@@ -13,13 +13,13 @@ Projection mapping (also known as video mapping and spatial augmented reality) i
 
 ## 🚀 Project Status
 
-**Current Phase: Phase 5 (Professional Video I/O) - 🚧 FOUNDATION COMPLETE**
+**Current Phase: Phase 2 (Professional Multi-Projector System) - 🚧 IN PROGRESS**
 
-MapMap has achieved a major milestone! **Phase 0-4** are complete, and **Phase 5** foundation is implemented with architecture ready for SDK integration!
+MapMap is undergoing a complete rewrite in Rust. The project is actively in development and has made significant progress on its foundational features.
 
-### Completed ✅
+### Completed & In Progress ✅
 
-**Foundation:**
+**Phase 0 - Foundation (✅ Structurally Complete)**
 - ✅ Modern graphics via **wgpu** (Vulkan/Metal/DX12)
 - ✅ Safe, high-performance **Rust** implementation
 - ✅ **ImGui-based** live operator interface
@@ -27,54 +27,25 @@ MapMap has achieved a major milestone! **Phase 0-4** are complete, and **Phase 5
 - ✅ Cross-platform support (Linux, macOS, Windows)
 - ✅ Comprehensive CI/CD pipeline
 
-**Phase 1 - Core Engine:**
-- ✅ FFmpeg video decoding (supports MP4, MOV, AVI, and image formats)
-- ✅ Hardware-accelerated video playback
-- ✅ Multi-threaded media pipeline
-- ✅ Layer system with transforms and blend modes
-- ✅ Advanced playback controls (speed, direction, loop modes)
-- ✅ Full UI controls for all features
+**Phase 1 - Core Engine (🚧 86% Complete)**
+- ✅ Layer system with transforms, opacity, and blend modes
+- ✅ Advanced playback controls (backwards, ping-pong, play once)
+- ✅ Master controls for speed and opacity
+- ✅ Quick resize modes (Fill, Fit, Stretch, Original)
+- 🚧 Still image support (PNG, JPG, TIFF)
+- 🚧 Animated format support (GIF, image sequences)
+- 🚧 ProRes codec support
 
-**Phase 2 - Multi-Projector System:**
-- ✅ **Multi-window rendering** with synchronized wgpu surfaces
-- ✅ **Edge blending renderer** with GPU-accelerated seamless overlap
-- ✅ **Color calibration** per-output (brightness, contrast, gamma, color temp, saturation)
-- ✅ **Canvas region filtering** for optimized rendering
-- ✅ **Post-processing pipeline** with intermediate textures
-- ✅ **UI controls** for edge blending and color calibration
-- ✅ **One-click 2x2 projector array** setup with automatic configuration
-- ✅ Real-time adjustment of all parameters
-
-**Phase 3 - Effects Pipeline:**
-- ✅ **Shader graph system** with visual node-based editor
-- ✅ **Audio analysis** (FFT, beat detection, frequency bands)
-- ✅ **Audio-reactive effects** with parameter mapping
-- ✅ **LUT color grading** (trilinear/tetrahedral interpolation)
-- ✅ **Timeline animation** with keyframe editor
-- ✅ **WGSL code generation** from shader graphs
-
-**Phase 4 - Control Systems:**
-- ✅ **MIDI input/output** with learn mode and controller profiles
-- ✅ **OSC server/client** for TouchOSC, Lemur, and custom apps
-- ✅ **DMX output** via Art-Net and sACN protocols
-- ✅ **Web control interface** (REST API + WebSocket)
-- ✅ **Cue system** with crossfades and triggers
-- ✅ **Keyboard shortcuts** and macro recorder
-- ✅ **Unified control manager** integrating all systems
-
-**Phase 5 - Professional Video I/O (NEW!):**
-- ✅ **Video I/O architecture** with trait-based abstractions
-- ✅ **Format conversion** (YUV↔RGB, BT.709 color space, 7 pixel formats)
-- ✅ **Stream output** foundation (RTMP/SRT ready for FFmpeg integration)
-- ✅ **NDI integration** stubs (ready for NDI SDK)
-- ✅ **DeckLink SDI** stubs (ready for Blackmagic SDK)
-- ✅ **Spout** texture sharing stubs (Windows, DX11 ready)
-- ✅ **Syphon** texture sharing stubs (macOS, IOSurface ready)
-- ✅ **Virtual camera** foundation (DirectShow/CoreMediaIO/V4L2)
-- 🚧 **SDK Integration** (requires proprietary SDKs for full functionality)
+**Phase 2 - Multi-Projector System (🚧 85% Complete)**
+- ✅ Bezier-based mesh warping system
+- ✅ Edge blending and color calibration shaders
+- ✅ Monitor detection and output management foundation
+- ✅ UI panels for multi-output configuration
+- 🚧 Multi-window rendering implementation
+- 🚧 Frame synchronization across outputs
 
 ### Next Phase 🎯
-**Phase 6:** Advanced Authoring UI - Node editor, timeline, asset browser, dark theme
+**Phase 3:** Effects Pipeline - GPU compute effects, audio reactivity, custom shaders
 
 ### What's New
 
@@ -93,57 +64,50 @@ MapMap has achieved a major milestone! **Phase 0-4** are complete, and **Phase 5
 
 ## 📦 Features
 
-### Current (Phases 0-4 Complete)
-- ✅ Real-time video playback with full control (play/pause/seek/speed/loop/direction)
+### Current (Phases 0-2 In Progress)
+- ✅ Real-time video playback with basic controls (play/pause/stop)
+- ✅ Advanced playback modes (backwards, ping-pong)
 - ✅ Hardware-accelerated rendering (Vulkan/Metal/DX12 via wgpu)
 - ✅ Professional ImGui control interface
-- ✅ Mesh warping with perspective correction
-- ✅ **Multi-window output** with synchronized rendering
-- ✅ **Edge blending** for seamless projector overlap (GPU-accelerated)
-- ✅ **Per-output color calibration** (brightness, contrast, gamma, color temp, saturation)
-- ✅ **Canvas region filtering** for optimized multi-output performance
-- ✅ **2x2 projector array** one-click setup
-- ✅ **Shader graph** visual effects editor with 30+ node types
-- ✅ **Audio-reactive effects** with FFT analysis and beat detection
-- ✅ **LUT color grading** with multiple interpolation modes
-- ✅ **MIDI control** with learn mode and controller profiles
-- ✅ **OSC control** for remote apps (TouchOSC, Lemur)
-- ✅ **DMX lighting control** (Art-Net/sACN)
-- ✅ **Web API** with REST + WebSocket for remote control
-- ✅ **Cue system** for automated shows
-- ✅ **Keyboard shortcuts** and macros
-- ✅ Layer system with transforms and blend modes
-- ✅ FFmpeg video decode (MP4, MOV, AVI, images, GIFs)
+- ✅ Layer system with transforms, opacity, and blend modes
+- ✅ Bezier-based mesh warping
+- ✅ Edge blending and color calibration shaders (foundation)
+- ✅ Monitor detection and output management foundation
 - ✅ Performance monitoring and real-time stats
 
 ### Roadmap
 
-**Phase 1 (Core Engine)** - ✅ COMPLETE
-- ✅ Multi-threaded media pipeline
-- ✅ Hardware-accelerated video decode
+**Phase 0 (Foundation)** - ✅ Structurally Complete
+- ✅ wgpu rendering backend
+- ✅ FFmpeg decode abstraction
+- ✅ Multi-threaded architecture design
+- ✅ ImGui integration
+
+**Phase 1 (Core Engine)** - 🚧 86% Complete
 - ✅ Layer system and compositing
-- ✅ Advanced blend modes
+- ✅ Advanced playback modes
+- 🚧 Hardware-accelerated video decode
+- 🚧 Still image and GIF support
 
-**Phase 2 (Professional Multi-Projector)** - ✅ COMPLETE
-- ✅ Multi-output support with synchronized rendering
-- ✅ Mesh warping with control points
-- ✅ Edge blending with gamma correction
-- ✅ Geometric correction and canvas regions
-- ✅ Per-output color calibration
+**Phase 2 (Professional Multi-Projector)** - 🚧 85% Complete
+- ✅ Bezier mesh warping with control points
+- ✅ Edge blending and color calibration shaders
+- 🚧 Multi-output support with synchronized rendering
+- 🚧 Geometric correction and canvas regions
 
-**Phase 3 (Effects Pipeline)** - ✅ COMPLETE
-- ✅ Shader graph system
-- ✅ Parameter animation
-- ✅ Audio-reactive effects
-- ✅ LUT color grading
+**Phase 3 (Effects Pipeline)** - 📋 Planned
+- 📋 Shader graph system
+- 📋 Parameter animation
+- 📋 Audio-reactive effects
+- 📋 LUT color grading
 
-**Phase 4 (Control Systems)** - ✅ COMPLETE
-- ✅ MIDI input/output
-- ✅ OSC server/client
-- ✅ DMX output (Art-Net/sACN)
-- ✅ Web API and WebSocket
-- ✅ Cue system
-- ✅ Keyboard shortcuts and macros
+**Phase 4 (Control Systems)** - 📋 Planned
+- 📋 MIDI input/output
+- 📋 OSC server/client
+- 📋 DMX output (Art-Net/sACN)
+- 📋 Web API and WebSocket
+- 📋 Cue system
+- 📋 Keyboard shortcuts and macros
 
 **Phase 5-7:** Professional Video I/O (NDI/DeckLink/Spout/Syphon), Advanced UI, Performance & Polish
 
@@ -358,7 +322,3 @@ This project was made possible by the support of the International Organization 
 Ce projet a été rendu possible grâce au support de l'Organisation internationale de la Francophonie (http://www.francophonie.org/).
 
 ---
-
-**Status:** Phase 2 (Professional Multi-Projector System) - ✅ Complete
-**Next Milestone:** Phase 3 (Effects Pipeline) - Shader graph and parameter animation
-**Version:** 0.2.0 (Professional Multi-Projector Release)
