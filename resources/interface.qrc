@@ -1,0 +1,62 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="new">images/icons/newdoc_w.png</file>
+        <file alias="open">images/icons/open_w.png</file>
+        <file alias="save">images/icons/save_w.png</file>
+        <file alias="save-as">images/icons/save_w.png</file>
+        <file alias="fullscreen">images/icons/fullscreen_w.png</file>
+        <file alias="output-window">images/icons/nofullscreen_w.png</file>
+        <file alias="control-points">images/icons/ctrl2_w.png</file>
+        <file alias="add-video">images/icons/add_movie_w.png</file>
+        <file alias="add-camera">images/icons/add_camera_w.png</file>
+        <file alias="add-color">images/icons/add_paint_w.png</file>
+        <file alias="add-mesh">images/shapes/add_quad.png</file>
+        <file alias="add-triangle">images/shapes/add_triangle.png</file>
+        <file alias="add-ellipse">images/shapes/add_circle.png</file>
+        <file alias="play">images/icons/play_w.png</file>
+        <file alias="rewind">images/icons/rewind_w.png</file>
+        <file alias="shape-mesh">images/shapes/add_quad.png</file>
+        <file alias="shape-triangle">images/shapes/add_triangle.png</file>
+        <file alias="shape-ellipse">images/shapes/add_circle.png</file>
+        <file alias="shape-polygon">images/shapes/add_circle.png</file>
+        <file alias="mapmap-title">images/logo/logomapmap.png</file>
+        <file alias="mapmap-title-light">images/logo/logomapmap-light.png</file>
+        <file alias="mapmap-logo">images/logo/mapmap-logo.png</file>
+        <file alias="mapmap-splash">images/logo/splash.png</file>
+        <file alias="logo-title">fonts/DroidSans.otf</file>
+        <file alias="base-font">fonts/DroidSans.otf</file>
+        <file alias="test-signal">images/test-signal/test-signal.svg</file>
+        <file alias="delete-mapping">images/icons/small/delete_w.png</file>
+        <file alias="lock-mapping">images/icons/small/lock_w.png</file>
+        <file alias="visible-mapping">images/icons/small/visible_w.png</file>
+        <file alias="duplicate-mapping">images/icons/small/duplicate_w.png</file>
+        <file alias="stylesheet">qss/mapmap.qss</file>
+        <file alias="console-font">fonts/Hack-Regular.otf</file>
+        <file alias="pal-test-card">images/test-signal/pal-test-signal.svg</file>
+        <file alias="classic-test">images/test-signal/examples/classic-test-card.png</file>
+        <file alias="pal-test">images/test-signal/examples/pal-test-card.png</file>
+        <file alias="ntsc-test">images/test-signal/examples/ntsc-test-card.png</file>
+        <file alias="ntsc-test-card">images/test-signal/ntsc-test-signal.svg</file>
+        <file alias="mapmap-logo-with-border">images/logo/mapmap-wide-with-border.svg</file>
+        <file>images/checkbox/checkbox-checked.png</file>
+        <file>images/checkbox/checkbox-checked-focused.png</file>
+        <file>images/checkbox/checkbox-unchecked.png</file>
+        <file>images/checkbox/checkbox-unchecked-focused.png</file>
+        <file>images/checkbox/radio-checked.png</file>
+        <file>images/checkbox/radio-checked-focused.png</file>
+        <file>images/checkbox/radio-unchecked.png</file>
+        <file>images/checkbox/radio-unchecked-focused.png</file>
+        <file alias="zoom-out">images/icons/zoom_out_w.svg.png</file>
+        <file alias="pause">images/icons/pause_w_1.png</file>
+        <file alias="zoom-in">images/icons/zoom_in.png</file>
+        <file alias="reset-zoom">images/icons/zoom_1.png</file>
+        <file alias="zoom-fit">images/icons/zoom_fit.png</file>
+        <file alias="pref-controls">images/icons/controls.png</file>
+        <file alias="pref-advanced">images/icons/advanced.png</file>
+        <file alias="pref-interface">images/icons/interface.png</file>
+        <file alias="solo-mapping">images/icons/solo.png</file>
+        <file alias="toggle-test-signal">images/icons/testsignal.png</file>
+        <file alias="vertex-scale">images/icons/scale-vertex.png</file>
+        <file alias="vertex-rotate">images/icons/rotate-vertex.png</file>
+    </qresource>
+</RCC>

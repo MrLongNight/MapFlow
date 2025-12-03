@@ -1,0 +1,30 @@
+[package]
+name = "mapmap-media"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# FFmpeg is optional - we have a test pattern fallback
+ffmpeg-next = { workspace = true, optional = true }
+crossbeam-channel = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+# Image decoding for still images, GIF, and sequences
+image = { workspace = true }
+walkdir = "2.4"
+
+[features]
+default = []
+ffmpeg = ["ffmpeg-next"]
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "video_decode"
+harness = false
