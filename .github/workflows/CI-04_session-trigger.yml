@@ -40,8 +40,9 @@ jobs:
     - name: Install/build dependencies for local actions
       run: |
         set -e
+        shopt -s nullglob
         for d in ./.github/actions/*; do
-          if [ -f "$d/package.json" ]; then
+          if [ -d "$d" ] && [ -f "$d/package.json" ]; then
             echo "Installing npm deps for local action: $d"
             (cd "$d" && npm ci)
             echo "Running build (if present) for: $d"
