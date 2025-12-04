@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use super::cue::Cue;
 use super::crossfade::Crossfade;
+use super::cue::Cue;
 
 use crate::{error::ControlError, Result};
 
@@ -205,8 +205,8 @@ impl Default for CueList {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::crossfade::FadeCurve;
+    use super::*;
 
     #[test]
     fn test_cue_list_creation() {

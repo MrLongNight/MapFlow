@@ -4,9 +4,7 @@
 //! Timeline editor for keyframe-based parameter animation
 
 use imgui::*;
-use mapmap_core::{
-    AnimationClip, AnimationTrack, InterpolationMode,
-};
+use mapmap_core::{AnimationClip, AnimationTrack, InterpolationMode};
 
 /// Timeline editor state
 pub struct TimelineEditor {
@@ -196,7 +194,10 @@ impl TimelineEditor {
                 draw_list
                     .add_rect(
                         canvas_pos,
-                        [canvas_pos[0] + canvas_size[0], canvas_pos[1] + canvas_size[1]],
+                        [
+                            canvas_pos[0] + canvas_size[0],
+                            canvas_pos[1] + canvas_size[1],
+                        ],
                         [0.15, 0.15, 0.15, 1.0],
                     )
                     .filled(true)
@@ -212,7 +213,14 @@ impl TimelineEditor {
                 if let Some(clip) = &self.clip {
                     let mut y_offset = 40.0; // Start below ruler
                     for track in &clip.tracks {
-                        self.draw_track(&draw_list, canvas_pos, canvas_size, &track.name, track, y_offset);
+                        self.draw_track(
+                            &draw_list,
+                            canvas_pos,
+                            canvas_size,
+                            &track.name,
+                            track,
+                            y_offset,
+                        );
                         y_offset += self.track_height;
                     }
                 }
@@ -271,7 +279,8 @@ impl TimelineEditor {
 
         // Time markers
         let visible_start = self.scroll_offset;
-        let visible_end = visible_start + (canvas_size[0] - self.track_header_width) as f64 / self.zoom as f64;
+        let visible_end =
+            visible_start + (canvas_size[0] - self.track_header_width) as f64 / self.zoom as f64;
 
         let marker_interval = if self.zoom > 200.0 {
             0.1 // Every 100ms
@@ -284,16 +293,20 @@ impl TimelineEditor {
         let start_marker = (visible_start / marker_interval).floor() * marker_interval;
         let mut t = start_marker;
         while t <= visible_end {
-            let x = canvas_pos[0] + self.track_header_width + ((t - self.scroll_offset) * self.zoom as f64) as f32;
+            let x = canvas_pos[0]
+                + self.track_header_width
+                + ((t - self.scroll_offset) * self.zoom as f64) as f32;
 
             // Draw tick
             let is_second = (t % 1.0).abs() < 0.01;
             let tick_height = if is_second { 20.0 } else { 10.0 };
-            draw_list.add_line(
-                [x, canvas_pos[1] + ruler_height],
-                [x, canvas_pos[1] + ruler_height - tick_height],
-                text_color,
-            ).build();
+            draw_list
+                .add_line(
+                    [x, canvas_pos[1] + ruler_height],
+                    [x, canvas_pos[1] + ruler_height - tick_height],
+                    text_color,
+                )
+                .build();
 
             // Draw time label (only for seconds)
             if is_second {
@@ -310,25 +323,32 @@ impl TimelineEditor {
 
     /// Draw playhead indicator
     fn draw_playhead(&self, draw_list: &DrawListMut, canvas_pos: [f32; 2], canvas_size: [f32; 2]) {
-        let x = canvas_pos[0] + self.track_header_width +
-                ((self.current_time - self.scroll_offset) * self.zoom as f64) as f32;
+        let x = canvas_pos[0]
+            + self.track_header_width
+            + ((self.current_time - self.scroll_offset) * self.zoom as f64) as f32;
 
         if x >= canvas_pos[0] + self.track_header_width && x <= canvas_pos[0] + canvas_size[0] {
             // Vertical line
-            draw_list.add_line(
-                [x, canvas_pos[1]],
-                [x, canvas_pos[1] + canvas_size[1]],
-                [1.0, 0.3, 0.3, 1.0],
-            ).thickness(2.0).build();
+            draw_list
+                .add_line(
+                    [x, canvas_pos[1]],
+                    [x, canvas_pos[1] + canvas_size[1]],
+                    [1.0, 0.3, 0.3, 1.0],
+                )
+                .thickness(2.0)
+                .build();
 
             // Triangle at top
             let triangle_size = 8.0;
-            draw_list.add_triangle(
-                [x, canvas_pos[1] + 30.0],
-                [x - triangle_size, canvas_pos[1] + 30.0 - triangle_size],
-                [x + triangle_size, canvas_pos[1] + 30.0 - triangle_size],
-                [1.0, 0.3, 0.3, 1.0],
-            ).filled(true).build();
+            draw_list
+                .add_triangle(
+                    [x, canvas_pos[1] + 30.0],
+                    [x - triangle_size, canvas_pos[1] + 30.0 - triangle_size],
+                    [x + triangle_size, canvas_pos[1] + 30.0 - triangle_size],
+                    [1.0, 0.3, 0.3, 1.0],
+                )
+                .filled(true)
+                .build();
         }
     }
 
@@ -350,7 +370,10 @@ impl TimelineEditor {
         draw_list
             .add_rect(
                 [canvas_pos[0], track_y],
-                [canvas_pos[0] + self.track_header_width, track_y + self.track_height],
+                [
+                    canvas_pos[0] + self.track_header_width,
+                    track_y + self.track_height,
+                ],
                 header_color,
             )
             .filled(true)
@@ -374,11 +397,14 @@ impl TimelineEditor {
 
         // Draw keyframes
         for (i, (_time_us, keyframe)) in track.keyframes.iter().enumerate() {
-            let x = canvas_pos[0] + self.track_header_width +
-                    ((keyframe.time - self.scroll_offset) * self.zoom as f64) as f32;
+            let x = canvas_pos[0]
+                + self.track_header_width
+                + ((keyframe.time - self.scroll_offset) * self.zoom as f64) as f32;
 
             if x >= canvas_pos[0] + self.track_header_width && x <= canvas_pos[0] + canvas_size[0] {
-                let is_selected = self.selected_keyframes.contains(&(track_name.to_string(), i));
+                let is_selected = self
+                    .selected_keyframes
+                    .contains(&(track_name.to_string(), i));
                 let keyframe_color = if is_selected {
                     [1.0, 0.8, 0.2, 1.0]
                 } else {
@@ -390,30 +416,42 @@ impl TimelineEditor {
                 let center_y = track_y + self.track_height * 0.5;
 
                 // Draw diamond as four triangles since add_quad doesn't exist
-                draw_list.add_triangle(
-                    [x, center_y - diamond_size],
-                    [x + diamond_size, center_y],
-                    [x, center_y],
-                    keyframe_color,
-                ).filled(true).build();
-                draw_list.add_triangle(
-                    [x + diamond_size, center_y],
-                    [x, center_y + diamond_size],
-                    [x, center_y],
-                    keyframe_color,
-                ).filled(true).build();
-                draw_list.add_triangle(
-                    [x, center_y + diamond_size],
-                    [x - diamond_size, center_y],
-                    [x, center_y],
-                    keyframe_color,
-                ).filled(true).build();
-                draw_list.add_triangle(
-                    [x - diamond_size, center_y],
-                    [x, center_y - diamond_size],
-                    [x, center_y],
-                    keyframe_color,
-                ).filled(true).build();
+                draw_list
+                    .add_triangle(
+                        [x, center_y - diamond_size],
+                        [x + diamond_size, center_y],
+                        [x, center_y],
+                        keyframe_color,
+                    )
+                    .filled(true)
+                    .build();
+                draw_list
+                    .add_triangle(
+                        [x + diamond_size, center_y],
+                        [x, center_y + diamond_size],
+                        [x, center_y],
+                        keyframe_color,
+                    )
+                    .filled(true)
+                    .build();
+                draw_list
+                    .add_triangle(
+                        [x, center_y + diamond_size],
+                        [x - diamond_size, center_y],
+                        [x, center_y],
+                        keyframe_color,
+                    )
+                    .filled(true)
+                    .build();
+                draw_list
+                    .add_triangle(
+                        [x - diamond_size, center_y],
+                        [x, center_y - diamond_size],
+                        [x, center_y],
+                        keyframe_color,
+                    )
+                    .filled(true)
+                    .build();
             }
         }
     }
@@ -438,7 +476,10 @@ impl TimelineEditor {
                             draw_list
                                 .add_rect(
                                     canvas_pos,
-                                    [canvas_pos[0] + canvas_size[0], canvas_pos[1] + canvas_size[1]],
+                                    [
+                                        canvas_pos[0] + canvas_size[0],
+                                        canvas_pos[1] + canvas_size[1],
+                                    ],
                                     [0.1, 0.1, 0.1, 1.0],
                                 )
                                 .filled(true)
@@ -479,8 +520,10 @@ impl TimelineEditor {
             let t2 = first_keyframe.time + (time_range * (i + 1) as f64 / num_samples as f64);
 
             // Map time to x position
-            let x1 = canvas_pos[0] + (t1 - self.scroll_offset) as f32 / time_range as f32 * canvas_size[0];
-            let x2 = canvas_pos[0] + (t2 - self.scroll_offset) as f32 / time_range as f32 * canvas_size[0];
+            let x1 = canvas_pos[0]
+                + (t1 - self.scroll_offset) as f32 / time_range as f32 * canvas_size[0];
+            let x2 = canvas_pos[0]
+                + (t2 - self.scroll_offset) as f32 / time_range as f32 * canvas_size[0];
 
             // Sample values (simplified - would need actual interpolation)
             // For now, just draw a placeholder line

@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 /// Simulation resolution presets
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SimulationResolution {
-    Low,      // 128x128
-    Medium,   // 256x256
-    High,     // 512x512
+    Low,    // 128x128
+    Medium, // 256x256
+    High,   // 512x512
 }
 
 impl SimulationResolution {
@@ -88,8 +88,8 @@ pub struct OscillatorConfig {
     pub simulation_resolution: SimulationResolution,
     pub kernel_radius: f32,
     pub rings: [RingParams; 4],
-    pub frequency_min: f32,  // Hz
-    pub frequency_max: f32,  // Hz
+    pub frequency_min: f32, // Hz
+    pub frequency_max: f32, // Hz
     pub noise_amount: f32,
     pub coordinate_mode: CoordinateMode,
     pub phase_init_mode: PhaseInitMode,
@@ -114,10 +114,26 @@ impl Default for OscillatorConfig {
             simulation_resolution: SimulationResolution::Medium,
             kernel_radius: 16.0,
             rings: [
-                RingParams { distance: 0.2, width: 0.1, coupling: 1.0 },
-                RingParams { distance: 0.5, width: 0.15, coupling: -0.5 },
-                RingParams { distance: 0.8, width: 0.2, coupling: 0.3 },
-                RingParams { distance: 0.0, width: 0.0, coupling: 0.0 },
+                RingParams {
+                    distance: 0.2,
+                    width: 0.1,
+                    coupling: 1.0,
+                },
+                RingParams {
+                    distance: 0.5,
+                    width: 0.15,
+                    coupling: -0.5,
+                },
+                RingParams {
+                    distance: 0.8,
+                    width: 0.2,
+                    coupling: 0.3,
+                },
+                RingParams {
+                    distance: 0.0,
+                    width: 0.0,
+                    coupling: 0.0,
+                },
             ],
             frequency_min: 0.5,
             frequency_max: 2.0,
@@ -167,10 +183,26 @@ impl OscillatorConfig {
             frequency_min: 1.0,
             frequency_max: 4.0,
             rings: [
-                RingParams { distance: 0.25, width: 0.15, coupling: 2.0 },
-                RingParams { distance: 0.5, width: 0.2, coupling: -1.5 },
-                RingParams { distance: 0.75, width: 0.25, coupling: 1.0 },
-                RingParams { distance: 0.0, width: 0.0, coupling: 0.0 },
+                RingParams {
+                    distance: 0.25,
+                    width: 0.15,
+                    coupling: 2.0,
+                },
+                RingParams {
+                    distance: 0.5,
+                    width: 0.2,
+                    coupling: -1.5,
+                },
+                RingParams {
+                    distance: 0.75,
+                    width: 0.25,
+                    coupling: 1.0,
+                },
+                RingParams {
+                    distance: 0.0,
+                    width: 0.0,
+                    coupling: 0.0,
+                },
             ],
             ..Default::default()
         }
@@ -185,10 +217,26 @@ impl OscillatorConfig {
             frequency_min: 0.5,
             frequency_max: 2.0,
             rings: [
-                RingParams { distance: 0.3, width: 0.1, coupling: 3.0 },
-                RingParams { distance: 0.5, width: 0.1, coupling: -2.0 },
-                RingParams { distance: 0.7, width: 0.1, coupling: 1.5 },
-                RingParams { distance: 0.0, width: 0.0, coupling: 0.0 },
+                RingParams {
+                    distance: 0.3,
+                    width: 0.1,
+                    coupling: 3.0,
+                },
+                RingParams {
+                    distance: 0.5,
+                    width: 0.1,
+                    coupling: -2.0,
+                },
+                RingParams {
+                    distance: 0.7,
+                    width: 0.1,
+                    coupling: 1.5,
+                },
+                RingParams {
+                    distance: 0.0,
+                    width: 0.0,
+                    coupling: 0.0,
+                },
             ],
             ..Default::default()
         }

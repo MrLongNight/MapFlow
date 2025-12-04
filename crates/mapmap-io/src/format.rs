@@ -3,8 +3,8 @@
 //! This module defines pixel formats, video formats, frame metadata,
 //! and video frame structures used throughout the I/O system.
 
-use std::time::Duration;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 /// Pixel format enumeration.
 ///
@@ -36,10 +36,10 @@ impl PixelFormat {
             PixelFormat::RGBA8 => 4,
             PixelFormat::BGRA8 => 4,
             PixelFormat::RGB8 => 3,
-            PixelFormat::YUV420P => 1,  // Average across Y, U, V planes
-            PixelFormat::YUV422P => 2,  // Average across Y, U, V planes
+            PixelFormat::YUV420P => 1, // Average across Y, U, V planes
+            PixelFormat::YUV422P => 2, // Average across Y, U, V planes
             PixelFormat::UYVY => 2,
-            PixelFormat::NV12 => 1,     // Average across Y and UV planes
+            PixelFormat::NV12 => 1, // Average across Y and UV planes
         }
     }
 
@@ -50,10 +50,10 @@ impl PixelFormat {
             PixelFormat::RGBA8 => pixels * 4,
             PixelFormat::BGRA8 => pixels * 4,
             PixelFormat::RGB8 => pixels * 3,
-            PixelFormat::YUV420P => (pixels * 3) / 2,  // Y + U/4 + V/4
-            PixelFormat::YUV422P => pixels * 2,        // Y + U/2 + V/2
+            PixelFormat::YUV420P => (pixels * 3) / 2, // Y + U/4 + V/4
+            PixelFormat::YUV422P => pixels * 2,       // Y + U/2 + V/2
             PixelFormat::UYVY => pixels * 2,
-            PixelFormat::NV12 => (pixels * 3) / 2,     // Y + UV/2
+            PixelFormat::NV12 => (pixels * 3) / 2, // Y + UV/2
         }
     }
 
@@ -69,10 +69,7 @@ impl PixelFormat {
     pub fn is_yuv(&self) -> bool {
         matches!(
             self,
-            PixelFormat::YUV420P
-                | PixelFormat::YUV422P
-                | PixelFormat::UYVY
-                | PixelFormat::NV12
+            PixelFormat::YUV420P | PixelFormat::YUV422P | PixelFormat::UYVY | PixelFormat::NV12
         )
     }
 

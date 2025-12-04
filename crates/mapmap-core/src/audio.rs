@@ -3,11 +3,11 @@
 //! Phase 3: Audio-reactive Effects
 //! Provides FFT analysis, beat detection, and audio-reactive parameter mapping
 
-use crossbeam_channel::{Receiver, Sender, unbounded};
-use rustfft::{Fft, FftPlanner, num_complex::Complex};
+use crossbeam_channel::{unbounded, Receiver, Sender};
+use rustfft::{num_complex::Complex, Fft, FftPlanner};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 /// Audio analysis configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -219,7 +219,10 @@ impl AudioAnalyzer {
         // Apply Hann window and copy to FFT buffer
         for i in 0..self.config.fft_size {
             let sample = self.input_buffer[i];
-            let window = 0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (self.config.fft_size - 1) as f32).cos());
+            let window = 0.5
+                * (1.0
+                    - (2.0 * std::f32::consts::PI * i as f32 / (self.config.fft_size - 1) as f32)
+                        .cos());
             self.fft_buffer[i] = Complex::new(sample * window, 0.0);
         }
 
@@ -233,7 +236,7 @@ impl AudioAnalyzer {
 
             // Apply smoothing
             let smoothed = self.config.smoothing * self.previous_magnitudes[i]
-                         + (1.0 - self.config.smoothing) * magnitude;
+                + (1.0 - self.config.smoothing) * magnitude;
 
             self.magnitude_buffer[i] = smoothed;
             self.previous_magnitudes[i] = smoothed;
@@ -248,7 +251,9 @@ impl AudioAnalyzer {
         let rms_volume = self.calculate_rms();
 
         // Calculate peak volume
-        let peak_volume = self.magnitude_buffer.iter()
+        let peak_volume = self
+            .magnitude_buffer
+            .iter()
             .copied()
             .fold(0.0f32, |a, b| a.max(b));
 
@@ -279,7 +284,9 @@ impl AudioAnalyzer {
 
     /// Calculate RMS (Root Mean Square) volume
     fn calculate_rms(&self) -> f32 {
-        let sum: f32 = self.input_buffer.iter()
+        let sum: f32 = self
+            .input_buffer
+            .iter()
             .take(self.config.fft_size)
             .map(|&s| s * s)
             .sum();
@@ -312,18 +319,19 @@ impl AudioAnalyzer {
         let bass_energy = band_energies[0] + band_energies[1]; // SubBass + Bass
 
         self.energy_history.push_back(bass_energy);
-        if self.energy_history.len() > 43 {  // ~1 second at 43Hz update rate
+        if self.energy_history.len() > 43 {
+            // ~1 second at 43Hz update rate
             self.energy_history.pop_front();
         }
 
         // Calculate average energy
-        let avg_energy: f32 = self.energy_history.iter().sum::<f32>()
-                            / self.energy_history.len() as f32;
+        let avg_energy: f32 =
+            self.energy_history.iter().sum::<f32>() / self.energy_history.len() as f32;
 
         // Beat detection threshold
         let threshold = avg_energy * 1.5;
-        let beat_detected = bass_energy > threshold
-                         && (self.current_time - self.last_beat_time) > 0.1; // Min 100ms between beats
+        let beat_detected =
+            bass_energy > threshold && (self.current_time - self.last_beat_time) > 0.1; // Min 100ms between beats
 
         let beat_strength = if beat_detected {
             ((bass_energy - threshold) / threshold).min(1.0)
@@ -371,8 +379,8 @@ impl AudioAnalyzer {
             return None;
         }
 
-        let avg_interval: f64 = self.beat_intervals.iter().sum::<f64>()
-                               / self.beat_intervals.len() as f64;
+        let avg_interval: f64 =
+            self.beat_intervals.iter().sum::<f64>() / self.beat_intervals.len() as f64;
 
         if avg_interval > 0.0 {
             Some((60.0 / avg_interval) as f32)
@@ -383,8 +391,7 @@ impl AudioAnalyzer {
 
     /// Get the latest analysis result
     pub fn get_latest_analysis(&self) -> AudioAnalysis {
-        self.analysis_receiver.try_recv()
-            .unwrap_or_default()
+        self.analysis_receiver.try_recv().unwrap_or_default()
     }
 
     /// Get analysis receiver for async updates
@@ -479,9 +486,21 @@ impl AudioReactiveMapping {
                     0.0
                 }
             }
-            AudioMappingType::Beat => if analysis.beat_detected { 1.0 } else { 0.0 },
+            AudioMappingType::Beat => {
+                if analysis.beat_detected {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
             AudioMappingType::BeatStrength => analysis.beat_strength,
-            AudioMappingType::Onset => if analysis.onset_detected { 1.0 } else { 0.0 },
+            AudioMappingType::Onset => {
+                if analysis.onset_detected {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
             AudioMappingType::Tempo => analysis.tempo_bpm.unwrap_or(0.0) / 200.0, // Normalize to 0-1 (assuming 200 BPM max)
             AudioMappingType::FFTBin(bin) => {
                 analysis.fft_magnitudes.get(bin).copied().unwrap_or(0.0)

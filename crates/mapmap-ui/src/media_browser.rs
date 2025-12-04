@@ -144,10 +144,7 @@ impl MediaBrowser {
                 if let Ok(metadata) = entry.metadata() {
                     if metadata.is_file() {
                         let path = entry.path();
-                        let name = entry
-                            .file_name()
-                            .to_string_lossy()
-                            .to_string();
+                        let name = entry.file_name().to_string_lossy().to_string();
 
                         // Skip hidden files if not showing them
                         if !self.show_hidden && name.starts_with('.') {
@@ -163,7 +160,10 @@ impl MediaBrowser {
                         // Only include media files
                         if matches!(
                             file_type,
-                            MediaType::Video | MediaType::Image | MediaType::ImageSequence | MediaType::Audio
+                            MediaType::Video
+                                | MediaType::Image
+                                | MediaType::ImageSequence
+                                | MediaType::Audio
                         ) {
                             let thumbnail = self.get_or_generate_thumbnail(&path);
 
@@ -351,7 +351,11 @@ impl MediaBrowser {
         // Content area
         egui::ScrollArea::vertical().show(ui, |ui| {
             // Collect indices to avoid borrowing issues
-            let entry_indices: Vec<usize> = self.filtered_entries().into_iter().map(|(i, _)| i).collect();
+            let entry_indices: Vec<usize> = self
+                .filtered_entries()
+                .into_iter()
+                .map(|(i, _)| i)
+                .collect();
 
             match self.view_mode {
                 ViewMode::Grid => {
@@ -499,7 +503,8 @@ impl MediaBrowser {
                 );
             } else {
                 // Placeholder
-                ui.painter().rect_filled(thumb_rect, 2.0, Color32::from_rgb(45, 45, 45));
+                ui.painter()
+                    .rect_filled(thumb_rect, 2.0, Color32::from_rgb(45, 45, 45));
                 let icon_pos = thumb_rect.center() - Vec2::new(20.0, 20.0);
                 ui.painter().text(
                     icon_pos,

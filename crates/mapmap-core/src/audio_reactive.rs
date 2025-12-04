@@ -3,9 +3,9 @@
 //! Phase 3: Effects Pipeline
 //! Connects audio analysis to shader graph parameters for audio-reactive effects
 
-use crate::audio::{AudioAnalysis, AudioReactiveMapping, AudioMappingType, FrequencyBand};
-use crate::shader_graph::{ShaderGraph, NodeId, ParameterValue};
-use crate::animation::{AnimationPlayer, AnimationClip, AnimValue};
+use crate::animation::{AnimValue, AnimationClip, AnimationPlayer};
+use crate::audio::{AudioAnalysis, AudioMappingType, AudioReactiveMapping, FrequencyBand};
+use crate::shader_graph::{NodeId, ParameterValue, ShaderGraph};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -302,12 +302,7 @@ impl AudioReactiveAnimationSystem {
     }
 
     /// Update both animation and audio reactivity
-    pub fn update(
-        &mut self,
-        audio: &AudioAnalysis,
-        current_time: f64,
-        graph: &mut ShaderGraph,
-    ) {
+    pub fn update(&mut self, audio: &AudioAnalysis, current_time: f64, graph: &mut ShaderGraph) {
         // Get animated values
         self.animation_player.seek(current_time);
         let animated_values_raw = self.animation_player.clip.evaluate(current_time);
@@ -352,7 +347,13 @@ impl AudioReactiveAnimationSystem {
             AnimValue::Vec3(v) => v[0],
             AnimValue::Vec4(v) => v[0],
             AnimValue::Color(c) => c[0],
-            AnimValue::Bool(b) => if *b { 1.0 } else { 0.0 },
+            AnimValue::Bool(b) => {
+                if *b {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
         }
     }
 
@@ -376,9 +377,7 @@ impl AudioReactiveAnimationSystem {
                 AudioAnimationBlendMode::Replace => {
                     anim_value * (1.0 - self.blend_factor) + audio_value * self.blend_factor
                 }
-                AudioAnimationBlendMode::Add => {
-                    anim_value + audio_value * self.blend_factor
-                }
+                AudioAnimationBlendMode::Add => anim_value + audio_value * self.blend_factor,
                 AudioAnimationBlendMode::Multiply => {
                     anim_value * (1.0 + (audio_value - 1.0) * self.blend_factor)
                 }

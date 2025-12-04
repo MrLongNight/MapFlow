@@ -2,7 +2,7 @@
 
 use super::MidiMessage;
 use std::time::{Duration, Instant};
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 /// MIDI clock synchronization state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

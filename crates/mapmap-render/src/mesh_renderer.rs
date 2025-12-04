@@ -32,9 +32,9 @@ impl GpuVertex {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct MeshUniforms {
-    transform: [[f32; 4]; 4],  // 64 bytes
-    opacity: f32,              // 4 bytes
-    _padding: [f32; 7],        // 28 bytes (total 96 bytes for std140 alignment)
+    transform: [[f32; 4]; 4], // 64 bytes
+    opacity: f32,             // 4 bytes
+    _padding: [f32; 7],       // 28 bytes (total 96 bytes for std140 alignment)
 }
 
 /// Mesh renderer for warped texture mapping
@@ -320,10 +320,7 @@ mod tests {
 
     #[test]
     fn test_gpu_vertex_conversion() {
-        let mesh_vertex = MeshVertex::new(
-            glam::Vec2::new(0.5, 0.5),
-            glam::Vec2::new(0.25, 0.75),
-        );
+        let mesh_vertex = MeshVertex::new(glam::Vec2::new(0.5, 0.5), glam::Vec2::new(0.25, 0.75));
 
         let gpu_vertex = GpuVertex::from_mesh_vertex(&mesh_vertex);
 

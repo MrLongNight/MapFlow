@@ -46,23 +46,12 @@ impl FormatConverter {
         }
 
         // Dispatch to specific conversion functions
-        match (
-            &frame.format.pixel_format,
-            &target_format.pixel_format,
-        ) {
+        match (&frame.format.pixel_format, &target_format.pixel_format) {
             // RGB conversions
-            (PixelFormat::RGBA8, PixelFormat::BGRA8) => {
-                self.rgba_to_bgra(frame, target_format)
-            }
-            (PixelFormat::BGRA8, PixelFormat::RGBA8) => {
-                self.bgra_to_rgba(frame, target_format)
-            }
-            (PixelFormat::RGB8, PixelFormat::RGBA8) => {
-                self.rgb_to_rgba(frame, target_format)
-            }
-            (PixelFormat::RGBA8, PixelFormat::RGB8) => {
-                self.rgba_to_rgb(frame, target_format)
-            }
+            (PixelFormat::RGBA8, PixelFormat::BGRA8) => self.rgba_to_bgra(frame, target_format),
+            (PixelFormat::BGRA8, PixelFormat::RGBA8) => self.bgra_to_rgba(frame, target_format),
+            (PixelFormat::RGB8, PixelFormat::RGBA8) => self.rgb_to_rgba(frame, target_format),
+            (PixelFormat::RGBA8, PixelFormat::RGB8) => self.rgba_to_rgb(frame, target_format),
 
             // YUV to RGB conversions
             (PixelFormat::YUV420P, PixelFormat::RGBA8) => {
@@ -71,12 +60,8 @@ impl FormatConverter {
             (PixelFormat::YUV422P, PixelFormat::RGBA8) => {
                 self.yuv422p_to_rgba(frame, target_format)
             }
-            (PixelFormat::UYVY, PixelFormat::RGBA8) => {
-                self.uyvy_to_rgba(frame, target_format)
-            }
-            (PixelFormat::NV12, PixelFormat::RGBA8) => {
-                self.nv12_to_rgba(frame, target_format)
-            }
+            (PixelFormat::UYVY, PixelFormat::RGBA8) => self.uyvy_to_rgba(frame, target_format),
+            (PixelFormat::NV12, PixelFormat::RGBA8) => self.nv12_to_rgba(frame, target_format),
 
             // Unsupported conversions
             _ => Err(IoError::UnsupportedPixelFormat(format!(
@@ -120,7 +105,7 @@ impl FormatConverter {
             output.push(pixel[0]); // R
             output.push(pixel[1]); // G
             output.push(pixel[2]); // B
-            output.push(255);      // A (fully opaque)
+            output.push(255); // A (fully opaque)
         }
 
         Ok(VideoFrame::with_metadata(
@@ -154,7 +139,11 @@ impl FormatConverter {
     ///
     /// YUV420P is a planar format with full resolution Y plane and
     /// quarter resolution U and V planes.
-    fn yuv420p_to_rgba(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+    fn yuv420p_to_rgba(
+        &self,
+        frame: &VideoFrame,
+        target_format: &VideoFormat,
+    ) -> Result<VideoFrame> {
         let width = frame.format.width as usize;
         let height = frame.format.height as usize;
         let y_size = width * height;
@@ -203,7 +192,11 @@ impl FormatConverter {
     ///
     /// YUV422P is a planar format with full resolution Y plane and
     /// half resolution U and V planes (horizontally subsampled).
-    fn yuv422p_to_rgba(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+    fn yuv422p_to_rgba(
+        &self,
+        frame: &VideoFrame,
+        target_format: &VideoFormat,
+    ) -> Result<VideoFrame> {
         let width = frame.format.width as usize;
         let height = frame.format.height as usize;
         let y_size = width * height;
@@ -382,18 +375,18 @@ mod tests {
 
         // Create a simple RGBA frame: one red pixel
         let data = vec![
-            255, 0, 0, 255,  // Red pixel
-            0, 255, 0, 255,  // Green pixel
-            0, 0, 255, 255,  // Blue pixel
-            255, 255, 255, 255,  // White pixel
+            255, 0, 0, 255, // Red pixel
+            0, 255, 0, 255, // Green pixel
+            0, 0, 255, 255, // Blue pixel
+            255, 255, 255, 255, // White pixel
         ];
 
         let frame = VideoFrame::new(data, format, Duration::ZERO);
         let converted = converter.convert(&frame, &target_format).unwrap();
 
         // After conversion, R and B should be swapped
-        assert_eq!(converted.data[0], 0);   // B (was R)
-        assert_eq!(converted.data[1], 0);   // G
+        assert_eq!(converted.data[0], 0); // B (was R)
+        assert_eq!(converted.data[1], 0); // G
         assert_eq!(converted.data[2], 255); // R (was B)
         assert_eq!(converted.data[3], 255); // A
     }

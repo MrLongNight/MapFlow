@@ -4,8 +4,7 @@
 //! Generates WGSL shader code from node-based shader graphs
 
 use crate::shader_graph::{
-    ShaderGraph, ShaderNode, NodeType, NodeId, DataType,
-    InputSocket, ParameterValue,
+    DataType, InputSocket, NodeId, NodeType, ParameterValue, ShaderGraph, ShaderNode,
 };
 use std::collections::HashSet;
 use std::fmt::Write;
@@ -55,7 +54,8 @@ impl WGSLCodegen {
     /// Generate complete WGSL shader code
     pub fn generate(&mut self) -> Result<String> {
         // Validate graph
-        self.graph.validate()
+        self.graph
+            .validate()
             .map_err(|errors| CodegenError::ValidationError(errors.join(", ")))?;
 
         // Determine execution order (topological sort)
@@ -84,8 +84,7 @@ impl WGSLCodegen {
 
     /// Compute node execution order using topological sort
     fn compute_execution_order(&mut self) -> Result<()> {
-        let output_node = self.graph.output_node()
-            .ok_or(CodegenError::NoOutputNode)?;
+        let output_node = self.graph.output_node().ok_or(CodegenError::NoOutputNode)?;
 
         let mut visited = HashSet::new();
         let mut stack = HashSet::new();
@@ -118,7 +117,10 @@ impl WGSLCodegen {
 
         stack.insert(node_id);
 
-        let node = self.graph.nodes.get(&node_id)
+        let node = self
+            .graph
+            .nodes
+            .get(&node_id)
             .ok_or(CodegenError::NodeNotFound(node_id))?;
 
         // Visit all input dependencies
@@ -155,7 +157,11 @@ impl WGSLCodegen {
         }
 
         writeln!(code, "}}").unwrap();
-        writeln!(code, "@group(0) @binding(0) var<uniform> uniforms: Uniforms;\n").unwrap();
+        writeln!(
+            code,
+            "@group(0) @binding(0) var<uniform> uniforms: Uniforms;\n"
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -169,14 +175,19 @@ impl WGSLCodegen {
             if let Some(node) = self.graph.nodes.get(node_id) {
                 if node.node_type == NodeType::TextureInput {
                     let binding = 1 + texture_count;
-                    writeln!(code,
+                    writeln!(
+                        code,
                         "@group(0) @binding({}) var texture_{}: texture_2d<f32>;",
                         binding, node.id
-                    ).unwrap();
-                    writeln!(code,
+                    )
+                    .unwrap();
+                    writeln!(
+                        code,
                         "@group(0) @binding({}) var sampler_{}: sampler;",
-                        binding + 1, node.id
-                    ).unwrap();
+                        binding + 1,
+                        node.id
+                    )
+                    .unwrap();
                     texture_count += 2;
                 }
             }
@@ -195,7 +206,9 @@ impl WGSLCodegen {
             if let Some(node) = self.graph.nodes.get(node_id) {
                 match node.node_type {
                     NodeType::Blur => self.generate_blur_function(code)?,
-                    NodeType::ChromaticAberration => self.generate_chromatic_aberration_function(code)?,
+                    NodeType::ChromaticAberration => {
+                        self.generate_chromatic_aberration_function(code)?
+                    }
                     NodeType::EdgeDetect => self.generate_edge_detect_function(code)?,
                     NodeType::Kaleidoscope => self.generate_kaleidoscope_function(code)?,
                     NodeType::HSVToRGB => self.generate_hsv_to_rgb_function(code)?,
@@ -228,10 +241,20 @@ impl WGSLCodegen {
         let output_input = &output_node.inputs[0];
 
         if let Some((source_node, output_name)) = &output_input.connected_output {
-            writeln!(code, "    return node_{}_{};", source_node, output_name.to_lowercase()).unwrap();
+            writeln!(
+                code,
+                "    return node_{}_{};",
+                source_node,
+                output_name.to_lowercase()
+            )
+            .unwrap();
         } else if let Some(default) = &output_input.default_value {
-            writeln!(code, "    return vec4<f32>({}, {}, {}, {});",
-                default.x, default.y, default.z, default.w).unwrap();
+            writeln!(
+                code,
+                "    return vec4<f32>({}, {}, {}, {});",
+                default.x, default.y, default.z, default.w
+            )
+            .unwrap();
         }
 
         writeln!(code, "}}").unwrap();
@@ -261,14 +284,21 @@ impl WGSLCodegen {
                 let tex_var = self.get_input_variable(tex_input)?;
                 let uv_var = self.get_input_variable(uv_input)?;
 
-                writeln!(code,
+                writeln!(
+                    code,
                     "    let node_{}_color = textureSample({}, {}, {});",
-                    node.id, tex_var, tex_var.replace("texture", "sampler"), uv_var
-                ).unwrap();
-                writeln!(code,
+                    node.id,
+                    tex_var,
+                    tex_var.replace("texture", "sampler"),
+                    uv_var
+                )
+                .unwrap();
+                writeln!(
+                    code,
                     "    let node_{}_alpha = node_{}_color.a;",
                     node.id, node.id
-                ).unwrap();
+                )
+                .unwrap();
             }
 
             NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide => {
@@ -301,7 +331,12 @@ impl WGSLCodegen {
 
             NodeType::AudioInput => {
                 // Audio values will be passed as uniforms
-                writeln!(code, "    let node_{}_value = uniforms.audio_value;", node.id).unwrap();
+                writeln!(
+                    code,
+                    "    let node_{}_value = uniforms.audio_value;",
+                    node.id
+                )
+                .unwrap();
             }
 
             NodeType::Output => {
@@ -310,7 +345,12 @@ impl WGSLCodegen {
 
             _ => {
                 // Placeholder for unimplemented nodes
-                writeln!(code, "    // TODO: Implement {}", node.node_type.display_name()).unwrap();
+                writeln!(
+                    code,
+                    "    // TODO: Implement {}",
+                    node.node_type.display_name()
+                )
+                .unwrap();
             }
         }
 
@@ -330,7 +370,12 @@ impl WGSLCodegen {
             _ => return Err(CodegenError::GenerationError("Invalid math op".to_string())),
         };
 
-        writeln!(code, "    let node_{}_result = {} {} {};", node.id, a, op, b).unwrap();
+        writeln!(
+            code,
+            "    let node_{}_result = {} {} {};",
+            node.id, a, op, b
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -345,7 +390,12 @@ impl WGSLCodegen {
             _ => return Err(CodegenError::GenerationError("Invalid trig op".to_string())),
         };
 
-        writeln!(code, "    let node_{}_result = {}({});", node.id, func, input).unwrap();
+        writeln!(
+            code,
+            "    let node_{}_result = {}({});",
+            node.id, func, input
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -356,7 +406,12 @@ impl WGSLCodegen {
         let b = self.get_input_variable(&node.inputs[1])?;
         let t = self.get_input_variable(&node.inputs[2])?;
 
-        writeln!(code, "    let node_{}_result = mix({}, {}, {});", node.id, a, b, t).unwrap();
+        writeln!(
+            code,
+            "    let node_{}_result = mix({}, {}, {});",
+            node.id, a, b, t
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -364,14 +419,18 @@ impl WGSLCodegen {
     /// Generate brightness operation code
     fn generate_brightness_op(&self, code: &mut String, node: &ShaderNode) -> Result<()> {
         let color = self.get_input_variable(&node.inputs[0])?;
-        let amount = node.parameters.get("amount")
+        let amount = node
+            .parameters
+            .get("amount")
             .map(|v| format!("{}", v))
             .unwrap_or_else(|| "0.0".to_string());
 
-        writeln!(code,
+        writeln!(
+            code,
             "    let node_{}_result = {} + vec4<f32>({}, {}, {}, 0.0);",
             node.id, color, amount, amount, amount
-        ).unwrap();
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -379,14 +438,18 @@ impl WGSLCodegen {
     /// Generate contrast operation code
     fn generate_contrast_op(&self, code: &mut String, node: &ShaderNode) -> Result<()> {
         let color = self.get_input_variable(&node.inputs[0])?;
-        let amount = node.parameters.get("amount")
+        let amount = node
+            .parameters
+            .get("amount")
             .map(|v| format!("{}", v))
             .unwrap_or_else(|| "1.0".to_string());
 
-        writeln!(code,
+        writeln!(
+            code,
             "    let node_{}_result = ({} - 0.5) * {} + 0.5;",
             node.id, color, amount
-        ).unwrap();
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -395,8 +458,18 @@ impl WGSLCodegen {
     fn generate_desaturate_op(&self, code: &mut String, node: &ShaderNode) -> Result<()> {
         let color = self.get_input_variable(&node.inputs[0])?;
 
-        writeln!(code, "    let gray = dot({}.rgb, vec3<f32>(0.299, 0.587, 0.114));", color).unwrap();
-        writeln!(code, "    let node_{}_result = vec4<f32>(vec3<f32>(gray), {}.a);", node.id, color).unwrap();
+        writeln!(
+            code,
+            "    let gray = dot({}.rgb, vec3<f32>(0.299, 0.587, 0.114));",
+            color
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    let node_{}_result = vec4<f32>(vec3<f32>(gray), {}.a);",
+            node.id, color
+        )
+        .unwrap();
 
         Ok(())
     }
@@ -414,19 +487,32 @@ impl WGSLCodegen {
     /// Get the variable name for an input socket
     fn get_input_variable(&self, input: &InputSocket) -> Result<String> {
         if let Some((source_node, output_name)) = &input.connected_output {
-            Ok(format!("node_{}_{}", source_node, output_name.to_lowercase()))
+            Ok(format!(
+                "node_{}_{}",
+                source_node,
+                output_name.to_lowercase()
+            ))
         } else if let Some(default) = &input.default_value {
             match input.data_type {
                 DataType::Float => Ok(format!("{}", default.x)),
                 DataType::Vec2 => Ok(format!("vec2<f32>({}, {})", default.x, default.y)),
-                DataType::Vec3 => Ok(format!("vec3<f32>({}, {}, {})", default.x, default.y, default.z)),
-                DataType::Vec4 | DataType::Color => {
-                    Ok(format!("vec4<f32>({}, {}, {}, {})", default.x, default.y, default.z, default.w))
-                }
-                _ => Err(CodegenError::GenerationError("Cannot generate default for texture/sampler".to_string()))
+                DataType::Vec3 => Ok(format!(
+                    "vec3<f32>({}, {}, {})",
+                    default.x, default.y, default.z
+                )),
+                DataType::Vec4 | DataType::Color => Ok(format!(
+                    "vec4<f32>({}, {}, {}, {})",
+                    default.x, default.y, default.z, default.w
+                )),
+                _ => Err(CodegenError::GenerationError(
+                    "Cannot generate default for texture/sampler".to_string(),
+                )),
             }
         } else {
-            Err(CodegenError::GenerationError(format!("Input '{}' has no connection or default", input.name)))
+            Err(CodegenError::GenerationError(format!(
+                "Input '{}' has no connection or default",
+                input.name
+            )))
         }
     }
 
@@ -443,8 +529,16 @@ impl WGSLCodegen {
         writeln!(code, "    let offset = radius / 100.0;").unwrap();
         writeln!(code, "    for (var x = -1; x <= 1; x++) {{").unwrap();
         writeln!(code, "        for (var y = -1; y <= 1; y++) {{").unwrap();
-        writeln!(code, "            let sample_uv = uv + vec2<f32>(f32(x), f32(y)) * offset;").unwrap();
-        writeln!(code, "            color += textureSample(tex, samp, sample_uv);").unwrap();
+        writeln!(
+            code,
+            "            let sample_uv = uv + vec2<f32>(f32(x), f32(y)) * offset;"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "            color += textureSample(tex, samp, sample_uv);"
+        )
+        .unwrap();
         writeln!(code, "        }}").unwrap();
         writeln!(code, "    }}").unwrap();
         writeln!(code, "    return color / f32(samples);").unwrap();
@@ -467,7 +561,8 @@ impl WGSLCodegen {
         writeln!(code, "    return vec4<f32>(r, g, b, 1.0);").unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions.insert("chromatic_aberration".to_string());
+        self.generated_functions
+            .insert("chromatic_aberration".to_string());
         Ok(())
     }
 
@@ -476,14 +571,38 @@ impl WGSLCodegen {
             return Ok(());
         }
 
-        writeln!(code, "fn edge_detect(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {{").unwrap();
+        writeln!(
+            code,
+            "fn edge_detect(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {{"
+        )
+        .unwrap();
         writeln!(code, "    let offset = 1.0 / 512.0;").unwrap();
         writeln!(code, "    let c = textureSample(tex, samp, uv).rgb;").unwrap();
-        writeln!(code, "    let t = textureSample(tex, samp, uv + vec2<f32>(0.0, offset)).rgb;").unwrap();
-        writeln!(code, "    let b = textureSample(tex, samp, uv - vec2<f32>(0.0, offset)).rgb;").unwrap();
-        writeln!(code, "    let l = textureSample(tex, samp, uv - vec2<f32>(offset, 0.0)).rgb;").unwrap();
-        writeln!(code, "    let r = textureSample(tex, samp, uv + vec2<f32>(offset, 0.0)).rgb;").unwrap();
-        writeln!(code, "    let edge = abs(c - t) + abs(c - b) + abs(c - l) + abs(c - r);").unwrap();
+        writeln!(
+            code,
+            "    let t = textureSample(tex, samp, uv + vec2<f32>(0.0, offset)).rgb;"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    let b = textureSample(tex, samp, uv - vec2<f32>(0.0, offset)).rgb;"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    let l = textureSample(tex, samp, uv - vec2<f32>(offset, 0.0)).rgb;"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    let r = textureSample(tex, samp, uv + vec2<f32>(offset, 0.0)).rgb;"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    let edge = abs(c - t) + abs(c - b) + abs(c - l) + abs(c - r);"
+        )
+        .unwrap();
         writeln!(code, "    return vec4<f32>(edge, 1.0);").unwrap();
         writeln!(code, "}}\n").unwrap();
 
@@ -496,13 +615,25 @@ impl WGSLCodegen {
             return Ok(());
         }
 
-        writeln!(code, "fn kaleidoscope(uv: vec2<f32>, segments: f32) -> vec2<f32> {{").unwrap();
+        writeln!(
+            code,
+            "fn kaleidoscope(uv: vec2<f32>, segments: f32) -> vec2<f32> {{"
+        )
+        .unwrap();
         writeln!(code, "    let center = uv - 0.5;").unwrap();
         writeln!(code, "    let angle = atan2(center.y, center.x);").unwrap();
         writeln!(code, "    let radius = length(center);").unwrap();
         writeln!(code, "    let slice = 6.28318530718 / segments;").unwrap();
-        writeln!(code, "    let new_angle = abs((angle % slice) - slice * 0.5) + slice * 0.5;").unwrap();
-        writeln!(code, "    return vec2<f32>(cos(new_angle), sin(new_angle)) * radius + 0.5;").unwrap();
+        writeln!(
+            code,
+            "    let new_angle = abs((angle % slice) - slice * 0.5) + slice * 0.5;"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    return vec2<f32>(cos(new_angle), sin(new_angle)) * radius + 0.5;"
+        )
+        .unwrap();
         writeln!(code, "}}\n").unwrap();
 
         self.generated_functions.insert("kaleidoscope".to_string());
@@ -523,10 +654,26 @@ impl WGSLCodegen {
         writeln!(code, "    let m = v - c;").unwrap();
         writeln!(code, "    var rgb = vec3<f32>(0.0);").unwrap();
         writeln!(code, "    if (h < 1.0) {{ rgb = vec3<f32>(c, x, 0.0); }}").unwrap();
-        writeln!(code, "    else if (h < 2.0) {{ rgb = vec3<f32>(x, c, 0.0); }}").unwrap();
-        writeln!(code, "    else if (h < 3.0) {{ rgb = vec3<f32>(0.0, c, x); }}").unwrap();
-        writeln!(code, "    else if (h < 4.0) {{ rgb = vec3<f32>(0.0, x, c); }}").unwrap();
-        writeln!(code, "    else if (h < 5.0) {{ rgb = vec3<f32>(x, 0.0, c); }}").unwrap();
+        writeln!(
+            code,
+            "    else if (h < 2.0) {{ rgb = vec3<f32>(x, c, 0.0); }}"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    else if (h < 3.0) {{ rgb = vec3<f32>(0.0, c, x); }}"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    else if (h < 4.0) {{ rgb = vec3<f32>(0.0, x, c); }}"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    else if (h < 5.0) {{ rgb = vec3<f32>(x, 0.0, c); }}"
+        )
+        .unwrap();
         writeln!(code, "    else {{ rgb = vec3<f32>(c, 0.0, x); }}").unwrap();
         writeln!(code, "    return rgb + m;").unwrap();
         writeln!(code, "}}\n").unwrap();
@@ -546,9 +693,21 @@ impl WGSLCodegen {
         writeln!(code, "    let delta = max_c - min_c;").unwrap();
         writeln!(code, "    var h = 0.0;").unwrap();
         writeln!(code, "    if (delta > 0.0) {{").unwrap();
-        writeln!(code, "        if (max_c == rgb.r) {{ h = ((rgb.g - rgb.b) / delta) % 6.0; }}").unwrap();
-        writeln!(code, "        else if (max_c == rgb.g) {{ h = (rgb.b - rgb.r) / delta + 2.0; }}").unwrap();
-        writeln!(code, "        else {{ h = (rgb.r - rgb.g) / delta + 4.0; }}").unwrap();
+        writeln!(
+            code,
+            "        if (max_c == rgb.r) {{ h = ((rgb.g - rgb.b) / delta) % 6.0; }}"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "        else if (max_c == rgb.g) {{ h = (rgb.b - rgb.r) / delta + 2.0; }}"
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "        else {{ h = (rgb.r - rgb.g) / delta + 4.0; }}"
+        )
+        .unwrap();
         writeln!(code, "        h = h / 6.0;").unwrap();
         writeln!(code, "    }}").unwrap();
         writeln!(code, "    let s = select(0.0, delta / max_c, max_c > 0.0);").unwrap();
@@ -566,8 +725,12 @@ impl std::fmt::Display for ParameterValue {
             ParameterValue::Float(v) => write!(f, "{}", v),
             ParameterValue::Vec2(v) => write!(f, "vec2<f32>({}, {})", v[0], v[1]),
             ParameterValue::Vec3(v) => write!(f, "vec3<f32>({}, {}, {})", v[0], v[1], v[2]),
-            ParameterValue::Vec4(v) => write!(f, "vec4<f32>({}, {}, {}, {})", v[0], v[1], v[2], v[3]),
-            ParameterValue::Color(c) => write!(f, "vec4<f32>({}, {}, {}, {})", c[0], c[1], c[2], c[3]),
+            ParameterValue::Vec4(v) => {
+                write!(f, "vec4<f32>({}, {}, {}, {})", v[0], v[1], v[2], v[3])
+            }
+            ParameterValue::Color(c) => {
+                write!(f, "vec4<f32>({}, {}, {}, {})", c[0], c[1], c[2], c[3])
+            }
         }
     }
 }
@@ -575,7 +738,7 @@ impl std::fmt::Display for ParameterValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shader_graph::{ShaderGraph, NodeType};
+    use crate::shader_graph::{NodeType, ShaderGraph};
 
     #[test]
     fn test_simple_shader_generation() {
@@ -587,8 +750,12 @@ mod tests {
         let output_node = graph.add_node(NodeType::Output);
 
         graph.connect(uv_node, "UV", sample_node, "UV").unwrap();
-        graph.connect(texture_node, "Texture", sample_node, "Texture").unwrap();
-        graph.connect(sample_node, "Color", output_node, "Color").unwrap();
+        graph
+            .connect(texture_node, "Texture", sample_node, "Texture")
+            .unwrap();
+        graph
+            .connect(sample_node, "Color", output_node, "Color")
+            .unwrap();
 
         let mut codegen = WGSLCodegen::new(graph);
         let result = codegen.generate();
@@ -608,7 +775,9 @@ mod tests {
         let output_node = graph.add_node(NodeType::Output);
 
         graph.connect(time_node, "Time", sin_node, "A").unwrap();
-        graph.connect(sin_node, "Result", output_node, "Color").unwrap();
+        graph
+            .connect(sin_node, "Result", output_node, "Color")
+            .unwrap();
 
         let mut codegen = WGSLCodegen::new(graph);
         let result = codegen.generate();

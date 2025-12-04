@@ -10,24 +10,24 @@ use thiserror::Error;
 use tracing::error;
 
 pub mod backend;
-pub mod texture;
-pub mod shader;
-pub mod quad;
-pub mod compositor;
-pub mod mesh_renderer;
-pub mod edge_blend_renderer;
 pub mod color_calibration_renderer;
+pub mod compositor;
+pub mod edge_blend_renderer;
+pub mod mesh_renderer;
 pub mod oscillator_renderer;
+pub mod quad;
+pub mod shader;
+pub mod texture;
 
 pub use backend::{RenderBackend, WgpuBackend};
-pub use texture::{TextureHandle, TexturePool, TextureDescriptor};
-pub use shader::{ShaderHandle, ShaderSource};
-pub use quad::QuadRenderer;
-pub use compositor::Compositor;
-pub use mesh_renderer::MeshRenderer;
-pub use edge_blend_renderer::EdgeBlendRenderer;
 pub use color_calibration_renderer::ColorCalibrationRenderer;
+pub use compositor::Compositor;
+pub use edge_blend_renderer::EdgeBlendRenderer;
+pub use mesh_renderer::MeshRenderer;
 pub use oscillator_renderer::OscillatorRenderer;
+pub use quad::QuadRenderer;
+pub use shader::{ShaderHandle, ShaderSource};
+pub use texture::{TextureDescriptor, TextureHandle, TexturePool};
 
 /// Rendering errors
 #[derive(Error, Debug)]
@@ -53,6 +53,6 @@ pub type Result<T> = std::result::Result<T, RenderError>;
 
 /// Re-export commonly used wgpu types
 pub use wgpu::{
-    Device, Queue, Surface, SurfaceConfiguration, Texture, TextureView, TextureFormat,
-    PresentMode, CompositeAlphaMode, TextureUsages, BufferUsages, CommandEncoder,
+    BufferUsages, CommandEncoder, CompositeAlphaMode, Device, PresentMode, Queue, Surface,
+    SurfaceConfiguration, Texture, TextureFormat, TextureUsages, TextureView,
 };

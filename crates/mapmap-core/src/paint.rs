@@ -198,6 +198,6 @@ mod tests {
     #[test]
     fn test_aspect_ratio() {
         let paint = Paint::test_pattern(1, "Test");
-        assert!((paint.aspect_ratio() - 16.0/9.0).abs() < 0.01);
+        assert!((paint.aspect_ratio() - 16.0 / 9.0).abs() < 0.01);
     }
 }

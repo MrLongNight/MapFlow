@@ -117,7 +117,8 @@ impl AssetManager {
                     if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
                         if let Ok(data) = std::fs::read_to_string(entry.path()) {
                             if let Ok(template) = serde_json::from_str::<ProjectTemplate>(&data) {
-                                self.project_templates.insert(template.name.clone(), template);
+                                self.project_templates
+                                    .insert(template.name.clone(), template);
                             }
                         }
                     }
@@ -140,10 +141,7 @@ impl AssetManager {
     }
 
     /// Save transform preset
-    pub fn save_transform_preset(
-        &mut self,
-        preset: TransformPreset,
-    ) -> Result<(), std::io::Error> {
+    pub fn save_transform_preset(&mut self, preset: TransformPreset) -> Result<(), std::io::Error> {
         let transforms_path = self.library_path.join("transforms");
         std::fs::create_dir_all(&transforms_path)?;
 
@@ -151,8 +149,7 @@ impl AssetManager {
         let data = serde_json::to_string_pretty(&preset)?;
         std::fs::write(file_path, data)?;
 
-        self.transform_presets
-            .insert(preset.name.clone(), preset);
+        self.transform_presets.insert(preset.name.clone(), preset);
         Ok(())
     }
 
@@ -189,7 +186,10 @@ impl AssetManager {
             .filter(|preset| {
                 preset.name.to_lowercase().contains(&query_lower)
                     || preset.description.to_lowercase().contains(&query_lower)
-                    || preset.tags.iter().any(|tag| tag.to_lowercase().contains(&query_lower))
+                    || preset
+                        .tags
+                        .iter()
+                        .any(|tag| tag.to_lowercase().contains(&query_lower))
             })
             .collect()
     }

@@ -13,50 +13,52 @@ use thiserror::Error;
 
 // Phase 1: Layer system for compositing
 pub mod layer;
-pub use layer::{BlendMode, Layer, LayerManager, Transform, ResizeMode, Composition};
+pub use layer::{BlendMode, Composition, Layer, LayerManager, ResizeMode, Transform};
 
 // Phase 2: Multi-output and projection mapping
-pub mod output;
-pub mod monitor;
-pub mod paint;
-pub mod mesh;
 pub mod mapping;
+pub mod mesh;
+pub mod monitor;
+pub mod output;
+pub mod paint;
 
 // Phase 3: Effects Pipeline
-pub mod shader_graph;
 pub mod animation;
 pub mod audio;
+pub mod audio_reactive;
 pub mod codegen;
 pub mod lut;
-pub mod audio_reactive;
 pub mod oscillator;
+pub mod shader_graph;
 
-pub use output::{OutputManager, OutputConfig, OutputId, CanvasRegion, EdgeBlendConfig, EdgeBlendZone, ColorCalibration};
-pub use monitor::{MonitorInfo, MonitorTopology};
-pub use paint::{Paint, PaintId, PaintManager, PaintType};
-pub use mesh::{Mesh, MeshType, MeshVertex, VertexId, BezierPatch, keystone};
-pub use mapping::{Mapping, MappingId, MappingManager};
-pub use shader_graph::{
-    ShaderGraph, ShaderNode, NodeType, NodeId, GraphId,
-    DataType, InputSocket, OutputSocket, ParameterValue,
-};
 pub use animation::{
-    AnimationClip, AnimationTrack, AnimationPlayer, Keyframe,
-    AnimValue, InterpolationMode, TimePoint,
+    AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,
+    TimePoint,
 };
 pub use audio::{
-    AudioAnalyzer, AudioAnalysis, AudioConfig, AudioSource,
-    AudioReactiveMapping, AudioMappingType, FrequencyBand,
+    AudioAnalysis, AudioAnalyzer, AudioConfig, AudioMappingType, AudioReactiveMapping, AudioSource,
+    FrequencyBand,
 };
-pub use codegen::{WGSLCodegen, CodegenError};
-pub use lut::{Lut3D, LutManager, LutPreset, LutFormat, LutError};
 pub use audio_reactive::{
-    AudioReactiveController, AudioReactiveAnimationSystem,
-    AudioReactivePreset, AudioAnimationBlendMode,
+    AudioAnimationBlendMode, AudioReactiveAnimationSystem, AudioReactiveController,
+    AudioReactivePreset,
 };
+pub use codegen::{CodegenError, WGSLCodegen};
+pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
+pub use mapping::{Mapping, MappingId, MappingManager};
+pub use mesh::{keystone, BezierPatch, Mesh, MeshType, MeshVertex, VertexId};
+pub use monitor::{MonitorInfo, MonitorTopology};
 pub use oscillator::{
-    OscillatorConfig, SimulationResolution, PhaseInitMode,
-    ColorMode, CoordinateMode, RingParams,
+    ColorMode, CoordinateMode, OscillatorConfig, PhaseInitMode, RingParams, SimulationResolution,
+};
+pub use output::{
+    CanvasRegion, ColorCalibration, EdgeBlendConfig, EdgeBlendZone, OutputConfig, OutputId,
+    OutputManager,
+};
+pub use paint::{Paint, PaintId, PaintManager, PaintType};
+pub use shader_graph::{
+    DataType, GraphId, InputSocket, NodeId, NodeType, OutputSocket, ParameterValue, ShaderGraph,
+    ShaderNode,
 };
 
 /// Core error types
@@ -128,7 +130,10 @@ pub trait Shape: Send + Sync {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ShapeType {
     Quad(Quad),
-    Mesh { vertices: Vec<Vertex>, indices: Vec<u16> },
+    Mesh {
+        vertices: Vec<Vertex>,
+        indices: Vec<u16>,
+    },
 }
 
 /// Project - top-level container (Phase 2+)

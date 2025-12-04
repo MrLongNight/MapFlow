@@ -109,11 +109,7 @@ impl Default for ResizeMode {
 impl ResizeMode {
     /// Calculate transform matrix for this resize mode
     /// Returns scale and translation to apply
-    pub fn calculate_transform(
-        &self,
-        source_size: Vec2,
-        target_size: Vec2,
-    ) -> (Vec2, Vec2) {
+    pub fn calculate_transform(&self, source_size: Vec2, target_size: Vec2) -> (Vec2, Vec2) {
         match self {
             ResizeMode::Fill => {
                 // Scale to cover (largest dimension fills, crop other)
@@ -220,11 +216,8 @@ impl Transform {
 
         // Build transformation matrix
         // 1. Translate to anchor point
-        let translate_to_anchor = Mat4::from_translation(Vec3::new(
-            -anchor_offset.x,
-            -anchor_offset.y,
-            0.0,
-        ));
+        let translate_to_anchor =
+            Mat4::from_translation(Vec3::new(-anchor_offset.x, -anchor_offset.y, 0.0));
 
         // 2. Scale
         let scale = Mat4::from_scale(Vec3::new(self.scale.x, self.scale.y, 1.0));
@@ -349,8 +342,14 @@ impl Layer {
     }
 
     /// Set transform with resize mode
-    pub fn set_transform_with_resize(&mut self, mode: ResizeMode, source_size: Vec2, target_size: Vec2) {
-        self.transform.apply_resize_mode(mode, source_size, target_size);
+    pub fn set_transform_with_resize(
+        &mut self,
+        mode: ResizeMode,
+        source_size: Vec2,
+        target_size: Vec2,
+    ) {
+        self.transform
+            .apply_resize_mode(mode, source_size, target_size);
     }
 
     /// Get transform matrix for rendering

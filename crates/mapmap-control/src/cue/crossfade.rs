@@ -98,11 +98,7 @@ pub fn interpolate_f32(from: f32, to: f32, progress: f32) -> f32 {
 }
 
 /// Interpolate between two positions
-pub fn interpolate_position(
-    from: (f32, f32),
-    to: (f32, f32),
-    progress: f32,
-) -> (f32, f32) {
+pub fn interpolate_position(from: (f32, f32), to: (f32, f32), progress: f32) -> (f32, f32) {
     (
         interpolate_f32(from.0, to.0, progress),
         interpolate_f32(from.1, to.1, progress),

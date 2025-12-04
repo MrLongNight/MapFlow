@@ -2,7 +2,7 @@
 //!
 //! Parses OSC addresses like `/mapmap/layer/0/opacity` to control targets
 
-use crate::{ControlTarget, error::ControlError, Result};
+use crate::{error::ControlError, ControlTarget, Result};
 
 /// Parse an OSC address to a control target
 ///
@@ -49,14 +49,12 @@ pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
 
 fn parse_layer_address(parts: &[&str]) -> Result<ControlTarget> {
     if parts.is_empty() {
-        return Err(ControlError::InvalidMessage(
-            "Missing layer ID".to_string(),
-        ));
+        return Err(ControlError::InvalidMessage("Missing layer ID".to_string()));
     }
 
-    let layer_id: u32 = parts[0].parse().map_err(|_| {
-        ControlError::InvalidMessage(format!("Invalid layer ID: {}", parts[0]))
-    })?;
+    let layer_id: u32 = parts[0]
+        .parse()
+        .map_err(|_| ControlError::InvalidMessage(format!("Invalid layer ID: {}", parts[0])))?;
 
     if parts.len() < 2 {
         return Err(ControlError::InvalidMessage(
@@ -79,14 +77,12 @@ fn parse_layer_address(parts: &[&str]) -> Result<ControlTarget> {
 
 fn parse_paint_address(parts: &[&str]) -> Result<ControlTarget> {
     if parts.is_empty() {
-        return Err(ControlError::InvalidMessage(
-            "Missing paint ID".to_string(),
-        ));
+        return Err(ControlError::InvalidMessage("Missing paint ID".to_string()));
     }
 
-    let paint_id: u32 = parts[0].parse().map_err(|_| {
-        ControlError::InvalidMessage(format!("Invalid paint ID: {}", parts[0]))
-    })?;
+    let paint_id: u32 = parts[0]
+        .parse()
+        .map_err(|_| ControlError::InvalidMessage(format!("Invalid paint ID: {}", parts[0])))?;
 
     if parts.len() < 3 || parts[1] != "parameter" {
         return Err(ControlError::InvalidMessage(
@@ -107,9 +103,9 @@ fn parse_effect_address(parts: &[&str]) -> Result<ControlTarget> {
         ));
     }
 
-    let effect_id: u32 = parts[0].parse().map_err(|_| {
-        ControlError::InvalidMessage(format!("Invalid effect ID: {}", parts[0]))
-    })?;
+    let effect_id: u32 = parts[0]
+        .parse()
+        .map_err(|_| ControlError::InvalidMessage(format!("Invalid effect ID: {}", parts[0])))?;
 
     if parts.len() < 3 || parts[1] != "parameter" {
         return Err(ControlError::InvalidMessage(
@@ -147,9 +143,9 @@ fn parse_output_address(parts: &[&str]) -> Result<ControlTarget> {
         ));
     }
 
-    let output_id: u32 = parts[0].parse().map_err(|_| {
-        ControlError::InvalidMessage(format!("Invalid output ID: {}", parts[0]))
-    })?;
+    let output_id: u32 = parts[0]
+        .parse()
+        .map_err(|_| ControlError::InvalidMessage(format!("Invalid output ID: {}", parts[0])))?;
 
     if parts.len() < 2 {
         return Err(ControlError::InvalidMessage(
@@ -241,7 +237,10 @@ mod tests {
     #[test]
     fn test_control_target_to_address() {
         let target = ControlTarget::LayerOpacity(0);
-        assert_eq!(control_target_to_address(&target), "/mapmap/layer/0/opacity");
+        assert_eq!(
+            control_target_to_address(&target),
+            "/mapmap/layer/0/opacity"
+        );
 
         let target = ControlTarget::PaintParameter(3, "speed".to_string());
         assert_eq!(

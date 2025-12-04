@@ -164,12 +164,16 @@ pub struct DeckLinkInput;
 impl DeckLinkInput {
     /// Create a new DeckLink input (returns error when feature is disabled)
     pub fn new(_device_index: usize) -> crate::error::Result<Self> {
-        Err(crate::error::IoError::feature_not_enabled("DeckLink", "decklink"))
+        Err(crate::error::IoError::feature_not_enabled(
+            "DeckLink", "decklink",
+        ))
     }
 
     /// Enumerate DeckLink devices (returns error when feature is disabled)
     pub fn enumerate_devices() -> crate::error::Result<Vec<DeckLinkDevice>> {
-        Err(crate::error::IoError::feature_not_enabled("DeckLink", "decklink"))
+        Err(crate::error::IoError::feature_not_enabled(
+            "DeckLink", "decklink",
+        ))
     }
 }
 
@@ -180,8 +184,13 @@ pub struct DeckLinkOutput;
 #[cfg(not(feature = "decklink"))]
 impl DeckLinkOutput {
     /// Create a new DeckLink output (returns error when feature is disabled)
-    pub fn new(_device_index: usize, _format: crate::format::VideoFormat) -> crate::error::Result<Self> {
-        Err(crate::error::IoError::feature_not_enabled("DeckLink", "decklink"))
+    pub fn new(
+        _device_index: usize,
+        _format: crate::format::VideoFormat,
+    ) -> crate::error::Result<Self> {
+        Err(crate::error::IoError::feature_not_enabled(
+            "DeckLink", "decklink",
+        ))
     }
 }
 

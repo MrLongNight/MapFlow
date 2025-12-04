@@ -126,11 +126,8 @@ impl MappingManager {
 
     /// Get visible mappings (sorted by depth)
     pub fn visible_mappings(&self) -> Vec<&Mapping> {
-        let mut mappings: Vec<&Mapping> = self
-            .mappings
-            .iter()
-            .filter(|m| m.is_renderable())
-            .collect();
+        let mut mappings: Vec<&Mapping> =
+            self.mappings.iter().filter(|m| m.is_renderable()).collect();
 
         // Sort by depth (back to front)
         mappings.sort_by(|a, b| a.depth.partial_cmp(&b.depth).unwrap());

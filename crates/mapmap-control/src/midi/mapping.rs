@@ -1,8 +1,8 @@
 //! MIDI message to control target mapping
 
+use super::MidiMessage;
 use crate::error::Result;
 use crate::target::{ControlTarget, ControlValue};
-use super::MidiMessage;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -64,7 +64,10 @@ impl MidiMapping {
     }
 
     /// Get the control value for a MIDI message
-    pub fn get_control_value(&self, message: &MidiMessage) -> Option<(ControlTarget, ControlValue)> {
+    pub fn get_control_value(
+        &self,
+        message: &MidiMessage,
+    ) -> Option<(ControlTarget, ControlValue)> {
         let mapping = self.mappings.get(message)?;
 
         // Get the normalized value (0.0-1.0) from the MIDI message

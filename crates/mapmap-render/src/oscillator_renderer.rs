@@ -6,7 +6,7 @@ use crate::Result;
 use bytemuck::{Pod, Zeroable};
 use mapmap_core::{OscillatorConfig, PhaseInitMode};
 use std::sync::Arc;
-use tracing::{info, debug};
+use tracing::{debug, info};
 use wgpu::util::DeviceExt;
 
 /// Simulation uniform parameters
@@ -81,10 +81,22 @@ impl Vertex {
 
 // Fullscreen quad vertices
 const QUAD_VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, -1.0], texcoord: [0.0, 1.0] },
-    Vertex { position: [1.0, -1.0], texcoord: [1.0, 1.0] },
-    Vertex { position: [1.0, 1.0], texcoord: [1.0, 0.0] },
-    Vertex { position: [-1.0, 1.0], texcoord: [0.0, 0.0] },
+    Vertex {
+        position: [-1.0, -1.0],
+        texcoord: [0.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, -1.0],
+        texcoord: [1.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0],
+        texcoord: [0.0, 0.0],
+    },
 ];
 
 const QUAD_INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
@@ -129,7 +141,7 @@ pub struct OscillatorRenderer {
     // State
     sim_width: u32,
     sim_height: u32,
-    current_phase: bool,  // false = A, true = B
+    current_phase: bool, // false = A, true = B
     time_elapsed: f32,
 
     // Device reference
@@ -162,103 +174,109 @@ impl OscillatorRenderer {
         });
 
         // Create phase textures (ping-pong)
-        let phase_texture_a = Self::create_phase_texture(&device, sim_width, sim_height, "Phase Texture A");
+        let phase_texture_a =
+            Self::create_phase_texture(&device, sim_width, sim_height, "Phase Texture A");
         let phase_view_a = phase_texture_a.create_view(&wgpu::TextureViewDescriptor::default());
         let sim_fbo_a = phase_texture_a.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let phase_texture_b = Self::create_phase_texture(&device, sim_width, sim_height, "Phase Texture B");
+        let phase_texture_b =
+            Self::create_phase_texture(&device, sim_width, sim_height, "Phase Texture B");
         let phase_view_b = phase_texture_b.create_view(&wgpu::TextureViewDescriptor::default());
         let sim_fbo_b = phase_texture_b.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Create bind group layouts for simulation
-        let sim_texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Sim Texture Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
+        let sim_texture_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Sim Texture Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
+        let sim_uniform_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Sim Uniform Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
                     count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
-
-        let sim_uniform_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Sim Uniform Bind Group Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+                }],
+            });
 
         // Create bind group layouts for distortion
-        let dist_texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Dist Texture Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
+        let dist_texture_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Dist Texture Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
+        let dist_uniform_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Dist Uniform Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
                     count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
-
-        let dist_uniform_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Dist Uniform Bind Group Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+                }],
+            });
 
         // Load shaders
         let sim_shader_source = include_str!("../../../shaders/oscillator_simulation.wgsl");
@@ -668,9 +686,11 @@ impl OscillatorRenderer {
         );
 
         // Create command encoder for simulation step
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Oscillator Simulation Encoder"),
-        });
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Oscillator Simulation Encoder"),
+            });
 
         // Determine which phase texture to read from and write to
         let (input_bind_group, output_view) = if self.current_phase {

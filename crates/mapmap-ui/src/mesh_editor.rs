@@ -379,9 +379,7 @@ impl MeshEditor {
                         {
                             self.vertices.remove(idx);
                             // Remove faces referencing this vertex
-                            self.faces.retain(|f| {
-                                !f.vertices.contains(&idx)
-                            });
+                            self.faces.retain(|f| !f.vertices.contains(&idx));
                             action = Some(MeshEditorAction::VertexRemoved);
                         }
                     }

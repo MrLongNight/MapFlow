@@ -396,19 +396,19 @@ pub mod keystone {
             KeystonePreset::Horizontal => {
                 let offset = amount.clamp(0.0, 0.5);
                 [
-                    Vec2::new(offset, 0.0),        // Top-left
-                    Vec2::new(1.0 - offset, 0.0),  // Top-right
-                    Vec2::new(1.0, 1.0),           // Bottom-right
-                    Vec2::new(0.0, 1.0),           // Bottom-left
+                    Vec2::new(offset, 0.0),       // Top-left
+                    Vec2::new(1.0 - offset, 0.0), // Top-right
+                    Vec2::new(1.0, 1.0),          // Bottom-right
+                    Vec2::new(0.0, 1.0),          // Bottom-left
                 ]
             }
             KeystonePreset::Vertical => {
                 let offset = amount.clamp(0.0, 0.5);
                 [
-                    Vec2::new(0.0, offset),        // Top-left
-                    Vec2::new(1.0, offset),        // Top-right
-                    Vec2::new(1.0, 1.0),           // Bottom-right
-                    Vec2::new(0.0, 1.0),           // Bottom-left
+                    Vec2::new(0.0, offset), // Top-left
+                    Vec2::new(1.0, offset), // Top-right
+                    Vec2::new(1.0, 1.0),    // Bottom-right
+                    Vec2::new(0.0, 1.0),    // Bottom-left
                 ]
             }
             KeystonePreset::Rotate => {

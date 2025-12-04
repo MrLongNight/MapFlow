@@ -1,11 +1,11 @@
 //! MIDI input handling
 
+use super::{MidiMapping, MidiMessage};
 use crate::error::{ControlError, Result};
-use super::{MidiMessage, MidiMapping};
-use midir::{MidiInput as MidirInput, MidiInputConnection, Ignore};
+use midir::{Ignore, MidiInput as MidirInput, MidiInputConnection};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{channel, Sender, Receiver};
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 /// MIDI input handler
 pub struct MidiInputHandler {
@@ -103,11 +103,7 @@ impl MidiInputHandler {
 
     /// Get the next MIDI message (non-blocking)
     pub fn poll_message(&self) -> Option<MidiMessage> {
-        self.message_receiver
-            .lock()
-            .ok()?
-            .try_recv()
-            .ok()
+        self.message_receiver.lock().ok()?.try_recv().ok()
     }
 
     /// Set the MIDI mapping

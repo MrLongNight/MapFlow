@@ -1,10 +1,10 @@
 //! Keyboard shortcut bindings manager
 
-use super::{Action, Key, Modifiers, Shortcut, ShortcutContext, DefaultShortcuts, Macro};
+use super::{Action, DefaultShortcuts, Key, Macro, Modifiers, Shortcut, ShortcutContext};
 use crate::error::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use serde::{Deserialize, Serialize};
 use tracing::info;
 
 /// Key binding manager
@@ -154,7 +154,11 @@ impl KeyBindings {
         let json = std::fs::read_to_string(path)?;
         let data: KeyBindingsData = serde_json::from_str(&json)?;
 
-        info!("Loaded {} shortcuts and {} macros", data.shortcuts.len(), data.macros.len());
+        info!(
+            "Loaded {} shortcuts and {} macros",
+            data.shortcuts.len(),
+            data.macros.len()
+        );
 
         Ok(Self {
             shortcuts: data.shortcuts,
@@ -173,7 +177,11 @@ impl KeyBindings {
         let json = serde_json::to_string_pretty(&data)?;
         std::fs::write(path, json)?;
 
-        info!("Saved {} shortcuts and {} macros", self.shortcuts.len(), self.macros.len());
+        info!(
+            "Saved {} shortcuts and {} macros",
+            self.shortcuts.len(),
+            self.macros.len()
+        );
 
         Ok(())
     }

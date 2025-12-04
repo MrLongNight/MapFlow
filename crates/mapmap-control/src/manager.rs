@@ -4,17 +4,17 @@
 //! (MIDI, OSC, DMX, Web API, Cue system, and keyboard shortcuts).
 
 use crate::error::{ControlError, Result};
-use crate::target::{ControlTarget, ControlValue};
 use crate::shortcuts::{Action, Key, KeyBindings, Modifiers};
+use crate::target::{ControlTarget, ControlValue};
 use std::sync::{Arc, Mutex};
 use tracing::{info, warn};
 
 #[cfg(feature = "midi")]
-use crate::midi::{MidiInputHandler, MidiMapping, MidiLearn};
+use crate::midi::{MidiInputHandler, MidiLearn, MidiMapping};
 
-use crate::osc::{OscServer, OscClient};
-use crate::dmx::{ArtNetSender, SacnSender};
 use crate::cue::CueList;
+use crate::dmx::{ArtNetSender, SacnSender};
+use crate::osc::{OscClient, OscServer};
 
 /// Unified control system manager
 pub struct ControlManager {
@@ -95,7 +95,10 @@ impl ControlManager {
 
     /// Initialize Art-Net sender
     pub fn init_artnet(&mut self, universe: u16, target: &str) -> Result<()> {
-        info!("Initializing Art-Net sender for universe {} to {}", universe, target);
+        info!(
+            "Initializing Art-Net sender for universe {} to {}",
+            universe, target
+        );
         let sender = ArtNetSender::new(universe, target)?;
         self.artnet_sender = Some(sender);
         Ok(())
@@ -103,7 +106,10 @@ impl ControlManager {
 
     /// Initialize sACN sender
     pub fn init_sacn(&mut self, universe: u16, source_name: &str) -> Result<()> {
-        info!("Initializing sACN sender for universe {} with source {}", universe, source_name);
+        info!(
+            "Initializing sACN sender for universe {} with source {}",
+            universe, source_name
+        );
         let sender = SacnSender::new(universe, source_name)?;
         self.sacn_sender = Some(sender);
         Ok(())
@@ -212,7 +218,9 @@ impl ControlManager {
         if let Some(sender) = &mut self.artnet_sender {
             sender.send_dmx(channels, target)?;
         } else {
-            return Err(ControlError::DmxError("Art-Net not initialized".to_string()));
+            return Err(ControlError::DmxError(
+                "Art-Net not initialized".to_string(),
+            ));
         }
         Ok(())
     }

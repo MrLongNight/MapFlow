@@ -9,7 +9,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 #[cfg(feature = "osc")]
 use std::thread;
 
-use crate::{ControlTarget, ControlValue, Result, error::ControlError};
+use crate::{error::ControlError, ControlTarget, ControlValue, Result};
 
 #[cfg(feature = "osc")]
 use super::address::parse_osc_address;
@@ -71,18 +71,16 @@ impl OscServer {
 
         loop {
             match socket.recv_from(&mut buf) {
-                Ok((size, addr)) => {
-                    match decoder::decode_udp(&buf[..size]) {
-                        Ok((_, packet)) => {
-                            if let Err(e) = Self::handle_packet(&packet, &sender) {
-                                tracing::warn!("Failed to handle OSC packet from {}: {}", addr, e);
-                            }
-                        }
-                        Err(e) => {
-                            tracing::warn!("Failed to decode OSC packet from {}: {}", addr, e);
+                Ok((size, addr)) => match decoder::decode_udp(&buf[..size]) {
+                    Ok((_, packet)) => {
+                        if let Err(e) = Self::handle_packet(&packet, &sender) {
+                            tracing::warn!("Failed to handle OSC packet from {}: {}", addr, e);
                         }
                     }
-                }
+                    Err(e) => {
+                        tracing::warn!("Failed to decode OSC packet from {}: {}", addr, e);
+                    }
+                },
                 Err(e) => {
                     tracing::error!("OSC socket error: {}", e);
                     break;

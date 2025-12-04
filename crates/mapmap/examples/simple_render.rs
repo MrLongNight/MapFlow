@@ -1,122 +1,130 @@
-/! Simple rendering example //! //! Demonstrates basic usage of mapmap-render crate
+//! Simple rendering example
+//!
+//! Demonstrates basic usage of mapmap-render crate
 
-use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend}; use winit::{ event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder, };
-
-fn main() { println!("MapMap Simple Render Example");
-           let event_loop = EventLoop::new();
-let window = WindowBuilder::new()
-    .with_title("MapMap - Simple Render")
-    .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))
-    .build(&event_loop)
-    .unwrap();
-
-// Create wgpu backend
-let mut backend = pollster::block_on(WgpuBackend::new()).unwrap();
-println!("Backend initialized: {:?}", backend.adapter_info());
-
-// Create surface
-let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-    backends: wgpu::Backends::all(),
-    ..Default::default()
-});
-
-let surface = unsafe { instance.create_surface(&window) }.unwrap();
-
-let surface_config = wgpu::SurfaceConfiguration {
-    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-    format: wgpu::TextureFormat::Bgra8Unorm,
-    width: 800,
-    height: 600,
-    present_mode: wgpu::PresentMode::Fifo,
-    alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-    view_formats: vec![],
+use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
 };
 
-surface.configure(backend.device(), &surface_config);
+fn main() {
+    println!("MapMap Simple Render Example");
+    let event_loop = EventLoop::new();
+    let window = WindowBuilder::new()
+        .with_title("MapMap - Simple Render")
+        .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))
+        .build(&event_loop)
+        .unwrap();
 
-// Create quad renderer
-let quad_renderer = QuadRenderer::new(backend.device(), surface_config.format).unwrap();
+    // Create wgpu backend
+    let mut backend = pollster::block_on(WgpuBackend::new()).unwrap();
+    println!("Backend initialized: {:?}", backend.adapter_info());
 
-// Create a test texture (red square)
-let tex_desc = TextureDescriptor {
-    width: 256,
-    height: 256,
-    format: wgpu::TextureFormat::Rgba8UnormSrgb,
-    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-    mip_levels: 1,
-};
+    // Create surface
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::all(),
+        ..Default::default()
+    });
 
-let texture = backend.create_texture(tex_desc).unwrap();
+    let surface = unsafe { instance.create_surface(&window) }.unwrap();
 
-// Fill with red color
-let red_data: Vec<u8> = (0..256 * 256)
-    .flat_map(|_| [255u8, 0, 0, 255])
-    .collect();
+    let surface_config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        format: wgpu::TextureFormat::Bgra8Unorm,
+        width: 800,
+        height: 600,
+        present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+        view_formats: vec![],
+    };
 
-backend.upload_texture(texture.clone(), &red_data).unwrap();
+    surface.configure(backend.device(), &surface_config);
 
-println!("Setup complete. Rendering...");
+    // Create quad renderer
+    let quad_renderer = QuadRenderer::new(backend.device(), surface_config.format).unwrap();
 
-event_loop.run(move |event, _, control_flow| {
-    *control_flow = ControlFlow::Poll;
+    // Create a test texture (red square)
+    let tex_desc = TextureDescriptor {
+        width: 256,
+        height: 256,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        mip_levels: 1,
+    };
 
-    match event {
-        Event::WindowEvent {
-            event: WindowEvent::CloseRequested,
-            ..
-        } => {
-            println!("Close requested");
-            *control_flow = ControlFlow::Exit;
-        }
-        Event::RedrawRequested(_) => {
-            let frame = match surface.get_current_texture() {
-                Ok(frame) => frame,
-                Err(_) => return,
-            };
+    let texture = backend.create_texture(tex_desc).unwrap();
 
-            let view = frame
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
+    // Fill with red color
+    let red_data: Vec<u8> = (0..256 * 256).flat_map(|_| [255u8, 0, 0, 255]).collect();
 
-            let mut encoder = backend
-                .device()
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
+    backend.upload_texture(texture.clone(), &red_data).unwrap();
 
-            {
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Main Render Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.0,
-                                g: 0.0,
-                                b: 0.0,
-                                a: 1.0,
-                            }),
-                            // Angepasst an neuere wgpu-API: `store` ist ein bool
-                            store: true,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                    ..Default::default()
-                });
+    println!("Setup complete. Rendering...");
 
-                let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-                let bind_group = quad_renderer.create_bind_group(backend.device(), &texture_view);
-                quad_renderer.draw(&mut render_pass, &bind_group);
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Poll;
+
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                println!("Close requested");
+                *control_flow = ControlFlow::Exit;
             }
+            Event::RedrawRequested(_) => {
+                let frame = match surface.get_current_texture() {
+                    Ok(frame) => frame,
+                    Err(_) => return,
+                };
 
-            backend.queue().submit(Some(encoder.finish()));
-            frame.present();
+                let view = frame
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+
+                let mut encoder =
+                    backend
+                        .device()
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Render Encoder"),
+                        });
+
+                {
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Main Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
+                                    a: 1.0,
+                                }),
+                                // Angepasst an neuere wgpu-API: `store` ist ein bool
+                                store: true,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        ..Default::default()
+                    });
+
+                    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+                    let bind_group =
+                        quad_renderer.create_bind_group(backend.device(), &texture_view);
+                    quad_renderer.draw(&mut render_pass, &bind_group);
+                }
+
+                backend.queue().submit(Some(encoder.finish()));
+                frame.present();
+            }
+            Event::MainEventsCleared => {
+                window.request_redraw();
+            }
+            _ => {}
         }
-        Event::MainEventsCleared => {
-            window.request_redraw();
-        }
-        _ => {}
-    }
-});
-           }
+    });
+}

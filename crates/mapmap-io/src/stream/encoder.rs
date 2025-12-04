@@ -235,7 +235,10 @@ pub struct VideoEncoder;
 impl VideoEncoder {
     /// Create a new video encoder (returns error when feature is disabled)
     pub fn new() -> crate::error::Result<Self> {
-        Err(crate::error::IoError::feature_not_enabled("Stream encoding", "stream"))
+        Err(crate::error::IoError::feature_not_enabled(
+            "Stream encoding",
+            "stream",
+        ))
     }
 }
 

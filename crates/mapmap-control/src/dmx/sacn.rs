@@ -70,7 +70,8 @@ impl SacnSender {
         let packet = self.build_sacn_packet(channels);
 
         // Calculate multicast address: 239.255.0.0 + universe
-        let multicast_addr = format!("239.255.{}.{}:5568",
+        let multicast_addr = format!(
+            "239.255.{}.{}:5568",
             (self.universe >> 8) & 0xFF,
             self.universe & 0xFF
         );
@@ -107,7 +108,8 @@ impl SacnSender {
 
         // Flags and Length (16-bit): 0x7000 | (638 - 16)
         let root_length = 638 - 16;
-        packet[offset..offset + 2].copy_from_slice(&((0x7000u16 | root_length as u16).to_be_bytes()));
+        packet[offset..offset + 2]
+            .copy_from_slice(&((0x7000u16 | root_length as u16).to_be_bytes()));
         offset += 2;
 
         // Vector (32-bit): VECTOR_ROOT_E131_DATA (0x00000004)
@@ -121,7 +123,8 @@ impl SacnSender {
         // Framing Layer
         // Flags and Length (16-bit): 0x7000 | (638 - 38)
         let framing_length = 638 - 38;
-        packet[offset..offset + 2].copy_from_slice(&((0x7000u16 | framing_length as u16).to_be_bytes()));
+        packet[offset..offset + 2]
+            .copy_from_slice(&((0x7000u16 | framing_length as u16).to_be_bytes()));
         offset += 2;
 
         // Vector (32-bit): VECTOR_E131_DATA_PACKET (0x00000002)
@@ -157,7 +160,8 @@ impl SacnSender {
         // DMP Layer
         // Flags and Length (16-bit): 0x7000 | (638 - 115)
         let dmp_length = 638 - 115;
-        packet[offset..offset + 2].copy_from_slice(&((0x7000u16 | dmp_length as u16).to_be_bytes()));
+        packet[offset..offset + 2]
+            .copy_from_slice(&((0x7000u16 | dmp_length as u16).to_be_bytes()));
         offset += 2;
 
         // Vector (1 byte): VECTOR_DMP_SET_PROPERTY (0x02)

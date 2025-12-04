@@ -4,7 +4,7 @@
 //! Node-based visual shader editor using ImGui
 
 use imgui::*;
-use mapmap_core::{ShaderGraph, ShaderNode, NodeType, NodeId};
+use mapmap_core::{NodeId, NodeType, ShaderGraph, ShaderNode};
 use std::collections::HashMap;
 
 /// Shader graph editor state
@@ -156,7 +156,9 @@ impl ShaderGraphEditor {
                 ui.separator();
 
                 // Category buttons
-                let categories = vec!["All", "Input", "Math", "Color", "Texture", "Effects", "Utility"];
+                let categories = vec![
+                    "All", "Input", "Math", "Color", "Texture", "Effects", "Utility",
+                ];
                 for category in categories {
                     if ui.small_button(category) {
                         self.palette_category = category.to_string();
@@ -207,7 +209,12 @@ impl ShaderGraphEditor {
                                 } else {
                                     "Not connected"
                                 };
-                                ui.text(format!("  {} [{}] - {}", input.name, input.data_type.wgsl_type(), status));
+                                ui.text(format!(
+                                    "  {} [{}] - {}",
+                                    input.name,
+                                    input.data_type.wgsl_type(),
+                                    status
+                                ));
                             }
 
                             ui.separator();
@@ -215,7 +222,11 @@ impl ShaderGraphEditor {
                             // Display outputs
                             ui.text("Outputs:");
                             for output in &node.outputs {
-                                ui.text(format!("  {} [{}]", output.name, output.data_type.wgsl_type()));
+                                ui.text(format!(
+                                    "  {} [{}]",
+                                    output.name,
+                                    output.data_type.wgsl_type()
+                                ));
                             }
 
                             ui.separator();
@@ -257,7 +268,10 @@ impl ShaderGraphEditor {
                 draw_list
                     .add_rect(
                         canvas_pos,
-                        [canvas_pos[0] + canvas_size[0], canvas_pos[1] + canvas_size[1]],
+                        [
+                            canvas_pos[0] + canvas_size[0],
+                            canvas_pos[1] + canvas_size[1],
+                        ],
                         [0.1, 0.1, 0.1, 1.0],
                     )
                     .filled(true)
@@ -280,7 +294,9 @@ impl ShaderGraphEditor {
                 // Handle mouse input
                 if ui.is_window_hovered() {
                     // Pan canvas with middle mouse or right mouse
-                    if ui.is_mouse_dragging(MouseButton::Middle) || ui.is_mouse_dragging(MouseButton::Right) {
+                    if ui.is_mouse_dragging(MouseButton::Middle)
+                        || ui.is_mouse_dragging(MouseButton::Right)
+                    {
                         let delta = ui.mouse_drag_delta_with_button(MouseButton::Middle);
                         self.canvas_offset.0 += delta[0];
                         self.canvas_offset.1 += delta[1];
@@ -305,29 +321,44 @@ impl ShaderGraphEditor {
         // Vertical lines
         let mut x = (canvas_pos[0] + self.canvas_offset.0 % grid_size) - grid_size;
         while x < canvas_pos[0] + canvas_size[0] {
-            draw_list.add_line(
-                [x, canvas_pos[1]],
-                [x, canvas_pos[1] + canvas_size[1]],
-                grid_color,
-            ).build();
+            draw_list
+                .add_line(
+                    [x, canvas_pos[1]],
+                    [x, canvas_pos[1] + canvas_size[1]],
+                    grid_color,
+                )
+                .build();
             x += grid_size;
         }
 
         // Horizontal lines
         let mut y = (canvas_pos[1] + self.canvas_offset.1 % grid_size) - grid_size;
         while y < canvas_pos[1] + canvas_size[1] {
-            draw_list.add_line(
-                [canvas_pos[0], y],
-                [canvas_pos[0] + canvas_size[0], y],
-                grid_color,
-            ).build();
+            draw_list
+                .add_line(
+                    [canvas_pos[0], y],
+                    [canvas_pos[0] + canvas_size[0], y],
+                    grid_color,
+                )
+                .build();
             y += grid_size;
         }
     }
 
     /// Draw a node
-    fn draw_node(&self, draw_list: &DrawListMut, canvas_pos: [f32; 2], node_id: NodeId, node: &ShaderNode, _ui: &Ui) {
-        let pos = self.node_positions.get(&node_id).copied().unwrap_or((100.0, 100.0));
+    fn draw_node(
+        &self,
+        draw_list: &DrawListMut,
+        canvas_pos: [f32; 2],
+        node_id: NodeId,
+        node: &ShaderNode,
+        _ui: &Ui,
+    ) {
+        let pos = self
+            .node_positions
+            .get(&node_id)
+            .copied()
+            .unwrap_or((100.0, 100.0));
         let screen_pos = [
             canvas_pos[0] + pos.0 * self.zoom + self.canvas_offset.0,
             canvas_pos[1] + pos.1 * self.zoom + self.canvas_offset.1,
@@ -377,29 +408,39 @@ impl ShaderGraphEditor {
             for input in &node.inputs {
                 if let Some((source_node, _output_name)) = &input.connected_output {
                     if let Some(source_pos) = self.node_positions.get(source_node) {
-                        let dest_pos = self.node_positions.get(&node.id).copied().unwrap_or((0.0, 0.0));
+                        let dest_pos = self
+                            .node_positions
+                            .get(&node.id)
+                            .copied()
+                            .unwrap_or((0.0, 0.0));
 
                         let start = [
-                            canvas_pos[0] + source_pos.0 * self.zoom + self.canvas_offset.0 + 150.0 * self.zoom,
-                            canvas_pos[1] + source_pos.1 * self.zoom + self.canvas_offset.1 + 40.0 * self.zoom,
+                            canvas_pos[0]
+                                + source_pos.0 * self.zoom
+                                + self.canvas_offset.0
+                                + 150.0 * self.zoom,
+                            canvas_pos[1]
+                                + source_pos.1 * self.zoom
+                                + self.canvas_offset.1
+                                + 40.0 * self.zoom,
                         ];
 
                         let end = [
                             canvas_pos[0] + dest_pos.0 * self.zoom + self.canvas_offset.0,
-                            canvas_pos[1] + dest_pos.1 * self.zoom + self.canvas_offset.1 + 40.0 * self.zoom,
+                            canvas_pos[1]
+                                + dest_pos.1 * self.zoom
+                                + self.canvas_offset.1
+                                + 40.0 * self.zoom,
                         ];
 
                         // Draw bezier curve
                         let ctrl1 = [start[0] + 50.0, start[1]];
                         let ctrl2 = [end[0] - 50.0, end[1]];
 
-                        draw_list.add_bezier_curve(
-                            start,
-                            ctrl1,
-                            ctrl2,
-                            end,
-                            [0.8, 0.8, 0.2, 1.0],
-                        ).thickness(2.0).build();
+                        draw_list
+                            .add_bezier_curve(start, ctrl1, ctrl2, end, [0.8, 0.8, 0.2, 1.0])
+                            .thickness(2.0)
+                            .build();
                     }
                 }
             }
@@ -409,17 +450,38 @@ impl ShaderGraphEditor {
     /// Filter node types based on category and search
     fn filter_node_types(&self) -> Vec<NodeType> {
         let all_types = vec![
-            NodeType::TextureInput, NodeType::TimeInput, NodeType::UVInput,
-            NodeType::ParameterInput, NodeType::AudioInput,
-            NodeType::Add, NodeType::Subtract, NodeType::Multiply, NodeType::Divide,
-            NodeType::Sin, NodeType::Cos, NodeType::Power,
-            NodeType::Mix, NodeType::Clamp, NodeType::Smoothstep,
-            NodeType::ColorRamp, NodeType::HSVToRGB, NodeType::RGBToHSV,
-            NodeType::Brightness, NodeType::Contrast, NodeType::Desaturate,
-            NodeType::TextureSample, NodeType::UVTransform, NodeType::UVDistort,
-            NodeType::Blur, NodeType::Glow, NodeType::ChromaticAberration,
-            NodeType::Kaleidoscope, NodeType::EdgeDetect,
-            NodeType::Split, NodeType::Combine, NodeType::Remap,
+            NodeType::TextureInput,
+            NodeType::TimeInput,
+            NodeType::UVInput,
+            NodeType::ParameterInput,
+            NodeType::AudioInput,
+            NodeType::Add,
+            NodeType::Subtract,
+            NodeType::Multiply,
+            NodeType::Divide,
+            NodeType::Sin,
+            NodeType::Cos,
+            NodeType::Power,
+            NodeType::Mix,
+            NodeType::Clamp,
+            NodeType::Smoothstep,
+            NodeType::ColorRamp,
+            NodeType::HSVToRGB,
+            NodeType::RGBToHSV,
+            NodeType::Brightness,
+            NodeType::Contrast,
+            NodeType::Desaturate,
+            NodeType::TextureSample,
+            NodeType::UVTransform,
+            NodeType::UVDistort,
+            NodeType::Blur,
+            NodeType::Glow,
+            NodeType::ChromaticAberration,
+            NodeType::Kaleidoscope,
+            NodeType::EdgeDetect,
+            NodeType::Split,
+            NodeType::Combine,
+            NodeType::Remap,
             NodeType::Output,
         ];
 
@@ -427,11 +489,15 @@ impl ShaderGraphEditor {
             .into_iter()
             .filter(|node_type| {
                 // Filter by category
-                let category_match = self.palette_category == "All" || node_type.category() == self.palette_category;
+                let category_match =
+                    self.palette_category == "All" || node_type.category() == self.palette_category;
 
                 // Filter by search
                 let search_match = self.palette_search.is_empty()
-                    || node_type.display_name().to_lowercase().contains(&self.palette_search.to_lowercase());
+                    || node_type
+                        .display_name()
+                        .to_lowercase()
+                        .contains(&self.palette_search.to_lowercase());
 
                 category_match && search_match
             })

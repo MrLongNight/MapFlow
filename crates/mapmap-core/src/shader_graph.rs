@@ -158,21 +158,42 @@ impl NodeType {
     /// Get the category for node palette
     pub fn category(&self) -> &'static str {
         match self {
-            NodeType::TextureInput | NodeType::TimeInput | NodeType::UVInput
-            | NodeType::ParameterInput | NodeType::AudioInput => "Input",
+            NodeType::TextureInput
+            | NodeType::TimeInput
+            | NodeType::UVInput
+            | NodeType::ParameterInput
+            | NodeType::AudioInput => "Input",
 
-            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide
-            | NodeType::Power | NodeType::Sin | NodeType::Cos | NodeType::Clamp
-            | NodeType::Mix | NodeType::Smoothstep => "Math",
+            NodeType::Add
+            | NodeType::Subtract
+            | NodeType::Multiply
+            | NodeType::Divide
+            | NodeType::Power
+            | NodeType::Sin
+            | NodeType::Cos
+            | NodeType::Clamp
+            | NodeType::Mix
+            | NodeType::Smoothstep => "Math",
 
-            NodeType::ColorRamp | NodeType::HSVToRGB | NodeType::RGBToHSV
-            | NodeType::Desaturate | NodeType::Brightness | NodeType::Contrast => "Color",
+            NodeType::ColorRamp
+            | NodeType::HSVToRGB
+            | NodeType::RGBToHSV
+            | NodeType::Desaturate
+            | NodeType::Brightness
+            | NodeType::Contrast => "Color",
 
-            NodeType::TextureSample | NodeType::TextureSampleLod | NodeType::TextureCombine
-            | NodeType::UVTransform | NodeType::UVDistort => "Texture",
+            NodeType::TextureSample
+            | NodeType::TextureSampleLod
+            | NodeType::TextureCombine
+            | NodeType::UVTransform
+            | NodeType::UVDistort => "Texture",
 
-            NodeType::Blur | NodeType::Glow | NodeType::ChromaticAberration
-            | NodeType::Kaleidoscope | NodeType::PixelSort | NodeType::EdgeDetect
+            NodeType::Blur
+            | NodeType::Glow
+            | NodeType::ChromaticAberration
+            | NodeType::Kaleidoscope
+            | NodeType::PixelSort
+            | NodeType::EdgeDetect
             | NodeType::Displacement => "Effects",
 
             NodeType::Split | NodeType::Combine | NodeType::Remap => "Utility",
@@ -256,46 +277,38 @@ impl ShaderNode {
                 },
             ],
 
-            NodeType::Output => vec![
-                InputSocket {
-                    name: "Color".to_string(),
-                    data_type: DataType::Color,
-                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 1.0)),
-                    connected_output: None,
-                },
-            ],
+            NodeType::Output => vec![InputSocket {
+                name: "Color".to_string(),
+                data_type: DataType::Color,
+                default_value: Some(Vec4::new(0.0, 0.0, 0.0, 1.0)),
+                connected_output: None,
+            }],
 
             _ => vec![], // TODO: Implement for all node types
         };
 
         let outputs = match node_type {
-            NodeType::TextureInput => vec![
-                OutputSocket {
-                    name: "Texture".to_string(),
-                    data_type: DataType::Texture,
-                },
-            ],
+            NodeType::TextureInput => vec![OutputSocket {
+                name: "Texture".to_string(),
+                data_type: DataType::Texture,
+            }],
 
-            NodeType::TimeInput => vec![
-                OutputSocket {
-                    name: "Time".to_string(),
-                    data_type: DataType::Float,
-                },
-            ],
+            NodeType::TimeInput => vec![OutputSocket {
+                name: "Time".to_string(),
+                data_type: DataType::Float,
+            }],
 
-            NodeType::UVInput => vec![
-                OutputSocket {
-                    name: "UV".to_string(),
-                    data_type: DataType::Vec2,
-                },
-            ],
+            NodeType::UVInput => vec![OutputSocket {
+                name: "UV".to_string(),
+                data_type: DataType::Vec2,
+            }],
 
-            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide => vec![
-                OutputSocket {
+            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide => {
+                vec![OutputSocket {
                     name: "Result".to_string(),
                     data_type: DataType::Float,
-                },
-            ],
+                }]
+            }
 
             NodeType::TextureSample => vec![
                 OutputSocket {
@@ -384,18 +397,27 @@ impl ShaderGraph {
         dest_input: &str,
     ) -> Result<(), String> {
         // Verify source node and output exist
-        let source = self.nodes.get(&source_node)
+        let source = self
+            .nodes
+            .get(&source_node)
             .ok_or_else(|| format!("Source node {} not found", source_node))?;
 
         if !source.outputs.iter().any(|o| o.name == source_output) {
-            return Err(format!("Output '{}' not found on source node", source_output));
+            return Err(format!(
+                "Output '{}' not found on source node",
+                source_output
+            ));
         }
 
         // Update destination node input
-        let dest = self.nodes.get_mut(&dest_node)
+        let dest = self
+            .nodes
+            .get_mut(&dest_node)
             .ok_or_else(|| format!("Destination node {} not found", dest_node))?;
 
-        let input = dest.inputs.iter_mut()
+        let input = dest
+            .inputs
+            .iter_mut()
             .find(|i| i.name == dest_input)
             .ok_or_else(|| format!("Input '{}' not found on destination node", dest_input))?;
 
@@ -406,10 +428,14 @@ impl ShaderGraph {
 
     /// Disconnect an input
     pub fn disconnect(&mut self, node_id: NodeId, input_name: &str) -> Result<(), String> {
-        let node = self.nodes.get_mut(&node_id)
+        let node = self
+            .nodes
+            .get_mut(&node_id)
             .ok_or_else(|| format!("Node {} not found", node_id))?;
 
-        let input = node.inputs.iter_mut()
+        let input = node
+            .inputs
+            .iter_mut()
             .find(|i| i.name == input_name)
             .ok_or_else(|| format!("Input '{}' not found", input_name))?;
 
@@ -420,7 +446,9 @@ impl ShaderGraph {
 
     /// Get the output node (should be exactly one)
     pub fn output_node(&self) -> Option<&ShaderNode> {
-        self.nodes.values().find(|n| n.node_type == NodeType::Output)
+        self.nodes
+            .values()
+            .find(|n| n.node_type == NodeType::Output)
     }
 
     /// Validate the graph (check for cycles, disconnected nodes, etc.)

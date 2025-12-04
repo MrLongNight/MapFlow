@@ -71,11 +71,11 @@
 //! ```
 
 pub mod artnet;
-pub mod sacn;
 pub mod channels;
 pub mod fixtures;
+pub mod sacn;
 
 pub use artnet::ArtNetSender;
-pub use sacn::SacnSender;
 pub use channels::{ChannelAssignment, DmxChannel};
 pub use fixtures::{ChannelType, Fixture, FixtureChannel, FixtureProfile};
+pub use sacn::SacnSender;

@@ -210,8 +210,15 @@ pub struct RtmpStreamer;
 #[cfg(not(feature = "stream"))]
 impl RtmpStreamer {
     /// Create a new RTMP streamer (returns error when feature is disabled)
-    pub fn new(_url: impl Into<String>, _format: crate::format::VideoFormat, _bitrate: u64) -> crate::error::Result<Self> {
-        Err(crate::error::IoError::feature_not_enabled("RTMP streaming", "stream"))
+    pub fn new(
+        _url: impl Into<String>,
+        _format: crate::format::VideoFormat,
+        _bitrate: u64,
+    ) -> crate::error::Result<Self> {
+        Err(crate::error::IoError::feature_not_enabled(
+            "RTMP streaming",
+            "stream",
+        ))
     }
 }
 
@@ -246,8 +253,8 @@ mod tests {
     #[test]
     fn test_rtmp_streamer_connect() {
         let format = VideoFormat::hd_1080p60_rgba();
-        let mut streamer = RtmpStreamer::new("rtmp://localhost/live/stream", format, 6_000_000)
-            .unwrap();
+        let mut streamer =
+            RtmpStreamer::new("rtmp://localhost/live/stream", format, 6_000_000).unwrap();
 
         assert!(!streamer.is_connected());
         assert!(streamer.connect().is_ok());
@@ -257,8 +264,8 @@ mod tests {
     #[test]
     fn test_rtmp_streamer_send_frame() {
         let format = VideoFormat::hd_1080p60_rgba();
-        let mut streamer = RtmpStreamer::new("rtmp://localhost/live/stream", format.clone(), 6_000_000)
-            .unwrap();
+        let mut streamer =
+            RtmpStreamer::new("rtmp://localhost/live/stream", format.clone(), 6_000_000).unwrap();
 
         let frame = VideoFrame::empty(format);
         assert!(streamer.send_frame(&frame).is_ok());
@@ -269,8 +276,8 @@ mod tests {
     #[test]
     fn test_rtmp_streamer_statistics() {
         let format = VideoFormat::hd_1080p60_rgba();
-        let mut streamer = RtmpStreamer::new("rtmp://localhost/live/stream", format.clone(), 6_000_000)
-            .unwrap();
+        let mut streamer =
+            RtmpStreamer::new("rtmp://localhost/live/stream", format.clone(), 6_000_000).unwrap();
 
         let frame = VideoFrame::empty(format);
         streamer.send_frame(&frame).unwrap();

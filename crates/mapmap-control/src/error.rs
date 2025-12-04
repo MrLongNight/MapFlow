@@ -1,5 +1,4 @@
 ///! Error types for the control system
-
 use thiserror::Error;
 
 /// Control system errors

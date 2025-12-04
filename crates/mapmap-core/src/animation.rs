@@ -37,38 +37,27 @@ impl AnimValue {
     /// Interpolate between two values
     pub fn lerp(&self, other: &AnimValue, t: f32) -> AnimValue {
         match (self, other) {
-            (AnimValue::Float(a), AnimValue::Float(b)) => {
-                AnimValue::Float(a + (b - a) * t)
-            }
+            (AnimValue::Float(a), AnimValue::Float(b)) => AnimValue::Float(a + (b - a) * t),
             (AnimValue::Vec2(a), AnimValue::Vec2(b)) => {
-                AnimValue::Vec2([
-                    a[0] + (b[0] - a[0]) * t,
-                    a[1] + (b[1] - a[1]) * t,
-                ])
+                AnimValue::Vec2([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t])
             }
-            (AnimValue::Vec3(a), AnimValue::Vec3(b)) => {
-                AnimValue::Vec3([
-                    a[0] + (b[0] - a[0]) * t,
-                    a[1] + (b[1] - a[1]) * t,
-                    a[2] + (b[2] - a[2]) * t,
-                ])
-            }
-            (AnimValue::Vec4(a), AnimValue::Vec4(b)) => {
-                AnimValue::Vec4([
-                    a[0] + (b[0] - a[0]) * t,
-                    a[1] + (b[1] - a[1]) * t,
-                    a[2] + (b[2] - a[2]) * t,
-                    a[3] + (b[3] - a[3]) * t,
-                ])
-            }
-            (AnimValue::Color(a), AnimValue::Color(b)) => {
-                AnimValue::Color([
-                    a[0] + (b[0] - a[0]) * t,
-                    a[1] + (b[1] - a[1]) * t,
-                    a[2] + (b[2] - a[2]) * t,
-                    a[3] + (b[3] - a[3]) * t,
-                ])
-            }
+            (AnimValue::Vec3(a), AnimValue::Vec3(b)) => AnimValue::Vec3([
+                a[0] + (b[0] - a[0]) * t,
+                a[1] + (b[1] - a[1]) * t,
+                a[2] + (b[2] - a[2]) * t,
+            ]),
+            (AnimValue::Vec4(a), AnimValue::Vec4(b)) => AnimValue::Vec4([
+                a[0] + (b[0] - a[0]) * t,
+                a[1] + (b[1] - a[1]) * t,
+                a[2] + (b[2] - a[2]) * t,
+                a[3] + (b[3] - a[3]) * t,
+            ]),
+            (AnimValue::Color(a), AnimValue::Color(b)) => AnimValue::Color([
+                a[0] + (b[0] - a[0]) * t,
+                a[1] + (b[1] - a[1]) * t,
+                a[2] + (b[2] - a[2]) * t,
+                a[3] + (b[3] - a[3]) * t,
+            ]),
             (AnimValue::Bool(a), AnimValue::Bool(_)) => {
                 // Step interpolation for booleans
                 AnimValue::Bool(*a)
@@ -92,7 +81,7 @@ pub struct Keyframe {
     pub value: AnimValue,
     pub interpolation: InterpolationMode,
     // For Bezier interpolation
-    pub in_tangent: Option<[f32; 2]>,  // (time_offset, value_offset)
+    pub in_tangent: Option<[f32; 2]>, // (time_offset, value_offset)
     pub out_tangent: Option<[f32; 2]>,
 }
 
@@ -280,7 +269,8 @@ impl AnimationClip {
 
     /// Calculate total duration from all tracks
     pub fn calculate_duration(&mut self) {
-        let max_time = self.tracks
+        let max_time = self
+            .tracks
             .iter()
             .filter_map(|track| track.time_range())
             .map(|(_, end)| end)
@@ -360,10 +350,7 @@ mod tests {
 
     #[test]
     fn test_keyframe_animation() {
-        let mut track = AnimationTrack::new(
-            "opacity".to_string(),
-            AnimValue::Float(1.0),
-        );
+        let mut track = AnimationTrack::new("opacity".to_string(), AnimValue::Float(1.0));
 
         track.add_keyframe(Keyframe::new(0.0, AnimValue::Float(0.0)));
         track.add_keyframe(Keyframe::new(1.0, AnimValue::Float(1.0)));

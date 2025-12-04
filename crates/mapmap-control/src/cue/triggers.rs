@@ -72,11 +72,7 @@ impl MidiTrigger {
                     controller: msg_controller,
                     value: msg_value,
                 },
-            ) => {
-                *channel == self.channel
-                    && *msg_controller == *controller
-                    && *msg_value == *value
-            }
+            ) => *channel == self.channel && *msg_controller == *controller && *msg_value == *value,
 
             (
                 MidiTriggerType::ProgramChange { program },
