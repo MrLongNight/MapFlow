@@ -1,4 +1,4 @@
-name: Create Jules Development Issues
+name: "JULES-01: Create Development Issues"
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     branches:
       - 'copilot/implement-ci-cd-workflow'
     paths:
-      - '.github/workflows/create-jules-issues.yml'
+      - '.github/workflows/JULES-01_create-issues.yml'
 
 permissions:
   issues: write
@@ -126,7 +126,7 @@ The Build_Rust workflow is currently failing due to FreeType/fontconfig linker e
 - [ ] Cache works correctly for faster builds
 
 ### Technical Details
-- File: \`.github/workflows/Build_Rust.yml\`
+- File: \`.github/workflows/CI-01_build-and-test.yml\`
 - Issue: servo-fontconfig-sys build failure
 - Likely missing: \`libfontconfig-dev\` or pkg-config paths
 - Environment variable: \`FREETYPE_SYS_USE_PKG_CONFIG=1\` already set

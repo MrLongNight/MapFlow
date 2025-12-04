@@ -1,4 +1,4 @@
-name: CI/CD
+name: "CI-01: Build & Test"
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: Update Documentation
+name: "DOCS-01: Update Changelog"
 
 on:
   pull_request:

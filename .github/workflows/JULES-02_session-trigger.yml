@@ -1,4 +1,4 @@
-name: Jules Session Trigger
+name: "JULES-02: Session Trigger"
 
 on:
   issues:

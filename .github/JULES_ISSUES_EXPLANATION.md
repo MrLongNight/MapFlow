@@ -10,7 +10,7 @@ Die Jules Issues wurden **absichtlich NICHT automatisch** erstellt. Hier ist war
 
 ### 1. Sicherheitskonzept: Manual Trigger
 
-Der Workflow `create-jules-issues.yml` ist als **`workflow_dispatch`** konfiguriert:
+Der Workflow `JULES-01_create-issues.yml` ist als **`workflow_dispatch`** konfiguriert:
 
 ```yaml
 on:
@@ -29,7 +29,7 @@ Der Workflow ist **vollständig implementiert** und wartet nur auf deine manuell
 
 ```bash
 # Issues erstellen (einmalig ausführen)
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 ```
 
 ### 3. Was passiert beim Ausführen?
@@ -100,7 +100,7 @@ Wenn du den Workflow ausführst:
 
 ```bash
 # Issues erstellen
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 
 # Status prüfen
 gh run watch
@@ -123,7 +123,7 @@ gh issue list --label "jules-task"
 curl -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.github.com/repos/MrLongNight/VjMapper/actions/workflows/create-jules-issues.yml/dispatches \
+  https://api.github.com/repos/MrLongNight/VjMapper/actions/workflows/JULES-01_create-issues.yml/dispatches \
   -d '{"ref":"copilot/implement-ci-cd-workflow"}'
 ```
 
@@ -227,7 +227,7 @@ This is critical for professional multi-projector setups.
 gh label sync --file .github/labels.yml
 
 # 2. Jules Issues erstellen
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 
 # 3. Warten (~30 Sekunden)
 gh run watch

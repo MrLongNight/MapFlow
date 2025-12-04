@@ -27,7 +27,7 @@ gh label sync --file .github/labels.yml
 
 ```bash
 # Alle 8 Development Issues auf einmal erstellen
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 
 # Status prüfen
 gh run watch
@@ -142,11 +142,11 @@ gh run view <run-id> --log
 
 | Datei | Zweck |
 |-------|-------|
-| `.github/workflows/Build_Rust.yml` | Hauptsächlicher CI/CD Pipeline |
-| `.github/workflows/create-jules-issues.yml` | Erstellt alle Jules Issues |
-| `.github/workflows/jules-pr-automation.yml` | Auto-Merge für Jules PRs |
-| `.github/workflows/update-documentation.yml` | Changelog Updates |
-| `.github/workflows/codeql.yml` | Security Scanning |
+| `.github/workflows/CI-01_build-and-test.yml` | Hauptsächlicher CI/CD Pipeline |
+| `.github/workflows/JULES-01_create-issues.yml` | Erstellt alle Jules Issues |
+| `.github/workflows/JULES-03_pr-automation.yml` | Auto-Merge für Jules PRs |
+| `.github/workflows/DOCS-01_update-changelog.yml` | Changelog Updates |
+| `.github/workflows/CI-02_security-scan.yml` | Security Scanning |
 | `.github/ISSUE_TEMPLATE/development_task.yml` | Template für neue Tasks |
 | `.github/labels.yml` | Label Konfiguration |
 | `.github/JULES_INTEGRATION.md` | Detaillierte Jules Dokumentation |
@@ -264,7 +264,7 @@ Nach diesen 5 Schritten ist die Jules Integration einsatzbereit:
 gh label sync --file .github/labels.yml
 
 # 2. Issues erstellen
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 
 # 3. Jules konfigurieren (siehe Schritt 4)
 

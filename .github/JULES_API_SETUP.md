@@ -135,7 +135,7 @@ gh secret list
 
 #### 5. Workflow ist bereits konfiguriert! ✅
 
-Der Workflow `.github/workflows/jules-session-trigger.yml` ist bereits in diesem Repository vorhanden und aktiv.
+Der Workflow `.github/workflows/JULES-02_session-trigger.yml` ist bereits in diesem Repository vorhanden und aktiv.
 
 **Was automatisch passiert:**
 - Issue wird mit `jules-task` Label erstellt/gelabelt → Workflow triggert
@@ -409,7 +409,7 @@ echo "Merged this week: $(gh pr list --label jules-pr --state closed --search 'm
 
 ### Was ist jetzt konfiguriert?
 
-- ✅ Workflow `jules-session-trigger.yml` ist implementiert
+- ✅ Workflow `JULES-02_session-trigger.yml` ist implementiert
 - ✅ Auto-Merge für Jules-PRs ist aktiv
 - ✅ CI/CD Pipeline läuft automatisch
 - ✅ Dokumentation ist aktualisiert

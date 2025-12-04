@@ -4,7 +4,7 @@ This directory contains automated workflows for the VjMapper project, implementi
 
 ## 🤖 Workflows Overview
 
-### 1. CI/CD Pipeline (`Build_Rust.yml`)
+### 1. CI/CD Pipeline (`CI-01_build-and-test.yml`)
 
 **Purpose:** Comprehensive continuous integration and deployment pipeline
 
@@ -25,7 +25,7 @@ This directory contains automated workflows for the VjMapper project, implementi
 - Generates release artifacts
 - Comprehensive test execution
 
-### 2. CodeQL Security Scan (`codeql.yml`)
+### 2. CodeQL Security Scan (`CI-02_security-scan.yml`)
 
 **Purpose:** Automated security vulnerability detection
 
@@ -41,7 +41,7 @@ This directory contains automated workflows for the VjMapper project, implementi
 - Automatic issue creation for findings
 - Integration with GitHub Security tab
 
-### 3. Create Jules Development Issues (`create-jules-issues.yml`)
+### 3. Create Jules Development Issues (`JULES-01_create-issues.yml`)
 
 **Purpose:** Create all Jules development issues at once
 
@@ -58,12 +58,12 @@ This directory contains automated workflows for the VjMapper project, implementi
 **Usage:**
 ```bash
 # Create all Jules issues (run once)
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 ```
 
 **Note:** This should be run ONCE to create all initial issues. Issues are pre-defined in the workflow, not parsed from ROADMAP.md (simpler and more reliable).
 
-### 4. Jules Session Trigger (`jules-session-trigger.yml`) 🆕
+### 4. Jules Session Trigger (`JULES-02_session-trigger.yml`) 🆕
 
 **Purpose:** Automatically trigger Jules API sessions when issues are created or labeled
 
@@ -84,10 +84,10 @@ gh workflow run create-jules-issues.yml
 # Automatically triggered when issue gets jules-task label
 
 # Or manually trigger for specific issue:
-gh workflow run jules-session-trigger.yml -f issue_number=123
+gh workflow run JULES-02_session-trigger.yml -f issue_number=123
 
 # Or batch-process all open jules-task issues:
-gh workflow run jules-session-trigger.yml
+gh workflow run JULES-02_session-trigger.yml
 ```
 
 **Configuration:**
@@ -106,7 +106,7 @@ gh workflow run jules-session-trigger.yml
    - Still adds tracking comment
    - Jules GitHub App takes over (if installed)
 
-### 5. Jules PR Auto-Merge (`jules-pr-automation.yml`)
+### 5. Jules PR Auto-Merge (`JULES-03_pr-automation.yml`)
 
 **Purpose:** Automatically merge Jules PRs when all checks pass
 
@@ -128,7 +128,7 @@ gh workflow run jules-session-trigger.yml
 4. ✅ No review requested changes
 5. ✅ Not a draft PR
 
-### 6. Update Documentation (`update-documentation.yml`)
+### 6. Update Documentation (`DOCS-01_update-changelog.yml`)
 
 **Purpose:** Keep CHANGELOG.md up to date automatically
 
@@ -239,7 +239,7 @@ gh workflow run "CI/CD Pipeline"
 gh workflow run auto-create-issues.yml -f dry_run=true
 
 # Trigger documentation update
-gh workflow run update-documentation.yml
+gh workflow run DOCS-01_update-changelog.yml
 ```
 
 ## 🛠️ Maintenance
@@ -261,7 +261,7 @@ gh workflow run update-documentation.yml
 ### Troubleshooting
 
 **Issue: CI fails with dependency errors**
-- Check system dependencies in `Build_Rust.yml`
+- Check system dependencies in `CI-01_build-and-test.yml`
 - Verify FFmpeg installation
 - Check package availability on runner OS
 

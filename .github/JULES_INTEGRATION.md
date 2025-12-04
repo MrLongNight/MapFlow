@@ -84,7 +84,7 @@ Es gibt **drei Möglichkeiten**, Jules zu aktivieren:
    ```
 
 3. **Workflow aktivieren:**
-   - Der Workflow `.github/workflows/jules-session-trigger.yml` ist bereits konfiguriert
+   - Der Workflow `.github/workflows/JULES-02_session-trigger.yml` ist bereits konfiguriert
    - Er triggert automatisch bei Issues mit `jules-task` Label
    - Er nutzt den JULES_API_KEY um Sessions zu erstellen
 
@@ -136,7 +136,7 @@ curl 'https://jules.googleapis.com/v1alpha/sessions' \
 3. Batch-Processing von Issues
 
 **Aktueller Status:**
-- ✅ Workflow `jules-session-trigger.yml` ist implementiert
+- ✅ Workflow `JULES-02_session-trigger.yml` ist implementiert
 - ✅ Auto-Merge Workflow ist konfiguriert
 - ⏳ JULES_API_KEY Secret fehlt (optional - nur für API-basierte Automatisierung)
 - ⏳ Jules GitHub App muss installiert werden (empfohlen)
@@ -161,7 +161,7 @@ permissions:
 **Einmalig alle Issues erstellen:**
 ```bash
 # Alle Jules Development Issues auf einmal erstellen
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 ```
 
 Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend auf ROADMAP.md:
@@ -181,7 +181,7 @@ Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend au
 
 ### 2. Automatische Jules Session-Erstellung
 
-**Neu implementiert!** Der Workflow `jules-session-trigger.yml` automatisiert die Session-Erstellung:
+**Neu implementiert!** Der Workflow `JULES-02_session-trigger.yml` automatisiert die Session-Erstellung:
 
 #### Automatische Trigger:
 
@@ -189,7 +189,7 @@ Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend au
 ```
 Issue mit jules-task Label erstellt/hinzugefügt
     ↓
-Workflow: jules-session-trigger.yml läuft automatisch
+Workflow: JULES-02_session-trigger.yml läuft automatisch
     ↓
 Tracking-Kommentar wird zum Issue hinzugefügt
     ↓
@@ -201,10 +201,10 @@ Jules beginnt mit der Arbeit
 **Manuell für existierende Issues:**
 ```bash
 # Einzelnes Issue triggern
-gh workflow run jules-session-trigger.yml -f issue_number=123
+gh workflow run JULES-02_session-trigger.yml -f issue_number=123
 
 # ALLE offenen jules-task Issues triggern (Batch-Modus)
-gh workflow run jules-session-trigger.yml
+gh workflow run JULES-02_session-trigger.yml
 ```
 
 #### Was der Workflow macht:
@@ -237,9 +237,9 @@ gh workflow run jules-session-trigger.yml
 
 ```
 .github/workflows/
-├── jules-session-trigger.yml    # NEU: Triggert Jules Sessions
-├── create-jules-issues.yml      # Erstellt Issues aus ROADMAP
-├── jules-pr-automation.yml      # Auto-Merge für Jules PRs
+├── JULES-02_session-trigger.yml    # NEU: Triggert Jules Sessions
+├── JULES-01_create-issues.yml      # Erstellt Issues aus ROADMAP
+├── JULES-03_pr-automation.yml      # Auto-Merge für Jules PRs
 └── ...
 ```
 
@@ -259,7 +259,7 @@ Nach Session-Erstellung arbeitet Jules am Issue:
 
 ### 4. Automatisches Testing
 
-Nach PR-Erstellung laufen automatisch (via `Build_Rust.yml`):
+Nach PR-Erstellung laufen automatisch (via `CI-01_build-and-test.yml`):
 
 - **Code Quality Checks:**
   - `cargo fmt --check` (Formatierung)
@@ -277,7 +277,7 @@ Nach PR-Erstellung laufen automatisch (via `Build_Rust.yml`):
 
 ### 5. Auto-Merge Logik
 
-Der Auto-Merge (via `jules-pr-automation.yml`) erfolgt, wenn:
+Der Auto-Merge (via `JULES-03_pr-automation.yml`) erfolgt, wenn:
 
 ```
 ✅ Alle CI-Checks bestanden
@@ -295,7 +295,7 @@ Der Auto-Merge (via `jules-pr-automation.yml`) erfolgt, wenn:
 
 ### 6. Dokumentations-Update
 
-Nach erfolgreichem Merge (via `update-documentation.yml`):
+Nach erfolgreichem Merge (via `DOCS-01_update-changelog.yml`):
 
 - **CHANGELOG.md:** Fügt automatisch Changelog-Entry hinzu
 - **ROADMAP.md:** Wird manuell aktualisiert (Tasks als completed markieren)

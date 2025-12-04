@@ -8,7 +8,7 @@
 
 Die einfachste Methode ist, die `env` Variablen direkt in den Workflow-Dateien zu ändern:
 
-#### CI/CD Workflow (Build_Rust.yml)
+#### CI/CD Workflow (CI-01_build-and-test.yml)
 ```yaml
 # Keine globale Deaktivierung - verwende stattdessen manual dispatch mit Optionen
 ```
@@ -25,18 +25,18 @@ gh workflow run "CI/CD" -f skip_tests=true
 gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 ```
 
-#### Jules Auto-Merge (jules-pr-automation.yml)
+#### Jules Auto-Merge (JULES-03_pr-automation.yml)
 ```yaml
 env:
   AUTO_MERGE_ENABLED: true  # Auf 'false' setzen um zu deaktivieren
 ```
 
 **Deaktivieren:**
-1. Öffne `.github/workflows/jules-pr-automation.yml`
+1. Öffne `.github/workflows/JULES-03_pr-automation.yml`
 2. Ändere `AUTO_MERGE_ENABLED: true` zu `AUTO_MERGE_ENABLED: false`
 3. Commit und push
 
-#### CodeQL Security Scan (codeql.yml)
+#### CodeQL Security Scan (CI-02_security-scan.yml)
 ```yaml
 env:
   SCAN_ON_PR_ENABLED: true  # Auf 'false' setzen um PR-Scans zu deaktivieren
@@ -67,7 +67,7 @@ Wenn du bestimmte Checks nicht mehr benötigst:
 
 ## 📋 Welche Checks gibt es und warum?
 
-### 1. CI/CD Workflow (Build_Rust.yml)
+### 1. CI/CD Workflow (CI-01_build-and-test.yml)
 
 **Checks:**
 - **Code Quality (Format & Lint)** - 1 Job
@@ -103,7 +103,7 @@ gh workflow run "CI/CD" -f skip_platforms=true
 gh workflow run "CI/CD" -f skip_tests=true
 ```
 
-### 2. CodeQL Security Scan (codeql.yml)
+### 2. CodeQL Security Scan (CI-02_security-scan.yml)
 
 **Checks:**
 - **Analyze Code** - 1 Job
@@ -120,7 +120,7 @@ gh workflow run "CI/CD" -f skip_tests=true
 - Kann über `SCAN_ON_PR_ENABLED: false` für PRs deaktiviert werden
 - Wöchentlicher Scan bleibt aktiv (wichtig!)
 
-### 3. Jules PR Auto-Merge (jules-pr-automation.yml)
+### 3. Jules PR Auto-Merge (JULES-03_pr-automation.yml)
 
 **Checks:**
 - **Auto-Merge Jules PR** - 1 Job
@@ -135,7 +135,7 @@ gh workflow run "CI/CD" -f skip_tests=true
 - Über `AUTO_MERGE_ENABLED` variable
 - Läuft nur wenn PR `jules-pr` Label hat
 
-### 4. Update Documentation (update-documentation.yml)
+### 4. Update Documentation (DOCS-01_update-changelog.yml)
 
 **Checks:**
 - **Update Changelog** - 1 Job
@@ -146,7 +146,7 @@ gh workflow run "CI/CD" -f skip_tests=true
 - Läuft nur nach erfolgreichem Merge
 - Minimal und schnell
 
-### 5. Sync Labels (sync-labels.yml)
+### 5. Sync Labels (ADMIN-01_sync-labels.yml)
 
 **Checks:**
 - **Sync Repository Labels** - 1 Job
@@ -223,13 +223,13 @@ Wenn du wirklich nur das Nötigste willst:
 
 ### Nur Code Quality Checks behalten:
 
-1. **Deaktiviere** in `.github/workflows/codeql.yml`:
+1. **Deaktiviere** in `.github/workflows/CI-02_security-scan.yml`:
    ```yaml
    env:
      SCAN_ON_PR_ENABLED: false
    ```
 
-2. **Deaktiviere** in `.github/workflows/jules-pr-automation.yml`:
+2. **Deaktiviere** in `.github/workflows/JULES-03_pr-automation.yml`:
    ```yaml
    env:
      AUTO_MERGE_ENABLED: false

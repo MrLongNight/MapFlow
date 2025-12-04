@@ -120,7 +120,7 @@ Resolve FreeType linker errors and ensure clean multi-platform builds. This is b
 - [ ] CI validates builds on all platforms
 
 ### Technical Details
-- Files: `Cargo.toml`, `.github/workflows/Build_Rust.yml`
+- Files: `Cargo.toml`, `.github/workflows/CI-01_build-and-test.yml`
 - Known issue: FreeType linking fails on some systems
 - May need: pkg-config, fontconfig, freetype system packages
 - Consider: vendoring dependencies or better error messages

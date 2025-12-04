@@ -28,7 +28,7 @@
 
 **Issues erstellen:**
 ```bash
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 ```
 
 **Dokumente:**
@@ -51,7 +51,7 @@ name: CI/CD Pipeline
 name: CI/CD
 ```
 
-**Datei:** `.github/workflows/Build_Rust.yml`
+**Datei:** `.github/workflows/CI-01_build-and-test.yml`
 
 ---
 
@@ -116,14 +116,14 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 
 #### Auto-Merge deaktivieren
 ```yaml
-# Datei: .github/workflows/jules-pr-automation.yml
+# Datei: .github/workflows/JULES-03_pr-automation.yml
 env:
   AUTO_MERGE_ENABLED: false  # Auf false setzen
 ```
 
 #### CodeQL für PRs deaktivieren
 ```yaml
-# Datei: .github/workflows/codeql.yml
+# Datei: .github/workflows/CI-02_security-scan.yml
 env:
   SCAN_ON_PR_ENABLED: false  # Auf false setzen
 ```
@@ -157,16 +157,16 @@ env:
 
 ### Aktualisierte Dokumente:
 
-4. **`.github/workflows/Build_Rust.yml`**
+4. **`.github/workflows/CI-01_build-and-test.yml`**
    - Workflow-Name geändert
    - Manual dispatch Optionen hinzugefügt
    - Bedingte Ausführung für Plattformen/Tests
 
-5. **`.github/workflows/jules-pr-automation.yml`**
+5. **`.github/workflows/JULES-03_pr-automation.yml`**
    - `AUTO_MERGE_ENABLED` Variable
    - Bedingung für Auto-Merge
 
-6. **`.github/workflows/codeql.yml`**
+6. **`.github/workflows/CI-02_security-scan.yml`**
    - `SCAN_ON_PR_ENABLED` Variable
    - Bedingung für PR-Scans
 
@@ -188,7 +188,7 @@ env:
 
 ### Jules Issues erstellen
 ```bash
-gh workflow run create-jules-issues.yml
+gh workflow run JULES-01_create-issues.yml
 ```
 
 ### CI/CD nur auf Linux
@@ -198,7 +198,7 @@ gh workflow run "CI/CD" -f skip_platforms=true
 
 ### Auto-Merge temporär deaktivieren
 ```bash
-# Edit .github/workflows/jules-pr-automation.yml
+# Edit .github/workflows/JULES-03_pr-automation.yml
 # Setze: AUTO_MERGE_ENABLED: false
 ```
 
@@ -221,9 +221,9 @@ cat .github/SETUP_GUIDE.md
 **Commit c45fe5c:** "Add workflow control options and detailed documentation"
 
 **Änderungen:**
-- Modified: `.github/workflows/Build_Rust.yml`
-- Modified: `.github/workflows/jules-pr-automation.yml`
-- Modified: `.github/workflows/codeql.yml`
+- Modified: `.github/workflows/CI-01_build-and-test.yml`
+- Modified: `.github/workflows/JULES-03_pr-automation.yml`
+- Modified: `.github/workflows/CI-02_security-scan.yml`
 - Added: `.github/WORKFLOW_CONTROL.md`
 - Added: `.github/JULES_ISSUES_EXPLANATION.md`
 - Added: `.github/workflows.config.yml`
@@ -236,7 +236,7 @@ Alle Fragen wurden beantwortet, alle Requests implementiert, ausführliche Dokum
 
 **Nächste Schritte:**
 1. Dokumentation lesen
-2. Jules Issues erstellen: `gh workflow run create-jules-issues.yml`
+2. Jules Issues erstellen: `gh workflow run JULES-01_create-issues.yml`
 3. Jules API konfigurieren
 4. Workflows nach Bedarf anpassen
 

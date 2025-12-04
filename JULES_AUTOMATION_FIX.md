@@ -12,7 +12,7 @@ Der CI/CD Prozess konnte Issues mit dem `jules-task` Label erstellen, aber es fe
 
 ## ✅ Was wurde implementiert?
 
-### 1. Neuer Workflow: `jules-session-trigger.yml`
+### 1. Neuer Workflow: `JULES-02_session-trigger.yml`
 
 Ein vollautomatischer Workflow der:
 - **Automatisch triggert** wenn ein Issue das `jules-task` Label erhält
@@ -20,7 +20,7 @@ Ein vollautomatischer Workflow der:
 - **Jules API Sessions** erstellt (wenn API Key konfiguriert)
 - **Batch-Processing** unterstützt für alle offenen Issues
 
-**Datei:** `.github/workflows/jules-session-trigger.yml`
+**Datei:** `.github/workflows/JULES-02_session-trigger.yml`
 
 ### 2. Drei Setup-Optionen
 
@@ -51,7 +51,7 @@ Jules beginnt mit der Arbeit
 ```
 Issue mit jules-task Label erstellt
     ↓
-jules-session-trigger.yml Workflow triggert
+JULES-02_session-trigger.yml Workflow triggert
     ↓
 Workflow ruft Jules API auf (mit JULES_API_KEY)
     ↓
@@ -203,7 +203,7 @@ gh pr list --label "jules-pr" --state open
 ## 📁 Geänderte Dateien
 
 ### Neue Dateien
-- `.github/workflows/jules-session-trigger.yml` - Hauptworkflow
+- `.github/workflows/JULES-02_session-trigger.yml` - Hauptworkflow
 - `.github/JULES_API_SETUP.md` - Setup-Anleitung
 
 ### Aktualisierte Dateien
@@ -212,7 +212,7 @@ gh pr list --label "jules-pr" --state open
 - `.github/workflows/README.md` - Workflow-Details
 
 ### Keine Änderungen an
-- Bestehende Workflows (Build_Rust.yml, jules-pr-automation.yml, etc.)
+- Bestehende Workflows (CI-01_build-and-test.yml, JULES-03_pr-automation.yml, etc.)
 - Issue-Templates
 - Labels
 - Code oder Tests
@@ -252,8 +252,8 @@ on:
 
 **Manuell:**
 - Über GitHub Actions UI
-- Via CLI: `gh workflow run jules-session-trigger.yml`
-- Mit Parameter: `gh workflow run jules-session-trigger.yml -f issue_number=123`
+- Via CLI: `gh workflow run JULES-02_session-trigger.yml`
+- Mit Parameter: `gh workflow run JULES-02_session-trigger.yml -f issue_number=123`
 
 ### API-Integration
 
@@ -294,7 +294,7 @@ Workflow funktioniert auch **ohne** API Key:
 1. API Key generieren und als Secret hinzufügen
 2. Batch-Processing testen:
    ```bash
-   gh workflow run jules-session-trigger.yml
+   gh workflow run JULES-02_session-trigger.yml
    ```
 3. Monitoring-Dashboard aufsetzen (siehe JULES_API_SETUP.md)
 

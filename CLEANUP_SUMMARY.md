@@ -113,7 +113,7 @@ VjMapper/
 
 ### Build System
 - **Current**: Cargo/Rust (Cargo.toml)
-- **CI**: GitHub Actions (.github/workflows/Build_Rust.yml)
+- **CI**: GitHub Actions (.github/workflows/CI-01_build-and-test.yml)
 - **Removed**: qmake/Qt, Travis CI, AppVeyor
 
 ### Verification
