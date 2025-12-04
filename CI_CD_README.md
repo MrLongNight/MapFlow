@@ -18,17 +18,31 @@ Eine vollständige, produktionsbereite CI/CD Pipeline mit automatisierter Entwic
 # 1. Labels erstellen
 gh label sync --file .github/labels.yml
 
-# 2. Alle Jules Development Issues erstellen
+# 2. Jules aktivieren (wähle eine Option):
+
+# Option A: Jules GitHub App (Empfohlen - Einfachste Lösung)
+open https://github.com/apps/jules
+# → Installiere die App für dein Repository
+# → Fertig! Jules überwacht automatisch jules-task Issues
+
+# Option B: Jules API + GitHub Actions
+# → Siehe detaillierte Anleitung: .github/JULES_API_SETUP.md
+# → Generiere API Key bei https://jules.google.com
+# → Füge als Secret hinzu: gh secret set JULES_API_KEY
+
+# 3. Alle Jules Development Issues erstellen
 gh workflow run create-jules-issues.yml
 
-# 3. Status prüfen
+# 4. Status prüfen
 gh run watch
 
-# 4. Issues anzeigen
+# 5. Issues anzeigen
 gh issue list --label "jules-task"
 ```
 
-**Das war's!** Jules kann jetzt Issues bearbeiten und PRs werden automatisch gemerged.
+**Das war's!** Jules Sessions werden jetzt automatisch erstellt, PRs werden automatisch gemerged.
+
+**Neu:** Der Workflow `jules-session-trigger.yml` triggert automatisch Jules API Sessions wenn Issues mit `jules-task` Label erstellt/gelabelt werden. 🎉
 
 ## 📁 Datei-Struktur
 
@@ -191,6 +205,45 @@ cargo test
 gh run view <run-id> --log
 ```
 
+### Problem: Jules Session wird nicht automatisch erstellt
+
+**Checklist:**
+- [ ] Issue hat `jules-task` Label?
+- [ ] Workflow `jules-session-trigger.yml` existiert?
+- [ ] Jules GitHub App installiert ODER JULES_API_KEY konfiguriert?
+
+```bash
+# Debug
+# Check ob Workflow getriggert wurde
+gh run list --workflow="Jules Session Trigger" --limit 5
+
+# Check Workflow-Logs
+gh run view --log
+
+# Check Issue-Kommentare
+gh issue view <issue-number> --comments
+
+# Manuel triggern
+gh workflow run jules-session-trigger.yml -f issue_number=<issue-number>
+```
+
+**Lösungen:**
+1. **Kein Workflow-Run:**
+   - Issue braucht `jules-task` Label
+   - Workflow-Datei muss in main branch sein
+
+2. **Workflow läuft, aber keine Session:**
+   - Option A: Installiere Jules GitHub App (empfohlen)
+   - Option B: Konfiguriere JULES_API_KEY Secret
+   - Siehe: `.github/JULES_API_SETUP.md`
+
+3. **API Key fehlt:**
+   ```bash
+   # API Key hinzufügen
+   gh secret set JULES_API_KEY
+   # Key von https://jules.google.com (Settings → API Keys)
+   ```
+
 ### Problem: Auto-Merge funktioniert nicht
 
 **Checklist:**
@@ -221,8 +274,9 @@ brew install ffmpeg pkg-config
 
 ## 📚 Dokumentation
 
+- **[Jules API Setup](.github/JULES_API_SETUP.md)** - 🆕 Detaillierte Jules Setup-Anleitung
 - **[Setup Guide](.github/SETUP_GUIDE.md)** - Schritt-für-Schritt Anleitung
-- **[Jules Integration](.github/JULES_INTEGRATION.md)** - Jules Konfiguration
+- **[Jules Integration](.github/JULES_INTEGRATION.md)** - Jules Konfiguration & Workflows
 - **[Workflows README](.github/workflows/README.md)** - Workflow Details
 - **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Templates für Issues
 
