@@ -30,4 +30,5 @@ rfd = "0.14"  # Native file dialogs
 
 [features]
 default = []
+audio = ["mapmap-core/audio"]
 ffmpeg = ["mapmap-media/ffmpeg"]
