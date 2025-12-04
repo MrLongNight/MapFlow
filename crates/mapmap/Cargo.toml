@@ -12,7 +12,6 @@ name = "mapmap"
 path = "src/main.rs"
 
 [dependencies]
-mapmap-core = { path = "../mapmap-core" }
 mapmap-render = { path = "../mapmap-render" }
 mapmap-media = { path = "../mapmap-media" }
 mapmap-ui = { path = "../mapmap-ui" }

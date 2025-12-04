@@ -40,8 +40,6 @@ pub enum BlendMode {
     Exclusion,
 }
 
-
-
 impl BlendMode {
     /// Get shader function name for this blend mode
     pub fn shader_function(&self) -> &'static str {

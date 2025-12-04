@@ -35,8 +35,6 @@ pub enum PlaybackMode {
     PlayOnceAndHold,
 }
 
-
-
 /// Video player with playback control
 pub struct VideoPlayer {
     decoder: Box<dyn VideoDecoder>,

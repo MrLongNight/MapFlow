@@ -4,6 +4,7 @@
 
 use anyhow::Result;
 use glam::{Mat4, Vec2};
+mod window_manager;
 use mapmap_core::{LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager};
 use mapmap_media::{FFmpegDecoder, TestPatternDecoder, VideoPlayer};
 use mapmap_render::{
@@ -15,27 +16,26 @@ use std::collections::HashMap;
 use std::time::Instant;
 use tracing::{error, info};
 use tracing_subscriber;
+use window_manager::WindowManager;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{WindowBuilder, WindowId},
 };
 
-/// Context for a single output window with its surface and configuration
-struct WindowContext {
-    window: winit::window::Window,
-    surface: wgpu::Surface,
-    surface_config: wgpu::SurfaceConfiguration,
-    #[allow(dead_code)]
-    output_id: OutputId,
+#[cfg(test)]
+mod window_manager_test;
+
+/// A snapshot of the application state required for rendering a single frame.
+/// This is passed to each window's render function to ensure consistency.
+struct SharedRenderState<'a> {
+    output_manager: &'a mapmap_core::OutputManager,
+    mapping_manager: &'a mapmap_core::MappingManager,
+    paint_textures: &'a HashMap<u64, mapmap_render::TextureHandle>,
 }
 
 struct App {
-    // Multi-window rendering: Each output has its own window and surface
-    windows: HashMap<OutputId, WindowContext>,
-    window_id_map: HashMap<WindowId, OutputId>, // Map winit WindowId to OutputId
-    main_window_id: Option<OutputId>,           // Primary window for UI
-
+    window_manager: WindowManager,
     backend: WgpuBackend,
     #[allow(dead_code)]
     quad_renderer: QuadRenderer,
@@ -67,47 +67,10 @@ impl App {
         // Create wgpu backend first (shared across all windows)
         let backend = WgpuBackend::new().await?;
 
-        // Create main preview window for UI and control
-        let main_window = WindowBuilder::new()
-            .with_title("MapMap - Main Control")
-            .with_inner_size(winit::dpi::PhysicalSize::new(1920, 1080))
-            .build(event_loop)?;
-
-        let main_window_id_winit = main_window.id();
-
-        // Create surface for main window
-        let main_surface = unsafe { backend.create_surface(&main_window) }?;
-
-        let main_surface_config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            width: 1920,
-            height: 1080,
-            present_mode: wgpu::PresentMode::Fifo, // VSync
-            alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-            view_formats: vec![],
-        };
-
-        main_surface.configure(backend.device(), &main_surface_config);
-
-        // Use OutputId 0 for main window (non-output window)
-        let main_output_id: OutputId = 0;
-
-        // Store format before moving main_surface_config
-        let surface_format = main_surface_config.format;
-
-        let main_window_context = WindowContext {
-            window: main_window,
-            surface: main_surface,
-            surface_config: main_surface_config,
-            output_id: main_output_id,
-        };
-
-        let mut windows = HashMap::new();
-        windows.insert(main_output_id, main_window_context);
-
-        let mut window_id_map = HashMap::new();
-        window_id_map.insert(main_window_id_winit, main_output_id);
+        let mut window_manager = WindowManager::new();
+        let main_output_id = window_manager.create_main_window(event_loop, &backend)?;
+        let main_window_context = window_manager.get(main_output_id).unwrap();
+        let surface_format = main_window_context.surface_config.format;
 
         // Create quad renderer
         let quad_renderer = QuadRenderer::new(backend.device(), surface_format)?;
@@ -126,7 +89,7 @@ impl App {
             ColorCalibrationRenderer::new(backend.device.clone(), surface_format)?;
 
         // Create ImGui context for main window
-        let main_window_ref = &windows.get(&main_output_id).unwrap().window;
+        let main_window_ref = &window_manager.get(main_output_id).unwrap().window;
         let imgui_context = ImGuiContext::new(
             main_window_ref,
             backend.device(),
@@ -200,9 +163,7 @@ impl App {
         );
 
         Ok(Self {
-            windows,
-            window_id_map,
-            main_window_id: Some(main_output_id),
+            window_manager,
             backend,
             quad_renderer,
             mesh_renderer,
@@ -223,102 +184,6 @@ impl App {
             frame_count: 0,
             fps: 0.0,
         })
-    }
-
-    /// Create output windows for all configured outputs
-    fn create_output_windows<T>(
-        &mut self,
-        event_loop_target: &winit::event_loop::EventLoopWindowTarget<T>,
-    ) -> Result<()> {
-        info!(
-            "Creating output windows for {} configured outputs",
-            self.output_manager.outputs().len()
-        );
-
-        for output_config in self.output_manager.outputs() {
-            let output_id = output_config.id;
-
-            // Skip if window already exists
-            if self.windows.contains_key(&output_id) {
-                continue;
-            }
-
-            info!(
-                "Creating window for output '{}' (ID: {})",
-                output_config.name, output_id
-            );
-
-            let window = WindowBuilder::new()
-                .with_title(&format!("MapMap Output - {}", output_config.name))
-                .with_inner_size(winit::dpi::PhysicalSize::new(
-                    output_config.resolution.0,
-                    output_config.resolution.1,
-                ))
-                .with_fullscreen(if output_config.fullscreen {
-                    Some(winit::window::Fullscreen::Borderless(None))
-                } else {
-                    None
-                })
-                .build(event_loop_target)?;
-
-            let window_id_winit = window.id();
-
-            // Create surface for this output window
-            let surface = unsafe { self.backend.create_surface(&window) }?;
-
-            let surface_config = wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: wgpu::TextureFormat::Bgra8Unorm,
-                width: output_config.resolution.0,
-                height: output_config.resolution.1,
-                present_mode: wgpu::PresentMode::Fifo, // VSync for synchronized output
-                alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-                view_formats: vec![],
-            };
-
-            surface.configure(self.backend.device(), &surface_config);
-
-            let window_context = WindowContext {
-                window,
-                surface,
-                surface_config,
-                output_id,
-            };
-
-            self.windows.insert(output_id, window_context);
-            self.window_id_map.insert(window_id_winit, output_id);
-
-            info!(
-                "Created output window for '{}' at {}x{}",
-                output_config.name, output_config.resolution.0, output_config.resolution.1
-            );
-        }
-
-        Ok(())
-    }
-
-    /// Synchronize windows with output manager configuration
-    fn sync_windows(&mut self) {
-        // Remove windows for outputs that no longer exist
-        let output_ids: Vec<OutputId> =
-            self.output_manager.outputs().iter().map(|o| o.id).collect();
-
-        let mut windows_to_remove = Vec::new();
-        for (&window_output_id, _) in &self.windows {
-            // Don't remove main window (id 0)
-            if window_output_id != 0 && !output_ids.contains(&window_output_id) {
-                windows_to_remove.push(window_output_id);
-            }
-        }
-
-        for output_id in windows_to_remove {
-            if let Some(window_context) = self.windows.remove(&output_id) {
-                // Remove from window_id_map
-                let winit_id = window_context.window.id();
-                self.window_id_map.remove(&winit_id);
-                info!("Removed output window for output ID {}", output_id);
-            }
-        }
     }
 
     fn update(&mut self) {
@@ -375,11 +240,11 @@ impl App {
         let mut encoders = Vec::new();
 
         // Get all window IDs to render
-        let window_ids: Vec<OutputId> = self.windows.keys().copied().collect();
+        let window_ids: Vec<OutputId> = self.window_manager.window_ids().copied().collect();
 
         // Acquire frames from all surfaces
         for &output_id in &window_ids {
-            if let Some(window_context) = self.windows.get(&output_id) {
+            if let Some(window_context) = self.window_manager.get(output_id) {
                 match window_context.surface.get_current_texture() {
                     Ok(frame) => frames.push((output_id, frame)),
                     Err(wgpu::SurfaceError::Timeout) => {
@@ -412,10 +277,23 @@ impl App {
                     });
 
             // Determine if this is the main window or an output window
-            let is_main_window = Some(*output_id) == self.main_window_id;
+            let is_main_window = Some(*output_id) == self.window_manager.main_window_id();
+
+            // Create a shared render state for this frame
+            let shared_state = SharedRenderState {
+                output_manager: &self.output_manager,
+                mapping_manager: &self.mapping_manager,
+                paint_textures: &self.paint_textures,
+            };
 
             // Render content
-            self.render_to_view(&mut encoder, &view, *output_id, is_main_window)?;
+            self.render_to_view(
+                &mut encoder,
+                &view,
+                *output_id,
+                is_main_window,
+                &shared_state,
+            )?;
 
             encoders.push(encoder);
         }
@@ -438,10 +316,11 @@ impl App {
         view: &wgpu::TextureView,
         output_id: OutputId,
         is_main_window: bool,
+        shared_state: &SharedRenderState,
     ) -> Result<()> {
         // Get output configuration if this is an output window
         let output_config = if !is_main_window {
-            self.output_manager.get_output(output_id).cloned()
+            shared_state.output_manager.get_output(output_id).cloned()
         } else {
             None
         };
@@ -461,7 +340,7 @@ impl App {
 
         // Create intermediate texture if needed and doesn't exist
         if needs_post_processing && !self.intermediate_textures.contains_key(&output_id) {
-            let window_context = self.windows.get(&output_id).unwrap();
+            let window_context = self.window_manager.get(output_id).unwrap();
             let tex_desc = TextureDescriptor {
                 width: window_context.surface_config.width,
                 height: window_context.surface_config.height,
@@ -499,7 +378,7 @@ impl App {
 
         // Render mappings with mesh warping
         {
-            let visible_mappings = self.mapping_manager.visible_mappings();
+            let visible_mappings = shared_state.mapping_manager.visible_mappings();
 
             // Collect all rendering resources
             let render_data: Vec<_> = visible_mappings
@@ -523,48 +402,51 @@ impl App {
                         }
                     }
 
-                    self.paint_textures.get(&mapping.paint_id).map(|texture| {
-                        let (vertex_buffer, index_buffer) =
-                            self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
+                    shared_state
+                        .paint_textures
+                        .get(&mapping.paint_id)
+                        .map(|texture| {
+                            let (vertex_buffer, index_buffer) =
+                                self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
 
-                        // Apply canvas region transformation for output windows
-                        let transform = if let Some(ref config) = output_config {
-                            // Transform from canvas space to output window space
-                            let region = &config.canvas_region;
-                            let scale = Mat4::from_scale(glam::Vec3::new(
-                                1.0 / region.width,
-                                1.0 / region.height,
-                                1.0,
-                            ));
-                            let translate = Mat4::from_translation(glam::Vec3::new(
-                                -region.x / region.width,
-                                -region.y / region.height,
-                                0.0,
-                            ));
-                            translate * scale
-                        } else {
-                            Mat4::IDENTITY
-                        };
+                            // Apply canvas region transformation for output windows
+                            let transform = if let Some(ref config) = output_config {
+                                // Transform from canvas space to output window space
+                                let region = &config.canvas_region;
+                                let scale = Mat4::from_scale(glam::Vec3::new(
+                                    1.0 / region.width,
+                                    1.0 / region.height,
+                                    1.0,
+                                ));
+                                let translate = Mat4::from_translation(glam::Vec3::new(
+                                    -region.x / region.width,
+                                    -region.y / region.height,
+                                    0.0,
+                                ));
+                                translate * scale
+                            } else {
+                                Mat4::IDENTITY
+                            };
 
-                        let uniform_buffer = self
-                            .mesh_renderer
-                            .create_uniform_buffer(transform, mapping.opacity);
-                        let uniform_bind_group = self
-                            .mesh_renderer
-                            .create_uniform_bind_group(&uniform_buffer);
-                        let texture_view = texture.create_view();
-                        let texture_bind_group =
-                            self.mesh_renderer.create_texture_bind_group(&texture_view);
-                        let index_count = mapping.mesh.indices.len() as u32;
+                            let uniform_buffer = self
+                                .mesh_renderer
+                                .create_uniform_buffer(transform, mapping.opacity);
+                            let uniform_bind_group = self
+                                .mesh_renderer
+                                .create_uniform_bind_group(&uniform_buffer);
+                            let texture_view = texture.create_view();
+                            let texture_bind_group =
+                                self.mesh_renderer.create_texture_bind_group(&texture_view);
+                            let index_count = mapping.mesh.indices.len() as u32;
 
-                        (
-                            vertex_buffer,
-                            index_buffer,
-                            uniform_bind_group,
-                            texture_bind_group,
-                            index_count,
-                        )
-                    })
+                            (
+                                vertex_buffer,
+                                index_buffer,
+                                uniform_bind_group,
+                                texture_bind_group,
+                                index_count,
+                            )
+                        })
                 })
                 .collect();
 
@@ -617,7 +499,7 @@ impl App {
             // Step 1: Apply color calibration
             // Create another intermediate texture for color calibration result
             let color_corrected_view = {
-                let window_context = self.windows.get(&output_id).unwrap();
+                let window_context = self.window_manager.get(output_id).unwrap();
                 let tex_desc = TextureDescriptor {
                     width: window_context.surface_config.width,
                     height: window_context.surface_config.height,
@@ -699,7 +581,7 @@ impl App {
 
         // Render ImGui only on main window
         if is_main_window {
-            let main_window = &self.windows.get(&output_id).unwrap().window;
+            let main_window = &self.window_manager.get(output_id).unwrap().window;
             let ui_state = &mut self.ui_state;
             let layer_manager = &mut self.layer_manager;
             let paint_manager = &mut self.paint_manager;
@@ -1184,29 +1066,24 @@ impl App {
     }
 
     fn handle_window_event(&mut self, window_id: WindowId, event: &WindowEvent) -> bool {
-        // Map WindowId to OutputId
-        let output_id = match self.window_id_map.get(&window_id) {
-            Some(&id) => id,
+        let output_id = match self.window_manager.get_output_id_from_window_id(window_id) {
+            Some(id) => id,
             None => return true, // Unknown window, ignore
         };
 
         match event {
             WindowEvent::CloseRequested => {
-                // If main window is closed, exit application
-                if Some(output_id) == self.main_window_id {
+                if Some(output_id) == self.window_manager.main_window_id() {
                     info!("Main window closed, exiting application");
                     return false;
                 } else {
-                    // Close specific output window
                     info!("Closing output window {}", output_id);
-                    self.windows.remove(&output_id);
-                    self.window_id_map.remove(&window_id);
-                    // Remove output from manager
+                    self.window_manager.remove_window(output_id);
                     self.output_manager.remove_output(output_id);
                 }
             }
             WindowEvent::Resized(size) => {
-                if let Some(window_context) = self.windows.get_mut(&output_id) {
+                if let Some(window_context) = self.window_manager.get_mut(output_id) {
                     info!(
                         "Window {} resized to {}x{}",
                         output_id, size.width, size.height
@@ -1241,9 +1118,9 @@ fn main() -> Result<()> {
     event_loop.run(move |event, event_loop_target, control_flow| {
         *control_flow = ControlFlow::Poll;
 
-        // Let ImGui handle events only for main window
-        if let Some(main_window_id) = app.main_window_id {
-            if let Some(main_window_context) = app.windows.get(&main_window_id) {
+        // Pass events to ImGui for the main window
+        if let Some(main_window_id) = app.window_manager.main_window_id() {
+            if let Some(main_window_context) = app.window_manager.get(main_window_id) {
                 app.imgui_context
                     .handle_event(&main_window_context.window, &event);
             }
@@ -1256,22 +1133,26 @@ fn main() -> Result<()> {
                 }
             }
             Event::MainEventsCleared => {
+                // Update application state
                 app.update();
 
-                // Handle UI actions (may create/remove windows)
+                // Process UI actions, which may add or remove outputs
                 if !app.handle_ui_actions() {
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
 
-                // Synchronize windows with output manager and create any new windows
-                app.sync_windows();
-                if let Err(e) = app.create_output_windows(event_loop_target) {
-                    error!("Failed to create output windows: {}", e);
+                // Sync windows with the output manager, creating and destroying windows as needed
+                if let Err(e) = app.window_manager.sync_windows(
+                    event_loop_target,
+                    &app.backend,
+                    &app.output_manager,
+                ) {
+                    error!("Failed to sync windows: {}", e);
                 }
 
-                // Request redraw for all windows
-                for window_context in app.windows.values() {
+                // Request a redraw for all windows
+                for window_context in app.window_manager.iter() {
                     window_context.window.request_redraw();
                 }
             }
