@@ -37,15 +37,15 @@
 
 // Core modules
 pub mod error;
-pub mod target;
 pub mod manager;
+pub mod target;
 
 // Control system modules
 #[cfg(feature = "midi")]
 pub mod midi;
 
-pub mod osc;
 pub mod dmx;
+pub mod osc;
 
 #[cfg(feature = "http-api")]
 pub mod web;
@@ -55,20 +55,23 @@ pub mod shortcuts;
 
 // Re-exports
 pub use error::{ControlError, Result};
-pub use target::{ControlTarget, ControlValue, EdgeSide};
 pub use manager::ControlManager;
+pub use target::{ControlTarget, ControlValue, EdgeSide};
 
 #[cfg(feature = "midi")]
 pub use midi::{MidiInput, MidiMessage, MidiOutput};
 
-pub use osc::{OscClient, OscEvent, OscServer};
 pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfile, SacnSender};
+pub use osc::{OscClient, OscEvent, OscServer};
 
 #[cfg(feature = "http-api")]
 pub use web::{WebServer, WebServerConfig};
 
 pub use cue::{Cue, CueList, FadeCurve, LayerState};
-pub use shortcuts::{Action, Key, KeyBindings, Macro, MacroPlayer, MacroRecorder, Modifiers, Shortcut, ShortcutContext};
+pub use shortcuts::{
+    Action, Key, KeyBindings, Macro, MacroPlayer, MacroRecorder, Modifiers, Shortcut,
+    ShortcutContext,
+};
 
 #[cfg(test)]
 mod tests {

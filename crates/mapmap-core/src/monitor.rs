@@ -211,7 +211,15 @@ mod tests {
     fn test_topology_bounds() {
         let monitors = vec![
             MonitorInfo::new(0, "M1".to_string(), (0, 0), (1920, 1080), None, 1.0, true),
-            MonitorInfo::new(1, "M2".to_string(), (1920, 0), (1920, 1080), None, 1.0, false),
+            MonitorInfo::new(
+                1,
+                "M2".to_string(),
+                (1920, 0),
+                (1920, 1080),
+                None,
+                1.0,
+                false,
+            ),
         ];
 
         let topology = MonitorTopology::new(monitors);

@@ -1,9 +1,9 @@
 //! DMX channel assignment system
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-use crate::{ControlTarget, ControlValue, error::ControlError, Result};
+use crate::{error::ControlError, ControlTarget, ControlValue, Result};
 
 /// Maps control targets to DMX channels
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -15,7 +15,7 @@ pub struct ChannelAssignment {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DmxChannel {
     pub universe: u16,
-    pub channel: u16, // 1-512
+    pub channel: u16,            // 1-512
     pub range: Option<(u8, u8)>, // Optional value range remapping (min, max)
 }
 
@@ -66,10 +66,7 @@ impl ChannelAssignment {
     /// Convert a control value to a DMX value (0-255)
     fn control_value_to_dmx(&self, value: &ControlValue, channel: &DmxChannel) -> Result<u8> {
         let float_value = value.as_float().ok_or_else(|| {
-            ControlError::InvalidParameter(format!(
-                "Cannot convert {:?} to DMX value",
-                value
-            ))
+            ControlError::InvalidParameter(format!("Cannot convert {:?} to DMX value", value))
         })?;
 
         // Clamp to 0.0-1.0

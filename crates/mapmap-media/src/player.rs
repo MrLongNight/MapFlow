@@ -12,24 +12,20 @@ pub enum PlaybackState {
 }
 
 /// Playback direction (Phase 1, Month 5)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlaybackDirection {
     /// Play forward (default)
+    #[default]
     Forward,
     /// Play backward (reverse)
     Backward,
 }
 
-impl Default for PlaybackDirection {
-    fn default() -> Self {
-        PlaybackDirection::Forward
-    }
-}
-
 /// Playback mode (Phase 1, Month 5)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlaybackMode {
     /// Loop - repeat indefinitely (existing behavior)
+    #[default]
     Loop,
     /// Ping Pong - bounce forward and backward
     PingPong,
@@ -39,11 +35,7 @@ pub enum PlaybackMode {
     PlayOnceAndHold,
 }
 
-impl Default for PlaybackMode {
-    fn default() -> Self {
-        PlaybackMode::Loop
-    }
-}
+
 
 /// Video player with playback control
 pub struct VideoPlayer {
@@ -242,7 +234,7 @@ impl VideoPlayer {
 
     /// Set playback speed (1.0 = normal, 0.5 = half speed, 2.0 = double speed)
     pub fn set_speed(&mut self, speed: f32) {
-        self.playback_speed = speed.max(0.0).min(10.0);
+        self.playback_speed = speed.clamp(0.0, 10.0);
     }
 
     /// Enable or disable looping
@@ -338,7 +330,7 @@ mod tests {
 
         assert_eq!(player.state(), PlaybackState::Stopped);
         assert_eq!(player.speed(), 1.0);
-        assert_eq!(player.is_looping(), false);
+        assert!(!player.is_looping());
         assert_eq!(player.direction(), PlaybackDirection::Forward);
         assert_eq!(player.playback_mode(), PlaybackMode::Loop);
     }

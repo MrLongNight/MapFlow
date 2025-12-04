@@ -55,12 +55,26 @@ pub struct Node {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum NodeType {
     // Effect nodes
-    Blur { radius: f32 },
-    Glow { intensity: f32, threshold: f32 },
-    ColorCorrection { hue: f32, saturation: f32, brightness: f32 },
-    Sharpen { amount: f32 },
+    Blur {
+        radius: f32,
+    },
+    Glow {
+        intensity: f32,
+        threshold: f32,
+    },
+    ColorCorrection {
+        hue: f32,
+        saturation: f32,
+        brightness: f32,
+    },
+    Sharpen {
+        amount: f32,
+    },
     EdgeDetect,
-    ChromaKey { key_color: [f32; 3], threshold: f32 },
+    ChromaKey {
+        key_color: [f32; 3],
+        threshold: f32,
+    },
 
     // Math nodes
     Add,
@@ -70,7 +84,10 @@ pub enum NodeType {
     Sin,
     Cos,
     Abs,
-    Clamp { min: f32, max: f32 },
+    Clamp {
+        min: f32,
+        max: f32,
+    },
     Lerp,
     SmoothStep,
 
@@ -79,15 +96,31 @@ pub enum NodeType {
     Merge,
     Split,
     Value(f32),
-    Vector3 { x: f32, y: f32, z: f32 },
-    Color { r: f32, g: f32, b: f32, a: f32 },
+    Vector3 {
+        x: f32,
+        y: f32,
+        z: f32,
+    },
+    Color {
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+    },
 
     // Input/Output
-    Input { name: String },
-    Output { name: String },
+    Input {
+        name: String,
+    },
+    Output {
+        name: String,
+    },
 
     // Custom
-    Custom { name: String, code: String },
+    Custom {
+        name: String,
+        code: String,
+    },
 }
 
 impl NodeType {
@@ -429,7 +462,9 @@ impl NodeEditor {
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
 
         // Handle canvas interactions
-        if response.dragged() && !self.dragging_node.is_some() && !self.creating_connection.is_some()
+        if response.dragged()
+            && !self.dragging_node.is_some()
+            && !self.creating_connection.is_some()
         {
             self.pan_offset += response.drag_delta();
         }
@@ -450,18 +485,18 @@ impl NodeEditor {
         }
 
         let canvas_rect = response.rect;
-        let to_screen = |pos: Pos2| -> Pos2 {
-            canvas_rect.min + (pos.to_vec2() + self.pan_offset) * self.zoom
-        };
+        let to_screen =
+            |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + self.pan_offset) * self.zoom };
 
         // Draw grid
         self.draw_grid(&painter, canvas_rect);
 
         // Draw connections
         for conn in &self.connections {
-            if let (Some(from_node), Some(to_node)) =
-                (self.nodes.get(&conn.from_node), self.nodes.get(&conn.to_node))
-            {
+            if let (Some(from_node), Some(to_node)) = (
+                self.nodes.get(&conn.from_node),
+                self.nodes.get(&conn.to_node),
+            ) {
                 let from_pos = self.get_socket_pos(from_node, conn.from_socket, false);
                 let to_pos = self.get_socket_pos(to_node, conn.to_socket, true);
 
@@ -479,8 +514,7 @@ impl NodeEditor {
 
         for node in nodes_vec {
             let node_screen_pos = to_screen(node.position);
-            let node_screen_rect =
-                Rect::from_min_size(node_screen_pos, node.size * self.zoom);
+            let node_screen_rect = Rect::from_min_size(node_screen_pos, node.size * self.zoom);
 
             let node_response = self.draw_node(ui, &painter, node, node_screen_rect);
 
@@ -550,8 +584,10 @@ impl NodeEditor {
                             }
 
                             if let Some(node_type) = selected_type {
-                                let world_pos = (pos - canvas_rect.min - self.pan_offset) / self.zoom;
-                                action = Some(NodeEditorAction::AddNode(node_type, world_pos.to_pos2()));
+                                let world_pos =
+                                    (pos - canvas_rect.min - self.pan_offset) / self.zoom;
+                                action =
+                                    Some(NodeEditorAction::AddNode(node_type, world_pos.to_pos2()));
                             }
                         });
                     });
@@ -614,13 +650,7 @@ impl NodeEditor {
     }
 
     /// Draw a node
-    fn draw_node(
-        &self,
-        ui: &Ui,
-        painter: &egui::Painter,
-        node: &Node,
-        rect: Rect,
-    ) -> Response {
+    fn draw_node(&self, ui: &Ui, painter: &egui::Painter, node: &Node, rect: Rect) -> Response {
         let response = ui.interact(rect, egui::Id::new(node.id), Sense::click_and_drag());
 
         let is_selected = self.selected_nodes.contains(&node.id);
@@ -632,11 +662,7 @@ impl NodeEditor {
 
         // Node background
         painter.rect_filled(rect, 4.0, bg_color);
-        painter.rect_stroke(
-            rect,
-            4.0,
-            Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-        );
+        painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
 
         // Title bar
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 24.0 * self.zoom));
@@ -665,7 +691,13 @@ impl NodeEditor {
     }
 
     /// Draw a socket
-    fn draw_socket(&self, painter: &egui::Painter, pos: Pos2, socket_type: SocketType, _is_input: bool) {
+    fn draw_socket(
+        &self,
+        painter: &egui::Painter,
+        pos: Pos2,
+        socket_type: SocketType,
+        _is_input: bool,
+    ) {
         let radius = 6.0 * self.zoom;
         painter.circle_filled(pos, radius, socket_type.color());
         painter.circle_stroke(pos, radius, Stroke::new(2.0, Color32::WHITE));

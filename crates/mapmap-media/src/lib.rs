@@ -9,17 +9,19 @@
 use thiserror::Error;
 
 pub mod decoder;
-pub mod player;
 pub mod image_decoder;
+pub mod player;
 // TODO: Enable pipeline with thread-local scaler approach
 // The pipeline module requires VideoDecoder to be Send, but FFmpeg's scaler (SwsContext) is not thread-safe.
 // Solution: Use thread-local scaler - create scaler once in decode thread, avoiding Send requirement.
 // This provides zero overhead and clean separation. See pipeline.rs for implementation details.
 // pub mod pipeline;
 
-pub use decoder::{VideoDecoder, FFmpegDecoder, TestPatternDecoder, DecodedFrame, PixelFormat, HwAccelType};
-pub use player::{VideoPlayer, PlaybackState, PlaybackDirection, PlaybackMode};
-pub use image_decoder::{StillImageDecoder, GifDecoder, ImageSequenceDecoder};
+pub use decoder::{
+    DecodedFrame, FFmpegDecoder, HwAccelType, PixelFormat, TestPatternDecoder, VideoDecoder,
+};
+pub use image_decoder::{GifDecoder, ImageSequenceDecoder, StillImageDecoder};
+pub use player::{PlaybackDirection, PlaybackMode, PlaybackState, VideoPlayer};
 // pub use pipeline::{FramePipeline, PipelineConfig, PipelineStats, Priority, FrameScheduler};
 
 /// Media errors

@@ -3,7 +3,7 @@
 #[cfg(feature = "osc")]
 use rosc::{encoder, OscMessage, OscPacket};
 
-use crate::{ControlTarget, ControlValue, Result, error::ControlError};
+use crate::{error::ControlError, ControlTarget, ControlValue, Result};
 
 #[cfg(feature = "osc")]
 use super::types::control_value_to_osc;

@@ -177,9 +177,7 @@ impl GifDecoder {
         }
 
         if frames.is_empty() {
-            return Err(MediaError::DecoderError(
-                "GIF has no frames".to_string(),
-            ));
+            return Err(MediaError::DecoderError("GIF has no frames".to_string()));
         }
 
         let width = frames[0].0.width();

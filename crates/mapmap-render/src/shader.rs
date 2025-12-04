@@ -37,7 +37,6 @@ mod tests {
         let source = ShaderSource::from_wgsl("@vertex fn main() {}");
         match source {
             ShaderSource::Wgsl(code) => assert!(code.contains("@vertex")),
-            _ => panic!("Expected WGSL source"),
         }
     }
 }

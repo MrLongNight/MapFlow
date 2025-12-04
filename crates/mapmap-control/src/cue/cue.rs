@@ -143,7 +143,13 @@ impl Cue {
 
 impl LayerState {
     /// Create a new layer state
-    pub fn new(opacity: f32, visible: bool, position: (f32, f32), rotation: f32, scale: f32) -> Self {
+    pub fn new(
+        opacity: f32,
+        visible: bool,
+        position: (f32, f32),
+        rotation: f32,
+        scale: f32,
+    ) -> Self {
         Self {
             opacity,
             visible,

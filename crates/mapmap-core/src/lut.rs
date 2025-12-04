@@ -68,8 +68,8 @@ impl Lut3D {
     /// Load a LUT from a .cube file
     pub fn from_cube_file(path: impl AsRef<Path>) -> Result<Self, LutError> {
         let path = path.as_ref();
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| LutError::IoError(e.to_string()))?;
+        let content =
+            std::fs::read_to_string(path).map_err(|e| LutError::IoError(e.to_string()))?;
 
         Self::parse_cube(&content, Some(path.to_path_buf()))
     }
@@ -95,7 +95,11 @@ impl Lut3D {
 
             // Parse header
             if line.starts_with("TITLE") {
-                name = line.split_whitespace().skip(1).collect::<Vec<_>>().join(" ");
+                name = line
+                    .split_whitespace()
+                    .skip(1)
+                    .collect::<Vec<_>>()
+                    .join(" ");
                 name = name.trim_matches('"').to_string();
                 continue;
             }
@@ -105,7 +109,8 @@ impl Lut3D {
                 if parts.len() < 2 {
                     return Err(LutError::ParseError("Invalid LUT_3D_SIZE".to_string()));
                 }
-                size = parts[1].parse()
+                size = parts[1]
+                    .parse()
                     .map_err(|_| LutError::ParseError("Invalid size value".to_string()))?;
                 continue;
             }
@@ -118,11 +123,14 @@ impl Lut3D {
             // Parse RGB values
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() == 3 {
-                let r: f32 = parts[0].parse()
+                let r: f32 = parts[0]
+                    .parse()
                     .map_err(|_| LutError::ParseError(format!("Invalid R value: {}", parts[0])))?;
-                let g: f32 = parts[1].parse()
+                let g: f32 = parts[1]
+                    .parse()
                     .map_err(|_| LutError::ParseError(format!("Invalid G value: {}", parts[1])))?;
-                let b: f32 = parts[2].parse()
+                let b: f32 = parts[2]
+                    .parse()
                     .map_err(|_| LutError::ParseError(format!("Invalid B value: {}", parts[2])))?;
 
                 data.push(r);
@@ -138,9 +146,11 @@ impl Lut3D {
 
         let expected_entries = size * size * size * 3;
         if data.len() != expected_entries {
-            return Err(LutError::ParseError(
-                format!("Expected {} values, got {}", expected_entries, data.len())
-            ));
+            return Err(LutError::ParseError(format!(
+                "Expected {} values, got {}",
+                expected_entries,
+                data.len()
+            )));
         }
 
         Ok(Self {
@@ -204,11 +214,7 @@ impl Lut3D {
     /// Sample a specific LUT entry
     fn sample(&self, r: usize, g: usize, b: usize) -> Vec3 {
         let index = (b * self.size * self.size + g * self.size + r) * 3;
-        Vec3::new(
-            self.data[index],
-            self.data[index + 1],
-            self.data[index + 2],
-        )
+        Vec3::new(self.data[index], self.data[index + 1], self.data[index + 2])
     }
 
     /// Convert LUT to texture data for GPU (RGBA format)
@@ -260,8 +266,8 @@ impl Lut3D {
                 for i in 0..(size * size * size) {
                     let base = i * 3;
                     let gray = 0.299 * lut.data[base]
-                             + 0.587 * lut.data[base + 1]
-                             + 0.114 * lut.data[base + 2];
+                        + 0.587 * lut.data[base + 1]
+                        + 0.114 * lut.data[base + 2];
                     lut.data[base] = gray;
                     lut.data[base + 1] = gray;
                     lut.data[base + 2] = gray;
@@ -284,16 +290,16 @@ impl Lut3D {
             LutPreset::CoolTone => {
                 for i in 0..(size * size * size) {
                     let base = i * 3;
-                    lut.data[base] *= 0.9;      // Reduce red
-                    lut.data[base + 2] *= 1.1;  // Increase blue
+                    lut.data[base] *= 0.9; // Reduce red
+                    lut.data[base + 2] *= 1.1; // Increase blue
                 }
                 lut
             }
             LutPreset::WarmTone => {
                 for i in 0..(size * size * size) {
                     let base = i * 3;
-                    lut.data[base] *= 1.1;      // Increase red
-                    lut.data[base + 2] *= 0.9;  // Reduce blue
+                    lut.data[base] *= 1.1; // Increase red
+                    lut.data[base + 2] *= 0.9; // Reduce blue
                 }
                 lut
             }
@@ -338,8 +344,7 @@ impl Lut3D {
             ));
         }
 
-        std::fs::write(path, content)
-            .map_err(|e| LutError::IoError(e.to_string()))?;
+        std::fs::write(path, content).map_err(|e| LutError::IoError(e.to_string()))?;
 
         Ok(())
     }
@@ -534,7 +539,10 @@ LUT_3D_SIZE 2
     fn test_lut_texture_conversion() {
         let lut = Lut3D::identity(LUT_SIZE_32);
         let texture_data = lut.to_texture_data();
-        assert_eq!(texture_data.len(), LUT_SIZE_32 * LUT_SIZE_32 * LUT_SIZE_32 * 4);
+        assert_eq!(
+            texture_data.len(),
+            LUT_SIZE_32 * LUT_SIZE_32 * LUT_SIZE_32 * 4
+        );
 
         let (data_2d, width, height) = lut.to_2d_texture_data();
         assert_eq!(width as usize, LUT_SIZE_32);

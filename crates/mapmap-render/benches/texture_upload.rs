@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use mapmap_render::{TextureDescriptor, WgpuBackend};
 
 fn bench_texture_upload(c: &mut Criterion) {
@@ -22,7 +22,6 @@ fn bench_texture_upload(c: &mut Criterion) {
                 };
 
                 b.iter(|| {
-                    let mut backend_clone = backend.clone();
                     // Note: This is a stub benchmark. Full implementation would measure actual upload time
                     black_box(&data);
                 });

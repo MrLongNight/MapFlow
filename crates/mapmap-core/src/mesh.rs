@@ -210,6 +210,7 @@ impl Mesh {
         }
 
         // Direct mapping for 4-corner quad
+        #[allow(clippy::needless_range_loop)]
         for i in 0..4 {
             self.vertices[i].position = corners[i];
         }
@@ -273,6 +274,7 @@ impl BezierPatch {
     pub fn new() -> Self {
         let mut control_points = [[Vec2::ZERO; 4]; 4];
 
+        #[allow(clippy::needless_range_loop)]
         for i in 0..4 {
             for j in 0..4 {
                 let u = j as f32 / 3.0;
@@ -308,6 +310,7 @@ impl BezierPatch {
 
         let mut result = Vec2::ZERO;
 
+        #[allow(clippy::needless_range_loop)]
         for i in 0..4 {
             for j in 0..4 {
                 result += self.control_points[i][j] * u_basis[j] * v_basis[i];
@@ -396,19 +399,19 @@ pub mod keystone {
             KeystonePreset::Horizontal => {
                 let offset = amount.clamp(0.0, 0.5);
                 [
-                    Vec2::new(offset, 0.0),        // Top-left
-                    Vec2::new(1.0 - offset, 0.0),  // Top-right
-                    Vec2::new(1.0, 1.0),           // Bottom-right
-                    Vec2::new(0.0, 1.0),           // Bottom-left
+                    Vec2::new(offset, 0.0),       // Top-left
+                    Vec2::new(1.0 - offset, 0.0), // Top-right
+                    Vec2::new(1.0, 1.0),          // Bottom-right
+                    Vec2::new(0.0, 1.0),          // Bottom-left
                 ]
             }
             KeystonePreset::Vertical => {
                 let offset = amount.clamp(0.0, 0.5);
                 [
-                    Vec2::new(0.0, offset),        // Top-left
-                    Vec2::new(1.0, offset),        // Top-right
-                    Vec2::new(1.0, 1.0),           // Bottom-right
-                    Vec2::new(0.0, 1.0),           // Bottom-left
+                    Vec2::new(0.0, offset), // Top-left
+                    Vec2::new(1.0, offset), // Top-right
+                    Vec2::new(1.0, 1.0),    // Bottom-right
+                    Vec2::new(0.0, 1.0),    // Bottom-left
                 ]
             }
             KeystonePreset::Rotate => {
@@ -491,6 +494,7 @@ mod phase2_tests {
 
         mesh.apply_keystone(corners);
 
+        #[allow(clippy::needless_range_loop)]
         for i in 0..4 {
             assert!((mesh.vertices[i].position - corners[i]).length() < 0.001);
         }

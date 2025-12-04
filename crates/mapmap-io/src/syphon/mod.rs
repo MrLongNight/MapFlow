@@ -76,7 +76,9 @@ impl VideoSource for SyphonClient {
     }
 
     fn receive_frame(&mut self) -> Result<VideoFrame> {
-        Err(IoError::SyphonError("Syphon framework not available".to_string()))
+        Err(IoError::SyphonError(
+            "Syphon framework not available".to_string(),
+        ))
     }
 
     fn is_available(&self) -> bool {
@@ -124,7 +126,9 @@ impl VideoSink for SyphonServer {
     }
 
     fn send_frame(&mut self, _frame: &VideoFrame) -> Result<()> {
-        Err(IoError::SyphonError("Syphon framework not available".to_string()))
+        Err(IoError::SyphonError(
+            "Syphon framework not available".to_string(),
+        ))
     }
 
     fn is_available(&self) -> bool {
@@ -146,19 +150,27 @@ impl SyphonClient {
     /// Create a new Syphon client (returns error when feature is disabled or on non-macOS platforms)
     pub fn new() -> crate::error::Result<Self> {
         #[cfg(not(target_os = "macos"))]
-        return Err(crate::error::IoError::platform_not_supported("Syphon is only available on macOS"));
+        return Err(crate::error::IoError::platform_not_supported(
+            "Syphon is only available on macOS",
+        ));
 
         #[cfg(target_os = "macos")]
-        Err(crate::error::IoError::feature_not_enabled("Syphon", "syphon"))
+        Err(crate::error::IoError::feature_not_enabled(
+            "Syphon", "syphon",
+        ))
     }
 
     /// List available Syphon servers (returns error when feature is disabled or on non-macOS platforms)
     pub fn list_servers() -> crate::error::Result<Vec<SyphonServerInfo>> {
         #[cfg(not(target_os = "macos"))]
-        return Err(crate::error::IoError::platform_not_supported("Syphon is only available on macOS"));
+        return Err(crate::error::IoError::platform_not_supported(
+            "Syphon is only available on macOS",
+        ));
 
         #[cfg(target_os = "macos")]
-        Err(crate::error::IoError::feature_not_enabled("Syphon", "syphon"))
+        Err(crate::error::IoError::feature_not_enabled(
+            "Syphon", "syphon",
+        ))
     }
 }
 
@@ -169,12 +181,19 @@ pub struct SyphonServer;
 #[cfg(not(all(feature = "syphon", target_os = "macos")))]
 impl SyphonServer {
     /// Create a new Syphon server (returns error when feature is disabled or on non-macOS platforms)
-    pub fn new(_name: impl Into<String>, _format: crate::format::VideoFormat) -> crate::error::Result<Self> {
+    pub fn new(
+        _name: impl Into<String>,
+        _format: crate::format::VideoFormat,
+    ) -> crate::error::Result<Self> {
         #[cfg(not(target_os = "macos"))]
-        return Err(crate::error::IoError::platform_not_supported("Syphon is only available on macOS"));
+        return Err(crate::error::IoError::platform_not_supported(
+            "Syphon is only available on macOS",
+        ));
 
         #[cfg(target_os = "macos")]
-        Err(crate::error::IoError::feature_not_enabled("Syphon", "syphon"))
+        Err(crate::error::IoError::feature_not_enabled(
+            "Syphon", "syphon",
+        ))
     }
 }
 

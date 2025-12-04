@@ -200,11 +200,7 @@ impl Compositor {
     }
 
     /// Create a uniform buffer for composite parameters
-    pub fn create_uniform_buffer(
-        &self,
-        blend_mode: BlendMode,
-        opacity: f32,
-    ) -> wgpu::Buffer {
+    pub fn create_uniform_buffer(&self, blend_mode: BlendMode, opacity: f32) -> wgpu::Buffer {
         let params = CompositeParams {
             blend_mode: blend_mode_to_u32(blend_mode),
             opacity,

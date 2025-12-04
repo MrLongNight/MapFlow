@@ -14,12 +14,12 @@ use wgpu::util::DeviceExt;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct EdgeBlendUniforms {
-    left_width: f32,      // offset 0-3
-    right_width: f32,     // offset 4-7
-    top_width: f32,       // offset 8-11
-    bottom_width: f32,    // offset 12-15
-    gamma: f32,           // offset 16-19
-    _padding: [f32; 7],   // offset 20-47 (vec3 in WGSL needs 16-byte alignment)
+    left_width: f32,    // offset 0-3
+    right_width: f32,   // offset 4-7
+    top_width: f32,     // offset 8-11
+    bottom_width: f32,  // offset 12-15
+    gamma: f32,         // offset 16-19
+    _padding: [f32; 7], // offset 20-47 (vec3 in WGSL needs 16-byte alignment)
 }
 
 /// Vertex for fullscreen quad
@@ -53,10 +53,22 @@ impl Vertex {
 
 // Fullscreen quad vertices (NDC coordinates)
 const QUAD_VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, -1.0], texcoord: [0.0, 1.0] },
-    Vertex { position: [1.0, -1.0], texcoord: [1.0, 1.0] },
-    Vertex { position: [1.0, 1.0], texcoord: [1.0, 0.0] },
-    Vertex { position: [-1.0, 1.0], texcoord: [0.0, 0.0] },
+    Vertex {
+        position: [-1.0, -1.0],
+        texcoord: [0.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, -1.0],
+        texcoord: [1.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0],
+        texcoord: [0.0, 0.0],
+    },
 ];
 
 const QUAD_INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
@@ -90,27 +102,28 @@ impl EdgeBlendRenderer {
         });
 
         // Create bind group layouts
-        let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Edge Blend Texture Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Edge Blend Texture Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
 
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -223,10 +236,26 @@ impl EdgeBlendRenderer {
     /// Create a uniform buffer from edge blend configuration
     pub fn create_uniform_buffer(&self, config: &EdgeBlendConfig) -> wgpu::Buffer {
         let uniforms = EdgeBlendUniforms {
-            left_width: if config.left.enabled { config.left.width } else { 0.0 },
-            right_width: if config.right.enabled { config.right.width } else { 0.0 },
-            top_width: if config.top.enabled { config.top.width } else { 0.0 },
-            bottom_width: if config.bottom.enabled { config.bottom.width } else { 0.0 },
+            left_width: if config.left.enabled {
+                config.left.width
+            } else {
+                0.0
+            },
+            right_width: if config.right.enabled {
+                config.right.width
+            } else {
+                0.0
+            },
+            top_width: if config.top.enabled {
+                config.top.width
+            } else {
+                0.0
+            },
+            bottom_width: if config.bottom.enabled {
+                config.bottom.width
+            } else {
+                0.0
+            },
             gamma: config.gamma,
             _padding: [0.0; 7],
         };
@@ -292,10 +321,8 @@ mod tests {
         pollster::block_on(async {
             let backend = crate::WgpuBackend::new().await;
             if let Ok(backend) = backend {
-                let renderer = EdgeBlendRenderer::new(
-                    backend.device.clone(),
-                    wgpu::TextureFormat::Bgra8Unorm,
-                );
+                let renderer =
+                    EdgeBlendRenderer::new(backend.device.clone(), wgpu::TextureFormat::Bgra8Unorm);
                 assert!(renderer.is_ok());
             }
         });

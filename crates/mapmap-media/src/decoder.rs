@@ -150,8 +150,8 @@ mod ffmpeg_impl {
             ffmpeg::init().map_err(|e| MediaError::DecoderError(e.to_string()))?;
 
             // Open input file
-            let input_ctx = ffmpeg::format::input(&path)
-                .map_err(|e| MediaError::FileOpen(e.to_string()))?;
+            let input_ctx =
+                ffmpeg::format::input(&path).map_err(|e| MediaError::FileOpen(e.to_string()))?;
 
             // Find best video stream
             let video_stream = input_ctx

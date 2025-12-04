@@ -98,11 +98,7 @@ pub fn interpolate_f32(from: f32, to: f32, progress: f32) -> f32 {
 }
 
 /// Interpolate between two positions
-pub fn interpolate_position(
-    from: (f32, f32),
-    to: (f32, f32),
-    progress: f32,
-) -> (f32, f32) {
+pub fn interpolate_position(from: (f32, f32), to: (f32, f32), progress: f32) -> (f32, f32) {
     (
         interpolate_f32(from.0, to.0, progress),
         interpolate_f32(from.1, to.1, progress),
@@ -173,7 +169,7 @@ mod tests {
 
         // Should start at 0
         let initial_progress = crossfade.progress();
-        assert!(initial_progress >= 0.0 && initial_progress < 0.1);
+        assert!((0.0..0.1).contains(&initial_progress));
 
         // Wait and check progress increases
         std::thread::sleep(Duration::from_millis(150));

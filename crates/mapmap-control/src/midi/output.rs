@@ -1,9 +1,9 @@
 //! MIDI output handling
 
-use crate::error::{ControlError, Result};
 use super::MidiMessage;
+use crate::error::{ControlError, Result};
 use midir::{MidiOutput as MidirOutput, MidiOutputConnection};
-use tracing::{info, error};
+use tracing::{error, info};
 
 /// MIDI output handler
 pub struct MidiOutputHandler {

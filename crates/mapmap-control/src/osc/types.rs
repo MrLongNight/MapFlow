@@ -1,9 +1,9 @@
 //! OSC type conversion helpers
 
 #[cfg(feature = "osc")]
-use rosc::OscType;
+use crate::{error::ControlError, ControlValue, Result};
 #[cfg(feature = "osc")]
-use crate::{ControlValue, error::ControlError, Result};
+use rosc::OscType;
 
 /// Convert OSC arguments to ControlValue
 #[cfg(feature = "osc")]

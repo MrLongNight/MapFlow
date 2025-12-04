@@ -3,19 +3,17 @@
 //! Phase 2 Demo Application - Projection Mapping with Warping
 
 use anyhow::Result;
-use tracing::{error, info};
 use glam::{Mat4, Vec2};
-use mapmap_core::{
-    LayerManager, Mapping, MappingManager, Paint, PaintManager, OutputId,
-};
+use mapmap_core::{LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager};
 use mapmap_media::{FFmpegDecoder, TestPatternDecoder, VideoPlayer};
 use mapmap_render::{
-    Compositor, EdgeBlendRenderer, ColorCalibrationRenderer, MeshRenderer, QuadRenderer,
+    ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, MeshRenderer, QuadRenderer,
     RenderBackend, TextureDescriptor, WgpuBackend,
 };
 use mapmap_ui::{AppUI, ImGuiContext};
 use std::collections::HashMap;
 use std::time::Instant;
+use tracing::{error, info};
 use tracing_subscriber;
 use winit::{
     event::{Event, WindowEvent},
@@ -36,7 +34,7 @@ struct App {
     // Multi-window rendering: Each output has its own window and surface
     windows: HashMap<OutputId, WindowContext>,
     window_id_map: HashMap<WindowId, OutputId>, // Map winit WindowId to OutputId
-    main_window_id: Option<OutputId>, // Primary window for UI
+    main_window_id: Option<OutputId>,           // Primary window for UI
 
     backend: WgpuBackend,
     #[allow(dead_code)]
@@ -115,28 +113,17 @@ impl App {
         let quad_renderer = QuadRenderer::new(backend.device(), surface_format)?;
 
         // Create mesh renderer
-        let mesh_renderer = MeshRenderer::new(
-            backend.device.clone(),
-            surface_format,
-        )?;
+        let mesh_renderer = MeshRenderer::new(backend.device.clone(), surface_format)?;
 
         // Create compositor
-        let compositor = Compositor::new(
-            backend.device.clone(),
-            surface_format,
-        )?;
+        let compositor = Compositor::new(backend.device.clone(), surface_format)?;
 
         // Create edge blend renderer
-        let edge_blend_renderer = EdgeBlendRenderer::new(
-            backend.device.clone(),
-            surface_format,
-        )?;
+        let edge_blend_renderer = EdgeBlendRenderer::new(backend.device.clone(), surface_format)?;
 
         // Create color calibration renderer
-        let color_calibration_renderer = ColorCalibrationRenderer::new(
-            backend.device.clone(),
-            surface_format,
-        )?;
+        let color_calibration_renderer =
+            ColorCalibrationRenderer::new(backend.device.clone(), surface_format)?;
 
         // Create ImGui context for main window
         let main_window_ref = &windows.get(&main_output_id).unwrap().window;
@@ -184,17 +171,23 @@ impl App {
 
         // Use TestPattern decoder for demo (Real FFmpeg decoder requires feature flag)
         // 5-second duration for easier loop testing
-        let decoder1 = FFmpegDecoder::TestPattern(
-            TestPatternDecoder::new(1920, 1080, std::time::Duration::from_secs(5), 30.0)
-        );
+        let decoder1 = FFmpegDecoder::TestPattern(TestPatternDecoder::new(
+            1920,
+            1080,
+            std::time::Duration::from_secs(5),
+            30.0,
+        ));
         let mut player1 = VideoPlayer::new(decoder1);
         player1.set_looping(true);
         player1.play();
         video_players.insert(paint_id_1, player1);
 
-        let decoder2 = FFmpegDecoder::TestPattern(
-            TestPatternDecoder::new(1920, 1080, std::time::Duration::from_secs(5), 30.0)
-        );
+        let decoder2 = FFmpegDecoder::TestPattern(TestPatternDecoder::new(
+            1920,
+            1080,
+            std::time::Duration::from_secs(5),
+            30.0,
+        ));
         let mut player2 = VideoPlayer::new(decoder2);
         player2.set_looping(true);
         player2.play();
@@ -233,8 +226,14 @@ impl App {
     }
 
     /// Create output windows for all configured outputs
-    fn create_output_windows<T>(&mut self, event_loop_target: &winit::event_loop::EventLoopWindowTarget<T>) -> Result<()> {
-        info!("Creating output windows for {} configured outputs", self.output_manager.outputs().len());
+    fn create_output_windows<T>(
+        &mut self,
+        event_loop_target: &winit::event_loop::EventLoopWindowTarget<T>,
+    ) -> Result<()> {
+        info!(
+            "Creating output windows for {} configured outputs",
+            self.output_manager.outputs().len()
+        );
 
         for output_config in self.output_manager.outputs() {
             let output_id = output_config.id;
@@ -244,7 +243,10 @@ impl App {
                 continue;
             }
 
-            info!("Creating window for output '{}' (ID: {})", output_config.name, output_id);
+            info!(
+                "Creating window for output '{}' (ID: {})",
+                output_config.name, output_id
+            );
 
             let window = WindowBuilder::new()
                 .with_title(&format!("MapMap Output - {}", output_config.name))
@@ -286,10 +288,10 @@ impl App {
             self.windows.insert(output_id, window_context);
             self.window_id_map.insert(window_id_winit, output_id);
 
-            info!("Created output window for '{}' at {}x{}",
-                  output_config.name,
-                  output_config.resolution.0,
-                  output_config.resolution.1);
+            info!(
+                "Created output window for '{}' at {}x{}",
+                output_config.name, output_config.resolution.0, output_config.resolution.1
+            );
         }
 
         Ok(())
@@ -298,10 +300,8 @@ impl App {
     /// Synchronize windows with output manager configuration
     fn sync_windows(&mut self) {
         // Remove windows for outputs that no longer exist
-        let output_ids: Vec<OutputId> = self.output_manager.outputs()
-            .iter()
-            .map(|o| o.id)
-            .collect();
+        let output_ids: Vec<OutputId> =
+            self.output_manager.outputs().iter().map(|o| o.id).collect();
 
         let mut windows_to_remove = Vec::new();
         for (&window_output_id, _) in &self.windows {
@@ -352,7 +352,11 @@ impl App {
                     match self.backend.create_texture(tex_desc) {
                         Ok(handle) => {
                             let rgba_data = frame.to_rgba();
-                            if self.backend.upload_texture(handle.clone(), &rgba_data).is_ok() {
+                            if self
+                                .backend
+                                .upload_texture(handle.clone(), &rgba_data)
+                                .is_ok()
+                            {
                                 self.paint_textures.insert(paint_id, handle);
                             }
                         }
@@ -400,12 +404,12 @@ impl App {
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
 
-            let mut encoder = self
-                .backend
-                .device()
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some(&format!("Render Encoder Output {}", output_id)),
-                });
+            let mut encoder =
+                self.backend
+                    .device()
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some(&format!("Render Encoder Output {}", output_id)),
+                    });
 
             // Determine if this is the main window or an output window
             let is_main_window = Some(*output_id) == self.main_window_id;
@@ -462,7 +466,8 @@ impl App {
                 width: window_context.surface_config.width,
                 height: window_context.surface_config.height,
                 format: wgpu::TextureFormat::Bgra8Unorm,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
                 mip_levels: 1,
             };
 
@@ -471,7 +476,10 @@ impl App {
                     self.intermediate_textures.insert(output_id, handle);
                 }
                 Err(e) => {
-                    error!("Failed to create intermediate texture for output {}: {}", output_id, e);
+                    error!(
+                        "Failed to create intermediate texture for output {}: {}",
+                        output_id, e
+                    );
                 }
             }
         }
@@ -504,12 +512,10 @@ impl App {
                             let region = &config.canvas_region;
 
                             // Simple bounding box intersection test
-                            let intersects = !(
-                                bounds_max.x < region.x
-                                    || bounds_min.x > region.x + region.width
-                                    || bounds_max.y < region.y
-                                    || bounds_min.y > region.y + region.height
-                            );
+                            let intersects = !(bounds_max.x < region.x
+                                || bounds_min.x > region.x + region.width
+                                || bounds_max.y < region.y
+                                || bounds_min.y > region.y + region.height);
 
                             if !intersects {
                                 return None; // Skip this mapping for this output
@@ -540,10 +546,12 @@ impl App {
                             Mat4::IDENTITY
                         };
 
-                        let uniform_buffer =
-                            self.mesh_renderer.create_uniform_buffer(transform, mapping.opacity);
-                        let uniform_bind_group =
-                            self.mesh_renderer.create_uniform_bind_group(&uniform_buffer);
+                        let uniform_buffer = self
+                            .mesh_renderer
+                            .create_uniform_buffer(transform, mapping.opacity);
+                        let uniform_bind_group = self
+                            .mesh_renderer
+                            .create_uniform_bind_group(&uniform_buffer);
                         let texture_view = texture.create_view();
                         let texture_bind_group =
                             self.mesh_renderer.create_texture_bind_group(&texture_view);
@@ -581,8 +589,13 @@ impl App {
             });
 
             // Draw all mappings
-            for (vertex_buffer, index_buffer, uniform_bind_group, texture_bind_group, index_count) in
-                &render_data
+            for (
+                vertex_buffer,
+                index_buffer,
+                uniform_bind_group,
+                texture_bind_group,
+                index_count,
+            ) in &render_data
             {
                 self.mesh_renderer.draw(
                     &mut render_pass,
@@ -609,7 +622,8 @@ impl App {
                     width: window_context.surface_config.width,
                     height: window_context.surface_config.height,
                     format: wgpu::TextureFormat::Bgra8Unorm,
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
                     mip_levels: 1,
                 };
 
@@ -617,9 +631,15 @@ impl App {
                 let temp_view = temp_texture.create_view();
 
                 // Apply color calibration
-                let texture_bind_group = self.color_calibration_renderer.create_texture_bind_group(intermediate_view);
-                let uniform_buffer = self.color_calibration_renderer.create_uniform_buffer(&config.color_calibration);
-                let uniform_bind_group = self.color_calibration_renderer.create_uniform_bind_group(&uniform_buffer);
+                let texture_bind_group = self
+                    .color_calibration_renderer
+                    .create_texture_bind_group(intermediate_view);
+                let uniform_buffer = self
+                    .color_calibration_renderer
+                    .create_uniform_buffer(&config.color_calibration);
+                let uniform_bind_group = self
+                    .color_calibration_renderer
+                    .create_uniform_bind_group(&uniform_buffer);
 
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some(&format!("Color Calibration Pass Output {}", output_id)),
@@ -646,9 +666,15 @@ impl App {
             };
 
             // Step 2: Apply edge blending to final output
-            let texture_bind_group = self.edge_blend_renderer.create_texture_bind_group(&color_corrected_view);
-            let uniform_buffer = self.edge_blend_renderer.create_uniform_buffer(&config.edge_blend);
-            let uniform_bind_group = self.edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
+            let texture_bind_group = self
+                .edge_blend_renderer
+                .create_texture_bind_group(&color_corrected_view);
+            let uniform_buffer = self
+                .edge_blend_renderer
+                .create_uniform_buffer(&config.edge_blend);
+            let uniform_bind_group = self
+                .edge_blend_renderer
+                .create_uniform_bind_group(&uniform_buffer);
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&format!("Edge Blend Pass Output {}", output_id)),
@@ -739,10 +765,18 @@ impl App {
                     }
                 }
                 UIAction::ToggleLoop(looping) => {
-                    info!("Setting loop mode to {} for {} video players", looping, self.video_players.len());
+                    info!(
+                        "Setting loop mode to {} for {} video players",
+                        looping,
+                        self.video_players.len()
+                    );
                     for (paint_id, player) in self.video_players.iter_mut() {
                         player.set_looping(looping);
-                        info!("  - Paint {} now has looping={}", paint_id, player.is_looping());
+                        info!(
+                            "  - Paint {} now has looping={}",
+                            paint_id,
+                            player.is_looping()
+                        );
                     }
                 }
                 UIAction::ToggleMappingVisibility(id, visible) => {
@@ -754,12 +788,14 @@ impl App {
                 UIAction::AddMapping => {
                     info!("Adding new quad mapping");
                     let next_id = self.mapping_manager.mappings().len() as u64 + 1;
-                    let paint_id = self.paint_manager.paints().first().map(|p| p.id).unwrap_or(1);
-                    let mut new_mapping = Mapping::quad(
-                        next_id,
-                        &format!("Mapping {}", next_id),
-                        paint_id,
-                    );
+                    let paint_id = self
+                        .paint_manager
+                        .paints()
+                        .first()
+                        .map(|p| p.id)
+                        .unwrap_or(1);
+                    let mut new_mapping =
+                        Mapping::quad(next_id, &format!("Mapping {}", next_id), paint_id);
                     // Position it slightly offset from center
                     let offset = (next_id as f32 * 0.1) % 1.0;
                     for vertex in &mut new_mapping.mesh.vertices {
@@ -783,15 +819,22 @@ impl App {
 
                     // Create a video player for this paint (shorter 5-second duration for easier loop testing)
                     let decoder = mapmap_media::FFmpegDecoder::TestPattern(
-                        mapmap_media::TestPatternDecoder::new(1920, 1080, std::time::Duration::from_secs(5), 30.0)
+                        mapmap_media::TestPatternDecoder::new(
+                            1920,
+                            1080,
+                            std::time::Duration::from_secs(5),
+                            30.0,
+                        ),
                     );
                     let mut player = mapmap_media::VideoPlayer::new(decoder);
                     player.set_looping(self.ui_state.looping);
                     player.set_speed(self.ui_state.playback_speed);
                     player.play();
                     self.video_players.insert(paint_id, player);
-                    info!("Created video player for paint {} with looping={}, speed={}",
-                          paint_id, self.ui_state.looping, self.ui_state.playback_speed);
+                    info!(
+                        "Created video player for paint {} with looping={}, speed={}",
+                        paint_id, self.ui_state.looping, self.ui_state.playback_speed
+                    );
 
                     // Create a default quad mapping for the new paint so it's visible
                     let mapping_id = self.mapping_manager.mappings().len() as u64 + 1;
@@ -807,7 +850,10 @@ impl App {
                         vertex.position.y += offset * 0.5;
                     }
                     self.mapping_manager.add_mapping(new_mapping);
-                    info!("Created default quad mapping {} for paint {}", mapping_id, paint_id);
+                    info!(
+                        "Created default quad mapping {} for paint {}",
+                        mapping_id, paint_id
+                    );
                 }
                 UIAction::RemovePaint(id) => {
                     info!("Removing paint {}", id);
@@ -821,7 +867,10 @@ impl App {
                         info!("Opening file picker for media selection");
                         if let Some(file_path) = rfd::FileDialog::new()
                             .add_filter("Video Files", &["mp4", "mov", "avi", "mkv", "webm", "m4v"])
-                            .add_filter("Image Files", &["png", "jpg", "jpeg", "gif", "tif", "tiff", "bmp", "webp"])
+                            .add_filter(
+                                "Image Files",
+                                &["png", "jpg", "jpeg", "gif", "tif", "tiff", "bmp", "webp"],
+                            )
                             .add_filter("All Files", &["*"])
                             .set_title("Select Media File")
                             .pick_file()
@@ -838,11 +887,25 @@ impl App {
                     }
                 }
                 UIAction::SaveProject(path) => {
-                    info!("Save project: {}", if path.is_empty() { "open dialog" } else { &path });
+                    info!(
+                        "Save project: {}",
+                        if path.is_empty() {
+                            "open dialog"
+                        } else {
+                            &path
+                        }
+                    );
                     // TODO: Implement project save
                 }
                 UIAction::LoadProject(path) => {
-                    info!("Load project: {}", if path.is_empty() { "open dialog" } else { &path });
+                    info!(
+                        "Load project: {}",
+                        if path.is_empty() {
+                            "open dialog"
+                        } else {
+                            &path
+                        }
+                    );
                     // TODO: Implement project load
                 }
                 UIAction::Exit => {
@@ -878,7 +941,11 @@ impl App {
                 UIAction::AddLayer => {
                     info!("Adding new layer");
                     let layer_id = self.layer_manager.create_layer("New Layer");
-                    info!("Created layer {} with ID {}", self.layer_manager.get_layer(layer_id).unwrap().name, layer_id);
+                    info!(
+                        "Created layer {} with ID {}",
+                        self.layer_manager.get_layer(layer_id).unwrap().name,
+                        layer_id
+                    );
                 }
                 UIAction::RemoveLayer(id) => {
                     info!("Removing layer {}", id);
@@ -934,7 +1001,7 @@ impl App {
                     // Get composition size first (before borrowing layer)
                     let target_size = glam::Vec2::new(
                         self.layer_manager.composition.size.0 as f32,
-                        self.layer_manager.composition.size.1 as f32
+                        self.layer_manager.composition.size.1 as f32,
                     );
 
                     if let Some(layer) = self.layer_manager.get_layer_mut(id) {
@@ -971,7 +1038,10 @@ impl App {
 
                 // Phase 2: Multi-Output Actions
                 UIAction::AddOutput(name, region, resolution) => {
-                    info!("Adding output: {} at {:?} with resolution {:?}", name, region, resolution);
+                    info!(
+                        "Adding output: {} at {:?} with resolution {:?}",
+                        name, region, resolution
+                    );
                     self.output_manager.add_output(name, region, resolution);
                 }
                 UIAction::RemoveOutput(id) => {
@@ -997,8 +1067,13 @@ impl App {
                     }
                 }
                 UIAction::CreateProjectorArray2x2(resolution, overlap) => {
-                    info!("Creating 2x2 projector array with resolution {:?} and {}% overlap", resolution, overlap * 100.0);
-                    self.output_manager.create_projector_array_2x2(resolution, overlap);
+                    info!(
+                        "Creating 2x2 projector array with resolution {:?} and {}% overlap",
+                        resolution,
+                        overlap * 100.0
+                    );
+                    self.output_manager
+                        .create_projector_array_2x2(resolution, overlap);
                 }
             }
         }
@@ -1007,9 +1082,9 @@ impl App {
     }
 
     fn load_video_file(&mut self, path: &str) {
-        use mapmap_core::{Paint, PaintType, Mapping};
-        use mapmap_media::{FFmpegDecoder, VideoPlayer, VideoDecoder};
         use glam::Vec2;
+        use mapmap_core::{Mapping, Paint, PaintType};
+        use mapmap_media::{FFmpegDecoder, VideoDecoder, VideoPlayer};
 
         info!("Loading media file: {}", path);
 
@@ -1031,8 +1106,14 @@ impl App {
                     PaintType::Video
                 };
 
-                info!("Media loaded: {}x{} @ {:.2} fps, duration: {:.2}s, type: {:?}",
-                      width, height, fps, duration.as_secs_f64(), paint_type);
+                info!(
+                    "Media loaded: {}x{} @ {:.2} fps, duration: {:.2}s, type: {:?}",
+                    width,
+                    height,
+                    fps,
+                    duration.as_secs_f64(),
+                    paint_type
+                );
 
                 // Create a paint for this media
                 let next_id = self.paint_manager.paints().len() as u64 + 1;
@@ -1048,7 +1129,11 @@ impl App {
                     opacity: 1.0,
                     color: [1.0, 1.0, 1.0, 1.0],
                     is_playing: !is_still_image, // Still images don't "play"
-                    loop_playback: if is_still_image { false } else { self.ui_state.looping },
+                    loop_playback: if is_still_image {
+                        false
+                    } else {
+                        self.ui_state.looping
+                    },
                     rate: self.ui_state.playback_speed,
                     source_path: Some(path.to_string()),
                     dimensions: Vec2::new(width as f32, height as f32),
@@ -1056,7 +1141,10 @@ impl App {
                 };
 
                 let paint_id = self.paint_manager.add_paint(paint);
-                info!("Created paint {} for media (type: {:?})", paint_id, paint_type);
+                info!(
+                    "Created paint {} for media (type: {:?})",
+                    paint_id, paint_type
+                );
 
                 // Create video player (works for all decoder types)
                 let mut player = VideoPlayer::new(decoder);
@@ -1076,11 +1164,8 @@ impl App {
 
                 // Create a default quad mapping for the media
                 let mapping_id = self.mapping_manager.mappings().len() as u64 + 1;
-                let mut new_mapping = Mapping::quad(
-                    mapping_id,
-                    &format!("Mapping for {}", filename),
-                    paint_id,
-                );
+                let mut new_mapping =
+                    Mapping::quad(mapping_id, &format!("Mapping for {}", filename), paint_id);
 
                 // Position it with a slight offset
                 let offset = (mapping_id as f32 * 0.15) % 1.0 - 0.3;
@@ -1122,7 +1207,10 @@ impl App {
             }
             WindowEvent::Resized(size) => {
                 if let Some(window_context) = self.windows.get_mut(&output_id) {
-                    info!("Window {} resized to {}x{}", output_id, size.width, size.height);
+                    info!(
+                        "Window {} resized to {}x{}",
+                        output_id, size.width, size.height
+                    );
                     window_context.surface_config.width = size.width;
                     window_context.surface_config.height = size.height;
                     window_context
@@ -1156,7 +1244,8 @@ fn main() -> Result<()> {
         // Let ImGui handle events only for main window
         if let Some(main_window_id) = app.main_window_id {
             if let Some(main_window_context) = app.windows.get(&main_window_id) {
-                app.imgui_context.handle_event(&main_window_context.window, &event);
+                app.imgui_context
+                    .handle_event(&main_window_context.window, &event);
             }
         }
 

@@ -1,6 +1,6 @@
 //! MIDI controller profiles
 
-use super::{MidiMessage, MidiMapping, MappingCurve};
+use super::{MappingCurve, MidiMapping, MidiMessage};
 use crate::target::ControlTarget;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -38,13 +38,14 @@ impl ControllerProfile {
 
         for profile_mapping in &self.mappings {
             let message = match profile_mapping.message_template {
-                MidiMessageTemplate::ControlChange { channel, controller } => {
-                    MidiMessage::ControlChange {
-                        channel,
-                        controller,
-                        value: 0,
-                    }
-                }
+                MidiMessageTemplate::ControlChange {
+                    channel,
+                    controller,
+                } => MidiMessage::ControlChange {
+                    channel,
+                    controller,
+                    value: 0,
+                },
                 MidiMessageTemplate::Note { channel, note } => MidiMessage::NoteOn {
                     channel,
                     note,

@@ -12,27 +12,27 @@ pub mod shader_graph_editor;
 pub mod timeline;
 
 // Phase 6: Advanced Authoring UI (egui-based)
-pub mod undo_redo;
-pub mod theme;
-pub mod media_browser;
-pub mod node_editor;
-pub mod timeline_v2;
 pub mod asset_manager;
-pub mod mesh_editor;
 pub mod dashboard;
+pub mod media_browser;
+pub mod mesh_editor;
+pub mod node_editor;
+pub mod theme;
+pub mod timeline_v2;
+pub mod undo_redo;
 
-pub use shader_graph_editor::{ShaderGraphEditor, ShaderGraphAction};
-pub use timeline::{TimelineEditor, TimelineAction};
+pub use shader_graph_editor::{ShaderGraphAction, ShaderGraphEditor};
+pub use timeline::{TimelineAction, TimelineEditor};
 
 // Phase 6 exports
-pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
-pub use theme::{Theme, ThemeConfig};
-pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
-pub use node_editor::{NodeEditor, NodeEditorAction, NodeType, Node};
-pub use timeline_v2::{TimelineV2, TimelineAction as TimelineV2Action, InterpolationType};
 pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
-pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use dashboard::{Dashboard, DashboardAction, DashboardWidget, WidgetType};
+pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
+pub use mesh_editor::{MeshEditor, MeshEditorAction};
+pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
+pub use theme::{Theme, ThemeConfig};
+pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
+pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
 
 use imgui::*;
 use imgui_wgpu::{Renderer, RendererConfig};
@@ -208,12 +208,12 @@ pub struct AppUI {
     pub show_layers: bool,
     pub show_paints: bool,
     pub show_mappings: bool,
-    pub show_transforms: bool,      // Phase 1
-    pub show_master_controls: bool, // Phase 1
-    pub show_outputs: bool,          // Phase 2
-    pub show_edge_blend: bool,       // Phase 2
+    pub show_transforms: bool,        // Phase 1
+    pub show_master_controls: bool,   // Phase 1
+    pub show_outputs: bool,           // Phase 2
+    pub show_edge_blend: bool,        // Phase 2
     pub show_color_calibration: bool, // Phase 2
-    pub show_oscillator: bool,       // Oscillator distortion effect
+    pub show_oscillator: bool,        // Oscillator distortion effect
     pub playback_speed: f32,
     pub looping: bool,
     // Phase 1: Advanced playback state
@@ -237,8 +237,8 @@ impl Default for AppUI {
             show_transforms: true,
             show_master_controls: true,
             show_outputs: true,
-            show_edge_blend: false,  // Show only when output selected
-            show_color_calibration: false,  // Show only when output selected
+            show_edge_blend: false,        // Show only when output selected
+            show_color_calibration: false, // Show only when output selected
             show_oscillator: true,
             playback_speed: 1.0,
             looping: true,
@@ -310,24 +310,32 @@ impl AppUI {
                     mapmap_media::PlaybackDirection::Backward => 1,
                 };
 
-                if ui.combo("##direction", &mut direction_idx, &direction_names, |item| {
-                    std::borrow::Cow::Borrowed(item)
-                }) {
+                if ui.combo(
+                    "##direction",
+                    &mut direction_idx,
+                    &direction_names,
+                    |item| std::borrow::Cow::Borrowed(item),
+                ) {
                     let new_direction = match direction_idx {
                         0 => mapmap_media::PlaybackDirection::Forward,
                         1 => mapmap_media::PlaybackDirection::Backward,
                         _ => mapmap_media::PlaybackDirection::Forward,
                     };
                     self.playback_direction = new_direction;
-                    self.actions.push(UIAction::SetPlaybackDirection(new_direction));
+                    self.actions
+                        .push(UIAction::SetPlaybackDirection(new_direction));
                 }
 
                 ui.same_line();
                 if ui.button("Toggle ⇄") {
                     self.actions.push(UIAction::TogglePlaybackDirection);
                     self.playback_direction = match self.playback_direction {
-                        mapmap_media::PlaybackDirection::Forward => mapmap_media::PlaybackDirection::Backward,
-                        mapmap_media::PlaybackDirection::Backward => mapmap_media::PlaybackDirection::Forward,
+                        mapmap_media::PlaybackDirection::Forward => {
+                            mapmap_media::PlaybackDirection::Backward
+                        }
+                        mapmap_media::PlaybackDirection::Backward => {
+                            mapmap_media::PlaybackDirection::Forward
+                        }
                     };
                 }
 
@@ -471,9 +479,20 @@ impl AppUI {
 
                         // Blend mode selector
                         let blend_modes = [
-                            "Normal", "Add", "Subtract", "Multiply", "Screen",
-                            "Overlay", "Soft Light", "Hard Light", "Lighten", "Darken",
-                            "Color Dodge", "Color Burn", "Difference", "Exclusion",
+                            "Normal",
+                            "Add",
+                            "Subtract",
+                            "Multiply",
+                            "Screen",
+                            "Overlay",
+                            "Soft Light",
+                            "Hard Light",
+                            "Lighten",
+                            "Darken",
+                            "Color Dodge",
+                            "Color Burn",
+                            "Difference",
+                            "Exclusion",
                         ];
 
                         let current_mode_idx = layer.blend_mode as usize;
@@ -505,7 +524,8 @@ impl AppUI {
                         let old_opacity = layer.opacity;
                         ui.slider("Opacity (V)", 0.0, 1.0, &mut layer.opacity);
                         if (layer.opacity - old_opacity).abs() > 0.001 {
-                            self.actions.push(UIAction::SetLayerOpacity(layer.id, layer.opacity));
+                            self.actions
+                                .push(UIAction::SetLayerOpacity(layer.id, layer.opacity));
                         }
 
                         // Phase 1: Layer management buttons
@@ -549,11 +569,8 @@ impl AppUI {
                 ui.separator();
 
                 // Paint list
-                let paint_ids: Vec<mapmap_core::PaintId> = paint_manager
-                    .paints()
-                    .iter()
-                    .map(|p| p.id)
-                    .collect();
+                let paint_ids: Vec<mapmap_core::PaintId> =
+                    paint_manager.paints().iter().map(|p| p.id).collect();
 
                 for paint_id in paint_ids {
                     if let Some(paint) = paint_manager.get_paint_mut(paint_id) {
@@ -616,11 +633,8 @@ impl AppUI {
                 ui.separator();
 
                 // Mapping list
-                let mapping_ids: Vec<mapmap_core::MappingId> = mapping_manager
-                    .mappings()
-                    .iter()
-                    .map(|m| m.id)
-                    .collect();
+                let mapping_ids: Vec<mapmap_core::MappingId> =
+                    mapping_manager.mappings().iter().map(|m| m.id).collect();
 
                 for mapping_id in mapping_ids {
                     if let Some(mapping) = mapping_manager.get_mapping_mut(mapping_id) {
@@ -639,7 +653,10 @@ impl AppUI {
                         ui.same_line();
 
                         // Make the mapping name clickable to select it
-                        if ui.small_button(&format!("{} (Paint #{})", mapping.name, mapping.paint_id)) {
+                        if ui.small_button(&format!(
+                            "{} (Paint #{})",
+                            mapping.name, mapping.paint_id
+                        )) {
                             self.actions.push(UIAction::SelectMapping(mapping.id));
                         }
 
@@ -684,7 +701,11 @@ impl AppUI {
     }
 
     /// Render transform controls panel (Phase 1)
-    pub fn render_transform_panel(&mut self, ui: &Ui, layer_manager: &mut mapmap_core::LayerManager) {
+    pub fn render_transform_panel(
+        &mut self,
+        ui: &Ui,
+        layer_manager: &mut mapmap_core::LayerManager,
+    ) {
         use mapmap_core::ResizeMode;
 
         if !self.show_transforms {
@@ -759,21 +780,24 @@ impl AppUI {
                         // Resize mode presets (Phase 1, Month 6)
                         ui.text("Resize Presets:");
                         if ui.button("Fill (Cover)") {
-                            self.actions.push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Fill));
+                            self.actions
+                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Fill));
                         }
                         ui.same_line();
                         if ui.button("Fit (Contain)") {
-                            self.actions.push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Fit));
+                            self.actions
+                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Fit));
                         }
 
                         if ui.button("Stretch (Distort)") {
-                            self.actions.push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Stretch));
+                            self.actions
+                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Stretch));
                         }
                         ui.same_line();
                         if ui.button("Original (1:1)") {
-                            self.actions.push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Original));
+                            self.actions
+                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Original));
                         }
-
                     } else {
                         ui.text("Selected layer not found.");
                     }
@@ -786,7 +810,11 @@ impl AppUI {
     }
 
     /// Render master controls panel (Phase 1)
-    pub fn render_master_controls(&mut self, ui: &Ui, layer_manager: &mut mapmap_core::LayerManager) {
+    pub fn render_master_controls(
+        &mut self,
+        ui: &Ui,
+        layer_manager: &mut mapmap_core::LayerManager,
+    ) {
         if !self.show_master_controls {
             return;
         }
@@ -810,20 +838,30 @@ impl AppUI {
 
                 // Master Opacity (Phase 1, Month 4)
                 let old_master_opacity = composition.master_opacity;
-                ui.slider("Master Opacity (M)", 0.0, 1.0, &mut composition.master_opacity);
+                ui.slider(
+                    "Master Opacity (M)",
+                    0.0,
+                    1.0,
+                    &mut composition.master_opacity,
+                );
                 if (composition.master_opacity - old_master_opacity).abs() > 0.001 {
-                    self.actions.push(UIAction::SetMasterOpacity(composition.master_opacity));
+                    self.actions
+                        .push(UIAction::SetMasterOpacity(composition.master_opacity));
                 }
 
                 // Master Speed (Phase 1, Month 5)
                 let old_master_speed = composition.master_speed;
                 ui.slider("Master Speed (S)", 0.1, 10.0, &mut composition.master_speed);
                 if (composition.master_speed - old_master_speed).abs() > 0.001 {
-                    self.actions.push(UIAction::SetMasterSpeed(composition.master_speed));
+                    self.actions
+                        .push(UIAction::SetMasterSpeed(composition.master_speed));
                 }
 
                 ui.separator();
-                ui.text(format!("Size: {}x{}", composition.size.0, composition.size.1));
+                ui.text(format!(
+                    "Size: {}x{}",
+                    composition.size.0, composition.size.1
+                ));
                 ui.text(format!("Frame Rate: {:.1} fps", composition.frame_rate));
 
                 ui.separator();
@@ -834,7 +872,11 @@ impl AppUI {
     }
 
     /// Phase 2: Render output configuration panel
-    pub fn render_output_panel(&mut self, ui: &Ui, output_manager: &mut mapmap_core::OutputManager) {
+    pub fn render_output_panel(
+        &mut self,
+        ui: &Ui,
+        output_manager: &mut mapmap_core::OutputManager,
+    ) {
         if !self.show_outputs {
             return;
         }
@@ -858,7 +900,8 @@ impl AppUI {
                     let _id = ui.push_id_usize(output.id as usize);
 
                     let is_selected = self.selected_output_id == Some(output.id);
-                    if ui.selectable_config(&output.name)
+                    if ui
+                        .selectable_config(&output.name)
                         .selected(is_selected)
                         .build()
                     {
@@ -899,28 +942,51 @@ impl AppUI {
 
                 // Edit selected output
                 if let Some(output_id) = self.selected_output_id {
-                    if let Some(output) = output_manager.outputs().iter().find(|o| o.id == output_id) {
+                    if let Some(output) =
+                        output_manager.outputs().iter().find(|o| o.id == output_id)
+                    {
                         ui.text("Selected Output Settings");
                         ui.separator();
 
                         ui.text(format!("Name: {}", output.name));
-                        ui.text(format!("Resolution: {}x{}", output.resolution.0, output.resolution.1));
+                        ui.text(format!(
+                            "Resolution: {}x{}",
+                            output.resolution.0, output.resolution.1
+                        ));
 
                         ui.separator();
                         ui.text("Canvas Region:");
-                        ui.text(format!("  X: {:.2}, Y: {:.2}", output.canvas_region.x, output.canvas_region.y));
-                        ui.text(format!("  W: {:.2}, H: {:.2}", output.canvas_region.width, output.canvas_region.height));
+                        ui.text(format!(
+                            "  X: {:.2}, Y: {:.2}",
+                            output.canvas_region.x, output.canvas_region.y
+                        ));
+                        ui.text(format!(
+                            "  W: {:.2}, H: {:.2}",
+                            output.canvas_region.width, output.canvas_region.height
+                        ));
 
                         ui.separator();
 
                         // Edge blending status
                         let blend = &output.edge_blend;
                         ui.text("Edge Blending:");
-                        if blend.left.enabled { ui.text("  Left"); }
-                        if blend.right.enabled { ui.text("  Right"); }
-                        if blend.top.enabled { ui.text("  Top"); }
-                        if blend.bottom.enabled { ui.text("  Bottom"); }
-                        if !blend.left.enabled && !blend.right.enabled && !blend.top.enabled && !blend.bottom.enabled {
+                        if blend.left.enabled {
+                            ui.text("  Left");
+                        }
+                        if blend.right.enabled {
+                            ui.text("  Right");
+                        }
+                        if blend.top.enabled {
+                            ui.text("  Top");
+                        }
+                        if blend.bottom.enabled {
+                            ui.text("  Bottom");
+                        }
+                        if !blend.left.enabled
+                            && !blend.right.enabled
+                            && !blend.top.enabled
+                            && !blend.bottom.enabled
+                        {
                             ui.text_disabled("  (None)");
                         }
 
@@ -929,9 +995,15 @@ impl AppUI {
                         // Color calibration status
                         let cal = &output.color_calibration;
                         ui.text("Color Calibration:");
-                        if cal.brightness != 0.0 { ui.text(format!("  Brightness: {:.2}", cal.brightness)); }
-                        if cal.contrast != 1.0 { ui.text(format!("  Contrast: {:.2}", cal.contrast)); }
-                        if cal.saturation != 1.0 { ui.text(format!("  Saturation: {:.2}", cal.saturation)); }
+                        if cal.brightness != 0.0 {
+                            ui.text(format!("  Brightness: {:.2}", cal.brightness));
+                        }
+                        if cal.contrast != 1.0 {
+                            ui.text(format!("  Contrast: {:.2}", cal.contrast));
+                        }
+                        if cal.saturation != 1.0 {
+                            ui.text(format!("  Saturation: {:.2}", cal.saturation));
+                        }
                         if cal.brightness == 0.0 && cal.contrast == 1.0 && cal.saturation == 1.0 {
                             ui.text_disabled("  (Defaults)");
                         }
@@ -939,7 +1011,9 @@ impl AppUI {
                         ui.separator();
 
                         ui.text_colored([0.5, 0.8, 1.0, 1.0], "Tip:");
-                        ui.text_wrapped("Edge Blending and Color Calibration panels open automatically!");
+                        ui.text_wrapped(
+                            "Edge Blending and Color Calibration panels open automatically!",
+                        );
 
                         ui.separator();
 
@@ -951,16 +1025,17 @@ impl AppUI {
                 }
 
                 ui.separator();
-                ui.text_colored(
-                    [0.0, 1.0, 0.0, 1.0],
-                    "Multi-window rendering: ACTIVE"
-                );
+                ui.text_colored([0.0, 1.0, 0.0, 1.0], "Multi-window rendering: ACTIVE");
                 ui.text_disabled("Output windows are automatically created and synchronized");
             });
     }
 
     /// Phase 2: Render edge blend configuration
-    pub fn render_edge_blend_panel(&mut self, ui: &Ui, output_manager: &mut mapmap_core::OutputManager) {
+    pub fn render_edge_blend_panel(
+        &mut self,
+        ui: &Ui,
+        output_manager: &mut mapmap_core::OutputManager,
+    ) {
         // Auto-show when output is selected
         if self.selected_output_id.is_some() {
             self.show_edge_blend = true;
@@ -1044,7 +1119,11 @@ impl AppUI {
     }
 
     /// Phase 2: Render color calibration panel
-    pub fn render_color_calibration_panel(&mut self, ui: &Ui, output_manager: &mut mapmap_core::OutputManager) {
+    pub fn render_color_calibration_panel(
+        &mut self,
+        ui: &Ui,
+        output_manager: &mut mapmap_core::OutputManager,
+    ) {
         // Auto-show when output is selected
         if self.selected_output_id.is_some() {
             self.show_color_calibration = true;
@@ -1269,9 +1348,12 @@ impl AppUI {
                     for i in 0..4 {
                         let _id = ui.push_id_usize(i);
 
-                        let is_active = config.rings[i].distance > 0.0 || config.rings[i].width > 0.0 || config.rings[i].coupling.abs() > 0.01;
+                        let is_active = config.rings[i].distance > 0.0
+                            || config.rings[i].width > 0.0
+                            || config.rings[i].coupling.abs() > 0.01;
 
-                        if let Some(_token) = ui.tree_node_config(format!("Ring {}", i + 1))
+                        if let Some(_token) = ui
+                            .tree_node_config(format!("Ring {}", i + 1))
                             .default_open(is_active)
                             .build(|| {
                                 ui.slider("Distance", 0.0, 1.0, &mut config.rings[i].distance);
@@ -1301,8 +1383,7 @@ impl AppUI {
                                     };
                                 }
                             })
-                        {
-                        }
+                        {}
                     }
                 }
             });

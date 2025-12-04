@@ -2,7 +2,7 @@
 //!
 //! Art-Net is a UDP-based protocol for transmitting DMX512 over Ethernet.
 
-use std::net::{UdpSocket, SocketAddr};
+use std::net::{SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
 use crate::{error::ControlError, Result};
@@ -31,7 +31,11 @@ impl ArtNetSender {
             ControlError::DmxError(format!("Invalid Art-Net target address: {}", e))
         })?;
 
-        tracing::info!("Art-Net sender created for universe {} -> {}", universe, target);
+        tracing::info!(
+            "Art-Net sender created for universe {} -> {}",
+            universe,
+            target
+        );
 
         Ok(Self {
             socket,

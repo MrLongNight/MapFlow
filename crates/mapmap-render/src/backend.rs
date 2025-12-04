@@ -1,6 +1,6 @@
 //! Rendering backend abstraction
 
-use crate::{Result, RenderError, TextureHandle, TextureDescriptor, ShaderHandle, ShaderSource};
+use crate::{RenderError, Result, ShaderHandle, ShaderSource, TextureDescriptor, TextureHandle};
 use std::sync::Arc;
 use tracing::{debug, info};
 use wgpu::util::StagingBelt;
@@ -28,7 +28,11 @@ pub struct WgpuBackend {
 impl WgpuBackend {
     /// Create a new wgpu backend
     pub async fn new() -> Result<Self> {
-        Self::new_with_options(wgpu::Backends::all(), wgpu::PowerPreference::HighPerformance).await
+        Self::new_with_options(
+            wgpu::Backends::all(),
+            wgpu::PowerPreference::HighPerformance,
+        )
+        .await
     }
 
     /// Create a new wgpu backend with specific options
@@ -62,8 +66,7 @@ impl WgpuBackend {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: Some("MapMap Device"),
-                    features: wgpu::Features::TIMESTAMP_QUERY
-                        | wgpu::Features::PUSH_CONSTANTS,
+                    features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
                     limits: wgpu::Limits {
                         max_push_constant_size: 128,
                         ..Default::default()
@@ -93,10 +96,7 @@ impl WgpuBackend {
     ///
     /// # Safety
     /// The window must outlive the surface
-    pub unsafe fn create_surface(
-        &self,
-        window: &winit::window::Window,
-    ) -> Result<wgpu::Surface> {
+    pub unsafe fn create_surface(&self, window: &winit::window::Window) -> Result<wgpu::Surface> {
         self.instance
             .create_surface(window)
             .map_err(|e| RenderError::DeviceError(format!("Failed to create surface: {}", e)))
@@ -157,7 +157,10 @@ impl RenderBackend for WgpuBackend {
         };
 
         self.texture_counter += 1;
-        debug!("Created texture {} ({}x{})", handle.id, desc.width, desc.height);
+        debug!(
+            "Created texture {} ({}x{})",
+            handle.id, desc.width, desc.height
+        );
 
         Ok(handle)
     }
@@ -202,17 +205,21 @@ impl RenderBackend for WgpuBackend {
             },
         );
 
-        debug!("Uploaded texture {} ({}x{})", handle.id, handle.width, handle.height);
+        debug!(
+            "Uploaded texture {} ({}x{})",
+            handle.id, handle.width, handle.height
+        );
         Ok(())
     }
 
     fn create_shader(&mut self, source: ShaderSource) -> Result<ShaderHandle> {
         let module = match source {
             ShaderSource::Wgsl(ref code) => {
-                self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                    label: Some(&format!("Shader {}", self.shader_counter)),
-                    source: wgpu::ShaderSource::Wgsl(code.clone().into()),
-                })
+                self.device
+                    .create_shader_module(wgpu::ShaderModuleDescriptor {
+                        label: Some(&format!("Shader {}", self.shader_counter)),
+                        source: wgpu::ShaderSource::Wgsl(code.clone().into()),
+                    })
             }
         };
 

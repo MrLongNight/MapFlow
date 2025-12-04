@@ -1,8 +1,8 @@
 //! Texture management and pooling
 
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
-use parking_lot::RwLock;
 
 /// Handle to a GPU texture
 #[derive(Clone)]
@@ -17,7 +17,8 @@ pub struct TextureHandle {
 impl TextureHandle {
     /// Create a texture view
     pub fn create_view(&self) -> wgpu::TextureView {
-        self.texture.create_view(&wgpu::TextureViewDescriptor::default())
+        self.texture
+            .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
     /// Get texture size in bytes
@@ -137,12 +138,7 @@ impl TexturePool {
         PoolStats {
             total_textures: self.textures.read().len(),
             free_textures: self.free_list.read().len(),
-            total_memory: self
-                .textures
-                .read()
-                .values()
-                .map(|t| t.size_bytes())
-                .sum(),
+            total_memory: self.textures.read().values().map(|t| t.size_bytes()).sum(),
         }
     }
 }

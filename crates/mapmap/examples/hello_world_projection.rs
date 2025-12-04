@@ -6,11 +6,11 @@
 //! 3. Creating a Mapping (connecting Paint to Mesh)
 //! 4. Rendering the result
 
-use mapmap_core::{Paint, PaintType, Mesh, MeshType, Mapping};
-use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
 use glam::Vec2;
+use mapmap_core::{Mapping, Mesh, MeshType, Paint, PaintType};
+use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
 use winit::{
-    event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState},
+    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
@@ -69,22 +69,25 @@ fn main() {
     let mesh = Mesh::new_quad(
         1, // mesh_id
         "Hello World Mesh",
-        Vec2::new(0.0, 0.0),    // top-left
-        Vec2::new(800.0, 0.0),  // top-right
+        Vec2::new(0.0, 0.0),     // top-left
+        Vec2::new(800.0, 0.0),   // top-right
         Vec2::new(800.0, 600.0), // bottom-right
-        Vec2::new(0.0, 600.0),  // bottom-left
+        Vec2::new(0.0, 600.0),   // bottom-left
     );
     println!("✓ Mesh created: '{}'", mesh.name);
 
     // Step 7: Create a Mapping (connects Paint to Mesh)
     let mapping = Mapping::new(
-        1,                // mapping_id
+        1, // mapping_id
         "Hello World Mapping",
-        paint.id,         // paint_id
-        mesh.id,          // mesh_id
+        paint.id, // paint_id
+        mesh.id,  // mesh_id
     );
     println!("✓ Mapping created: '{}'", mapping.name);
-    println!("  Paint ID: {} → Mesh ID: {}", mapping.paint_id, mapping.mesh_id);
+    println!(
+        "  Paint ID: {} → Mesh ID: {}",
+        mapping.paint_id, mapping.mesh_id
+    );
 
     // Step 8: Create GPU texture for the Paint
     let tex_desc = TextureDescriptor {
@@ -100,7 +103,9 @@ fn main() {
     // Create a "Hello World" pattern
     // We'll create a simple gradient with the Paint's color
     let texture_data = create_hello_world_texture(512, 512, paint.color);
-    backend.upload_texture(texture.clone(), &texture_data).unwrap();
+    backend
+        .upload_texture(texture.clone(), &texture_data)
+        .unwrap();
     println!("✓ Texture uploaded (512x512)");
 
     println!("\n🎉 Setup complete! Rendering...\n");
@@ -121,14 +126,16 @@ fn main() {
                 *control_flow = ControlFlow::Exit;
             }
             Event::WindowEvent {
-                event: WindowEvent::KeyboardInput {
-                    input: KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                        state: ElementState::Pressed,
+                event:
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                state: ElementState::Pressed,
+                                ..
+                            },
                         ..
                     },
-                    ..
-                },
                 ..
             } => {
                 println!("Goodbye! 👋");
@@ -146,11 +153,12 @@ fn main() {
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
                 // Create command encoder
-                let mut encoder = backend.device().create_command_encoder(
-                    &wgpu::CommandEncoderDescriptor {
-                        label: Some("Render Encoder"),
-                    }
-                );
+                let mut encoder =
+                    backend
+                        .device()
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Render Encoder"),
+                        });
 
                 {
                     // Begin render pass
@@ -175,10 +183,8 @@ fn main() {
 
                     // Render the textured quad (our projection mapping!)
                     let texture_view = texture.create_view();
-                    let bind_group = quad_renderer.create_bind_group(
-                        backend.device(),
-                        &texture_view
-                    );
+                    let bind_group =
+                        quad_renderer.create_bind_group(backend.device(), &texture_view);
                     quad_renderer.draw(&mut render_pass, &bind_group);
                 }
 

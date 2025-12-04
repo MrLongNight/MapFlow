@@ -311,12 +311,8 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
 
     ui.label("Theme:");
     ui.horizontal(|ui| {
-        changed |= ui
-            .selectable_value(theme, Theme::Dark, "Dark")
-            .clicked();
-        changed |= ui
-            .selectable_value(theme, Theme::Light, "Light")
-            .clicked();
+        changed |= ui.selectable_value(theme, Theme::Dark, "Dark").clicked();
+        changed |= ui.selectable_value(theme, Theme::Light, "Light").clicked();
         changed |= ui
             .selectable_value(theme, Theme::HighContrast, "High Contrast")
             .clicked();

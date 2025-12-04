@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use super::cue::Cue;
 use super::crossfade::Crossfade;
+use super::cue::Cue;
 
 use crate::{error::ControlError, Result};
 
@@ -100,6 +100,7 @@ impl CueList {
     }
 
     /// Go to the next cue in the list
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<()> {
         if let Some(next_id) = self.next_cue {
             self.goto_cue(next_id, None)
@@ -205,8 +206,8 @@ impl Default for CueList {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::crossfade::FadeCurve;
+    use super::*;
 
     #[test]
     fn test_cue_list_creation() {

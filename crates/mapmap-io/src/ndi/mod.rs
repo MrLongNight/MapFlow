@@ -171,7 +171,10 @@ pub struct NdiSender;
 #[cfg(not(feature = "ndi"))]
 impl NdiSender {
     /// Create a new NDI sender (returns error when feature is disabled)
-    pub fn new(_name: impl Into<String>, _format: crate::format::VideoFormat) -> crate::error::Result<Self> {
+    pub fn new(
+        _name: impl Into<String>,
+        _format: crate::format::VideoFormat,
+    ) -> crate::error::Result<Self> {
         Err(crate::error::IoError::feature_not_enabled("NDI", "ndi"))
     }
 }

@@ -144,7 +144,9 @@ impl SpoutReceiver {
     /// Create a new Spout receiver (returns error when feature is disabled or on non-Windows platforms)
     pub fn new() -> crate::error::Result<Self> {
         #[cfg(not(target_os = "windows"))]
-        return Err(crate::error::IoError::platform_not_supported("Spout is only available on Windows"));
+        return Err(crate::error::IoError::platform_not_supported(
+            "Spout is only available on Windows",
+        ));
 
         #[cfg(target_os = "windows")]
         Err(crate::error::IoError::feature_not_enabled("Spout", "spout"))
@@ -153,7 +155,9 @@ impl SpoutReceiver {
     /// List available Spout senders (returns error when feature is disabled or on non-Windows platforms)
     pub fn list_senders() -> crate::error::Result<Vec<SpoutSenderInfo>> {
         #[cfg(not(target_os = "windows"))]
-        return Err(crate::error::IoError::platform_not_supported("Spout is only available on Windows"));
+        return Err(crate::error::IoError::platform_not_supported(
+            "Spout is only available on Windows",
+        ));
 
         #[cfg(target_os = "windows")]
         Err(crate::error::IoError::feature_not_enabled("Spout", "spout"))
@@ -167,9 +171,14 @@ pub struct SpoutSender;
 #[cfg(not(all(feature = "spout", target_os = "windows")))]
 impl SpoutSender {
     /// Create a new Spout sender (returns error when feature is disabled or on non-Windows platforms)
-    pub fn new(_name: impl Into<String>, _format: crate::format::VideoFormat) -> crate::error::Result<Self> {
+    pub fn new(
+        _name: impl Into<String>,
+        _format: crate::format::VideoFormat,
+    ) -> crate::error::Result<Self> {
         #[cfg(not(target_os = "windows"))]
-        return Err(crate::error::IoError::platform_not_supported("Spout is only available on Windows"));
+        return Err(crate::error::IoError::platform_not_supported(
+            "Spout is only available on Windows",
+        ));
 
         #[cfg(target_os = "windows")]
         Err(crate::error::IoError::feature_not_enabled("Spout", "spout"))

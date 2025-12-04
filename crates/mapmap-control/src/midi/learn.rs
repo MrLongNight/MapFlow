@@ -1,7 +1,7 @@
 //! MIDI learn mode implementation
 
+use super::{MappingCurve, MidiMapping, MidiMessage};
 use crate::target::ControlTarget;
-use super::{MidiMessage, MidiMapping, MappingCurve};
 use std::sync::{Arc, Mutex};
 use tracing::info;
 
@@ -127,10 +127,7 @@ impl MidiLearn {
                 controller,
                 value: 0,
             },
-            MidiMessage::PitchBend { channel, .. } => MidiMessage::PitchBend {
-                channel,
-                value: 0,
-            },
+            MidiMessage::PitchBend { channel, .. } => MidiMessage::PitchBend { channel, value: 0 },
             _ => message,
         };
 
@@ -139,7 +136,13 @@ impl MidiLearn {
             template_message, target
         );
 
-        mapping.add_mapping(template_message, target.clone(), min_value, max_value, curve);
+        mapping.add_mapping(
+            template_message,
+            target.clone(),
+            min_value,
+            max_value,
+            curve,
+        );
 
         // Reset state
         if let Ok(mut state) = self.state.lock() {

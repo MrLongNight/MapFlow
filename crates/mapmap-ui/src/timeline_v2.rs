@@ -85,10 +85,23 @@ impl InterpolationType {
     }
 
     /// Interpolate between two values based on interpolation type
-    pub fn interpolate(&self, a: f32, b: f32, t: f32, ctrl_in: Option<Vec2>, ctrl_out: Option<Vec2>) -> f32 {
+    pub fn interpolate(
+        &self,
+        a: f32,
+        b: f32,
+        t: f32,
+        ctrl_in: Option<Vec2>,
+        ctrl_out: Option<Vec2>,
+    ) -> f32 {
         match self {
             Self::Linear => a + (b - a) * t,
-            Self::Constant => if t < 1.0 { a } else { b },
+            Self::Constant => {
+                if t < 1.0 {
+                    a
+                } else {
+                    b
+                }
+            }
             Self::Bezier => {
                 // Cubic Bezier interpolation using control points
                 if let (Some(c_in), Some(c_out)) = (ctrl_in, ctrl_out) {
@@ -111,7 +124,11 @@ impl InterpolationType {
             Self::EaseIn => a + (b - a) * (t * t),
             Self::EaseOut => a + (b - a) * (t * (2.0 - t)),
             Self::EaseInOut => {
-                let t2 = if t < 0.5 { 2.0 * t * t } else { -1.0 + (4.0 - 2.0 * t) * t };
+                let t2 = if t < 0.5 {
+                    2.0 * t * t
+                } else {
+                    -1.0 + (4.0 - 2.0 * t) * t
+                };
                 a + (b - a) * t2
             }
             Self::Elastic => {
@@ -122,7 +139,9 @@ impl InterpolationType {
                 } else {
                     let p = 0.3;
                     let s = p / 4.0;
-                    let post = (b - a) * (2.0_f32).powf(-10.0 * t) * ((t - s) * (2.0 * std::f32::consts::PI) / p).sin();
+                    let post = (b - a)
+                        * (2.0_f32).powf(-10.0 * t)
+                        * ((t - s) * (2.0 * std::f32::consts::PI) / p).sin();
                     a + (b - a) - post
                 }
             }
@@ -197,7 +216,11 @@ impl TimelineV2 {
     pub fn add_keyframe(&mut self, track_idx: usize, time: f32, value: f32) {
         if let Some(track) = self.tracks.get_mut(track_idx) {
             // Check if keyframe already exists at this time
-            if let Some(existing) = track.keyframes.iter_mut().find(|k| (k.time - time).abs() < 0.01) {
+            if let Some(existing) = track
+                .keyframes
+                .iter_mut()
+                .find(|k| (k.time - time).abs() < 0.01)
+            {
                 existing.value = value;
             } else {
                 track.keyframes.push(Keyframe {
@@ -207,7 +230,9 @@ impl TimelineV2 {
                     control_in: None,
                     control_out: None,
                 });
-                track.keyframes.sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap());
+                track
+                    .keyframes
+                    .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap());
             }
         }
     }
@@ -286,7 +311,11 @@ impl TimelineV2 {
 
             ui.checkbox(&mut self.snap_enabled, "Snap");
             if self.snap_enabled {
-                ui.add(egui::DragValue::new(&mut self.snap_interval).prefix("Snap: ").suffix("s"));
+                ui.add(
+                    egui::DragValue::new(&mut self.snap_interval)
+                        .prefix("Snap: ")
+                        .suffix("s"),
+                );
             }
 
             ui.separator();
@@ -333,7 +362,10 @@ impl TimelineV2 {
             while time <= self.duration {
                 let x = rect.min.x + time * self.zoom;
                 painter.line_segment(
-                    [Pos2::new(x, ruler_rect.min.y), Pos2::new(x, ruler_rect.max.y)],
+                    [
+                        Pos2::new(x, ruler_rect.min.y),
+                        Pos2::new(x, ruler_rect.max.y),
+                    ],
                     Stroke::new(1.0, Color32::from_rgb(100, 100, 100)),
                 );
                 painter.text(

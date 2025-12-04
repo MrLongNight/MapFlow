@@ -135,7 +135,9 @@ impl VideoSink for SrtStreamer {
         }
 
         // TODO: Implement frame sending
-        Err(IoError::SrtError("SRT streaming not yet implemented".to_string()))
+        Err(IoError::SrtError(
+            "SRT streaming not yet implemented".to_string(),
+        ))
     }
 
     fn is_available(&self) -> bool {
@@ -173,8 +175,15 @@ pub struct SrtStreamer;
 #[cfg(not(feature = "stream"))]
 impl SrtStreamer {
     /// Create a new SRT streamer (returns error when feature is disabled)
-    pub fn new(_url: impl Into<String>, _format: crate::format::VideoFormat, _bitrate: u64) -> crate::error::Result<Self> {
-        Err(crate::error::IoError::feature_not_enabled("SRT streaming", "stream"))
+    pub fn new(
+        _url: impl Into<String>,
+        _format: crate::format::VideoFormat,
+        _bitrate: u64,
+    ) -> crate::error::Result<Self> {
+        Err(crate::error::IoError::feature_not_enabled(
+            "SRT streaming",
+            "stream",
+        ))
     }
 }
 
@@ -200,8 +209,7 @@ mod tests {
     #[test]
     fn test_srt_streamer_not_implemented() {
         let format = VideoFormat::hd_1080p60_rgba();
-        let mut streamer = SrtStreamer::new("srt://localhost:9000", format, 6_000_000)
-            .unwrap();
+        let mut streamer = SrtStreamer::new("srt://localhost:9000", format, 6_000_000).unwrap();
 
         // Connect should fail with not implemented error
         assert!(streamer.connect().is_err());

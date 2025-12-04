@@ -36,21 +36,11 @@ pub struct DashboardWidget {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WidgetType {
     /// Slider control
-    Slider {
-        value: f32,
-        min: f32,
-        max: f32,
-    },
+    Slider { value: f32, min: f32, max: f32 },
     /// Knob/dial control
-    Knob {
-        value: f32,
-        min: f32,
-        max: f32,
-    },
+    Knob { value: f32, min: f32, max: f32 },
     /// Toggle button
-    Toggle {
-        value: bool,
-    },
+    Toggle { value: bool },
     /// XY Pad (2D control)
     XYPad {
         x: f32,
@@ -63,9 +53,7 @@ pub enum WidgetType {
     /// Button (trigger)
     Button,
     /// Label (display value)
-    Label {
-        value: String,
-    },
+    Label { value: String },
 }
 
 impl Dashboard {
@@ -155,7 +143,8 @@ impl Dashboard {
     fn render_freeform_layout(&mut self, ui: &mut Ui) -> Option<DashboardAction> {
         let mut action = None;
 
-        let (_response, _painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
+        let (_response, _painter) =
+            ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
 
         for widget in &mut self.widgets {
             // Use egui::Area for freeform positioning
@@ -194,8 +183,7 @@ impl Dashboard {
             // Widget control
             match &mut widget.widget_type {
                 WidgetType::Slider { value, min, max } => {
-                    let slider = egui::Slider::new(value, *min..=*max)
-                        .show_value(true);
+                    let slider = egui::Slider::new(value, *min..=*max).show_value(true);
                     if ui.add(slider).changed() {
                         action = Some(DashboardAction::ValueChanged(widget.id, *value));
                     }
@@ -203,7 +191,8 @@ impl Dashboard {
                 WidgetType::Knob { value, min, max } => {
                     // Draw custom knob
                     let desired_size = Vec2::new(80.0, 80.0);
-                    let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click_and_drag());
+                    let (rect, response) =
+                        ui.allocate_exact_size(desired_size, Sense::click_and_drag());
 
                     if ui.is_rect_visible(rect) {
                         let painter = ui.painter();
@@ -212,17 +201,22 @@ impl Dashboard {
 
                         // Background circle
                         painter.circle_filled(center, radius, Color32::from_rgb(40, 40, 40));
-                        painter.circle_stroke(center, radius, Stroke::new(2.0, Color32::from_rgb(100, 100, 100)));
+                        painter.circle_stroke(
+                            center,
+                            radius,
+                            Stroke::new(2.0, Color32::from_rgb(100, 100, 100)),
+                        );
 
                         // Value arc
                         let normalized = (*value - *min) / (*max - *min);
                         let angle = -135.0 + (normalized * 270.0);
                         let angle_rad = angle.to_radians();
 
-                        let indicator_pos = center + Vec2::new(
-                            angle_rad.cos() * radius * 0.7,
-                            angle_rad.sin() * radius * 0.7,
-                        );
+                        let indicator_pos = center
+                            + Vec2::new(
+                                angle_rad.cos() * radius * 0.7,
+                                angle_rad.sin() * radius * 0.7,
+                            );
 
                         painter.line_segment(
                             [center, indicator_pos],
@@ -252,16 +246,28 @@ impl Dashboard {
                         action = Some(DashboardAction::BoolChanged(widget.id, *value));
                     }
                 }
-                WidgetType::XYPad { x, y, x_min, x_max, y_min, y_max } => {
+                WidgetType::XYPad {
+                    x,
+                    y,
+                    x_min,
+                    x_max,
+                    y_min,
+                    y_max,
+                } => {
                     let desired_size = Vec2::new(150.0, 150.0);
-                    let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click_and_drag());
+                    let (rect, response) =
+                        ui.allocate_exact_size(desired_size, Sense::click_and_drag());
 
                     if ui.is_rect_visible(rect) {
                         let painter = ui.painter();
 
                         // Background
                         painter.rect_filled(rect, 2.0, Color32::from_rgb(30, 30, 30));
-                        painter.rect_stroke(rect, 2.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
+                        painter.rect_stroke(
+                            rect,
+                            2.0,
+                            Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+                        );
 
                         // Crosshairs
                         let x_norm = (*x - *x_min) / (*x_max - *x_min);
@@ -280,14 +286,23 @@ impl Dashboard {
                         );
 
                         // Control point
-                        painter.circle_filled(Pos2::new(pad_x, pad_y), 8.0, Color32::from_rgb(100, 150, 255));
-                        painter.circle_stroke(Pos2::new(pad_x, pad_y), 8.0, Stroke::new(2.0, Color32::WHITE));
+                        painter.circle_filled(
+                            Pos2::new(pad_x, pad_y),
+                            8.0,
+                            Color32::from_rgb(100, 150, 255),
+                        );
+                        painter.circle_stroke(
+                            Pos2::new(pad_x, pad_y),
+                            8.0,
+                            Stroke::new(2.0, Color32::WHITE),
+                        );
 
                         // Handle interaction
                         if response.clicked() || response.dragged() {
                             if let Some(pos) = response.interact_pointer_pos() {
                                 let x_norm = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
-                                let y_norm = 1.0 - ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0);
+                                let y_norm =
+                                    1.0 - ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0);
 
                                 *x = *x_min + x_norm * (*x_max - *x_min);
                                 *y = *y_min + y_norm * (*y_max - *y_min);

@@ -146,7 +146,9 @@ pub use spout::{SpoutReceiver, SpoutSender, SpoutSenderInfo};
 pub use syphon::{SyphonClient, SyphonServer, SyphonServerInfo};
 
 #[cfg(feature = "stream")]
-pub use stream::{EncodedPacket, EncoderPreset, RtmpStreamer, SrtStreamer, VideoCodec, VideoEncoder};
+pub use stream::{
+    EncodedPacket, EncoderPreset, RtmpStreamer, SrtStreamer, VideoCodec, VideoEncoder,
+};
 
 #[cfg(feature = "virtual-camera")]
 pub use virtual_camera::VirtualCamera;

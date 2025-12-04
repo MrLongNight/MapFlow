@@ -20,7 +20,12 @@ pub struct CanvasRegion {
 impl CanvasRegion {
     /// Create a new canvas region
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     /// Check if this region intersects with another region
@@ -81,8 +86,8 @@ impl Default for EdgeBlendConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EdgeBlendZone {
     pub enabled: bool,
-    pub width: f32,   // 0.0-0.5 (percentage of output width/height)
-    pub offset: f32,  // Shift blend zone inward/outward (-0.1 to 0.1)
+    pub width: f32,  // 0.0-0.5 (percentage of output width/height)
+    pub offset: f32, // Shift blend zone inward/outward (-0.1 to 0.1)
 }
 
 impl Default for EdgeBlendZone {
@@ -98,12 +103,12 @@ impl Default for EdgeBlendZone {
 /// Color calibration for per-output color correction
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColorCalibration {
-    pub brightness: f32,        // -1.0 to 1.0
-    pub contrast: f32,           // 0.0 to 2.0
-    pub gamma: Vec2,           // Per-channel gamma (R, G, B) - using Vec3 requires glam feature
-    pub gamma_b: f32,            // Blue gamma (separate due to Vec2)
-    pub color_temp: f32,         // 2000K to 10000K
-    pub saturation: f32,         // 0.0 to 2.0
+    pub brightness: f32, // -1.0 to 1.0
+    pub contrast: f32,   // 0.0 to 2.0
+    pub gamma: Vec2,     // Per-channel gamma (R, G, B) - using Vec3 requires glam feature
+    pub gamma_b: f32,    // Blue gamma (separate due to Vec2)
+    pub color_temp: f32, // 2000K to 10000K
+    pub saturation: f32, // 0.0 to 2.0
 }
 
 impl Default for ColorCalibration {
@@ -112,8 +117,8 @@ impl Default for ColorCalibration {
             brightness: 0.0,
             contrast: 1.0,
             gamma: Vec2::new(1.0, 1.0), // R, G
-            gamma_b: 1.0,                // B
-            color_temp: 6500.0,          // D65 standard
+            gamma_b: 1.0,               // B
+            color_temp: 6500.0,         // D65 standard
             saturation: 1.0,
         }
     }
@@ -133,7 +138,12 @@ pub struct OutputConfig {
 
 impl OutputConfig {
     /// Create a new output configuration
-    pub fn new(id: OutputId, name: String, canvas_region: CanvasRegion, resolution: (u32, u32)) -> Self {
+    pub fn new(
+        id: OutputId,
+        name: String,
+        canvas_region: CanvasRegion,
+        resolution: (u32, u32),
+    ) -> Self {
         Self {
             id,
             name,
@@ -165,7 +175,12 @@ impl OutputManager {
     }
 
     /// Add a new output
-    pub fn add_output(&mut self, name: String, canvas_region: CanvasRegion, resolution: (u32, u32)) -> OutputId {
+    pub fn add_output(
+        &mut self,
+        name: String,
+        canvas_region: CanvasRegion,
+        resolution: (u32, u32),
+    ) -> OutputId {
         let id = self.next_id;
         self.next_id += 1;
 

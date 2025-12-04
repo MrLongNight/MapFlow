@@ -1,9 +1,10 @@
 //! Keyboard shortcuts and macro system
 
-mod shortcuts;
-mod macros;
 mod bindings;
+mod macros;
+#[allow(clippy::module_inception)]
+mod shortcuts;
 
-pub use shortcuts::*;
-pub use macros::*;
 pub use bindings::*;
+pub use macros::*;
+pub use shortcuts::*;

@@ -126,11 +126,8 @@ impl MappingManager {
 
     /// Get visible mappings (sorted by depth)
     pub fn visible_mappings(&self) -> Vec<&Mapping> {
-        let mut mappings: Vec<&Mapping> = self
-            .mappings
-            .iter()
-            .filter(|m| m.is_renderable())
-            .collect();
+        let mut mappings: Vec<&Mapping> =
+            self.mappings.iter().filter(|m| m.is_renderable()).collect();
 
         // Sort by depth (back to front)
         mappings.sort_by(|a, b| a.depth.partial_cmp(&b.depth).unwrap());
@@ -237,7 +234,7 @@ mod tests {
     fn test_solo_mode() {
         let mut manager = MappingManager::new();
 
-        let mut mapping1 = Mapping::quad(0, "Normal", 10);
+        let mapping1 = Mapping::quad(0, "Normal", 10);
         manager.add_mapping(mapping1);
 
         let mut mapping2 = Mapping::quad(0, "Solo", 20);

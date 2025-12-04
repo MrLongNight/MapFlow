@@ -1,30 +1,30 @@
 //! MIDI input/output system
 
 #[cfg(feature = "midi")]
-mod input;
+mod clock;
 #[cfg(feature = "midi")]
-mod output;
+mod input;
 #[cfg(feature = "midi")]
 mod learn;
 #[cfg(feature = "midi")]
 mod mapping;
 #[cfg(feature = "midi")]
-mod profiles;
+mod output;
 #[cfg(feature = "midi")]
-mod clock;
+mod profiles;
 
 #[cfg(feature = "midi")]
-pub use input::*;
+pub use clock::*;
 #[cfg(feature = "midi")]
-pub use output::*;
+pub use input::*;
 #[cfg(feature = "midi")]
 pub use learn::*;
 #[cfg(feature = "midi")]
 pub use mapping::*;
 #[cfg(feature = "midi")]
-pub use profiles::*;
+pub use output::*;
 #[cfg(feature = "midi")]
-pub use clock::*;
+pub use profiles::*;
 
 use serde::{Deserialize, Serialize};
 
