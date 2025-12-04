@@ -1,0 +1,233 @@
+//! Window Manager
+//!
+//! This module handles the creation, tracking, and destruction of all application windows,
+//! including the main control window and all output windows. It abstracts away the
+//! complexities of managing winit windows and wgpu surfaces.
+
+use anyhow::Result;
+use mapmap_core::{OutputId, OutputManager};
+use mapmap_render::WgpuBackend;
+use std::collections::HashMap;
+use tracing::info;
+use winit::{
+    event_loop::EventLoopWindowTarget,
+    window::{Fullscreen, Window, WindowBuilder, WindowId},
+};
+
+/// Context for a single window, containing the `winit` window, `wgpu` surface,
+/// and other related configuration.
+pub struct WindowContext {
+    /// The `winit` window.
+    pub window: Window,
+    /// The `wgpu` surface associated with the window.
+    pub surface: wgpu::Surface,
+    /// The configuration for the `wgpu` surface.
+    pub surface_config: wgpu::SurfaceConfiguration,
+    /// The `OutputId` associated with this window. For the main window, this is `0`.
+    pub output_id: OutputId,
+}
+
+/// Manages all application windows, including the main control window and all output windows.
+pub struct WindowManager {
+    windows: HashMap<OutputId, WindowContext>,
+    window_id_map: HashMap<WindowId, OutputId>,
+    main_window_id: Option<OutputId>,
+}
+
+impl WindowManager {
+    /// Creates a new, empty `WindowManager`.
+    pub fn new() -> Self {
+        Self {
+            windows: HashMap::new(),
+            window_id_map: HashMap::new(),
+            main_window_id: None,
+        }
+    }
+
+    /// Creates the main control window.
+    ///
+    /// This is the primary window for the application, where the UI is displayed.
+    /// It is assigned a reserved `OutputId` of `0`.
+    pub fn create_main_window<T>(
+        &mut self,
+        event_loop: &EventLoopWindowTarget<T>,
+        backend: &WgpuBackend,
+    ) -> Result<OutputId> {
+        let window = WindowBuilder::new()
+            .with_title("MapMap - Main Control")
+            .with_inner_size(winit::dpi::PhysicalSize::new(1920, 1080))
+            .build(event_loop)?;
+
+        let window_id = window.id();
+        let output_id: OutputId = 0; // Reserved ID for the main window
+
+        let surface = unsafe { backend.create_surface(&window) }?;
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            width: 1920,
+            height: 1080,
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+            view_formats: vec![],
+        };
+        surface.configure(backend.device(), &surface_config);
+
+        let context = WindowContext {
+            window,
+            surface,
+            surface_config,
+            output_id,
+        };
+
+        self.windows.insert(output_id, context);
+        self.window_id_map.insert(window_id, output_id);
+        self.main_window_id = Some(output_id);
+
+        Ok(output_id)
+    }
+
+    /// Creates a new output window based on an `OutputConfig`.
+    ///
+    /// If a window for the given `OutputId` already exists, this function does nothing.
+    pub fn create_output_window<T>(
+        &mut self,
+        event_loop: &EventLoopWindowTarget<T>,
+        backend: &WgpuBackend,
+        output_config: &mapmap_core::OutputConfig,
+    ) -> Result<()> {
+        let output_id = output_config.id;
+
+        // Skip if window already exists
+        if self.windows.contains_key(&output_id) {
+            return Ok(());
+        }
+
+        info!(
+            "Creating window for output '{}' (ID: {})",
+            output_config.name, output_id
+        );
+
+        let window = WindowBuilder::new()
+            .with_title(&format!("MapMap Output - {}", output_config.name))
+            .with_inner_size(winit::dpi::PhysicalSize::new(
+                output_config.resolution.0,
+                output_config.resolution.1,
+            ))
+            .with_fullscreen(if output_config.fullscreen {
+                Some(Fullscreen::Borderless(None))
+            } else {
+                None
+            })
+            .build(event_loop)?;
+
+        let window_id_winit = window.id();
+
+        // Create surface for this output window
+        let surface = unsafe { backend.create_surface(&window) }?;
+
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            width: output_config.resolution.0,
+            height: output_config.resolution.1,
+            present_mode: wgpu::PresentMode::Fifo, // VSync for synchronized output
+            alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+            view_formats: vec![],
+        };
+
+        surface.configure(backend.device(), &surface_config);
+
+        let window_context = WindowContext {
+            window,
+            surface,
+            surface_config,
+            output_id,
+        };
+
+        self.windows.insert(output_id, window_context);
+        self.window_id_map.insert(window_id_winit, output_id);
+
+        info!(
+            "Created output window for '{}' at {}x{}",
+            output_config.name, output_config.resolution.0, output_config.resolution.1
+        );
+
+        Ok(())
+    }
+
+    /// Synchronizes the active windows with the `OutputManager`'s configuration.
+    ///
+    /// This function will create windows for new outputs and remove windows for outputs
+    /// that no longer exist.
+    pub fn sync_windows<T>(
+        &mut self,
+        event_loop: &EventLoopWindowTarget<T>,
+        backend: &WgpuBackend,
+        output_manager: &OutputManager,
+    ) -> Result<()> {
+        // Create windows for new outputs
+        for output_config in output_manager.outputs() {
+            if !self.windows.contains_key(&output_config.id) {
+                self.create_output_window(event_loop, backend, output_config)?;
+            }
+        }
+
+        // Remove windows for outputs that no longer exist
+        let output_ids: Vec<OutputId> = output_manager.outputs().iter().map(|o| o.id).collect();
+
+        let mut windows_to_remove = Vec::new();
+        for &window_output_id in self.windows.keys() {
+            if window_output_id != 0 && !output_ids.contains(&window_output_id) {
+                windows_to_remove.push(window_output_id);
+            }
+        }
+
+        for output_id in windows_to_remove {
+            self.remove_window(output_id);
+            info!("Removed output window for output ID {}", output_id);
+        }
+
+        Ok(())
+    }
+
+    /// Removes a window by its `OutputId`.
+    pub fn remove_window(&mut self, output_id: OutputId) -> Option<WindowContext> {
+        if let Some(context) = self.windows.remove(&output_id) {
+            self.window_id_map.remove(&context.window.id());
+            Some(context)
+        } else {
+            None
+        }
+    }
+
+    /// Returns a reference to a `WindowContext` by its `OutputId`.
+    pub fn get(&self, output_id: OutputId) -> Option<&WindowContext> {
+        self.windows.get(&output_id)
+    }
+
+    /// Returns a mutable reference to a `WindowContext` by its `OutputId`.
+    pub fn get_mut(&mut self, output_id: OutputId) -> Option<&mut WindowContext> {
+        self.windows.get_mut(&output_id)
+    }
+
+    /// Returns the main window's `OutputId`.
+    pub fn main_window_id(&self) -> Option<OutputId> {
+        self.main_window_id
+    }
+
+    /// Returns an iterator over all `OutputId`s.
+    pub fn window_ids(&self) -> impl Iterator<Item = &OutputId> {
+        self.windows.keys()
+    }
+
+    /// Returns an iterator over all `WindowContext`s.
+    pub fn iter(&self) -> impl Iterator<Item = &WindowContext> {
+        self.windows.values()
+    }
+
+    /// Returns the `OutputId` for a given `winit` `WindowId`.
+    pub fn get_output_id_from_window_id(&self, window_id: WindowId) -> Option<OutputId> {
+        self.window_id_map.get(&window_id).copied()
+    }
+}
