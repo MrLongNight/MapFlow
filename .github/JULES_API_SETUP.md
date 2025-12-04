@@ -202,11 +202,18 @@ jules remote status
 
 #### Via cURL (REST API)
 
-```bash
-# API Key aus Environment oder direkt
-export JULES_API_KEY="your-api-key-here"
+⚠️ **Sicherheitshinweis:** API Keys sollten niemals direkt in der Shell oder Scripts hardcoded werden. Verwende sichere Methoden wie Environment-Variablen aus Credential Manager.
 
-# Session erstellen
+```bash
+# ⚠️ NICHT EMPFOHLEN: API Key direkt in Shell
+# export JULES_API_KEY="your-api-key-here"  # Landet in Shell History!
+
+# ✅ BESSER: API Key aus sicherem Speicher laden
+# macOS: security find-generic-password -s jules-api-key -w
+# Linux: secret-tool lookup service jules api-key
+# Oder: Aus Password Manager (1Password, LastPass, etc.)
+
+# Session erstellen (Annahme: JULES_API_KEY ist sicher gesetzt)
 curl 'https://jules.googleapis.com/v1alpha/sessions' \
   -X POST \
   -H "Content-Type: application/json" \
@@ -254,11 +261,21 @@ gh run watch
 
 ```bash
 # Test API Key (wenn manuell konfiguriert)
-export JULES_API_KEY="your-api-key"
+# WICHTIG: Für Sicherheit, API Key aus sicherem Speicher laden
+# Option 1: Von GitHub Secret (lokal nicht direkt verfügbar)
+# Option 2: Verwende Umgebungsvariable aus sicherem Storage
+
+# Test mit API Key aus Environment (bereits gesetzt)
 curl 'https://jules.googleapis.com/v1alpha/sources/github/MrLongNight/VjMapper' \
   -H "X-Goog-Api-Key: $JULES_API_KEY"
 
 # Sollte 200 OK zurückgeben mit Repository-Info
+
+# ⚠️ SICHERHEITSHINWEIS: 
+# - Niemals API Keys direkt in Shell-Befehlen verwenden
+# - Nicht in Shell History speichern (export HISTCONTROL=ignorespace)
+# - Verwende GitHub Secrets für Workflows
+# - Für lokale Tests: Verwende Credential Manager oder .netrc
 ```
 
 ### Häufige Probleme:

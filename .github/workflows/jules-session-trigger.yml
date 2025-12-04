@@ -24,8 +24,8 @@ jobs:
     # 3. Manual workflow dispatch
     if: |
       (github.event_name == 'issues' && 
-       (github.event.action == 'labeled' && github.event.label.name == 'jules-task') ||
-       (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'jules-task'))) ||
+       ((github.event.action == 'labeled' && github.event.label.name == 'jules-task') ||
+        (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'jules-task')))) ||
       github.event_name == 'workflow_dispatch'
     
     steps:
@@ -36,7 +36,13 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const issueNumber = context.payload.inputs?.issue_number || context.payload.issue?.number;
+          // Extract issue number from different trigger contexts
+          let issueNumber;
+          if (context.eventName === 'workflow_dispatch' && context.payload.inputs) {
+            issueNumber = context.payload.inputs.issue_number;
+          } else if (context.payload.issue) {
+            issueNumber = context.payload.issue.number;
+          }
           
           // Function to process a single issue
           async function processIssue(issueNum) {
@@ -104,8 +110,8 @@ jobs:
             for (const issue of issues) {
               const success = await processIssue(issue.number);
               if (success) processed++;
-              // Small delay to avoid rate limiting
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Small delay to avoid rate limiting (reduced for efficiency)
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
             
             console.log(`\n✅ Batch processing complete: ${processed}/${issues.length} issues processed`);
@@ -162,7 +168,18 @@ jobs:
         JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       with:
         script: |
-          const issueNumber = context.payload.inputs?.issue_number || context.payload.issue?.number;
+          // Extract issue number from different trigger contexts
+          let issueNumber;
+          if (context.eventName === 'workflow_dispatch' && context.payload.inputs) {
+            issueNumber = parseInt(context.payload.inputs.issue_number);
+          } else if (context.payload.issue) {
+            issueNumber = context.payload.issue.number;
+          }
+          
+          if (!issueNumber) {
+            console.log('⚠️  No issue number found - skipping API session creation');
+            return;
+          }
           
           // Get issue details
           const { data: issue } = await github.rest.issues.get({
@@ -179,31 +196,59 @@ jobs:
           console.log(`   Issue: #${issueNumber}`);
           console.log(`   Source: ${source}`);
           
-          // Make API call to Jules
+          // Make API call to Jules using exec
+          // Note: Using curl instead of fetch since fetch is not available in github-script
           try {
-            const response = await fetch('https://jules.googleapis.com/v1alpha/sessions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': process.env.JULES_API_KEY
-              },
-              body: JSON.stringify({
-                prompt: prompt,
-                sourceContext: {
-                  source: source,
-                  githubRepoContext: {
-                    startingBranch: 'main'
-                  }
+            const { exec } = require('@actions/exec');
+            
+            // Prepare API request body
+            const requestBody = JSON.stringify({
+              prompt: prompt,
+              sourceContext: {
+                source: source,
+                githubRepoContext: {
+                  startingBranch: 'main'
                 }
-              })
+              }
             });
             
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`Jules API error (${response.status}): ${errorText}`);
+            // Create temp file for request body
+            const fs = require('fs');
+            const tmpFile = '/tmp/jules-request.json';
+            fs.writeFileSync(tmpFile, requestBody);
+            
+            // Execute curl command
+            let stdout = '';
+            let stderr = '';
+            const exitCode = await exec('curl', [
+              '-s',
+              '-X', 'POST',
+              'https://jules.googleapis.com/v1alpha/sessions',
+              '-H', 'Content-Type: application/json',
+              '-H', `X-Goog-Api-Key: ${process.env.JULES_API_KEY}`,
+              '-d', `@${tmpFile}`,
+              '-w', '\n%{http_code}'
+            ], {
+              listeners: {
+                stdout: (data) => { stdout += data.toString(); },
+                stderr: (data) => { stderr += data.toString(); }
+              },
+              ignoreReturnCode: true
+            });
+            
+            // Clean up temp file
+            fs.unlinkSync(tmpFile);
+            
+            // Parse response
+            const lines = stdout.trim().split('\n');
+            const httpCode = lines[lines.length - 1];
+            const responseBody = lines.slice(0, -1).join('\n');
+            
+            if (httpCode !== '200' && httpCode !== '201') {
+              throw new Error(`Jules API error (${httpCode}): ${responseBody}`);
             }
             
-            const result = await response.json();
+            const result = JSON.parse(responseBody);
             console.log('✅ Jules session created successfully!');
             console.log(`   Session ID: ${result.name || 'unknown'}`);
             
