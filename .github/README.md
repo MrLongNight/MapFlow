@@ -21,7 +21,7 @@
 gh label sync --file .github/labels.yml
 
 # Issues erstellen
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 
 # Status prüfen
 gh run watch
@@ -42,7 +42,7 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 ### 3. Workflows kontrollieren
 ```bash
 # Auto-Merge deaktivieren
-# Editiere: .github/workflows/JULES-03_pr-automation.yml
+# Editiere: .github/workflows/CI-05_pr-automation.yml
 # Setze: AUTO_MERGE_ENABLED: false
 
 # CodeQL für PRs deaktivieren
@@ -66,10 +66,10 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 │   ├── README.md                      # Technische Workflow-Details
 │   ├── CI-01_build-and-test.yml                 # CI/CD (6 Jobs)
 │   ├── CI-02_security-scan.yml                     # Security Scan
-│   ├── JULES-01_create-issues.yml        # Issues erstellen
-│   ├── JULES-03_pr-automation.yml        # Auto-Merge
-│   ├── DOCS-01_update-changelog.yml       # CHANGELOG
-│   └── ADMIN-01_sync-labels.yml                # Labels sync
+│   ├── CI-03_create-issues.yml        # Issues erstellen
+│   ├── CI-05_pr-automation.yml        # Auto-Merge
+│   ├── CI-06_update-changelog.yml       # CHANGELOG
+│   └── CI-ADMIN-01_sync-labels.yml                # Labels sync
 │
 ├── ISSUE_TEMPLATE/
 │   ├── development_task.yml           # Jules Tasks
@@ -85,7 +85,7 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 
 ### 🆕 Erste Schritte
 1. Lies: [SETUP_GUIDE.md](SETUP_GUIDE.md)
-2. Erstelle Jules Issues: `gh workflow run JULES-01_create-issues.yml`
+2. Erstelle Jules Issues: `gh workflow run CI-03_create-issues.yml`
 3. Fertig! Jules kann loslegen
 
 ### 👨‍💻 Entwickler
@@ -118,7 +118,7 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 **Antwort:** Checks sind nicht fehlerhaft - sie laufen nur auf `main` oder bei PR zu `main`. Dieser Branch ist noch nicht gemerged. Nach Merge: alle Checks laufen.
 
 ### Wie erstelle ich Jules Issues?
-**Antwort:** `gh workflow run JULES-01_create-issues.yml` - Siehe [JULES_ISSUES_EXPLANATION.md](JULES_ISSUES_EXPLANATION.md)
+**Antwort:** `gh workflow run CI-03_create-issues.yml` - Siehe [JULES_ISSUES_EXPLANATION.md](JULES_ISSUES_EXPLANATION.md)
 
 ## 🔧 Workflows im Überblick
 
@@ -136,25 +136,25 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 **Jobs:** 1 (Security Analysis)  
 **Kontrolle:** `SCAN_ON_PR_ENABLED: false` für PRs deaktivieren
 
-### Jules Issues Creation (JULES-01_create-issues.yml)
+### Jules Issues Creation (CI-03_create-issues.yml)
 **Wann:** Manual only  
 **Dauer:** <1 min  
 **Jobs:** 1 (Erstellt 8 Issues)  
-**Verwendung:** `gh workflow run JULES-01_create-issues.yml`
+**Verwendung:** `gh workflow run CI-03_create-issues.yml`
 
-### Jules Auto-Merge (JULES-03_pr-automation.yml)
+### Jules Auto-Merge (CI-05_pr-automation.yml)
 **Wann:** Bei Jules PRs automatisch  
 **Dauer:** <1 min  
 **Jobs:** 1 (Merged wenn Checks ✅)  
 **Kontrolle:** `AUTO_MERGE_ENABLED: false` zum Deaktivieren
 
-### Update Documentation (DOCS-01_update-changelog.yml)
+### Update Documentation (CI-06_update-changelog.yml)
 **Wann:** Nach Merge in main  
 **Dauer:** <1 min  
 **Jobs:** 1 (CHANGELOG Update)  
 **Kontrolle:** Nicht deaktivierbar (läuft selten)
 
-### Sync Labels (ADMIN-01_sync-labels.yml)
+### Sync Labels (CI-ADMIN-01_sync-labels.yml)
 **Wann:** Bei Änderungen an labels.yml  
 **Dauer:** <1 min  
 **Jobs:** 1 (Label Sync)  
@@ -197,7 +197,7 @@ gh workflow run "CI/CD" -f skip_platforms=true
 ### Für Jules Integration
 ```bash
 # 1. Issues einmalig erstellen
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 
 # 2. Jules konfigurieren
 # 3. Auto-Merge aktiv lassen

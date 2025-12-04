@@ -1,4 +1,4 @@
-name: "JULES-02: Session Trigger"
+name: "CI-04: Session Trigger"
 
 on:
   issues:

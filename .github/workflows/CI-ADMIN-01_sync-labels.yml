@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   sync-labels:
-    name: "ADMIN-01: Sync Labels"
+    name: "CI-ADMIN-01: Sync Labels"
     runs-on: ubuntu-latest
     
     steps:

@@ -1,4 +1,4 @@
-name: "DOCS-01: Update Changelog"
+name: "CI-06: Update Changelog"
 
 on:
   pull_request:

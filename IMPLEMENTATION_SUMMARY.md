@@ -30,7 +30,7 @@ Deutsche Anforderung aus dem Problem Statement:
 **Dateien:**
 - `.github/workflows/CI-01_build-and-test.yml` - Haupt-CI/CD Pipeline
 - `.github/workflows/CI-02_security-scan.yml` - Security Scanning
-- `.github/workflows/ADMIN-01_sync-labels.yml` - Label Management
+- `.github/workflows/CI-ADMIN-01_sync-labels.yml` - Label Management
 
 **Features:**
 - ✅ Parallele Builds auf allen Plattformen
@@ -48,8 +48,8 @@ Deutsche Anforderung aus dem Problem Statement:
 - Label-System für Organisation
 
 **Dateien:**
-- `.github/workflows/JULES-01_create-issues.yml` - Issue Creation
-- `.github/workflows/JULES-03_pr-automation.yml` - Auto-Merge
+- `.github/workflows/CI-03_create-issues.yml` - Issue Creation
+- `.github/workflows/CI-05_pr-automation.yml` - Auto-Merge
 - `.github/ISSUE_TEMPLATE/development_task.yml` - Task Template
 - `.github/ISSUE_TEMPLATE/bug_report.yml` - Bug Template
 - `.github/ISSUE_TEMPLATE/feature_request.yml` - Feature Template
@@ -86,7 +86,7 @@ Issue wird geschlossen
 - Troubleshooting Anleitungen
 
 **Dateien:**
-- `.github/workflows/DOCS-01_update-changelog.yml` - Changelog Updates
+- `.github/workflows/CI-06_update-changelog.yml` - Changelog Updates
 - `.github/pull_request_template.md` - PR Template
 - `.github/workflows/README.md` - Workflow Dokumentation
 - `.github/JULES_INTEGRATION.md` - Jules Integration Guide (Deutsch)
@@ -142,10 +142,10 @@ Issue wird geschlossen
 ### Workflows (6 Stück)
 1. ✅ `CI-01_build-and-test.yml` - CI/CD Pipeline (enhanced)
 2. ✅ `CI-02_security-scan.yml` - Security Scanning
-3. ✅ `JULES-01_create-issues.yml` - Issue Creation
-4. ✅ `JULES-03_pr-automation.yml` - Auto-Merge
-5. ✅ `DOCS-01_update-changelog.yml` - Changelog
-6. ✅ `ADMIN-01_sync-labels.yml` - Label Management
+3. ✅ `CI-03_create-issues.yml` - Issue Creation
+4. ✅ `CI-05_pr-automation.yml` - Auto-Merge
+5. ✅ `CI-06_update-changelog.yml` - Changelog
+6. ✅ `CI-ADMIN-01_sync-labels.yml` - Label Management
 
 ### Templates (4 Stück)
 1. ✅ `development_task.yml` - Development Task Template
@@ -189,7 +189,7 @@ gh label sync --file .github/labels.yml
 
 ### Schritt 2: Jules Issues erstellen
 ```bash
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 gh run watch
 ```
 
@@ -281,7 +281,7 @@ Einen Test-Issue von Jules bearbeiten lassen und Auto-Merge beobachten.
 
 **Nächster Schritt:**
 ```bash
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 ```
 
 ---

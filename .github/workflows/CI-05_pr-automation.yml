@@ -1,4 +1,4 @@
-name: "JULES-03: PR Auto-Merge"
+name: "CI-05: PR Auto-Merge"
 
 on:
   pull_request:

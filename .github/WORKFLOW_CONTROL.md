@@ -25,14 +25,14 @@ gh workflow run "CI/CD" -f skip_tests=true
 gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 ```
 
-#### Jules Auto-Merge (JULES-03_pr-automation.yml)
+#### Jules Auto-Merge (CI-05_pr-automation.yml)
 ```yaml
 env:
   AUTO_MERGE_ENABLED: true  # Auf 'false' setzen um zu deaktivieren
 ```
 
 **Deaktivieren:**
-1. Öffne `.github/workflows/JULES-03_pr-automation.yml`
+1. Öffne `.github/workflows/CI-05_pr-automation.yml`
 2. Ändere `AUTO_MERGE_ENABLED: true` zu `AUTO_MERGE_ENABLED: false`
 3. Commit und push
 
@@ -120,7 +120,7 @@ gh workflow run "CI/CD" -f skip_tests=true
 - Kann über `SCAN_ON_PR_ENABLED: false` für PRs deaktiviert werden
 - Wöchentlicher Scan bleibt aktiv (wichtig!)
 
-### 3. Jules PR Auto-Merge (JULES-03_pr-automation.yml)
+### 3. Jules PR Auto-Merge (CI-05_pr-automation.yml)
 
 **Checks:**
 - **Auto-Merge Jules PR** - 1 Job
@@ -135,7 +135,7 @@ gh workflow run "CI/CD" -f skip_tests=true
 - Über `AUTO_MERGE_ENABLED` variable
 - Läuft nur wenn PR `jules-pr` Label hat
 
-### 4. Update Documentation (DOCS-01_update-changelog.yml)
+### 4. Update Documentation (CI-06_update-changelog.yml)
 
 **Checks:**
 - **Update Changelog** - 1 Job
@@ -146,7 +146,7 @@ gh workflow run "CI/CD" -f skip_tests=true
 - Läuft nur nach erfolgreichem Merge
 - Minimal und schnell
 
-### 5. Sync Labels (ADMIN-01_sync-labels.yml)
+### 5. Sync Labels (CI-ADMIN-01_sync-labels.yml)
 
 **Checks:**
 - **Sync Repository Labels** - 1 Job
@@ -229,7 +229,7 @@ Wenn du wirklich nur das Nötigste willst:
      SCAN_ON_PR_ENABLED: false
    ```
 
-2. **Deaktiviere** in `.github/workflows/JULES-03_pr-automation.yml`:
+2. **Deaktiviere** in `.github/workflows/CI-05_pr-automation.yml`:
    ```yaml
    env:
      AUTO_MERGE_ENABLED: false

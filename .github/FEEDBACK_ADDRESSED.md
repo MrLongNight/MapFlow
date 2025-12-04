@@ -28,7 +28,7 @@
 
 **Issues erstellen:**
 ```bash
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 ```
 
 **Dokumente:**
@@ -116,7 +116,7 @@ gh workflow run "CI/CD" -f skip_platforms=true -f skip_tests=true
 
 #### Auto-Merge deaktivieren
 ```yaml
-# Datei: .github/workflows/JULES-03_pr-automation.yml
+# Datei: .github/workflows/CI-05_pr-automation.yml
 env:
   AUTO_MERGE_ENABLED: false  # Auf false setzen
 ```
@@ -162,7 +162,7 @@ env:
    - Manual dispatch Optionen hinzugefügt
    - Bedingte Ausführung für Plattformen/Tests
 
-5. **`.github/workflows/JULES-03_pr-automation.yml`**
+5. **`.github/workflows/CI-05_pr-automation.yml`**
    - `AUTO_MERGE_ENABLED` Variable
    - Bedingung für Auto-Merge
 
@@ -188,7 +188,7 @@ env:
 
 ### Jules Issues erstellen
 ```bash
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 ```
 
 ### CI/CD nur auf Linux
@@ -198,7 +198,7 @@ gh workflow run "CI/CD" -f skip_platforms=true
 
 ### Auto-Merge temporär deaktivieren
 ```bash
-# Edit .github/workflows/JULES-03_pr-automation.yml
+# Edit .github/workflows/CI-05_pr-automation.yml
 # Setze: AUTO_MERGE_ENABLED: false
 ```
 
@@ -222,7 +222,7 @@ cat .github/SETUP_GUIDE.md
 
 **Änderungen:**
 - Modified: `.github/workflows/CI-01_build-and-test.yml`
-- Modified: `.github/workflows/JULES-03_pr-automation.yml`
+- Modified: `.github/workflows/CI-05_pr-automation.yml`
 - Modified: `.github/workflows/CI-02_security-scan.yml`
 - Added: `.github/WORKFLOW_CONTROL.md`
 - Added: `.github/JULES_ISSUES_EXPLANATION.md`
@@ -236,7 +236,7 @@ Alle Fragen wurden beantwortet, alle Requests implementiert, ausführliche Dokum
 
 **Nächste Schritte:**
 1. Dokumentation lesen
-2. Jules Issues erstellen: `gh workflow run JULES-01_create-issues.yml`
+2. Jules Issues erstellen: `gh workflow run CI-03_create-issues.yml`
 3. Jules API konfigurieren
 4. Workflows nach Bedarf anpassen
 

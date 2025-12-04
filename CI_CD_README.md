@@ -31,7 +31,7 @@ open https://github.com/apps/jules
 # → Füge als Secret hinzu: gh secret set JULES_API_KEY
 
 # 3. Alle Jules Development Issues erstellen
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 
 # 4. Status prüfen
 gh run watch
@@ -42,7 +42,7 @@ gh issue list --label "jules-task"
 
 **Das war's!** Jules Sessions werden jetzt automatisch erstellt, PRs werden automatisch gemerged.
 
-**Neu:** Der Workflow `JULES-02_session-trigger.yml` triggert automatisch Jules API Sessions wenn Issues mit `jules-task` Label erstellt/gelabelt werden. 🎉
+**Neu:** Der Workflow `CI-04_session-trigger.yml` triggert automatisch Jules API Sessions wenn Issues mit `jules-task` Label erstellt/gelabelt werden. 🎉
 
 ## 📁 Datei-Struktur
 
@@ -51,11 +51,11 @@ gh issue list --label "jules-task"
 ├── workflows/
 │   ├── CI-01_build-and-test.yml              # Haupt-CI/CD Pipeline
 │   ├── CI-02_security-scan.yml                  # Security Scanning
-│   ├── JULES-01_create-issues.yml     # Jules Issues erstellen (einmalig)
-│   ├── JULES-02_session-trigger.yml   # NEU: Triggert Jules API Sessions
-│   ├── JULES-03_pr-automation.yml     # Auto-Merge für Jules PRs
-│   ├── DOCS-01_update-changelog.yml    # Changelog Updates
-│   ├── ADMIN-01_sync-labels.yml             # Label Synchronisierung
+│   ├── CI-03_create-issues.yml     # Jules Issues erstellen (einmalig)
+│   ├── CI-04_session-trigger.yml   # NEU: Triggert Jules API Sessions
+│   ├── CI-05_pr-automation.yml     # Auto-Merge für Jules PRs
+│   ├── CI-06_update-changelog.yml    # Changelog Updates
+│   ├── CI-ADMIN-01_sync-labels.yml             # Label Synchronisierung
 │   └── README.md                   # Workflow Dokumentation
 ├── ISSUE_TEMPLATE/
 │   ├── development_task.yml        # Template für Jules Tasks
@@ -74,7 +74,7 @@ gh issue list --label "jules-task"
 ```
 Issue mit jules-task Label erstellt/gelabelt
     ↓
-JULES-02_session-trigger.yml triggert automatisch
+CI-04_session-trigger.yml triggert automatisch
     ↓
 Jules API Session wird erstellt (wenn Key vorhanden)
     ↓
@@ -84,11 +84,11 @@ Jules erstellt PR mit jules-pr Label
     ↓
 CI/CD Pipeline (CI-01_build-and-test.yml) läuft automatisch
     ↓
-JULES-03_pr-automation.yml: Auto-Merge wenn alle Checks ✅
+CI-05_pr-automation.yml: Auto-Merge wenn alle Checks ✅
     ↓
 Issue wird automatisch geschlossen
     ↓
-DOCS-01_update-changelog.yml: CHANGELOG.md wird aktualisiert
+CI-06_update-changelog.yml: CHANGELOG.md wird aktualisiert
 ```
 
 **Neu:** Der Workflow ist jetzt vollständig automatisiert! Sobald ein Issue das `jules-task` Label erhält, wird automatisch eine Jules Session getriggert.
@@ -116,12 +116,12 @@ Bereit zum Merge
 - **Was:** Baut und testet auf allen Plattformen
 - **Dauer:** ~10-15 Minuten
 
-### 2. Jules Issues Creation (`JULES-01_create-issues.yml`)
+### 2. Jules Issues Creation (`CI-03_create-issues.yml`)
 - **Trigger:** Manuell (einmalig)
 - **Was:** Erstellt 8 vordefinierte Development Issues
 - **Dauer:** ~1 Minute
 
-### 3. Jules Session Trigger (`JULES-02_session-trigger.yml`) 🆕
+### 3. Jules Session Trigger (`CI-04_session-trigger.yml`) 🆕
 - **Trigger:** Automatisch bei Issues mit `jules-task` Label oder manuell
 - **Was:** Erstellt Jules API Sessions für Issues
 - **Features:**
@@ -131,12 +131,12 @@ Bereit zum Merge
   - Batch-Processing aller offenen Issues
 - **Dauer:** Sekunden
 
-### 4. Jules Auto-Merge (`JULES-03_pr-automation.yml`)
+### 4. Jules Auto-Merge (`CI-05_pr-automation.yml`)
 - **Trigger:** Bei Jules PRs automatisch
 - **Was:** Merged PRs wenn alle Checks bestehen
 - **Dauer:** Sekunden
 
-### 5. Documentation Update (`DOCS-01_update-changelog.yml`)
+### 5. Documentation Update (`CI-06_update-changelog.yml`)
 - **Trigger:** Bei Merge in main
 - **Was:** Updates CHANGELOG.md
 - **Dauer:** Sekunden
@@ -209,7 +209,7 @@ gh run view <run-id> --log
 
 **Checklist:**
 - [ ] Issue hat `jules-task` Label?
-- [ ] Workflow `JULES-02_session-trigger.yml` existiert?
+- [ ] Workflow `CI-04_session-trigger.yml` existiert?
 - [ ] Jules GitHub App installiert ODER JULES_API_KEY konfiguriert?
 
 ```bash
@@ -224,7 +224,7 @@ gh run view --log
 gh issue view <issue-number> --comments
 
 # Manuel triggern
-gh workflow run JULES-02_session-trigger.yml -f issue_number=<issue-number>
+gh workflow run CI-04_session-trigger.yml -f issue_number=<issue-number>
 ```
 
 **Lösungen:**
@@ -375,4 +375,4 @@ gh pr list --state closed --label "jules-pr" --limit 20 \
 **Status:** ✅ Produktionsbereit  
 **Letztes Update:** 2024-12-04
 
-**Nächster Schritt:** `gh workflow run JULES-01_create-issues.yml` 🚀
+**Nächster Schritt:** `gh workflow run CI-03_create-issues.yml` 🚀

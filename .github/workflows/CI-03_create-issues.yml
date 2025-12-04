@@ -1,4 +1,4 @@
-name: "JULES-01: Create Development Issues"
+name: "CI-03: Create Development Issues"
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     branches:
       - 'copilot/implement-ci-cd-workflow'
     paths:
-      - '.github/workflows/JULES-01_create-issues.yml'
+      - '.github/workflows/CI-03_create-issues.yml'
 
 permissions:
   issues: write

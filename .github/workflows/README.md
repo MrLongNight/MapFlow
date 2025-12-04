@@ -41,7 +41,7 @@ This directory contains automated workflows for the VjMapper project, implementi
 - Automatic issue creation for findings
 - Integration with GitHub Security tab
 
-### 3. Create Jules Development Issues (`JULES-01_create-issues.yml`)
+### 3. Create Jules Development Issues (`CI-03_create-issues.yml`)
 
 **Purpose:** Create all Jules development issues at once
 
@@ -58,12 +58,12 @@ This directory contains automated workflows for the VjMapper project, implementi
 **Usage:**
 ```bash
 # Create all Jules issues (run once)
-gh workflow run JULES-01_create-issues.yml
+gh workflow run CI-03_create-issues.yml
 ```
 
 **Note:** This should be run ONCE to create all initial issues. Issues are pre-defined in the workflow, not parsed from ROADMAP.md (simpler and more reliable).
 
-### 4. Jules Session Trigger (`JULES-02_session-trigger.yml`) 🆕
+### 4. Jules Session Trigger (`CI-04_session-trigger.yml`) 🆕
 
 **Purpose:** Automatically trigger Jules API sessions when issues are created or labeled
 
@@ -84,10 +84,10 @@ gh workflow run JULES-01_create-issues.yml
 # Automatically triggered when issue gets jules-task label
 
 # Or manually trigger for specific issue:
-gh workflow run JULES-02_session-trigger.yml -f issue_number=123
+gh workflow run CI-04_session-trigger.yml -f issue_number=123
 
 # Or batch-process all open jules-task issues:
-gh workflow run JULES-02_session-trigger.yml
+gh workflow run CI-04_session-trigger.yml
 ```
 
 **Configuration:**
@@ -106,7 +106,7 @@ gh workflow run JULES-02_session-trigger.yml
    - Still adds tracking comment
    - Jules GitHub App takes over (if installed)
 
-### 5. Jules PR Auto-Merge (`JULES-03_pr-automation.yml`)
+### 5. Jules PR Auto-Merge (`CI-05_pr-automation.yml`)
 
 **Purpose:** Automatically merge Jules PRs when all checks pass
 
@@ -128,7 +128,7 @@ gh workflow run JULES-02_session-trigger.yml
 4. ✅ No review requested changes
 5. ✅ Not a draft PR
 
-### 6. Update Documentation (`DOCS-01_update-changelog.yml`)
+### 6. Update Documentation (`CI-06_update-changelog.yml`)
 
 **Purpose:** Keep CHANGELOG.md up to date automatically
 
@@ -239,7 +239,7 @@ gh workflow run "CI/CD Pipeline"
 gh workflow run auto-create-issues.yml -f dry_run=true
 
 # Trigger documentation update
-gh workflow run DOCS-01_update-changelog.yml
+gh workflow run CI-06_update-changelog.yml
 ```
 
 ## 🛠️ Maintenance
