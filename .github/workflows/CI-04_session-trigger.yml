@@ -92,78 +92,44 @@ jobs:
             echo "If you don't want to use the API, install the Jules GitHub App: https://github.com/apps/jules"
           fi
 
-      # Trigger via API (keine externe Action-Referenz, damit Preparation nicht fehlschlägt)
-      - name: Trigger Jules session via API (fallback)
+      # Trigger via official Jules GitHub Action
+      - name: Trigger Jules session via official action
         id: trigger-jules
         if: steps.get-issue.outputs.has_issue == 'true' && steps.check-key.outputs.has_key == 'true'
-        env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          JULES_API_ENDPOINT: ${{ secrets.JULES_API_ENDPOINT }}    # Secret mit Jules-API-URL
-          ISSUE_NUMBER: ${{ steps.get-issue.outputs.issue_number }}
-          ISSUE_TITLE: ${{ steps.get-issue.outputs.issue_title }}
-          ISSUE_BODY: ${{ steps.get-issue.outputs.issue_body }}
-        run: |
-          set -euo pipefail
+        uses: google-labs-code/jules-action@v1
+        with:
+          prompt: |
+            Issue #${{ steps.get-issue.outputs.issue_number }}: ${{ steps.get-issue.outputs.issue_title }}
+            
+            ${{ steps.get-issue.outputs.issue_body }}
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
+          starting_branch: 'main'
 
-          if [ -z "${JULES_API_ENDPOINT:-}" ]; then
-            echo "api_status=not_configured" >> $GITHUB_OUTPUT
-            echo "JULES_API_ENDPOINT is not configured. Set repository secret JULES_API_ENDPOINT to the Jules API URL."
-            exit 0
-          fi
-
-          payload=$(jq -n --arg title "Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}" \
-                           --arg body "${ISSUE_BODY}" \
-                           --arg branch "main" \
-                           '{ title: $title, description: $body, starting_branch: $branch }')
-
-          echo "Posting to Jules API endpoint: ${JULES_API_ENDPOINT}"
-          http_code=$(curl -s -o /tmp/jules_resp -w "%{http_code}" \
-            -X POST "${JULES_API_ENDPOINT}" \
-            -H "Authorization: Bearer ${JULES_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "${payload}")
-
-          echo "HTTP response code: $http_code"
-          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-            echo "api_status=success" >> $GITHUB_OUTPUT
-            echo "✅ Jules session created (API returned $http_code)"
-            head -c 8192 /tmp/jules_resp || true
-          else
-            echo "api_status=failure" >> $GITHUB_OUTPUT
-            echo "⚠️ Jules API returned non-2xx status ($http_code). Response:"
-            cat /tmp/jules_resp || true
-          fi
-
-      - name: Update issue with session result
-        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-key.outputs.has_key == 'true'
+      - name: Update issue with success message
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-key.outputs.has_key == 'true' && steps.trigger-jules.outcome == 'success'
         uses: actions/github-script@v7
         with:
           script: |
             const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
-            const apiStatus = '${{ steps.trigger-jules.outputs.api_status }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `✅ **Jules Session Created Successfully**\n\nJules is now working on this issue using the official Jules GitHub Action.`
+            });
 
-            if (apiStatus === 'success') {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                body: `✅ **Jules Session Created Successfully (via API)**\n\nJules is now working on this issue.`
-              });
-            } else if (apiStatus === 'failure') {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                body: `⚠️ **Jules Session Creation Failed**\n\nThere was an error creating the Jules session via API. Check workflow logs.`
-              });
-            } else if (apiStatus === 'not_configured') {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                body: `⚠️ **Jules Integration Not Configured**\n\nPlease configure the repository secret JULES_API_ENDPOINT and JULES_API_KEY, or install the Jules GitHub App.`
-              });
-            }
+      - name: Update issue with failure message
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-key.outputs.has_key == 'true' && steps.trigger-jules.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `⚠️ **Jules Session Creation Failed**\n\nThere was an error creating the Jules session. Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`
+            });
 
       - name: Log completion
         if: always()
@@ -174,7 +140,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
           if [ "${{ steps.check-key.outputs.has_key }}" = "true" ]; then
-            echo "✅ Jules API integration attempted"
+            echo "✅ Jules session triggered via official Jules GitHub Action"
           else
             echo "⚠️  Jules API key not configured"
             echo ""
@@ -183,9 +149,9 @@ jobs:
             echo "      → https://github.com/apps/jules"
             echo ""
             echo "   2. Jules API + GitHub Actions:"
-            echo "      → Set repository secret JULES_API_ENDPOINT (API URL)"
             echo "      → Set repository secret JULES_API_KEY"
+            echo "      → Get your API key from https://jules.google.com (Settings)"
             echo ""
-            echo "   See: .github/JULES_API_SETUP.md for detailed instructions (add if missing)"
+            echo "   See: .github/JULES_API_SETUP.md for detailed instructions"
           fi
           echo "" 
