@@ -75,14 +75,17 @@ jobs:
               });
               
               // Look for session creation comment - try multiple patterns
+              // These patterns are designed to work with CI-04 output and Jules comments
               for (const comment of comments) {
-                // Pattern 1: From CI-04 workflow comment format
+                // Pattern 1: From CI-04 workflow comment format (most reliable)
                 let sessionMatch = comment.body.match(/Jules session created.*?sessions\/([\w-]+)/);
                 // Pattern 2: Alternative format with session URL
                 if (!sessionMatch) {
                   sessionMatch = comment.body.match(/Session.*?sessions\/([\w-]+)/);
                 }
-                // Pattern 3: Direct session ID format
+                // Pattern 3: Direct session ID format (permissive, best-effort)
+                // Note: This pattern is intentionally broad to catch various formats
+                // May need adjustment based on actual Jules comment format
                 if (!sessionMatch) {
                   sessionMatch = comment.body.match(/session[:\s]+([a-zA-Z0-9_-]{10,})/i);
                 }

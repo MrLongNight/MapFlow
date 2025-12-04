@@ -132,12 +132,14 @@ jobs:
           cp ROADMAP.md ROADMAP.md.backup
           
           # Update checkboxes related to this issue (best effort)
-          # Look for any line containing the issue number
-          SEARCH_PATTERN="#${ISSUE_NUM}"
-          if grep -q "${SEARCH_PATTERN}" ROADMAP.md; then
-            # Use consistent pattern in sed - match any line containing the issue number
-            sed -i "s/- \[ \]\(.*#${ISSUE_NUM}[^0-9].*\)/- [x]\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
-            sed -i "s/- 🚧\(.*#${ISSUE_NUM}[^0-9].*\)/- ✅\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
+          # Look for any line containing the issue number with word boundary
+          SEARCH_PATTERN="#${ISSUE_NUM}[^0-9]"
+          if grep -q "${SEARCH_PATTERN}" ROADMAP.md || grep -q "#${ISSUE_NUM}\$" ROADMAP.md; then
+            # Use word boundary-aware patterns - match issue number followed by non-digit or end of line
+            sed -i "s/- \[ \]\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- [x]\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
+            sed -i "s/- \[ \]\(.*#${ISSUE_NUM}\)$/- [x]\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
+            sed -i "s/- 🚧\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- ✅\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
+            sed -i "s/- 🚧\(.*#${ISSUE_NUM}\)$/- ✅\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
             echo "✅ Updated ROADMAP.md with completion status"
             echo "roadmap_updated=true" >> $GITHUB_OUTPUT
           else
