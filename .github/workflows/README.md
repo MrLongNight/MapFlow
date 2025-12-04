@@ -65,18 +65,17 @@ gh workflow run CI-03_create-issues.yml
 
 ### 4. Jules Session Trigger (`CI-04_session-trigger.yml`) 🆕
 
-**Purpose:** Automatically trigger Jules API sessions when issues are created or labeled
+**Purpose:** Automatically trigger Jules sessions when issues are created or labeled
 
 **Triggers:**
 - Issue opened with `jules-task` label
 - `jules-task` label added to existing issue
-- Manual dispatch (single issue or batch processing)
+- Manual dispatch (single issue)
 
 **Features:**
 - **Automatic Detection:** Monitors all issues with `jules-task` label
+- **Official Jules Action:** Uses `google-labs-code/jules-action@v1` for reliable session creation
 - **Tracking Comments:** Adds status comments to issues
-- **API Integration:** Creates Jules sessions via API (if JULES_API_KEY configured)
-- **Batch Processing:** Can process all open jules-task issues at once
 - **Flexible Setup:** Works with or without API key (supports Jules GitHub App)
 
 **Usage:**
@@ -85,24 +84,27 @@ gh workflow run CI-03_create-issues.yml
 
 # Or manually trigger for specific issue:
 gh workflow run CI-04_session-trigger.yml -f issue_number=123
-
-# Or batch-process all open jules-task issues:
-gh workflow run CI-04_session-trigger.yml
 ```
 
 **Configuration:**
-- **Optional:** Add `JULES_API_KEY` as repository secret for API-based automation
-- **Alternative:** Install Jules GitHub App (no API key needed)
+- **Option 1 (Recommended):** Install Jules GitHub App at https://github.com/apps/jules
+  - No API key needed
+  - Works automatically with all `jules-task` issues
+- **Option 2:** Add `JULES_API_KEY` as repository secret for GitHub Action-based automation
+  - Get API key from https://jules.google.com (Settings)
+  - Workflow uses official `google-labs-code/jules-action`
 - **Fallback:** Manual session creation via jules.google.com
 
 **What it does:**
 1. Detects issues with `jules-task` label
-2. Adds tracking comment to issue
-3. If `JULES_API_KEY` is configured:
-   - Calls Jules API to create session
-   - Uses issue title and body as prompt
-   - Links session to repository
-4. If no API key:
+2. Extracts issue details (number, title, body)
+3. Adds tracking comment to issue
+4. If `JULES_API_KEY` is configured:
+   - Uses `google-labs-code/jules-action@v1` to create Jules session
+   - Passes issue content as prompt
+   - Jules creates branch, implements changes, opens PR
+5. Updates issue with success/failure status
+6. If no API key:
    - Still adds tracking comment
    - Jules GitHub App takes over (if installed)
 

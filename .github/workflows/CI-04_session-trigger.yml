@@ -6,17 +6,18 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: 'Issue number to trigger Jules session for (optional - processes all open jules-task issues if not provided)'
+        description: 'Issue number to trigger Jules session for'
         required: false
         type: string
 
 permissions:
   issues: write
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
   trigger-jules-session:
-    name: Create Jules API Session
+    name: Create Jules Session
     runs-on: ubuntu-latest
     # Only run if:
     # 1. Issue was labeled with 'jules-task', OR
@@ -32,137 +33,70 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-    
-    - name: Install/build dependencies for local actions
-      run: |
-        set -e
-        shopt -s nullglob
-        for d in ./.github/actions/*; do
-          if [ -d "$d" ] && [ -f "$d/package.json" ]; then
-            echo "Installing npm deps for local action: $d"
-            (cd "$d" && npm ci)
-            echo "Running build (if present) for: $d"
-            (cd "$d" && npm run build --if-present)
-          fi
-        done
-    
-    - name: Get issue details and trigger Jules
+    - name: Get issue details
+      id: get-issue
       uses: actions/github-script@v7
       with:
         script: |
           // Extract issue number from different trigger contexts
           let issueNumber;
-          if (context.eventName === 'workflow_dispatch' && context.payload.inputs) {
-            issueNumber = context.payload.inputs.issue_number;
+          if (context.eventName === 'workflow_dispatch' && context.payload.inputs && context.payload.inputs.issue_number) {
+            issueNumber = parseInt(context.payload.inputs.issue_number, 10);
           } else if (context.payload.issue) {
             issueNumber = context.payload.issue.number;
           }
           
-          // Function to process a single issue
-          async function processIssue(issueNum) {
-            try {
-              const { data: issue } = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNum
-              });
-              
-              // Check if issue has jules-task label
-              const hasJulesLabel = issue.labels.some(label => label.name === 'jules-task');
-              if (!hasJulesLabel) {
-                console.log(`⏭️  Issue #${issueNum} doesn't have 'jules-task' label - skipping`);
-                return false;
-              }
-              
-              // Check if issue is already closed
-              if (issue.state === 'closed') {
-                console.log(`⏭️  Issue #${issueNum} is already closed - skipping`);
-                return false;
-              }
-              
-              console.log(`\n🎯 Processing Issue #${issueNum}: ${issue.title}`);
-              console.log(`   State: ${issue.state}`);
-              console.log(`   Labels: ${issue.labels.map(l => l.name).join(', ')}`);
-              
-              // Add comment to issue indicating Jules session will be triggered
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNum,
-                body: `🤖 **Jules Session Triggered**\n\nA Jules API session is being created for this issue.\n\n**Next Steps:**\n- Jules will analyze the issue description and acceptance criteria\n- A new branch will be created: \`jules/issue-${issueNum}-...\`\n- Jules will implement the required changes\n- A PR will be created and linked to this issue\n\n*Triggered by: ${context.workflow} workflow*`
-              });
-              
-              console.log(`✅ Added tracking comment to issue #${issueNum}`);
-              return true;
-              
-            } catch (error) {
-              console.error(`❌ Error processing issue #${issueNum}:`, error.message);
-              return false;
-            }
+          if (!issueNumber) {
+            console.log('⚠️  No issue number found in workflow context');
+            core.setOutput('has_issue', 'false');
+            return;
           }
           
-          // Main logic
-          if (issueNumber) {
-            // Process single issue
-            console.log(`🚀 Triggering Jules session for issue #${issueNumber}...`);
-            await processIssue(parseInt(issueNumber));
-          } else if (context.eventName === 'workflow_dispatch' && !issueNumber) {
-            // Process all open jules-task issues (batch mode)
-            console.log('🚀 Batch mode: Processing all open jules-task issues...\n');
-            
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'jules-task',
-              per_page: 100
-            });
-            
-            console.log(`Found ${issues.length} open issues with 'jules-task' label\n`);
-            
-            let processed = 0;
-            for (const issue of issues) {
-              const success = await processIssue(issue.number);
-              if (success) processed++;
-              // 500ms delay to avoid GitHub API secondary rate limits (5000 requests/hour)
-              // Balances efficiency with API guidelines - allows ~7200 issues/hour processing
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-            console.log(`\n✅ Batch processing complete: ${processed}/${issues.length} issues processed`);
-          } else {
-            // Single issue from event
-            await processIssue(issueNumber);
+          // Get issue details
+          const { data: issue } = await github.rest.issues.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issueNumber
+          });
+          
+          // Check if issue has jules-task label
+          const hasJulesLabel = issue.labels.some(label => label.name === 'jules-task');
+          if (!hasJulesLabel) {
+            console.log(`⏭️  Issue #${issueNumber} doesn't have 'jules-task' label - skipping`);
+            core.setOutput('has_issue', 'false');
+            return;
           }
           
-          console.log('\n📝 **IMPORTANT NEXT STEP:**');
-          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          console.log('');
-          console.log('This workflow adds tracking comments to issues, but you need to');
-          console.log('configure the actual Jules API integration separately:');
-          console.log('');
-          console.log('Option 1: Use Jules GitHub App (Recommended)');
-          console.log('  → Install Jules app at: https://github.com/apps/jules');
-          console.log('  → Jules automatically monitors issues with "jules-task" label');
-          console.log('');
-          console.log('Option 2: Use Jules CLI with API key');
-          console.log('  → Get API key from: https://jules.google.com (Settings)');
-          console.log('  → Add as repository secret: JULES_API_KEY');
-          console.log('  → Update workflow to use google-labs-code/jules-action');
-          console.log('');
-          console.log('Option 3: Manual trigger via Jules web interface');
-          console.log('  → Visit: https://jules.google.com');
-          console.log('  → Create session for each issue manually');
-          console.log('');
-          console.log('See documentation: .github/JULES_INTEGRATION.md');
-          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          // Check if issue is already closed
+          if (issue.state === 'closed') {
+            console.log(`⏭️  Issue #${issueNumber} is already closed - skipping`);
+            core.setOutput('has_issue', 'false');
+            return;
+          }
+          
+          console.log(`\n🎯 Processing Issue #${issueNumber}: ${issue.title}`);
+          console.log(`   State: ${issue.state}`);
+          console.log(`   Labels: ${issue.labels.map(l => l.name).join(', ')}`);
+          
+          // Set outputs for next steps
+          core.setOutput('has_issue', 'true');
+          core.setOutput('issue_number', issueNumber);
+          core.setOutput('issue_title', issue.title);
+          core.setOutput('issue_body', issue.body || '');
+          
+          // Add tracking comment to issue
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issueNumber,
+            body: `🤖 **Jules Session Triggered**\n\nA Jules session is being created for this issue.\n\n**Next Steps:**\n- Jules will analyze the issue description and acceptance criteria\n- A new branch will be created: \`jules/issue-${issueNumber}-...\`\n- Jules will implement the required changes\n- A PR will be created and linked to this issue\n\n*Triggered by: ${context.workflow} workflow*`
+          });
+          
+          console.log(`✅ Added tracking comment to issue #${issueNumber}`);
     
     - name: Check for Jules API Key
       id: check-key
+      if: steps.get-issue.outputs.has_issue == 'true'
       run: |
         if [ -n "${{ secrets.JULES_API_KEY }}" ]; then
           echo "has_key=true" >> $GITHUB_OUTPUT
@@ -180,124 +114,67 @@ jobs:
           echo "→ https://github.com/apps/jules"
         fi
     
-    - name: Trigger Jules API Session (if API key available)
-      if: steps.check-key.outputs.has_key == 'true'
+    - name: Trigger Jules Session with GitHub Action
+      id: jules-action
+      if: steps.get-issue.outputs.has_issue == 'true' && steps.check-key.outputs.has_key == 'true'
+      uses: google-labs-code/jules-action@v1
+      with:
+        prompt: |
+          Issue #${{ steps.get-issue.outputs.issue_number }}: ${{ steps.get-issue.outputs.issue_title }}
+          
+          ${{ steps.get-issue.outputs.issue_body }}
+          
+          Please implement the changes described in this issue. Create tests where appropriate and follow the existing code style.
+        jules_api_key: ${{ secrets.JULES_API_KEY }}
+        starting_branch: 'main'
+      continue-on-error: true
+    
+    - name: Update issue with session result
+      if: steps.get-issue.outputs.has_issue == 'true' && steps.check-key.outputs.has_key == 'true'
       uses: actions/github-script@v7
-      env:
-        JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       with:
         script: |
-          // Extract issue number from different trigger contexts
-          let issueNumber;
-          if (context.eventName === 'workflow_dispatch' && context.payload.inputs) {
-            issueNumber = parseInt(context.payload.inputs.issue_number);
-          } else if (context.payload.issue) {
-            issueNumber = context.payload.issue.number;
-          }
+          const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+          const actionResult = '${{ steps.jules-action.outcome }}';
           
-          if (!issueNumber) {
-            console.log('⚠️  No issue number found - skipping API session creation');
-            return;
-          }
-          
-          // Get issue details
-          const { data: issue } = await github.rest.issues.get({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: issueNumber
-          });
-          
-          // Prepare Jules API request
-          const prompt = `${issue.title}\n\n${issue.body || ''}`;
-          const source = `sources/github/${context.repo.owner}/${context.repo.repo}`;
-          
-          console.log(`🚀 Creating Jules session via API...`);
-          console.log(`   Issue: #${issueNumber}`);
-          console.log(`   Source: ${source}`);
-          
-          // Make API call to Jules using exec
-          // Note: Using curl instead of fetch since fetch is not available in github-script
-          try {
-            const { exec } = require('@actions/exec');
-            
-            // Prepare API request body
-            const requestBody = JSON.stringify({
-              prompt: prompt,
-              sourceContext: {
-                source: source,
-                githubRepoContext: {
-                  startingBranch: 'main'
-                }
-              }
-            });
-            
-            // Create temp file for request body
-            const fs = require('fs');
-            const tmpFile = '/tmp/jules-request.json';
-            fs.writeFileSync(tmpFile, requestBody);
-            
-            // Execute curl command
-            let stdout = '';
-            let stderr = '';
-            const exitCode = await exec('curl', [
-              '-s',
-              '-X', 'POST',
-              'https://jules.googleapis.com/v1alpha/sessions',
-              '-H', 'Content-Type: application/json',
-              '-H', `X-Goog-Api-Key: ${process.env.JULES_API_KEY}`,
-              '-d', `@${tmpFile}`,
-              '-w', '\n%{http_code}'
-            ], {
-              listeners: {
-                stdout: (data) => { stdout += data.toString(); },
-                stderr: (data) => { stderr += data.toString(); }
-              },
-              ignoreReturnCode: true
-            });
-            
-            // Clean up temp file
-            fs.unlinkSync(tmpFile);
-            
-            // Parse response
-            const lines = stdout.trim().split('\n');
-            const httpCode = lines[lines.length - 1];
-            const responseBody = lines.slice(0, -1).join('\n');
-            
-            if (httpCode !== '200' && httpCode !== '201') {
-              throw new Error(`Jules API error (${httpCode}): ${responseBody}`);
-            }
-            
-            const result = JSON.parse(responseBody);
-            console.log('✅ Jules session created successfully!');
-            console.log(`   Session ID: ${result.name || 'unknown'}`);
-            
-            // Update issue with session info
+          if (actionResult === 'success') {
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber,
-              body: `✅ **Jules API Session Created**\n\nSession ID: \`${result.name || 'N/A'}\`\n\nJules is now working on this issue. You can monitor progress at [jules.google.com](https://jules.google.com).`
+              body: `✅ **Jules Session Created Successfully**\n\nJules is now working on this issue. You can monitor progress at [jules.google.com](https://jules.google.com).\n\nJules will create a pull request when the work is complete.`
             });
-            
-          } catch (error) {
-            console.error('❌ Failed to create Jules session:', error.message, error);
-            
-            // Prepare detailed error information
-            let errorDetails = '';
-            if (error.stderr) {
-              errorDetails = `\n\nStderr Output:\n\`\`\`\n${error.stderr}\n\`\`\``;
-            }
-            if (error.stdout) {
-              errorDetails += `\n\nStdout Output:\n\`\`\`\n${error.stdout}\n\`\`\``;
-            }
-            
-            // Add error comment to issue with more context
+          } else if (actionResult === 'failure') {
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber,
-              body: `⚠️ **Jules API Session Creation Failed**\n\nError: ${error.message}${errorDetails}\n\nPlease check the workflow logs for details or create a session manually at [jules.google.com](https://jules.google.com).`
+              body: `⚠️ **Jules Session Creation Failed**\n\nThere was an error creating the Jules session. Please check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n\n**Alternatives:**\n1. Install the Jules GitHub App: https://github.com/apps/jules\n2. Create a session manually at: https://jules.google.com`
             });
-            
-            throw error;
           }
+    
+    - name: Log completion
+      if: always()
+      run: |
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📝 Workflow completed"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        if [ "${{ steps.check-key.outputs.has_key }}" = "true" ]; then
+          echo "✅ Jules API integration is active"
+          echo "   Sessions are created automatically via google-labs-code/jules-action"
+        else
+          echo "⚠️  Jules API key not configured"
+          echo ""
+          echo "📚 Setup options:"
+          echo "   1. Jules GitHub App (Recommended - No API key needed):"
+          echo "      → https://github.com/apps/jules"
+          echo ""
+          echo "   2. Jules API + GitHub Actions:"
+          echo "      → Generate API key at: https://jules.google.com"
+          echo "      → Add as repository secret: JULES_API_KEY"
+          echo ""
+          echo "   See: .github/JULES_API_SETUP.md for detailed instructions"
+        fi
+        echo ""

@@ -123,12 +123,12 @@ Bereit zum Merge
 
 ### 3. Jules Session Trigger (`CI-04_session-trigger.yml`) 🆕
 - **Trigger:** Automatisch bei Issues mit `jules-task` Label oder manuell
-- **Was:** Erstellt Jules API Sessions für Issues
+- **Was:** Erstellt Jules Sessions für Issues
 - **Features:**
   - Automatische Erkennung neuer jules-task Issues
   - Tracking-Kommentare im Issue
+  - Nutzt offizielle `google-labs-code/jules-action`
   - API-Integration (wenn JULES_API_KEY vorhanden)
-  - Batch-Processing aller offenen Issues
 - **Dauer:** Sekunden
 
 ### 4. Jules Auto-Merge (`CI-05_pr-automation.yml`)

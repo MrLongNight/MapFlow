@@ -257,24 +257,24 @@ on:
 
 ### API-Integration
 
-Wenn `JULES_API_KEY` Secret konfiguriert ist:
-```javascript
-// API Call
-fetch('https://jules.googleapis.com/v1alpha/sessions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Goog-Api-Key': JULES_API_KEY
-  },
-  body: JSON.stringify({
-    prompt: `${issue.title}\n\n${issue.body}`,
-    sourceContext: {
-      source: `sources/github/${owner}/${repo}`,
-      githubRepoContext: { startingBranch: 'main' }
-    }
-  })
-})
+Wenn `JULES_API_KEY` Secret konfiguriert ist, verwendet der Workflow die offizielle Jules GitHub Action:
+```yaml
+- name: Trigger Jules Session
+  uses: google-labs-code/jules-action@v1
+  with:
+    prompt: |
+      Issue #${{ issue_number }}: ${{ issue_title }}
+      
+      ${{ issue_body }}
+    jules_api_key: ${{ secrets.JULES_API_KEY }}
+    starting_branch: 'main'
 ```
+
+Die Action übernimmt:
+- Authentifizierung mit Jules API
+- Session-Erstellung
+- Branch-Management
+- PR-Erstellung
 
 ### Fallback-Mechanismus
 
