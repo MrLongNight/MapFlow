@@ -1,0 +1,365 @@
+name: Create Jules Development Issues
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'copilot/implement-ci-cd-workflow'
+    paths:
+      - '.github/workflows/create-jules-issues.yml'
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-issues:
+    name: Create All Jules Issues
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Create development issues for Jules
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Definiere alle Issues direkt basierend auf ROADMAP.md
+          const issues = [
+            {
+              title: "Implement Multi-Window Rendering",
+              body: `## Multi-Window Rendering Implementation
+
+**Phase:** Phase 2 - Multi-Projector System  
+**Priority:** Critical  
+**Status:** 60% complete
+
+### Description
+Complete multi-window rendering with synchronized output. This is critical for professional multi-projector setups.
+
+### Tasks
+- [ ] Implement window-per-output architecture
+- [ ] Synchronize frame presentation across windows
+- [ ] Handle window resize and display changes
+- [ ] Test with multiple physical displays
+- [ ] Performance optimization for multi-window scenarios
+
+### Acceptance Criteria
+- [ ] Multiple output windows can be created and managed
+- [ ] Frame synchronization works across all outputs
+- [ ] Handles display changes (connect/disconnect) gracefully
+- [ ] Performance: 60fps on 2+ outputs at 1920x1080
+- [ ] Tests pass for 2, 4, and 6+ output scenarios
+
+### Technical Details
+- Files: \`crates/mapmap-render/src/output.rs\`, \`crates/mapmap/src/main.rs\`
+- Use wgpu for multi-window support
+- Implement VSync synchronization mechanism
+- Consider using separate surfaces per output
+
+### Related Documentation
+- ROADMAP.md: "Multi-Window Rendering" section
+- docs/03-ARCHITECTURE/rendering.md
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: critical", "phase-2: multi-projector"]
+            },
+            {
+              title: "Implement Frame Synchronization",
+              body: `## Frame Synchronization Across Outputs
+
+**Phase:** Phase 2 - Multi-Projector System  
+**Priority:** Critical  
+**Status:** Not started
+
+### Description
+Ensure frame-perfect synchronization across all output windows for seamless multi-projector displays.
+
+### Tasks
+- [ ] Design sync mechanism (VSync, manual sync, etc.)
+- [ ] Implement frame timing system
+- [ ] Add frame drop detection and recovery
+- [ ] Test with 2+, 4+, 6+ outputs
+- [ ] Profile performance impact
+
+### Acceptance Criteria
+- [ ] Frame-perfect sync across all outputs (±1 frame)
+- [ ] Automatic frame drop detection
+- [ ] Recovery mechanism for out-of-sync situations
+- [ ] Performance overhead <5ms
+- [ ] Works reliably with different display refresh rates
+
+### Technical Details
+- Files: \`crates/mapmap-render/src/sync.rs\` (new file)
+- Consider using: frame counters, presentation timestamps
+- Implement backpressure mechanism
+- Add metrics for monitoring sync quality
+
+### Related Documentation
+- ROADMAP.md: "Frame Synchronization" section
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: critical", "phase-2: multi-projector"]
+            },
+            {
+              title: "Fix Build System - FreeType Linker Errors",
+              body: `## Fix Build_Rust GitHub Actions Workflow
+
+**Phase:** Infrastructure  
+**Priority:** High  
+**Status:** Failing
+
+### Description
+The Build_Rust workflow is currently failing due to FreeType/fontconfig linker errors. This blocks the CI/CD pipeline.
+
+### Tasks
+- [ ] Verify fontconfig installation in CI
+- [ ] Fix FreeType linker errors (FT_Set_Default_Properties)
+- [ ] Test build on Ubuntu 20.04+
+- [ ] Verify on all platforms (Linux, macOS, Windows)
+- [ ] Document build requirements
+
+### Acceptance Criteria
+- [ ] CI/CD pipeline passes on all platforms
+- [ ] No linker errors in GitHub Actions
+- [ ] Build dependencies properly documented
+- [ ] Cache works correctly for faster builds
+
+### Technical Details
+- File: \`.github/workflows/Build_Rust.yml\`
+- Issue: servo-fontconfig-sys build failure
+- Likely missing: \`libfontconfig-dev\` or pkg-config paths
+- Environment variable: \`FREETYPE_SYS_USE_PKG_CONFIG=1\` already set
+
+### Error Log
+\`\`\`
+The system library 'fontconfig' required by crate 'servo-fontconfig-sys' was not found.
+The file 'fontconfig.pc' needs to be installed and the PKG_CONFIG_PATH environment variable must contain its parent directory.
+\`\`\`
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: high", "ci/cd", "bug"]
+            },
+            {
+              title: "Complete Still Image Support (PNG, JPG, TIFF)",
+              body: `## Still Image Format Support
+
+**Phase:** Phase 1 - Core Engine  
+**Priority:** High  
+**Status:** Partial implementation
+
+### Description
+Complete support for still image formats (PNG, JPG, TIFF) including loading, caching, and display.
+
+### Tasks
+- [ ] Image loading and caching system
+- [ ] Texture upload optimization
+- [ ] Memory management for large images
+- [ ] Format conversion pipeline
+- [ ] UI integration for image properties
+
+### Acceptance Criteria
+- [ ] PNG, JPG, TIFF formats fully supported
+- [ ] Images load quickly (<100ms for typical sizes)
+- [ ] Memory usage optimized (smart caching)
+- [ ] Works with high-resolution images (8K+)
+- [ ] UI shows image properties and allows adjustments
+
+### Technical Details
+- Files: \`crates/mapmap-media/src/image.rs\`
+- Use \`image\` crate for decoding
+- Implement texture cache in \`mapmap-render\`
+- Consider mipmapping for large images
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: high", "phase-1: core-engine"]
+            },
+            {
+              title: "Add Animated Format Support (GIF, Image Sequences)",
+              body: `## Animated Format Support
+
+**Phase:** Phase 1 - Core Engine  
+**Priority:** Medium  
+**Status:** Partial implementation
+
+### Description
+Support for GIF animations and image sequences with proper frame timing and playback controls.
+
+### Tasks
+- [ ] GIF decoder integration
+- [ ] Image sequence loader
+- [ ] Frame timing and playback
+- [ ] Memory-efficient buffering
+- [ ] UI controls for animation playback
+
+### Acceptance Criteria
+- [ ] GIF animations play correctly
+- [ ] Image sequences (numbered files) supported
+- [ ] Proper frame timing and loop control
+- [ ] Memory-efficient streaming for long sequences
+- [ ] Playback controls (play, pause, speed, loop)
+
+### Technical Details
+- Files: \`crates/mapmap-media/src/animated.rs\` (new)
+- Use \`image\` crate for GIF decoding
+- Implement frame buffer (circular buffer)
+- Consider using FFmpeg for image sequences
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: medium", "phase-1: core-engine"]
+            },
+            {
+              title: "Add ProRes Codec Support",
+              body: `## ProRes Codec Support
+
+**Phase:** Phase 1 - Core Engine  
+**Priority:** Medium  
+**Status:** Not started
+
+### Description
+Add professional ProRes codec support for high-quality video workflows.
+
+### Tasks
+- [ ] Research FFmpeg ProRes support
+- [ ] Implement decoder
+- [ ] Test with various ProRes variants (422, 422 HQ, 4444)
+- [ ] Performance benchmarking
+- [ ] Documentation
+
+### Acceptance Criteria
+- [ ] ProRes 422, 422 HQ, 4444 variants supported
+- [ ] Real-time playback at full resolution
+- [ ] Hardware acceleration if available
+- [ ] Proper color space handling
+- [ ] Documentation for ProRes usage
+
+### Technical Details
+- Files: \`crates/mapmap-media/src/codecs/prores.rs\` (new)
+- Use FFmpeg's ProRes decoder
+- Consider hardware acceleration on macOS (VideoToolbox)
+- Test with professional ProRes samples
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: medium", "phase-1: core-engine"]
+            },
+            {
+              title: "Advanced Geometric Correction Tools",
+              body: `## Enhanced Mesh Warping and Correction
+
+**Phase:** Phase 2 - Multi-Projector System  
+**Priority:** Medium  
+**Status:** Partial implementation
+
+### Description
+Enhanced mesh warping and geometric correction tools for precise projection mapping.
+
+### Tasks
+- [ ] Keystone correction UI
+- [ ] Grid-based warping
+- [ ] Corner pinning improvements
+- [ ] Save/load warp presets
+- [ ] Per-output warp configuration
+
+### Acceptance Criteria
+- [ ] Intuitive keystone correction interface
+- [ ] Grid-based warp editing with control points
+- [ ] Warp presets can be saved and loaded
+- [ ] Per-output warp configurations
+- [ ] Real-time preview of warp changes
+
+### Technical Details
+- Files: \`crates/mapmap-ui/src/panels/warping.rs\`
+- Bezier-based mesh system already implemented
+- Add UI controls for common corrections
+- Implement preset serialization
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: medium", "phase-2: multi-projector"]
+            },
+            {
+              title: "Implement Output Configuration Persistence",
+              body: `## Save/Load Output Configurations
+
+**Phase:** Phase 2 - Multi-Projector System  
+**Priority:** Medium  
+**Status:** Not started
+
+### Description
+Implement save and load functionality for complete output configurations including warping, edge blending, and color calibration.
+
+### Tasks
+- [ ] Project file format design
+- [ ] Serialization of output settings
+- [ ] Deserialization and validation
+- [ ] Migration from older formats (future-proofing)
+- [ ] UI for project management (save/load/recent)
+
+### Acceptance Criteria
+- [ ] Output configurations can be saved to file
+- [ ] Configurations can be loaded reliably
+- [ ] Format is versioned for future compatibility
+- [ ] UI provides save/load/recent files
+- [ ] Invalid files handled gracefully
+
+### Technical Details
+- Files: \`crates/mapmap-core/src/project.rs\`
+- Use RON or TOML for human-readable format
+- Include all output parameters (position, size, warping, edge blend, color)
+- Add version field for migration
+
+---
+*Issue for Jules AI Agent - Auto-generated from ROADMAP.md*`,
+              labels: ["jules-task", "priority: medium", "phase-2: multi-projector"]
+            }
+          ];
+
+          console.log(`🤖 Creating ${issues.length} Jules development issues...\n`);
+
+          for (const issue of issues) {
+            try {
+              // Check if issue already exists
+              const existingIssues = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                per_page: 100
+              });
+              
+              const isDuplicate = existingIssues.data.some(
+                existing => existing.title === issue.title
+              );
+              
+              if (isDuplicate) {
+                console.log(`⏭️  Skipping (already exists): ${issue.title}`);
+                continue;
+              }
+              
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issue.title,
+                body: issue.body,
+                labels: issue.labels
+              });
+              
+              console.log(`✅ Created issue #${created.data.number}: ${issue.title}`);
+              
+              // Small delay to avoid rate limiting
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+            } catch (error) {
+              console.error(`❌ Error creating issue "${issue.title}":`, error.message);
+            }
+          }
+          
+          console.log('\n✅ All Jules issues created successfully!');
+          console.log('\n📋 Next Steps:');
+          console.log('1. Review created issues at: https://github.com/MrLongNight/VjMapper/issues?q=is%3Aissue+label%3Ajules-task');
+          console.log('2. Configure Jules API to monitor these issues');
+          console.log('3. Jules will create PRs for each issue');
+          console.log('4. PRs will be auto-merged when all checks pass');

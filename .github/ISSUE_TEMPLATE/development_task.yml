@@ -1,0 +1,105 @@
+name: Development Task
+description: Development task for VjMapper project (can be processed by Jules)
+title: "[Task]: "
+labels: ["enhancement", "jules-task"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Development Task
+        This template is used for development tasks that can be automatically processed by Jules AI agent.
+        
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Project Phase
+      description: Which phase does this task belong to?
+      options:
+        - Phase 1 - Core Engine
+        - Phase 2 - Multi-Projector System
+        - Phase 3 - Effects Pipeline
+        - Phase 4 - Control Systems
+        - Phase 5 - Professional Video I/O
+        - Phase 6 - Advanced UI
+        - Phase 7 - Polish & Release
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Task priority level
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+      default: 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: Detailed description of the development task
+      placeholder: Describe what needs to be implemented or fixed...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List of criteria that must be met for this task to be considered complete
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-details
+    attributes:
+      label: Technical Details
+      description: Technical specifications, implementation notes, or architectural considerations
+      placeholder: Include relevant technical details, file paths, functions, etc...
+    validations:
+      required: false
+
+  - type: textarea
+    id: related-docs
+    attributes:
+      label: Related Documentation
+      description: Links to relevant documentation, roadmap items, or related issues
+      placeholder: |
+        - ROADMAP.md section: ...
+        - Related issue: #...
+        - Documentation: docs/...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: Requirements
+      description: Select all that apply
+      options:
+        - label: Tests required
+        - label: Documentation update required
+        - label: Breaking change
+        - label: Security implications
+
+  - type: textarea
+    id: estimated-effort
+    attributes:
+      label: Estimated Effort
+      description: Estimated time to complete this task
+      placeholder: e.g., "2-3 hours", "1 day", "1 week"
+    validations:
+      required: false

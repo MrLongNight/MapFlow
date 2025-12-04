@@ -1,21 +1,72 @@
-name: Build Rust
+name: CI/CD
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (faster builds)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      skip_platforms:
+        description: 'Only build on Linux (skip macOS/Windows)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
+  RUST_BACKTRACE: 1
 
 jobs:
-  build:
+  # Code quality checks
+  quality:
+    name: Code Quality (Format & Lint)
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+    
+    - name: Run Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # Build and test on multiple platforms
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ inputs.skip_platforms == 'true' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') }}
+        
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Cache Cargo registry and git
       uses: actions/cache@v4
@@ -35,7 +86,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-target-
 
-    - name: Install system dependencies
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -55,9 +107,78 @@ jobs:
           libswscale-dev \
           libavdevice-dev \
           libavfilter-dev
+        
+        # Verify installations
+        pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
+        pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
 
-    - name: Build
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install ffmpeg pkg-config
+
+    - name: Install system dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Note: FFmpeg installation on Windows is complex
+        # For now, skip it and let the build fail gracefully if FFmpeg is required
+        # TODO: Use vcpkg for deterministic Windows builds
+        echo "Windows build - FFmpeg may need to be pre-installed"
+
+    - name: Build (Debug)
       run: cargo build --verbose
 
+    - name: Build (Release)
+      run: cargo build --release --verbose
+
     - name: Run tests
-      run: cargo test --verbose
+      if: inputs.skip_tests != 'true'
+      run: cargo test --verbose --all-features
+
+    - name: Run doc tests
+      if: inputs.skip_tests != 'true'
+      run: cargo test --doc --verbose
+
+    - name: Generate documentation
+      run: cargo doc --no-deps --all-features
+
+    - name: Upload artifacts (Release binary)
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@v4
+      with:
+        name: vjmapper-linux-release
+        path: target/release/mapmap
+        if-no-files-found: ignore
+
+  # Security scanning
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run cargo audit
+      uses: rustsec/audit-check@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Success gate for branch protection
+  ci-success:
+    name: CI Success Gate
+    needs: [quality, build-and-test, security]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Check all jobs succeeded
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: exit 1
+      
+    - name: All checks passed
+      run: echo "✓ All CI checks passed successfully"

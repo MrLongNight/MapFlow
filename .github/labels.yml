@@ -1,0 +1,191 @@
+# GitHub Labels Configuration
+# This file defines standard labels for the VjMapper project
+# Can be synced using: gh label sync --file .github/labels.yml
+
+# Priority Labels
+- name: "priority: critical"
+  color: "d73a4a"
+  description: "Critical priority - needs immediate attention"
+
+- name: "priority: high"
+  color: "e99695"
+  description: "High priority - should be addressed soon"
+
+- name: "priority: medium"
+  color: "fbca04"
+  description: "Medium priority - normal priority"
+
+- name: "priority: low"
+  color: "d4c5f9"
+  description: "Low priority - can be addressed later"
+
+# Type Labels
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "feature-request"
+  color: "7AFFC7"
+  description: "Request for a new feature"
+
+- name: "documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: "security"
+  color: "ee0701"
+  description: "Security vulnerability or concern"
+
+# Jules Integration Labels
+- name: "jules-task"
+  color: "B60205"
+  description: "Task that can be processed by Jules AI agent"
+
+- name: "jules-pr"
+  color: "5319E7"
+  description: "Pull request created by Jules AI agent"
+
+# Phase Labels
+- name: "phase-0: foundation"
+  color: "1d76db"
+  description: "Phase 0 - Foundation & Setup"
+
+- name: "phase-1: core-engine"
+  color: "1d76db"
+  description: "Phase 1 - Core Engine"
+
+- name: "phase-2: multi-projector"
+  color: "1d76db"
+  description: "Phase 2 - Multi-Projector System"
+
+- name: "phase-3: effects"
+  color: "1d76db"
+  description: "Phase 3 - Effects Pipeline"
+
+- name: "phase-4: control"
+  color: "1d76db"
+  description: "Phase 4 - Control Systems"
+
+- name: "phase-5: video-io"
+  color: "1d76db"
+  description: "Phase 5 - Professional Video I/O"
+
+- name: "phase-6: ui"
+  color: "1d76db"
+  description: "Phase 6 - Advanced UI"
+
+- name: "phase-7: polish"
+  color: "1d76db"
+  description: "Phase 7 - Polish & Release"
+
+# Status Labels
+- name: "status: in-progress"
+  color: "fbca04"
+  description: "Work is in progress"
+
+- name: "status: blocked"
+  color: "d73a4a"
+  description: "Blocked by other issues or external factors"
+
+- name: "status: needs-review"
+  color: "0e8a16"
+  description: "Needs code review"
+
+- name: "status: needs-testing"
+  color: "0e8a16"
+  description: "Needs testing"
+
+- name: "status: ready-to-merge"
+  color: "0e8a16"
+  description: "Ready to be merged"
+
+# Component Labels
+- name: "component: core"
+  color: "006b75"
+  description: "mapmap-core crate"
+
+- name: "component: render"
+  color: "006b75"
+  description: "mapmap-render crate"
+
+- name: "component: media"
+  color: "006b75"
+  description: "mapmap-media crate"
+
+- name: "component: ui"
+  color: "006b75"
+  description: "mapmap-ui crate"
+
+- name: "component: control"
+  color: "006b75"
+  description: "mapmap-control crate"
+
+- name: "component: ffi"
+  color: "006b75"
+  description: "mapmap-ffi crate"
+
+- name: "component: io"
+  color: "006b75"
+  description: "mapmap-io crate"
+
+# Workflow Labels
+- name: "workflows"
+  color: "ededed"
+  description: "Related to GitHub Actions workflows"
+
+- name: "ci/cd"
+  color: "ededed"
+  description: "Related to CI/CD pipeline"
+
+- name: "automation"
+  color: "ededed"
+  description: "Related to automation"
+
+# Special Labels
+- name: "good first issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+
+- name: "help wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+- name: "wontfix"
+  color: "ffffff"
+  description: "This will not be worked on"
+
+- name: "duplicate"
+  color: "cfd3d7"
+  description: "This issue or pull request already exists"
+
+- name: "invalid"
+  color: "e4e669"
+  description: "This doesn't seem right"
+
+- name: "question"
+  color: "d876e3"
+  description: "Further information is requested"
+
+- name: "breaking-change"
+  color: "d73a4a"
+  description: "Breaking change to API or behavior"
+
+- name: "dependencies"
+  color: "0366d6"
+  description: "Pull requests that update a dependency file"
+
+- name: "performance"
+  color: "00d4ff"
+  description: "Performance improvements"
+
+- name: "refactoring"
+  color: "fbca04"
+  description: "Code refactoring"
+
+- name: "testing"
+  color: "c5def5"
+  description: "Related to testing"

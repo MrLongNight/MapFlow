@@ -1,0 +1,127 @@
+name: Jules PR Auto-Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  check_suite:
+    types: [completed]
+  workflow_dispatch:
+
+env:
+  # Set to 'false' to disable auto-merge temporarily
+  AUTO_MERGE_ENABLED: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+
+jobs:
+  # Simple auto-merge for Jules PRs
+  auto-merge:
+    name: Auto-Merge Jules PR
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request &&
+      (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
+       contains(github.event.pull_request.body, 'Created by Jules')) &&
+      github.event.pull_request.draft == false &&
+      env.AUTO_MERGE_ENABLED == 'true'
+    
+    steps:
+    - name: Auto-merge Jules PR if all checks pass
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const pr = context.payload.pull_request;
+          if (!pr) return;
+          
+          console.log(`🤖 Jules PR Auto-Merge: #${pr.number} - ${pr.title}`);
+          
+          // Get latest PR state
+          const { data: prData } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pr.number
+          });
+          
+          // Check mergeable state
+          if (prData.mergeable === false) {
+            console.log('❌ Merge conflicts - cannot auto-merge');
+            return;
+          }
+          
+          // Get check runs
+          const { data: checkRuns } = await github.rest.checks.listForRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: pr.head.sha
+          });
+          
+          // Check if all required checks passed
+          const allChecksPassed = checkRuns.check_runs
+            .filter(check => check.name !== 'Auto-Merge Jules PR')  // Ignore self
+            .every(check => 
+              check.conclusion === 'success' || 
+              check.conclusion === 'skipped'
+            );
+          
+          const anyPending = checkRuns.check_runs
+            .filter(check => check.name !== 'Auto-Merge Jules PR')
+            .some(check => check.conclusion === null || check.status === 'in_progress');
+          
+          if (anyPending) {
+            console.log('⏳ Checks still running - waiting...');
+            return;
+          }
+          
+          if (!allChecksPassed) {
+            console.log('❌ Some checks failed - cannot auto-merge');
+            return;
+          }
+          
+          // Check for requested changes
+          const { data: reviews } = await github.rest.pulls.listReviews({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pr.number
+          });
+          
+          const hasRequestedChanges = reviews.some(r => r.state === 'CHANGES_REQUESTED');
+          if (hasRequestedChanges) {
+            console.log('❌ Changes requested - cannot auto-merge');
+            return;
+          }
+          
+          // All good - merge!
+          console.log('✅ All checks passed - merging...');
+          
+          try {
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              commit_title: `🤖 Auto-merge: ${pr.title}`,
+              commit_message: `Jules PR #${pr.number} - All checks passed\n\n${pr.body || ''}`,
+              merge_method: 'squash'
+            });
+            
+            console.log('✅ Merged successfully!');
+            
+            // Close related issue
+            const issueMatch = pr.body?.match(/(?:close|closes|fix|fixes|resolve|resolves)\s+#(\d+)/i);
+            if (issueMatch) {
+              const issueNum = parseInt(issueMatch[1]);
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNum,
+                state: 'closed'
+              });
+              console.log(`✅ Closed issue #${issueNum}`);
+            }
+            
+          } catch (error) {
+            console.error('❌ Merge failed:', error.message);
+          }

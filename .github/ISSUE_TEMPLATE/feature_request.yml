@@ -1,0 +1,88 @@
+name: Feature Request
+description: Suggest a new feature for VjMapper
+title: "[Feature]: "
+labels: ["feature-request"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        Suggest a new feature or enhancement for VjMapper.
+        
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like
+      placeholder: A clear and concise description of what you want to happen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe alternatives you've considered
+      placeholder: A clear and concise description of any alternative solutions or features you've considered...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Related Phase
+      description: Which project phase would this feature belong to?
+      options:
+        - Phase 1 - Core Engine
+        - Phase 2 - Multi-Projector System
+        - Phase 3 - Effects Pipeline
+        - Phase 4 - Control Systems
+        - Phase 5 - Professional Video I/O
+        - Phase 6 - Advanced UI
+        - Phase 7 - Polish & Release
+        - Not sure / Other
+      default: 7
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Describe real-world use cases for this feature
+      placeholder: |
+        - Use case 1: ...
+        - Use case 2: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context or screenshots about the feature request
+      placeholder: Any additional information, mockups, or examples...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact Assessment
+      description: Select all that apply
+      options:
+        - label: Would improve user experience significantly
+        - label: Would improve performance
+        - label: Would improve maintainability
+        - label: Would require breaking changes
