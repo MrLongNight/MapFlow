@@ -12,12 +12,14 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 glam = { workspace = true }
-cpal = { workspace = true }
+cpal = { workspace = true, optional = true }
 rustfft = { workspace = true }
 hound = { workspace = true }
 crossbeam-channel = { workspace = true }
 
 [features]
+default = []
+audio = ["cpal"]
 winit = []
 
 [dev-dependencies]

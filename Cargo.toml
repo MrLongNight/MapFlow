@@ -45,7 +45,7 @@ arc-swap = "1.6"
 ffmpeg-next = "6.1"
 
 # Audio
-cpal = "0.15"
+cpal = { version = "0.15", default-features = false }
 rustfft = "6.2"
 hound = "3.5"
 

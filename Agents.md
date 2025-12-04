@@ -41,6 +41,33 @@ VjMapper ist ein Rewrite einer C++/Qt-Anwendung in Rust. Ziel ist eine hochperfo
     ```
 -   **Anforderung:** Fügen Sie für jede neue Funktion oder Fehlerbehebung entsprechende Unit-Tests hinzu. Bestehende Tests dürfen nicht fehlschlagen.
 
+## Audio-Features und Native Abhängigkeiten
+
+Das Projekt unterstützt optionale Audio-Features für Audio-Reaktivität:
+
+-   **Ohne Audio (Standard):** Das Projekt baut standardmäßig ohne native Audio-Abhängigkeiten:
+    ```bash
+    cargo build
+    cargo test
+    ```
+
+-   **Mit Audio-Unterstützung:** Für Audio-Funktionalität müssen native Bibliotheken installiert werden:
+    
+    **Linux:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y libasound2-dev pkg-config build-essential
+    cargo build --features audio
+    cargo test --features audio
+    ```
+    
+    **macOS/Windows:** Audio-Features werden derzeit nur unter Linux mit ALSA unterstützt.
+
+-   **CI/CD:** Die CI-Pipeline testet beide Varianten:
+    - Linux mit Audio (`--all-features`)
+    - Linux ohne Audio (`--no-default-features`)
+    - macOS und Windows (ohne Audio)
+
 ## Pull Request (PR) Prozess
 
 1.  **Vorbereitung:** Stellen Sie vor dem Einreichen sicher, dass die folgenden Befehle ohne Fehler durchlaufen:

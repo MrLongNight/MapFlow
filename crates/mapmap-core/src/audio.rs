@@ -527,6 +527,28 @@ impl AudioReactiveMapping {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    /// Mock audio backend for testing without native audio dependencies
+    pub struct MockAudioBackend {
+        samples_recorded: Mutex<Vec<Vec<f32>>>,
+    }
+
+    impl MockAudioBackend {
+        pub fn new() -> Self {
+            Self {
+                samples_recorded: Mutex::new(Vec::new()),
+            }
+        }
+
+        pub fn provide_samples(&self, samples: &[f32]) {
+            self.samples_recorded.lock().unwrap().push(samples.to_vec());
+        }
+
+        pub fn get_recorded_count(&self) -> usize {
+            self.samples_recorded.lock().unwrap().len()
+        }
+    }
 
     #[test]
     fn test_audio_analyzer_creation() {
@@ -564,5 +586,73 @@ mod tests {
 
         let value = mapping.apply(&analysis, 0.0, 0.016);
         assert!(value > 0.0 && value <= 1.0);
+    }
+
+    #[test]
+    fn test_mock_audio_backend() {
+        let backend = MockAudioBackend::new();
+        
+        // Simulate providing audio samples
+        backend.provide_samples(&[0.1, 0.2, 0.3]);
+        backend.provide_samples(&[0.4, 0.5]);
+        
+        assert_eq!(backend.get_recorded_count(), 2);
+    }
+
+    #[test]
+    fn test_audio_analyzer_with_mock_samples() {
+        let config = AudioConfig::default();
+        let mut analyzer = AudioAnalyzer::new(config);
+        
+        // Generate mock sine wave samples (440 Hz tone)
+        let sample_rate = 44100.0;
+        let frequency = 440.0;
+        let duration = 0.1; // 100ms
+        let num_samples = (sample_rate * duration) as usize;
+        
+        let mut samples = Vec::new();
+        for i in 0..num_samples {
+            let t = i as f32 / sample_rate;
+            let sample = (2.0 * std::f32::consts::PI * frequency * t).sin() * 0.5;
+            samples.push(sample);
+        }
+        
+        // Process the mock samples
+        let analysis = analyzer.process_samples(&samples, 0.0);
+        
+        // Verify we got valid analysis results
+        assert!(analysis.fft_magnitudes.len() > 0);
+        assert!(analysis.rms_volume > 0.0);
+        assert!(analysis.rms_volume < 1.0);
+    }
+
+    #[test]
+    fn test_beat_detection_with_mock() {
+        let config = AudioConfig::default();
+        let mut analyzer = AudioAnalyzer::new(config);
+        
+        // Generate mock kick drum samples (strong bass)
+        let sample_rate = 44100.0;
+        let duration = 0.05; // 50ms kick
+        let num_samples = (sample_rate * duration) as usize;
+        
+        let mut samples = Vec::new();
+        for i in 0..num_samples {
+            let t = i as f32 / sample_rate;
+            let envelope = (1.0 - t / duration).max(0.0);
+            let sample = (2.0 * std::f32::consts::PI * 60.0 * t).sin() * envelope * 0.8;
+            samples.push(sample);
+        }
+        
+        // Build up history first
+        for _ in 0..5 {
+            analyzer.process_samples(&vec![0.0; 1024], 0.0);
+        }
+        
+        // Process kick drum
+        let analysis = analyzer.process_samples(&samples, 0.5);
+        
+        // Check that band energies are calculated
+        assert_eq!(analysis.band_energies.len(), 7);
     }
 }
