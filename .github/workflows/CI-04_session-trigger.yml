@@ -32,6 +32,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install/build dependencies for local actions
+      run: |
+        set -e
+        for d in ./.github/actions/*; do
+          if [ -f "$d/package.json" ]; then
+            echo "Installing npm deps for local action: $d"
+            (cd "$d" && npm ci)
+            echo "Running build (if present) for: $d"
+            (cd "$d" && npm run build --if-present)
+          fi
+        done
+    
     - name: Get issue details and trigger Jules
       uses: actions/github-script@v7
       with:
