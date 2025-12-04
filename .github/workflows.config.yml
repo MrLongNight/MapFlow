@@ -1,0 +1,28 @@
+# Workflow Configuration
+# Set to 'false' to disable workflows manually
+# Note: workflow_dispatch triggers will still work for manual runs
+
+workflows:
+  ci_cd_enabled: true
+  security_scan_enabled: true
+  jules_auto_merge_enabled: true
+  documentation_updates_enabled: true
+  
+# Check configuration
+checks:
+  # Code quality checks
+  format_check: true
+  clippy_check: true
+  
+  # Build checks
+  build_linux: true
+  build_macos: true
+  build_windows: true
+  
+  # Test checks
+  run_tests: true
+  run_doc_tests: true
+  
+  # Security checks
+  cargo_audit: true
+  codeql_scan: true

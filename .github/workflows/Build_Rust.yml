@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD
 
 on:
   push:
@@ -6,6 +6,23 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (faster builds)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      skip_platforms:
+        description: 'Only build on Linux (skip macOS/Windows)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 env:
   CARGO_TERM_COLOR: always
@@ -43,7 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ inputs.skip_platforms == 'true' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') }}
         
     steps:
     - uses: actions/checkout@v4
@@ -115,9 +132,11 @@ jobs:
       run: cargo build --release --verbose
 
     - name: Run tests
+      if: inputs.skip_tests != 'true'
       run: cargo test --verbose --all-features
 
     - name: Run doc tests
+      if: inputs.skip_tests != 'true'
       run: cargo test --doc --verbose
 
     - name: Generate documentation

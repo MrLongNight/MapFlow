@@ -9,10 +9,15 @@ on:
     - cron: '0 0 * * 1'  # Weekly on Monday
   workflow_dispatch:
 
+env:
+  # Set to 'false' to disable security scanning on PRs (scheduled scans still run)
+  SCAN_ON_PR_ENABLED: true
+
 jobs:
   analyze:
     name: Analyze Code
     runs-on: ubuntu-latest
+    if: env.SCAN_ON_PR_ENABLED == 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 360
     permissions:
       actions: read

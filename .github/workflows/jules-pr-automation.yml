@@ -5,6 +5,11 @@ on:
     types: [opened, synchronize, reopened, labeled]
   check_suite:
     types: [completed]
+  workflow_dispatch:
+
+env:
+  # Set to 'false' to disable auto-merge temporarily
+  AUTO_MERGE_ENABLED: true
 
 permissions:
   contents: write
@@ -21,7 +26,8 @@ jobs:
       github.event.pull_request &&
       (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
        contains(github.event.pull_request.body, 'Created by Jules')) &&
-      github.event.pull_request.draft == false
+      github.event.pull_request.draft == false &&
+      env.AUTO_MERGE_ENABLED == 'true'
     
     steps:
     - name: Auto-merge Jules PR if all checks pass
