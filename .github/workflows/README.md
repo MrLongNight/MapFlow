@@ -108,20 +108,23 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
    - Still adds tracking comment
    - Jules GitHub App takes over (if installed)
 
-### 5. Jules PR Auto-Merge (`CI-05_pr-automation.yml`)
+### 5. Jules PR Auto-Merge (`CI-05_pr-automation.yml`) ✨ Enhanced
 
-**Purpose:** Automatically merge Jules PRs when all checks pass
+**Purpose:** Automatically merge Jules PRs when all checks pass, with intelligent error handling
 
 **Triggers:**
-- Pull request events (opened, synchronize, labeled)
+- Pull request events (opened, synchronize, reopened, labeled)
 - Check suite completion
+- Workflow run completion (CI-01)
+- Manual dispatch
 
 **Features:**
-- Simple and reliable auto-merge logic
-- Checks all CI tests pass
-- Prevents merge on conflicts or requested changes
-- Automatically closes related issues
-- No complex validation - just works!
+- **Intelligent Check Monitoring:** Waits for all checks to complete
+- **Success Path:** Auto-merges when all checks pass
+- **Error Path:** Creates detailed @jules comments with failure information
+- **Merge Conflict Detection:** Notifies about conflicts
+- **Failed Check Details:** Includes check names, summaries, and links
+- **Retry Support:** Jules can update PR, checks re-run automatically
 
 **Auto-Merge Conditions:**
 1. ✅ PR labeled with `jules-pr` or body contains "Created by Jules"
@@ -129,6 +132,14 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 3. ✅ No merge conflicts
 4. ✅ No review requested changes
 5. ✅ Not a draft PR
+
+**Error Handling:**
+- Detects failed checks and collects details
+- Creates @jules comment with:
+  - List of failed checks
+  - Error summaries
+  - Links to detailed logs
+- Allows Jules to fix and re-submit
 
 ### 6. Update Documentation (`CI-06_update-changelog.yml`)
 
@@ -142,6 +153,56 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 - Adds entry for each merged PR
 - Commits changes automatically
 - No complex parsing or updates - just adds changelog entries!
+
+### 7. Post-Merge Automation (`CI-07_post-merge-automation.yml`) 🆕
+
+**Purpose:** Complete post-merge tasks: close issue, update ROADMAP, trigger next session
+
+**Triggers:**
+- Pull request closed/merged (Jules PRs only)
+- Manual dispatch
+
+**Features:**
+- **Issue Management:** Automatically closes related issue
+- **ROADMAP Updates:** Marks tasks as completed
+- **Continuous Automation:** Triggers CI-04 for next jules-task issue
+- **Progress Tracking:** Adds completion comments
+
+**Workflow:**
+1. Extract issue number from PR body
+2. Close related issue with success comment
+3. Update ROADMAP.md:
+   - Mark task as completed
+   - Add PR reference
+   - Commit changes
+4. Trigger CI-04 for next oldest jules-task issue
+
+### 8. Monitor Jules Session (`CI-08_monitor-jules-session.yml`) 🆕
+
+**Purpose:** Continuously monitor Jules sessions and create PRs when ready
+
+**Triggers:**
+- Scheduled: Every 5 minutes (cron)
+- Manual dispatch
+
+**Features:**
+- **Active Session Detection:** Finds sessions from issue comments
+- **Jules API Polling:** Checks session status via API
+- **Automatic PR Creation:** Creates PR when session completes
+- **Branch Detection:** Extracts branch from session data
+- **Label Management:** Adds jules-pr label automatically
+- **Failure Handling:** Notifies when sessions fail
+
+**Workflow:**
+1. Find all open jules-task issues
+2. Extract session IDs from comments
+3. Poll Jules API for each session
+4. When session completes:
+   - Detect branch name
+   - Create PR with proper labels
+   - Add success comment to issue
+5. When session fails:
+   - Add failure notification to issue
 
 ## 🏷️ Labels Used
 
@@ -177,32 +238,64 @@ The workflows require the following GitHub permissions:
    - Create PRs with `jules-pr` label or "Created by Jules" in body
    - Follow the PR template format
 
-### Jules Workflow
+### Complete Jules Automation Workflow
 
+**📋 Phase 1: Issue Creation & Session Start**
 1. **Issue Creation:**
    - Manual creation via issue templates
-   - Automatic creation from ROADMAP.md
+   - Batch creation via CI-03
    - Issues labeled with `jules-task`
 
-2. **Jules Processing:**
-   - Jules monitors `jules-task` issues
-   - Creates branch and implements changes
-   - Opens PR with proper labels and references
+2. **Session Trigger (CI-04):**
+   - Automatically triggered when issue gets jules-task label
+   - Or manually triggered for oldest open issue
+   - Creates Jules session via API
+   - Adds tracking comment to issue
 
-3. **Automated Testing:**
-   - CI/CD pipeline runs automatically
-   - Code quality checks execute
-   - Security scanning performed
+**🔄 Phase 2: Session Monitoring**
+3. **Continuous Monitoring (CI-08):**
+   - Runs every 5 minutes
+   - Polls Jules API for session status
+   - Detects when sessions complete or fail
 
-4. **Auto-Merge:**
-   - If all checks pass → automatic merge
-   - If checks fail → comment posted, manual review required
-   - Related issue automatically closed
+4. **PR Creation (CI-08):**
+   - Automatically creates PR when session completes
+   - Adds jules-pr label
+   - Links to issue and session
+   - Notifies on issue
 
-5. **Documentation Update:**
-   - ROADMAP.md updated
+**🧪 Phase 3: Automated Testing**
+5. **CI/CD Pipeline (CI-01):**
+   - Triggered automatically on PR
+   - Code quality checks (format, lint)
+   - Multi-platform builds
+   - Security scanning
+
+**✅ Phase 4: Merge Decision**
+6. **Success Path (CI-05):**
+   - All checks pass → automatic merge
+   - Success comment added
+   - Triggers post-merge automation
+
+7. **Error Path (CI-05):**
+   - Checks fail → detailed @jules comment
+   - Lists all failed checks with summaries
+   - Jules can update PR
+   - Checks re-run automatically
+
+**📝 Phase 5: Post-Merge Actions**
+8. **Documentation Updates (CI-06 & CI-07):**
+   - ROADMAP.md marked as completed
    - Changelog entry added
-   - Progress tracked
+   - Issue automatically closed
+   - Success comments added
+
+9. **Continuous Automation (CI-07):**
+   - Triggers CI-04 for next oldest jules-task issue
+   - Cycle repeats automatically
+   - Fully self-sustaining workflow
+
+**🎯 Result:** Fully automated development pipeline from issue creation to merge, with intelligent error handling and continuous operation.
 
 ### Configuration
 
