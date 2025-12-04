@@ -1,4 +1,4 @@
-//! Simple rendering example //! //! Demonstrates basic usage of mapmap-render crate
+/! Simple rendering example //! //! Demonstrates basic usage of mapmap-render crate
 
 use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend}; use winit::{ event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder, };
 
@@ -50,7 +50,7 @@ let texture = backend.create_texture(tex_desc).unwrap();
 
 // Fill with red color
 let red_data: Vec<u8> = (0..256 * 256)
-    .flat_map(|_| [255u8, 0, 0, 255]) // RGBA red
+    .flat_map(|_| [255u8, 0, 0, 255])
     .collect();
 
 backend.upload_texture(texture.clone(), &red_data).unwrap();
@@ -78,12 +78,11 @@ event_loop.run(move |event, _, control_flow| {
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
 
-            let mut encoder =
-                backend
-                    .device()
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Render Encoder"),
-                    });
+            let mut encoder = backend
+                .device()
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -98,14 +97,15 @@ event_loop.run(move |event, _, control_flow| {
                                 b: 0.0,
                                 a: 1.0,
                             }),
-                            store: true, // <- angepasst: früher wgpu::StoreOp::Store
+                            // Angepasst an neuere wgpu-API: `store` ist ein bool
+                            store: true,
                         },
                     })],
                     depth_stencil_attachment: None,
                     ..Default::default()
                 });
 
-                let texture_view = texture.create_view();
+                let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
                 let bind_group = quad_renderer.create_bind_group(backend.device(), &texture_view);
                 quad_renderer.draw(&mut render_pass, &bind_group);
             }
@@ -119,3 +119,4 @@ event_loop.run(move |event, _, control_flow| {
         _ => {}
     }
 });
+           }
