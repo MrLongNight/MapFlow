@@ -183,6 +183,12 @@ pub struct Region {
     pub color: Color32,
 }
 
+impl Default for TimelineV2 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TimelineV2 {
     pub fn new() -> Self {
         Self {

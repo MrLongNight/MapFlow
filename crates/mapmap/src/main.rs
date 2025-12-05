@@ -15,24 +15,15 @@ use mapmap_ui::{AppUI, ImGuiContext};
 use std::collections::HashMap;
 use std::time::Instant;
 use tracing::{error, info};
-use tracing_subscriber;
 use window_manager::WindowManager;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{WindowBuilder, WindowId},
+    window::WindowId,
 };
 
 #[cfg(test)]
 mod window_manager_test;
-
-/// A snapshot of the application state required for rendering a single frame.
-/// This is passed to each window's render function to ensure consistency.
-struct SharedRenderState<'a> {
-    output_manager: &'a mapmap_core::OutputManager,
-    mapping_manager: &'a mapmap_core::MappingManager,
-    paint_textures: &'a HashMap<u64, mapmap_render::TextureHandle>,
-}
 
 struct App {
     window_manager: WindowManager,
@@ -279,21 +270,8 @@ impl App {
             // Determine if this is the main window or an output window
             let is_main_window = Some(*output_id) == self.window_manager.main_window_id();
 
-            // Create a shared render state for this frame
-            let shared_state = SharedRenderState {
-                output_manager: &self.output_manager,
-                mapping_manager: &self.mapping_manager,
-                paint_textures: &self.paint_textures,
-            };
-
             // Render content
-            self.render_to_view(
-                &mut encoder,
-                &view,
-                *output_id,
-                is_main_window,
-                &shared_state,
-            )?;
+            self.render_to_view(&mut encoder, &view, *output_id, is_main_window)?;
 
             encoders.push(encoder);
         }
@@ -316,11 +294,10 @@ impl App {
         view: &wgpu::TextureView,
         output_id: OutputId,
         is_main_window: bool,
-        shared_state: &SharedRenderState,
     ) -> Result<()> {
         // Get output configuration if this is an output window
         let output_config = if !is_main_window {
-            shared_state.output_manager.get_output(output_id).cloned()
+            self.output_manager.get_output(output_id).cloned()
         } else {
             None
         };
@@ -365,11 +342,7 @@ impl App {
 
         // Choose render target (intermediate texture or final view)
         let render_target_view = if needs_post_processing {
-            if let Some(intermediate_tex) = self.intermediate_textures.get(&output_id) {
-                Some(intermediate_tex.create_view())
-            } else {
-                None
-            }
+            self.intermediate_textures.get(&output_id).map(|intermediate_tex| intermediate_tex.create_view())
         } else {
             None
         };
@@ -378,7 +351,7 @@ impl App {
 
         // Render mappings with mesh warping
         {
-            let visible_mappings = shared_state.mapping_manager.visible_mappings();
+            let visible_mappings = self.mapping_manager.visible_mappings();
 
             // Collect all rendering resources
             let render_data: Vec<_> = visible_mappings
@@ -402,55 +375,53 @@ impl App {
                         }
                     }
 
-                    shared_state
-                        .paint_textures
-                        .get(&mapping.paint_id)
-                        .map(|texture| {
-                            let (vertex_buffer, index_buffer) =
-                                self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
+                    self.paint_textures.get(&mapping.paint_id).map(|texture| {
+                        let (vertex_buffer, index_buffer) =
+                            self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
 
-                            // Apply canvas region transformation for output windows
-                            let transform = if let Some(ref config) = output_config {
-                                // Transform from canvas space to output window space
-                                let region = &config.canvas_region;
-                                let scale = Mat4::from_scale(glam::Vec3::new(
-                                    1.0 / region.width,
-                                    1.0 / region.height,
-                                    1.0,
-                                ));
-                                let translate = Mat4::from_translation(glam::Vec3::new(
-                                    -region.x / region.width,
-                                    -region.y / region.height,
-                                    0.0,
-                                ));
-                                translate * scale
-                            } else {
-                                Mat4::IDENTITY
-                            };
+                        // Apply canvas region transformation for output windows
+                        let transform = if let Some(ref config) = output_config {
+                            // Transform from canvas space to output window space
+                            let region = &config.canvas_region;
+                            let scale = Mat4::from_scale(glam::Vec3::new(
+                                1.0 / region.width,
+                                1.0 / region.height,
+                                1.0,
+                            ));
+                            let translate = Mat4::from_translation(glam::Vec3::new(
+                                -region.x / region.width,
+                                -region.y / region.height,
+                                0.0,
+                            ));
+                            translate * scale
+                        } else {
+                            Mat4::IDENTITY
+                        };
 
-                            let uniform_buffer = self
-                                .mesh_renderer
-                                .create_uniform_buffer(transform, mapping.opacity);
-                            let uniform_bind_group = self
-                                .mesh_renderer
-                                .create_uniform_bind_group(&uniform_buffer);
-                            let texture_view = texture.create_view();
-                            let texture_bind_group =
-                                self.mesh_renderer.create_texture_bind_group(&texture_view);
-                            let index_count = mapping.mesh.indices.len() as u32;
+                        let uniform_buffer = self
+                            .mesh_renderer
+                            .create_uniform_buffer(transform, mapping.opacity);
+                        let uniform_bind_group = self
+                            .mesh_renderer
+                            .create_uniform_bind_group(&uniform_buffer);
+                        let texture_view = texture.create_view();
+                        let texture_bind_group =
+                            self.mesh_renderer.create_texture_bind_group(&texture_view);
+                        let index_count = mapping.mesh.indices.len() as u32;
 
-                            (
-                                vertex_buffer,
-                                index_buffer,
-                                uniform_bind_group,
-                                texture_bind_group,
-                                index_count,
-                            )
-                        })
+                        (
+                            vertex_buffer,
+                            index_buffer,
+                            uniform_bind_group,
+                            texture_bind_group,
+                            index_count,
+                        )
+                    })
                 })
                 .collect();
 
             // Create render pass to intermediate or final target
+            #[allow(clippy::needless_update)]
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&format!("Mapping Render Pass Output {}", output_id)),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -492,9 +463,10 @@ impl App {
         }
 
         // Apply post-processing if needed
-        if needs_post_processing && render_target_view.is_some() {
-            let intermediate_view = render_target_view.as_ref().unwrap();
-            let config = output_config.as_ref().unwrap();
+        if needs_post_processing {
+            if let (Some(intermediate_view), Some(config)) =
+                (render_target_view.as_ref(), output_config.as_ref())
+            {
 
             // Step 1: Apply color calibration
             // Create another intermediate texture for color calibration result
@@ -523,6 +495,7 @@ impl App {
                     .color_calibration_renderer
                     .create_uniform_bind_group(&uniform_buffer);
 
+                #[allow(clippy::needless_update)]
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some(&format!("Color Calibration Pass Output {}", output_id)),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -558,6 +531,7 @@ impl App {
                 .edge_blend_renderer
                 .create_uniform_bind_group(&uniform_buffer);
 
+            #[allow(clippy::needless_update)]
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&format!("Edge Blend Pass Output {}", output_id)),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -577,6 +551,7 @@ impl App {
                 &texture_bind_group,
                 &uniform_bind_group,
             );
+            }
         }
 
         // Render ImGui only on main window
@@ -677,7 +652,7 @@ impl App {
                         .map(|p| p.id)
                         .unwrap_or(1);
                     let mut new_mapping =
-                        Mapping::quad(next_id, &format!("Mapping {}", next_id), paint_id);
+                        Mapping::quad(next_id, format!("Mapping {}", next_id), paint_id);
                     // Position it slightly offset from center
                     let offset = (next_id as f32 * 0.1) % 1.0;
                     for vertex in &mut new_mapping.mesh.vertices {
@@ -696,7 +671,7 @@ impl App {
                 UIAction::AddPaint => {
                     info!("Adding new paint");
                     let next_id = self.paint_manager.paints().len() as u64 + 1;
-                    let paint = Paint::test_pattern(next_id, &format!("Test Pattern {}", next_id));
+                    let paint = Paint::test_pattern(next_id, format!("Test Pattern {}", next_id));
                     let paint_id = self.paint_manager.add_paint(paint);
 
                     // Create a video player for this paint (shorter 5-second duration for easier loop testing)
@@ -722,7 +697,7 @@ impl App {
                     let mapping_id = self.mapping_manager.mappings().len() as u64 + 1;
                     let mut new_mapping = Mapping::quad(
                         mapping_id,
-                        &format!("Mapping for Paint {}", next_id),
+                        format!("Mapping for Paint {}", next_id),
                         paint_id,
                     );
                     // Position it with a slight offset based on count
@@ -1047,7 +1022,7 @@ impl App {
                 // Create a default quad mapping for the media
                 let mapping_id = self.mapping_manager.mappings().len() as u64 + 1;
                 let mut new_mapping =
-                    Mapping::quad(mapping_id, &format!("Mapping for {}", filename), paint_id);
+                    Mapping::quad(mapping_id, format!("Mapping for {}", filename), paint_id);
 
                 // Position it with a slight offset
                 let offset = (mapping_id as f32 * 0.15) % 1.0 - 0.3;

@@ -36,6 +36,12 @@ pub struct PluginApi {
     pub version: u32,
 }
 
+impl Default for PluginApi {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PluginApi {
     pub const VERSION: u32 = 1;
 

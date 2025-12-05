@@ -72,6 +72,12 @@ pub enum SymmetryMode {
     Both,
 }
 
+impl Default for MeshEditor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MeshEditor {
     pub fn new() -> Self {
         Self {
@@ -281,7 +287,7 @@ impl MeshEditor {
         }
 
         // Draw vertices
-        for (_i, vertex) in self.vertices.iter().enumerate() {
+        for vertex in self.vertices.iter() {
             let color = if vertex.selected {
                 Color32::from_rgb(255, 200, 100)
             } else {
@@ -320,7 +326,7 @@ impl MeshEditor {
                     if response.clicked() {
                         // Select vertex under pointer
                         let mut found = false;
-                        for (_i, vertex) in self.vertices.iter_mut().enumerate() {
+                        for vertex in self.vertices.iter_mut() {
                             if vertex.position.distance(pointer_pos) < 10.0 {
                                 vertex.selected = !vertex.selected;
                                 found = true;

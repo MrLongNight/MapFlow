@@ -450,7 +450,7 @@ impl AppUI {
 
                         // Layer header with visibility toggle
                         let mut visible = layer.visible;
-                        if ui.checkbox(&format!("##visible_{}", layer.id), &mut visible) {
+                        if ui.checkbox(format!("##visible_{}", layer.id), &mut visible) {
                             layer.visible = visible;
                         }
                         ui.same_line();
@@ -577,7 +577,7 @@ impl AppUI {
                         let _id = ui.push_id_usize(paint.id as usize);
 
                         // Paint header
-                        ui.text(&format!("{} ({:?})", paint.name, paint.paint_type));
+                        ui.text(format!("{} ({:?})", paint.name, paint.paint_type));
 
                         // Indent for paint properties
                         ui.indent();
@@ -642,18 +642,18 @@ impl AppUI {
 
                         // Mapping header with visibility
                         let old_visible = mapping.visible;
-                        if ui.checkbox(&format!("##visible_{}", mapping.id), &mut mapping.visible) {
-                            if mapping.visible != old_visible {
-                                self.actions.push(UIAction::ToggleMappingVisibility(
-                                    mapping.id,
-                                    mapping.visible,
-                                ));
-                            }
+                        if ui.checkbox(format!("##visible_{}", mapping.id), &mut mapping.visible)
+                            && mapping.visible != old_visible
+                        {
+                            self.actions.push(UIAction::ToggleMappingVisibility(
+                                mapping.id,
+                                mapping.visible,
+                            ));
                         }
                         ui.same_line();
 
                         // Make the mapping name clickable to select it
-                        if ui.small_button(&format!(
+                        if ui.small_button(format!(
                             "{} (Paint #{})",
                             mapping.name, mapping.paint_id
                         )) {

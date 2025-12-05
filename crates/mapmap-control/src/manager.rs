@@ -132,6 +132,9 @@ impl ControlManager {
     /// Process MIDI messages
     #[cfg(feature = "midi")]
     fn process_midi_messages(&mut self) {
+        // Collect messages to process to avoid borrow checker issues
+        let mut controls_to_apply = Vec::new();
+
         if let Some(midi_input) = &self.midi_input {
             while let Some(message) = midi_input.poll_message() {
                 // Check if in learn mode
@@ -141,13 +144,18 @@ impl ControlManager {
                     }
                 }
 
-                // Get mapping and apply control
+                // Get mapping and collect control values
                 if let Some(mapping) = midi_input.get_mapping() {
                     if let Some((target, value)) = mapping.get_control_value(&message) {
-                        self.apply_control(target, value);
+                        controls_to_apply.push((target, value));
                     }
                 }
             }
+        }
+
+        // Apply collected controls
+        for (target, value) in controls_to_apply {
+            self.apply_control(target, value);
         }
     }
 

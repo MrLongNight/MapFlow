@@ -330,6 +330,12 @@ pub enum Parameter {
     Color([f32; 4]),
 }
 
+impl Default for NodeEditor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NodeEditor {
     pub fn new() -> Self {
         Self {
@@ -463,8 +469,8 @@ impl NodeEditor {
 
         // Handle canvas interactions
         if response.dragged()
-            && !self.dragging_node.is_some()
-            && !self.creating_connection.is_some()
+            && self.dragging_node.is_none()
+            && self.creating_connection.is_none()
         {
             self.pan_offset += response.drag_delta();
         }

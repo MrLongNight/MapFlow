@@ -1,6 +1,5 @@
 use super::window_manager::WindowManager;
 use mapmap_render::WgpuBackend;
-use pollster;
 use winit::event_loop::EventLoop;
 
 #[test]

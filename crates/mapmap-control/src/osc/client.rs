@@ -3,10 +3,13 @@
 #[cfg(feature = "osc")]
 use rosc::{encoder, OscMessage, OscPacket};
 
+#[cfg(feature = "osc")]
+use std::net::{SocketAddr, UdpSocket};
+
 use crate::{error::ControlError, ControlTarget, ControlValue, Result};
 
 #[cfg(feature = "osc")]
-use super::types::control_value_to_osc;
+use super::{address::control_target_to_address, types::control_value_to_osc};
 
 /// OSC client for sending state updates
 pub struct OscClient {

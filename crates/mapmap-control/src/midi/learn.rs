@@ -160,7 +160,11 @@ impl MidiLearn {
 
     /// Get current learn state
     pub fn get_state(&self) -> LearnState {
-        self.state.lock().ok().copied().unwrap_or(LearnState::Idle)
+        self.state
+            .lock()
+            .ok()
+            .map(|guard| *guard)
+            .unwrap_or(LearnState::Idle)
     }
 
     /// Get pending target

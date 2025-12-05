@@ -37,13 +37,12 @@ impl FormatConverter {
     /// Returns an error if the conversion is not supported or fails.
     pub fn convert(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
         // If formats match, just clone the frame
-        if frame.format.pixel_format == target_format.pixel_format {
-            if frame.format.width == target_format.width
+        if frame.format.pixel_format == target_format.pixel_format
+            && frame.format.width == target_format.width
                 && frame.format.height == target_format.height
             {
                 return Ok(frame.clone());
             }
-        }
 
         // Dispatch to specific conversion functions
         match (&frame.format.pixel_format, &target_format.pixel_format) {

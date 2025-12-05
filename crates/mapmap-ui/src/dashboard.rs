@@ -56,6 +56,12 @@ pub enum WidgetType {
     Label { value: String },
 }
 
+impl Default for Dashboard {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Dashboard {
     pub fn new() -> Self {
         Self {

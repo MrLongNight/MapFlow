@@ -189,7 +189,7 @@ impl VideoSink for TestVideoSink {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::format::PixelFormat;
+    
 
     #[test]
     fn test_video_sink_trait() {

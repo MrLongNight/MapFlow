@@ -164,7 +164,7 @@ impl VideoSource for TestVideoSource {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::format::PixelFormat;
+    
 
     #[test]
     fn test_video_source_trait() {

@@ -119,11 +119,9 @@ impl TimelineEditor {
                 self.playing = false;
                 actions.push(TimelineAction::Pause);
             }
-        } else {
-            if ui.button("Play") {
-                self.playing = true;
-                actions.push(TimelineAction::Play);
-            }
+        } else if ui.button("Play") {
+            self.playing = true;
+            actions.push(TimelineAction::Play);
         }
 
         ui.same_line();
@@ -313,7 +311,7 @@ impl TimelineEditor {
                 draw_list.add_text(
                     [x + 2.0, canvas_pos[1] + 5.0],
                     text_color,
-                    &format!("{:.0}s", t),
+                    format!("{:.0}s", t),
                 );
             }
 

@@ -224,7 +224,7 @@ impl AssetManager {
 
         // For now, just show effect presets
         egui::ScrollArea::vertical().show(ui, |ui| {
-            for (_name, preset) in &self.effect_presets {
+            for preset in self.effect_presets.values() {
                 ui.horizontal(|ui| {
                     if preset.favorite {
                         ui.label("⭐");

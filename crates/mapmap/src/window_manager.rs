@@ -24,6 +24,7 @@ pub struct WindowContext {
     /// The configuration for the `wgpu` surface.
     pub surface_config: wgpu::SurfaceConfiguration,
     /// The `OutputId` associated with this window. For the main window, this is `0`.
+    #[allow(dead_code)]
     pub output_id: OutputId,
 }
 
@@ -71,7 +72,7 @@ impl WindowManager {
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
             view_formats: vec![],
         };
-        surface.configure(backend.device(), &surface_config);
+        surface.configure(&backend.device, &surface_config);
 
         let context = WindowContext {
             window,
@@ -109,7 +110,7 @@ impl WindowManager {
         );
 
         let window = WindowBuilder::new()
-            .with_title(&format!("MapMap Output - {}", output_config.name))
+            .with_title(format!("MapMap Output - {}", output_config.name))
             .with_inner_size(winit::dpi::PhysicalSize::new(
                 output_config.resolution.0,
                 output_config.resolution.1,
@@ -136,7 +137,7 @@ impl WindowManager {
             view_formats: vec![],
         };
 
-        surface.configure(backend.device(), &surface_config);
+        surface.configure(&backend.device, &surface_config);
 
         let window_context = WindowContext {
             window,
