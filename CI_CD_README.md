@@ -50,13 +50,15 @@ gh issue list --label "jules-task"
 .github/
 ├── workflows/
 │   ├── CI-01_build-and-test.yml              # Haupt-CI/CD Pipeline
-│   ├── CI-02_security-scan.yml                  # Security Scanning
-│   ├── CI-03_create-issues.yml     # Jules Issues erstellen (einmalig)
-│   ├── CI-04_session-trigger.yml   # NEU: Triggert Jules API Sessions
-│   ├── CI-05_pr-automation.yml     # Auto-Merge für Jules PRs
-│   ├── CI-06_update-changelog.yml    # Changelog Updates
-│   ├── CI-ADMIN-01_sync-labels.yml             # Label Synchronisierung
-│   └── README.md                   # Workflow Dokumentation
+│   ├── CI-02_security-scan.yml               # Security Scanning
+│   ├── CI-03_create-issues.yml               # Jules Issues erstellen (einmalig)
+│   ├── CI-04_session-trigger.yml             # Jules API Session Trigger
+│   ├── CI-05_pr-automation.yml               # ✨ Auto-Merge mit Fehlerbehandlung
+│   ├── CI-06_update-changelog.yml            # Changelog Updates
+│   ├── CI-07_post-merge-automation.yml       # 🆕 Post-Merge (Issue close, Roadmap, Next)
+│   ├── CI-08_monitor-jules-session.yml       # 🆕 Jules Session Monitoring & PR Creation
+│   ├── CI-ADMIN-01_sync-labels.yml           # Label Synchronisierung
+│   └── README.md                             # Workflow Dokumentation
 ├── ISSUE_TEMPLATE/
 │   ├── development_task.yml        # Template für Jules Tasks
 │   ├── bug_report.yml              # Bug Reports
@@ -72,26 +74,42 @@ gh issue list --label "jules-task"
 ### Vollautomatischer Jules Workflow:
 
 ```
-Issue mit jules-task Label erstellt/gelabelt
+1. Issue mit jules-task Label erstellt/gelabelt
     ↓
-CI-04_session-trigger.yml triggert automatisch
+2. CI-04_session-trigger.yml triggert automatisch (oder manuell)
     ↓
-Jules API Session wird erstellt (wenn Key vorhanden)
+3. Jules API Session wird erstellt (wenn Key vorhanden)
     ↓
-Jules bearbeitet Issue
+4. CI-08_monitor-jules-session.yml überwacht Session (alle 5 Min.)
     ↓
-Jules erstellt PR mit jules-pr Label
+5. Jules bearbeitet Issue & erstellt Branch
     ↓
-CI/CD Pipeline (CI-01_build-and-test.yml) läuft automatisch
+6. CI-08 erkennt fertige Session & erstellt PR mit jules-pr Label
     ↓
-CI-05_pr-automation.yml: Auto-Merge wenn alle Checks ✅
+7. CI/CD Pipeline (CI-01_build-and-test.yml) läuft automatisch
     ↓
-Issue wird automatisch geschlossen
+8a. Bei SUCCESS: CI-05_pr-automation.yml merged PR automatisch
     ↓
-CI-06_update-changelog.yml: CHANGELOG.md wird aktualisiert
+8b. Bei FEHLER: CI-05 erstellt @jules Kommentar mit Fehlerdetails
+    ↓
+9. Bei SUCCESS: CI-07_post-merge-automation.yml:
+    - Schließt Issue automatisch
+    - Aktualisiert ROADMAP.md
+    - Triggert CI-04 für nächstes jules-task Issue
+    ↓
+10. CI-06_update-changelog.yml: CHANGELOG.md wird aktualisiert
+    ↓
+11. Zyklus wiederholt sich automatisch für nächstes Issue
 ```
 
-**Neu:** Der Workflow ist jetzt vollständig automatisiert! Sobald ein Issue das `jules-task` Label erhält, wird automatisch eine Jules Session getriggert.
+**✨ Vollständig automatisiert!** Der komplette Workflow läuft ohne manuelle Eingriffe:
+- Automatische Session-Erstellung bei neuen jules-task Issues
+- Kontinuierliche Überwachung laufender Sessions
+- Automatische PR-Erstellung bei Session-Completion
+- Intelligente Fehlerbehandlung mit @jules Benachrichtigungen
+- Auto-Merge bei erfolgreichen Checks
+- Automatische Roadmap-Updates und Issue-Schließung
+- Selbst-triggernde Fortsetzung mit nächstem Issue
 
 ### CI/CD Pipeline (bei jedem PR):
 
@@ -121,19 +139,25 @@ Bereit zum Merge
 - **Was:** Erstellt 8 vordefinierte Development Issues
 - **Dauer:** ~1 Minute
 
-### 3. Jules Session Trigger (`CI-04_session-trigger.yml`) 🆕
+### 3. Jules Session Trigger (`CI-04_session-trigger.yml`)
 - **Trigger:** Automatisch bei Issues mit `jules-task` Label oder manuell
 - **Was:** Erstellt Jules Sessions für Issues
 - **Features:**
   - Automatische Erkennung neuer jules-task Issues
+  - Wählt ältestes offenes Issue bei manueller Ausführung
   - Tracking-Kommentare im Issue
-  - Nutzt offizielle `google-labs-code/jules-action`
   - API-Integration (wenn JULES_API_KEY vorhanden)
 - **Dauer:** Sekunden
 
-### 4. Jules Auto-Merge (`CI-05_pr-automation.yml`)
-- **Trigger:** Bei Jules PRs automatisch
-- **Was:** Merged PRs wenn alle Checks bestehen
+### 4. Jules Auto-Merge (`CI-05_pr-automation.yml`) ✨ Enhanced
+- **Trigger:** Bei Jules PRs automatisch, nach CI-Completion
+- **Was:** Merged PRs wenn alle Checks bestehen, mit Fehlerbehandlung
+- **Features:**
+  - Wartet auf alle Checks
+  - Bei Erfolg: Auto-Merge mit Squash
+  - Bei Fehler: Erstellt detaillierten @jules Kommentar
+  - Erkennt Merge-Konflikte
+  - Intelligente Fehleranalyse
 - **Dauer:** Sekunden
 
 ### 5. Documentation Update (`CI-06_update-changelog.yml`)
@@ -145,6 +169,27 @@ Bereit zum Merge
 - **Trigger:** Push/PR + wöchentlich
 - **Was:** CodeQL Security Analysis
 - **Dauer:** ~5-10 Minuten
+
+### 7. Post-Merge Automation (`CI-07_post-merge-automation.yml`) 🆕
+- **Trigger:** Automatisch nach Jules PR Merge
+- **Was:** Schließt Issue, updated Roadmap, triggert nächste Session
+- **Features:**
+  - Automatisches Issue-Schließen
+  - ROADMAP.md Update mit Completion-Status
+  - Triggert CI-04 für nächstes jules-task Issue
+  - Erstellt Erfolgs-Kommentare
+- **Dauer:** Sekunden
+
+### 8. Monitor Jules Session (`CI-08_monitor-jules-session.yml`) 🆕
+- **Trigger:** Scheduled (alle 5 Minuten) oder manuell
+- **Was:** Überwacht aktive Jules Sessions und erstellt PRs
+- **Features:**
+  - Findet aktive Sessions aus Issue-Kommentaren
+  - Pollt Jules API für Session-Status
+  - Erstellt automatisch PR bei Completion
+  - Benachrichtigt bei Fehler oder Completion
+  - Fügt jules-pr Label hinzu
+- **Dauer:** Sekunden
 
 ## 📊 Monitoring
 
@@ -210,7 +255,7 @@ gh run view <run-id> --log
 **Checklist:**
 - [ ] Issue hat `jules-task` Label?
 - [ ] Workflow `CI-04_session-trigger.yml` existiert?
-- [ ] Jules GitHub App installiert ODER JULES_API_KEY konfiguriert?
+- [ ] JULES_API_KEY konfiguriert?
 
 ```bash
 # Debug
@@ -233,8 +278,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=<issue-number>
    - Workflow-Datei muss in main branch sein
 
 2. **Workflow läuft, aber keine Session:**
-   - Option A: Installiere Jules GitHub App (empfohlen)
-   - Option B: Konfiguriere JULES_API_KEY Secret
+   - Konfiguriere JULES_API_KEY Secret
    - Siehe: `.github/JULES_API_SETUP.md`
 
 3. **API-Key fehlt:**
@@ -244,6 +288,37 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=<issue-number>
    # Key von https://jules.google.com (Settings → API-Keys)
    ```
 
+### Problem: Jules Session läuft, aber kein PR wird erstellt
+
+**Checklist:**
+- [ ] CI-08 (Monitor) läuft alle 5 Minuten?
+- [ ] Session ist wirklich abgeschlossen?
+- [ ] Jules hat einen Branch erstellt?
+
+```bash
+# Check Monitoring Workflow
+gh run list --workflow="Monitor Jules Session" --limit 5
+
+# Check Logs
+gh run view --log
+
+# Manuel triggern
+gh workflow run CI-08_monitor-jules-session.yml
+```
+
+**Lösungen:**
+1. **Monitoring läuft nicht:**
+   - Stelle sicher dass CI-08 in main branch ist
+   - GitHub Actions müssen aktiviert sein
+
+2. **Session noch nicht fertig:**
+   - Warten - CI-08 prüft alle 5 Minuten
+   - Jules Sessions können mehrere Minuten dauern
+
+3. **Kein Branch gefunden:**
+   - PR muss manuell erstellt werden
+   - Check Jules Session UI für Branch-Name
+
 ### Problem: Auto-Merge funktioniert nicht
 
 **Checklist:**
@@ -251,11 +326,23 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=<issue-number>
 - [ ] Alle Checks sind grün?
 - [ ] Keine Merge Konflikte?
 - [ ] Kein Draft?
+- [ ] CI-05 wurde getriggert?
 
 ```bash
 # Debug
 gh pr view <number> --json mergeable,statusCheckRollup
+
+# Check Auto-Merge Workflow
+gh run list --workflow="PR Auto-Merge" --limit 5
+
+# Check für @jules Kommentare (bei Fehler)
+gh pr view <number> --comments
 ```
+
+**Bei Fehler:**
+- CI-05 erstellt automatisch einen @jules Kommentar mit Details
+- Jules kann PR direkt updaten
+- Checks laufen automatisch erneut
 
 ### Problem: Build-Dependencies fehlen
 
@@ -274,10 +361,13 @@ brew install ffmpeg pkg-config
 
 ## 📚 Dokumentation
 
-- **[Jules API Setup](.github/JULES_API_SETUP.md)** - 🆕 Detaillierte Jules Setup-Anleitung
+- **[Implementation Summary](.github/IMPLEMENTATION_SUMMARY.md)** - 🆕 Vollständige Implementierungs-Übersicht
+- **[Complete Automation](.github/JULES_AUTOMATION_COMPLETE.md)** - 🆕 Detaillierter Workflow mit Diagrammen
+- **[Quick Reference](.github/WORKFLOW_QUICKREF.md)** - 🆕 Schnellreferenz & Commands
+- **[Workflows README](.github/workflows/README.md)** - Workflow Details
+- **[Jules API Setup](.github/JULES_API_SETUP.md)** - Detaillierte Jules Setup-Anleitung
 - **[Setup Guide](.github/SETUP_GUIDE.md)** - Schritt-für-Schritt Anleitung
 - **[Jules Integration](.github/JULES_INTEGRATION.md)** - Jules Konfiguration & Workflows
-- **[Workflows README](.github/workflows/README.md)** - Workflow Details
 - **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Templates für Issues
 
 ## 💡 Tipps & Tricks

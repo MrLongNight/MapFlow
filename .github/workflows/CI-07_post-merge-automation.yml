@@ -1,0 +1,218 @@
+name: "CI-07: Post-Merge Automation"
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  post-merge-actions:
+    name: Post-Merge Actions
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.pull_request.merged == true && 
+       (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
+        contains(github.event.pull_request.body, 'Created by Jules'))) ||
+      github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Get PR and Issue details
+        id: get-details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request?.number || 
+                            parseInt('${{ github.event.inputs.pr_number }}' || '0');
+            
+            if (!prNumber) {
+              core.info('No PR to process');
+              core.setOutput('has_pr', 'false');
+              return;
+            }
+            
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            core.setOutput('has_pr', 'true');
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('pr_title', pr.title);
+            core.setOutput('pr_body', pr.body || '');
+            
+            // Extract related issue number
+            const issueMatch = pr.body?.match(/(?:close|closes|fix|fixes|resolve|resolves|issue)\s*[:#]?\s*(\d+)/i);
+            if (issueMatch) {
+              const issueNum = parseInt(issueMatch[1]);
+              core.setOutput('issue_number', issueNum);
+              core.setOutput('has_issue', 'true');
+              
+              // Get issue details
+              try {
+                const { data: issue } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNum
+                });
+                core.setOutput('issue_title', issue.title);
+                core.setOutput('issue_body', issue.body || '');
+                
+                // Check if issue is closed
+                if (issue.state === 'closed') {
+                  core.setOutput('issue_already_closed', 'true');
+                } else {
+                  core.setOutput('issue_already_closed', 'false');
+                }
+              } catch (error) {
+                core.warning(`Could not fetch issue #${issueNum}: ${error.message}`);
+              }
+            } else {
+              core.setOutput('has_issue', 'false');
+            }
+
+      - name: Close related issue
+        id: close-issue
+        if: steps.get-details.outputs.has_issue == 'true' && steps.get-details.outputs.issue_already_closed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNum = parseInt('${{ steps.get-details.outputs.issue_number }}');
+            const prNumber = parseInt('${{ steps.get-details.outputs.pr_number }}');
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNum,
+              state: 'closed'
+            });
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNum,
+              body: `✅ **Completed!** This issue has been resolved and merged in PR #${prNumber}.`
+            });
+            
+            console.log(`✅ Closed issue #${issueNum}`);
+
+      - name: Update ROADMAP.md
+        id: update-roadmap
+        if: steps.get-details.outputs.has_issue == 'true'
+        run: |
+          ISSUE_NUM="${{ steps.get-details.outputs.issue_number }}"
+          ISSUE_TITLE="${{ steps.get-details.outputs.issue_title }}"
+          PR_NUM="${{ steps.get-details.outputs.pr_number }}"
+          
+          if [ ! -f "ROADMAP.md" ]; then
+            echo "⚠️ ROADMAP.md not found"
+            exit 0
+          fi
+          
+          # Try to find the issue in the roadmap and mark it as complete
+          # Look for patterns like "- [ ]" or "- 🚧" that might reference this issue
+          
+          # Create a backup
+          cp ROADMAP.md ROADMAP.md.backup
+          
+          # Update checkboxes related to this issue (best effort)
+          # Look for any line containing the issue number with word boundary
+          SEARCH_PATTERN="#${ISSUE_NUM}[^0-9]"
+          if grep -q "${SEARCH_PATTERN}" ROADMAP.md || grep -q "#${ISSUE_NUM}\$" ROADMAP.md; then
+            # Use word boundary-aware patterns - match issue number followed by non-digit or end of line
+            sed -i "s/- \[ \]\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- [x]\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
+            sed -i "s/- \[ \]\(.*#${ISSUE_NUM}\)$/- [x]\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
+            sed -i "s/- 🚧\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- ✅\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
+            sed -i "s/- 🚧\(.*#${ISSUE_NUM}\)$/- ✅\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
+            echo "✅ Updated ROADMAP.md with completion status"
+            echo "roadmap_updated=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Could not find specific reference to issue #${ISSUE_NUM} in ROADMAP.md"
+            
+            # Add to changelog section if it exists
+            if grep -q "## Next Immediate Actions" ROADMAP.md; then
+              # Add completion note using printf for better portability
+              DATE=$(date +%Y-%m-%d)
+              {
+                echo ""
+                echo ""
+                echo "**Recently Completed ($DATE):**"
+                echo "- ✅ Issue #${ISSUE_NUM}: ${ISSUE_TITLE} (PR #${PR_NUM})"
+              } > /tmp/roadmap_insert.txt
+              sed -i "/## Next Immediate Actions/r /tmp/roadmap_insert.txt" ROADMAP.md
+              rm /tmp/roadmap_insert.txt
+              echo "✅ Added completion note to ROADMAP.md"
+              echo "roadmap_updated=true" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ Could not find suitable section in ROADMAP.md"
+              echo "roadmap_updated=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Commit ROADMAP changes
+        if: steps.update-roadmap.outputs.roadmap_updated == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          if ! git diff --quiet ROADMAP.md; then
+            git add ROADMAP.md
+            git commit -m "docs: Update ROADMAP.md - completed issue #${{ steps.get-details.outputs.issue_number }}"
+            git push
+            echo "✅ ROADMAP.md committed and pushed"
+          else
+            echo "⚠️ No changes to ROADMAP.md to commit"
+          fi
+
+      - name: Trigger next Jules session
+        id: trigger-next
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('🔄 Triggering CI-04 for next Jules task...');
+            
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'CI-04_session-trigger.yml',
+                ref: 'main'
+              });
+              
+              console.log('✅ CI-04 triggered successfully');
+              core.setOutput('triggered', 'true');
+            } catch (error) {
+              console.error('❌ Failed to trigger CI-04:', error.message);
+              core.setOutput('triggered', 'false');
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📝 CI-07: Post-Merge Automation completed"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "PR Number: ${{ steps.get-details.outputs.pr_number }}"
+          echo "Issue Number: ${{ steps.get-details.outputs.issue_number }}"
+          echo "Issue Closed: ${{ steps.close-issue.conclusion }}"
+          echo "ROADMAP Updated: ${{ steps.update-roadmap.outputs.roadmap_updated }}"
+          echo "Next Session Triggered: ${{ steps.trigger-next.outputs.triggered }}"
+          echo ""

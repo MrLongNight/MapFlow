@@ -1,0 +1,257 @@
+name: "CI-08: Monitor Jules Session"
+
+on:
+  schedule:
+    # Run every 5 minutes to check for completed Jules sessions
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      session_name:
+        description: 'Jules session name to monitor'
+        required: false
+        type: string
+      issue_number:
+        description: 'Related issue number'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  monitor-sessions:
+    name: Monitor Jules Sessions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check JULES_API_KEY secret
+        id: check-key
+        run: |
+          if [ -n "${{ secrets.JULES_API_KEY }}" ]; then
+            echo "has_key=true" >> $GITHUB_OUTPUT
+            echo "✅ JULES_API_KEY is configured"
+          else
+            echo "has_key=false" >> $GITHUB_OUTPUT
+            echo "⚠️ JULES_API_KEY is NOT configured - skipping monitoring"
+          fi
+
+      - name: Find active Jules sessions
+        id: find-sessions
+        if: steps.check-key.outputs.has_key == 'true'
+        uses: actions/github-script@v7
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        with:
+          script: |
+            const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
+            
+            if (!process.env.JULES_API_KEY) {
+              core.info('No API key - skipping');
+              return;
+            }
+            
+            // Get all open issues with jules-task label that have session tracking comments
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'jules-task',
+              state: 'open',
+              per_page: 100
+            });
+            
+            const sessionsToCheck = [];
+            
+            for (const issue of issues) {
+              // Get comments to find session tracking
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number
+              });
+              
+              // Look for session creation comment - try multiple patterns
+              // These patterns are designed to work with CI-04 output and Jules comments
+              for (const comment of comments) {
+                // Pattern 1: From CI-04 workflow comment format (most reliable)
+                let sessionMatch = comment.body.match(/Jules session created.*?sessions\/([\w-]+)/);
+                // Pattern 2: Alternative format with session URL
+                if (!sessionMatch) {
+                  sessionMatch = comment.body.match(/Session.*?sessions\/([\w-]+)/);
+                }
+                // Pattern 3: Direct session ID format (permissive, best-effort)
+                // Note: This pattern is intentionally broad to catch various formats
+                // May need adjustment based on actual Jules comment format
+                if (!sessionMatch) {
+                  sessionMatch = comment.body.match(/session[:\s]+([a-zA-Z0-9_-]{10,})/i);
+                }
+                
+                if (sessionMatch) {
+                  const sessionId = sessionMatch[1];
+                  sessionsToCheck.push({
+                    issueNumber: issue.number,
+                    sessionId: sessionId,
+                    issueTitle: issue.title
+                  });
+                  break;
+                }
+              }
+            }
+            
+            if (sessionsToCheck.length === 0) {
+              core.info('No active Jules sessions to monitor');
+              core.setOutput('has_sessions', 'false');
+              return;
+            }
+            
+            core.info(`Found ${sessionsToCheck.length} sessions to check`);
+            core.setOutput('has_sessions', 'true');
+            core.setOutput('sessions', JSON.stringify(sessionsToCheck));
+
+      - name: Check session status and create PRs
+        if: steps.check-key.outputs.has_key == 'true' && steps.find-sessions.outputs.has_sessions == 'true'
+        uses: actions/github-script@v7
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          SESSIONS_JSON: ${{ steps.find-sessions.outputs.sessions }}
+        with:
+          script: |
+            const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
+            const sessions = JSON.parse(process.env.SESSIONS_JSON);
+            
+            for (const session of sessions) {
+              core.info(`Checking session ${session.sessionId} for issue #${session.issueNumber}`);
+              
+              try {
+                // Check session status via Jules API
+                const sessionUrl = `https://jules.googleapis.com/v1alpha/sessions/${session.sessionId}`;
+                const res = await fetch(sessionUrl, {
+                  method: 'GET',
+                  headers: {
+                    'X-Goog-Api-Key': process.env.JULES_API_KEY,
+                    'Accept': 'application/json'
+                  }
+                });
+                
+                if (!res.ok) {
+                  core.warning(`Failed to fetch session status: ${res.status}`);
+                  continue;
+                }
+                
+                const sessionData = await res.json();
+                const status = sessionData.state || sessionData.status || 'unknown';
+                
+                core.info(`Session ${session.sessionId} status: ${status}`);
+                
+                // Check if session is complete
+                if (status === 'COMPLETED' || status === 'complete' || status === 'done') {
+                  // Check if PR already exists
+                  const { data: prs } = await github.rest.pulls.list({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    state: 'open'
+                  });
+                  
+                  const existingPR = prs.find(pr => 
+                    pr.body && pr.body.includes(`Issue: #${session.issueNumber}`)
+                  );
+                  
+                  if (existingPR) {
+                    core.info(`PR already exists for issue #${session.issueNumber}: #${existingPR.number}`);
+                    continue;
+                  }
+                  
+                  // Try to detect branch from session data
+                  const branch = sessionData.gitPush?.branch || 
+                                sessionData.branch || 
+                                sessionData.pullRequest?.branch ||
+                                null;
+                  
+                  if (branch) {
+                    core.info(`Found branch: ${branch}`);
+                    
+                    // Create PR
+                    try {
+                      const { data: repo } = await github.rest.repos.get({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo
+                      });
+                      
+                      const { data: pr } = await github.rest.pulls.create({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        title: `Jules: ${session.issueTitle}`,
+                        head: branch,
+                        base: repo.default_branch || 'main',
+                        body: `Automated PR created for completed Jules session.\n\nIssue: #${session.issueNumber}\nSession: ${sessionUrl}\n\nThis PR was created by the CI monitoring workflow.`
+                      });
+                      
+                      // Add jules-pr label
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: pr.number,
+                        labels: ['jules-pr']
+                      });
+                      
+                      // Comment on issue
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: session.issueNumber,
+                        body: `✅ **Jules session completed!** PR created: #${pr.number}\n\nThe PR will be automatically merged once all checks pass.`
+                      });
+                      
+                      core.info(`✅ Created PR #${pr.number} for issue #${session.issueNumber}`);
+                    } catch (error) {
+                      core.error(`Failed to create PR: ${error.message}`);
+                      
+                      // Notify on issue
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: session.issueNumber,
+                        body: `⚠️ Jules session completed but PR creation failed. Branch: \`${branch}\`\n\nError: ${error.message}\n\nPlease create the PR manually.`
+                      });
+                    }
+                  } else {
+                    core.warning(`No branch found in session data for issue #${session.issueNumber}`);
+                    
+                    // Notify that session is complete but no branch was found
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: session.issueNumber,
+                      body: `✅ **Jules session completed!** However, no branch was detected automatically.\n\nPlease check the [Jules session](${sessionUrl}) and create a PR manually if needed.`
+                    });
+                  }
+                } else if (status === 'FAILED' || status === 'failed' || status === 'error') {
+                  // Notify about failure
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: session.issueNumber,
+                    body: `⚠️ **Jules session failed**\n\nThe session did not complete successfully. Please check the [session details](${sessionUrl}) and retry if needed.`
+                  });
+                }
+                
+              } catch (error) {
+                core.error(`Error checking session ${session.sessionId}: ${error.message}`);
+              }
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📝 CI-08: Monitor Jules Session completed"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Has API Key: ${{ steps.check-key.outputs.has_key }}"
+          echo "Active Sessions: ${{ steps.find-sessions.outputs.has_sessions }}"
+          echo ""
