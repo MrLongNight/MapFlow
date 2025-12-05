@@ -39,8 +39,13 @@ jobs:
         languages: ${{ matrix.language }}
         queries: security-and-quality
 
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
+    # Use a newer toolchain for the security analysis/build step so Cargo can parse newer manifests
+    - name: Install Rust toolchain (security)
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
 
     - name: Install system dependencies
       run: |
