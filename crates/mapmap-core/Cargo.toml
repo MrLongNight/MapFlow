@@ -16,11 +16,12 @@ cpal = { workspace = true, optional = true }
 rustfft = { workspace = true }
 hound = { workspace = true }
 crossbeam-channel = { workspace = true }
+winit = { workspace = true, optional = true }
 
 [features]
 default = []
 audio = ["cpal"]
-winit = []
+winit = ["dep:winit"]
 
 [dev-dependencies]
 proptest = { workspace = true }

@@ -124,7 +124,7 @@ pub fn detect_monitors_winit<T>(event_loop: &winit::event_loop::EventLoop<T>) ->
     use winit::monitor::MonitorHandle;
 
     let mut monitors = Vec::new();
-    let primary_handle = event_loop.primary_monitor();
+    let primary_handle: Option<MonitorHandle> = event_loop.primary_monitor();
 
     for (index, monitor) in event_loop.available_monitors().enumerate() {
         let name = monitor
