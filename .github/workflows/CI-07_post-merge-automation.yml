@@ -247,13 +247,17 @@ jobs:
               if grep -q "^${SECTION}" ROADMAP.md; then
                 echo "✅ Adding completion note to '${SECTION}' section"
                 
-                # Create completion entry
-                COMPLETION_NOTE="**Recently Completed (${DATE}):**\n- ✅ Issue #${ISSUE_NUM}: ${ISSUE_TITLE} (PR #${PR_NUM})\n"
+                # Create completion entry using a temp file
+                {
+                  echo ""
+                  echo "**Recently Completed (${DATE}):**"
+                  echo "- ✅ Issue #${ISSUE_NUM}: ${ISSUE_TITLE} (PR #${PR_NUM})"
+                  echo ""
+                } > /tmp/completion_note.txt
                 
                 # Insert after the section header
-                sed -i "/^${SECTION}/a\\
-\\
-${COMPLETION_NOTE}" ROADMAP.md
+                sed -i "/^${SECTION}/r /tmp/completion_note.txt" ROADMAP.md
+                rm -f /tmp/completion_note.txt
                 
                 CHANGES_MADE=true
                 break

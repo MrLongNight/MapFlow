@@ -323,22 +323,19 @@ jobs:
               const prTitle = sessionName ? `Jules: ${sessionName}` : `Jules session for issue #${issueNumber}`;
               
               // Enhanced PR body with proper "Closes #" reference and labels
-              const prBody = `## Jules Session PR
-
-Automated PR created for Jules session.
-
-**Closes #${issueNumber}**
-
-### Issue Details
-- **Title:** ${issue.title}
-- **Issue:** #${issueNumber}
-${sessionUrl ? `- **Session:** ${sessionUrl}` : ''}
-
-### Description
-${issue.body || 'No description provided'}
-
----
-This PR was automatically created by the CI workflow (CI-04).`;
+              let prBody = '## Jules Session PR\n\n';
+              prBody += 'Automated PR created for Jules session.\n\n';
+              prBody += `**Closes #${issueNumber}**\n\n`;
+              prBody += '### Issue Details\n';
+              prBody += `- **Title:** ${issue.title}\n`;
+              prBody += `- **Issue:** #${issueNumber}\n`;
+              if (sessionUrl) {
+                prBody += `- **Session:** ${sessionUrl}\n`;
+              }
+              prBody += '\n### Description\n';
+              prBody += (issue.body || 'No description provided') + '\n\n';
+              prBody += '---\n';
+              prBody += 'This PR was automatically created by the CI workflow (CI-04).';
 
               // Verify branch exists before creating PR
               try {
@@ -406,23 +403,25 @@ This PR was automatically created by the CI workflow (CI-04).`;
               // Provide detailed error information
               let errorDetails = `**Error:** ${err.message}`;
               if (err.message.includes('Branch')) {
-                errorDetails += '\n\n**Possible causes:**\n- Jules has not yet pushed changes to the branch\n- Branch name detection was incorrect\n- Network issues during branch creation';
+                errorDetails += '\\n\\n**Possible causes:**\\n- Jules has not yet pushed changes to the branch\\n- Branch name detection was incorrect\\n- Network issues during branch creation';
               }
+              
+              let errorBody = '⚠️ **Failed to create PR automatically**\\n\\n';
+              errorBody += `**Detected branch:** \`${sessionBranch}\`\\n`;
+              if (sessionUrl) {
+                errorBody += `**Session URL:** ${sessionUrl}\\n`;
+              }
+              errorBody += errorDetails + '\\n\\n';
+              errorBody += '**Next steps:**\\n';
+              errorBody += '1. Check the Jules session to see if changes were pushed\\n';
+              errorBody += '2. Create a PR manually from the branch if it exists\\n';
+              errorBody += '3. Or wait for Jules to complete and the monitoring workflow (CI-08) will create the PR automatically';
               
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issueNumber,
-                body: `⚠️ **Failed to create PR automatically**
-
-**Detected branch:** \`${sessionBranch}\`
-${sessionUrl ? `**Session URL:** ${sessionUrl}\n` : ''}
-${errorDetails}
-
-**Next steps:**
-1. Check the Jules session to see if changes were pushed
-2. Create a PR manually from the branch if it exists
-3. Or wait for Jules to complete and the monitoring workflow (CI-08) will create the PR automatically`
+                body: errorBody
               });
               throw err;
             }
