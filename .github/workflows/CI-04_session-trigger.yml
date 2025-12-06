@@ -268,7 +268,7 @@ jobs:
               json?.sourceContext?.githubRepoContext?.branch,
               json?.sourceContext?.branch,
               // Fallback: generate branch name from session if no explicit branch found
-              (json?.name || json?.id) ? `jules/${(json?.name || json?.id).replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase()}` : null
+              (json?.name || json?.id) ? `jules/${String(json?.name || json?.id).replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase()}` : null
             ].filter(Boolean);
 
             const sessionBranch = possibleBranchFields.length > 0 ? possibleBranchFields[0] : null;

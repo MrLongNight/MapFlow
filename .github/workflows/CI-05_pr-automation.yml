@@ -219,7 +219,7 @@ jobs:
           
           // Log detailed status
           console.log(`✅ Passed: ${allChecks.filter(c => c.conclusion === 'success').length}`);
-          console.log(`⏳ Pending: ${allChecks.filter(c => anyPending && (c.conclusion === null || c.status === 'in_progress' || c.status === 'queued' || c.status === 'pending')).length}`);
+          console.log(`⏳ Pending: ${allChecks.filter(c => c.conclusion === null || c.status === 'in_progress' || c.status === 'queued' || c.status === 'pending').length}`);
           console.log(`❌ Failed: ${failedChecks.length}`);
           console.log(`⏭️ Skipped: ${allChecks.filter(c => c.conclusion === 'skipped').length}`);
           

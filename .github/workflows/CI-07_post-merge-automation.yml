@@ -341,7 +341,9 @@ jobs:
                   if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
                     echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
                     sleep 2
-                    git pull --rebase origin main || true
+                    # Use the default branch from the repository
+                    BASE_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
+                    git pull --rebase origin "$BASE_BRANCH" || true
                   else
                     echo "❌ Failed to push after $MAX_RETRIES attempts"
                     echo "Manual intervention may be required to push ROADMAP.md changes"

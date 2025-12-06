@@ -5,7 +5,7 @@ use crate::error::{ControlError, Result};
 use midir::{Ignore, MidiInput as MidirInput, MidiInputConnection};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 /// MIDI input handler
 pub struct MidiInputHandler {

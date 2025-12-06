@@ -3,7 +3,7 @@
 use super::MidiMessage;
 use crate::error::{ControlError, Result};
 use midir::{MidiOutput as MidirOutput, MidiOutputConnection};
-use tracing::{error, info};
+use tracing::info;
 
 /// MIDI output handler
 pub struct MidiOutputHandler {

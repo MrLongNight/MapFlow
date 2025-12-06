@@ -7,7 +7,6 @@
 //! - GPU profiling
 
 use thiserror::Error;
-use tracing::error;
 
 pub mod backend;
 pub mod color_calibration_renderer;
