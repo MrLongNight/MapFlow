@@ -403,18 +403,18 @@ jobs:
               // Provide detailed error information
               let errorDetails = `**Error:** ${err.message}`;
               if (err.message.includes('Branch')) {
-                errorDetails += '\\n\\n**Possible causes:**\\n- Jules has not yet pushed changes to the branch\\n- Branch name detection was incorrect\\n- Network issues during branch creation';
+                errorDetails += '\n\n**Possible causes:**\n- Jules has not yet pushed changes to the branch\n- Branch name detection was incorrect\n- Network issues during branch creation';
               }
               
-              let errorBody = '⚠️ **Failed to create PR automatically**\\n\\n';
-              errorBody += `**Detected branch:** \`${sessionBranch}\`\\n`;
+              let errorBody = '⚠️ **Failed to create PR automatically**\n\n';
+              errorBody += `**Detected branch:** \`${sessionBranch}\`\n`;
               if (sessionUrl) {
-                errorBody += `**Session URL:** ${sessionUrl}\\n`;
+                errorBody += `**Session URL:** ${sessionUrl}\n`;
               }
-              errorBody += errorDetails + '\\n\\n';
-              errorBody += '**Next steps:**\\n';
-              errorBody += '1. Check the Jules session to see if changes were pushed\\n';
-              errorBody += '2. Create a PR manually from the branch if it exists\\n';
+              errorBody += errorDetails + '\n\n';
+              errorBody += '**Next steps:**\n';
+              errorBody += '1. Check the Jules session to see if changes were pushed\n';
+              errorBody += '2. Create a PR manually from the branch if it exists\n';
               errorBody += '3. Or wait for Jules to complete and the monitoring workflow (CI-08) will create the PR automatically';
               
               await github.rest.issues.createComment({
