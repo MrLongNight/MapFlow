@@ -98,6 +98,9 @@ pub enum UIAction {
 
     // View actions
     ToggleFullscreen,
+
+    // Audio actions
+    SelectAudioDevice(String),
 }
 
 pub struct ImGuiContext {
@@ -214,6 +217,7 @@ pub struct AppUI {
     pub show_edge_blend: bool,        // Phase 2
     pub show_color_calibration: bool, // Phase 2
     pub show_oscillator: bool,        // Oscillator distortion effect
+    pub show_audio: bool,
     pub playback_speed: f32,
     pub looping: bool,
     // Phase 1: Advanced playback state
@@ -223,6 +227,8 @@ pub struct AppUI {
     pub selected_layer_id: Option<u64>,
     // Phase 2: Output configuration state
     pub selected_output_id: Option<u64>,
+    pub audio_devices: Vec<String>,
+    pub selected_audio_device: String,
     pub actions: Vec<UIAction>,
 }
 
@@ -240,12 +246,15 @@ impl Default for AppUI {
             show_edge_blend: false,        // Show only when output selected
             show_color_calibration: false, // Show only when output selected
             show_oscillator: true,
+            show_audio: true,
             playback_speed: 1.0,
             looping: true,
             playback_direction: mapmap_media::PlaybackDirection::Forward,
             playback_mode: mapmap_media::PlaybackMode::Loop,
             selected_layer_id: None,
             selected_output_id: None,
+            audio_devices: vec!["None".to_string()],
+            selected_audio_device: "None".to_string(),
             actions: Vec::new(),
         }
     }
@@ -410,6 +419,7 @@ impl AppUI {
                 ui.checkbox("Show Transforms", &mut self.show_transforms);
                 ui.checkbox("Show Master Controls", &mut self.show_master_controls);
                 ui.checkbox("Show Oscillator", &mut self.show_oscillator);
+                ui.checkbox("Show Audio", &mut self.show_audio);
                 ui.checkbox("Show Stats", &mut self.show_stats);
                 ui.separator();
                 if ui.menu_item("Toggle Fullscreen") {
@@ -1388,4 +1398,89 @@ impl AppUI {
                 }
             });
     }
+
+    /// Render audio analysis panel
+    pub fn render_audio_panel(&mut self, ui: &Ui, audio_analyzer: &mapmap_core::audio::AudioAnalyzer) {
+        if !self.show_audio {
+            return;
+        }
+
+        ui.window("Audio Analysis")
+            .size([380.0, 450.0], Condition::FirstUseEver)
+            .build(|| {
+                ui.text("Audio Input");
+                ui.separator();
+
+                let mut selected_idx = self
+                    .audio_devices
+                    .iter()
+                    .position(|d| d == &self.selected_audio_device)
+                    .unwrap_or(0);
+
+                if ui.combo(
+                    "Device",
+                    &mut selected_idx,
+                    &self.audio_devices,
+                    |item| std::borrow::Cow::Borrowed(item),
+                ) {
+                    self.selected_audio_device = self.audio_devices[selected_idx].clone();
+                    self.actions.push(UIAction::SelectAudioDevice(
+                        self.selected_audio_device.clone(),
+                    ));
+                }
+
+                let analysis = audio_analyzer.get_latest_analysis();
+
+                // RMS and Peak Volume Meters
+                draw_progress_bar(ui, analysis.rms_volume, "RMS");
+                draw_progress_bar(ui, analysis.peak_volume, "Peak");
+
+                ui.separator();
+
+                // FFT Visualization
+                ui.text("Frequency Spectrum");
+                let fft_magnitudes = &analysis.fft_magnitudes;
+                let draw_list = ui.get_window_draw_list();
+                let pos = ui.cursor_screen_pos();
+                let width = ui.content_region_avail()[0];
+                let height = 80.0;
+                let bar_width = width / (fft_magnitudes.len() / 4) as f32;
+
+                for (i, &magnitude) in fft_magnitudes.iter().step_by(4).enumerate() {
+                    let bar_height = (magnitude * height).min(height);
+                    let x = pos[0] + i as f32 * bar_width;
+                    let y = pos[1] + height;
+                    draw_list.add_rect(
+                        [x, y - bar_height],
+                        [x + bar_width, y],
+                        [0.0, 1.0, 0.0, 1.0],
+                    ).filled(true).build();
+                }
+                ui.dummy([width, height]);
+            });
+    }
+}
+
+fn draw_progress_bar(ui: &Ui, fraction: f32, overlay_text: &str) {
+    let pos = ui.cursor_screen_pos();
+    let width = ui.content_region_avail()[0];
+    let height = ui.text_line_height_with_spacing();
+    let draw_list = ui.get_window_draw_list();
+
+    draw_list.add_rect(
+        pos,
+        [pos[0] + width, pos[1] + height],
+        [0.2, 0.2, 0.2, 1.0],
+    ).filled(true).build();
+
+    draw_list.add_rect(
+        pos,
+        [pos[0] + width * fraction, pos[1] + height],
+        [0.0, 0.8, 0.0, 1.0],
+    ).filled(true).build();
+
+    let text_pos = [pos[0] + 4.0, pos[1] + 2.0];
+    draw_list.add_text(text_pos, [1.0, 1.0, 1.0, 1.0], overlay_text);
+
+    ui.dummy([width, height]);
 }

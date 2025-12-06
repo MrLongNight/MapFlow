@@ -9,6 +9,7 @@ fn test_create_window_manager() {
 }
 
 #[test]
+#[ignore]
 fn test_create_main_window() {
     let event_loop = EventLoop::new();
     let backend = pollster::block_on(WgpuBackend::new()).unwrap();

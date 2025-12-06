@@ -7,8 +7,8 @@
 //! 4. Rendering the result
 
 use glam::Vec2;
-use mapmap_core::{Mapping, Mesh, MeshType, Paint, PaintType};
-use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
+use mapmap_core::{Mapping, Mesh, Paint};
+use mapmap_render::{RenderBackend, QuadRenderer, TextureDescriptor, WgpuBackend};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -66,28 +66,21 @@ fn main() {
 
     // Step 6: Create a Mesh (warping geometry)
     // We'll use a simple quad mesh
-    let mesh = Mesh::new_quad(
-        1, // mesh_id
-        "Hello World Mesh",
-        Vec2::new(0.0, 0.0),     // top-left
-        Vec2::new(800.0, 0.0),   // top-right
-        Vec2::new(800.0, 600.0), // bottom-right
-        Vec2::new(0.0, 600.0),   // bottom-left
-    );
-    println!("✓ Mesh created: '{}'", mesh.name);
+    let mut mesh = Mesh::quad();
+    mesh.vertices[0].position = Vec2::new(0.0, 0.0);
+    mesh.vertices[1].position = Vec2::new(800.0, 0.0);
+    mesh.vertices[2].position = Vec2::new(800.0, 600.0);
+    mesh.vertices[3].position = Vec2::new(0.0, 600.0);
+    println!("✓ Mesh created");
 
     // Step 7: Create a Mapping (connects Paint to Mesh)
     let mapping = Mapping::new(
         1, // mapping_id
         "Hello World Mapping",
         paint.id, // paint_id
-        mesh.id,  // mesh_id
+        mesh,  // mesh
     );
     println!("✓ Mapping created: '{}'", mapping.name);
-    println!(
-        "  Paint ID: {} → Mesh ID: {}",
-        mapping.paint_id, mapping.mesh_id
-    );
 
     // Step 8: Create GPU texture for the Paint
     let tex_desc = TextureDescriptor {
@@ -160,6 +153,8 @@ fn main() {
                             label: Some("Render Encoder"),
                         });
 
+                let texture_view = texture.create_view();
+                let bind_group = quad_renderer.create_bind_group(backend.device(), &texture_view);
                 {
                     // Begin render pass
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -174,7 +169,7 @@ fn main() {
                                     b: 0.1,
                                     a: 1.0,
                                 }),
-                                store: wgpu::StoreOp::Store,
+                                store: true,
                             },
                         })],
                         depth_stencil_attachment: None,
@@ -182,9 +177,6 @@ fn main() {
                     });
 
                     // Render the textured quad (our projection mapping!)
-                    let texture_view = texture.create_view();
-                    let bind_group =
-                        quad_renderer.create_bind_group(backend.device(), &texture_view);
                     quad_renderer.draw(&mut render_pass, &bind_group);
                 }
 

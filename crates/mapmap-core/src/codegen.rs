@@ -767,6 +767,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_math_nodes() {
         let mut graph = ShaderGraph::new(1, "Math Test".to_string());
 

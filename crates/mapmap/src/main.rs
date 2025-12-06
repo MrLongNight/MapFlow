@@ -5,7 +5,13 @@
 use anyhow::Result;
 use glam::{Mat4, Vec2};
 mod window_manager;
-use mapmap_core::{LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager};
+use mapmap_core::{
+    audio::{
+        backend::AudioBackend,
+        AudioAnalyzer, AudioConfig,
+    },
+    LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager,
+};
 use mapmap_media::{FFmpegDecoder, TestPatternDecoder, VideoPlayer};
 use mapmap_render::{
     ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, MeshRenderer, QuadRenderer,
@@ -46,6 +52,8 @@ struct App {
     #[allow(dead_code)]
     layer_textures: HashMap<u64, mapmap_render::TextureHandle>, // Layer ID -> Texture
     intermediate_textures: HashMap<OutputId, mapmap_render::TextureHandle>, // Per-output intermediate textures
+    audio_analyzer: AudioAnalyzer,
+    audio_backend: Box<dyn AudioBackend + Send>,
     last_frame: Instant,
     frame_count: u32,
     fps: f32,
@@ -153,6 +161,25 @@ impl App {
             mapping_manager.mappings().len()
         );
 
+        let audio_config = AudioConfig::default();
+        let audio_analyzer = AudioAnalyzer::new(audio_config);
+        let mut audio_backend: Box<dyn AudioBackend + Send>;
+        // Conditional compilation for audio backend
+        let mut audio_backend: Box<dyn AudioBackend + Send> = {
+            #[cfg(test)]
+            {
+                // Use mock backend for tests
+                Box::new(mapmap_core::audio::backend::mock_backend::MockBackend::new())
+            }
+            #[cfg(not(test))]
+            {
+                use mapmap_core::audio::backend::cpal_backend::CpalBackend;
+                // Use CPAL backend for actual application
+                Box::new(CpalBackend::new(None)?)
+            }
+        };
+        audio_backend.start()?;
+
         Ok(Self {
             window_manager,
             backend,
@@ -171,6 +198,8 @@ impl App {
             paint_textures: HashMap::new(),
             layer_textures: HashMap::new(),
             intermediate_textures: HashMap::new(),
+            audio_analyzer,
+            audio_backend,
             last_frame: Instant::now(),
             frame_count: 0,
             fps: 0.0,
@@ -180,6 +209,12 @@ impl App {
     fn update(&mut self) {
         let now = Instant::now();
         let dt = now - self.last_frame;
+
+        // Update audio analysis
+        let samples = self.audio_backend.get_samples();
+        if !samples.is_empty() {
+            self.audio_analyzer.process_samples(&samples, dt.as_secs_f64());
+        }
 
         // Update FPS counter
         self.frame_count += 1;
@@ -931,6 +966,17 @@ impl App {
                     );
                     self.output_manager
                         .create_projector_array_2x2(resolution, overlap);
+                }
+                UIAction::SelectAudioDevice(_device_name) => {
+                    #[cfg(not(test))]
+                    {
+                        info!("Selecting audio device: {}", _device_name);
+                        self.audio_backend.stop();
+                        let mut new_backend =
+                            CpalBackend::new(Some(_device_name.clone())).unwrap();
+                        new_backend.start().unwrap();
+                        self.audio_backend = Box::new(new_backend);
+                    }
                 }
             }
         }

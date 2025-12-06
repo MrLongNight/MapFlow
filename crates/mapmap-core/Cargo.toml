@@ -19,9 +19,10 @@ crossbeam-channel = { workspace = true }
 winit = { workspace = true, optional = true }
 
 [features]
-default = []
+default = ["audio"]
 audio = ["cpal"]
 winit = ["dep:winit"]
+mock-audio = []
 
 [dev-dependencies]
 proptest = { workspace = true }

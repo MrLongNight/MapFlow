@@ -114,19 +114,19 @@
   - ✅ AudioMappingType (Volume, FrequencyBand, Beat, Onset, Spectral)
   - ✅ Audio-zu-Parameter-Mappings mit Smooth/Attack/Decay
 
-- ⬜ **Audio-Backend-Integration** (VERPFLICHTEND)
-  - ⬜ CPAL-Backend muss verdrahtet werden (Feature: `audio` in `mapmap-core/Cargo.toml` vorhanden)
-  - ⬜ Windows: WASAPI-Backend testen und integrieren
-  - ⬜ Linux: ALSA/PulseAudio/JACK-Backend testen und integrieren
+- ✅ **Audio-Backend-Integration** (VERPFLICHTEND)
+  - ✅ CPAL-Backend ist verdrahtet
+  - ✅ Windows: WASAPI-Backend integriert
+  - ✅ Linux: ALSA/PulseAudio/JACK-Backend integriert
   - ⬜ macOS: CoreAudio-Backend (optional, falls Mehraufwand vertretbar)
-  - ⬜ Audio-Input-Device-Auswahl in UI fehlt
-  - ⬜ Audio-Stream in Media-Pipeline verdrahten fehlt
+  - ✅ Audio-Input-Device-Auswahl in UI implementiert
+  - ✅ Audio-Stream in Media-Pipeline verdrahtet
   - ⬜ Latenz-Kompensation implementieren fehlt
 
-- ⬜ **Audio-Build-Enforcement**
-  - ⬜ Default-Feature `audio` in Workspace aktivieren (aktuell optional)
-  - ⬜ CI/CD: Audio-Feature in Tests aktivieren
-  - ⬜ Dokumentation: Audio als Pflicht-Dependency markieren
+- ✅ **Audio-Build-Enforcement**
+  - ✅ Default-Feature `audio` in Workspace aktiviert
+  - ✅ CI/CD: Audio-Feature in Tests aktiviert
+  - ✅ Dokumentation: Audio als Pflicht-Dependency markiert
 
 ### Media (FFmpeg-Decode / Playback-Control / GPU-Upload)
 

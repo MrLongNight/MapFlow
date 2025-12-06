@@ -158,9 +158,9 @@ jobs:
       id: features
       run: |
         if [ "${{ matrix.audio }}" = "true" ]; then
-          echo "flags=--all-features" >> $GITHUB_OUTPUT
+          echo "flags=--features audio" >> $GITHUB_OUTPUT
         else
-          echo "flags=--no-default-features" >> $GITHUB_OUTPUT
+          echo "flags=" >> $GITHUB_OUTPUT
         fi
       shell: bash
 

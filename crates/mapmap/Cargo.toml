@@ -29,6 +29,9 @@ glam = { workspace = true }
 rfd = "0.14"  # Native file dialogs
 
 [features]
-default = []
+default = ["audio"]
 ffmpeg = ["mapmap-media/ffmpeg"]
 audio = ["mapmap-core/audio"]
+
+[dev-dependencies]
+mapmap-core = { path = "../mapmap-core", features = ["mock-audio"] }

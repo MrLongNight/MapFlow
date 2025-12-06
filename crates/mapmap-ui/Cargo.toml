@@ -11,6 +11,7 @@ repository.workspace = true
 mapmap-core = { path = "../mapmap-core" }
 mapmap-media = { path = "../mapmap-media" }
 mapmap-render = { path = "../mapmap-render" }
+cpal = { workspace = true, optional = true }
 
 # Legacy ImGui (Phase 0-5)
 imgui = { workspace = true }
@@ -34,3 +35,6 @@ image = { workspace = true }
 parking_lot = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+
+[features]
+default = ["cpal"]

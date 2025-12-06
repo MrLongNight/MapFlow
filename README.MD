@@ -58,3 +58,7 @@ For a detailed breakdown, see the [Roadmap](docs/roadmap.md).
 ```bash
 # Install Rust 1.75 or later
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+**Audio Backend:**
+VjMapper requires a functional audio backend for its audio-reactive features. Please follow the [Audio Setup Guide](docs/04-USER-GUIDE/AUDIO-SETUP.md) for platform-specific instructions.
