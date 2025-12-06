@@ -111,55 +111,191 @@ jobs:
             return;
           }
           
-          // Get check runs
-          const { data: checkRuns } = await github.rest.checks.listForRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: pr.head.sha
-          });
+          // Get check runs with retry logic for robustness
+          let checkRuns;
+          let retryCount = 0;
+          const maxRetries = 3;
           
-          // Check if all required checks passed
+          while (retryCount < maxRetries) {
+            try {
+              const response = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha,
+                per_page: 100
+              });
+              checkRuns = response.data;
+              break;
+            } catch (error) {
+              retryCount++;
+              if (retryCount >= maxRetries) {
+                console.error(`❌ Failed to fetch check runs after ${maxRetries} attempts: ${error.message}`);
+                throw error;
+              }
+              console.log(`⚠️ Retry ${retryCount}/${maxRetries} fetching check runs...`);
+              await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+            }
+          }
+          
+          // Get commit statuses as well (some checks use statuses instead of check runs)
+          let commitStatuses;
+          try {
+            const statusResponse = await github.rest.repos.getCombinedStatusForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha
+            });
+            commitStatuses = statusResponse.data.statuses || [];
+          } catch (error) {
+            console.log(`⚠️ Could not fetch commit statuses: ${error.message}`);
+            commitStatuses = [];
+          }
+          
+          // Filter out self-referencing checks
           const relevantChecks = checkRuns.check_runs.filter(check => 
-            check.name !== 'Auto-Merge Jules PR'
+            check.name !== 'Auto-Merge Jules PR' && 
+            check.name !== 'auto-merge'
           );
           
-          const allChecksPassed = relevantChecks.every(check => 
-            check.conclusion === 'success' || check.conclusion === 'skipped'
+          // Check for required status checks from branch protection
+          let requiredChecks = [];
+          try {
+            const branchProtection = await github.rest.repos.getBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: pr.base.ref
+            }).catch(() => null);
+            
+            if (branchProtection?.data?.required_status_checks?.contexts) {
+              requiredChecks = branchProtection.data.required_status_checks.contexts;
+              console.log(`📋 Required checks from branch protection: ${requiredChecks.join(', ')}`);
+            }
+          } catch (error) {
+            console.log(`⚠️ Could not fetch branch protection rules: ${error.message}`);
+          }
+          
+          // Combine check runs and commit statuses for complete picture
+          const allChecks = [
+            ...relevantChecks.map(check => ({
+              name: check.name,
+              conclusion: check.conclusion,
+              status: check.status,
+              type: 'check_run',
+              details_url: check.details_url,
+              summary: check.output?.summary,
+              started_at: check.started_at,
+              completed_at: check.completed_at
+            })),
+            ...commitStatuses.map(status => ({
+              name: status.context,
+              conclusion: status.state === 'success' ? 'success' : (status.state === 'pending' ? null : 'failure'),
+              status: status.state === 'pending' ? 'in_progress' : 'completed',
+              type: 'status',
+              details_url: status.target_url,
+              summary: status.description
+            }))
+          ];
+          
+          console.log(`📊 Total checks found: ${allChecks.length} (${relevantChecks.length} check runs, ${commitStatuses.length} statuses)`);
+          
+          // Check completion status
+          const allChecksPassed = allChecks.every(check => 
+            check.conclusion === 'success' || check.conclusion === 'skipped' || check.conclusion === 'neutral'
           );
           
-          const anyPending = relevantChecks.some(check => 
-            check.conclusion === null || check.status === 'in_progress'
+          const anyPending = allChecks.some(check => 
+            check.conclusion === null || 
+            check.status === 'in_progress' || 
+            check.status === 'queued' ||
+            check.status === 'pending'
           );
           
-          const failedChecks = relevantChecks.filter(check => 
-            check.conclusion === 'failure'
+          const failedChecks = allChecks.filter(check => 
+            check.conclusion === 'failure' || 
+            check.conclusion === 'cancelled' ||
+            check.conclusion === 'timed_out' ||
+            check.conclusion === 'action_required'
           );
+          
+          // Log detailed status
+          console.log(`✅ Passed: ${allChecks.filter(c => c.conclusion === 'success').length}`);
+          console.log(`⏳ Pending: ${allChecks.filter(c => anyPending && (c.conclusion === null || c.status === 'in_progress' || c.status === 'queued' || c.status === 'pending')).length}`);
+          console.log(`❌ Failed: ${failedChecks.length}`);
+          console.log(`⏭️ Skipped: ${allChecks.filter(c => c.conclusion === 'skipped').length}`);
           
           if (anyPending) {
-            console.log('⏳ Checks still running - waiting...');
+            const pendingChecks = allChecks.filter(c => 
+              c.conclusion === null || 
+              c.status === 'in_progress' || 
+              c.status === 'queued' ||
+              c.status === 'pending'
+            );
+            console.log(`⏳ Checks still running (${pendingChecks.length}): ${pendingChecks.map(c => c.name).join(', ')}`);
+            return;
+          }
+          
+          // Check if we have any checks at all (avoid auto-merge with no checks)
+          if (allChecks.length === 0 && requiredChecks.length === 0) {
+            console.log('⚠️ No checks found and no required checks configured. Waiting for checks to start...');
             return;
           }
           
           if (!allChecksPassed) {
-            console.log('❌ Some checks failed - notifying Jules');
+            console.log(`❌ ${failedChecks.length} check(s) failed - notifying Jules`);
             
-            // Create detailed failure report
-            let failureReport = '## Failed Checks\n\n';
+            // Create detailed failure report with enhanced information
+            let failureReport = '## ❌ Failed Checks Summary\n\n';
+            failureReport += `**Total Checks:** ${allChecks.length} | **Failed:** ${failedChecks.length} | **Passed:** ${allChecks.filter(c => c.conclusion === 'success').length}\n\n`;
+            failureReport += '### Failed Checks Details\n\n';
+            
             for (const check of failedChecks) {
-              failureReport += `- ❌ **${check.name}**: ${check.conclusion}\n`;
-              if (check.output && check.output.summary) {
-                failureReport += `  ${check.output.summary}\n`;
+              const emoji = check.conclusion === 'cancelled' ? '🚫' : 
+                           check.conclusion === 'timed_out' ? '⏱️' : 
+                           check.conclusion === 'action_required' ? '⚠️' : '❌';
+              
+              failureReport += `${emoji} **${check.name}** (${check.type})\n`;
+              failureReport += `   - **Status:** ${check.conclusion}\n`;
+              
+              if (check.summary) {
+                const truncatedSummary = check.summary.length > 200 
+                  ? check.summary.substring(0, 200) + '...' 
+                  : check.summary;
+                failureReport += `   - **Summary:** ${truncatedSummary}\n`;
               }
+              
               if (check.details_url) {
-                failureReport += `  [View Details](${check.details_url})\n`;
+                failureReport += `   - **Details:** [View Full Log](${check.details_url})\n`;
               }
+              
+              if (check.started_at && check.completed_at) {
+                const duration = Math.round((new Date(check.completed_at) - new Date(check.started_at)) / 1000);
+                failureReport += `   - **Duration:** ${duration}s\n`;
+              }
+              
+              failureReport += '\n';
+            }
+            
+            failureReport += '\n### 🔧 Next Steps\n\n';
+            failureReport += '1. Click on the "View Full Log" links above to see detailed error messages\n';
+            failureReport += '2. Fix the issues in your code\n';
+            failureReport += '3. Push the changes to update this PR\n';
+            failureReport += '4. Checks will automatically re-run and auto-merge will retry when they pass\n';
+            
+            if (failedChecks.some(c => c.name.includes('test'))) {
+              failureReport += '\n💡 **Tip:** Test failures often indicate logic errors. Run tests locally to debug faster.\n';
+            }
+            if (failedChecks.some(c => c.name.includes('lint') || c.name.includes('format'))) {
+              failureReport += '\n💡 **Tip:** Run `cargo fmt` and `cargo clippy` locally to fix formatting and lint issues.\n';
+            }
+            if (failedChecks.some(c => c.name.includes('build'))) {
+              failureReport += '\n💡 **Tip:** Build failures might be due to compilation errors or missing dependencies.\n';
             }
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: `@jules ⚠️ **Checks Failed**\n\nSome checks did not pass. Please review and fix the issues:\n\n${failureReport}\n\nOnce you've updated the PR, the checks will run again automatically.`
+              body: `@jules ⚠️ **Checks Failed - Action Required**\n\n${failureReport}`
             });
             return;
           }
@@ -206,10 +342,37 @@ jobs:
             
           } catch (error) {
             console.error('❌ Merge failed:', error.message);
+            
+            // Provide detailed error analysis
+            let errorAnalysis = '### 🔍 Error Analysis\n\n';
+            let nextSteps = '### 🔧 Next Steps\n\n';
+            
+            if (error.message.includes('merge conflict') || error.message.includes('conflict')) {
+              errorAnalysis += '**Cause:** Merge conflicts detected\n';
+              nextSteps += '1. Update your branch with the latest changes from the base branch\n';
+              nextSteps += '2. Resolve any conflicts locally\n';
+              nextSteps += '3. Push the resolved changes\n';
+            } else if (error.message.includes('required status check') || error.message.includes('branch protection')) {
+              errorAnalysis += '**Cause:** Branch protection requirements not met\n';
+              nextSteps += '1. Ensure all required status checks have passed\n';
+              nextSteps += '2. Check if review approvals are required\n';
+              nextSteps += '3. Verify branch is up to date with base\n';
+            } else if (error.message.includes('not mergeable') || error.message.includes('mergeable_state')) {
+              errorAnalysis += '**Cause:** PR is not in a mergeable state\n';
+              nextSteps += '1. Wait for all checks to complete\n';
+              nextSteps += '2. Refresh the PR status\n';
+              nextSteps += '3. Check for merge conflicts\n';
+            } else {
+              errorAnalysis += `**Cause:** ${error.message}\n`;
+              nextSteps += '1. Review the error message above\n';
+              nextSteps += '2. Check the PR status manually\n';
+              nextSteps += '3. Contact maintainers if issue persists\n';
+            }
+            
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: `@jules ⚠️ **Auto-merge failed**: ${error.message}\n\nPlease check the PR status and merge manually if needed.`
+              body: `@jules ⚠️ **Auto-merge Failed**\n\n${errorAnalysis}\n${nextSteps}\n---\n**Technical Details:** \`${error.message}\``
             });
           }

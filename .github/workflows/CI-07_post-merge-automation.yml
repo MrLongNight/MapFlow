@@ -57,10 +57,77 @@ jobs:
             core.setOutput('pr_title', pr.title);
             core.setOutput('pr_body', pr.body || '');
             
-            // Extract related issue number
-            const issueMatch = pr.body?.match(/(?:close|closes|fix|fixes|resolve|resolves|issue)\s*[:#]?\s*(\d+)/i);
-            if (issueMatch) {
-              const issueNum = parseInt(issueMatch[1]);
+            // Extract related issue number with multiple fallback strategies
+            let issueNum = null;
+            
+            // Strategy 1: Check PR body for explicit "Closes #X" pattern (most reliable)
+            const closesMatch = pr.body?.match(/(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s*[:#]?\s*(\d+)/i);
+            if (closesMatch) {
+              issueNum = parseInt(closesMatch[1]);
+              core.info(`✅ Found issue from PR body "Closes #${issueNum}" pattern`);
+            }
+            
+            // Strategy 2: Check PR title for issue reference
+            if (!issueNum) {
+              const titleMatch = pr.title?.match(/(?:#|issue\s*[:#]?\s*)(\d+)/i);
+              if (titleMatch) {
+                issueNum = parseInt(titleMatch[1]);
+                core.info(`✅ Found issue from PR title: #${issueNum}`);
+              }
+            }
+            
+            // Strategy 3: Check branch name for issue reference (e.g., "jules/issue-123")
+            if (!issueNum) {
+              const branchMatch = pr.head?.ref?.match(/(?:issue[-_]?|#)(\d+)/i);
+              if (branchMatch) {
+                issueNum = parseInt(branchMatch[1]);
+                core.info(`✅ Found issue from branch name '${pr.head?.ref}': #${issueNum}`);
+              }
+            }
+            
+            // Strategy 4: Check PR comments for issue references
+            if (!issueNum) {
+              try {
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  per_page: 100
+                });
+                
+                // Look for references in comments, especially from the workflow that created the PR
+                for (const comment of comments) {
+                  const commentMatch = comment.body?.match(/(?:issue|for)\s*[:#]?\s*(\d+)/i);
+                  if (commentMatch) {
+                    issueNum = parseInt(commentMatch[1]);
+                    core.info(`✅ Found issue from PR comment: #${issueNum}`);
+                    break;
+                  }
+                }
+              } catch (error) {
+                core.warning(`Could not fetch PR comments: ${error.message}`);
+              }
+            }
+            
+            // Strategy 5: Check linked issues via GitHub API
+            if (!issueNum) {
+              try {
+                const query = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open linked:pr-${prNumber}`;
+                const { data: searchResults } = await github.rest.search.issuesAndPullRequests({
+                  q: query,
+                  per_page: 1
+                });
+                
+                if (searchResults.items && searchResults.items.length > 0) {
+                  issueNum = searchResults.items[0].number;
+                  core.info(`✅ Found linked issue via GitHub API: #${issueNum}`);
+                }
+              } catch (error) {
+                core.warning(`Could not search for linked issues: ${error.message}`);
+              }
+            }
+            
+            if (issueNum) {
               core.setOutput('issue_number', issueNum);
               core.setOutput('has_issue', 'true');
               
@@ -77,14 +144,30 @@ jobs:
                 // Check if issue is closed
                 if (issue.state === 'closed') {
                   core.setOutput('issue_already_closed', 'true');
+                  core.info(`ℹ️ Issue #${issueNum} is already closed`);
                 } else {
                   core.setOutput('issue_already_closed', 'false');
+                  core.info(`ℹ️ Issue #${issueNum} is open and will be closed`);
                 }
               } catch (error) {
                 core.warning(`Could not fetch issue #${issueNum}: ${error.message}`);
+                core.setOutput('has_issue', 'false');
               }
             } else {
+              core.warning('⚠️ Could not find related issue number using any strategy');
               core.setOutput('has_issue', 'false');
+              
+              // Create a warning comment on the PR
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `⚠️ **Post-merge automation warning**: Could not automatically identify a related issue to close.\n\nIf this PR resolves an issue, please close it manually or ensure the PR body includes "Closes #123" in future PRs.`
+                });
+              } catch (commentError) {
+                core.warning(`Could not add warning comment: ${commentError.message}`);
+              }
             }
 
       - name: Close related issue
@@ -115,70 +198,190 @@ jobs:
       - name: Update ROADMAP.md
         id: update-roadmap
         if: steps.get-details.outputs.has_issue == 'true'
+        continue-on-error: true
         run: |
+          set +e  # Don't exit on errors - we want to handle them gracefully
+          
           ISSUE_NUM="${{ steps.get-details.outputs.issue_number }}"
           ISSUE_TITLE="${{ steps.get-details.outputs.issue_title }}"
           PR_NUM="${{ steps.get-details.outputs.pr_number }}"
           
+          echo "📝 Attempting to update ROADMAP.md for issue #${ISSUE_NUM}"
+          
           if [ ! -f "ROADMAP.md" ]; then
-            echo "⚠️ ROADMAP.md not found"
+            echo "⚠️ ROADMAP.md not found - skipping roadmap update"
+            echo "roadmap_updated=false" >> $GITHUB_OUTPUT
+            echo "roadmap_skip_reason=file_not_found" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # Try to find the issue in the roadmap and mark it as complete
-          # Look for patterns like "- [ ]" or "- 🚧" that might reference this issue
-          
-          # Create a backup
+          # Create a backup for safety
           cp ROADMAP.md ROADMAP.md.backup
+          CHANGES_MADE=false
           
-          # Update checkboxes related to this issue (best effort)
-          # Look for any line containing the issue number with word boundary
+          # Strategy 1: Update checkboxes with issue reference
+          # Look for patterns like "- [ ] ... #123" or "- 🚧 ... #123"
           SEARCH_PATTERN="#${ISSUE_NUM}[^0-9]"
           if grep -q "${SEARCH_PATTERN}" ROADMAP.md || grep -q "#${ISSUE_NUM}\$" ROADMAP.md; then
-            # Use word boundary-aware patterns - match issue number followed by non-digit or end of line
+            echo "✅ Found issue #${ISSUE_NUM} in ROADMAP.md - updating status"
+            
+            # Update various checkbox patterns
             sed -i "s/- \[ \]\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- [x]\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
             sed -i "s/- \[ \]\(.*#${ISSUE_NUM}\)$/- [x]\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
             sed -i "s/- 🚧\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- ✅\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
             sed -i "s/- 🚧\(.*#${ISSUE_NUM}\)$/- ✅\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
-            echo "✅ Updated ROADMAP.md with completion status"
-            echo "roadmap_updated=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚠️ Could not find specific reference to issue #${ISSUE_NUM} in ROADMAP.md"
+            sed -i "s/- ⬜\(.*#${ISSUE_NUM}\)\([^0-9].*\)/- ✅\1 (Completed in PR #${PR_NUM})\2/" ROADMAP.md
+            sed -i "s/- ⬜\(.*#${ISSUE_NUM}\)$/- ✅\1 (Completed in PR #${PR_NUM})/" ROADMAP.md
             
-            # Add to changelog section if it exists
-            if grep -q "## Next Immediate Actions" ROADMAP.md; then
-              # Add completion note using printf for better portability
-              DATE=$(date +%Y-%m-%d)
-              {
-                echo ""
-                echo ""
-                echo "**Recently Completed ($DATE):**"
-                echo "- ✅ Issue #${ISSUE_NUM}: ${ISSUE_TITLE} (PR #${PR_NUM})"
-              } > /tmp/roadmap_insert.txt
-              sed -i "/## Next Immediate Actions/r /tmp/roadmap_insert.txt" ROADMAP.md
-              rm /tmp/roadmap_insert.txt
-              echo "✅ Added completion note to ROADMAP.md"
-              echo "roadmap_updated=true" >> $GITHUB_OUTPUT
-            else
-              echo "⚠️ Could not find suitable section in ROADMAP.md"
-              echo "roadmap_updated=false" >> $GITHUB_OUTPUT
-            fi
+            CHANGES_MADE=true
+          else
+            echo "⚠️ Issue #${ISSUE_NUM} not explicitly referenced in ROADMAP.md"
           fi
+          
+          # Strategy 2: Add to "Recently Completed" section if it exists
+          if ! $CHANGES_MADE; then
+            DATE=$(date +%Y-%m-%d)
+            
+            # Try multiple section names
+            for SECTION in "## Next Immediate Actions" "## Recently Completed" "## Completed Tasks" "# VjMapper"; do
+              if grep -q "^${SECTION}" ROADMAP.md; then
+                echo "✅ Adding completion note to '${SECTION}' section"
+                
+                # Create completion entry
+                COMPLETION_NOTE="**Recently Completed (${DATE}):**\n- ✅ Issue #${ISSUE_NUM}: ${ISSUE_TITLE} (PR #${PR_NUM})\n"
+                
+                # Insert after the section header
+                sed -i "/^${SECTION}/a\\
+\\
+${COMPLETION_NOTE}" ROADMAP.md
+                
+                CHANGES_MADE=true
+                break
+              fi
+            done
+          fi
+          
+          # Strategy 3: Append to end of file if no suitable section found
+          if ! $CHANGES_MADE; then
+            echo "⚠️ No suitable section found - appending to end of ROADMAP.md"
+            DATE=$(date +%Y-%m-%d)
+            
+            {
+              echo ""
+              echo "---"
+              echo ""
+              echo "## Recently Completed"
+              echo ""
+              echo "**${DATE}:**"
+              echo "- ✅ Issue #${ISSUE_NUM}: ${ISSUE_TITLE} (PR #${PR_NUM})"
+            } >> ROADMAP.md
+            
+            CHANGES_MADE=true
+          fi
+          
+          # Check if file actually changed
+          if diff -q ROADMAP.md ROADMAP.md.backup > /dev/null; then
+            echo "ℹ️ No changes made to ROADMAP.md"
+            echo "roadmap_updated=false" >> $GITHUB_OUTPUT
+            echo "roadmap_skip_reason=no_changes" >> $GITHUB_OUTPUT
+          else
+            echo "✅ ROADMAP.md updated successfully"
+            echo "roadmap_updated=true" >> $GITHUB_OUTPUT
+          fi
+          
+          # Cleanup backup
+          rm -f ROADMAP.md.backup
+          
+          exit 0
 
       - name: Commit ROADMAP changes
         if: steps.update-roadmap.outputs.roadmap_updated == 'true'
+        continue-on-error: true
         run: |
+          set +e  # Don't exit on errors
+          
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           
           if ! git diff --quiet ROADMAP.md; then
+            echo "📝 Committing ROADMAP.md changes..."
             git add ROADMAP.md
-            git commit -m "docs: Update ROADMAP.md - completed issue #${{ steps.get-details.outputs.issue_number }}"
-            git push
-            echo "✅ ROADMAP.md committed and pushed"
+            
+            if git commit -m "docs: Update ROADMAP.md - completed issue #${{ steps.get-details.outputs.issue_number }}"; then
+              echo "✅ Changes committed"
+              
+              # Try to push with retry logic
+              MAX_RETRIES=3
+              RETRY_COUNT=0
+              
+              while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+                if git push; then
+                  echo "✅ ROADMAP.md committed and pushed successfully"
+                  exit 0
+                else
+                  RETRY_COUNT=$((RETRY_COUNT + 1))
+                  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                    echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                    sleep 2
+                    git pull --rebase origin main || true
+                  else
+                    echo "❌ Failed to push after $MAX_RETRIES attempts"
+                    echo "Manual intervention may be required to push ROADMAP.md changes"
+                    exit 1
+                  fi
+                fi
+              done
+            else
+              echo "❌ Failed to commit changes"
+              exit 1
+            fi
           else
-            echo "⚠️ No changes to ROADMAP.md to commit"
+            echo "ℹ️ No changes to ROADMAP.md to commit"
           fi
+
+      - name: Add summary comment to PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.get-details.outputs.pr_number }}');
+            const hasIssue = '${{ steps.get-details.outputs.has_issue }}' === 'true';
+            const issueNumber = '${{ steps.get-details.outputs.issue_number }}';
+            const roadmapUpdated = '${{ steps.update-roadmap.outputs.roadmap_updated }}' === 'true';
+            const roadmapSkipReason = '${{ steps.update-roadmap.outputs.roadmap_skip_reason }}';
+            
+            if (!prNumber) return;
+            
+            let summary = '## 📝 Post-Merge Automation Summary\n\n';
+            
+            if (hasIssue && issueNumber) {
+              summary += `✅ **Issue #${issueNumber} closed**\n`;
+            } else {
+              summary += `⚠️ **No related issue found** - Could not automatically close an issue\n`;
+            }
+            
+            if (roadmapUpdated) {
+              summary += `✅ **ROADMAP.md updated** - Marked task as completed\n`;
+            } else if (roadmapSkipReason === 'file_not_found') {
+              summary += `ℹ️ **ROADMAP.md not found** - Skipped roadmap update\n`;
+            } else if (roadmapSkipReason === 'no_changes') {
+              summary += `ℹ️ **ROADMAP.md unchanged** - No updates needed\n`;
+            } else {
+              summary += `⚠️ **ROADMAP.md not updated** - Update may be needed manually\n`;
+            }
+            
+            summary += '\n---\n*Automated by CI-07: Post-Merge Automation*';
+            
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: summary
+              });
+            } catch (error) {
+              console.error('Failed to add summary comment:', error.message);
+            }
 
       - name: Trigger next Jules session
         id: trigger-next
