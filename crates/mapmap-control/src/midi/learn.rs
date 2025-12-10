@@ -108,7 +108,7 @@ impl MidiLearn {
         }
         drop(state);
 
-        let message = self.last_message.lock().ok()?.clone()?;
+        let message = (*self.last_message.lock().ok()?)?;
         let target = self.pending_target.lock().ok()?.clone()?;
 
         // For Note On messages, we use a template that matches any velocity
@@ -174,7 +174,7 @@ impl MidiLearn {
 
     /// Get last received message
     pub fn get_last_message(&self) -> Option<MidiMessage> {
-        self.last_message.lock().ok()?.clone()
+        *self.last_message.lock().ok()?
     }
 }
 

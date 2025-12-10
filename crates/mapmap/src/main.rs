@@ -160,7 +160,6 @@ impl App {
 
         let audio_config = AudioConfig::default();
         let audio_analyzer = AudioAnalyzer::new(audio_config);
-        let mut audio_backend: Box<dyn AudioBackend + Send>;
         // Conditional compilation for audio backend
         let mut audio_backend: Box<dyn AudioBackend + Send> = {
             #[cfg(test)]
@@ -969,6 +968,7 @@ impl App {
                 UIAction::SelectAudioDevice(_device_name) => {
                     #[cfg(not(test))]
                     {
+                        use mapmap_core::audio::backend::cpal_backend::CpalBackend;
                         info!("Selecting audio device: {}", _device_name);
                         self.audio_backend.stop();
                         let mut new_backend = CpalBackend::new(Some(_device_name.clone())).unwrap();

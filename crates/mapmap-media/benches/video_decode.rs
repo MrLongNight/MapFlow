@@ -1,17 +1,12 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use mapmap_media::{FFmpegDecoder, VideoDecoder};
+use mapmap_media::{TestPatternDecoder, VideoDecoder};
+use std::time::Duration;
 
 fn bench_video_decode(c: &mut Criterion) {
     c.benchmark_group("video_decode")
         .bench_function("decode_frame_1080p", |b| {
-            let mut decoder = FFmpegDecoder {
-                width: 1920,
-                height: 1080,
-                duration: std::time::Duration::from_secs(60),
-                fps: 30.0,
-                current_time: std::time::Duration::ZERO,
-                frame_count: 0,
-            };
+            // Use TestPatternDecoder which can be constructed directly
+            let mut decoder = TestPatternDecoder::new(1920, 1080, Duration::from_secs(60), 30.0);
 
             b.iter(|| {
                 let frame = decoder.next_frame().unwrap();

@@ -3,7 +3,6 @@
 use super::{MappingCurve, MidiMapping, MidiMessage};
 use crate::target::ControlTarget;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Predefined MIDI controller profile
 #[derive(Debug, Clone, Serialize, Deserialize)]

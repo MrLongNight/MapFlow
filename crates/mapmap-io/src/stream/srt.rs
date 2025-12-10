@@ -92,9 +92,9 @@ impl SrtStreamer {
         // 3. Stream setup
         // 4. Error correction configuration
 
-        return Err(IoError::SrtError(
+        Err(IoError::SrtError(
             "SRT streaming not yet implemented. This requires libsrt integration.".to_string(),
-        ));
+        ))
     }
 
     /// Disconnects from the SRT server.

@@ -5,7 +5,7 @@
 #[cfg(feature = "stream")]
 use crate::error::{IoError, Result};
 #[cfg(feature = "stream")]
-use crate::format::{PixelFormat, VideoFormat, VideoFrame};
+use crate::format::{VideoFormat, VideoFrame};
 
 /// Video codec enumeration.
 #[cfg(feature = "stream")]
@@ -81,6 +81,7 @@ pub struct VideoEncoder {
     codec: VideoCodec,
     format: VideoFormat,
     bitrate: u64,
+    #[allow(dead_code)]
     preset: EncoderPreset,
     frame_count: u64,
 }
@@ -246,7 +247,7 @@ impl VideoEncoder {
 #[cfg(feature = "stream")]
 mod tests {
     use super::*;
-    use std::time::Duration;
+    use crate::format::PixelFormat;
 
     #[test]
     fn test_video_codec_names() {
