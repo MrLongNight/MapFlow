@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use tracing::{info, warn};
 
 #[cfg(feature = "midi")]
-use crate::midi::{MidiInputHandler, MidiLearn, MidiMapping};
+use crate::midi::{MidiInputHandler, MidiLearn};
 
 use crate::cue::CueList;
 use crate::dmx::{ArtNetSender, SacnSender};

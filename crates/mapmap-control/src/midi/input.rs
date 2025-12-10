@@ -5,37 +5,60 @@ use crate::error::{ControlError, Result};
 use midir::{Ignore, MidiInput as MidirInput, MidiInputConnection};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// MIDI input handler
 pub struct MidiInputHandler {
-    _midi_input: MidirInput,
     connection: Option<MidiInputConnection<()>>,
     message_sender: Sender<MidiMessage>,
     message_receiver: Arc<Mutex<Receiver<MidiMessage>>>,
     mapping: Arc<Mutex<MidiMapping>>,
+    /// Track whether MIDI backend is available on this system
+    backend_available: bool,
 }
 
 impl MidiInputHandler {
     /// Create a new MIDI input handler
+    ///
+    /// Returns Ok even if no MIDI backend is available (e.g., in CI environments).
+    /// In this case, operations will return appropriate errors.
     pub fn new() -> Result<Self> {
-        let midi_input = MidirInput::new("MapMap MIDI Input")?;
         let (message_sender, message_receiver) = channel();
 
+        // Check if MIDI backend is available
+        let backend_available = match MidirInput::new("MapMap MIDI Input") {
+            Ok(_) => true,
+            Err(e) => {
+                warn!(
+                    "No MIDI backend available: {:?}. MIDI input will be disabled.",
+                    e
+                );
+                false
+            }
+        };
+
         Ok(Self {
-            _midi_input: midi_input,
             connection: None,
             message_sender,
             message_receiver: Arc::new(Mutex::new(message_receiver)),
             mapping: Arc::new(Mutex::new(MidiMapping::new())),
+            backend_available,
         })
     }
 
     /// List available MIDI input ports
+    ///
+    /// Returns an empty list if no MIDI backend is available.
     pub fn list_ports() -> Result<Vec<String>> {
-        let midi_input = MidirInput::new("MapMap MIDI Input")?;
-        let mut ports = Vec::new();
+        let midi_input = match MidirInput::new("MapMap MIDI Input") {
+            Ok(mi) => mi,
+            Err(e) => {
+                warn!("No MIDI backend available: {:?}", e);
+                return Ok(Vec::new());
+            }
+        };
 
+        let mut ports = Vec::new();
         for port in midi_input.ports() {
             if let Ok(name) = midi_input.port_name(&port) {
                 ports.push(name);
@@ -47,10 +70,25 @@ impl MidiInputHandler {
 
     /// Connect to a MIDI input port by index
     pub fn connect(&mut self, port_index: usize) -> Result<()> {
+        // Check if MIDI backend is available
+        if !self.backend_available {
+            return Err(ControlError::MidiError(
+                "No MIDI backend available on this system".to_string(),
+            ));
+        }
+
         // Disconnect existing connection if any
         self.disconnect();
 
-        let mut midi_input = MidirInput::new("MapMap MIDI Input")?;
+        let mut midi_input = match MidirInput::new("MapMap MIDI Input") {
+            Ok(mi) => mi,
+            Err(e) => {
+                return Err(ControlError::MidiError(format!(
+                    "Failed to create MIDI input: {:?}",
+                    e
+                )));
+            }
+        };
         midi_input.ignore(Ignore::None);
 
         let ports = midi_input.ports();

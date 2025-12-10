@@ -5,7 +5,7 @@
 #[cfg(feature = "stream")]
 use crate::error::{IoError, Result};
 #[cfg(feature = "stream")]
-use crate::format::{PixelFormat, VideoFormat, VideoFrame};
+use crate::format::{VideoFormat, VideoFrame};
 
 /// Video codec enumeration.
 #[cfg(feature = "stream")]
@@ -81,6 +81,7 @@ pub struct VideoEncoder {
     codec: VideoCodec,
     format: VideoFormat,
     bitrate: u64,
+    #[allow(dead_code)]
     preset: EncoderPreset,
     frame_count: u64,
 }
@@ -171,7 +172,7 @@ impl VideoEncoder {
             data: Vec::new(), // Would contain actual encoded data
             pts: self.frame_count as i64,
             dts: self.frame_count as i64,
-            is_keyframe: self.frame_count % 60 == 0, // Keyframe every 2 seconds at 30fps
+            is_keyframe: self.frame_count == 1 || self.frame_count % 60 == 0, // First frame + keyframe every 2 seconds at 30fps
         })
     }
 
@@ -246,7 +247,7 @@ impl VideoEncoder {
 #[cfg(feature = "stream")]
 mod tests {
     use super::*;
-    use std::time::Duration;
+    use crate::format::PixelFormat;
 
     #[test]
     fn test_video_codec_names() {
@@ -290,18 +291,19 @@ mod tests {
         // First frame should be keyframe
         let frame = VideoFrame::empty(format.clone());
         let packet = encoder.encode(&frame).unwrap();
-        assert!(!packet.is_keyframe); // Actually frame 1, so not keyframe
+        assert!(packet.is_keyframe); // Frame 1 is always a keyframe
 
-        // Encode 59 more frames
-        for _ in 0..59 {
+        // Encode 58 more frames (frames 2-59, none are keyframes)
+        for _ in 0..58 {
             let frame = VideoFrame::empty(format.clone());
-            encoder.encode(&frame).unwrap();
+            let packet = encoder.encode(&frame).unwrap();
+            assert!(!packet.is_keyframe);
         }
 
         // Frame 60 should be keyframe
         let frame = VideoFrame::empty(format.clone());
         let packet = encoder.encode(&frame).unwrap();
-        assert!(packet.is_keyframe);
+        assert!(packet.is_keyframe); // Every 60th frame is a keyframe
     }
 
     #[test]

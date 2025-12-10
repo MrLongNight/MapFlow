@@ -7,10 +7,24 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Maps MIDI messages to control targets
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct MidiMapping {
     /// Message -> Target mappings
     pub mappings: HashMap<MidiMessage, MidiControlMapping>,
+}
+
+/// Serializable representation of MidiMapping for JSON
+/// JSON requires string keys, so we serialize MidiMessage as a string
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SerializableMidiMapping {
+    mappings: Vec<MidiMappingEntry>,
+}
+
+/// A single mapping entry for serialization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct MidiMappingEntry {
+    message: MidiMessage,
+    mapping: MidiControlMapping,
 }
 
 /// A single MIDI to control mapping
@@ -90,18 +104,26 @@ impl MidiMapping {
 
     /// Load from JSON
     pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
+        let serializable: SerializableMidiMapping = serde_json::from_str(json)?;
+        let mut mapping = MidiMapping::new();
+        for entry in serializable.mappings {
+            mapping.mappings.insert(entry.message, entry.mapping);
+        }
+        Ok(mapping)
     }
 
     /// Save to JSON
     pub fn to_json(&self) -> Result<String> {
-        Ok(serde_json::to_string_pretty(self)?)
-    }
-}
-
-impl Default for MidiMapping {
-    fn default() -> Self {
-        Self::new()
+        let entries: Vec<MidiMappingEntry> = self
+            .mappings
+            .iter()
+            .map(|(message, mapping)| MidiMappingEntry {
+                message: *message,
+                mapping: mapping.clone(),
+            })
+            .collect();
+        let serializable = SerializableMidiMapping { mappings: entries };
+        Ok(serde_json::to_string_pretty(&serializable)?)
     }
 }
 
@@ -175,8 +197,8 @@ mod tests {
             MappingCurve::Linear,
         );
 
-        let json = mapping.to_json().unwrap();
-        let loaded = MidiMapping::from_json(&json).unwrap();
+        let json = mapping.to_json().expect("Serialization should succeed");
+        let loaded = MidiMapping::from_json(&json).expect("Deserialization should succeed");
 
         assert_eq!(mapping.mappings.len(), loaded.mappings.len());
     }
