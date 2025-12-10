@@ -41,11 +41,9 @@ jobs:
 
     # Use a newer toolchain for the security analysis/build step so Cargo can parse newer manifests
     - name: Install Rust toolchain (security)
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: nightly
-        profile: minimal
-        override: true
 
     - name: Install system dependencies
       run: |
