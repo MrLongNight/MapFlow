@@ -132,6 +132,9 @@ jobs:
             });
             
             // Check if any open Jules PRs exist
+            // Note: Dual criteria for backward compatibility:
+            // 1. jules-pr label (preferred, explicit)
+            // 2. Body text check (fallback for PRs created before label automation)
             const julesPRs = prs.filter(pr => 
               pr.labels.some(l => l.name === 'jules-pr') || 
               (pr.body && pr.body.includes('Created by Jules'))
