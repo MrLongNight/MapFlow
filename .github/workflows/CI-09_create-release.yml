@@ -1,0 +1,83 @@
+name: CI-09: Create Release (Windows ZIP)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  windows-build:
+    name: Windows-Build (Release)
+    runs-on: windows-latest
+    env:
+      # Falls ffmpeg-sys-next Source-Build gewünscht wird, kann hier gesetzt werden.
+      # FFMPEG_SYS_NEXT_BUILD_FROM_SOURCE: "1"
+      RUST_BACKTRACE: "1"
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Cache Cargo registry & index
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: windows-cargo-
+
+      - name: Installiere vcpkg (für ffmpeg)
+        # Wir benutzen cmd auf Windows, bootstrap-vcpkg.bat wird so ausgeführt
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "%RUNNER_TEMP%\vcpkg"
+          pushd "%RUNNER_TEMP%\vcpkg"
+          bootstrap-vcpkg.bat
+          popd
+        shell: cmd
+
+      - name: Setze VCPKG_ROOT und PATH
+        run: |
+          echo "VCPKG_ROOT=%RUNNER_TEMP%\\vcpkg" >> $GITHUB_ENV
+          echo "%RUNNER_TEMP%\\vcpkg" >> $GITHUB_PATH
+        shell: bash
+
+      - name: (Optional) Installiere ffmpeg via vcpkg (x64)
+        # Entferne diesen Schritt, falls ihr FFmpeg anders bereitstellen wollt.
+        run: |
+          "%RUNNER_TEMP%\\vcpkg\\vcpkg.exe" install ffmpeg:x64-windows
+        shell: cmd
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Installiere zusätzliche Build-Tools (Windows)
+        run: |
+          choco install -y visualstudio2019buildtools --noop
+        if: always()
+        shell: powershell
+
+      - name: Build Release (cargo)
+        run: |
+          cargo build --release -p vjmapper
+        env:
+          # VCPKG_ROOT ist bereits in $GITHUB_ENV gesetzt
+          # Wichtig: falls euer crate anders heißt, anpassen
+          CARGO_TERM_COLOR: always
+
+      - name: Erstelle Release ZIP
+        if: success()
+        run: |
+          mkdir -p artifacts
+          powershell -Command "Compress-Archive -Path target\\release\\* -DestinationPath artifacts\\vjmapper-windows-x86_64.zip -Force"
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-zip
+          path: artifacts/vjmapper-windows-x86_64.zip
