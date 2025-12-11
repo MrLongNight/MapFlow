@@ -29,6 +29,10 @@ pub enum ControlTarget {
     OutputBrightness(u32),
     /// Output edge blend (output_id, edge, width: 0.0-1.0)
     OutputEdgeBlend(u32, EdgeSide),
+    /// Master opacity
+    MasterOpacity,
+    /// Master blackout
+    MasterBlackout,
     /// Custom parameter (name)
     Custom(String),
 }

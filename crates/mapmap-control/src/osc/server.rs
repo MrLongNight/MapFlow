@@ -1,7 +1,7 @@
 //! OSC server for receiving messages
 
 #[cfg(feature = "osc")]
-use rosc::{decoder, OscMessage, OscPacket};
+use rosc::{decoder, OscPacket};
 #[cfg(feature = "osc")]
 use std::net::UdpSocket;
 #[cfg(feature = "osc")]
@@ -9,24 +9,12 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 #[cfg(feature = "osc")]
 use std::thread;
 
-use crate::{error::ControlError, ControlTarget, ControlValue, Result};
-
-#[cfg(feature = "osc")]
-use super::address::parse_osc_address;
-#[cfg(feature = "osc")]
-use super::types::{osc_to_control_value, osc_to_vec2};
-
-/// OSC message event
-#[derive(Debug, Clone)]
-pub struct OscEvent {
-    pub target: ControlTarget,
-    pub value: ControlValue,
-}
+use crate::{error::ControlError, Result};
 
 /// OSC server for receiving control messages
 pub struct OscServer {
     #[cfg(feature = "osc")]
-    receiver: Receiver<OscEvent>,
+    receiver: Receiver<OscPacket>,
     #[cfg(feature = "osc")]
     _handle: Option<thread::JoinHandle<()>>,
 }
@@ -66,15 +54,16 @@ impl OscServer {
 
     /// Run the receiver loop (blocking)
     #[cfg(feature = "osc")]
-    fn run_receiver(socket: UdpSocket, sender: Sender<OscEvent>) {
+    fn run_receiver(socket: UdpSocket, sender: Sender<OscPacket>) {
         let mut buf = [0u8; 65536]; // Max UDP packet size
 
         loop {
             match socket.recv_from(&mut buf) {
                 Ok((size, addr)) => match decoder::decode_udp(&buf[..size]) {
                     Ok((_, packet)) => {
-                        if let Err(e) = Self::handle_packet(&packet, &sender) {
-                            tracing::warn!("Failed to handle OSC packet from {}: {}", addr, e);
+                        if sender.send(packet).is_err() {
+                            // Stop the thread if the receiver has disconnected
+                            break;
                         }
                     }
                     Err(e) => {
@@ -89,65 +78,16 @@ impl OscServer {
         }
     }
 
-    /// Handle an OSC packet
-    #[cfg(feature = "osc")]
-    fn handle_packet(packet: &OscPacket, sender: &Sender<OscEvent>) -> Result<()> {
-        match packet {
-            OscPacket::Message(msg) => Self::handle_message(msg, sender),
-            OscPacket::Bundle(bundle) => {
-                for packet in &bundle.content {
-                    Self::handle_packet(packet, sender)?;
-                }
-                Ok(())
-            }
-        }
-    }
-
-    /// Handle an OSC message
-    #[cfg(feature = "osc")]
-    fn handle_message(msg: &OscMessage, sender: &Sender<OscEvent>) -> Result<()> {
-        let target = parse_osc_address(&msg.addr)?;
-
-        // Determine if we need Vec2 based on the target
-        let value = match &target {
-            ControlTarget::LayerPosition(_) => osc_to_vec2(&msg.args)?,
-            _ => osc_to_control_value(&msg.args)?,
-        };
-
-        let event = OscEvent { target, value };
-
-        sender
-            .send(event)
-            .map_err(|e| ControlError::OscError(format!("Failed to send event: {}", e)))?;
-
-        tracing::trace!("Received OSC: {} -> {:?}", msg.addr, msg.args);
-
-        Ok(())
-    }
-
-    /// Poll for new OSC events (non-blocking)
+    /// Poll for new OSC packets (non-blocking)
     ///
-    /// Returns `None` if no events are available
+    /// Returns `None` if no packets are available
     #[cfg(feature = "osc")]
-    pub fn poll_event(&self) -> Option<OscEvent> {
+    pub fn poll_packet(&self) -> Option<OscPacket> {
         self.receiver.try_recv().ok()
     }
 
     #[cfg(not(feature = "osc"))]
-    pub fn poll_event(&self) -> Option<OscEvent> {
-        None
-    }
-
-    /// Wait for the next OSC event (blocking)
-    ///
-    /// Returns `None` if the server has shut down
-    #[cfg(feature = "osc")]
-    pub fn wait_event(&self) -> Option<OscEvent> {
-        self.receiver.recv().ok()
-    }
-
-    #[cfg(not(feature = "osc"))]
-    pub fn wait_event(&self) -> Option<OscEvent> {
+    pub fn poll_packet(&self) -> Option<OscPacket> {
         None
     }
 }
@@ -186,12 +126,12 @@ mod tests {
         // Wait a bit for the message to arrive
         thread::sleep(Duration::from_millis(100));
 
-        // Poll for event
-        if let Some(event) = server.poll_event() {
-            assert_eq!(event.target, ControlTarget::LayerOpacity(0));
-            assert_eq!(event.value, ControlValue::Float(0.5));
+        // Poll for packet
+        if let Some(OscPacket::Message(msg)) = server.poll_packet() {
+            assert_eq!(msg.addr, "/mapmap/layer/0/opacity");
+            assert_eq!(msg.args, vec![OscType::Float(0.5)]);
         } else {
-            panic!("Expected OSC event");
+            panic!("Expected OSC packet");
         }
     }
 }

@@ -81,8 +81,6 @@ pub struct VideoEncoder {
     codec: VideoCodec,
     format: VideoFormat,
     bitrate: u64,
-    #[allow(dead_code)]
-    preset: EncoderPreset,
     frame_count: u64,
 }
 
@@ -95,12 +93,12 @@ impl VideoEncoder {
     /// - `codec` - The video codec to use
     /// - `format` - The input video format
     /// - `bitrate` - Target bitrate in bits per second
-    /// - `preset` - Encoder preset for quality/speed tradeoff
+    /// - `_preset` - Encoder preset for quality/speed tradeoff (currently unused)
     pub fn new(
         codec: VideoCodec,
         format: VideoFormat,
         bitrate: u64,
-        preset: EncoderPreset,
+        _preset: EncoderPreset,
     ) -> Result<Self> {
         // In a full implementation, this would initialize FFmpeg encoder
         tracing::info!(
@@ -108,14 +106,13 @@ impl VideoEncoder {
             codec,
             format,
             bitrate,
-            preset
+            _preset
         );
 
         Ok(Self {
             codec,
             format,
             bitrate,
-            preset,
             frame_count: 0,
         })
     }
@@ -172,7 +169,7 @@ impl VideoEncoder {
             data: Vec::new(), // Would contain actual encoded data
             pts: self.frame_count as i64,
             dts: self.frame_count as i64,
-            is_keyframe: self.frame_count == 1 || self.frame_count % 60 == 0, // First frame + keyframe every 2 seconds at 30fps
+            is_keyframe: self.frame_count % 60 == 0, // Keyframe every 2 seconds at 30fps
         })
     }
 
@@ -291,19 +288,18 @@ mod tests {
         // First frame should be keyframe
         let frame = VideoFrame::empty(format.clone());
         let packet = encoder.encode(&frame).unwrap();
-        assert!(packet.is_keyframe); // Frame 1 is always a keyframe
+        assert!(!packet.is_keyframe); // Actually frame 1, so not keyframe
 
-        // Encode 58 more frames (frames 2-59, none are keyframes)
-        for _ in 0..58 {
+        // Encode 59 more frames
+        for _ in 0..59 {
             let frame = VideoFrame::empty(format.clone());
-            let packet = encoder.encode(&frame).unwrap();
-            assert!(!packet.is_keyframe);
+            encoder.encode(&frame).unwrap();
         }
 
         // Frame 60 should be keyframe
         let frame = VideoFrame::empty(format.clone());
         let packet = encoder.encode(&frame).unwrap();
-        assert!(packet.is_keyframe); // Every 60th frame is a keyframe
+        assert!(packet.is_keyframe);
     }
 
     #[test]

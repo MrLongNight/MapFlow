@@ -107,6 +107,12 @@ impl OscClient {
         self.destination
     }
 
+    /// Get the destination address as a string
+    #[cfg(feature = "osc")]
+    pub fn destination_str(&self) -> String {
+        self.destination.to_string()
+    }
+
     #[cfg(not(feature = "osc"))]
     pub fn destination(&self) -> String {
         String::new()

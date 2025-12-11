@@ -7,12 +7,10 @@
 Die Jules-Integration ermöglicht es, Entwicklungsaufgaben automatisch von einem KI-Agenten bearbeiten zu lassen. Der komplette Workflow umfasst:
 
 1. **Issue-Generierung** aus ROADMAP.md
-2. **Jules-Verarbeitung** der Issues (**sequenziell**, nur ein Issue zur Zeit)
+2. **Jules-Verarbeitung** der Issues
 3. **Automatisches Testing** der PRs
 4. **Auto-Merge** bei erfolgreichen Tests
 5. **Dokumentations-Updates** nach dem Merge
-
-> **🔄 Sequenzielle Verarbeitung:** Jules arbeitet immer nur an einem Issue zur Zeit. Weitere Issues werden automatisch in eine Warteschlange gestellt und nacheinander abgearbeitet. Siehe [SEQUENTIAL_PROCESSING.md](SEQUENTIAL_PROCESSING.md) für Details.
 
 ## 🚀 Setup-Anleitung
 
@@ -193,11 +191,7 @@ Issue mit jules-task Label erstellt/hinzugefügt
     ↓
 Workflow: CI-04_session-trigger.yml läuft automatisch
     ↓
-Prüfung: Gibt es offene Jules-PRs? ← NEU: Sequenzielle Verarbeitung
-    ↓
-Falls JA: Issue wird in Warteschlange gestellt
-    ↓
-Falls NEIN: Tracking-Kommentar wird zum Issue hinzugefügt
+Tracking-Kommentar wird zum Issue hinzugefügt
     ↓
 Jules API Session wird erstellt (wenn JULES_API_KEY vorhanden)
     ↓
@@ -220,20 +214,12 @@ gh workflow run CI-04_session-trigger.yml
    - Triggert wenn `jules-task` Label zu existierendem Issue hinzugefügt wird
    - Kann manuell für beliebige Issues getriggert werden
 
-2. **Sequenzielle Verarbeitung (NEU):** ⭐
-   - Prüft vor dem Start, ob bereits ein offener Jules-PR existiert
-   - Falls JA: Issue wird in Warteschlange gestellt mit informativem Kommentar
-   - Falls NEIN: Normale Verarbeitung beginnt
-   - Nach PR-Merge wird automatisch das nächste Issue aus der Warteschlange geholt
-   - FIFO-Prinzip: Älteste Issues werden zuerst bearbeitet
-
-3. **Tracking-Kommentar:**
+2. **Tracking-Kommentar:**
    - Fügt Kommentar zum Issue hinzu mit Status
    - Informiert über nächste Schritte
    - Dokumentiert Session-ID (wenn API genutzt)
-   - Zeigt Warteschlangen-Status an (wenn in Warteschlange)
 
-4. **API Integration (optional):**
+3. **API Integration (optional):**
    - Wenn `JULES_API_KEY` Secret konfiguriert ist:
      - Erstellt automatisch Jules API Session
      - Issue-Titel und Body werden als Prompt verwendet
@@ -242,11 +228,10 @@ gh workflow run CI-04_session-trigger.yml
      - Workflow läuft trotzdem (Tracking-Kommentar)
      - Jules GitHub App übernimmt (wenn installiert)
 
-5. **Batch-Processing:**
+4. **Batch-Processing:**
    - Workflow kann alle offenen jules-task Issues auf einmal verarbeiten
    - Nützlich bei Repository-Setup
    - Rate-Limiting berücksichtigt
-   - Sequenzielle Verarbeitung wird automatisch durchgesetzt
 
 #### Workflow-Dateien:
 
@@ -271,8 +256,6 @@ Nach Session-Erstellung arbeitet Jules am Issue:
    - Beschreibung der Änderungen
    - Test-Ergebnisse
    - `jules-pr` Label (automatisch)
-
-> **⏸️ Warteschlange:** Wenn Jules bereits an einem anderen Issue arbeitet (offener Jules-PR existiert), wird das neue Issue automatisch in die Warteschlange gestellt. Ein Kommentar informiert über den Status und die voraussichtliche Reihenfolge.
 
 ### 4. Automatisches Testing
 
@@ -309,31 +292,14 @@ Der Auto-Merge (via `CI-05_pr-automation.yml`) erfolgt, wenn:
 2. Squash-Merge in `main`
 3. Automatisches Schließen des related Issues
 4. Commit-Message: "Auto-merge Jules PR #<number>: <title>"
-5. **Trigger nächstes Issue (NEU):** CI-07 wird automatisch getriggert ⭐
 
-### 6. Dokumentations-Update und Warteschlangen-Fortsetzung
+### 6. Dokumentations-Update
 
-Nach erfolgreichem Merge (via `CI-07_post-merge-automation.yml`):
+Nach erfolgreichem Merge (via `CI-06_update-changelog.yml`):
 
 - **CHANGELOG.md:** Fügt automatisch Changelog-Entry hinzu
-- **ROADMAP.md:** Wird automatisch aktualisiert (Tasks als completed markieren)
+- **ROADMAP.md:** Wird manuell aktualisiert (Tasks als completed markieren)
 - **Related Issue:** Wird automatisch geschlossen
-- **Nächstes Issue (NEU):** CI-04 wird automatisch getriggert für das nächste Issue in der Warteschlange ⭐
-
-**Sequenzieller Ablauf:**
-```
-Jules PR gemerged
-    ↓
-CI-07: Post-Merge Automation
-    ↓
-Issue schließen + ROADMAP aktualisieren
-    ↓
-CI-04 automatisch triggern
-    ↓
-Nächstes Issue aus Warteschlange holen (ältestes zuerst)
-    ↓
-Jules beginnt mit neuem Issue
-```
 
 ## 📝 Best Practices
 
@@ -498,13 +464,11 @@ gh api repos/MrLongNight/VjMapper/pulls \
 **Täglich:**
 - Jules PR Status überprüfen
 - Fehlgeschlagene Workflows prüfen
-- Warteschlangen-Status prüfen (queued Issues)
 
 **Wöchentlich:**
 - Auto-generierte Issues reviewen
 - ROADMAP.md Fortschritt überprüfen
-- Issue-Warteschlange (Queue) überprüfen
-- Sequenzielle Verarbeitungs-Metriken analysieren
+- Merge-Queue überprüfen
 
 **Monatlich:**
 - Jules-Performance analysieren
@@ -527,7 +491,6 @@ Bei Änderungen am System:
 
 ## 📚 Weitere Ressourcen
 
-- **[Sequential Processing Guide](SEQUENTIAL_PROCESSING.md)** ⭐ - Detaillierte Dokumentation zur sequenziellen Issue-Verarbeitung
 - [Workflow README](.github/workflows/README.md)
 - [Issue Templates](.github/ISSUE_TEMPLATE/)
 - [PR Template](.github/pull_request_template.md)
@@ -544,7 +507,6 @@ Bei Problemen:
 
 ---
 
-**Letztes Update:** 2024-12-10  
-**Version:** 1.1  
-**Status:** Produktionsbereit  
-**Neu:** Sequenzielle Issue-Verarbeitung (v1.1)
+**Letztes Update:** 2024-12-04
+**Version:** 1.0
+**Status:** Produktionsbereit

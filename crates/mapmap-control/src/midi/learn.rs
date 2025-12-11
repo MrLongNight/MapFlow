@@ -108,11 +108,12 @@ impl MidiLearn {
         }
         drop(state);
 
-        let message = (*self.last_message.lock().ok()?)?;
+        let message = *self.last_message.lock().ok()?
+;
         let target = self.pending_target.lock().ok()?.clone()?;
 
         // For Note On messages, we use a template that matches any velocity
-        let template_message = match message {
+        let template_message = match message? {
             MidiMessage::NoteOn { channel, note, .. } => MidiMessage::ControlChange {
                 channel,
                 controller: note,
@@ -128,7 +129,7 @@ impl MidiLearn {
                 value: 0,
             },
             MidiMessage::PitchBend { channel, .. } => MidiMessage::PitchBend { channel, value: 0 },
-            _ => message,
+            _ => message?,
         };
 
         info!(

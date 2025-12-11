@@ -192,13 +192,13 @@
   - ✅ OSC-zu-Control-Value-Mapping (`osc/types.rs`)
   - ✅ Feature-Flag: `osc` (optional, muss aktiviert werden)
   
-- ⬜ **OSC-Integration (HAUPTPFAD – ZU IMPLEMENTIEREN)**
-  - ⬜ OSC-Command-Schema definieren (siehe `osc/mod.rs` für Vorschlag)
-  - ⬜ OSC-Events an Layer/Paint/Effect-Parameter routen
-  - ⬜ OSC-Feedback (State-Updates zurück an Controller) implementieren
-  - ⬜ OSC-Learn-Mode für Address-Mapping
-  - ⬜ UI: OSC-Server-Status und Port-Konfiguration
-  - ⬜ Default-OSC-Port: 8000 (konfigurierbar)
+- ✅ **OSC-Integration (HAUPTPFAD – IMPLEMENTIERT)**
+  - ✅ OSC-Command-Schema definiert und dokumentiert
+  - ✅ OSC-Events an `ControlTarget`s geroutet
+  - ✅ OSC-Feedback (State-Updates zurück an Controller) implementiert
+  - ✅ OSC-Learn-Mode für Address-Mapping implementiert
+  - ✅ UI: OSC-Server-Status und Port-Konfiguration implementiert (mit `imgui`)
+  - ✅ Default-OSC-Port: 8000 (konfigurierbar)
 
 - ✅ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`)
   - ✅ MIDI-Input (`midi/input.rs`)

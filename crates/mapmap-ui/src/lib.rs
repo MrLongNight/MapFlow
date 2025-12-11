@@ -17,6 +17,7 @@ pub mod dashboard;
 pub mod media_browser;
 pub mod mesh_editor;
 pub mod node_editor;
+pub mod osc_panel;
 pub mod theme;
 pub mod timeline_v2;
 pub mod undo_redo;
@@ -204,8 +205,16 @@ impl ImGuiContext {
     }
 }
 
+use mapmap_control::ControlTarget;
+
 /// UI state for the application
 pub struct AppUI {
+    pub show_osc_panel: bool,
+    pub show_osc_learn_dialog: bool,
+    pub osc_learn_address: Option<String>,
+    pub selected_control_target: ControlTarget,
+    pub osc_port_input: String,
+    pub osc_client_input: String,
     pub show_controls: bool,
     pub show_stats: bool,
     pub show_layers: bool,
@@ -235,6 +244,12 @@ pub struct AppUI {
 impl Default for AppUI {
     fn default() -> Self {
         Self {
+            show_osc_panel: true,
+            show_osc_learn_dialog: false,
+            osc_learn_address: None,
+            selected_control_target: ControlTarget::Custom("".to_string()),
+            osc_port_input: "8000".to_string(),
+            osc_client_input: "127.0.0.1:9000".to_string(),
             show_controls: true,
             show_stats: true,
             show_layers: true,
@@ -412,6 +427,7 @@ impl AppUI {
             });
 
             ui.menu("View", || {
+                ui.checkbox("Show OSC Panel", &mut self.show_osc_panel);
                 ui.checkbox("Show Controls", &mut self.show_controls);
                 ui.checkbox("Show Layers", &mut self.show_layers);
                 ui.checkbox("Show Paints", &mut self.show_paints);

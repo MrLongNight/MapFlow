@@ -60,6 +60,17 @@ impl App<'_> {
         let ui = UI::new();
         let output_manager = OutputManager::new((INITIAL_WIDTH, INITIAL_HEIGHT));
 
+        let mut control_manager = mapmap_control::ControlManager::new();
+        if let Err(e) = control_manager.init_osc_server(8000) {
+            error!("Failed to start OSC server: {}", e);
+        }
+        if let Err(e) = control_manager
+            .osc_mapping
+            .load_from_file("osc_mappings.json")
+        {
+            error!("Could not load OSC mappings: {}", e);
+        }
+
         Ok(Self {
             window_manager,
             ui,

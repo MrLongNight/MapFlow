@@ -336,7 +336,7 @@ mod tests {
     fn test_mesh_uniforms_size() {
         assert_eq!(
             std::mem::size_of::<MeshUniforms>(),
-            96 // 64 (mat4x4) + 4 (f32) + 28 (padding for std140 alignment)
+            96 // 64 (mat4x4) + 4 (f32) + 28 (padding) = 96
         );
     }
 }

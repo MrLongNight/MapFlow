@@ -242,12 +242,6 @@ mod tests {
 
     #[test]
     fn test_backend_creation() {
-        // Skip test in CI environments where GPU/graphics APIs may not be available
-        if std::env::var("CI").is_ok() {
-            eprintln!("Skipping backend creation test in CI (no GPU available)");
-            return;
-        }
-
         pollster::block_on(async {
             let backend = WgpuBackend::new().await;
             assert!(backend.is_ok());

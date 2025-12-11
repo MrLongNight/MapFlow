@@ -1,167 +1,20 @@
-# VjMapper – Chronologischer Changelog (Rust Workspace)
+# Release notes for MapMap
 
-## 2025-12-11 – Automatisierte Jules/Copilot Workflow Pipeline & CI/CD Architektur
+&nbsp;
 
-- **Jules/Copilot Setup komplett:**  
-  - Automatische CI/CD-Pipeline: Issue → Jules-Session → PR durch Jules → CI/tests → Copilot Review → Auto-Merge → Issue/ROADMAP/Changelog-Update → nächstes Issue (CI-04 bis CI-08 Workflows)
-  - "jules-task"-Label steuert Prozess, per API wird jeweils immer nur ein Issue bearbeitet (FIFO, sequential).
-  - Automatisierte PR-Prüfung: `cargo fmt`, `cargo clippy`, `cargo test` sind Pflicht für Merge.
-  - Copilot kommentiert und merged nur fehlerfreie PRs (CI-05).
-  - Fortschritt wird nach Merge automatisch in ROADMAP und CHANGELOG eingetragen.
-  - Fehlerhafte PRs: Automatische Kommentare an Jules mit Checkliste und Logs für Anpassung.
-
-- **Wichtige CI/CD PRs zu dieser Phase:**  
-  - [CI/CD Workflow, Jules API & Issue Pipeline](https://github.com/MrLongNight/VjMapper/pull/10)
-  - [Automatische Jules-Session-Trigger](https://github.com/MrLongNight/VjMapper/pull/13)
-  - [Jules API Action Setup/Fix](https://github.com/MrLongNight/VjMapper/pull/15)
-  - [Node.js/Local Actions Dependency Fix](https://github.com/MrLongNight/VjMapper/pull/14)
-  - [Sequential Issue Processing (multi-PR block)](https://github.com/MrLongNight/VjMapper/pull/37)
-  - [Auto-Merge, Check Aggregation, Error Handling](https://github.com/MrLongNight/VjMapper/pull/30)
-
----
-
-## 2025-12-10 – Infrastruktur: CI/CD Stabilisierung, Build & Tests
-
-- **Fehlerbehebung:** CI-Checks + GitHub Actions aktualisiert  
-  - Veraltete Actions (`actions-rs/toolchain@v1`) entfernt, auf `dtolnay/rust-toolchain@master` gewechselt.
-  - Berechtigungsfehler für Security Audit (`checks: write`) gefixt.
-  - Automatische Build-Fehler durch fehlende nativen Linux Abhängigkeiten (`libasound2-dev`, `fontconfig`) behoben.
-  - CI-Matrix optimiert: Ubuntu mit/ohne Audio, macOS, Windows; Audio-Feature optional bei non-linux Jobs.
-
-- **PRs:**  
-  - [Fix deprecated GitHub Actions and permissions](https://github.com/MrLongNight/VjMapper/pull/33)
-  - [Fix CI build failures: ALSA-Dev, MIDI Exports, Clippy, Video Encoder](https://github.com/MrLongNight/VjMapper/pull/34)
-  - [Fix cargo metadata CI failure, winit compilation, audio](https://github.com/MrLongNight/VjMapper/pull/22)
-  - [Fix CI failures by making audio dependencies optional](https://github.com/MrLongNight/VjMapper/pull/20)
-  - [Build_Rust workflow: Linux native dependencies](https://github.com/MrLongNight/VjMapper/pull/6)
-
----
-
-## 2025-12-09 – Repository Struktur & Dokumentation refaktoriert
-- **Umstrukturierung:**  
-  - Doku ins /docs-Verzeichnis migriert, README.md aus Originalprojekt angepasst, CI/CD README als separater Bereich.
-  - Überflüssige Skripte und doppelte Roadmap/Readmes entfernt, Links korrigiert, Branding Assets umgezogen.
-  - [PR: Restructure and Optimize Documentation](https://github.com/MrLongNight/VjMapper/pull/7)
-  - [Repository Cleanup, README Overhaul](https://github.com/MrLongNight/VjMapper/pull/27)
-  - [Docs: Bereinigung und README Update](https://github.com/MrLongNight/VjMapper/pull/29)
-  - [Repository cleanup: consolidate files, fix doc links](https://github.com/MrLongNight/VjMapper/pull/32)
-
----
-
-## 2025-12-05 – Roadmap als Single-Source-of-Truth, Releaseplanung
-
-- Roadmap.md völlig rekonstruiert, 8 Arbeitspakete, alle Features mit Checkboxen/Kritikalität (siehe Roadmap).
-- [ROADMAP.md Update und Feature-Status](https://github.com/MrLongNight/VjMapper/pull/28)
-- Ausführliche Checklisten und konkrete Arbeitspakete eingefügt.
-
----
-
-## 2025-12-05 – Automatisierte Multi-Window Rendering Architektur abgeschlossen
-
-- **Jules-Dev-Issue #1:** Multi-Window Rendering für Projektor-Setup, Synchronisation eingeführt.
-- [Implement Multi-Window Rendering Architecture](https://github.com/MrLongNight/VjMapper/pull/18)
-- [Dev-Issue #1: Multi-Window Rendering abschließen](https://github.com/MrLongNight/VjMapper/issues/11)
-- Erfolgreich getestet mit 2, 4, 6+ Outputs, Synchronisationsmechanismus und UI-Anbindung.
-
----
-
-## 2025-12-05 – Repository Bereinigt, Altlasten entfernt
-
-- Kompletter Legacy-Code (C++/Qt) aus MapMap entfernt, alles Rust-Workspace.
-- Dokumentation und CI-Konfiguration bereinigt.
-- [Remove legacy C++ codebase after Rust rewrite](https://github.com/MrLongNight/VjMapper/pull/5)
-
----
-
-## 2025-12-05 – Jules-Dev-Issue #2: ROADMAP Checker, Dokumentation
-
-- Code-Doku, Rustdoc-Kommentare und Guidelines für alle neuen Funktionen ergänzen.
-- ROADMAP und AGENTS.md als verbindliche Entwickler-Dokumentation.
-- [Dev-Issue #2](https://github.com/MrLongNight/VjMapper/issues/12)
-
----
-
-## 2025-12-05 – Critical Path: Multi-Window Rendering Status
-
-- Tests und Guidelines für Rust API, Doku für Multi-Window Rendering.
-- [Dev-Issue #](https://github.com/MrLongNight/VjMapper/issues/23)
-
----
-
-## 2025-12-05 – Repository Aufräumen und Sortieren (Jules-Task #2)
-
-- "JULES_AUTOMATION_FIX.md", "IMPLEMENTATION_SUMMARY.md", "CLEANUP_SUMMARY.md", "CI_CD_README.md" etc. in `/docs` unterordner verschoben.
-- README.md wieder als Github-typische Übersicht; Roadmap-Links und Doc-Pfade angepasst.
-- [Jules-Task-02: Repository Aufräumen und Sortieren](https://github.com/MrLongNight/VjMapper/issues/24)
-
----
-
-## 2025-12-05 – CI/CD komplett automatisiert, Jules session trigger/workflows robustiert
-
-- **Session-Trigger:** Jules API/Action für Session aus Issues per Label.
-- Fehlerreduktion und Robustheit: Node.js Setup für Actions, Fallback-, Retry- und Concurrency-Checks.
-- [Fix CI-04: Add Node.js setup and local action dependencies](https://github.com/MrLongNight/VjMapper/pull/14)
-- [Fix CI-04 workflow to use official Jules GitHub Action](https://github.com/MrLongNight/VjMapper/pull/15)
-- [Fix duplicate Jules session creation and enforce sequential processing](https://github.com/MrLongNight/VjMapper/pull/25)
-- [Implement sequential Jules issue processing to prevent parallel sessions](https://github.com/MrLongNight/VjMapper/pull/37)
-
----
-
-## 2025-12-06 – Audio Build Enforcement (Jules-PR)
-
-- Audio Feature ist jetzt Pflicht für alle Builds, Mock-Backend für CI/CD Tests integriert.
-- [Feat: Enforce Audio Build](https://github.com/MrLongNight/VjMapper/pull/31)
-
----
-
-## 2025-12-09 – Media-Playback-State-Machine Task begonnen (Jules-Task-04, offen)
-
-- Erweiterung der State-Machine für Playback inkl. Unit-Testing Anforderungen.
-- [Jules-Task-04: Media-Playback-State-Machine (robust und fehlertolerant)](https://github.com/MrLongNight/VjMapper/issues/36)
-
----
-
-## 2025-12-10 – OSC-Command-Schema & Integration Task begonnen (Jules-Task-03, offen)
-
-- OSC als primärer Control-Pfad, vollständiges Address-Schema, Routing, Feedback & Learn-Mode in Arbeit.
-- [Jules-Task-03: OSC-Command-Schema und Integration](https://github.com/MrLongNight/VjMapper/issues/35)
-- [PR: feat(control): OSC-Command-Schema und Integration](https://github.com/MrLongNight/VjMapper/pull/38)
-
----
-
-## 2024–2025 – Diverse Bugfixes, Infrastruktur, Feature-Refaktorierungen
-
-- Lint/Format/Build-Fehler beseitigt (Clippy, Cargo Fmt überall).
-- Tests für Audio- und Media-Backends aufgesetzt/erweitert.
-- GitHub Issue Templates und Unterstützung für deutsch/englisch PRs/Doku eingeführt.
-- [Add English issue templates with Rust workflow integration](https://github.com/MrLongNight/VjMapper/pull/9)
-- [Fix documentation, add comprehensive roadmap, and resolve Build_Rust workflow](https://github.com/MrLongNight/VjMapper/pull/8)
-
----
-
-## 2024-06-01 Erstes VjMapper Rust-Workspace Release (mapmap-core, mapmap-render, mapmap-media, mapmap-ui…)
-
-- Historie sie Roadmap, weitere Releases siehe dort und in den PR-Beschreibungen.
-
----
-
-# Release notes for MapMap (Legacy, C++/Qt)
-
-## 2018-??-?? - MapMap 0.6.3
-
-TODO
-
-## 2018-07-24 - MapMap 0.6.2
-
-- Remove an assert that might crash MapMap
-- ...
-
-[Restliche MapMap-Historie bleibt unverändert – siehe Originaldatei.]
-
----
-
-**Jede Änderung, jeder Fix und jedes neue Feature MUSS ab jetzt exakt und zeitnah hier erscheinen!**
-Letzte Aktualisierung: 2025-12-11
+## [Unreleased]
+- CI/CD: Installiert `libasound2-dev` und `libavutil-dev` für alsa-sys und ffmpeg-sys Build (Linux), um Fehler beim automatischen Build in PRs zu beheben. (#38, @jules)
+- **OSC-Integration:** OSC als primärer Control-Pfad integriert.
+  - Umfassendes OSC-Adress-Schema für die Steuerung von Layern, Master-Parametern, etc.
+  - OSC-Server, der standardmäßig auf Port 8000 lauscht.
+  - Bidirektionales Feedback zur Synchronisierung von Controller-Zuständen.
+  - "OSC Learn"-Modus zur einfachen Zuweisung von OSC-Adressen zu Parametern.
+  - Persistente Speicherung von OSC-Mappings in `osc_mappings.json`.
+  - `imgui`-basiertes UI-Panel zur Konfiguration des OSC-Servers, zur Verwaltung von Clients und Mappings.
+- **Dokumentation:** Vollständige OSC-Befehlsreferenz unter `docs/10-OSC-CONTROL/COMMAND-REFERENCE.md` hinzugefügt.
+- **Tests:** Unit-Tests für OSC-Learn- und Mapping-Funktionalität hinzugefügt.
+- **ControlManager:** Erweitert, um OSC-Learn, -Mapping und die Verwaltung mehrerer OSC-Clients zu unterstützen.
+- **Fehlerbehandlung:** Robuste Fehlerbehandlung beim Laden und Speichern von OSC-Mappings implementiert, um Abstürze zu verhindern.
 
 &nbsp;
 

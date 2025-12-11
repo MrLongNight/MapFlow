@@ -59,10 +59,10 @@ pub use manager::ControlManager;
 pub use target::{ControlTarget, ControlValue, EdgeSide};
 
 #[cfg(feature = "midi")]
-pub use midi::{MidiInputHandler, MidiMessage, MidiOutputHandler};
+pub use midi::MidiMessage;
 
 pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfile, SacnSender};
-pub use osc::{OscClient, OscEvent, OscServer};
+pub use osc::{OscClient, OscLearn, OscMapping, OscServer};
 
 #[cfg(feature = "http-api")]
 pub use web::{WebServer, WebServerConfig};

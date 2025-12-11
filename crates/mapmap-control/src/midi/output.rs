@@ -3,52 +3,30 @@
 use super::MidiMessage;
 use crate::error::{ControlError, Result};
 use midir::{MidiOutput as MidirOutput, MidiOutputConnection};
-use tracing::{info, warn};
+use tracing::info;
 
 /// MIDI output handler
 pub struct MidiOutputHandler {
+    _midi_output: MidirOutput,
     connection: Option<MidiOutputConnection>,
-    /// Track whether MIDI backend is available on this system
-    backend_available: bool,
 }
 
 impl MidiOutputHandler {
     /// Create a new MIDI output handler
-    ///
-    /// Returns Ok even if no MIDI backend is available (e.g., in CI environments).
-    /// In this case, operations will return appropriate errors.
     pub fn new() -> Result<Self> {
-        // Check if MIDI backend is available
-        let backend_available = match MidirOutput::new("MapMap MIDI Output") {
-            Ok(_) => true,
-            Err(e) => {
-                warn!(
-                    "No MIDI backend available: {:?}. MIDI output will be disabled.",
-                    e
-                );
-                false
-            }
-        };
+        let midi_output = MidirOutput::new("MapMap MIDI Output")?;
 
         Ok(Self {
+            _midi_output: midi_output,
             connection: None,
-            backend_available,
         })
     }
 
     /// List available MIDI output ports
-    ///
-    /// Returns an empty list if no MIDI backend is available.
     pub fn list_ports() -> Result<Vec<String>> {
-        let midi_output = match MidirOutput::new("MapMap MIDI Output") {
-            Ok(mo) => mo,
-            Err(e) => {
-                warn!("No MIDI backend available: {:?}", e);
-                return Ok(Vec::new());
-            }
-        };
-
+        let midi_output = MidirOutput::new("MapMap MIDI Output")?;
         let mut ports = Vec::new();
+
         for port in midi_output.ports() {
             if let Ok(name) = midi_output.port_name(&port) {
                 ports.push(name);
@@ -60,25 +38,10 @@ impl MidiOutputHandler {
 
     /// Connect to a MIDI output port by index
     pub fn connect(&mut self, port_index: usize) -> Result<()> {
-        // Check if MIDI backend is available
-        if !self.backend_available {
-            return Err(ControlError::MidiError(
-                "No MIDI backend available on this system".to_string(),
-            ));
-        }
-
         // Disconnect existing connection if any
         self.disconnect();
 
-        let midi_output = match MidirOutput::new("MapMap MIDI Output") {
-            Ok(mo) => mo,
-            Err(e) => {
-                return Err(ControlError::MidiError(format!(
-                    "Failed to create MIDI output: {:?}",
-                    e
-                )));
-            }
-        };
+        let midi_output = MidirOutput::new("MapMap MIDI Output")?;
         let ports = midi_output.ports();
 
         if port_index >= ports.len() {

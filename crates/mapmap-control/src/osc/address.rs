@@ -35,6 +35,7 @@ pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
     }
 
     match parts[1] {
+        "master" => parse_master_address(&parts[2..]),
         "layer" => parse_layer_address(&parts[2..]),
         "paint" => parse_paint_address(&parts[2..]),
         "effect" => parse_effect_address(&parts[2..]),
@@ -43,6 +44,23 @@ pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
         _ => Err(ControlError::InvalidMessage(format!(
             "Unknown OSC category: {}",
             parts[1]
+        ))),
+    }
+}
+
+fn parse_master_address(parts: &[&str]) -> Result<ControlTarget> {
+    if parts.is_empty() {
+        return Err(ControlError::InvalidMessage(
+            "Missing master parameter".to_string(),
+        ));
+    }
+
+    match parts[0] {
+        "opacity" => Ok(ControlTarget::MasterOpacity),
+        "blackout" => Ok(ControlTarget::MasterBlackout),
+        _ => Err(ControlError::InvalidMessage(format!(
+            "Unknown master parameter: {}",
+            parts[0]
         ))),
     }
 }
@@ -182,6 +200,8 @@ pub fn control_target_to_address(target: &ControlTarget) -> String {
         ControlTarget::OutputEdgeBlend(id, edge) => {
             format!("/mapmap/output/{}/edge_blend/{:?}", id, edge)
         }
+        ControlTarget::MasterOpacity => "/mapmap/master/opacity".to_string(),
+        ControlTarget::MasterBlackout => "/mapmap/master/blackout".to_string(),
         ControlTarget::Custom(name) => format!("/mapmap/custom/{}", name),
     }
 }

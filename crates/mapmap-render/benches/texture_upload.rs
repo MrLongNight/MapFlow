@@ -6,7 +6,7 @@ fn bench_texture_upload(c: &mut Criterion) {
 
     let _backend = pollster::block_on(WgpuBackend::new()).unwrap();
 
-    for size in [512, 1024, 1920].iter() {
+    for size in [512, 1024, 2048].iter() {
         let data = vec![0u8; (size * size * 4) as usize];
 
         group.bench_with_input(
