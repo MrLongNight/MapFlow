@@ -543,9 +543,7 @@ mod tests {
         let mut player = VideoPlayer::new(decoder);
 
         // Idle -> Playing
-        assert!(player
-            .transition_state(PlaybackState::Playing)
-            .is_ok());
+        assert!(player.transition_state(PlaybackState::Playing).is_ok());
         assert_eq!(*player.state(), PlaybackState::Playing);
 
         // Playing -> Paused
@@ -553,9 +551,7 @@ mod tests {
         assert_eq!(*player.state(), PlaybackState::Paused);
 
         // Paused -> Playing
-        assert!(player
-            .transition_state(PlaybackState::Playing)
-            .is_ok());
+        assert!(player.transition_state(PlaybackState::Playing).is_ok());
         assert_eq!(*player.state(), PlaybackState::Playing);
 
         // Playing -> Stopped
@@ -574,21 +570,15 @@ mod tests {
         let mut player = VideoPlayer::new(decoder);
 
         // Idle -> Paused
-        assert!(player
-            .transition_state(PlaybackState::Paused)
-            .is_err());
+        assert!(player.transition_state(PlaybackState::Paused).is_err());
 
         // Loading -> Paused
         player.state = PlaybackState::Loading;
-        assert!(player
-            .transition_state(PlaybackState::Paused)
-            .is_err());
+        assert!(player.transition_state(PlaybackState::Paused).is_err());
 
         // Stopped -> Loading
         player.state = PlaybackState::Stopped;
-        assert!(player
-            .transition_state(PlaybackState::Loading)
-            .is_err());
+        assert!(player.transition_state(PlaybackState::Loading).is_err());
     }
 
     #[test]

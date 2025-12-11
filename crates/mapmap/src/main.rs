@@ -9,12 +9,15 @@ use mapmap_core::{
     audio::{backend::AudioBackend, AudioAnalyzer, AudioConfig},
     LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager,
 };
-use mapmap_media::{FFmpegDecoder, TestPatternDecoder, VideoPlayer};
+use mapmap_media::{
+    player::{LoopMode, PlaybackCommand},
+    FFmpegDecoder, TestPatternDecoder, VideoPlayer,
+};
 use mapmap_render::{
     ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, MeshRenderer, QuadRenderer,
     RenderBackend, TextureDescriptor, WgpuBackend,
 };
-use mapmap_ui::{AppUI, ImGuiContext};
+use mapmap_ui::{AppUI, Dashboard, ImGuiContext};
 use std::collections::HashMap;
 use std::time::Instant;
 use tracing::{error, info};
@@ -40,6 +43,7 @@ struct App {
     color_calibration_renderer: ColorCalibrationRenderer,
     imgui_context: ImGuiContext,
     ui_state: AppUI,
+    dashboard: Dashboard,
     layer_manager: LayerManager,
     paint_manager: PaintManager,
     mapping_manager: MappingManager,
@@ -136,9 +140,12 @@ impl App {
             std::time::Duration::from_secs(5),
             30.0,
         ));
-        let mut player1 = VideoPlayer::new(decoder1);
-        player1.set_looping(true);
-        player1.play();
+        let player1 = VideoPlayer::new(decoder1);
+        player1.command_sender().send(PlaybackCommand::Play).unwrap();
+        player1
+            .command_sender()
+            .send(PlaybackCommand::SetLoopMode(LoopMode::On))
+            .unwrap();
         video_players.insert(paint_id_1, player1);
 
         let decoder2 = FFmpegDecoder::TestPattern(TestPatternDecoder::new(
@@ -147,9 +154,12 @@ impl App {
             std::time::Duration::from_secs(5),
             30.0,
         ));
-        let mut player2 = VideoPlayer::new(decoder2);
-        player2.set_looping(true);
-        player2.play();
+        let player2 = VideoPlayer::new(decoder2);
+        player2.command_sender().send(PlaybackCommand::Play).unwrap();
+        player2
+            .command_sender()
+            .send(PlaybackCommand::SetLoopMode(LoopMode::On))
+            .unwrap();
         video_players.insert(paint_id_2, player2);
 
         info!(
@@ -186,6 +196,7 @@ impl App {
             color_calibration_renderer,
             imgui_context,
             ui_state: AppUI::default(),
+            dashboard: Dashboard::new(),
             layer_manager,
             paint_manager,
             mapping_manager,
@@ -252,6 +263,14 @@ impl App {
                     }
                 }
             }
+        }
+
+        // Update dashboard with the state of the first video player
+        if let Some(player) = self.video_players.values().next() {
+            self.dashboard
+                .set_playback_state(player.state().clone());
+            self.dashboard
+                .set_playback_time(player.current_time(), player.duration());
         }
 
         self.last_frame = now;
@@ -591,6 +610,7 @@ impl App {
         if is_main_window {
             let main_window = &self.window_manager.get(output_id).unwrap().window;
             let ui_state = &mut self.ui_state;
+            let dashboard = &mut self.dashboard;
             let layer_manager = &mut self.layer_manager;
             let paint_manager = &mut self.paint_manager;
             let mapping_manager = &mut self.mapping_manager;
@@ -607,6 +627,7 @@ impl App {
                 |ui| {
                     ui_state.render_menu_bar(ui);
                     ui_state.render_controls(ui);
+                    dashboard.ui(ui);
                     ui_state.render_layer_panel(ui, layer_manager);
                     ui_state.render_paint_panel(ui, paint_manager);
                     ui_state.render_mapping_panel(ui, mapping_manager);
@@ -624,8 +645,19 @@ impl App {
     }
 
     fn handle_ui_actions(&mut self) -> bool {
-        use mapmap_ui::UIAction;
+        use mapmap_ui::{DashboardAction, UIAction};
 
+        // Handle actions from the dashboard
+        if let Some(dashboard_action) = self.dashboard.take_action() {
+            if let DashboardAction::SendCommand(command) = dashboard_action {
+                for player in self.video_players.values() {
+                    let _ = player.command_sender().send(command.clone());
+                }
+            }
+            // TODO: Handle other dashboard actions like AddWidget, etc.
+        }
+
+        // Handle actions from the main UI
         let actions = self.ui_state.take_actions();
 
         for action in actions {
@@ -633,25 +665,27 @@ impl App {
                 UIAction::Play => {
                     info!("Play action triggered");
                     for player in self.video_players.values_mut() {
-                        player.play();
+                        let _ = player.command_sender().send(PlaybackCommand::Play);
                     }
                 }
                 UIAction::Pause => {
                     info!("Pause action triggered");
                     for player in self.video_players.values_mut() {
-                        player.pause();
+                        let _ = player.command_sender().send(PlaybackCommand::Pause);
                     }
                 }
                 UIAction::Stop => {
                     info!("Stop action triggered");
                     for player in self.video_players.values_mut() {
-                        player.stop();
+                        let _ = player.command_sender().send(PlaybackCommand::Stop);
                     }
                 }
                 UIAction::SetSpeed(speed) => {
                     info!("Setting playback speed to {}", speed);
                     for player in self.video_players.values_mut() {
-                        player.set_speed(speed);
+                        let _ = player
+                            .command_sender()
+                            .send(PlaybackCommand::SetSpeed(speed));
                     }
                 }
                 UIAction::ToggleLoop(looping) => {
@@ -661,7 +695,9 @@ impl App {
                         self.video_players.len()
                     );
                     for (paint_id, player) in self.video_players.iter_mut() {
-                        player.set_looping(looping);
+                        let _ = player.command_sender().send(PlaybackCommand::SetLoopMode(
+                            if looping { LoopMode::On } else { LoopMode::Off },
+                        ));
                         info!(
                             "  - Paint {} now has looping={}",
                             paint_id,
@@ -716,10 +752,20 @@ impl App {
                             30.0,
                         ),
                     );
-                    let mut player = mapmap_media::VideoPlayer::new(decoder);
-                    player.set_looping(self.ui_state.looping);
-                    player.set_speed(self.ui_state.playback_speed);
-                    player.play();
+                    let player = mapmap_media::VideoPlayer::new(decoder);
+                    let _ = player
+                        .command_sender()
+                        .send(PlaybackCommand::SetLoopMode(
+                            if self.ui_state.looping {
+                                LoopMode::On
+                            } else {
+                                LoopMode::Off
+                            },
+                        ));
+                    let _ = player
+                        .command_sender()
+                        .send(PlaybackCommand::SetSpeed(self.ui_state.playback_speed));
+                    let _ = player.command_sender().send(PlaybackCommand::Play);
                     self.video_players.insert(paint_id, player);
                     info!(
                         "Created video player for paint {} with looping={}, speed={}",
@@ -823,7 +869,9 @@ impl App {
                 UIAction::SetPlaybackMode(mode) => {
                     info!("Setting playback mode to {:?}", mode);
                     for player in self.video_players.values_mut() {
-                        player.set_playback_mode(mode);
+                        let _ = player
+                            .command_sender()
+                            .send(PlaybackCommand::SetPlaybackMode(mode));
                     }
                 }
 
@@ -985,7 +1033,7 @@ impl App {
     fn load_video_file(&mut self, path: &str) {
         use glam::Vec2;
         use mapmap_core::{Mapping, Paint, PaintType};
-        use mapmap_media::{FFmpegDecoder, VideoDecoder, VideoPlayer};
+        use mapmap_media::{player::PlaybackCommand, FFmpegDecoder, VideoDecoder, VideoPlayer};
 
         info!("Loading media file: {}", path);
 
@@ -1048,16 +1096,24 @@ impl App {
                 );
 
                 // Create video player (works for all decoder types)
-                let mut player = VideoPlayer::new(decoder);
+                let player = VideoPlayer::new(decoder);
 
                 // Still images don't need looping or speed control
                 if !is_still_image {
-                    player.set_looping(self.ui_state.looping);
-                    player.set_speed(self.ui_state.playback_speed);
-                    player.play();
+                    let _ = player.command_sender().send(PlaybackCommand::SetLoopMode(
+                        if self.ui_state.looping {
+                            LoopMode::On
+                        } else {
+                            LoopMode::Off
+                        },
+                    ));
+                    let _ = player
+                        .command_sender()
+                        .send(PlaybackCommand::SetSpeed(self.ui_state.playback_speed));
+                    let _ = player.command_sender().send(PlaybackCommand::Play);
                 } else {
                     // For still images, just load the single frame
-                    player.play();
+                    let _ = player.command_sender().send(PlaybackCommand::Play);
                 }
 
                 self.video_players.insert(paint_id, player);
