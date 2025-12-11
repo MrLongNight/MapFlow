@@ -7,6 +7,7 @@ use glam::{Mat4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
 /// Blend mode for compositing layers
+#[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum BlendMode {
     /// Normal alpha blending (default)
