@@ -10,6 +10,16 @@ VjMapper ist ein Rewrite einer C++/Qt-Anwendung in Rust. Ziel ist eine hochperfo
 
 **Kommuniziere mit dem Benutzer ausschließlich auf Deutsch.** Alle Pläne, Fragen und Antworten müssen auf Deutsch sein.
 
+> **WICHTIG:**  
+> Seit der Einführung von Jules/Copilot und automatischer CI/CD müssen alle Entwicklungen, Automatisierungen, Bugfixes und Tasks **immer in CHANGELOG.md eingetragen werden! Alle Einträge basieren auf Issues, PRs, Roadmap und echten Workflow-Aktivitäten.**
+
+> Code- und Dokumentationsdateien, die durch Issues, Pull Requests, Automatisierungen oder Änderungen (egal ob manuell oder KI-basiert) angepasst werden,  
+> **müssen immer als vollständige, neue Datei generiert und ersetzt werden**!  
+>  
+> _Keine Teilstücke, keine Diffs, keine Patches!_  
+>  
+> **Nur vollständige, konsistente Dateiinhalte sichern, dass keine zuvor bestehenden Informationen verloren gehen oder versehentlich gelöscht werden.**
+
 ## Setup & Build-Befehle
 
 -   **Abhängigkeiten installieren:** (Siehe `README.md` für plattformspezifische Bibliotheken)
