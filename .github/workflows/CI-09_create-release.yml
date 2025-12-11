@@ -1,0 +1,96 @@
+name: "CI-09: Create Release (Windows ZIP)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release-Typ: Release oder Pre-Release?'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - 'release'
+          - 'pre-release'
+      tag_name:
+        description: 'Tag/Version (z.B. v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  build-and-release-windows:
+    name: Build & Release Windows ZIP
+    runs-on: windows-latest
+    env:
+      RELEASE_DIR: target/x86_64-pc-windows-msvc/release
+      BIN_NAME: VjMapper.exe
+      ZIP_NAME: VjMapper-portable-windows.zip
+      CHANGELOG_FILE: docs/08-CHANGELOG/CHANGELOG.md
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust Toolchain installieren
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+
+      - name: Cargo Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-cargo-
+
+      - name: Windows-Build (Release)
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Prüfe Haupt-Binärdatei
+        run: |
+          if (!(Test-Path "$env:RELEASE_DIR\$env:BIN_NAME")) {
+            Write-Error "Binärdatei $env:BIN_NAME fehlt im Release-Ziel!"
+            exit 1
+          }
+
+      - name: ZIP für Portable Release erstellen
+        run: |
+          mkdir dist
+          # Dateien ins ZIP packen: Haupt-Binärdatei und optionale Assets
+          $assets = @(
+            "$env:RELEASE_DIR\$env:BIN_NAME"
+          )
+          if (Test-Path "vjmapper.ico") { $assets += "vjmapper.ico" }
+          if (Test-Path "README.md")   { $assets += "README.md" }
+          if (Test-Path "INSTALL.txt") { $assets += "INSTALL.txt" }
+          if (Test-Path "LICENSE")     { $assets += "LICENSE" }
+          Compress-Archive -Path $assets -DestinationPath "dist\$env:ZIP_NAME"
+
+      - name: Changelog für Release laden
+        id: changelog
+        shell: bash
+        run: |
+          # Nimmt den obersten Eintrag (meiste Nutzer wollen neuesten Abschnitt)
+          if [ -f "$CHANGELOG_FILE" ]; then
+            awk '/^## /{i++} i==2{exit} i==1{print}' "$CHANGELOG_FILE" > /tmp/changelog.txt
+          else
+            echo "Kein Changelog gefunden: $CHANGELOG_FILE"
+            echo "Kein Changelog verfügbar." > /tmp/changelog.txt
+          fi
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/changelog.txt     >> $GITHUB_OUTPUT
+          echo "EOF"                 >> $GITHUB_OUTPUT
+
+      - name: GitHub Release erstellen und Asset anhängen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          name: "VjMapper Windows Portable ${{ github.event.inputs.tag_name }}"
+          body: ${{ steps.changelog.outputs.release_notes }}
+          prerelease: ${{ github.event.inputs.release_type == 'pre-release' }}
+          files: dist/VjMapper-portable-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
