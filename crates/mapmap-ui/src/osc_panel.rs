@@ -85,7 +85,10 @@ pub fn render_osc_panel(ui: &Ui, app_ui: &mut AppUI, control_manager: &mut Contr
                 control_manager.osc_mapping.remove_mapping(addr);
             }
             if !mappings_to_remove.is_empty() {
-                if let Err(e) = control_manager.osc_mapping.save_to_file("osc_mappings.json") {
+                if let Err(e) = control_manager
+                    .osc_mapping
+                    .save_to_file("osc_mappings.json")
+                {
                     tracing::error!("Failed to save OSC mappings: {}", e);
                 }
             }
@@ -118,8 +121,9 @@ pub fn render_osc_panel(ui: &Ui, app_ui: &mut AppUI, control_manager: &mut Contr
                             control_manager
                                 .osc_mapping
                                 .add_mapping(address.clone(), target.clone());
-                            if let Err(e) =
-                                control_manager.osc_mapping.save_to_file("osc_mappings.json")
+                            if let Err(e) = control_manager
+                                .osc_mapping
+                                .save_to_file("osc_mappings.json")
                             {
                                 tracing::error!("Failed to save OSC mappings: {}", e);
                             }

@@ -216,7 +216,11 @@ impl ControlManager {
         // Send OSC feedback to all clients
         for client in &mut self.osc_clients {
             if let Err(e) = client.send_update(&target, &value) {
-                warn!("Failed to send OSC feedback to {}: {}", client.destination_str(), e);
+                warn!(
+                    "Failed to send OSC feedback to {}: {}",
+                    client.destination_str(),
+                    e
+                );
             }
         }
     }

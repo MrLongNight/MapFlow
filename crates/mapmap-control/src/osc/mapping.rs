@@ -37,10 +37,23 @@ impl OscMapping {
 
     /// Load mappings from a JSON file.
     pub fn load_from_file<P: AsRef<Path>>(&mut self, path: P) -> Result<(), std::io::Error> {
-        let data = fs::read_to_string(path)?;
-        let loaded_map: OscMapping = serde_json::from_str(&data)?;
-        self.map = loaded_map.map;
-        Ok(())
+        match fs::read_to_string(path) {
+            Ok(data) => {
+                let loaded_map: OscMapping = serde_json::from_str(&data)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                self.map = loaded_map.map;
+                Ok(())
+            }
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    tracing::warn!("osc_mappings.json not found - loading default mappings.");
+                    self.map = HashMap::new(); // reset to default
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     /// Save mappings to a JSON file.

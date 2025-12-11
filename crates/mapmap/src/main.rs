@@ -6,6 +6,7 @@ use anyhow::Result;
 use glam::{Mat4, Vec2};
 mod window_manager;
 use mapmap_core::{
+    audio::backend::cpal_backend::CpalBackend,
     audio::{backend::AudioBackend, AudioAnalyzer, AudioConfig},
     LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager,
 };
@@ -161,7 +162,7 @@ impl App {
 
         let audio_config = AudioConfig::default();
         let audio_analyzer = AudioAnalyzer::new(audio_config);
-        let mut audio_backend: Box<dyn AudioBackend + Send>;
+        let _audio_backend: Box<dyn AudioBackend + Send>;
         // Conditional compilation for audio backend
         let mut audio_backend: Box<dyn AudioBackend + Send> = {
             #[cfg(test)]
@@ -182,8 +183,11 @@ impl App {
         if let Err(e) = control_manager.init_osc_server(8000) {
             error!("Failed to start OSC server: {}", e);
         }
-        if let Err(e) = control_manager.osc_mapping.load_from_file("osc_mappings.json") {
-            info!("Could not load OSC mappings: {}", e);
+        if let Err(e) = control_manager
+            .osc_mapping
+            .load_from_file("osc_mappings.json")
+        {
+            error!("Could not load OSC mappings: {}", e);
         }
 
         Ok(Self {
@@ -614,7 +618,7 @@ impl App {
             let paint_manager = &mut self.paint_manager;
             let mapping_manager = &mut self.mapping_manager;
             let output_manager = &mut self.output_manager;
-            let control_manager = &mut self.control_manager;
+            let _control_manager = &mut self.control_manager;
             let fps = self.fps;
             let frame_time = self.last_frame.elapsed().as_secs_f32() * 1000.0;
 
