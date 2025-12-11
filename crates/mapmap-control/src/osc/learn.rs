@@ -4,8 +4,7 @@
 //! can automatically map incoming OSC messages to control targets.
 
 use crate::osc::address::parse_osc_address;
-use crate::ControlTarget;
-use rosc::{OscMessage, OscPacket};
+use rosc::OscPacket;
 use std::sync::{Arc, Mutex};
 
 /// OSC learn state

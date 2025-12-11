@@ -3,7 +3,7 @@
 &nbsp;
 
 ## [Unreleased]
-- CI/CD: Installiert libasound2-dev für alsa-sys-Build (Linux), um Fehler beim automatischen Build in PRs mit ALSA-Anbindung zu beheben. (#38, @jules)
+- CI/CD: Installiert `libasound2-dev` und `libavutil-dev` für alsa-sys und ffmpeg-sys Build (Linux), um Fehler beim automatischen Build in PRs zu beheben. (#38, @jules)
 - **OSC-Integration:** OSC als primärer Control-Pfad integriert.
   - Umfassendes OSC-Adress-Schema für die Steuerung von Layern, Master-Parametern, etc.
   - OSC-Server, der standardmäßig auf Port 8000 lauscht.

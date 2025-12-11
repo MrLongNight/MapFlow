@@ -1,7 +1,7 @@
 //! OSC server for receiving messages
 
 #[cfg(feature = "osc")]
-use rosc::{decoder, OscMessage, OscPacket};
+use rosc::{decoder, OscPacket};
 #[cfg(feature = "osc")]
 use std::net::UdpSocket;
 #[cfg(feature = "osc")]
@@ -9,12 +9,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 #[cfg(feature = "osc")]
 use std::thread;
 
-use crate::{error::ControlError, ControlTarget, ControlValue, Result};
-
-#[cfg(feature = "osc")]
-use super::address::parse_osc_address;
-#[cfg(feature = "osc")]
-use super::types::{osc_to_control_value, osc_to_vec2};
+use crate::{error::ControlError, Result};
 
 /// OSC server for receiving control messages
 pub struct OscServer {

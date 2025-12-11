@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use tracing::{info, warn};
 
 #[cfg(feature = "midi")]
-use crate::midi::{MidiInputHandler, MidiLearn, MidiMapping};
+use crate::midi::{MidiInputHandler, MidiLearn};
 
 use crate::cue::CueList;
 use crate::dmx::{ArtNetSender, SacnSender};
@@ -22,7 +22,7 @@ pub struct ControlManager {
     pub midi_input: Option<MidiInputHandler>,
 
     #[cfg(feature = "midi")]
-    pub midi_learn: MidiLearn,
+    pub midi_learn: Option<MidiLearn>,
 
     pub osc_server: Option<OscServer>,
     pub osc_clients: Vec<OscClient>,
@@ -47,7 +47,7 @@ impl ControlManager {
             midi_input: None,
 
             #[cfg(feature = "midi")]
-            midi_learn: MidiLearn::new(),
+            midi_learn: None,
 
             osc_server: None,
             osc_clients: Vec::new(),
