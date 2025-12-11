@@ -115,9 +115,52 @@ jobs:
             core.setOutput('has_issue', 'false');
             core.setOutput('issue_number', '');
 
+      - name: Check for existing open Jules PRs (ensure sequential processing)
+        id: check-jules-pr
+        if: steps.get-issue.outputs.has_issue == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+            
+            // Get all open PRs with jules-pr label
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            // Check if any open Jules PRs exist
+            // Note: Dual criteria for backward compatibility:
+            // 1. jules-pr label (preferred, explicit)
+            // 2. Body text check (fallback for PRs created before label automation)
+            const julesPRs = prs.filter(pr => 
+              pr.labels.some(l => l.name === 'jules-pr') || 
+              (pr.body && pr.body.includes('Created by Jules'))
+            );
+            
+            if (julesPRs.length > 0) {
+              core.info(`⏸️ Found ${julesPRs.length} open Jules PR(s): ${julesPRs.map(pr => `#${pr.number}`).join(', ')}`);
+              core.setOutput('has_open_pr', 'true');
+              core.setOutput('open_prs', julesPRs.map(pr => pr.number).join(','));
+              core.setOutput('first_pr_number', String(julesPRs[0].number));
+              
+              // Add informative comment to the issue being queued
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⏸️ **Jules is currently busy**\n\nJules is already working on another issue. This issue is queued and will be processed after the current work is completed.\n\n**Open Jules PR(s):** ${julesPRs.map(pr => `#${pr.number} - ${pr.title}`).join(', ')}\n\n**What happens next:**\n1. The current PR will be reviewed and merged\n2. Once merged, this issue will be automatically picked up\n3. You will be notified when Jules starts working on this issue\n\n_Sequential processing ensures quality and prevents conflicts._`
+              });
+            } else {
+              core.info('✅ No open Jules PRs found - safe to proceed');
+              core.setOutput('has_open_pr', 'false');
+            }
+
       - name: Check if Jules session already exists
         id: check-existing
-        if: steps.get-issue.outputs.has_issue == 'true'
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-jules-pr.outputs.has_open_pr == 'false'
         uses: actions/github-script@v7
         with:
           script: |
@@ -150,7 +193,7 @@ jobs:
 
       - name: Check JULES_API_KEY secret
         id: check-key
-        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'false'
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-jules-pr.outputs.has_open_pr == 'false' && steps.check-existing.outputs.has_existing == 'false'
         run: |
           if [ -n "${{ secrets.JULES_API_KEY }}" ]; then
             echo "has_key=true" >> $GITHUB_OUTPUT
@@ -162,7 +205,7 @@ jobs:
 
       - name: Create Jules session (list sources -> create)
         id: create-session
-        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'false' && steps.check-key.outputs.has_key == 'true'
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-jules-pr.outputs.has_open_pr == 'false' && steps.check-existing.outputs.has_existing == 'false' && steps.check-key.outputs.has_key == 'true'
         uses: actions/github-script@v7
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -441,7 +484,7 @@ jobs:
             });
 
       - name: Notify existing session
-        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'true'
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-jules-pr.outputs.has_open_pr == 'false' && steps.check-existing.outputs.has_existing == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -457,7 +500,7 @@ jobs:
             });
 
       - name: Notify missing JULES_API_KEY
-        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'false' && steps.check-key.outputs.has_key == 'false'
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-jules-pr.outputs.has_open_pr == 'false' && steps.check-existing.outputs.has_existing == 'false' && steps.check-key.outputs.has_key == 'false'
         uses: actions/github-script@v7
         with:
           script: |
@@ -469,6 +512,12 @@ jobs:
               body: `⚠️ **Jules integration not configured** — Repository secret \`JULES_API_KEY\` is missing. Get a key at https://jules.google.com → Settings → API and add it as secret \`JULES_API_KEY\`. Alternatively install the Jules GitHub App.`
             });
 
+      - name: Notify when queued (Jules is busy)
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-jules-pr.outputs.has_open_pr == 'true'
+        run: |
+          echo "⏸️ Issue queued - Jules is currently working on PR(s): ${{ steps.check-jules-pr.outputs.open_prs }}"
+          echo "This issue will be picked up automatically after the current work is completed."
+
       - name: Log completion
         if: always()
         run: |
@@ -479,6 +528,7 @@ jobs:
           echo ""
           echo "has_issue: ${{ steps.get-issue.outputs.has_issue }}"
           echo "issue_number: ${{ steps.get-issue.outputs.issue_number }}"
+          echo "has_open_pr: ${{ steps.check-jules-pr.outputs.has_open_pr }}"
           echo "has_existing: ${{ steps.check-existing.outputs.has_existing }}"
           echo "has_key: ${{ steps.check-key.outputs.has_key }}"
           echo "session_name: ${{ steps.create-session.outputs.session_name }}"
