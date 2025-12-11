@@ -1,37 +1,58 @@
 [package]
 name = "mapmap"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-authors.workspace = true
-license.workspace = true
-repository.workspace = true
-
-[[bin]]
-name = "mapmap"
-path = "src/main.rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["MapMap Contributors"]
+license = "GPL-3.0"
+repository = "https://github.com/johnjanik/mapmap"
+description = "Open source Vj Projection Mapping Software"
 
 [dependencies]
-mapmap-core = { path = "../mapmap-core" }
-mapmap-render = { path = "../mapmap-render" }
-mapmap-media = { path = "../mapmap-media" }
-mapmap-ui = { path = "../mapmap-ui" }
-mapmap-control = { path = "../mapmap-control" }
-
 wgpu = { workspace = true }
-winit = { version = "0.27", features = ["x11", "wayland"] }
+winit = { workspace = true }
+winit-027 = { workspace = true }
 pollster = { workspace = true }
+bytemuck = { workspace = true }
+glam = { workspace = true }
+image = { workspace = true }
 tokio = { workspace = true }
+futures = { workspace = true }
+crossbeam-channel = { workspace = true }
+rayon = { workspace = true }
+parking_lot = { workspace = true }
+arc-swap = { workspace = true }
+ffmpeg-next = { workspace = true }
+cpal = { workspace = true }
+rustfft = { workspace = true }
+hound = { workspace = true }
+imgui = { workspace = true }
+imgui-wgpu = { workspace = true }
+imgui-winit-support = { workspace = true }
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+egui-winit = { workspace = true }
+egui_dock = { workspace = true }
+egui_extras = { workspace = true }
+midir = { workspace = true }
+rosc = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+hyper = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+ron = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
 anyhow = { workspace = true }
-glam = { workspace = true }
-rfd = "0.14"  # Native file dialogs
+proptest = { workspace = true }
+criterion = { workspace = true }
+bindgen = { workspace = true }
+cbindgen = { workspace = true }
+cc = { workspace = true }
+winres = { workspace = true }
 
-[features]
-default = ["audio"]
-ffmpeg = ["mapmap-media/ffmpeg"]
-audio = ["mapmap-core/audio"]
-
-[dev-dependencies]
-mapmap-core = { path = "../mapmap-core", features = ["mock-audio"] }
+[[bin]]
+name = "VjMapper"
+path = "src/main.rs"
