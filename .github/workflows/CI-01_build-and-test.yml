@@ -103,15 +103,12 @@ jobs:
           libswscale-dev \
           libavdevice-dev \
           libavfilter-dev \
-          ffmpeg
+          ffmpeg \
+          libasound2-dev
         # Verify installations
         pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
         pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
-
-    - name: Install Linux audio dev packages
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y libasound2-dev
+        pkg-config --exists alsa && echo "✓ ALSA found" || echo "✗ ALSA not found"
 
     - name: Build (Debug)
       env:

@@ -2,6 +2,22 @@
 
 &nbsp;
 
+## [Unreleased]
+- CI/CD: Installiert libasound2-dev für alsa-sys-Build (Linux), um Fehler beim automatischen Build in PRs mit ALSA-Anbindung zu beheben. (#38, @jules)
+- **OSC-Integration:** OSC als primärer Control-Pfad integriert.
+  - Umfassendes OSC-Adress-Schema für die Steuerung von Layern, Master-Parametern, etc.
+  - OSC-Server, der standardmäßig auf Port 8000 lauscht.
+  - Bidirektionales Feedback zur Synchronisierung von Controller-Zuständen.
+  - "OSC Learn"-Modus zur einfachen Zuweisung von OSC-Adressen zu Parametern.
+  - Persistente Speicherung von OSC-Mappings in `osc_mappings.json`.
+  - `imgui`-basiertes UI-Panel zur Konfiguration des OSC-Servers, zur Verwaltung von Clients und Mappings.
+- **Dokumentation:** Vollständige OSC-Befehlsreferenz unter `docs/10-OSC-CONTROL/COMMAND-REFERENCE.md` hinzugefügt.
+- **Tests:** Unit-Tests für OSC-Learn- und Mapping-Funktionalität hinzugefügt.
+- **ControlManager:** Erweitert, um OSC-Learn, -Mapping und die Verwaltung mehrerer OSC-Clients zu unterstützen.
+- **Fehlerbehandlung:** Robuste Fehlerbehandlung beim Laden und Speichern von OSC-Mappings implementiert, um Abstürze zu verhindern.
+
+&nbsp;
+
 ## 2018-??-?? - MapMap 0.6.3
 
 TODO
