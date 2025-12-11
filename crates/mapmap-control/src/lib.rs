@@ -62,7 +62,7 @@ pub use target::{ControlTarget, ControlValue, EdgeSide};
 pub use midi::{MidiInput, MidiMessage, MidiOutput};
 
 pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfile, SacnSender};
-pub use osc::{OscClient, OscEvent, OscServer};
+pub use osc::{OscClient, OscLearn, OscMapping, OscServer};
 
 #[cfg(feature = "http-api")]
 pub use web::{WebServer, WebServerConfig};

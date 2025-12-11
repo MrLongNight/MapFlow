@@ -46,12 +46,16 @@
 
 pub mod address;
 pub mod client;
+pub mod learn;
+pub mod mapping;
 pub mod server;
 pub mod types;
 
 pub use address::{control_target_to_address, parse_osc_address};
 pub use client::OscClient;
-pub use server::{OscEvent, OscServer};
+pub use learn::OscLearn;
+pub use mapping::OscMapping;
+pub use server::OscServer;
 
 #[cfg(feature = "osc")]
 pub use types::{control_value_to_osc, osc_to_control_value, osc_to_vec2, osc_to_vec3};

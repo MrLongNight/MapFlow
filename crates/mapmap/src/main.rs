@@ -51,6 +51,7 @@ struct App {
     intermediate_textures: HashMap<OutputId, mapmap_render::TextureHandle>, // Per-output intermediate textures
     audio_analyzer: AudioAnalyzer,
     audio_backend: Box<dyn AudioBackend + Send>,
+    control_manager: mapmap_control::ControlManager,
     last_frame: Instant,
     frame_count: u32,
     fps: f32,
@@ -177,6 +178,14 @@ impl App {
         };
         audio_backend.start()?;
 
+        let mut control_manager = mapmap_control::ControlManager::new();
+        if let Err(e) = control_manager.init_osc_server(8000) {
+            error!("Failed to start OSC server: {}", e);
+        }
+        if let Err(e) = control_manager.osc_mapping.load_from_file("osc_mappings.json") {
+            info!("Could not load OSC mappings: {}", e);
+        }
+
         Ok(Self {
             window_manager,
             backend,
@@ -197,6 +206,7 @@ impl App {
             intermediate_textures: HashMap::new(),
             audio_analyzer,
             audio_backend,
+            control_manager,
             last_frame: Instant::now(),
             frame_count: 0,
             fps: 0.0,
@@ -206,6 +216,14 @@ impl App {
     fn update(&mut self) {
         let now = Instant::now();
         let dt = now - self.last_frame;
+
+        // Update control systems
+        self.control_manager.update();
+
+        // Check for learned OSC address
+        if let Some(address) = self.control_manager.get_last_learned_address() {
+            self.ui_state.osc_learn_address = Some(address);
+        }
 
         // Update audio analysis
         let samples = self.audio_backend.get_samples();
@@ -596,6 +614,7 @@ impl App {
             let paint_manager = &mut self.paint_manager;
             let mapping_manager = &mut self.mapping_manager;
             let output_manager = &mut self.output_manager;
+            let control_manager = &mut self.control_manager;
             let fps = self.fps;
             let frame_time = self.last_frame.elapsed().as_secs_f32() * 1000.0;
 
@@ -606,7 +625,9 @@ impl App {
                 encoder,
                 view,
                 |ui| {
+                    let control_manager = &mut self.control_manager;
                     ui_state.render_menu_bar(ui);
+                    mapmap_ui::osc_panel::render_osc_panel(ui, ui_state, control_manager);
                     ui_state.render_controls(ui);
                     ui_state.render_layer_panel(ui, layer_manager);
                     ui_state.render_paint_panel(ui, paint_manager);
