@@ -4,13 +4,12 @@ use super::MidiMessage;
 use crate::error::Result;
 use crate::target::{ControlTarget, ControlValue};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Maps MIDI messages to control targets
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MidiMapping {
     /// Message -> Target mappings
-    pub mappings: HashMap<MidiMessage, MidiControlMapping>,
+    pub mappings: Vec<(MidiMessage, MidiControlMapping)>,
 }
 
 /// A single MIDI to control mapping
@@ -34,7 +33,7 @@ pub enum MappingCurve {
 impl MidiMapping {
     pub fn new() -> Self {
         Self {
-            mappings: HashMap::new(),
+            mappings: Vec::new(),
         }
     }
 
@@ -47,7 +46,9 @@ impl MidiMapping {
         max_value: f32,
         curve: MappingCurve,
     ) {
-        self.mappings.insert(
+        // Remove existing mapping for this message if it exists
+        self.mappings.retain(|(m, _)| m != &message);
+        self.mappings.push((
             message,
             MidiControlMapping {
                 target,
@@ -55,12 +56,16 @@ impl MidiMapping {
                 max_value,
                 curve,
             },
-        );
+        ));
     }
 
     /// Remove a mapping
     pub fn remove_mapping(&mut self, message: &MidiMessage) -> Option<MidiControlMapping> {
-        self.mappings.remove(message)
+        if let Some(index) = self.mappings.iter().position(|(m, _)| m == message) {
+            Some(self.mappings.remove(index).1)
+        } else {
+            None
+        }
     }
 
     /// Get the control value for a MIDI message
@@ -68,7 +73,10 @@ impl MidiMapping {
         &self,
         message: &MidiMessage,
     ) -> Option<(ControlTarget, ControlValue)> {
-        let mapping = self.mappings.get(message)?;
+        let (_, mapping) = self
+            .mappings
+            .iter()
+            .find(|(m, _)| m.matches(message))?;
 
         // Get the normalized value (0.0-1.0) from the MIDI message
         let normalized = match message {

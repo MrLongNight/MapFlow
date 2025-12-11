@@ -5,7 +5,7 @@
 #[cfg(feature = "stream")]
 use crate::error::{IoError, Result};
 #[cfg(feature = "stream")]
-use crate::format::{PixelFormat, VideoFormat, VideoFrame};
+use crate::format::{VideoFormat, VideoFrame};
 
 /// Video codec enumeration.
 #[cfg(feature = "stream")]
@@ -81,7 +81,6 @@ pub struct VideoEncoder {
     codec: VideoCodec,
     format: VideoFormat,
     bitrate: u64,
-    preset: EncoderPreset,
     frame_count: u64,
 }
 
@@ -94,12 +93,12 @@ impl VideoEncoder {
     /// - `codec` - The video codec to use
     /// - `format` - The input video format
     /// - `bitrate` - Target bitrate in bits per second
-    /// - `preset` - Encoder preset for quality/speed tradeoff
+    /// - `_preset` - Encoder preset for quality/speed tradeoff (currently unused)
     pub fn new(
         codec: VideoCodec,
         format: VideoFormat,
         bitrate: u64,
-        preset: EncoderPreset,
+        _preset: EncoderPreset,
     ) -> Result<Self> {
         // In a full implementation, this would initialize FFmpeg encoder
         tracing::info!(
@@ -107,14 +106,13 @@ impl VideoEncoder {
             codec,
             format,
             bitrate,
-            preset
+            _preset
         );
 
         Ok(Self {
             codec,
             format,
             bitrate,
-            preset,
             frame_count: 0,
         })
     }
@@ -246,7 +244,7 @@ impl VideoEncoder {
 #[cfg(feature = "stream")]
 mod tests {
     use super::*;
-    use std::time::Duration;
+    use crate::format::PixelFormat;
 
     #[test]
     fn test_video_codec_names() {

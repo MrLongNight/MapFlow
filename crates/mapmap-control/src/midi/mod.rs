@@ -134,6 +134,41 @@ impl MidiMessage {
         }
     }
 
+    /// Checks if this message matches another, ignoring value fields for mapping
+    pub fn matches(&self, other: &MidiMessage) -> bool {
+        match (self, other) {
+            (
+                MidiMessage::NoteOn {
+                    channel: ch1,
+                    note: n1,
+                    ..
+                },
+                MidiMessage::NoteOn {
+                    channel: ch2,
+                    note: n2,
+                    ..
+                },
+            ) => ch1 == ch2 && n1 == n2,
+            (
+                MidiMessage::ControlChange {
+                    channel: ch1,
+                    controller: c1,
+                    ..
+                },
+                MidiMessage::ControlChange {
+                    channel: ch2,
+                    controller: c2,
+                    ..
+                },
+            ) => ch1 == ch2 && c1 == c2,
+            (
+                MidiMessage::PitchBend { channel: ch1, .. },
+                MidiMessage::PitchBend { channel: ch2, .. },
+            ) => ch1 == ch2,
+            _ => self == other,
+        }
+    }
+
     /// Convert to raw MIDI bytes
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {

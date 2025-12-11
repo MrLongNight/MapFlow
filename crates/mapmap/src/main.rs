@@ -6,7 +6,6 @@ use anyhow::Result;
 use glam::{Mat4, Vec2};
 mod window_manager;
 use mapmap_core::{
-    audio::backend::cpal_backend::CpalBackend,
     audio::{backend::AudioBackend, AudioAnalyzer, AudioConfig},
     LayerManager, Mapping, MappingManager, OutputId, Paint, PaintManager,
 };
@@ -172,9 +171,10 @@ impl App {
             }
             #[cfg(not(test))]
             {
-                use mapmap_core::audio::backend::cpal_backend::CpalBackend;
                 // Use CPAL backend for actual application
-                Box::new(CpalBackend::new(None)?)
+                Box::new(
+                    mapmap_core::audio::backend::cpal_backend::CpalBackend::new(None)?,
+                )
             }
         };
         audio_backend.start()?;
@@ -996,7 +996,7 @@ impl App {
                     {
                         info!("Selecting audio device: {}", _device_name);
                         self.audio_backend.stop();
-                        let mut new_backend = CpalBackend::new(Some(_device_name.clone())).unwrap();
+                        let mut new_backend = mapmap_core::audio::backend::cpal_backend::CpalBackend::new(Some(_device_name.clone())).unwrap();
                         new_backend.start().unwrap();
                         self.audio_backend = Box::new(new_backend);
                     }
