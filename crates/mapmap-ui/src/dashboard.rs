@@ -131,7 +131,11 @@ impl Dashboard {
 
             ui.separator();
 
-            if ui.button("➕ Add Widget").clicked() {
+            if ui
+                .button("➕ Add Widget")
+                .on_hover_text("Add a new widget to the dashboard")
+                .clicked()
+            {
                 action = Some(DashboardAction::AddWidget);
             }
         });
@@ -140,13 +144,13 @@ impl Dashboard {
 
         // Playback controls
         ui.horizontal(|ui| {
-            if ui.button("▶").clicked() {
+            if ui.button("▶").on_hover_text("Play").clicked() {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Play));
             }
-            if ui.button("⏸").clicked() {
+            if ui.button("⏸").on_hover_text("Pause").clicked() {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Pause));
             }
-            if ui.button("⏹").clicked() {
+            if ui.button("⏹").on_hover_text("Stop").clicked() {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Stop));
             }
 
@@ -170,7 +174,10 @@ impl Dashboard {
         // Speed and loop controls
         ui.horizontal(|ui| {
             ui.label("Speed:");
-            if ui.add(egui::Slider::new(&mut self.speed, 0.1..=4.0)).changed() {
+            if ui
+                .add(egui::Slider::new(&mut self.speed, 0.1..=4.0))
+                .changed()
+            {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::SetSpeed(
                     self.speed,
                 )));
@@ -180,11 +187,7 @@ impl Dashboard {
 
             let mut looping = self.loop_mode == LoopMode::On;
             if ui.checkbox(&mut looping, "Loop").changed() {
-                self.loop_mode = if looping {
-                    LoopMode::On
-                } else {
-                    LoopMode::Off
-                };
+                self.loop_mode = if looping { LoopMode::On } else { LoopMode::Off };
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::SetLoopMode(
                     self.loop_mode,
                 )));
@@ -421,7 +424,11 @@ impl Dashboard {
             }
 
             // Remove button
-            if ui.small_button("✖").clicked() {
+            if ui
+                .small_button("✖")
+                .on_hover_text("Remove widget")
+                .clicked()
+            {
                 action = Some(DashboardAction::RemoveWidget(widget.id));
             }
         });
