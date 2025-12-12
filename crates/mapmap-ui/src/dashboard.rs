@@ -175,8 +175,9 @@ impl Dashboard {
         ui.horizontal(|ui| {
             ui.label("Speed:");
             if ui.add(egui::Slider::new(&mut self.speed, 0.1..=4.0)).changed() {
+                let new_speed = self.speed;
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::SetSpeed(
-                    self.speed,
+                    new_speed,
                 )));
             }
 

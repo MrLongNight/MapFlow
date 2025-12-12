@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-12: fix: Build stabilization (wgpu lifetimes, lockfile corruption)
 - 2025-12-12: test: Complete unit tests for Control Web API
 - 2025-12-12: fix: Feature flag guards for Control module
+- 2025-12-12: fix: Resolve WGPU compilation errors in mapmap-render (removed compilation_options)
+- 2025-12-12: fix: Update winit dependency in mapmap-ui to 0.27.5 with features
+- 2025-12-12: fix: Refactor dashboard assignment logic
 - 2025-12-12: feat: Release Workflow & Installers (MSI/Deb) (#44)
 - 2025-12-12: docs: Add Multi-PC Feasibility Study (#43)
 - 2025-12-12: 🎨 Palette: Add Tooltips to Dashboard Controls (#41)

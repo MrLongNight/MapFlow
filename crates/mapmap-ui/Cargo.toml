@@ -27,8 +27,7 @@ egui_dock = { workspace = true }
 egui_extras = { workspace = true }
 
 wgpu = { workspace = true }
-# Use winit 0.27 for imgui compatibility
-winit = { version = "0.27", features = ["x11", "wayland"] }
+winit = { version = "0.27.5", features = ["x11", "wayland"] }
 glam = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
