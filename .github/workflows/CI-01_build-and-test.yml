@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     # Use a newer toolchain for building (resolver for dependencies that require newer Cargo)
     env:
-      RUST_TOOLCHAIN: nightly
+      RUST_TOOLCHAIN: stable
     permissions:
       contents: read
         
