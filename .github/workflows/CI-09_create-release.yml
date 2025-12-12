@@ -11,8 +11,6 @@ jobs:
     name: Windows-Build (Release)
     runs-on: windows-latest
     env:
-      # Falls ffmpeg-sys-next Source-Build gewünscht wird, kann hier gesetzt werden.
-      # FFMPEG_SYS_NEXT_BUILD_FROM_SOURCE: "1"
       RUST_BACKTRACE: "1"
     steps:
       - name: Repository auschecken
@@ -28,7 +26,6 @@ jobs:
           restore-keys: windows-cargo-
 
       - name: Installiere vcpkg (für ffmpeg)
-        # Wir benutzen cmd auf Windows, bootstrap-vcpkg.bat wird so ausgeführt
         run: |
           git clone https://github.com/microsoft/vcpkg.git "%RUNNER_TEMP%\vcpkg"
           pushd "%RUNNER_TEMP%\vcpkg"
@@ -42,8 +39,7 @@ jobs:
           echo "%RUNNER_TEMP%\\vcpkg" >> $GITHUB_PATH
         shell: bash
 
-      - name: (Optional) Installiere ffmpeg via vcpkg (x64)
-        # Entferne diesen Schritt, falls ihr FFmpeg anders bereitstellen wollt.
+      - name: Installiere ffmpeg via vcpkg (x64)
         run: |
           "%RUNNER_TEMP%\\vcpkg\\vcpkg.exe" install ffmpeg:x64-windows
         shell: cmd
@@ -61,20 +57,51 @@ jobs:
         if: always()
         shell: powershell
 
+      - name: Verifiziere Build Tools
+        run: |
+           & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        shell: powershell
+
       - name: Build Release (cargo)
         run: |
-          cargo build --release -p vjmapper
+          cargo build --release -p mapmap
         env:
-          # VCPKG_ROOT ist bereits in $GITHUB_ENV gesetzt
-          # Wichtig: falls euer crate anders heißt, anpassen
           CARGO_TERM_COLOR: always
+
+      - name: Prepare Distribution Folder
+        if: success()
+        run: |
+          New-Item -ItemType Directory -Force -Path "dist"
+
+          # Check if executable exists (might be .exe)
+          if (Test-Path "target\release\VjMapper.exe") {
+             Copy-Item -Path "target\release\VjMapper.exe" -Destination "dist\"
+          } else {
+             Write-Error "VjMapper.exe not found in target/release"
+          }
+
+          $vcpkgBin = "$env:VCPKG_ROOT\installed\x64-windows\bin"
+          if (Test-Path "$vcpkgBin\*.dll") {
+            Copy-Item -Path "$vcpkgBin\*.dll" -Destination "dist\"
+          } else {
+            Write-Warning "No DLLs found in vcpkg bin"
+          }
+
+          if (Test-Path "crates\mapmap\wix\License.rtf") {
+             Copy-Item -Path "crates\mapmap\wix\License.rtf" -Destination "dist\"
+          }
+
+          if (Test-Path "README.md") {
+             Copy-Item -Path "README.md" -Destination "dist\"
+          }
+        shell: powershell
 
       - name: Erstelle Release ZIP
         if: success()
         run: |
           mkdir -p artifacts
-          powershell -Command "Compress-Archive -Path target\\release\\* -DestinationPath artifacts\\vjmapper-windows-x86_64.zip -Force"
-        shell: bash
+          Compress-Archive -Path "dist\*" -DestinationPath "artifacts\vjmapper-windows-x86_64.zip" -Force
+        shell: powershell
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

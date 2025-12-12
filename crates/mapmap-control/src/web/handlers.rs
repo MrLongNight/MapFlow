@@ -137,4 +137,68 @@ mod tests {
         assert!(json.contains("success"));
         assert!(json.contains("version"));
     }
+
+    #[test]
+    fn test_layer_info_serialization() {
+        let info = LayerInfo {
+            id: 1,
+            name: "Layer 1".to_string(),
+            opacity: 1.0,
+            visible: true,
+        };
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("Layer 1"));
+        assert!(json.contains("opacity"));
+
+        let deserialized: LayerInfo = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.id, 1);
+        assert_eq!(deserialized.name, "Layer 1");
+    }
+
+    #[test]
+    fn test_update_layer_request_serialization() {
+        let request = UpdateLayerRequest {
+            opacity: Some(0.5),
+            visible: Some(true),
+            position: Some((100.0, 200.0)),
+            rotation: None,
+            scale: None,
+        };
+
+        let json = serde_json::to_string(&request).unwrap();
+        assert!(json.contains("opacity"));
+        assert!(json.contains("visible"));
+        assert!(!json.contains("rotation"));
+
+        let deserialized: UpdateLayerRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.opacity, Some(0.5));
+        assert_eq!(deserialized.visible, Some(true));
+        assert_eq!(deserialized.position, Some((100.0, 200.0)));
+        assert_eq!(deserialized.rotation, None);
+    }
+
+    #[test]
+    fn test_update_parameter_request_serialization() {
+        let request = UpdateParameterRequest {
+            target: ControlTarget::LayerOpacity(0),
+            value: ControlValue::Float(0.75),
+        };
+
+        let json = serde_json::to_string(&request).unwrap();
+        assert!(json.contains("target"));
+        assert!(json.contains("value"));
+
+        let deserialized: UpdateParameterRequest = serde_json::from_str(&json).unwrap();
+        if let ControlTarget::LayerOpacity(id) = deserialized.target {
+            assert_eq!(id, 0);
+        } else {
+            panic!("Wrong target type");
+        }
+
+        if let ControlValue::Float(val) = deserialized.value {
+            assert_eq!(val, 0.75);
+        } else {
+            panic!("Wrong value type");
+        }
+    }
 }

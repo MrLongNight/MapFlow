@@ -45,6 +45,8 @@ pub mod target;
 pub mod midi;
 
 pub mod dmx;
+
+#[cfg(feature = "osc")]
 pub mod osc;
 
 #[cfg(feature = "http-api")]
@@ -62,6 +64,8 @@ pub use target::{ControlTarget, ControlValue, EdgeSide};
 pub use midi::MidiMessage;
 
 pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfile, SacnSender};
+
+#[cfg(feature = "osc")]
 pub use osc::{OscClient, OscLearn, OscMapping, OscServer};
 
 #[cfg(feature = "http-api")]

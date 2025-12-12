@@ -14,6 +14,8 @@ use crate::midi::{MidiInputHandler, MidiLearn};
 
 use crate::cue::CueList;
 use crate::dmx::{ArtNetSender, SacnSender};
+
+#[cfg(feature = "osc")]
 use crate::osc::{OscClient, OscLearn, OscMapping, OscServer};
 
 /// Unified control system manager
@@ -24,9 +26,13 @@ pub struct ControlManager {
     #[cfg(feature = "midi")]
     pub midi_learn: Option<MidiLearn>,
 
+    #[cfg(feature = "osc")]
     pub osc_server: Option<OscServer>,
+    #[cfg(feature = "osc")]
     pub osc_clients: Vec<OscClient>,
+    #[cfg(feature = "osc")]
     pub osc_learn: OscLearn,
+    #[cfg(feature = "osc")]
     pub osc_mapping: OscMapping,
 
     pub artnet_sender: Option<ArtNetSender>,
@@ -49,9 +55,13 @@ impl ControlManager {
             #[cfg(feature = "midi")]
             midi_learn: None,
 
+            #[cfg(feature = "osc")]
             osc_server: None,
+            #[cfg(feature = "osc")]
             osc_clients: Vec::new(),
+            #[cfg(feature = "osc")]
             osc_learn: OscLearn::new(),
+            #[cfg(feature = "osc")]
             osc_mapping: OscMapping::new(),
 
             artnet_sender: None,
@@ -83,6 +93,7 @@ impl ControlManager {
     }
 
     /// Initialize OSC server
+    #[cfg(feature = "osc")]
     pub fn init_osc_server(&mut self, port: u16) -> Result<()> {
         info!("Initializing OSC server on port {}", port);
         let server = OscServer::new(port)?;
@@ -91,6 +102,7 @@ impl ControlManager {
     }
 
     /// Add an OSC client for feedback.
+    #[cfg(feature = "osc")]
     pub fn add_osc_client(&mut self, addr: &str) -> Result<()> {
         info!("Adding OSC client to {}", addr);
         let client = OscClient::new(addr)?;
@@ -99,6 +111,7 @@ impl ControlManager {
     }
 
     /// Remove an OSC client.
+    #[cfg(feature = "osc")]
     pub fn remove_osc_client(&mut self, addr: &str) {
         self.osc_clients.retain(|c| c.destination_str() != addr);
     }
@@ -132,6 +145,7 @@ impl ControlManager {
         self.process_midi_messages();
 
         // Process OSC messages
+        #[cfg(feature = "osc")]
         self.process_osc_messages();
 
         // Update cue system (for auto-follow, crossfades, etc.)
@@ -169,6 +183,7 @@ impl ControlManager {
     }
 
     /// Process OSC messages
+    #[cfg(feature = "osc")]
     fn process_osc_messages(&mut self) {
         let mut controls_to_apply = Vec::new();
 
@@ -214,6 +229,7 @@ impl ControlManager {
         }
 
         // Send OSC feedback to all clients
+        #[cfg(feature = "osc")]
         for client in &mut self.osc_clients {
             if let Err(e) = client.send_update(&target, &value) {
                 warn!(
@@ -287,6 +303,7 @@ impl ControlManager {
     }
 
     /// Check for and retrieve the last learned OSC address.
+    #[cfg(feature = "osc")]
     pub fn get_last_learned_address(&mut self) -> Option<String> {
         self.osc_learn.last_address()
     }
@@ -305,8 +322,11 @@ mod tests {
     #[test]
     fn test_create_manager() {
         let manager = ControlManager::new();
-        assert!(manager.osc_server.is_none());
-        assert!(manager.osc_clients.is_empty());
+        #[cfg(feature = "osc")]
+        {
+            assert!(manager.osc_server.is_none());
+            assert!(manager.osc_clients.is_empty());
+        }
     }
 
     #[test]
