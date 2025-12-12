@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=VjMapper
+Comment=Professional Projection Mapping Software
+Exec=VjMapper
+Icon=mapmap
+Terminal=false
+Type=Application
+Categories=Graphics;Video;AudioVideo;
+Keywords=projection;mapping;vj;
+StartupNotify=true
