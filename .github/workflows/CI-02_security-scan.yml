@@ -1,4 +1,4 @@
-name:"CI-02: Security Scan"
+name: "CI-02:Security-Scan"
 
 on:
   push:
