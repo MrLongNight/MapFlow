@@ -1,0 +1,111 @@
+name: CI-09: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Release-Titel (optional)'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-windows-portable:
+    name: Windows (portable ZIP)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build Release
+        run: cargo build --release -p mapmap
+      - name: Package binary
+        run: |
+          mkdir dist
+          copy target\release\mapmap.exe dist\VjMapper.exe
+      - name: Prepare ZIP
+        run: powershell -Command "Compress-Archive -Path dist\* -DestinationPath vjmapper-windows-x64.zip"
+      - name: Upload ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vjmapper-windows-portable-zip
+          path: vjmapper-windows-x64.zip
+
+  build-windows-installer:
+    name: Windows (Installer MSI)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build Release
+        run: cargo build --release -p mapmap
+      - name: Install WiX Toolset
+        run: choco install wixtoolset -y
+      - name: Build MSI (requires valid .wxs file!)
+        shell: pwsh
+        run: |
+          candle.exe .\crates\mapmap\wix\vjmapper.wxs -out vjmapper.wixobj
+          light.exe vjmapper.wixobj -out vjmapper-windows-installer.msi
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: vjmapper-windows-installer-msi
+          path: vjmapper-windows-installer.msi
+
+  build-linux:
+    name: Linux Release (tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libxcb1-dev libfreetype6-dev libasound2-dev ffmpeg
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build Release
+        run: cargo build --release -p mapmap
+      - name: Package tar.gz
+        run: |
+          mkdir -p dist
+          cp target/release/mapmap dist/
+          tar -czvf vjmapper-linux-x64.tar.gz -C dist mapmap
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vjmapper-linux-tar
+          path: vjmapper-linux-x64.tar.gz
+
+  publish:
+    name: "Create GitHub Release & Attach Assets"
+    needs: [build-windows-portable, build-windows-installer, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/vjmapper-windows-portable-zip/vjmapper-windows-x64.zip
+            artifacts/vjmapper-windows-installer-msi/vjmapper-windows-installer.msi
+            artifacts/vjmapper-linux-tar/vjmapper-linux-x64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
