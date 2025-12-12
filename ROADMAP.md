@@ -240,26 +240,29 @@
 - ✅ **UI-Framework-Status**
   - ✅ ImGui-Integration (`mapmap-ui` via `imgui`, `imgui-wgpu`, `imgui-winit-support`)
   - ✅ egui-Integration vorbereitet (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
-  - ⬜ **Phase 6: Migration von ImGui zu egui geplant**
+  - 🟡 **Phase 6: Migration von ImGui zu egui im Gange (Hybrid-Betrieb)**
 
-- ✅ **UI-Module** (`mapmap-ui/src/`)
+- ✅ **UI-Module (Migriert zu egui)** (`mapmap-ui/src/`)
   - ✅ Dashboard (`dashboard.rs`) – Hauptansicht
   - ✅ Media-Browser (`media_browser.rs`) – Datei-Auswahl
   - ✅ Mesh-Editor (`mesh_editor.rs`) – Mesh-Warping-UI
   - ✅ Node-Editor (`node_editor.rs`) – Shader-Graph-Editor
-  - ✅ Shader-Graph-Editor (`shader_graph_editor.rs`)
-  - ✅ Timeline (`timeline.rs`, `timeline_v2.rs`) – Zwei Versionen vorhanden
+  - ✅ Timeline V2 (`timeline_v2.rs`) – Keyframe Animation
   - ✅ Undo-Redo (`undo_redo.rs`) – Command-Pattern
   - ✅ Asset-Manager (`asset_manager.rs`)
   - ✅ Theme (`theme.rs`)
 
-- ⬜ **UI-Verdrahtung**
-  - ⬜ Audio-Input-Device-Selector fehlt
-  - ⬜ OSC-Server-Konfiguration-Panel fehlt
-  - ⬜ Effect-Chain-Editor fehlt
-  - ⬜ Output-Konfiguration-Panel (Multi-Projektor) fehlt
-  - ⬜ Project-Management (Save/Load) fehlt
-  - ⬜ Cue-List-UI fehlt
+- ⬜ **Pending Migration (Legacy ImGui Panels)**
+  - ⬜ Layer Manager (`render_layer_panel`)
+  - ⬜ Paint Manager (`render_paint_panel`)
+  - ⬜ Mapping Manager (`render_mapping_panel`)
+  - ⬜ Transform Controls (`render_transform_panel`)
+  - ⬜ Output Configuration (`render_output_panel`)
+  - ⬜ Edge Blend & Color Calibration (`render_edge_blend_panel`)
+  - ⬜ Audio Visualization (`render_audio_panel`)
+  - ⬜ Oscillator Control (`render_oscillator_panel`)
+  - ⬜ Main Menu & Toolbar (`render_menu_bar`)
+  - ⬜ Shader Graph Editor (`shader_graph_editor.rs` - Legacy Version)
 
 ### Persistenz / IO (Projektformat, Save/Load)
 
@@ -312,10 +315,11 @@
   - ⬜ Windows-CI-Builds fehlen
   - ⬜ macOS-CI-Builds fehlen (optional)
 
-- ⬜ **Packaging**
-  - ⬜ Windows-Installer (NSIS/WiX)
+- 🟡 **Packaging**
+  - 🟡 Windows-Installer (WiX) – Konfiguration (`crates/mapmap/wix/main.wxs`) vorhanden
+  - ✅ App Icon Embedding (`winres` in `build.rs` konfiguriert)
+  - ⬜ Linux Packaging (.deb)
   - ⬜ Linux-AppImage/Flatpak/Snap
-  - ⬜ macOS-DMG (optional)
   - ⬜ Dependency-Bundling (FFmpeg-Libs)
 
 - ✅ **Developer-Tools**
