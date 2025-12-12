@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-12: fix: stabilize build, CI and control tests (#45)
 - 2025-12-12: fix: CI Workflow fixes (Package Name, VS Verification, Release Artifacts)
 - 2025-12-12: fix: Build stabilization (wgpu lifetimes, lockfile corruption)
 - 2025-12-12: test: Complete unit tests for Control Web API
