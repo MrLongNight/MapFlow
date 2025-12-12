@@ -36,10 +36,12 @@ jobs:
 
     # explicit toolchain to avoid "toolchain is a required input" errors
     - name: Install Rust toolchain (MSRV for quality checks)
-      uses: dtolnay/rust-toolchain@master
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ env.RUST_TOOLCHAIN }}
-        components: rustfmt,clippy
+        components: rustfmt, clippy
+        profile: minimal
+        override: true
 
     - name: Check formatting
       run: cargo fmt --all -- --check
@@ -61,10 +63,12 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install Rust toolchain (build)
-      uses: dtolnay/rust-toolchain@master
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ env.RUST_TOOLCHAIN }}
-        components: rustfmt,clippy
+        components: rustfmt, clippy
+        profile: minimal
+        override: true
 
     - name: Cache Cargo registry and git
       uses: actions/cache@v4
@@ -157,9 +161,11 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install Rust toolchain (security)
-      uses: dtolnay/rust-toolchain@master
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ env.RUST_TOOLCHAIN }}
+        profile: minimal
+        override: true
 
     - name: Run cargo audit
       uses: rustsec/audit-check@v2
