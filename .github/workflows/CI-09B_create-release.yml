@@ -1,4 +1,4 @@
-name: CI-09: Create Release
+name: CI-09B: Create Release
 
 on:
   workflow_dispatch:
