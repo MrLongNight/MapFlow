@@ -31,7 +31,7 @@ struct App {
     /// The application's render backend.
     backend: WgpuBackend,
     /// The output manager.
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
     output_manager: OutputManager,
 }
 

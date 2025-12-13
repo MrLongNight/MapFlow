@@ -25,7 +25,7 @@ pub struct WindowContext {
     /// The configuration for the `wgpu` surface.
     pub surface_config: wgpu::SurfaceConfiguration,
     /// The `OutputId` associated with this window. For the main window, this is `0`.
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
     pub output_id: OutputId,
 }
 
@@ -95,6 +95,7 @@ impl WindowManager {
     /// Creates a new output window based on an `OutputConfig`.
     ///
     /// If a window for the given `OutputId` already exists, this function does nothing.
+    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
     pub fn create_output_window<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
@@ -168,6 +169,7 @@ impl WindowManager {
     ///
     /// This function will create windows for new outputs and remove windows for outputs
     /// that no longer exist.
+    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
     pub fn sync_windows<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
@@ -200,6 +202,7 @@ impl WindowManager {
     }
 
     /// Removes a window by its `OutputId`.
+    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
     pub fn remove_window(&mut self, output_id: OutputId) -> Option<WindowContext> {
         if let Some(context) = self.windows.remove(&output_id) {
             self.window_id_map.remove(&context.window.id());
@@ -220,6 +223,7 @@ impl WindowManager {
     }
 
     /// Returns the main window's `OutputId`.
+    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
     pub fn main_window_id(&self) -> Option<OutputId> {
         self.main_window_id
     }
@@ -230,6 +234,7 @@ impl WindowManager {
     }
 
     /// Returns an iterator over all `WindowContext`s.
+    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
     pub fn iter(&self) -> impl Iterator<Item = &WindowContext> {
         self.windows.values()
     }

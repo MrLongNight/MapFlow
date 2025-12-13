@@ -17,7 +17,7 @@ pub struct TimelineV2 {
     /// Zoom level (pixels per second)
     zoom: f32,
     /// Pan offset
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
     pan_offset: f32,
     /// Snap settings
     snap_enabled: bool,
@@ -25,10 +25,10 @@ pub struct TimelineV2 {
     /// Selected keyframes
     selected_keyframes: Vec<(usize, usize)>, // (track_idx, keyframe_idx)
     /// Markers
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
     markers: Vec<Marker>,
     /// Regions
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
     regions: Vec<Region>,
     /// Show curve editor
     show_curve_editor: bool,
