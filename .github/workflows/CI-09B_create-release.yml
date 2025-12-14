@@ -7,6 +7,14 @@ on:
         description: 'Release-Titel (optional)'
         required: false
         default: ''
+      pre_release:
+        description: 'Pre-Release?'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
   push:
     tags:
       - 'v*.*.*'
@@ -118,7 +126,6 @@ jobs:
             libavdevice-dev \
             libavfilter-dev \
             libswresample-dev \
-            libavresample-dev \
             ffmpeg \
             libasound2-dev
           if [ -f scripts/install-ffmpeg-dev.sh ]; then
@@ -158,7 +165,7 @@ jobs:
     name: "Create GitHub Release & Attach Assets"
     needs: [build-windows-portable, build-windows-installer, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Download all workflow artifacts
         uses: actions/download-artifact@v4
@@ -168,6 +175,8 @@ jobs:
       - name: Create Release & Upload Assets
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.event.inputs.release_name }}
+          prerelease: ${{ github.event.inputs.pre_release == 'true' }}
           files: |
             artifacts/vjmapper-windows-portable-zip/vjmapper-windows-x64.zip
             artifacts/vjmapper-windows-installer-msi/vjmapper-windows-installer.msi
