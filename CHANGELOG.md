@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-14: fix: resolve winit/wgpu dependency conflicts in mapmap-ui (#50)
 - 2025-12-12: Fix: `mapmap-control` doc test for OSC server updated to use `poll_packet` instead of non-existent `poll_event`.
 - 2025-12-12: Fix: `test_backend_creation` now handles headless CI environments by skipping gracefully when GPU backend unavailable.
 - 2025-12-12: Fix: Corrected `VideoEncoder` keyframe logic (first frame is now keyframe) and updated `test_video_encoder_keyframe` to match.
