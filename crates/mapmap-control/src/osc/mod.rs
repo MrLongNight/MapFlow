@@ -31,12 +31,10 @@
 //! // Create client for sending state updates
 //! let client = OscClient::new("192.168.1.100:8001")?;
 //!
-//! // Poll for events
-//! while let Some(event) = server.poll_event() {
-//!     println!("Received: {:?} = {:?}", event.target, event.value);
-//!
-//!     // Send update to other clients
-//!     client.send_update(&event.target, &event.value)?;
+//! // Poll for packets
+//! while let Some(_packet) = server.poll_packet() {
+//!     // Handle the OSC packet (Message or Bundle)
+//!     println!("Received OSC packet");
 //! }
 //! # Ok(())
 //! # }
