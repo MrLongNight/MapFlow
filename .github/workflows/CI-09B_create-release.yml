@@ -31,31 +31,22 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install vcpkg and FFmpeg
+      - name: Install build dependencies (vcpkg/FFmpeg)
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install ffmpeg
-        shell: powershell
-
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
-        shell: powershell
-
+          choco install vcpkg -y
+          vcpkg install ffmpeg:x64-windows
+          echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           profile: minimal
           override: true
-
       - name: Build Release
         env:
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          VCPKG_ROOT: C:\vcpkg
         run: cargo build --release -p mapmap
-
-      - name: Check if binary exists and package
+      - name: Prüfe Binary und packe ZIP
         run: |
           if (!(Test-Path "target\release\mapmap.exe")) {
             Write-Host "Build fehlgeschlagen: mapmap.exe fehlt!"
@@ -63,7 +54,6 @@ jobs:
           }
           mkdir dist
           copy target\release\mapmap.exe dist\VjMapper.exe
-
       - name: Prepare ZIP
         run: powershell -Command "Compress-Archive -Path dist\* -DestinationPath vjmapper-windows-x64.zip"
       - name: Upload ZIP Artifact
@@ -77,46 +67,34 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install vcpkg and FFmpeg
+      - name: Install build dependencies (vcpkg/FFmpeg)
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install ffmpeg
-        shell: powershell
-
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
-        shell: powershell
-
+          choco install vcpkg -y
+          vcpkg install ffmpeg:x64-windows
+          echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           profile: minimal
           override: true
-
       - name: Build Release
         env:
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          VCPKG_ROOT: C:\vcpkg
         run: cargo build --release -p mapmap
-
-      - name: Check if binary exists
+      - name: Prüfe Binary
         run: |
           if (!(Test-Path "target\release\mapmap.exe")) {
             Write-Host "Build fehlgeschlagen: mapmap.exe fehlt!"
             exit 1
           }
-
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
-
       - name: Build MSI (requires valid .wxs file!)
         shell: pwsh
         run: |
           candle.exe .\crates\mapmap\wix\vjmapper.wxs -out vjmapper.wixobj
           light.exe vjmapper.wixobj -out vjmapper-windows-installer.msi
-
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
@@ -128,23 +106,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install build dependencies (nasm etc.)
-        run: sudo apt-get update -y && sudo apt-get install -y nasm
-
-      - name: Install vcpkg and FFmpeg
+      - name: Installiere systemweite C-Bibliotheken und FFmpeg-Dev-Abhängigkeiten
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg install ffmpeg
-        shell: bash
-
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Install all system libs
-        run: |
+          sudo apt-get update -y
           sudo apt-get install -y \
             build-essential \
             pkg-config \
@@ -155,40 +119,45 @@ jobs:
             libxcb-shape0-dev \
             libxcb-xfixes0-dev \
             libx11-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libavdevice-dev \
+            libavfilter-dev \
+            libswresample-dev \
+            ffmpeg \
             libasound2-dev
+      - name: (Optional) Lokales FFmpeg-Dev Skript ausführen
+        run: |
           if [ -f scripts/install-ffmpeg-dev.sh ]; then
             bash scripts/install-ffmpeg-dev.sh
           fi
-          echo '--- Prüfe wichtige Bibliotheken ---'
+      - name: Prüfe systembibliotheken
+        run: |
           pkg-config --exists fontconfig && echo "✓ Fontconfig gefunden" || (echo "✗ Fontconfig fehlt"; exit 1)
           pkg-config --exists freetype2 && echo "✓ Freetype gefunden" || (echo "✗ Freetype fehlt"; exit 1)
           pkg-config --exists alsa && echo "✓ ALSA gefunden" || (echo "✗ ALSA fehlt"; exit 1)
-
+          pkg-config --exists libavutil && echo "✓ libavutil gefunden" || (echo "✗ libavutil fehlt"; exit 1)
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           profile: minimal
           override: true
-
       - name: Build Release
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         run: cargo build --release -p mapmap
-
-      - name: Check if binary exists
+      - name: Prüfe Binary existiert
         run: |
           if [ ! -f target/release/mapmap ]; then
             echo "Build fehlgeschlagen: mapmap-Binary fehlt!"
             exit 1
           fi
-
       - name: Package tar.gz
         run: |
           mkdir -p dist
           cp target/release/mapmap dist/
           tar -czvf vjmapper-linux-x64.tar.gz -C dist mapmap
-
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -216,4 +185,4 @@ jobs:
             artifacts/vjmapper-windows-installer-msi/vjmapper-windows-installer.msi
             artifacts/vjmapper-linux-tar/vjmapper-linux-x64.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
