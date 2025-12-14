@@ -34,15 +34,6 @@ pub fn render_osc_panel(ui: &Ui, app_ui: &mut AppUI, control_manager: &mut Contr
 
             ui.separator();
 
-            // OSC Learn
-            ui.text("OSC Learn");
-            if ui.button("Start OSC Learn") {
-                control_manager.osc_learn.set_active(true);
-                app_ui.show_osc_learn_dialog = true;
-            }
-
-            ui.separator();
-
             // OSC Clients (Feedback)
             ui.text("Feedback Clients");
             let mut clients_to_remove = Vec::new();
@@ -72,6 +63,8 @@ pub fn render_osc_panel(ui: &Ui, app_ui: &mut AppUI, control_manager: &mut Contr
 
             // Mappings
             ui.text("Address Mappings");
+            ui.text("(Edit osc_mappings.json for now)");
+
             let mut mappings_to_remove = Vec::new();
             for (addr, target) in &control_manager.osc_mapping.map {
                 ui.text(format!("{} -> {:?}", addr, target));
@@ -87,51 +80,10 @@ pub fn render_osc_panel(ui: &Ui, app_ui: &mut AppUI, control_manager: &mut Contr
             if !mappings_to_remove.is_empty() {
                 if let Err(e) = control_manager
                     .osc_mapping
-                    .save_to_file("osc_mappings.json")
+                    .save("osc_mappings.json")
                 {
                     tracing::error!("Failed to save OSC mappings: {}", e);
                 }
             }
         });
-
-    if app_ui.show_osc_learn_dialog {
-        ui.window("OSC Learn")
-            .size([400.0, 200.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text("Waiting for OSC message...");
-                if let Some(address) = &app_ui.osc_learn_address {
-                    ui.text(format!("Received: {}", address));
-                    ui.separator();
-                    ui.text("Select a target to map to:");
-
-                    let targets: Vec<String> = control_manager
-                        .get_all_control_targets()
-                        .into_iter()
-                        .map(|t| format!("{:?}", t))
-                        .collect();
-                    let mut selected_index = 0;
-
-                    ui.combo_simple_string("Target", &mut selected_index, &targets);
-
-                    if ui.button("Save") {
-                        if let Some(target) = control_manager
-                            .get_all_control_targets()
-                            .get(selected_index)
-                        {
-                            control_manager
-                                .osc_mapping
-                                .add_mapping(address.clone(), target.clone());
-                            if let Err(e) = control_manager
-                                .osc_mapping
-                                .save_to_file("osc_mappings.json")
-                            {
-                                tracing::error!("Failed to save OSC mappings: {}", e);
-                            }
-                        }
-                        app_ui.show_osc_learn_dialog = false;
-                        app_ui.osc_learn_address = None;
-                    }
-                }
-            });
-    }
 }
