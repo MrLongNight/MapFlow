@@ -7,7 +7,12 @@
 mod window_manager;
 
 use anyhow::Result;
-use mapmap_core::{OutputId, OutputManager};
+use egui_wgpu::Renderer;
+use egui_winit::State;
+use mapmap_core::{
+    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer, AudioConfig},
+    OutputId, OutputManager,
+};
 use mapmap_render::WgpuBackend;
 use mapmap_ui::{AppUI, ImGuiContext};
 use tracing::{error, info};
@@ -33,6 +38,18 @@ struct App {
     /// The output manager.
     #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
     output_manager: OutputManager,
+    /// The audio backend.
+    audio_backend: Option<CpalBackend>,
+    /// The audio analyzer.
+    audio_analyzer: AudioAnalyzer,
+    /// The available audio devices.
+    audio_devices: Vec<String>,
+    /// The egui context.
+    egui_context: egui::Context,
+    /// The egui state.
+    egui_state: State,
+    /// The egui renderer.
+    egui_renderer: Renderer,
 }
 
 impl App {
@@ -53,7 +70,51 @@ impl App {
             main_window_context.surface_config.format,
         );
 
-        let ui_state = AppUI::default();
+        let mut ui_state = AppUI::default();
+
+        // Initialize audio
+        let audio_config = AudioConfig::default();
+        let audio_analyzer = AudioAnalyzer::new(audio_config);
+        let audio_devices = match CpalBackend::list_devices() {
+            Ok(Some(devices)) => devices,
+            Ok(None) => vec![],
+            Err(e) => {
+                error!("Failed to list audio devices: {}", e);
+                vec![]
+            }
+        };
+        ui_state.dashboard.set_audio_devices(audio_devices.clone());
+
+        let mut audio_backend = match CpalBackend::new(None) {
+            Ok(backend) => Some(backend),
+            Err(e) => {
+                error!("Failed to initialize audio backend: {}", e);
+                None
+            }
+        };
+
+        if let Some(backend) = &mut audio_backend {
+            if let Err(e) = backend.start() {
+                error!("Failed to start audio stream: {}", e);
+                audio_backend = None;
+            }
+        }
+
+        // Initialize egui
+        let egui_context = egui::Context::default();
+        let egui_state = State::new(
+            egui_context.clone(),
+            egui::ViewportId::default(),
+            &main_window_context.window,
+            None,
+            None,
+        );
+        let egui_renderer = Renderer::new(
+            &backend.device,
+            main_window_context.surface_config.format,
+            None,
+            1,
+        );
 
         Ok(Self {
             window_manager,
@@ -61,6 +122,12 @@ impl App {
             ui_state,
             backend,
             output_manager: OutputManager::new((INITIAL_WIDTH, INITIAL_HEIGHT)),
+            audio_backend,
+            audio_analyzer,
+            audio_devices,
+            egui_context,
+            egui_state,
+            egui_renderer,
         })
     }
 
@@ -94,6 +161,16 @@ impl App {
                 if output_id == 0 {
                     self.imgui_context
                         .handle_event(&window_context.window, &event);
+                }
+            }
+        }
+
+        if let Event::WindowEvent { event, window_id } = &event {
+            if let Some(main_window) = self.window_manager.get(0) {
+                if *window_id == main_window.window.id() {
+                    let _ = self
+                        .egui_state
+                        .on_window_event(&main_window.window, event);
                 }
             }
         }
@@ -132,6 +209,15 @@ impl App {
                 }
             }
             Event::AboutToWait => {
+                // Process audio
+                if let Some(backend) = &mut self.audio_backend {
+                    let samples = backend.get_samples();
+                    if !samples.is_empty() {
+                        let analysis = self.audio_analyzer.process_samples(&samples, 0.0);
+                        self.ui_state.dashboard.set_audio_analysis(analysis);
+                    }
+                }
+
                 // Redraw all windows
                 for output_id in self
                     .window_manager
@@ -182,6 +268,84 @@ impl App {
                                                                 // TODO: Render other panels
                 },
             );
+
+            // Render egui
+            let raw_input = self.egui_state.take_egui_input(&window_context.window);
+            let mut dashboard_action = None;
+            let full_output = self.egui_context.run(raw_input, |ctx| {
+                egui::Window::new("Dashboard").show(ctx, |ui| {
+                    dashboard_action = self.ui_state.dashboard.ui(ui);
+                });
+            });
+
+            self.egui_state
+                .handle_platform_output(&window_context.window, full_output.platform_output);
+
+            let tris = self
+                .egui_context
+                .tessellate(full_output.shapes, full_output.pixels_per_point);
+            for (id, image_delta) in &full_output.textures_delta.set {
+                self.egui_renderer
+                    .update_texture(&self.backend.device, &self.backend.queue, *id, image_delta);
+            }
+            let screen_descriptor = egui_wgpu::ScreenDescriptor {
+                size_in_pixels: [
+                    window_context.surface_config.width,
+                    window_context.surface_config.height,
+                ],
+                pixels_per_point: window_context.window.scale_factor() as f32,
+            };
+            self.egui_renderer.update_buffers(
+                &self.backend.device,
+                &self.backend.queue,
+                &mut encoder,
+                &tris,
+                &screen_descriptor,
+            );
+
+            {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("egui Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+
+                self.egui_renderer
+                    .render(&mut render_pass, &tris, &screen_descriptor);
+            }
+
+            for id in &full_output.textures_delta.free {
+                self.egui_renderer.free_texture(id);
+            }
+
+            if let Some(mapmap_ui::DashboardAction::AudioDeviceChanged(device)) = dashboard_action {
+                if let Some(backend) = &mut self.audio_backend {
+                    backend.stop();
+                }
+                self.audio_backend = None;
+
+                match CpalBackend::new(Some(device)) {
+                    Ok(mut backend) => {
+                        if let Err(e) = backend.start() {
+                            error!("Failed to start audio stream: {}", e);
+                        } else {
+                            self.audio_backend = Some(backend);
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to initialize audio backend: {}", e);
+                    }
+                }
+            }
         } else {
             // Render output window (Clear to black)
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

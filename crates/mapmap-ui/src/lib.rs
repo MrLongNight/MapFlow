@@ -211,6 +211,7 @@ use mapmap_control::ControlTarget;
 
 /// UI state for the application
 pub struct AppUI {
+    pub dashboard: Dashboard,
     pub show_osc_panel: bool,
     pub show_osc_learn_dialog: bool,
     pub osc_learn_address: Option<String>,
@@ -246,6 +247,7 @@ pub struct AppUI {
 impl Default for AppUI {
     fn default() -> Self {
         Self {
+            dashboard: Dashboard::default(),
             show_osc_panel: true,
             show_osc_learn_dialog: false,
             osc_learn_address: None,

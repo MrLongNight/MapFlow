@@ -63,6 +63,10 @@ cc = { workspace = true }
 [build-dependencies]
 winres = { workspace = true }
 
+[features]
+default = ["audio"]
+audio = ["mapmap-core/audio"]
+
 [[bin]]
 name = "VjMapper"
 path = "src/main.rs"

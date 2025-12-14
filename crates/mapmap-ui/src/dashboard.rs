@@ -4,6 +4,7 @@
 //! Allows users to assign frequently-used parameters to dashboard dials and sliders.
 
 use egui::{Color32, Pos2, Sense, Stroke, Ui, Vec2};
+use mapmap_core::audio::AudioAnalysis;
 use mapmap_media::player::{LoopMode, PlaybackCommand, PlaybackState};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -26,6 +27,12 @@ pub struct Dashboard {
     speed: f32,
     /// Loop mode
     loop_mode: LoopMode,
+    /// Latest audio analysis
+    audio_analysis: Option<AudioAnalysis>,
+    /// Available audio devices
+    audio_devices: Vec<String>,
+    /// Selected audio device
+    selected_audio_device: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,6 +92,9 @@ impl Dashboard {
             duration: Duration::ZERO,
             speed: 1.0,
             loop_mode: LoopMode::Off,
+            audio_analysis: None,
+            audio_devices: vec![],
+            selected_audio_device: None,
         }
     }
 
@@ -112,6 +122,19 @@ impl Dashboard {
     pub fn set_playback_time(&mut self, current_time: Duration, duration: Duration) {
         self.current_time = current_time;
         self.duration = duration;
+    }
+
+    /// Update the audio analysis data
+    pub fn set_audio_analysis(&mut self, analysis: AudioAnalysis) {
+        self.audio_analysis = Some(analysis);
+    }
+
+    /// Update the list of available audio devices
+    pub fn set_audio_devices(&mut self, devices: Vec<String>) {
+        self.audio_devices = devices;
+        if self.selected_audio_device.is_none() {
+            self.selected_audio_device = self.audio_devices.first().cloned();
+        }
     }
 
     /// Render the dashboard UI
@@ -206,6 +229,13 @@ impl Dashboard {
             LayoutMode::Freeform => {
                 action = self.render_freeform_layout(ui);
             }
+        }
+
+        ui.separator();
+
+        // Audio visualization
+        if let Some(audio_action) = self.render_audio_visuals(ui) {
+            action = Some(audio_action);
         }
 
         action
@@ -437,6 +467,77 @@ impl Dashboard {
 
         action
     }
+
+    /// Render audio visualization
+    fn render_audio_visuals(&mut self, ui: &mut Ui) -> Option<DashboardAction> {
+        let mut action = None;
+        ui.collapsing("Audio Analysis", |ui| {
+            // Device selector
+            let selected_text = self
+                .selected_audio_device
+                .as_deref()
+                .unwrap_or("No device selected");
+            let mut selected_device = self.selected_audio_device.clone();
+            egui::ComboBox::from_label("Device")
+                .selected_text(selected_text)
+                .show_ui(ui, |ui| {
+                    for device in &self.audio_devices {
+                        if ui
+                            .selectable_value(&mut selected_device, Some(device.clone()), device)
+                            .changed()
+                        {
+                            if let Some(new_device) = selected_device.clone() {
+                                action = Some(DashboardAction::AudioDeviceChanged(new_device));
+                            }
+                        }
+                    }
+                });
+            self.selected_audio_device = selected_device;
+
+            if let Some(analysis) = &self.audio_analysis {
+                // RMS and Peak Volume Meters
+                ui.label("Volume");
+                ui.add(
+                    egui::ProgressBar::new(analysis.rms_volume)
+                        .text(format!("RMS: {:.2}", analysis.rms_volume)),
+                );
+                ui.add(
+                    egui::ProgressBar::new(analysis.peak_volume)
+                        .text(format!("Peak: {:.2}", analysis.peak_volume)),
+                );
+
+                ui.separator();
+
+                // FFT Visualization
+                ui.label("Frequency Spectrum");
+                let painter = ui.painter();
+                let rect = ui.available_rect_before_wrap();
+                let plot_rect = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), 80.0));
+                painter.rect_filled(plot_rect, 0.0, Color32::from_rgb(20, 20, 20));
+
+                let fft_magnitudes = &analysis.fft_magnitudes;
+                let bar_width = plot_rect.width() / (fft_magnitudes.len() / 4) as f32;
+
+                for (i, &magnitude) in fft_magnitudes.iter().step_by(4).enumerate() {
+                    let bar_height = (magnitude * plot_rect.height()).min(plot_rect.height());
+                    let x = plot_rect.min.x + i as f32 * bar_width;
+                    let y = plot_rect.max.y;
+                    painter.rect_filled(
+                        egui::Rect::from_min_size(
+                            egui::pos2(x, y - bar_height),
+                            egui::vec2(bar_width, bar_height),
+                        ),
+                        0.0,
+                        Color32::from_rgb(0, 255, 0),
+                    );
+                }
+                ui.advance_cursor_after_rect(plot_rect);
+            } else {
+                ui.label("No audio analysis data available.");
+            }
+        });
+        action
+    }
 }
 
 /// Actions that can be triggered by the dashboard
@@ -449,4 +550,5 @@ pub enum DashboardAction {
     XYChanged(u64, f32, f32),
     ButtonPressed(u64),
     SendCommand(PlaybackCommand),
+    AudioDeviceChanged(String),
 }
