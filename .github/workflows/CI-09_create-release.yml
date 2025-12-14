@@ -1,110 +1,94 @@
-name: CI-09:Create-Releases(Windows&Linux)
+name: Rust Build & Release
 
 on:
   workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Release-Titel (optional)'
+        required: false
+        default: ''
+      pre_release:
+        description: 'Pre-Release?'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
   push:
     tags:
       - 'v*.*.*'
 
 jobs:
-  windows-build:
-    name: Windows-Build (Release)
-    runs-on: windows-latest
-    env:
-      RUST_BACKTRACE: "1"
+  rust-build:
+    name: Build binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin_path: target/x86_64-unknown-linux-gnu/release/mapmap
+            artifact: vjmapper-linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin_path: target/x86_64-pc-windows-msvc/release/mapmap.exe
+            artifact: vjmapper-windows-x64.exe
     steps:
-      - name: Repository auschecken
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Cache Cargo registry & index
-        uses: actions/cache@v4
+      - name: Use rust-build.action
+        uses: rust-build/rust-build.action@v1
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: windows-cargo-
+          RUSTTARGET: ${{ matrix.target }}
+          PACKAGES: >
+            pkg-config
+            libasound2-dev
+            libfreetype6-dev
+            libfontconfig1-dev
+            libxcb1-dev
+            libxcb-render0-dev
+            libxcb-shape0-dev
+            libxcb-xfixes0-dev
+            libx11-dev
+            ffmpeg
+            libavcodec-dev
+            libavformat-dev
+            libavutil-dev
+            libswscale-dev
+            libavdevice-dev
+            libavfilter-dev
+            libswresample-dev
+          ARCHIVE_TYPES: zip
+          CARGOARGS: --release --all-features --verbose
+          BIN: mapmap
+          UPLOAD_MODE: none # Upload erfolgt gesammelt im nächsten Job
 
-      - name: Installiere vcpkg (für ffmpeg)
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git "%RUNNER_TEMP%\vcpkg"
-          pushd "%RUNNER_TEMP%\vcpkg"
-          bootstrap-vcpkg.bat
-          popd
-        shell: cmd
-
-      - name: Setze VCPKG_ROOT und PATH
-        run: |
-          echo "VCPKG_ROOT=%RUNNER_TEMP%\\vcpkg" >> $GITHUB_ENV
-          echo "%RUNNER_TEMP%\\vcpkg" >> $GITHUB_PATH
-        shell: bash
-
-      - name: Installiere ffmpeg via vcpkg (x64)
-        run: |
-          "%RUNNER_TEMP%\\vcpkg\\vcpkg.exe" install ffmpeg:x64-windows
-        shell: cmd
-
-      - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
-      - name: Installiere zusätzliche Build-Tools (Windows)
-        run: |
-          choco install -y visualstudio2019buildtools --noop
-        if: always()
-        shell: powershell
-
-      - name: Verifiziere Build Tools
-        run: |
-           & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-        shell: powershell
-
-      - name: Build Release (cargo)
-        run: |
-          cargo build --release -p mapmap
-        env:
-          CARGO_TERM_COLOR: always
-
-      - name: Prepare Distribution Folder
-        if: success()
-        run: |
-          New-Item -ItemType Directory -Force -Path "dist"
-
-          # Check if executable exists (might be .exe)
-          if (Test-Path "target\release\VjMapper.exe") {
-             Copy-Item -Path "target\release\VjMapper.exe" -Destination "dist\"
-          } else {
-             Write-Error "VjMapper.exe not found in target/release"
-          }
-
-          $vcpkgBin = "$env:VCPKG_ROOT\installed\x64-windows\bin"
-          if (Test-Path "$vcpkgBin\*.dll") {
-            Copy-Item -Path "$vcpkgBin\*.dll" -Destination "dist\"
-          } else {
-            Write-Warning "No DLLs found in vcpkg bin"
-          }
-
-          if (Test-Path "crates\mapmap\wix\License.rtf") {
-             Copy-Item -Path "crates\mapmap\wix\License.rtf" -Destination "dist\"
-          }
-
-          if (Test-Path "README.md") {
-             Copy-Item -Path "README.md" -Destination "dist\"
-          }
-        shell: powershell
-
-      - name: Erstelle Release ZIP
-        if: success()
-        run: |
-          mkdir -p artifacts
-          Compress-Archive -Path "dist\*" -DestinationPath "artifacts\vjmapper-windows-x86_64.zip" -Force
-        shell: powershell
-
-      - name: Upload artifacts
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-release-zip
-          path: artifacts/vjmapper-windows-x86_64.zip
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.bin_path }}
+
+  publish:
+    name: Create GitHub Release
+    needs: [rust-build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.event.inputs.release_name }}
+          prerelease: ${{ github.event.inputs.pre_release == 'true' }}
+          files: |
+            artifacts/vjmapper-linux-x64/mapmap
+            artifacts/vjmapper-windows-x64.exe/mapmap.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
