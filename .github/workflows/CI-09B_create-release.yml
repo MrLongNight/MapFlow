@@ -32,15 +32,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure Chocolatey is available
+      - name: Install vcpkg and FFmpeg
         run: |
-          if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-            Set-ExecutionPolicy Bypass -Scope Process -Force
-            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-          }
+          git clone https://github.com/Microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install ffmpeg
+        shell: powershell
 
-      - name: Install FFmpeg (Chocolatey)
-        run: choco install ffmpeg --no-progress -y
+      - name: Set VCPKG_ROOT
+        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
+        shell: powershell
 
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -50,6 +51,8 @@ jobs:
           override: true
 
       - name: Build Release
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
         run: cargo build --release -p mapmap
 
       - name: Check if binary exists and package
@@ -75,15 +78,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure Chocolatey is available
+      - name: Install vcpkg and FFmpeg
         run: |
-          if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-            Set-ExecutionPolicy Bypass -Scope Process -Force
-            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-          }
+          git clone https://github.com/Microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install ffmpeg
+        shell: powershell
 
-      - name: Install FFmpeg (Chocolatey)
-        run: choco install ffmpeg --no-progress -y
+      - name: Set VCPKG_ROOT
+        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
+        shell: powershell
 
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -93,6 +97,8 @@ jobs:
           override: true
 
       - name: Build Release
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
         run: cargo build --release -p mapmap
 
       - name: Check if binary exists
@@ -123,7 +129,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install all FFmpeg Dev dependencies and system libs
+      - name: Install vcpkg and FFmpeg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install ffmpeg
+        shell: bash
+
+      - name: Set VCPKG_ROOT
+        run: echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install all system libs
         run: |
           sudo apt-get update -y
           sudo apt-get install -y \
@@ -136,14 +153,6 @@ jobs:
             libxcb-shape0-dev \
             libxcb-xfixes0-dev \
             libx11-dev \
-            libavcodec-dev \
-            libavformat-dev \
-            libavutil-dev \
-            libswscale-dev \
-            libavdevice-dev \
-            libavfilter-dev \
-            libswresample-dev \
-            ffmpeg \
             libasound2-dev
           if [ -f scripts/install-ffmpeg-dev.sh ]; then
             bash scripts/install-ffmpeg-dev.sh
@@ -152,7 +161,6 @@ jobs:
           pkg-config --exists fontconfig && echo "✓ Fontconfig gefunden" || (echo "✗ Fontconfig fehlt"; exit 1)
           pkg-config --exists freetype2 && echo "✓ Freetype gefunden" || (echo "✗ Freetype fehlt"; exit 1)
           pkg-config --exists alsa && echo "✓ ALSA gefunden" || (echo "✗ ALSA fehlt"; exit 1)
-          pkg-config --exists libavutil && echo "✓ libavutil gefunden" || (echo "✗ libavutil fehlt"; exit 1)
 
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -162,6 +170,8 @@ jobs:
           override: true
 
       - name: Build Release
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         run: cargo build --release -p mapmap
 
       - name: Check if binary exists
