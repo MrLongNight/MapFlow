@@ -78,10 +78,7 @@ pub fn render_osc_panel(ui: &Ui, app_ui: &mut AppUI, control_manager: &mut Contr
                 control_manager.osc_mapping.remove_mapping(addr);
             }
             if !mappings_to_remove.is_empty() {
-                if let Err(e) = control_manager
-                    .osc_mapping
-                    .save("osc_mappings.json")
-                {
+                if let Err(e) = control_manager.osc_mapping.save("osc_mappings.json") {
                     let err_msg = format!("Failed to save OSC mappings: {}", e);
                     tracing::error!("{}", err_msg);
                     eprintln!("{}", err_msg);
