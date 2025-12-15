@@ -1,6 +1,6 @@
 //! Phase 6: Dashboard Controls
 //!
-//! Quick-access parameter controls with customizable layouts..  
+//! Quick-access parameter controls with customizable layouts.
 //! Allows users to assign frequently-used parameters to dashboard dials and sliders.
 
 use egui::{Color32, Pos2, Sense, Stroke, Ui, Vec2};

@@ -1,6 +1,6 @@
 # VjMapper – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.1  
+> **Version:** 1.2  
 > **Stand:** 2025-12-15  
 > **Zielgruppe:** @jules und Entwickler-Team  
 > **Projekt-Version:** 0.1.0
@@ -12,9 +12,10 @@
 1. [Feature-Status-Übersicht](#feature-status-übersicht)
 2. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
 3. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
-4. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
-5. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
-6. [Build- und Test-Strategie](#build--und-test-strategie)
+4. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
+5. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
+6. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
+7. [Build- und Test-Strategie](#build--und-test-strategie)
 
 ---
 
@@ -909,6 +910,262 @@ crates/
 - Resources liefern korrekten State
 - Integration mit Gemini CLI funktioniert
 - Dokumentation vollständig
+
+---
+
+---
+
+## 🎯 Task-Gruppen (Adaptiert für Rust)
+
+> Die folgenden Task-Gruppen sind aus dem ursprünglichen TypeScript/Electron-Konzept adaptiert für das Rust/wgpu-Projekt.
+
+---
+
+### 📦 TG-01: State Management & Persistence
+
+**Ziel:** Zentrales State-Management mit automatischem Speichern.
+
+#### Task 01.1: State Store (Rust)
+- 👤 [Jules] Entscheidung: `Arc<RwLock<AppState>>` vs. Message-Passing
+- 🤖 [Gemini] **Datei:** `mapmap-core/src/state.rs`
+- 🤖 [Gemini] **Logik:** 
+  ```rust
+  pub struct AppState {
+      pub layers: Vec<Layer>,
+      pub mappings: Vec<Mapping>,
+      pub outputs: Vec<Output>,
+      pub audio_config: AudioConfig,
+      pub dirty: bool,  // Änderungen vorhanden?
+  }
+  
+  impl AppState {
+      pub fn add_layer(&mut self, layer: Layer) { /* ... */ }
+      pub fn update_layer(&mut self, id: LayerId, update: LayerUpdate) { /* ... */ }
+  }
+  ```
+
+#### Task 01.2: Autosave Service
+- 🤖 [Gemini] **Datei:** `mapmap-core/src/autosave.rs`
+- 🤖 [Gemini] **Logik:** 
+  - Bei jeder State-Änderung → `dirty = true`
+  - Debounce Timer (1s) → Speichern in JSON-Datei
+  - Atomares Schreiben (temp-file → rename)
+
+#### Task 01.3: Persistence Service
+- 🤖 [Gemini] **Datei:** `mapmap-io/src/project.rs`
+- 🤖 [Gemini] **Format:** RON oder JSON (Serde)
+- 🤖 [Gemini] **Logik:**
+  ```rust
+  pub fn save_project(state: &AppState, path: &Path) -> Result<(), ProjectError>;
+  pub fn load_project(path: &Path) -> Result<AppState, ProjectError>;
+  ```
+
+**Akzeptanzkriterien:**
+- [ ] State-Änderungen werden automatisch gespeichert
+- [ ] Atomares Schreiben verhindert Datenverlust
+- [ ] Projekt kann geladen und gespeichert werden
+
+---
+
+### 🖼 TG-02: Flexible UI Framework (Docking)
+
+**Ziel:** Das moderne Interface-Gerüst mit Docking-Support.
+
+#### Task 02.1: Layout Engine
+- 🤖 [Gemini] **Lib:** `egui_dock` (bereits als Dependency vorhanden)
+- 🤖 [Gemini] **Datei:** `mapmap-ui/src/layout.rs`
+- 🤖 [Gemini] **Code:** 
+  ```rust
+  pub struct AppLayout {
+      dock_state: DockState<PanelType>,
+  }
+  
+  pub enum PanelType {
+      LayerList,
+      Viewport,
+      Inspector,
+      MediaLibrary,
+      Timeline,
+  }
+  ```
+- 🤖 [Gemini] **Default Layout:** Links: Layer-Liste, Mitte: Viewport, Rechts: Inspector
+
+#### Task 02.2: Panel Registry
+- 🤖 [Gemini] **Module:**
+  - `mapmap-ui/src/panels/layer_panel.rs`
+  - `mapmap-ui/src/panels/inspector_panel.rs`
+  - `mapmap-ui/src/panels/library_panel.rs`
+  - `mapmap-ui/src/panels/viewport_panel.rs`
+- 🤖 [Gemini] **Feature:** Layout-Präferenzen in User-Config speichern
+
+**Akzeptanzkriterien:**
+- [ ] Panels können per Drag&Drop angeordnet werden
+- [ ] Layout wird beim Schließen gespeichert
+- [ ] Layout wird beim Start wiederhergestellt
+
+---
+
+### 🎭 TG-04: Advanced Features (VPT 8 Level)
+
+**Ziel:** Masken, Grid-Warping, Multi-Layer Compositing.
+
+#### Task 04.1: Multi-Layer Compositing
+- 🤖 [Gemini] **Datei:** `mapmap-render/src/compositor.rs` (erweitern)
+- 🤖 [Gemini] **Logik:**
+  ```rust
+  // Layer A → Framebuffer A
+  // Layer B → Framebuffer B
+  // Blend(A, B, blend_mode) → Output
+  
+  pub fn composite_layers(
+      layers: &[LayerRenderData],
+      blend_modes: &[BlendMode],
+  ) -> wgpu::TextureView;
+  ```
+
+#### Task 04.2: Grid Warping (Mesh)
+- 🤖 [Gemini] **Datei:** `mapmap-core/src/math/bilinear.rs` (neu)
+- 🤖 [Gemini] **Logik:** Gitter-Interpolation für flexible Mesh-Deformation
+  ```rust
+  pub struct GridMesh {
+      pub columns: usize,
+      pub rows: usize,
+      pub control_points: Vec<Vec2>,
+  }
+  
+  impl GridMesh {
+      pub fn interpolate(&self, uv: Vec2) -> Vec2;
+  }
+  ```
+- 🤖 [Gemini] **UI:** Umschalter "Corner Pin" vs. "Mesh Warp" im Inspector
+
+#### Task 04.3: Masking System
+- 🤖 [Gemini] **Datei:** `mapmap-core/src/math/bezier.rs` (erweitern)
+- 🤖 [Gemini] **Datei:** `mapmap-ui/src/tools/pen_tool.rs` (neu)
+- 🤖 [Gemini] **UI:** Pen-Tool zum Zeichnen von Bezier-Pfaden
+- 🤖 [Gemini] **Renderer:** Stencil Buffer zum Ausschneiden
+  ```rust
+  // In WGSL Shader
+  @group(0) @binding(2) var mask_texture: texture_2d<f32>;
+  
+  // Discard pixels where mask < 0.5
+  if (textureSample(mask_texture, sampler, uv).r < 0.5) {
+      discard;
+  }
+  ```
+
+**Akzeptanzkriterien:**
+- [ ] Multi-Layer mit verschiedenen Blend-Modi
+- [ ] Grid-Mesh mit 4x4+ Kontrollpunkten
+- [ ] Bezier-Masken zum Ausschneiden
+
+---
+
+### 🎛 TG-05: Library & Presets
+
+**Ziel:** Drag & Drop von Einstellungen und Media-Assets.
+
+#### Task 05.1: Preset System
+- 🤖 [Gemini] **Datei:** `mapmap-core/src/preset.rs`
+- 🤖 [Gemini] **Speicherort:** `~/.vjmapper/presets/`
+- 🤖 [Gemini] **Format:**
+  ```rust
+  #[derive(Serialize, Deserialize)]
+  pub struct LayerPreset {
+      pub name: String,
+      pub blend_mode: BlendMode,
+      pub opacity: f32,
+      pub effects: Vec<EffectConfig>,
+  }
+  ```
+
+#### Task 05.2: Media Library
+- 🤖 [Gemini] **Datei:** `mapmap-ui/src/panels/library_panel.rs`
+- 🤖 [Gemini] **Features:**
+  - Thumbnail-Generierung für Videos/Bilder
+  - Drag & Drop auf Layer
+  - Ordner-Struktur anzeigen
+
+**Akzeptanzkriterien:**
+- [ ] Presets können gespeichert und geladen werden
+- [ ] Drag & Drop funktioniert
+- [ ] Thumbnails werden angezeigt
+
+---
+
+### 🚀 TG-06: Hybrid Multi-PC Architecture
+
+**Ziel:** Master steuert Slave(s) für verteiltes Projection Mapping.
+
+#### Task 06.1: TCP Networking
+- 🤖 [Gemini] **Datei:** `mapmap-control/src/net/sync_server.rs` (Master)
+- 🤖 [Gemini] **Datei:** `mapmap-control/src/net/sync_client.rs` (Slave)
+- 🤖 [Gemini] **Protokoll:** JSON über TCP
+  ```rust
+  #[derive(Serialize, Deserialize)]
+  pub enum SyncMessage {
+      UpdateState { payload: AppState },
+      TriggerCue { cue_id: CueId },
+      SyncClock { timestamp: u64 },
+  }
+  ```
+
+#### Task 06.2: App Modes
+- 🤖 [Gemini] **Datei:** `mapmap/src/config.rs`
+- 🤖 [Gemini] **Logik:** Parse CLI-Argumente
+  ```bash
+  vjmapper --mode=master --port=9000
+  vjmapper --mode=slave --master=192.168.1.100:9000
+  ```
+- 🤖 [Gemini] **Slave Mode:** Nur Viewport (Fullscreen), keine UI-Panels
+
+#### Task 06.3: Clock Sync
+- 🤖 [Gemini] **Datei:** `mapmap-control/src/net/clock_sync.rs`
+- 🤖 [Gemini] **Logik:** NTP-ähnlicher Offset-Check
+  ```rust
+  pub struct ClockSync {
+      offset_ms: i64,
+      round_trip_time: u64,
+  }
+  
+  impl ClockSync {
+      pub fn synchronized_time(&self) -> Duration;
+  }
+  ```
+
+**Akzeptanzkriterien:**
+- [ ] Master kann State an Slaves senden
+- [ ] Slaves rendern synchron (< 1 Frame Versatz)
+- [ ] Automatische Wiederverbindung bei Disconnect
+
+---
+
+### 📦 TG-07: Distribution & Polishing
+
+**Ziel:** Installer für Endanwender (Windows & Linux).
+
+#### Task 07.1: Universal Installer
+- 🤖 [Gemini] **Windows:** WiX Installer (bereits konfiguriert in `crates/mapmap/wix/`)
+- 🤖 [Gemini] **Linux:** `.deb` Package (bereits in CI)
+- 🤖 [Gemini] **Config:** Single-Binary mit gebündelten Assets
+
+#### Task 07.2: First Run Wizard
+- 🤖 [Gemini] **Datei:** `mapmap-ui/src/wizard.rs`
+- 🤖 [Gemini] **UI:** Beim ersten Start fragen:
+  - "Master oder Slave?"
+  - Audio-Input-Device auswählen
+  - Sprache wählen (DE/EN)
+- 🤖 [Gemini] **Speichern:** `~/.vjmapper/config.toml`
+
+#### Task 07.3: Auto-Update (Optional)
+- 👤 [Jules] Entscheidung: Self-Update oder nur Benachrichtigung?
+- 🤖 [Gemini] **Logik:** GitHub Releases API abfragen
+- 🤖 [Gemini] **UI:** Update-Banner anzeigen
+
+**Akzeptanzkriterien:**
+- [ ] Windows MSI-Installer funktioniert
+- [ ] Linux .deb-Package funktioniert
+- [ ] First Run Wizard konfiguriert App korrekt
 
 ---
 

@@ -135,4 +135,102 @@ Dies sichert Nachvollziehbarkeit, vollständige Dokumentation und erfüllt alle 
 
 ---
 
-*Letztes Update: 2025-12-12 – Vorgaben für KI/automatisierte PR-Erstellung ergänzt und Nutzung von PR-Templates spezifiziert.*
+## 🎭 Rolle & Expertise
+
+Du bist ein **Senior Graphics Architect & Lead Developer** für Rust/WebGPU-Anwendungen. Du schreibst keinen "Hackathon-Code", sondern produktionsreifen, wartbaren Industrie-Code für audioreaktives Projection Mapping.
+
+---
+
+## 📏 Code-Größen-Limits (ZWINGEND)
+
+| Metrik | Maximum | Aktion bei Überschreitung |
+|--------|---------|---------------------------|
+| **Datei (LOC)** | 400 Zeilen | Refactoring in Module |
+| **Funktion (LOC)** | 120 Zeilen | Extraktion in Hilfsfunktionen |
+| **Komplexität** | 10 Branches | Refactoring mit Pattern Matching |
+
+---
+
+## ⚡ Performance-Regeln (GPU/Audio)
+
+```rust
+// ✅ GUT: Pre-allokierte Buffer
+let mut buffer = vec![0.0f32; FFT_SIZE];
+
+// ❌ VERBOTEN: Allokation im Hot-Path
+for _ in 0..frames {
+    let buffer = vec![0.0f32; FFT_SIZE]; // VERBOTEN im Render-Loop
+}
+```
+
+- **Keine GC im Render-Loop** – Objekte pre-allokieren
+- **TypedArrays:** `[f32; N]` oder `Vec<f32>` für Audio/Geometrie
+- **Zeit-Basis:** Animationen basieren auf `Instant` oder `Duration`, **niemals** auf Frame-Rate
+- **Kein `.unwrap()`** im Produktionscode – nutze `?` oder `expect("reason")`
+
+---
+
+## 📝 Commit Message Convention
+
+Format: `type(scope): description`
+
+| Type | Verwendung |
+|------|------------|
+| `feat` | Neues Feature |
+| `fix` | Bugfix |
+| `refactor` | Code-Umbau ohne Funktionsänderung |
+| `docs` | Dokumentation |
+| `test` | Tests hinzufügen/ändern |
+| `chore` | Build, CI, Dependencies |
+
+Beispiele:
+- `feat(audio): add beat detection algorithm`
+- `fix(ui): resolve panel crash on resize`
+- `refactor(mesh): extract bilinear interpolation`
+
+---
+
+## 🚨 Notfall-Protokoll (ADR)
+
+Wenn ein Task die Architektur bricht:
+
+1. **STOPP** – Schreibe keinen Code
+2. **MELDE** das Problem klar:
+   ```
+   ⚠️ ARCHITEKTUR-KONFLIKT
+   
+   Task: XYZ
+   Problem: Würde zirkuläre Dependency erzeugen
+   Vorschlag: Neues Trait in mapmap-core definieren
+   ```
+3. **WARTE** auf Entscheidung von @MrLongNight
+
+Bei wichtigen Entscheidungen erstelle `docs/adr/NNNN-title.md`.
+
+---
+
+## 👤 Aufgabenteilung
+
+| Symbol | Zuständigkeit |
+|--------|---------------|
+| 👤 [Jules/User] | Strategie, Review, lokale Ausführung, Entscheidungen |
+| 🤖 [Gemini/AI] | Code-Erstellung, Config, Tests, Refactoring, Dokumentation |
+
+---
+
+## ✅ Checkliste vor Code-Abgabe
+
+- [ ] `cargo fmt` ausgeführt
+- [ ] `cargo clippy` ohne Warnungen
+- [ ] `cargo test` grün
+- [ ] RustDoc für alle `pub` Items
+- [ ] Keine `.unwrap()` im Produktionscode
+- [ ] Keine Allokationen im Render-Loop
+- [ ] Commit-Message folgt Convention
+- [ ] Code passt zur ROADMAP / Architektur
+- [ ] Dateigröße < 400 LOC
+- [ ] Funktionsgröße < 120 LOC
+
+---
+
+*Letztes Update: 2025-12-15 – Erweitert mit Coding Standards, Performance-Regeln und ADR-Prozess.*
