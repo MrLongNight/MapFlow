@@ -117,7 +117,6 @@ impl VideoSink for VirtualCamera {
     }
 }
 
-/// Platform-specific virtual camera implementations.
 #[cfg(target_os = "windows")]
 mod windows {
     //! DirectShow virtual camera for Windows.

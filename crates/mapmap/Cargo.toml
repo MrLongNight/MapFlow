@@ -10,7 +10,7 @@ description = "Open source Vj Projection Mapping Software"
 [dependencies]
 mapmap-core = { path = "../mapmap-core" }
 mapmap-render = { path = "../mapmap-render" }
-mapmap-media = { path = "../mapmap-media", features = ["ffmpeg"] }
+mapmap-media = { path = "../mapmap-media" }
 mapmap-ui = { path = "../mapmap-ui" }
 mapmap-control = { path = "../mapmap-control" }
 mapmap-io = { path = "../mapmap-io" }
@@ -29,7 +29,7 @@ crossbeam-channel = { workspace = true }
 rayon = { workspace = true }
 parking_lot = { workspace = true }
 arc-swap = { workspace = true }
-ffmpeg-next = { workspace = true }
+ffmpeg-next = { workspace = true, optional = true }
 cpal = { workspace = true }
 rustfft = { workspace = true }
 hound = { workspace = true }
@@ -59,6 +59,10 @@ criterion = { workspace = true }
 bindgen = { workspace = true }
 cbindgen = { workspace = true }
 cc = { workspace = true }
+
+[features]
+default = []
+ffmpeg = ["ffmpeg-next", "mapmap-media/ffmpeg"]
 
 [build-dependencies]
 winres = { workspace = true }
