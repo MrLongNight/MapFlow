@@ -1,7 +1,7 @@
 # VjMapper – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.0  
-> **Stand:** 2025-12-05  
+> **Version:** 1.1  
+> **Stand:** 2025-12-15  
 > **Zielgruppe:** @jules und Entwickler-Team  
 > **Projekt-Version:** 0.1.0
 
@@ -264,6 +264,38 @@
   - ⬜ Main Menu & Toolbar (`render_menu_bar`)
   - ⬜ Shader Graph Editor (`shader_graph_editor.rs` - Legacy Version)
 
+- ⬜ **Internationalisierung (i18n) – NEU**
+  - ⬜ Sprachauswahl UI (Deutsch / Englisch)
+  - ⬜ `fluent` oder `rust-i18n` Crate integrieren
+  - ⬜ Übersetzungsdateien (`locales/de.ftl`, `locales/en.ftl`)
+  - ⬜ Dynamischer Sprachwechsel zur Laufzeit
+  - ⬜ Persistierung der Spracheinstellung in User-Config
+  - ⬜ Alle UI-Strings extrahieren und übersetzen
+
+### MCP-Server Integration (Model Context Protocol) – NEU
+
+- ⬜ **MCP-Server Implementierung**
+  - ⬜ MCP-Server-Crate erstellen (`mapmap-mcp/`)
+  - ⬜ JSON-RPC 2.0 Transport (stdio/SSE)
+  - ⬜ Tool-Definitionen für VJMapper-Funktionen:
+    - ⬜ `layer_create`, `layer_delete`, `layer_set_opacity`
+    - ⬜ `media_load`, `media_play`, `media_pause`, `media_stop`
+    - ⬜ `mapping_create`, `mapping_update`
+    - ⬜ `output_configure`, `output_enable`
+    - ⬜ `cue_trigger`, `cue_next`, `cue_previous`
+    - ⬜ `project_save`, `project_load`
+  - ⬜ Resource-Definitionen:
+    - ⬜ `project://current` – Aktuelles Projekt
+    - ⬜ `layer://list` – Layer-Liste
+    - ⬜ `media://library` – Media-Bibliothek
+    - ⬜ `output://status` – Output-Status
+  - ⬜ Prompt-Definitionen für AI-Assistenz:
+    - ⬜ `create_mapping` – Mapping-Erstellung assistieren
+    - ⬜ `setup_projection` – Projektor-Setup assistieren
+    - ⬜ `troubleshoot` – Problemdiagnose
+  - ⬜ Integration mit Gemini CLI / Claude Desktop
+  - ⬜ Dokumentation: MCP-API-Referenz
+
 ### Persistenz / IO (Projektformat, Save/Load)
 
 - ✅ **IO-Subsystem** (`mapmap-io/src/`)
@@ -425,11 +457,21 @@ crates/
 
 ---
 
-### 🔴 **Priorität 2: OSC-Command-Schema und Integration (HAUPTPFAD)**
+### 🟢 **Priorität 2: OSC-Command-Schema und Integration (COMPLETED)**
 
 **Zweck:** OSC als primärer External-Control-Pfad (statt WebSocket). MIDI ist low priority.
 
-**Schritte:**
+**Status:** ✅ Completed (2025-12-15)
+
+**Realisiert:**
+- **Command-Schema:** OSC-Address-Space definiert und dokumentiert
+- **OSC-Events:** Routing zu `ControlTarget`s implementiert
+- **OSC-Feedback:** State-Updates zurück an Controller implementiert
+- **Simplified OSC-Mapping:** HashMap-basiertes Mapping (Legacy Learn Mode entfernt)
+- **UI:** OSC-Server-Status und Port-Konfiguration mit `imgui` implementiert
+- **Default-Port:** 8000 (konfigurierbar)
+
+**Schritte (Archiv):**
 
 1. **Command-Schema definieren:**
    - Dokumentation in `mapmap-control/src/osc/mod.rs` erweitern (aktuell: nur Beispiele)
@@ -748,6 +790,128 @@ crates/
 
 ---
 
+### 🟡 **Priorität 9: Internationalisierung (i18n) – NEU**
+
+**Zweck:** UI-Sprache zwischen Deutsch und Englisch umschaltbar machen.
+
+**Schritte:**
+
+1. **i18n-Framework auswählen:**
+   - Option A: `fluent-rs` (Mozilla Fluent) – Empfohlen für Flexibilität
+   - Option B: `rust-i18n` – Einfacher zu integrieren
+   - Entscheidung: `fluent-rs` wegen besserer Pluralisierung und Rich-Text
+
+2. **Übersetzungsdateien erstellen:**
+   ```
+   locales/
+   ├── en/
+   │   └── main.ftl          # Englische Übersetzungen
+   └── de/
+       └── main.ftl          # Deutsche Übersetzungen
+   ```
+
+3. **i18n-Modul implementieren:**
+   - `mapmap-ui/src/i18n.rs`: Sprachmanager
+   - `LocaleManager` mit `set_locale()`, `get_locale()`, `t()` (translate)
+   - Fallback auf Englisch wenn Übersetzung fehlt
+
+4. **UI-Integration:**
+   - Sprachauswahl-Dropdown in Settings-Panel
+   - Dynamischer Sprachwechsel ohne Neustart
+   - Alle UI-Strings durch `t!("key")` Makro ersetzen
+
+5. **Persistenz:**
+   - Spracheinstellung in User-Config speichern (`~/.vjmapper/config.toml`)
+   - Beim Start aus Config laden
+
+6. **Übersetzungsarbeit:**
+   - Alle UI-Strings extrahieren (ca. 200-300 Strings)
+   - Deutsche Übersetzungen erstellen
+   - Review durch Native-Speaker
+
+**Akzeptanzkriterien:**
+- Sprachauswahl (DE/EN) in UI verfügbar
+- Dynamischer Sprachwechsel funktioniert
+- Alle UI-Strings übersetzt
+- Spracheinstellung wird persistiert
+
+---
+
+### 🟡 **Priorität 10: MCP-Server Integration – NEU**
+
+**Zweck:** VJMapper als MCP-Server bereitstellen für AI-gestützte Steuerung und Automatisierung.
+
+**Schritte:**
+
+1. **MCP-Crate erstellen:**
+   ```bash
+   cargo new --lib crates/mapmap-mcp
+   ```
+   - Abhängigkeiten: `serde`, `serde_json`, `tokio`, `jsonrpc-core`
+
+2. **Transport-Layer:**
+   - stdio-Transport für CLI-Integration (Gemini CLI, Claude Desktop)
+   - Optional: SSE-Transport für Web-Clients
+   - JSON-RPC 2.0 Protokoll implementieren
+
+3. **Tool-Definitionen:**
+   ```rust
+   // Beispiel Tool-Definition
+   pub struct LayerSetOpacity {
+       pub layer_id: String,
+       pub opacity: f32,  // 0.0-1.0
+   }
+   ```
+   - Layer-Management: `layer_create`, `layer_delete`, `layer_set_opacity`, `layer_set_visibility`
+   - Media-Control: `media_load`, `media_play`, `media_pause`, `media_stop`, `media_seek`
+   - Mapping: `mapping_create`, `mapping_update`, `mapping_delete`
+   - Output: `output_configure`, `output_enable`, `output_disable`
+   - Cue: `cue_trigger`, `cue_next`, `cue_previous`
+   - Project: `project_save`, `project_load`, `project_new`
+
+4. **Resource-Definitionen:**
+   - `project://current` – JSON-Repräsentation des aktuellen Projekts
+   - `layer://list` – Liste aller Layer mit Status
+   - `media://library` – Verfügbare Media-Assets
+   - `output://status` – Status aller Outputs
+   - `cue://list` – Cue-Liste
+
+5. **Prompt-Definitionen:**
+   - `create_mapping` – Assistiert beim Erstellen eines neuen Mappings
+   - `setup_projection` – Hilft beim Multi-Projektor-Setup
+   - `troubleshoot` – Diagnose bei Problemen
+   - `optimize_performance` – Performance-Optimierungsvorschläge
+
+6. **Integration mit Main-App:**
+   - `mapmap/src/main.rs`: MCP-Server als separater Thread starten
+   - Command-Queue für Thread-sichere Kommunikation
+   - State-Updates an MCP-Clients pushen
+
+7. **Manifest-Datei:**
+   ```json
+   {
+     "name": "vjmapper",
+     "version": "0.1.0",
+     "description": "VJMapper Projection Mapping Control",
+     "tools": [...],
+     "resources": [...],
+     "prompts": [...]
+   }
+   ```
+
+8. **Dokumentation:**
+   - `docs/MCP-API.md`: Vollständige API-Referenz
+   - Beispiele für Gemini CLI und Claude Desktop
+
+**Akzeptanzkriterien:**
+- MCP-Server startet mit VJMapper
+- Tools funktionieren (Layer, Media, Cue)
+- Resources liefern korrekten State
+- Integration mit Gemini CLI funktioniert
+- Dokumentation vollständig
+
+---
+
 ## Implementierungsdetails nach Crate
 
 ### mapmap-core
@@ -1060,16 +1224,20 @@ cargo bench --workspace --features audio,ffmpeg
 3. ✅ **FFmpeg ist VERPFLICHTEND** – Media-Playback ohne FFmpeg nicht sinnvoll.
 4. ✅ **Windows + Linux** – Hauptplattformen, macOS optional.
 5. ❌ **Keine WebSocket-Control** – OSC ist Standard in VJ-Industrie.
+6. ✅ **MCP-Server für AI-Integration** – NEU: Gemini CLI / Claude Desktop Unterstützung
+7. ✅ **Mehrsprachigkeit (DE/EN)** – NEU: UI in Deutsch und Englisch
 
 **Kritische Arbeitspakete (in Reihenfolge):**
 1. 🔴 Audio-Build-Enforcement (Backend verdrahten, UI, Tests)
-2. 🔴 OSC-Command-Schema und Integration (Routing, Feedback, Learn-Mode)
-3. 🟡 Media-Playback-State-Machine (Robustheit)
+2. 🟢 OSC-Command-Schema und Integration ✅ COMPLETED (2025-12-15)
+3. 🟢 Media-Playback-State-Machine ✅ COMPLETED (2025-12-14)
 4. 🟡 Effect-Chain-Hooks (Shader-Graph in Render-Pipeline)
 5. 🟡 Projektformat und Persistenz (Save/Load)
 6. 🟢 Multi-Window-Rendering (Phase 2 Completion)
 7. 🟢 CI/CD mit Audio und FFmpeg (Builds automatisieren)
 8. 🟢 Dokumentation und DX (Onboarding verbessern)
+9. 🟡 **Internationalisierung (i18n)** – NEU: Deutsch/Englisch UI
+10. 🟡 **MCP-Server Integration** – NEU: AI-gestützte Steuerung
 
 **Nächste Schritte:**
 1. Audio-Backend-Verdrahtung starten (`mapmap-core/src/audio/backend.rs` erstellen)
@@ -1077,9 +1245,11 @@ cargo bench --workspace --features audio,ffmpeg
 3. UI-Panels für Audio und OSC erstellen (`mapmap-ui/src/audio_config.rs`, `mapmap-ui/src/osc_config.rs`)
 4. CI/CD anpassen (Audio + FFmpeg aktivieren)
 5. Tests schreiben und laufen lassen
+6. **NEU:** i18n-Framework (`fluent-rs`) integrieren
+7. **NEU:** MCP-Server-Crate (`mapmap-mcp/`) erstellen
 
 ---
 
-**Letzte Aktualisierung:** 2025-12-05  
+**Letzte Aktualisierung:** 2025-12-15  
 **Erstellt von:** VjMapper Development Team  
 **Für:** @jules und Contributors
