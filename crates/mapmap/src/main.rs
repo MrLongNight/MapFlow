@@ -10,7 +10,9 @@ use anyhow::Result;
 use egui_wgpu::Renderer;
 use egui_winit::State;
 use mapmap_core::{
-    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer, AudioConfig},
+    audio::{
+        backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer, AudioConfig,
+    },
     OutputId, OutputManager,
 };
 use mapmap_render::WgpuBackend;
@@ -165,9 +167,7 @@ impl App {
         if let Event::WindowEvent { event, window_id } = &event {
             if let Some(main_window) = self.window_manager.get(0) {
                 if *window_id == main_window.window.id() {
-                    let _ = self
-                        .egui_state
-                        .on_window_event(&main_window.window, event);
+                    let _ = self.egui_state.on_window_event(&main_window.window, event);
                 }
             }
         }
@@ -244,22 +244,21 @@ impl App {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         // Encoder vorbereiten
-        let mut encoder = self.backend.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            },
-        );
+        let mut encoder =
+            self.backend
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
         if output_id == 0 {
             // --------- ImGui: UI zeichnen (mutable Borrow ist hier auf das Minimum begrenzt) ----------
-            self.imgui_context.prepare_frame(
-                &window_context.window,
-                |ui| {
+            self.imgui_context
+                .prepare_frame(&window_context.window, |ui| {
                     self.ui_state.render_menu_bar(ui);
                     self.ui_state.render_controls(ui);
                     self.ui_state.render_stats(ui, 60.0, 16.6);
-                },
-            );
+                });
 
             // --------- egui: UI separat zeichnen ---------
             let mut dashboard_action = None;

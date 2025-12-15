@@ -4,6 +4,7 @@
 //! Allows users to assign frequently-used parameters to dashboard dials and sliders.
 
 use egui::{Color32, Pos2, Sense, Stroke, Ui, Vec2};
+use mapmap_core::AudioAnalysis;
 use mapmap_media::{LoopMode, PlaybackCommand, PlaybackState};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -91,6 +92,9 @@ impl Dashboard {
             duration: Duration::ZERO,
             speed: 1.0,
             loop_mode: LoopMode::Loop,
+            audio_analysis: None,
+            audio_devices: Vec::new(),
+            selected_audio_device: None,
         }
     }
 
