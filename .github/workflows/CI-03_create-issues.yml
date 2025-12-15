@@ -28,7 +28,7 @@ jobs:
               title: "Implement Multi-Window Rendering",
               body: `## Multi-Window Rendering Implementation
 
-**Phase:** Phase 2 - Multi-Projector System  
+**Phase:** Phase 2: Multi-Projector System  
 **Priority:** Critical  
 **Status:** 60% complete
 
@@ -67,7 +67,7 @@ Complete multi-window rendering with synchronized output. This is critical for p
               title: "Implement Frame Synchronization",
               body: `## Frame Synchronization Across Outputs
 
-**Phase:** Phase 2 - Multi-Projector System  
+**Phase:** Phase 2: Multi-Projector System  
 **Priority:** Critical  
 **Status:** Not started
 
