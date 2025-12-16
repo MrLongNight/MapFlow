@@ -1,7 +1,7 @@
 name: Feature Request
-description: Suggest a new feature for VjMapper
+description: Suggest a new feature for VjMapper (will be processed by Jules)
 title: "[Feature]: "
-labels: ["feature-request"]
+labels: ["feature-request", "jules-task"]
 assignees: []
 
 body:

@@ -1,6 +1,9 @@
 # VjMapper
 
-[![CI](https://github.com/MrLongNight/VjMapper/actions/workflows/ci.yml/badge.svg)](https://github.com/MrLongNight/VjMapper/actions/workflows/ci.yml)
+<!-- Dynamic CI/CD Status Badges -->
+[![Build & Test](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-01_build-and-test.yml/badge.svg)](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-01_build-and-test.yml)
+[![Security Scan](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-02_security-scan.yml)
+[![Release](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-09B_create-release.yml/badge.svg)](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-09B_create-release.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 > **Modern, High-Performance Projection Mapping Suite**
