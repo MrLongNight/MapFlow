@@ -61,16 +61,13 @@ cbindgen = { workspace = true }
 cc = { workspace = true }
 
 [features]
-default = []
+default = ["audio"]
 ffmpeg = ["ffmpeg-next", "mapmap-media/ffmpeg"]
+audio = ["mapmap-core/audio"]
 
 [build-dependencies]
 winres = { workspace = true }
 
-[features]
-default = ["audio"]
-audio = ["mapmap-core/audio"]
-
 [[bin]]
-name = "VjMapper"
+name = "MapFlow"
 path = "src/main.rs"

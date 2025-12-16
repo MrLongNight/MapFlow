@@ -23,94 +23,88 @@ env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
   RUST_BACKTRACE: 1
-  RUST_TOOLCHAIN: stable
 
 jobs:
   build-windows-portable:
     name: Windows (portable ZIP)
     runs-on: windows-latest
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'c82f74667287d3dc386bce81e44964370c91a289'
-          vcpkgJsonGlob: 'vcpkg.json'
-      
-      - name: Install FFmpeg via vcpkg
+      - name: Install vcpkg and FFmpeg
         run: |
-          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg.exe install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
       
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
       - name: Build Release
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --features ffmpeg
       
       - name: Check if binary exists and package
         run: |
-          if (!(Test-Path "target\release\mapmap.exe")) {
-            Write-Host "Build fehlgeschlagen: mapmap.exe fehlt!"
+          # Binary name is MapFlow (from Cargo.toml [[bin]] section)
+          if (!(Test-Path "target\release\MapFlow.exe")) {
+            Write-Host "Build fehlgeschlagen: MapFlow.exe fehlt!"
+            Write-Host "Verfuegbare Dateien in target\release:"
+            Get-ChildItem "target\release\*.exe" -ErrorAction SilentlyContinue
             exit 1
           }
           mkdir dist
-          copy target\release\mapmap.exe dist\VjMapper.exe
+          copy target\release\MapFlow.exe dist\MapFlow.exe
           # Kopiere FFmpeg DLLs
-          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
+          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Get-ChildItem "$vcpkgBin\*.dll" | Copy-Item -Destination dist\
           }
       
       - name: Prepare ZIP
-        run: powershell -Command "Compress-Archive -Path dist\* -DestinationPath vjmapper-windows-x64.zip"
+        run: powershell -Command "Compress-Archive -Path dist\* -DestinationPath mapflow-windows-x64.zip"
       
       - name: Upload ZIP Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vjmapper-windows-portable-zip
-          path: vjmapper-windows-x64.zip
+          name: mapflow-windows-portable-zip
+          path: mapflow-windows-x64.zip
 
   build-windows-installer:
     name: Windows (Installer MSI)
     runs-on: windows-latest
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'c82f74667287d3dc386bce81e44964370c91a289'
-          vcpkgJsonGlob: 'vcpkg.json'
-      
-      - name: Install FFmpeg via vcpkg
+      - name: Install vcpkg and FFmpeg
         run: |
-          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg.exe install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
       
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
       - name: Build Release
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --features ffmpeg
       
       - name: Prepare build artifacts for MSI
         run: |
-          if (!(Test-Path "target\release\mapmap.exe")) {
-            Write-Host "Build fehlgeschlagen: mapmap.exe fehlt!"
+          if (!(Test-Path "target\release\MapFlow.exe")) {
+            Write-Host "Build fehlgeschlagen: MapFlow.exe fehlt!"
+            Write-Host "Verfuegbare Dateien in target\release:"
+            Get-ChildItem "target\release\*.exe" -ErrorAction SilentlyContinue
             exit 1
           }
-          # Erstelle target/release/VjMapper.exe (erwartet von WiX)
-          copy target\release\mapmap.exe target\release\VjMapper.exe
           # Kopiere FFmpeg DLLs nach target/release
-          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
+          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Get-ChildItem "$vcpkgBin\*.dll" | Copy-Item -Destination target\release\
           }
@@ -123,14 +117,14 @@ jobs:
         run: |
           $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
           $cargoTargetBinDir = "${{ github.workspace }}\target\release"
-          candle.exe .\crates\mapmap\wix\main.wxs -dCargoTargetBinDir="$cargoTargetBinDir" -out vjmapper.wixobj -ext WixUIExtension
-          light.exe vjmapper.wixobj -out vjmapper-windows-installer.msi -ext WixUIExtension
+          candle.exe .\crates\mapmap\wix\main.wxs -dCargoTargetBinDir="$cargoTargetBinDir" -out mapflow.wixobj -ext WixUIExtension
+          light.exe mapflow.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
       
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
-          name: vjmapper-windows-installer-msi
-          path: vjmapper-windows-installer.msi
+          name: mapflow-windows-installer-msi
+          path: mapflow-windows-installer.msi
 
   build-linux:
     name: Linux Release (tar.gz)
@@ -159,10 +153,9 @@ jobs:
             libavfilter-dev \
             libswresample-dev \
             ffmpeg \
-            libasound2-dev
-          if [ -f scripts/install-ffmpeg-dev.sh ]; then
-            bash scripts/install-ffmpeg-dev.sh
-          fi
+            libasound2-dev \
+            clang \
+            llvm
           echo '--- Prüfe wichtige Bibliotheken ---'
           pkg-config --exists fontconfig && echo "✓ Fontconfig gefunden" || (echo "✗ Fontconfig fehlt"; exit 1)
           pkg-config --exists freetype2 && echo "✓ Freetype gefunden" || (echo "✗ Freetype fehlt"; exit 1)
@@ -173,26 +166,29 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       
       - name: Build Release
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --features ffmpeg
       
       - name: Check if binary exists
         run: |
-          if [ ! -f target/release/mapmap ]; then
-            echo "Build fehlgeschlagen: mapmap-Binary fehlt!"
+          # Binary name is MapFlow (from Cargo.toml [[bin]] section)
+          if [ ! -f target/release/MapFlow ]; then
+            echo "Build fehlgeschlagen: MapFlow-Binary fehlt!"
+            echo "Verfuegbare Dateien in target/release:"
+            ls -la target/release/ || true
             exit 1
           fi
       
       - name: Package tar.gz
         run: |
           mkdir -p dist
-          cp target/release/mapmap dist/
-          tar -czvf vjmapper-linux-x64.tar.gz -C dist mapmap
+          cp target/release/MapFlow dist/
+          tar -czvf mapflow-linux-x64.tar.gz -C dist MapFlow
       
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vjmapper-linux-tar
-          path: vjmapper-linux-x64.tar.gz
+          name: mapflow-linux-tar
+          path: mapflow-linux-x64.tar.gz
 
   publish:
     name: "Create GitHub Release & Attach Assets"
@@ -211,8 +207,8 @@ jobs:
           name: ${{ github.event.inputs.release_name }}
           prerelease: ${{ github.event.inputs.pre_release == 'true' }}
           files: |
-            artifacts/vjmapper-windows-portable-zip/vjmapper-windows-x64.zip
-            artifacts/vjmapper-windows-installer-msi/vjmapper-windows-installer.msi
-            artifacts/vjmapper-linux-tar/vjmapper-linux-x64.tar.gz
+            artifacts/mapflow-windows-portable-zip/mapflow-windows-x64.zip
+            artifacts/mapflow-windows-installer-msi/mapflow-windows-installer.msi
+            artifacts/mapflow-linux-tar/mapflow-linux-x64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
