@@ -32,9 +32,14 @@ jobs:
       VCPKG_ROOT: C:\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
-      - uses: actions/checkout@v4
+      - name: Enable long paths for Git
+        run: git config --system core.longpaths true
       
-      - name: Install vcpkg and FFmpeg
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup vcpkg and FFmpeg
         run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
@@ -80,9 +85,14 @@ jobs:
       VCPKG_ROOT: C:\vcpkg
       VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
+      - name: Enable long paths for Git
+        run: git config --system core.longpaths true
+
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
-      - name: Install vcpkg and FFmpeg
+      - name: Setup vcpkg and FFmpeg
         run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
