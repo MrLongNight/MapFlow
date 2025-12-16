@@ -30,6 +30,7 @@ pub mod codegen;
 pub mod lut;
 pub mod oscillator;
 pub mod shader_graph;
+pub mod state;
 
 pub use animation::{
     AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,
@@ -60,6 +61,7 @@ pub use shader_graph::{
     DataType, GraphId, InputSocket, NodeId, NodeType, OutputSocket, ParameterValue, ShaderGraph,
     ShaderNode,
 };
+pub use state::{AppSettings, AppState};
 
 /// Core error types
 #[derive(Error, Debug)]

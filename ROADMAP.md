@@ -1,7 +1,7 @@
 # VjMapper – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.2  
-> **Stand:** 2025-12-15  
+> **Stand:** 2025-12-16  
 > **Zielgruppe:** @jules und Entwickler-Team  
 > **Projekt-Version:** 0.1.0
 
@@ -87,11 +87,11 @@
   - ✅ LUT-Manager mit Presets
   - ✅ GPU-beschleunigtes Color-Grading
 
-- ⬜ **Effekt-Chain-Hooks**
-  - ⬜ Pluggable Effect System fehlt
-  - ⬜ Post-FX-Pipeline muss verdrahtet werden
-  - ⬜ Effect-Parameter-Binding an UI fehlt
-  - ⬜ Real-time Effect Hot-Reload fehlt
+- ✅ **Effekt-Chain-Hooks**
+  - ✅ Pluggable Effect System integriert
+  - ✅ Post-FX-Pipeline verdrahtet
+  - ✅ Effect-Parameter-Binding an UI vorhanden
+  - ✅ Real-time Effect Hot-Reload implementiert
 
 ### Audio (Plattformspezifische Backends, Analyzer/Mapping)
 
@@ -118,10 +118,10 @@
   - ⬜ Audio-Stream in Media-Pipeline verdrahten fehlt
   - ⬜ Latenz-Kompensation implementieren fehlt
 
-- ⬜ **Audio-Build-Enforcement**
-  - ⬜ Default-Feature `audio` in Workspace aktivieren (aktuell optional)
-  - ⬜ CI/CD: Audio-Feature in Tests aktivieren
-  - ⬜ Dokumentation: Audio als Pflicht-Dependency markieren
+- ✅ **Audio-Build-Enforcement**
+  - ✅ Default-Feature `audio` in Workspace aktivieren (aktuell optional)
+  - ✅ CI/CD: Audio-Feature in Tests aktivieren
+  - ✅ Dokumentation: Audio als Pflicht-Dependency markieren
 
 ### Media (FFmpeg-Decode / Playback-Control / GPU-Upload)
 
@@ -394,9 +394,18 @@ crates/
 
 ## Arbeitspakete für @jules
 
-### 🔴 **Priorität 1: Audio-Build-Enforcement (VERPFLICHTEND)**
+### 🟢 **Priorität 1: Audio-Build-Enforcement (COMPLETED)**
 
 **Zweck:** Audio ist Kern-Feature des Systems und muss immer verfügbar sein.
+
+**Status:** ✅ Completed (2025-12-16)
+
+**Realisiert:**
+- ✅ Feature-Aktivierung in `Cargo.toml`
+- ✅ Backend-Verdrahtung (CPAL)
+- ✅ Audio-Stream-Integration in `main.rs`
+- ✅ UI-Integration (Dashboard, Device Selector, FFT)
+- ✅ CI/CD-Testing mit Audio-Support
 
 **Schritte:**
 
@@ -636,33 +645,27 @@ crates/
 
 ---
 
-### 🟡 **Priorität 5: Projektformat und Persistenz**
+### 🟡 **Priorität 5: Projektformat und Persistenz (IN PROGRESS)**
 
 **Zweck:** Save/Load von Projekten, um Setups zu speichern und wiederherzustellen.
 
 **Schritte:**
 
 1. **Format-Definition:**
-   - RON (Rusty Object Notation) oder JSON als Format wählen (RON empfohlen für Lesbarkeit)
-   - Projekt-Struktur:
+   - ✅ RON (Rusty Object Notation) oder JSON als Format wählen (RON und JSON implementiert)
+   - ✅ Projekt-Struktur (`AppState` in `mapmap-core/src/state.rs`)
      ```rust
      #[derive(Serialize, Deserialize)]
-     pub struct ProjectFile {
-         pub version: String,
-         pub layers: Vec<Layer>,
-         pub mappings: Vec<Mapping>,
-         pub meshes: Vec<Mesh>,
-         pub outputs: Vec<Output>,
-         pub cues: Vec<Cue>,
-         pub audio_config: AudioConfig,
-         pub osc_config: OscConfig,
-         pub assets: Vec<AssetReference>,
+     pub struct AppState {
+         pub name: String,
+         pub paint_manager: PaintManager,
+         // ...
      }
      ```
 
 2. **Serialisierung:**
-   - Alle Core-Structs mit `#[derive(Serialize, Deserialize)]` annotieren (bereits teilweise vorhanden)
-   - Custom-Serializer für komplexe Typen (z. B. wgpu-Textures: nur Pfad speichern, nicht Binärdaten)
+   - ✅ Alle Core-Structs mit `#[derive(Serialize, Deserialize)]` annotieren (in `mapmap-core` erledigt)
+   - ⬜ Custom-Serializer für komplexe Typen (z. B. wgpu-Textures: nur Pfad speichern, nicht Binärdaten)
 
 3. **Deserialisierung mit Validierung:**
    - Schema-Validierung (Version-Check)
@@ -678,8 +681,8 @@ crates/
    - UI: Recent-Files-Menu in Dashboard
 
 6. **UI-Integration:**
-   - File-Menu: New, Open, Save, Save As, Recent Files
-   - Native-File-Dialog via `rfd` (bereits als Dependency vorhanden)
+   - ✅ File-Menu: New, Open, Save, Save As, Recent Files (Save/Load implementiert)
+   - ✅ Native-File-Dialog via `rfd` (implementiert)
 
 7. **Tests:**
    - Save/Load-Roundtrip-Test: Projekt speichern → laden → verifizieren
@@ -1510,11 +1513,11 @@ cargo bench --workspace --features audio,ffmpeg
 7. ✅ **Mehrsprachigkeit (DE/EN)** – NEU: UI in Deutsch und Englisch
 
 **Kritische Arbeitspakete (in Reihenfolge):**
-1. 🔴 Audio-Build-Enforcement (Backend verdrahten, UI, Tests)
+1. 🟢 Audio-Build-Enforcement ✅ COMPLETED (2025-12-16)
 2. 🟢 OSC-Command-Schema und Integration ✅ COMPLETED (2025-12-15)
 3. 🟢 Media-Playback-State-Machine ✅ COMPLETED (2025-12-14)
-4. 🟡 Effect-Chain-Hooks (Shader-Graph in Render-Pipeline)
-5. 🟡 Projektformat und Persistenz (Save/Load)
+4. 🟢 Effect-Chain-Hooks ✅ COMPLETED (2025-12-16)
+5. 🟡 Projektformat und Persistenz (Save/Load implementiert)
 6. 🟢 Multi-Window-Rendering (Phase 2 Completion)
 7. 🟢 CI/CD mit Audio und FFmpeg (Builds automatisieren)
 8. 🟢 Dokumentation und DX (Onboarding verbessern)

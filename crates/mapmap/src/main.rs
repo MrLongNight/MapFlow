@@ -10,22 +10,20 @@ use anyhow::Result;
 use egui_wgpu::Renderer;
 use egui_winit::State;
 use mapmap_core::{
-    audio::{
-        backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer, AudioConfig,
-    },
-    OutputId, OutputManager,
+    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer},
+    AppState, OutputId,
 };
+use mapmap_io::{load_project, save_project};
 use mapmap_render::WgpuBackend;
 use mapmap_ui::{AppUI, ImGuiContext};
+use rfd::FileDialog;
+use std::path::PathBuf;
 use tracing::{error, info};
 use window_manager::WindowManager;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
 };
-
-const INITIAL_WIDTH: u32 = 1920;
-const INITIAL_HEIGHT: u32 = 1080;
 
 /// The main application state.
 struct App {
@@ -37,9 +35,8 @@ struct App {
     ui_state: AppUI,
     /// The application's render backend.
     backend: WgpuBackend,
-    /// The output manager.
-    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
-    output_manager: OutputManager,
+    /// The application state (project data).
+    state: AppState,
     /// The audio backend.
     audio_backend: Option<CpalBackend>,
     /// The audio analyzer.
@@ -72,9 +69,10 @@ impl App {
 
         let mut ui_state = AppUI::default();
 
+        let state = AppState::new("New Project");
+
         // Initialize audio
-        let audio_config = AudioConfig::default();
-        let audio_analyzer = AudioAnalyzer::new(audio_config);
+        let audio_analyzer = AudioAnalyzer::new(state.audio_config.clone());
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
             Ok(None) => vec![],
@@ -121,7 +119,7 @@ impl App {
             imgui_context,
             ui_state,
             backend,
-            output_manager: OutputManager::new((INITIAL_WIDTH, INITIAL_HEIGHT)),
+            state,
             audio_backend,
             audio_analyzer,
             egui_context,
@@ -230,6 +228,65 @@ impl App {
             _ => (),
         }
 
+        // Process UI actions
+        let actions = self.ui_state.take_actions();
+        for action in actions {
+            match action {
+                mapmap_ui::UIAction::SaveProject(path_str) => {
+                    let path = if path_str.is_empty() {
+                        if let Some(path) = FileDialog::new()
+                            .add_filter("MapMap Project", &["mapmap", "ron", "json"])
+                            .set_file_name("project.mapmap")
+                            .save_file()
+                        {
+                            path
+                        } else {
+                            // Cancelled
+                            PathBuf::new()
+                        }
+                    } else {
+                        PathBuf::from(path_str)
+                    };
+
+                    if !path.as_os_str().is_empty() {
+                        if let Err(e) = save_project(&self.state, &path) {
+                            error!("Failed to save project: {}", e);
+                        } else {
+                            info!("Project saved to {:?}", path);
+                        }
+                    }
+                }
+                mapmap_ui::UIAction::LoadProject(path_str) => {
+                    let path = if path_str.is_empty() {
+                        if let Some(path) = FileDialog::new()
+                            .add_filter("MapMap Project", &["mapmap", "ron", "json"])
+                            .pick_file()
+                        {
+                            path
+                        } else {
+                            // Cancelled
+                            PathBuf::new()
+                        }
+                    } else {
+                        PathBuf::from(path_str)
+                    };
+
+                    if !path.as_os_str().is_empty() {
+                        match load_project(&path) {
+                            Ok(new_state) => {
+                                self.state = new_state;
+                                info!("Project loaded from {:?}", path);
+                                // TODO: Re-initialize systems if needed (e.g. audio backend settings)
+                            }
+                            Err(e) => error!("Failed to load project: {}", e),
+                        }
+                    }
+                }
+                // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
+                _ => {}
+            }
+        }
+
         Ok(())
     }
 
@@ -258,6 +315,18 @@ impl App {
                     self.ui_state.render_menu_bar(ui);
                     self.ui_state.render_controls(ui);
                     self.ui_state.render_stats(ui, 60.0, 16.6);
+
+                    // Panels
+                    self.ui_state
+                        .render_layer_panel(ui, &mut self.state.layer_manager);
+                    self.ui_state
+                        .render_paint_panel(ui, &mut self.state.paint_manager);
+                    self.ui_state
+                        .render_mapping_panel(ui, &mut self.state.mapping_manager);
+                    self.ui_state
+                        .render_transform_panel(ui, &mut self.state.layer_manager);
+                    self.ui_state
+                        .render_master_controls(ui, &mut self.state.layer_manager);
                 });
 
             // --------- egui: UI separat zeichnen ---------
