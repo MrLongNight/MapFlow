@@ -14,16 +14,25 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write
+
+env:
+  # ═══════════════════════════════════════════════════════════════
+  # MASTER SWITCH - Set to 'false' to disable ALL Jules automation
+  # ═══════════════════════════════════════════════════════════════
+  JULES_AUTOMATION_ENABLED: true
 
 jobs:
   post-merge-actions:
     name: Post-Merge Actions
     runs-on: ubuntu-latest
     if: |
-      (github.event.pull_request.merged == true && 
+      env.JULES_AUTOMATION_ENABLED == 'true' &&
+      ((github.event.pull_request.merged == true && 
        (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
         contains(github.event.pull_request.body, 'Created by Jules'))) ||
-      github.event_name == 'workflow_dispatch'
+      github.event_name == 'workflow_dispatch')
+    
     
     steps:
       - name: Checkout repository

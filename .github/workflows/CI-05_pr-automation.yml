@@ -1,4 +1,4 @@
-name: "CI-05:PR_Auto-Merge"
+name: "CI-05: PR Auto-Merge"
 
 on:
   pull_request:
@@ -6,12 +6,16 @@ on:
   check_suite:
     types: [completed]
   workflow_run:
-    workflows: ["CI-01: Build & Test"]
+    workflows: ["CI-01:Build&Test"]
     types: [completed]
   workflow_dispatch:
 
 env:
-  # Set to 'false' to disable auto-merge temporarily
+  # ═══════════════════════════════════════════════════════════════
+  # MASTER SWITCH - Set to 'false' to disable ALL Jules automation
+  # ═══════════════════════════════════════════════════════════════
+  JULES_AUTOMATION_ENABLED: true
+  # Set to 'false' to disable auto-merge only (keeps other automation)
   AUTO_MERGE_ENABLED: true
 
 permissions:
@@ -25,8 +29,9 @@ jobs:
   auto-merge:
     name: Auto-Merge Jules PR
     runs-on: ubuntu-latest
-    if: ${{ 
-      (github.event.pull_request &&
+    if: | 
+      env.JULES_AUTOMATION_ENABLED == 'true' &&
+      ((github.event.pull_request &&
        (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
         contains(github.event.pull_request.body, 'Created by Jules')) &&
        github.event.pull_request.draft == false &&
@@ -34,8 +39,8 @@ jobs:
       (github.event.workflow_run &&
        github.event.workflow_run.conclusion != 'skipped' &&
        env.AUTO_MERGE_ENABLED == 'true') ||
-      github.event_name == 'workflow_dispatch'
-    }}
+      github.event_name == 'workflow_dispatch')
+    
     
     steps:
     - name: Find Jules PR for workflow run

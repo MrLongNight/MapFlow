@@ -486,3 +486,28 @@ jobs:
           echo "session_url: ${{ steps.create-session.outputs.session_url }}"
           echo "pr_url: ${{ steps.create-pr.outputs.pr_url }}"
           echo ""
+
+      - name: Trigger Session Monitoring
+        if: steps.create-session.outputs.session_name != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('🔄 Triggering CI-08 to monitor session...');
+            
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'CI-08_monitor-jules-session.yml',
+                ref: 'main',
+                inputs: {
+                  session_id: '${{ steps.create-session.outputs.session_name }}',
+                  issue_number: '${{ steps.get-issue.outputs.issue_number }}'
+                }
+              });
+              
+              console.log('✅ CI-08 Session Monitoring triggered');
+            } catch (error) {
+              console.error('⚠️ Could not trigger monitoring:', error.message);
+            }
+
