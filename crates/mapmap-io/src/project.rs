@@ -12,18 +12,23 @@ use thiserror::Error;
 /// Project I/O errors
 #[derive(Debug, Error)]
 pub enum ProjectError {
+    /// Input/Output error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// RON serialization error
     #[error("Serialization error: {0}")]
     Serialization(#[from] ron::Error),
 
+    /// RON deserialization error
     #[error("Deserialization error: {0}")]
     Deserialization(#[from] ron::error::SpannedError),
 
+    /// JSON serialization error
     #[error("JSON Serialization error: {0}")]
     JsonSerialization(#[from] serde_json::Error),
 
+    /// Unsupported file format
     #[error("Format not supported: {0}")]
     UnsupportedFormat(String),
 }

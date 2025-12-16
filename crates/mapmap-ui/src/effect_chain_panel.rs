@@ -242,6 +242,7 @@ pub struct EffectChainPanel {
     presets: Vec<PresetEntry>,
 
     /// Currently dragging effect ID
+    #[allow(dead_code)]
     dragging_effect: Option<u64>,
 
     /// Save preset name input
