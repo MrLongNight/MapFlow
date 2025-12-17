@@ -1,0 +1,27 @@
+[package]
+name = "mapmap-mcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mapmap-core = { path = "../mapmap-core" }
+mapmap-control = { path = "../mapmap-control", features = ["osc"] }
+
+rosc = "0.10"
+
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+futures = "0.3"
+async-trait = "0.1"
+crossbeam-channel.workspace = true
+
+[dev-dependencies]

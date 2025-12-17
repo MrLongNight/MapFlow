@@ -14,6 +14,7 @@ mapmap-media = { path = "../mapmap-media" }
 mapmap-ui = { path = "../mapmap-ui" }
 mapmap-control = { path = "../mapmap-control" }
 mapmap-io = { path = "../mapmap-io" }
+mapmap-mcp = { path = "../mapmap-mcp" }
 
 rfd = "0.14"
 

@@ -9,6 +9,7 @@ members = [
     "crates/mapmap-ffi",
     "crates/mapmap-io",
     "crates/mapmap",
+    "crates/mapmap-mcp",
 ]
 
 [workspace.package]

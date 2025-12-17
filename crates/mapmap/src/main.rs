@@ -13,11 +13,16 @@ use mapmap_core::{
     audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer},
     AppState, OutputId,
 };
+use mapmap_mcp::{McpAction, McpServer};
+// Define McpAction locally or import if we move it to core later -> Removed local definition
+
+use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
 use mapmap_render::WgpuBackend;
 use mapmap_ui::{AppUI, ImGuiContext};
 use rfd::FileDialog;
 use std::path::PathBuf;
+use std::thread;
 use tracing::{error, info};
 use window_manager::WindowManager;
 use winit::{
@@ -49,6 +54,8 @@ struct App {
     egui_renderer: Renderer,
     /// Last autosave timestamp.
     last_autosave: std::time::Instant,
+    /// Receiver for MCP commands
+    mcp_receiver: Receiver<McpAction>,
 }
 
 impl App {
@@ -73,8 +80,6 @@ impl App {
 
         let state = AppState::new("New Project");
 
-        // Initialize audio
-        let audio_analyzer = AudioAnalyzer::new(state.audio_config.clone());
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
             Ok(None) => vec![],
@@ -99,6 +104,27 @@ impl App {
                 audio_backend = None;
             }
         }
+
+        // Initialize Audio Analyzer
+        let audio_analyzer = AudioAnalyzer::new(state.audio_config.clone());
+
+        // Start MCP Server in a separate thread
+        let (mcp_sender, mcp_receiver) = unbounded();
+
+        thread::spawn(move || {
+            // Create a Tokio runtime for the MCP server
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async {
+                let server = McpServer::new(Some(mcp_sender));
+                if let Err(e) = server.run_stdio().await {
+                    error!("MCP Server error: {}", e);
+                }
+            });
+        });
 
         // Initialize egui
         let egui_context = egui::Context::default();
@@ -128,6 +154,7 @@ impl App {
             egui_state,
             egui_renderer,
             last_autosave: std::time::Instant::now(),
+            mcp_receiver,
         })
     }
 
@@ -307,6 +334,22 @@ impl App {
             }
         }
 
+        // Poll MCP commands
+        while let Ok(action) = self.mcp_receiver.try_recv() {
+            match action {
+                McpAction::SaveProject(path) => {
+                    info!("MCP: Saving project to {:?}", path);
+                    if let Err(e) = save_project(&self.state, &path) {
+                        error!("MCP: Failed to save project: {}", e);
+                    }
+                }
+                McpAction::LoadProject(path) => {
+                    info!("MCP: Loading project from {:?}", path);
+                    self.load_project_file(&path);
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -383,7 +426,7 @@ impl App {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
                     egui::Window::new("Dashboard").show(ctx, |ui| {
-                        dashboard_action = self.ui_state.dashboard.ui(ui);
+                        dashboard_action = self.ui_state.dashboard.ui(ui, &self.ui_state.i18n);
                     });
                 });
 

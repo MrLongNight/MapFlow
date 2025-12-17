@@ -3,6 +3,7 @@
 //! File browsing interface with thumbnails, search/filter, drag-and-drop support,
 //! color coding, and hover preview playback.
 
+use crate::i18n::LocaleManager;
 use egui::{Color32, Response, Sense, Ui, Vec2};
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -277,36 +278,48 @@ impl MediaBrowser {
     }
 
     /// Render the media browser UI
-    pub fn ui(&mut self, ui: &mut Ui) -> Option<MediaBrowserAction> {
+    pub fn ui(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<MediaBrowserAction> {
         let mut action = None;
 
         // Toolbar
         ui.horizontal(|ui| {
             // Navigation buttons
             ui.add_enabled_ui(self.history_index > 0, |ui| {
-                if ui.button("◀ Back").clicked() {
+                if ui
+                    .button(format!("◀ {}", locale.t("media-browser-back")))
+                    .clicked()
+                {
                     self.navigate_back();
                 }
             });
 
             ui.add_enabled_ui(self.history_index < self.history.len() - 1, |ui| {
-                if ui.button("Forward ▶").clicked() {
+                if ui
+                    .button(format!("{} ▶", locale.t("media-browser-forward")))
+                    .clicked()
+                {
                     self.navigate_forward();
                 }
             });
 
-            if ui.button("⬆ Up").clicked() {
+            if ui
+                .button(format!("⬆ {}", locale.t("media-browser-up")))
+                .clicked()
+            {
                 self.navigate_up();
             }
 
-            if ui.button("🔄 Refresh").clicked() {
+            if ui
+                .button(format!("🔄 {}", locale.t("media-browser-refresh")))
+                .clicked()
+            {
                 self.refresh();
             }
 
             ui.separator();
 
             // Path display
-            ui.label("Path:");
+            ui.label(locale.t("media-browser-path"));
             ui.label(self.current_dir.display().to_string());
         });
 
@@ -322,27 +335,59 @@ impl MediaBrowser {
 
             ui.separator();
 
-            ui.label("Filter:");
-            ui.selectable_value(&mut self.filter_type, None, "All");
-            ui.selectable_value(&mut self.filter_type, Some(MediaType::Video), "Video");
-            ui.selectable_value(&mut self.filter_type, Some(MediaType::Image), "Image");
-            ui.selectable_value(&mut self.filter_type, Some(MediaType::Audio), "Audio");
+            ui.label(locale.t("media-browser-filter"));
+            ui.selectable_value(&mut self.filter_type, None, locale.t("media-browser-all"));
+            ui.selectable_value(
+                &mut self.filter_type,
+                Some(MediaType::Video),
+                locale.t("media-browser-video"),
+            );
+            ui.selectable_value(
+                &mut self.filter_type,
+                Some(MediaType::Image),
+                locale.t("media-browser-image"),
+            );
+            ui.selectable_value(
+                &mut self.filter_type,
+                Some(MediaType::Audio),
+                locale.t("media-browser-audio"),
+            );
 
             ui.separator();
 
             // View mode
-            ui.selectable_value(&mut self.view_mode, ViewMode::Grid, "Grid");
-            ui.selectable_value(&mut self.view_mode, ViewMode::List, "List");
+            ui.selectable_value(
+                &mut self.view_mode,
+                ViewMode::Grid,
+                locale.t("media-browser-view-grid"),
+            );
+            ui.selectable_value(
+                &mut self.view_mode,
+                ViewMode::List,
+                locale.t("media-browser-view-list"),
+            );
 
             ui.separator();
 
             // Sort mode
-            egui::ComboBox::from_label("Sort")
+            egui::ComboBox::from_label(locale.t("media-browser-sort"))
                 .selected_text(format!("{:?}", self.sort_mode))
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.sort_mode, SortMode::Name, "Name");
-                    ui.selectable_value(&mut self.sort_mode, SortMode::Type, "Type");
-                    ui.selectable_value(&mut self.sort_mode, SortMode::Size, "Size");
+                    ui.selectable_value(
+                        &mut self.sort_mode,
+                        SortMode::Name,
+                        locale.t("media-browser-sort-name"),
+                    );
+                    ui.selectable_value(
+                        &mut self.sort_mode,
+                        SortMode::Type,
+                        locale.t("media-browser-sort-type"),
+                    );
+                    ui.selectable_value(
+                        &mut self.sort_mode,
+                        SortMode::Size,
+                        locale.t("media-browser-sort-size"),
+                    );
                 });
         });
 

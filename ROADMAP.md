@@ -1494,6 +1494,60 @@ cargo bench --workspace --features audio,ffmpeg
 
 ---
 
+
+---
+
+## Phase 7: Advanced / Experimental Features (Visionary Roadmap)
+
+Diese Phase markiert den Übergang von einer technischen Video-Mapping-Software zu einer kreativen "Suite", die mit professionellen Industriestandards (NDI, DMX, Hue) interagiert und KI-gestützte Visuals bietet.
+
+### 1. 🤖 KI-gestützte Generative Effekte (Neural Style Transfer)
+**Status:** ⬜ Geplant
+- **Konzept:** Echtzeit-Integration von KI-Modellen, um Video-Inputs in künstlerische Stile (Van Gogh, Cyberpunk, Sketch) zu transformieren.
+- **Tech Stack:**
+  - `ort` (ONNX Runtime) für Rust.
+  - Pre-trained Style-Transfer Models (int8 quantisiert für Performance).
+  - WebGPU Compute Shader für Pre/Post-Processing.
+
+### 2. ⚡ NDI® & Spout/Syphon Integration (Network Video)
+**Status:** ⬜ Geplant (Placeholder existieren bereits in `mapmap-io`)
+- **Konzept:** VJMapper empfängt Video-Streams von anderer Software (Resolume, OBS, TouchDesigner) und sendet den gemappten Output weiter.
+- **Tech Stack:**
+  - `ndi-rs` (NDI 5 SDK Bindings).
+  - Spout (Windows Shared Memory) / Syphon (macOS).
+  - `dma-buf` (Linux Zero-Copy Sharing).
+
+### 3. 🌊 GPU Fluid Simulationen
+**Status:** ⬜ Geplant
+- **Konzept:** Physikalisch korrekte Rauch- und Flüssigkeitssimulation direkt auf der GPU, steuerbar durch Audio oder Video-Bewegung (Optical Flow).
+- **Tech Stack:**
+  - `wgpu` Compute Shaders.
+  - Navier-Stokes Solver Implementierung (Dichtefelder, Geschwindigkeitsfelder).
+
+### 4. 🕸️ Node-Basierter Shader-Editor
+**Status:** ⬜ Geplant (Beginnend mit `node_editor.rs` in `mapmap-ui`)
+- **Konzept:** Visueller Editor zum Verbinden von Shader-Nodes (Noise, Color, Transform, Output), ohne Code zu schreiben.
+- **Tech Stack:**
+  - `egui_node_graph` Crate.
+  - Kompilierung des Graphen zu WGSL zur Laufzeit.
+
+### 5. 🎛️ DMX / Art-Net Licht-Steuerung
+**Status:** ⬜ Geplant (Basis-Strukturen in `mapmap-control/src/dmx` vorhanden)
+- **Konzept:** Synchronisation von Raumbeleuchtung und Bühnenlicht mit den Video-Inhalten (Immersive Lighting).
+- **Tech Stack:**
+  - Art-Net Protokoll (UDP) Implementierung in Rust.
+
+### 6. 🌈 Philips Hue Entertainment (Low Latency Light Sync)
+**Status:** ⬜ Geplant
+- **Konzept:** Steuerung von Hue-Lampen im "Entertainment Mode" für extrem niedrige Latenz (Synchronisation mit Bass/Video-Flash).
+- **Wichtig:** Standard REST-API ist zu langsam. Wir müssen die DTLS-Streaming-API nutzen.
+- **Tech Stack:**
+  - `mbedtls` oder `rustls` (mit PSK Support für DTLS).
+  - Hue Entertainment API v2.
+  - Handshake Mechanismus mit der Hue Bridge.
+
+---
+
 ## Zusammenfassung für @jules
 
 **Kernentscheidungen:**

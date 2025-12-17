@@ -1,3 +1,4 @@
+
 app-title = MapMap - VJ Projection Mapping
 menu-file = File
 menu-file-load-video = Load Video
@@ -8,3 +9,37 @@ menu-file-exit = Exit
 menu-view = View
 menu-help = Help
 menu-help-about = About
+
+dashboard-layout-grid = Grid
+dashboard-layout-freeform = Freeform
+dashboard-columns = Columns:
+dashboard-add-widget = ➕ Add Widget
+dashboard-add-widget-tooltip = Add a new widget to the dashboard
+dashboard-state = State:
+dashboard-speed = Speed:
+dashboard-loop = Loop
+dashboard-audio-analysis = Audio Analysis
+dashboard-device = Device
+dashboard-no-device = No device selected
+dashboard-volume = Volume
+dashboard-spectrum = Frequency Spectrum
+dashboard-no-audio-data = No audio analysis data available.
+dashboard-remove-widget = Remove widget
+
+media-browser-title = Media Browser
+media-browser-back = Back
+media-browser-forward = Forward
+media-browser-up = Up
+media-browser-refresh = Refresh
+media-browser-path = Path:
+media-browser-filter = Filter:
+media-browser-all = All
+media-browser-video = Video
+media-browser-image = Image
+media-browser-audio = Audio
+media-browser-view-grid = Grid
+media-browser-view-list = List
+media-browser-sort = Sort
+media-browser-sort-name = Name
+media-browser-sort-type = Type
+media-browser-sort-size = Size

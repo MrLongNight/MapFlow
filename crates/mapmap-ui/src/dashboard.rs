@@ -3,6 +3,7 @@
 //! Quick-access parameter controls with customizable layouts.
 //! Allows users to assign frequently-used parameters to dashboard dials and sliders.
 
+use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Sense, Stroke, Ui, Vec2};
 use mapmap_core::AudioAnalysis;
 use mapmap_media::{LoopMode, PlaybackCommand, PlaybackState};
@@ -138,25 +139,33 @@ impl Dashboard {
     }
 
     /// Render the dashboard UI
-    pub fn ui(&mut self, ui: &mut Ui) -> Option<DashboardAction> {
+    pub fn ui(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<DashboardAction> {
         let mut action = None;
 
         // Toolbar
         ui.horizontal(|ui| {
-            ui.selectable_value(&mut self.layout, LayoutMode::Grid, "Grid");
-            ui.selectable_value(&mut self.layout, LayoutMode::Freeform, "Freeform");
+            ui.selectable_value(
+                &mut self.layout,
+                LayoutMode::Grid,
+                locale.t("dashboard-layout-grid"),
+            );
+            ui.selectable_value(
+                &mut self.layout,
+                LayoutMode::Freeform,
+                locale.t("dashboard-layout-freeform"),
+            );
 
             if self.layout == LayoutMode::Grid {
                 ui.separator();
-                ui.label("Columns:");
+                ui.label(locale.t("dashboard-columns"));
                 ui.add(egui::DragValue::new(&mut self.grid_columns).clamp_range(1..=8));
             }
 
             ui.separator();
 
             if ui
-                .button("➕ Add Widget")
-                .on_hover_text("Add a new widget to the dashboard")
+                .button(locale.t("dashboard-add-widget"))
+                .on_hover_text(locale.t("dashboard-add-widget-tooltip"))
                 .clicked()
             {
                 action = Some(DashboardAction::AddWidget);
@@ -177,7 +186,11 @@ impl Dashboard {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Stop));
             }
 
-            ui.label(format!("State: {:?}", self.playback_state));
+            ui.label(format!(
+                "{} {:?}",
+                locale.t("dashboard-state"),
+                self.playback_state
+            ));
         });
 
         // Timeline scrubber
@@ -196,7 +209,7 @@ impl Dashboard {
 
         // Speed and loop controls
         ui.horizontal(|ui| {
-            ui.label("Speed:");
+            ui.label(locale.t("dashboard-speed"));
             if ui
                 .add(egui::Slider::new(&mut self.speed, 0.1..=4.0))
                 .changed()
@@ -210,7 +223,10 @@ impl Dashboard {
             ui.separator();
 
             let mut looping = self.loop_mode == LoopMode::Loop;
-            if ui.checkbox(&mut looping, "Loop").changed() {
+            if ui
+                .checkbox(&mut looping, locale.t("dashboard-loop"))
+                .changed()
+            {
                 let new_mode = if looping {
                     LoopMode::Loop
                 } else {
@@ -228,17 +244,23 @@ impl Dashboard {
         // Render widgets based on layout mode
         match self.layout {
             LayoutMode::Grid => {
-                action = self.render_grid_layout(ui);
+                let layout_action = self.render_grid_layout(ui, locale);
+                if let Some(a) = layout_action {
+                    action = Some(a);
+                }
             }
             LayoutMode::Freeform => {
-                action = self.render_freeform_layout(ui);
+                let layout_action = self.render_freeform_layout(ui, locale);
+                if let Some(a) = layout_action {
+                    action = Some(a);
+                }
             }
         }
 
         ui.separator();
 
         // Audio visualization
-        if let Some(audio_action) = self.render_audio_visuals(ui) {
+        if let Some(audio_action) = self.render_audio_visuals(ui, locale) {
             action = Some(audio_action);
         }
 
@@ -246,7 +268,11 @@ impl Dashboard {
     }
 
     /// Render grid layout
-    fn render_grid_layout(&mut self, ui: &mut Ui) -> Option<DashboardAction> {
+    fn render_grid_layout(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+    ) -> Option<DashboardAction> {
         let mut action = None;
 
         egui::Grid::new("dashboard_grid")
@@ -258,7 +284,7 @@ impl Dashboard {
                         ui.end_row();
                     }
 
-                    if let Some(a) = Self::render_widget(ui, widget) {
+                    if let Some(a) = Self::render_widget(ui, widget, locale) {
                         action = Some(a);
                     }
                 }
@@ -268,7 +294,11 @@ impl Dashboard {
     }
 
     /// Render freeform layout
-    fn render_freeform_layout(&mut self, ui: &mut Ui) -> Option<DashboardAction> {
+    fn render_freeform_layout(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+    ) -> Option<DashboardAction> {
         let mut action = None;
 
         let (_response, _painter) =
@@ -283,7 +313,7 @@ impl Dashboard {
                 .movable(true)
                 .show(ui.ctx(), |ui| {
                     egui::Frame::group(ui.style()).show(ui, |ui| {
-                        if let Some(a) = Self::render_widget(ui, widget) {
+                        if let Some(a) = Self::render_widget(ui, widget, locale) {
                             action = Some(a);
                         }
 
@@ -301,7 +331,11 @@ impl Dashboard {
     }
 
     /// Render a single widget
-    fn render_widget(ui: &mut Ui, widget: &mut DashboardWidget) -> Option<DashboardAction> {
+    fn render_widget(
+        ui: &mut Ui,
+        widget: &mut DashboardWidget,
+        locale: &LocaleManager,
+    ) -> Option<DashboardAction> {
         let mut action = None;
 
         ui.vertical(|ui| {
@@ -462,7 +496,7 @@ impl Dashboard {
             // Remove button
             if ui
                 .small_button("✖")
-                .on_hover_text("Remove widget")
+                .on_hover_text(locale.t("dashboard-remove-widget"))
                 .clicked()
             {
                 action = Some(DashboardAction::RemoveWidget(widget.id));
@@ -473,16 +507,21 @@ impl Dashboard {
     }
 
     /// Render audio visualization
-    fn render_audio_visuals(&mut self, ui: &mut Ui) -> Option<DashboardAction> {
+    fn render_audio_visuals(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+    ) -> Option<DashboardAction> {
         let mut action = None;
-        ui.collapsing("Audio Analysis", |ui| {
+        ui.collapsing(locale.t("dashboard-audio-analysis"), |ui| {
             // Device selector
+            let no_device_text = locale.t("dashboard-no-device");
             let selected_text = self
                 .selected_audio_device
                 .as_deref()
-                .unwrap_or("No device selected");
+                .unwrap_or(&no_device_text);
             let mut selected_device = self.selected_audio_device.clone();
-            egui::ComboBox::from_label("Device")
+            egui::ComboBox::from_label(locale.t("dashboard-device"))
                 .selected_text(selected_text)
                 .show_ui(ui, |ui| {
                     for device in &self.audio_devices {
@@ -500,7 +539,7 @@ impl Dashboard {
 
             if let Some(analysis) = &self.audio_analysis {
                 // RMS and Peak Volume Meters
-                ui.label("Volume");
+                ui.label(locale.t("dashboard-volume"));
                 ui.add(
                     egui::ProgressBar::new(analysis.rms_volume)
                         .text(format!("RMS: {:.2}", analysis.rms_volume)),
@@ -513,7 +552,7 @@ impl Dashboard {
                 ui.separator();
 
                 // FFT Visualization
-                ui.label("Frequency Spectrum");
+                ui.label(locale.t("dashboard-spectrum"));
                 let painter = ui.painter();
                 let rect = ui.available_rect_before_wrap();
                 let plot_rect = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), 80.0));
@@ -552,7 +591,7 @@ impl Dashboard {
                 }
                 ui.advance_cursor_after_rect(plot_rect);
             } else {
-                ui.label("No audio analysis data available.");
+                ui.label(locale.t("dashboard-no-audio-data"));
             }
         });
         action
