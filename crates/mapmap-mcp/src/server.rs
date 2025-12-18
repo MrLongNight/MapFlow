@@ -830,7 +830,19 @@ mod tests {
 
         let response = server.handle_request(&request.to_string()).await;
         assert!(response.is_some());
-        let res_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
-        assert_eq!(res_json["result"]["status"], "sent");
+        let resp = response.unwrap();
+        assert!(
+            resp.error.is_none(),
+            "Response should not be an error: {:?}",
+            resp.error
+        );
+
+        let result = resp.result.unwrap();
+        // result is a CallToolResult
+        assert_eq!(result["isError"], false);
+        assert!(result["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Sent OSC"));
     }
 }

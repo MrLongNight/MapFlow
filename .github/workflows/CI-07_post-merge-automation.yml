@@ -27,7 +27,7 @@ jobs:
     name: Post-Merge Actions
     runs-on: ubuntu-latest
     env:
-      JULES_AUTOMATION_ENABLED: ${{ vars['JULES_AUTOMATION_ENABLED'] || 'true' }}
+      JULES_AUTOMATION_ENABLED: "${{ vars.JULES_AUTOMATION_ENABLED || 'true' }}"
       FIND_PR_NUMBER: ''
       HAS_PR: 'false'
       HAS_ISSUE: 'false'
