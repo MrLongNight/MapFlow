@@ -91,6 +91,10 @@ label-saturation = Sättigung
 label-freq-spectrum = Frequenz-Spektrum
 label-output = Ausgang: { $name }
 label-device = Gerät
+label-name = Name
+label-resolution = Auflösung
+label-x = X
+label-y = Y
 param-radius = Radius
 param-amount = Stärke
 param-threshold = Schwellenwert
@@ -188,41 +192,41 @@ label-frame-time = Frame-Zeit
 perf-demo = MapMap Phase 0 Demo
 
 # Layers
-layers-title = Ebenen
-layers-total = Gesamt Ebenen: { $count }
-layers-bypass = Umgehen (B)
-layers-solo = Solo (S)
-layers-blend-mode = Mischmodus
-layers-opacity = Deckkraft (V)
-layers-duplicate = Duplizieren
-layers-remove = Entfernen
-layers-add = Ebene hinzufügen
-layers-eject-all = Alle auswerfen (X)
+panel-layers = Ebenen
+label-total-layers = Ebenen insgesamt: { $count }
+check-bypass = Umgehen (B)
+check-solo = Solo (S)
+label-mode = Modus
+label-master-opacity = Deckkraft (V)
+btn-duplicate = Duplizieren
+btn-remove = Entfernen
+btn-add-layer = Ebene hinzufügen
+btn-eject-all = Alle auswerfen (X)
 
 # Paints
-paints-title = Farben/Medien
-paints-total = Gesamt Paints: { $count }
-paints-playing = Wiedergabe
-paints-loop = Schleife
-paints-speed = Geschwindigkeit
-paints-color = Farbe
+panel-paints = Farben/Medien
+label-total-paints = Paints insgesamt: { $count }
+check-playing = Wiedergabe
+mode-loop = Schleife
+label-speed = Geschwindigkeit
+label-composition = Komposition
 btn-add-paint = Paint hinzufügen
-paint-opacity = Deckkraft
+label-master-opacity = Deckkraft (V)
 
 # Mappings
-mappings-title = Mappings
-mappings-total = Gesamt Mappings: { $count }
-mappings-solo = Solo
-mappings-lock = Sperren
-mappings-opacity = Deckkraft
-mappings-depth = Tiefe
-mappings-mesh = Mesh: { $type } ({ $count } Vertices)
-btn-remove-this = Entfernen
+panel-mappings = Mappings
+label-total-mappings = Mappings insgesamt: { $count }
+check-solo = Solo
+check-lock = Sperren
+label-master-opacity = Deckkraft
+label-frame-time = Tiefe
+label-mesh = Mesh: { $type } ({ $count } Vertices)
+btn-remove = Entfernen
 btn-add-quad = Quad-Mapping hinzufügen
 
 # Transform
-transform-title = Transformations-Steuerung
-transform-phase1 = Phase 1: Transformations-System
+panel-transforms = Transformations-Steuerung
+header-transform-sys = Phase 1: Transformations-System
 label-editing = Bearbeite
 transform-position = Position:
 transform-position-x = X

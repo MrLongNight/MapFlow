@@ -645,3 +645,192 @@ fn error_response(id: Option<serde_json::Value>, code: i32, message: &str) -> Js
         id,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossbeam_channel::unbounded;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn test_handle_layer_create() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "layer_create",
+                "arguments": {
+                    "name": "Test Layer"
+                }
+            }
+        });
+
+        let response = server.handle_request(&request.to_string()).await;
+        assert!(response.is_some());
+
+        let action = rx.try_recv().unwrap();
+        if let McpAction::AddLayer(name) = action {
+            assert_eq!(name, "Test Layer");
+        } else {
+            panic!("Expected AddLayer action");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_layer_delete() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "layer_delete",
+                "arguments": {
+                    "layer_id": 42
+                }
+            }
+        });
+
+        server.handle_request(&request.to_string()).await;
+        let action = rx.try_recv().unwrap();
+        if let McpAction::RemoveLayer(id) = action {
+            assert_eq!(id, 42);
+        } else {
+            panic!("Expected RemoveLayer action");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_cue_trigger() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "cue_trigger",
+                "arguments": {
+                    "cue_id": 5
+                }
+            }
+        });
+
+        server.handle_request(&request.to_string()).await;
+        let action = rx.try_recv().unwrap();
+        if let McpAction::TriggerCue(id) = action {
+            assert_eq!(id, 5);
+        } else {
+            panic!("Expected TriggerCue action");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_cue_navigation() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        // Test Next
+        let next_req = json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "cue_next",
+                "arguments": {}
+            }
+        });
+        server.handle_request(&next_req.to_string()).await;
+        assert!(matches!(rx.try_recv().unwrap(), McpAction::NextCue));
+
+        // Test Previous
+        let prev_req = json!({
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "cue_previous",
+                "arguments": {}
+            }
+        });
+        server.handle_request(&prev_req.to_string()).await;
+        assert!(matches!(rx.try_recv().unwrap(), McpAction::PrevCue));
+    }
+
+    #[tokio::test]
+    async fn test_handle_project_save_load() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        // Test Save
+        let save_req = json!({
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "test.mapmap"
+                }
+            }
+        });
+        server.handle_request(&save_req.to_string()).await;
+        let action = rx.try_recv().unwrap();
+        if let McpAction::SaveProject(path) = action {
+            assert_eq!(path.to_str().unwrap(), "test.mapmap");
+        } else {
+            panic!("Expected SaveProject action");
+        }
+
+        // Test Load
+        let load_req = json!({
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "tools/call",
+            "params": {
+                "name": "project_load",
+                "arguments": {
+                    "path": "other.mapmap"
+                }
+            }
+        });
+        server.handle_request(&load_req.to_string()).await;
+        let action = rx.try_recv().unwrap();
+        if let McpAction::LoadProject(path) = action {
+            assert_eq!(path.to_str().unwrap(), "other.mapmap");
+        } else {
+            panic!("Expected LoadProject action");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_send_osc() {
+        let (tx, _rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {
+                "name": "send_osc",
+                "arguments": {
+                    "address": "/test/addr",
+                    "args": ["hello", 123, 1.5]
+                }
+            }
+        });
+
+        let response = server.handle_request(&request.to_string()).await;
+        assert!(response.is_some());
+        let res_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
+        assert_eq!(res_json["result"]["status"], "sent");
+    }
+}

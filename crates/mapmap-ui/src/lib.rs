@@ -340,7 +340,7 @@ impl AppUI {
                 }
 
                 // Loop control
-                ui.text(format!("{}:", self.i18n.t("label-mode")));
+                ui.text(self.i18n.t("label-mode"));
                 let mode_names = [self.i18n.t("mode-loop"), self.i18n.t("mode-play-once")];
                 let mut mode_idx = match self.loop_mode {
                     mapmap_media::LoopMode::Loop => 0,
@@ -478,7 +478,7 @@ impl AppUI {
         }
 
         ui.window(self.i18n.t("panel-layers"))
-            .size([380.0, 600.0], Condition::FirstUseEver)
+            .size([380.0, 400.0], Condition::FirstUseEver)
             .position([1530.0, 10.0], Condition::FirstUseEver)
             .build(|| {
                 ui.text(self.i18n.t_args(
@@ -617,8 +617,8 @@ impl AppUI {
         }
 
         ui.window(self.i18n.t("panel-paints"))
-            .size([350.0, 400.0], Condition::FirstUseEver)
-            .position([1170.0, 470.0], Condition::FirstUseEver)
+            .size([380.0, 340.0], Condition::FirstUseEver)
+            .position([1530.0, 730.0], Condition::FirstUseEver)
             .build(|| {
                 ui.text(self.i18n.t_args(
                     "label-total-paints",
@@ -686,8 +686,8 @@ impl AppUI {
         }
 
         ui.window(self.i18n.t("panel-mappings"))
-            .size([350.0, 450.0], Condition::FirstUseEver)
-            .position([1170.0, 10.0], Condition::FirstUseEver)
+            .size([380.0, 300.0], Condition::FirstUseEver)
+            .position([1530.0, 420.0], Condition::FirstUseEver)
             .build(|| {
                 ui.text(self.i18n.t_args(
                     "label-total-mappings",
@@ -846,9 +846,24 @@ impl AppUI {
                         let mut rot_y_deg = transform.rotation.y.to_degrees();
                         let mut rot_z_deg = transform.rotation.z.to_degrees();
 
-                        ui.slider("X", -180.0, 180.0, &mut rot_x_deg);
-                        ui.slider("Y", -180.0, 180.0, &mut rot_y_deg);
-                        ui.slider("Z", -180.0, 180.0, &mut rot_z_deg);
+                        ui.slider(
+                            format!("X##{}", self.i18n.t("transform-rotation")),
+                            -180.0,
+                            180.0,
+                            &mut rot_x_deg,
+                        );
+                        ui.slider(
+                            format!("Y##{}", self.i18n.t("transform-rotation")),
+                            -180.0,
+                            180.0,
+                            &mut rot_y_deg,
+                        );
+                        ui.slider(
+                            format!("Z##{}", self.i18n.t("transform-rotation")),
+                            -180.0,
+                            180.0,
+                            &mut rot_z_deg,
+                        );
 
                         transform.rotation.x = rot_x_deg.to_radians();
                         transform.rotation.y = rot_y_deg.to_radians();
@@ -923,7 +938,7 @@ impl AppUI {
         }
 
         ui.window(self.i18n.t("panel-master"))
-            .size([340.0, 280.0], Condition::FirstUseEver)
+            .size([360.0, 300.0], Condition::FirstUseEver)
             .position([10.0, 670.0], Condition::FirstUseEver)
             .build(|| {
                 ui.text(self.i18n.t("header-master"));
@@ -932,7 +947,7 @@ impl AppUI {
                 let composition = &mut layer_manager.composition;
 
                 // Composition name (Phase 1, Month 5)
-                ui.text(format!("{}:", self.i18n.t("label-composition")));
+                ui.text(self.i18n.t("label-composition"));
                 ui.text_wrapped(&composition.name);
 
                 // Note: ImGui text input requires mutable String buffer
@@ -967,13 +982,13 @@ impl AppUI {
 
                 ui.separator();
                 ui.text(format!(
-                    "{}: {}x{}",
+                    "{} {}x{}",
                     self.i18n.t("label-size"),
                     composition.size.0,
                     composition.size.1
                 ));
                 ui.text(format!(
-                    "{}: {:.1} fps",
+                    "{} {:.1} fps",
                     self.i18n.t("label-frame-rate"),
                     composition.frame_rate
                 ));
@@ -1071,21 +1086,29 @@ impl AppUI {
                         ui.text(self.i18n.t("header-selected-output"));
                         ui.separator();
 
-                        ui.text(format!("Name: {}", output.name));
+                        ui.text(format!("{}: {}", self.i18n.t("label-name"), output.name));
                         ui.text(format!(
-                            "Resolution: {}x{}",
-                            output.resolution.0, output.resolution.1
+                            "{}: {}x{}",
+                            self.i18n.t("label-resolution"),
+                            output.resolution.0,
+                            output.resolution.1
                         ));
 
                         ui.separator();
-                        ui.text(format!("{}:", self.i18n.t("label-canvas-region")));
+                        ui.text(self.i18n.t("label-canvas-region"));
                         ui.text(format!(
-                            "  X: {:.2}, Y: {:.2}",
-                            output.canvas_region.x, output.canvas_region.y
+                            "  {}: {:.2}, {}: {:.2}",
+                            self.i18n.t("label-x"),
+                            output.canvas_region.x,
+                            self.i18n.t("label-y"),
+                            output.canvas_region.y
                         ));
                         ui.text(format!(
-                            "  W: {:.2}, H: {:.2}",
-                            output.canvas_region.width, output.canvas_region.height
+                            "  {}: {:.2}, {}: {:.2}",
+                            self.i18n.t("label-width"),
+                            output.canvas_region.width,
+                            self.i18n.t("label-height"),
+                            output.canvas_region.height
                         ));
 
                         ui.separator();

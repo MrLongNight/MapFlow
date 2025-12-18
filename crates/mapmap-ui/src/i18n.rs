@@ -109,3 +109,49 @@ impl LocaleManager {
         value.to_string()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_locale_manager_creation() {
+        let lm = LocaleManager::new("en");
+        assert_eq!(lm.current_lang.language.as_str(), "en");
+    }
+
+    #[test]
+    fn test_translation_en() {
+        let lm = LocaleManager::new("en");
+        // Test a known key from en/main.ftl
+        let t = lm.t("menu-file");
+        assert_ne!(t, "menu-file");
+        // Assuming "File" is the translation
+        assert!(t.contains("File") || t.contains("Datei") == false);
+    }
+
+    #[test]
+    fn test_translation_de() {
+        let lm = LocaleManager::new("de");
+        // Test a known key from de/main.ftl
+        let t = lm.t("menu-file");
+        assert_ne!(t, "menu-file");
+        assert!(t.contains("Datei"));
+    }
+
+    #[test]
+    fn test_set_locale() {
+        let mut lm = LocaleManager::new("en");
+        assert!(lm.t("menu-file").contains("File"));
+
+        lm.set_locale("de");
+        assert!(lm.t("menu-file").contains("Datei"));
+    }
+
+    #[test]
+    fn test_missing_key() {
+        let lm = LocaleManager::new("en");
+        let t = lm.t("non-existent-key");
+        assert_eq!(t, "non-existent-key");
+    }
+}

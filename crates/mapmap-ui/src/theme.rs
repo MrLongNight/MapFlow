@@ -347,7 +347,7 @@ pub fn apply_imgui_theme(ctx: &mut imgui::Context) {
     // Buttons
     style.colors[imgui::StyleColor::Button as usize] = [0.18, 0.18, 0.18, 1.0];
     style.colors[imgui::StyleColor::ButtonHovered as usize] = [0.25, 0.25, 0.25, 1.0];
-    style.colors[imgui::StyleColor::ButtonActive as usize] = [0.2, 0.45, 0.8, 1.0]; // Accent blue
+    style.colors[imgui::StyleColor::ButtonActive as usize] = [0.15, 0.35, 0.6, 1.0]; // Subtler accent blue
 
     // Scrollbar
     style.colors[imgui::StyleColor::ScrollbarBg as usize] = [0.05, 0.05, 0.05, 0.5];

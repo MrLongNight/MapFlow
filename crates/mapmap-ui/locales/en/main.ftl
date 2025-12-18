@@ -179,41 +179,41 @@ label-frame-time = Frame Time
 perf-demo = MapMap Phase 0 Demo
 
 # Layers
-layers-title = Layers
-layers-total = Total Layers: { $count }
-layers-bypass = Bypass (B)
-layers-solo = Solo (S)
-layers-blend-mode = Blend Mode
-layers-opacity = Opacity (V)
-layers-duplicate = Duplicate
-layers-remove = Remove
-layers-add = Add Layer
-layers-eject-all = Eject All (X)
+panel-layers = Layers
+label-total-layers = Total Layers: { $count }
+check-bypass = Bypass (B)
+check-solo = Solo (S)
+label-mode = Mode
+label-master-opacity = Opacity (V)
+btn-duplicate = Duplicate
+btn-remove = Remove
+btn-add-layer = Add Layer
+btn-eject-all = Eject All (X)
 
 # Paints
-paints-title = Paints
-paints-total = Total Paints: { $count }
-paints-playing = Playing
-paints-loop = Loop
-paints-speed = Speed
-paints-color = Color
+panel-paints = Paints
+label-total-paints = Total Paints: { $count }
+check-playing = Playing
+mode-loop = Loop
+label-speed = Speed
+label-composition = Composition
 btn-add-paint = Add Paint
-paint-opacity = Opacity
+label-master-opacity = Opacity (V)
 
 # Mappings
-mappings-title = Mappings
-mappings-total = Total Mappings: { $count }
-mappings-solo = Solo
-mappings-lock = Lock
-mappings-opacity = Opacity
-mappings-depth = Depth
-mappings-mesh = Mesh: { $type } ({ $count } vertices)
-btn-remove-this = Remove This
+panel-mappings = Mappings
+label-total-mappings = Total Mappings: { $count }
+check-solo = Solo
+check-lock = Lock
+label-master-opacity = Opacity
+label-frame-time = Depth
+label-mesh = Mesh: { $type } ({ $count } vertices)
+btn-remove = Remove
 btn-add-quad = Add Quad Mapping
 
 # Transform
-transform-title = Transform Controls
-transform-phase1 = Phase 1: Transform System
+panel-transforms = Transform Controls
+header-transform-sys = Phase 1: Transform System
 label-editing = Editing
 transform-position = Position:
 transform-position-x = X
@@ -267,6 +267,10 @@ label-saturation = Saturation
 label-freq-spectrum = Frequency Spectrum
 label-output = Output: { $name }
 label-device = Device
+label-name = Name
+label-resolution = Resolution
+label-x = X
+label-y = Y
 
 # Edge Blend (Harmonized with User edits)
 panel-edge-blend = Edge Blending

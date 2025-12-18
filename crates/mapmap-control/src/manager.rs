@@ -173,8 +173,8 @@ impl ControlManager {
         #[cfg(feature = "osc")]
         self.process_osc_messages();
 
-        // Update cue system (for auto-follow, crossfades, etc.)
-        // This would integrate with the project state
+        // Update cue system
+        self.cue_list.update();
     }
 
     /// Process MIDI messages
@@ -374,23 +374,28 @@ mod tests {
         let mut manager = ControlManager::new();
 
         // Add some dummy cues to test navigation
-        manager
-            .cue_list
-            .add_cue(crate::cue::Cue::new(1, "Cue 1".to_string()));
-        manager
-            .cue_list
-            .add_cue(crate::cue::Cue::new(2, "Cue 2".to_string()));
+        manager.cue_list.add_cue(
+            crate::cue::Cue::new(1, "Cue 1".to_string())
+                .with_fade_duration(std::time::Duration::from_millis(0)),
+        );
+        manager.cue_list.add_cue(
+            crate::cue::Cue::new(2, "Cue 2".to_string())
+                .with_fade_duration(std::time::Duration::from_millis(0)),
+        );
 
         // Test Goto 1
         manager.execute_action(Action::GotoCue(1));
+        manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(1));
 
         // Test Next
         manager.execute_action(Action::NextCue);
+        manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(2));
 
         // Test Prev
         manager.execute_action(Action::PrevCue);
+        manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(1));
     }
 }
