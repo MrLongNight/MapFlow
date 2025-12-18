@@ -28,9 +28,6 @@ jobs:
   build-windows-portable:
     name: Windows (portable ZIP)
     runs-on: windows-latest
-    env:
-      VCPKG_ROOT: C:\vcpkg
-      VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
       - name: Configure Git
         run: |
@@ -41,35 +38,33 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup vcpkg and FFmpeg
+      - name: Install vcpkg dependencies
         run: |
-          if (!(Test-Path "C:\vcpkg")) {
-            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-            .\C:\vcpkg\bootstrap-vcpkg.bat
-          }
-          C:\vcpkg\vcpkg.exe install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
-      
+          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
+        shell: pwsh
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
       - name: Build Release
-        run: cargo build --release -p mapmap --features ffmpeg
+        run: |
+          $env:FFMPEG_DIR = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows"
+          cargo build --release -p mapmap --features ffmpeg
+        shell: pwsh
       
       - name: Check if binary exists and package
         run: |
           if (!(Test-Path "target\release\MapFlow.exe")) {
             Write-Host "Build fehlgeschlagen: MapFlow.exe fehlt!"
-            Write-Host "Verfuegbare Dateien in target\release:"
-            Get-ChildItem "target\release\*.exe" -ErrorAction SilentlyContinue
             exit 1
           }
           mkdir dist
           copy target\release\MapFlow.exe dist\MapFlow.exe
-          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
+          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Get-ChildItem "$vcpkgBin\*.dll" | Copy-Item -Destination dist\
           }
+        shell: pwsh
       
       - name: Prepare ZIP
         run: powershell -Command "Compress-Archive -Path dist\* -DestinationPath mapflow-windows-x64.zip"
@@ -83,9 +78,6 @@ jobs:
   build-windows-installer:
     name: Windows (Installer MSI)
     runs-on: windows-latest
-    env:
-      VCPKG_ROOT: C:\vcpkg
-      VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
       - name: Configure Git
         run: |
@@ -96,33 +88,31 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Setup vcpkg and FFmpeg
+      - name: Install vcpkg dependencies
         run: |
-          if (!(Test-Path "C:\vcpkg")) {
-            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-            .\C:\vcpkg\bootstrap-vcpkg.bat
-          }
-          C:\vcpkg\vcpkg.exe install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
+        shell: pwsh
       
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
       - name: Build Release
-        run: cargo build --release -p mapmap --features ffmpeg
+        run: |
+          $env:FFMPEG_DIR = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows"
+          cargo build --release -p mapmap --features ffmpeg
+        shell: pwsh
       
       - name: Prepare build artifacts for MSI
         run: |
           if (!(Test-Path "target\release\MapFlow.exe")) {
             Write-Host "Build fehlgeschlagen: MapFlow.exe fehlt!"
-            Write-Host "Verfuegbare Dateien in target\release:"
-            Get-ChildItem "target\release\*.exe" -ErrorAction SilentlyContinue
             exit 1
           }
-          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
+          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Get-ChildItem "$vcpkgBin\*.dll" | Copy-Item -Destination target\release\
           }
+        shell: pwsh
       
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
@@ -180,7 +170,6 @@ jobs:
         run: |
           if [ ! -f target/release/MapFlow ]; then
             echo "Build fehlgeschlagen: MapFlow-Binary fehlt!"
-            ls -la target/release/ || true
             exit 1
           fi
       

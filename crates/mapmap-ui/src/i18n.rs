@@ -154,4 +154,17 @@ mod tests {
         let t = lm.t("non-existent-key");
         assert_eq!(t, "non-existent-key");
     }
+
+    #[test]
+    fn test_translation_performance() {
+        let lm = LocaleManager::new("en");
+        let start = std::time::Instant::now();
+        for _ in 0..1000 {
+            let _ = lm.t("menu-file");
+        }
+        let duration = start.elapsed();
+        println!("1000 translations took: {:?}", duration);
+        // Usually should be < 10ms on modern CPUs
+        assert!(duration.as_millis() < 50);
+    }
 }

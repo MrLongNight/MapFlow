@@ -30,7 +30,7 @@ jobs:
     name: Auto-Merge Jules PR
     runs-on: ubuntu-latest
     env:
-      JULES_AUTOMATION_ENABLED: "${{ vars.JULES_AUTOMATION_ENABLED || 'true' }}"
+      JULES_AUTOMATION_ENABLED: "true"
       FIND_PR_NUMBER: ''
       HAS_PR: 'false'
     if: | 
