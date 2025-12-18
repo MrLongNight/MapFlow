@@ -253,6 +253,7 @@ pub struct AppUI {
     pub recent_files: Vec<String>,
     pub actions: Vec<UIAction>,
     pub i18n: LocaleManager,
+    pub effect_chain_panel: EffectChainPanel,
 }
 
 impl Default for AppUI {
@@ -284,6 +285,7 @@ impl Default for AppUI {
             recent_files: Vec::new(),
             actions: Vec::new(),
             i18n: LocaleManager::default(),
+            effect_chain_panel: EffectChainPanel::default(),
         }
     }
 }
@@ -414,6 +416,10 @@ impl AppUI {
                 ui.checkbox("Show Transforms", &mut self.show_transforms);
                 ui.checkbox("Show Master Controls", &mut self.show_master_controls);
                 ui.checkbox("Show Oscillator", &mut self.show_oscillator);
+                ui.checkbox(
+                    self.i18n.t("panel-effect-chain"),
+                    &mut self.effect_chain_panel.visible,
+                );
                 ui.checkbox("Show Audio", &mut self.show_audio);
                 ui.checkbox("Show Stats", &mut self.show_stats);
                 ui.separator();

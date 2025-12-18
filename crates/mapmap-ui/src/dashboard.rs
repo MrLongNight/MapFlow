@@ -484,7 +484,7 @@ impl Dashboard {
                     }
                 }
                 WidgetType::Button => {
-                    if ui.button("Trigger").clicked() {
+                    if ui.button(locale.t("dashboard-trigger")).clicked() {
                         action = Some(DashboardAction::ButtonPressed(widget.id));
                     }
                 }
@@ -540,14 +540,16 @@ impl Dashboard {
             if let Some(analysis) = &self.audio_analysis {
                 // RMS and Peak Volume Meters
                 ui.label(locale.t("dashboard-volume"));
-                ui.add(
-                    egui::ProgressBar::new(analysis.rms_volume)
-                        .text(format!("RMS: {:.2}", analysis.rms_volume)),
-                );
-                ui.add(
-                    egui::ProgressBar::new(analysis.peak_volume)
-                        .text(format!("Peak: {:.2}", analysis.peak_volume)),
-                );
+                ui.add(egui::ProgressBar::new(analysis.rms_volume).text(format!(
+                    "{}: {:.2}",
+                    locale.t("dashboard-rms"),
+                    analysis.rms_volume
+                )));
+                ui.add(egui::ProgressBar::new(analysis.peak_volume).text(format!(
+                    "{}: {:.2}",
+                    locale.t("dashboard-peak"),
+                    analysis.peak_volume
+                )));
 
                 ui.separator();
 

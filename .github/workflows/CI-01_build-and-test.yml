@@ -27,7 +27,7 @@ jobs:
   # Code quality checks
   quality:
     name: Code Quality (Format & Lint)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     
@@ -54,7 +54,7 @@ jobs:
   # Build and test on Ubuntu with audio support
   build-and-test:
     name: Build & Test (Ubuntu with Audio)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Use a newer toolchain for building (resolver for dependencies that require newer Cargo)
     env:
       RUST_TOOLCHAIN: nightly

@@ -3,6 +3,7 @@
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
 
+use crate::i18n::LocaleManager;
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
 
@@ -23,19 +24,19 @@ pub enum EffectType {
 }
 
 impl EffectType {
-    pub fn display_name(&self) -> &'static str {
+    pub fn display_name(&self, locale: &LocaleManager) -> String {
         match self {
-            EffectType::ColorAdjust => "Color Adjust",
-            EffectType::Blur => "Blur",
-            EffectType::ChromaticAberration => "Chromatic Aberration",
-            EffectType::EdgeDetect => "Edge Detect",
-            EffectType::Glow => "Glow",
-            EffectType::Kaleidoscope => "Kaleidoscope",
-            EffectType::Invert => "Invert",
-            EffectType::Pixelate => "Pixelate",
-            EffectType::Vignette => "Vignette",
-            EffectType::FilmGrain => "Film Grain",
-            EffectType::Custom => "Custom",
+            EffectType::ColorAdjust => locale.t("effect-name-color-adjust"),
+            EffectType::Blur => locale.t("effect-name-blur"),
+            EffectType::ChromaticAberration => locale.t("effect-name-chromatic-aberration"),
+            EffectType::EdgeDetect => locale.t("effect-name-edge-detect"),
+            EffectType::Glow => locale.t("effect-name-glow"),
+            EffectType::Kaleidoscope => locale.t("effect-name-kaleidoscope"),
+            EffectType::Invert => locale.t("effect-name-invert"),
+            EffectType::Pixelate => locale.t("effect-name-pixelate"),
+            EffectType::Vignette => locale.t("effect-name-vignette"),
+            EffectType::FilmGrain => locale.t("effect-name-film-grain"),
+            EffectType::Custom => locale.t("effect-name-custom"),
         }
     }
 
@@ -284,42 +285,55 @@ impl EffectChainPanel {
     }
 
     /// Render the effect chain panel
-    pub fn ui(&mut self, ui: &mut Ui) {
+    pub fn ui(&mut self, ctx: &egui::Context, locale: &LocaleManager) {
         if !self.visible {
             return;
         }
 
-        egui::Window::new("🎬 Effect Chain")
+        egui::Window::new(format!("🎬 {}", locale.t("panel-effect-chain")))
             .default_size([320.0, 500.0])
             .resizable(true)
-            .show(ui.ctx(), |ui| {
-                self.render_toolbar(ui);
+            .show(ctx, |ui| {
+                self.render_toolbar(ui, locale);
                 ui.separator();
-                self.render_effect_list(ui);
+                self.render_effect_list(ui, locale);
                 ui.separator();
-                self.render_footer(ui);
+                self.render_footer(ui, locale);
             });
 
         // Render popups
         if self.show_preset_browser {
-            self.render_preset_browser(ui);
+            // We need a way to render the preset browser window too.
+            // Since render_preset_browser expects ui, we might need to change it or call it inside a Window here.
+            // But render_preset_browser creates its OWN window in the code I saw (`egui::Window::new`).
+            // So it also needs Context.
+            self.render_preset_browser(ctx, locale);
         }
     }
 
-    fn render_toolbar(&mut self, ui: &mut Ui) {
+    fn render_toolbar(&mut self, ui: &mut Ui, locale: &LocaleManager) {
         ui.horizontal(|ui| {
             // Add effect button
-            if ui.button("➕ Add Effect").clicked() {
+            if ui
+                .button(format!("➕ {}", locale.t("effect-add")))
+                .clicked()
+            {
                 self.show_add_menu = !self.show_add_menu;
             }
 
             // Preset buttons
-            if ui.button("📂 Presets").clicked() {
+            if ui
+                .button(format!("📂 {}", locale.t("effect-presets")))
+                .clicked()
+            {
                 self.show_preset_browser = !self.show_preset_browser;
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("🗑️ Clear").clicked() {
+                if ui
+                    .button(format!("🗑️ {}", locale.t("effect-clear")))
+                    .clicked()
+                {
                     self.actions.push(EffectChainAction::ClearAll);
                     self.chain.effects.clear();
                 }
@@ -329,11 +343,14 @@ impl EffectChainPanel {
         // Add effect menu
         if self.show_add_menu {
             ui.group(|ui| {
-                ui.label("Select Effect Type:");
+                ui.label(locale.t("effect-select-type"));
                 ui.horizontal_wrapped(|ui| {
                     for effect_type in EffectType::all() {
-                        let label =
-                            format!("{} {}", effect_type.icon(), effect_type.display_name());
+                        let label = format!(
+                            "{} {}",
+                            effect_type.icon(),
+                            effect_type.display_name(locale)
+                        );
                         if ui.button(label).clicked() {
                             let id = self.chain.add_effect(*effect_type);
                             self.actions
@@ -347,15 +364,19 @@ impl EffectChainPanel {
         }
     }
 
-    fn render_effect_list(&mut self, ui: &mut Ui) {
+    fn render_effect_list(&mut self, ui: &mut Ui, locale: &LocaleManager) {
         egui::ScrollArea::vertical()
             .max_height(350.0)
             .show(ui, |ui| {
                 if self.chain.effects.is_empty() {
                     ui.vertical_centered(|ui| {
                         ui.add_space(50.0);
-                        ui.label(RichText::new("No effects").size(16.0).weak());
-                        ui.label("Click 'Add Effect' to get started");
+                        ui.label(
+                            RichText::new(locale.t("effect-no-effects"))
+                                .size(16.0)
+                                .weak(),
+                        );
+                        ui.label(locale.t("effect-start-tip"));
                         ui.add_space(50.0);
                     });
                 } else {
@@ -395,6 +416,7 @@ impl EffectChainPanel {
                             &effect.parameters,
                             is_first,
                             is_last,
+                            locale,
                         );
 
                         // Apply changes
@@ -457,6 +479,7 @@ impl EffectChainPanel {
         parameters: &std::collections::HashMap<String, f32>,
         is_first: bool,
         is_last: bool,
+        locale: &LocaleManager,
     ) -> (bool, bool, bool, bool, bool, f32, Vec<(String, f32)>) {
         let mut remove = false;
         let mut move_up = false;
@@ -481,8 +504,11 @@ impl EffectChainPanel {
                     ui.checkbox(&mut enabled, "");
 
                     // Effect name with icon
-                    let header_text =
-                        format!("{} {}", effect_type.icon(), effect_type.display_name());
+                    let header_text = format!(
+                        "{} {}",
+                        effect_type.icon(),
+                        effect_type.display_name(locale)
+                    );
                     if ui
                         .selectable_label(expanded, RichText::new(header_text).strong())
                         .clicked()
@@ -516,7 +542,7 @@ impl EffectChainPanel {
 
                     // Intensity slider
                     ui.horizontal(|ui| {
-                        ui.label("Intensity:");
+                        ui.label(locale.t("effect-intensity"));
                         ui.add(egui::Slider::new(&mut intensity, 0.0..=1.0));
                     });
 
@@ -527,6 +553,7 @@ impl EffectChainPanel {
                         effect_id,
                         parameters,
                         &mut param_changes,
+                        locale,
                     );
                 }
             });
@@ -548,6 +575,7 @@ impl EffectChainPanel {
         effect_id: u64,
         parameters: &std::collections::HashMap<String, f32>,
         param_changes: &mut Vec<(String, f32)>,
+        locale: &LocaleManager,
     ) {
         match effect_type {
             EffectType::ColorAdjust => {
@@ -556,7 +584,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "brightness",
-                    "Brightness",
+                    &locale.t("param-brightness"),
                     -1.0,
                     1.0,
                 );
@@ -565,7 +593,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "contrast",
-                    "Contrast",
+                    &locale.t("param-contrast"),
                     0.0,
                     2.0,
                 );
@@ -574,7 +602,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "saturation",
-                    "Saturation",
+                    &locale.t("param-saturation"),
                     0.0,
                     2.0,
                 );
@@ -585,7 +613,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "radius",
-                    "Radius",
+                    &locale.t("param-radius"),
                     0.0,
                     20.0,
                 );
@@ -596,7 +624,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "amount",
-                    "Amount",
+                    &locale.t("param-amount"),
                     0.0,
                     0.1,
                 );
@@ -607,7 +635,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "threshold",
-                    "Threshold",
+                    &locale.t("param-threshold"),
                     0.0,
                     1.0,
                 );
@@ -616,7 +644,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "radius",
-                    "Radius",
+                    &locale.t("param-radius"),
                     0.0,
                     30.0,
                 );
@@ -627,7 +655,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "segments",
-                    "Segments",
+                    &locale.t("param-segments"),
                     2.0,
                     16.0,
                 );
@@ -636,7 +664,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "rotation",
-                    "Rotation",
+                    &locale.t("param-rotation"),
                     0.0,
                     360.0,
                 );
@@ -647,7 +675,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "pixel_size",
-                    "Pixel Size",
+                    &locale.t("param-pixel-size"),
                     1.0,
                     64.0,
                 );
@@ -658,7 +686,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "radius",
-                    "Radius",
+                    &locale.t("param-radius"),
                     0.0,
                     1.0,
                 );
@@ -667,7 +695,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "softness",
-                    "Softness",
+                    &locale.t("param-softness"),
                     0.0,
                     1.0,
                 );
@@ -678,7 +706,7 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "amount",
-                    "Amount",
+                    &locale.t("param-amount"),
                     0.0,
                     0.5,
                 );
@@ -687,13 +715,13 @@ impl EffectChainPanel {
                     parameters,
                     param_changes,
                     "speed",
-                    "Speed",
+                    &locale.t("param-speed"),
                     0.0,
                     5.0,
                 );
             }
             _ => {
-                ui.label("No parameters");
+                ui.label(locale.t("no-parameters")); // NOTE: Check if key exists or add it
             }
         }
         let _ = effect_id; // Silence unused warning
@@ -719,13 +747,20 @@ impl EffectChainPanel {
         });
     }
 
-    fn render_footer(&mut self, ui: &mut Ui) {
+    fn render_footer(&mut self, ui: &mut Ui, locale: &LocaleManager) {
         ui.horizontal(|ui| {
-            ui.label(format!("{} effects", self.chain.effects.len()));
+            ui.label(format!(
+                "{} {}",
+                self.chain.effects.len(),
+                locale.t("panel-effect-chain")
+            )); // TODO: "effects" word check
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 // Save preset button
-                if ui.button("💾 Save").clicked() {
+                if ui
+                    .button(format!("💾 {}", locale.t("effect-save")))
+                    .clicked()
+                {
                     // Show save dialog
                     self.show_preset_browser = true;
                 }
@@ -733,20 +768,23 @@ impl EffectChainPanel {
         });
     }
 
-    fn render_preset_browser(&mut self, ui: &mut Ui) {
+    fn render_preset_browser(&mut self, ctx: &egui::Context, locale: &LocaleManager) {
         let mut close_browser = false;
         let mut load_preset_path: Option<String> = None;
 
         let mut open = self.show_preset_browser;
-        egui::Window::new("📂 Preset Browser")
+        egui::Window::new(format!("📂 {}", locale.t("effect-presets-browser")))
             .default_size([400.0, 300.0])
             .resizable(true)
             .open(&mut open)
-            .show(ui.ctx(), |ui| {
+            .show(ctx, |ui| {
                 // Search bar
                 ui.horizontal(|ui| {
                     ui.label("🔍");
-                    ui.text_edit_singleline(&mut self.preset_search);
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.preset_search)
+                            .hint_text(locale.t("effect-search")),
+                    );
                 });
 
                 ui.separator();
@@ -778,7 +816,7 @@ impl EffectChainPanel {
                         }
 
                         if self.presets.is_empty() {
-                            ui.label("No presets found");
+                            ui.label(locale.t("effect-no-presets"));
                         }
                     });
 
@@ -786,9 +824,11 @@ impl EffectChainPanel {
 
                 // Save new preset
                 ui.horizontal(|ui| {
-                    ui.label("Save as:");
+                    ui.label(locale.t("effect-save-as"));
                     ui.text_edit_singleline(&mut self.save_preset_name);
-                    if ui.button("Save").clicked() && !self.save_preset_name.is_empty() {
+                    if ui.button(locale.t("effect-save")).clicked()
+                        && !self.save_preset_name.is_empty()
+                    {
                         self.actions
                             .push(EffectChainAction::SavePreset(self.save_preset_name.clone()));
                         self.save_preset_name.clear();

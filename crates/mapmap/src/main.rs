@@ -428,6 +428,11 @@ impl App {
                     egui::Window::new("Dashboard").show(ctx, |ui| {
                         dashboard_action = self.ui_state.dashboard.ui(ui, &self.ui_state.i18n);
                     });
+
+                    // Render Effect Chain Panel
+                    self.ui_state
+                        .effect_chain_panel
+                        .ui(ctx, &self.ui_state.i18n);
                 });
 
                 self.egui_state

@@ -24,6 +24,10 @@ dashboard-volume = Lautstärke
 dashboard-spectrum = Frequenzspektrum
 dashboard-no-audio-data = Keine Audio-Analysedaten verfügbar.
 dashboard-remove-widget = Widget entfernen
+dashboard-trigger = Auslösen
+dashboard-rms = RMS
+dashboard-peak = Peak
+
 
 media-browser-title = Medien-Browser
 media-browser-back = Zurück
