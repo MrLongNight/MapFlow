@@ -39,3 +39,6 @@
 /target/
 **/*.rs.bk
 *.pdb
+
+# vcpkg (local only, not tracked)
+/vcpkg/
