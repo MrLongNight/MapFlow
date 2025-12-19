@@ -90,8 +90,10 @@ pub struct EffectPreset {
 impl EffectPreset {
     /// Create a new preset from an effect chain
     pub fn new(name: &str, chain: EffectChain) -> Self {
-        let mut metadata = PresetMetadata::default();
-        metadata.name = name.to_string();
+        let metadata = PresetMetadata {
+            name: name.to_string(),
+            ..Default::default()
+        };
 
         Self { metadata, chain }
     }
@@ -179,7 +181,7 @@ impl PresetLibrary {
                     if let Ok(sub_entries) = fs::read_dir(&path) {
                         for sub_entry in sub_entries.flatten() {
                             let sub_path = sub_entry.path();
-                            if sub_path.extension().map_or(false, |ext| ext == "json") {
+                            if sub_path.extension().is_some_and(|ext| ext == "json") {
                                 match EffectPreset::load(&sub_path) {
                                     Ok(preset) => {
                                         categories_set.insert(preset.metadata.category.clone());
@@ -192,7 +194,7 @@ impl PresetLibrary {
                             }
                         }
                     }
-                } else if path.extension().map_or(false, |ext| ext == "json") {
+                } else if path.extension().is_some_and(|ext| ext == "json") {
                     // Check if it's a JSON file
                     match EffectPreset::load(&path) {
                         Ok(preset) => {

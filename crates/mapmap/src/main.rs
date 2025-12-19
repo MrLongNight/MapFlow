@@ -388,6 +388,17 @@ impl App {
                     info!("MCP: Media Stop");
                     // TODO: Integrate with media player when available
                 }
+                McpAction::SetLayerOpacity(id, opacity) => {
+                    info!("MCP: Set layer {} opacity to {}", id, opacity);
+                    // TODO: Implement layer opacity update
+                }
+                McpAction::SetLayerVisibility(id, visible) => {
+                    info!("MCP: Set layer {} visibility to {}", id, visible);
+                    // TODO: Implement layer visibility update
+                }
+                _ => {
+                    info!("MCP: Unimplemented action received: {:?}", action);
+                }
             }
         }
 

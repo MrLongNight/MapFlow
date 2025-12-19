@@ -180,7 +180,12 @@ impl ImGuiContext {
         // End frame and prepare for rendering
         self.platform.prepare_render(ui, window);
         let draw_data = self.imgui.render();
-        self.draw_data = Some(unsafe { std::mem::transmute(draw_data) });
+        // SAFETY: We extend the lifetime of draw_data to 'static for imgui-wgpu renderer
+        // The draw_data is only used within the same frame and cleared before next frame
+        #[allow(clippy::missing_transmute_annotations)]
+        {
+            self.draw_data = Some(unsafe { std::mem::transmute(draw_data) });
+        }
     }
 
     /// Renders the ImGui frame.

@@ -469,6 +469,8 @@ impl EffectChainPanel {
     }
 
     /// Static rendering function that doesn't borrow self
+    #[allow(clippy::type_complexity)]
+    #[allow(clippy::too_many_arguments)]
     fn render_effect_card_static(
         ui: &mut Ui,
         effect_id: u64,

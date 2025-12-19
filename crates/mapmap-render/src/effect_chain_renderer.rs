@@ -602,6 +602,7 @@ impl EffectChainRenderer {
     /// Apply the effect chain to an input texture
     ///
     /// Returns the final output texture view after all effects are applied.
+    #[allow(clippy::too_many_arguments)]
     pub fn apply_chain(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,

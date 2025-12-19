@@ -1,6 +1,5 @@
 use anyhow::Result;
 use mapmap_mcp::McpServer;
-use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -119,7 +119,7 @@ impl ShaderHotReload {
                     if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_)) {
                         for path in event.paths {
                             // Only watch .wgsl files
-                            if path.extension().map_or(false, |ext| ext == "wgsl") {
+                            if path.extension().is_some_and(|ext| ext == "wgsl") {
                                 debug!("Shader file changed: {:?}", path);
 
                                 // Try to read the new content
@@ -164,7 +164,7 @@ impl ShaderHotReload {
             for entry in entries.flatten() {
                 let path = entry.path();
 
-                if path.is_file() && path.extension().map_or(false, |ext| ext == "wgsl") {
+                if path.is_file() && path.extension().is_some_and(|ext| ext == "wgsl") {
                     if let Ok(source) = fs::read_to_string(&path) {
                         shader_status.insert(
                             path.clone(),
@@ -327,15 +327,12 @@ impl HotReloadIntegration {
         path: &Path,
         source: &str,
     ) -> std::result::Result<wgpu::ShaderModule, String> {
-        match device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some(path.to_str().unwrap_or("shader")),
             source: wgpu::ShaderSource::Wgsl(source.into()),
-        }) {
-            module => {
-                self.hot_reload.report_success(path);
-                Ok(module)
-            }
-        }
+        });
+        self.hot_reload.report_success(path);
+        Ok(module)
     }
 
     /// Get inner hot-reload instance
