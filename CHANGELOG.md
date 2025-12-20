@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- 2025-12-16: fix: Correct Windows release workflow by adding missing avfilter and avdevice components to the FFmpeg installation. (#54)
+- 2025-12-20: fix: Correct Windows release workflow by adding missing avfilter and avdevice components to the FFmpeg installation. (#54)
 - 2025-12-16: Enforce Audio Build and Integrate CPAL Backend (#51)
 - 2025-12-14: Refactor Media Playback State Machine and Control System (#52)
 - 2025-12-14: Refactor: Complete rewrite of Media Playback State Machine and Control System Refactoring.
