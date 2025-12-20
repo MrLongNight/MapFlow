@@ -40,7 +40,7 @@ jobs:
 
       - name: Install vcpkg dependencies
         run: |
-          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
+          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample,avfilter,avdevice]:x64-windows
         shell: pwsh
 
       - name: Setup Rust toolchain
@@ -90,7 +90,7 @@ jobs:
       
       - name: Install vcpkg dependencies
         run: |
-          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample]:x64-windows
+          vcpkg install ffmpeg[core,avcodec,avformat,swscale,swresample,avfilter,avdevice]:x64-windows
         shell: pwsh
       
       - name: Setup Rust toolchain
