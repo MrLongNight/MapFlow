@@ -422,11 +422,13 @@ impl App {
                     if let Some(pos) = self.ui_state.recent_files.iter().position(|x| x == &p) {
                         self.ui_state.recent_files.remove(pos);
                     }
-                    self.ui_state.recent_files.insert(0, p);
+                    self.ui_state.recent_files.insert(0, p.clone());
                     // Limit to 10
                     if self.ui_state.recent_files.len() > 10 {
                         self.ui_state.recent_files.pop();
                     }
+                    // Persist to user config
+                    self.ui_state.user_config.add_recent_file(&p);
                 }
             }
             Err(e) => error!("Failed to load project: {}", e),

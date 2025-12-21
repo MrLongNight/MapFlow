@@ -293,7 +293,10 @@ impl Default for AppUI {
             selected_output_id: None,
             audio_devices: vec!["None".to_string()],
             selected_audio_device: "None".to_string(),
-            recent_files: Vec::new(),
+            recent_files: {
+                let config = config::UserConfig::load();
+                config.recent_files.clone()
+            },
             actions: Vec::new(),
             i18n: {
                 let config = config::UserConfig::load();
