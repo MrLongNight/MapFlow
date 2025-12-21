@@ -23,6 +23,7 @@ pub mod media_browser;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
+pub mod oscillator_panel;
 pub mod theme;
 pub mod timeline_v2;
 pub mod undo_redo;
@@ -44,6 +45,7 @@ pub use imgui::OwnedDrawData;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
+pub use oscillator_panel::OscillatorPanel;
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
@@ -266,6 +268,7 @@ pub struct AppUI {
     pub recent_files: Vec<String>,
     pub actions: Vec<UIAction>,
     pub i18n: LocaleManager,
+    pub oscillator_panel: OscillatorPanel,
     pub effect_chain_panel: EffectChainPanel,
     pub cue_panel: CuePanel,
     pub user_config: config::UserConfig,
@@ -307,6 +310,7 @@ impl Default for AppUI {
                 let config = config::UserConfig::load();
                 LocaleManager::new(&config.language)
             },
+            oscillator_panel: OscillatorPanel::default(),
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
             user_config: config::UserConfig::load(),
@@ -464,6 +468,10 @@ impl AppUI {
                 ui.checkbox(
                     self.i18n.t("check-show-master"),
                     &mut self.show_master_controls,
+                );
+                ui.checkbox(
+                    self.i18n.t("oscillator-panel-title"),
+                    &mut self.oscillator_panel.visible,
                 );
                 ui.checkbox(
                     self.i18n.t("check-show-oscillator"),

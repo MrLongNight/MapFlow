@@ -293,34 +293,6 @@ label-gamma-green = Green Gamma
 label-gamma-blue = Blue Gamma
 label-color-temp = Color Temperature
 
-# Oscillator (Harmonized with User edits)
-panel-oscillator = Oscillator Distortion
-check-enable = Enable Effect
-header-quick-presets = Quick Presets
-btn-subtle = Subtle
-btn-dramatic = Dramatic
-btn-rings = Rings
-btn-reset = Reset
-header-distortion = Distortion Parameters
-label-amount = Amount
-label-dist-scale = Scale
-label-dist-speed = Speed
-header-visual-overlay = Visual Overlay
-label-overlay-opacity = Overlay Opacity
-label-color-mode = Color Mode
-header-simulation = Simulation Parameters
-label-resolution = Resolution
-label-kernel-radius = Kernel Radius
-label-noise-amount = Noise Amount
-label-freq-min = Frequency Min (Hz)
-label-freq-max = Frequency Max (Hz)
-label-coordinate-mode = Coordinate Mode
-label-phase-init = Phase Init
-header-coupling = Coupling Rings (Advanced)
-label-diff-coupling = Coupling
-btn-reset-ring = Reset Ring
-btn-clear-ring = Clear Ring
-
 # Audio (Harmonized with User edits)
 panel-audio = Audio Analysis
 header-audio-input = Audio Input
@@ -342,3 +314,23 @@ btn-add = Add
 header-address-mappings = Address Mappings
 text-osc-edit-tip = (Edit osc_mappings.json for now)
 check-show-cues = Show Cues
+
+# egui Oscillator Panel
+oscillator-panel-title = Oscillator Controls
+oscillator-enable = Enable
+oscillator-simulation-params = Simulation Parameters
+oscillator-frequency-min = Min Frequency
+oscillator-frequency-max = Max Frequency
+oscillator-kernel-radius = Kernel Radius
+oscillator-noise-amount = Noise Amount
+oscillator-distortion-params = Distortion Parameters
+oscillator-distortion-amount = Amount
+oscillator-distortion-scale = Scale
+oscillator-distortion-speed = Speed
+oscillator-visual-params = Visual Parameters
+oscillator-overlay-opacity = Overlay Opacity
+oscillator-color-mode = Color Mode
+oscillator-color-mode-off = Off
+oscillator-color-mode-rainbow = Rainbow
+oscillator-color-mode-black-white = Black & White
+oscillator-color-mode-complementary = Complementary

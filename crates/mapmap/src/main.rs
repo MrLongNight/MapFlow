@@ -488,6 +488,19 @@ impl App {
                     self.ui_state
                         .effect_chain_panel
                         .ui(ctx, &self.ui_state.i18n);
+
+                    // Render Oscillator Panel
+                    let oscillator_changed = egui::Window::new("Oscillator Panel")
+                        .show(ctx, |ui| {
+                            self.ui_state.oscillator_panel.show(ui, &self.ui_state.i18n)
+                        })
+                        .and_then(|inner| inner.inner)
+                        .unwrap_or(false);
+
+                    if oscillator_changed {
+                        self.state.oscillator_config = self.ui_state.oscillator_panel.config.clone();
+                        self.state.dirty = true;
+                    }
                 });
 
                 self.egui_state
