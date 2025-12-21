@@ -273,6 +273,25 @@
   - ⬜ Persistierung der Spracheinstellung in User-Config
   - ⬜ Alle UI-Strings extrahieren und übersetzen
 
+### Phase 7: Advanced Show Control (Module-Based Timeline) – PLANNED
+
+- ⬜ **Architecture Refactor (Timeline V3)**
+  - ⬜ **Module Concept**: `TimelineModule` struct (Triggers, Resources, Assigned Layers)
+  - ⬜ **Modes**: Automatic vs. Manual/Hybrid Playback
+  - ⬜ **Track System**: Module-based tracks with collision detection (Track-based only)
+  - ⬜ **Data Model**: Migration from simple Keyframes to rich Modules
+
+- ⬜ **UI Components**
+  - ⬜ **Module Canvas**: Drag & Drop palette for module creation
+  - ⬜ **Timeline Editor**: Drag & Drop arrangement, Snapping, Multi-Track
+  - ⬜ **Module Editor**: Multi-tab interface for parallel module editing (Double-click action)
+  - ⬜ **Transition Modules**: Visual transition editing with timeline-based duration
+
+- ⬜ **Features**
+  - ⬜ **Undo/Redo**: Full Command-Pattern integration for Timeline actions
+  - ⬜ **Templates**: Save/Load Module configurations
+  - ⬜ **Library**: Reusable Module presets
+
 ### MCP-Server Integration (Model Context Protocol) – NEU
 
 - ✅ **MCP-Server Implementierung (COMPLETED 2025-12-18)**

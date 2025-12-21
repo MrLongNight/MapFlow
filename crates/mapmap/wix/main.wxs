@@ -30,12 +30,14 @@
             <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
             <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
         </Component>
-        <Icon Id="MapFlowIcon.exe" SourceFile="$(var.CargoTargetBinDir)\..\..\..\resources\app_icons\mapmap.ico" />
+        <!-- Icon path: from target\release go up 2 levels to project root, then into resources -->
+        <Icon Id="MapFlowIcon.exe" SourceFile="$(var.CargoTargetBinDir)\..\..\resources\app_icons\mapmap.ico" />
         <Property Id="ARPPRODUCTICON" Value="MapFlowIcon.exe" />
         <UI>
             <UIRef Id="WixUI_Minimal" />
         </UI>
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-        <WixVariable Id="WixUILicenseRtf" Value="$(var.CargoTargetBinDir)\..\..\..\crates\mapmap\wix\License.rtf" />
+        <!-- License path: from target\release go up 2 levels to project root, then into crates\mapmap\wix -->
+        <WixVariable Id="WixUILicenseRtf" Value="$(var.CargoTargetBinDir)\..\..\crates\mapmap\wix\License.rtf" />
     </Product>
 </Wix>
