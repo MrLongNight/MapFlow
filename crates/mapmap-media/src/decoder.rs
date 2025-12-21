@@ -1,7 +1,7 @@
 //! Video decoder abstraction with FFmpeg implementation
 
 use crate::{MediaError, Result};
-use std::path::{Path};
+use std::path::Path;
 use std::time::Duration;
 use tracing::{info, warn};
 
@@ -440,10 +440,7 @@ impl FFmpegDecoder {
     }
 
     /// Open a video file with hardware acceleration
-    pub fn open_with_hw_accel<P: AsRef<Path>>(
-        path: P,
-        hw_accel: HwAccelType,
-    ) -> Result<Self> {
+    pub fn open_with_hw_accel<P: AsRef<Path>>(path: P, hw_accel: HwAccelType) -> Result<Self> {
         #[cfg(feature = "ffmpeg")]
         {
             match ffmpeg_impl::RealFFmpegDecoder::open(path, hw_accel) {

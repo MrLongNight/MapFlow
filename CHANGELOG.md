@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-21: fix(ci): Correct formatting in mapmap-media/src/lib.rs (#65)
 - 2025-12-21: feat(media): Complete media pipeline for GIFs and image sequences (#65)
 - 2025-12-21: Implement Cue System UI Panel (#66)
 - 2025-12-21: test(osc): Expand OSC address routing integration tests (#62)

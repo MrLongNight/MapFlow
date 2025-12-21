@@ -6,8 +6,8 @@
 //!
 //! Multi-threaded decoding pipeline is planned for a future phase.
 
-use thiserror::Error;
 use std::path::Path;
+use thiserror::Error;
 
 pub mod decoder;
 pub mod image_decoder;
