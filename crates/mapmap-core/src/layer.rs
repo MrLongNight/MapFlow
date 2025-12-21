@@ -130,7 +130,7 @@ impl ResizeMode {
 }
 
 /// Transform properties for layers (Phase 1, Month 4)
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Transform {
     /// Position offset in pixels (X, Y)
     pub position: Vec2,
@@ -241,7 +241,7 @@ impl Transform {
 }
 
 /// A single layer in the composition
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Layer {
     pub id: u64,
     pub name: String,
@@ -350,7 +350,7 @@ impl Layer {
 }
 
 /// Composition metadata and master controls (Phase 1, Month 5)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Composition {
     /// Composition name
     pub name: String,
@@ -410,7 +410,7 @@ impl Composition {
 }
 
 /// Layer manager for organizing and rendering layers
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LayerManager {
     layers: Vec<Layer>,
     next_id: u64,

@@ -12,7 +12,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 
 /// Audio analysis configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AudioConfig {
     /// Sample rate (e.g., 44100, 48000)
     pub sample_rate: u32,

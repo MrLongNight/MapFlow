@@ -6,7 +6,7 @@ use crate::{AudioConfig, LayerManager, MappingManager, OutputManager, PaintManag
 use serde::{Deserialize, Serialize};
 
 /// Global application state
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppState {
     /// Project name
     pub name: String,
@@ -65,7 +65,7 @@ impl AppState {
 
 /// Global application settings (not strictly project, but persisted with it or separately in user config)
 /// For now, we include it in project file for simplicity, or we can split it later.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     /// Global master volume
     pub master_volume: f32,
