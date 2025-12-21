@@ -48,6 +48,8 @@ struct App {
     audio_backend: Option<CpalBackend>,
     /// The audio analyzer.
     audio_analyzer: AudioAnalyzer,
+    /// List of available audio devices.
+    audio_devices: Vec<String>,
     /// The egui context.
     egui_context: egui::Context,
     /// The egui state.
@@ -92,7 +94,7 @@ impl App {
                 vec![]
             }
         };
-        ui_state.dashboard.set_audio_devices(audio_devices.clone());
+        ui_state.audio_devices = audio_devices.clone();
 
         let mut audio_backend = match CpalBackend::new(None) {
             Ok(backend) => Some(backend),
@@ -154,6 +156,7 @@ impl App {
             state,
             audio_backend,
             audio_analyzer,
+            audio_devices,
             egui_context,
             egui_state,
             egui_renderer,
@@ -483,6 +486,40 @@ impl App {
                     egui::Window::new("Dashboard").show(ctx, |ui| {
                         dashboard_action = self.ui_state.dashboard.ui(ui, &self.ui_state.i18n);
                     });
+
+                    // Render Audio Panel
+                    if self.ui_state.show_audio {
+                        let analysis = self.audio_analyzer.get_latest_analysis();
+                        egui::Window::new(self.ui_state.i18n.t("audio-panel-title"))
+                            .show(ctx, |ui| {
+                                if let Some(action) = self.ui_state.audio_panel.ui(
+                                    ui,
+                                    &self.ui_state.i18n,
+                                    Some(&analysis),
+                                    &self.audio_devices,
+                                    &mut self.ui_state.selected_audio_device,
+                                ) {
+                                    // Handle device change
+                                    if let Some(backend) = &mut self.audio_backend {
+                                        backend.stop();
+                                    }
+                                    self.audio_backend = None;
+
+                                    match CpalBackend::new(Some(action)) {
+                                        Ok(mut backend) => {
+                                            if let Err(e) = backend.start() {
+                                                error!("Failed to start audio stream: {}", e);
+                                            } else {
+                                                self.audio_backend = Some(backend);
+                                            }
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to initialize audio backend: {}", e);
+                                        }
+                                    }
+                                }
+                            });
+                    }
 
                     // Render Effect Chain Panel
                     self.ui_state

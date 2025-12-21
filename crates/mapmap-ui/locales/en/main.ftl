@@ -326,6 +326,13 @@ panel-audio = Audio Analysis
 header-audio-input = Audio Input
 label-device = Device
 audio-spectrum = Frequency Spectrum
+audio-panel-title = Audio Analysis
+audio-panel-device = Input Device
+audio-panel-no-device = No device
+audio-panel-no-data = Waiting for audio data...
+audio-panel-rms = RMS Volume
+audio-panel-beat = Beat
+audio-panel-bands = Frequency Bands
 
 # OSC Panel
 panel-osc-title = OSC Control
