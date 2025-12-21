@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-21: test(audio): Expand audio system unit tests (#61)
 - 2025-12-21: ci: Add Windows build job to CI-01 workflow (#60)
 - 2025-12-21: feat(i18n): Add user config persistence for language settings (#59)
 - 2025-12-20: docs(roadmap): Mark audio backend integration as completed (#56)
