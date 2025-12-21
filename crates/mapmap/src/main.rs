@@ -21,7 +21,7 @@ use mapmap_mcp::{McpAction, McpServer};
 use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
 use mapmap_render::WgpuBackend;
-use mapmap_ui::{AppUI, ImGuiContext};
+use mapmap_ui::{menu_bar, AppUI, ImGuiContext};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -281,6 +281,19 @@ impl App {
         let actions = self.ui_state.take_actions();
         for action in actions {
             match action {
+                mapmap_ui::UIAction::SaveProjectAs => {
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("MapMap Project", &["mapmap", "ron", "json"])
+                        .set_file_name("project.mapmap")
+                        .save_file()
+                    {
+                        if let Err(e) = save_project(&self.state, &path) {
+                            error!("Failed to save project: {}", e);
+                        } else {
+                            info!("Project saved to {:?}", path);
+                        }
+                    }
+                }
                 mapmap_ui::UIAction::SaveProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -457,7 +470,6 @@ impl App {
             // --------- ImGui: UI zeichnen (mutable Borrow ist hier auf das Minimum begrenzt) ----------
             self.imgui_context
                 .prepare_frame(&window_context.window, |ui| {
-                    self.ui_state.render_menu_bar(ui);
                     self.ui_state.render_controls(ui);
                     self.ui_state.render_stats(ui, 60.0, 16.6);
 
@@ -480,11 +492,12 @@ impl App {
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
-                    egui::Window::new("Dashboard").show(ctx, |ui| {
-                        dashboard_action = self.ui_state.dashboard.ui(ui, &self.ui_state.i18n);
-                    });
+                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                    self.ui_state.actions.extend(menu_actions);
 
-                    // Render Effect Chain Panel
+                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n);
+
+                    // Render Effect Chain Panel if visible
                     self.ui_state
                         .effect_chain_panel
                         .ui(ctx, &self.ui_state.i18n);

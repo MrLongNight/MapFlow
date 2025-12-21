@@ -20,6 +20,7 @@ pub mod dashboard;
 pub mod effect_chain_panel;
 pub mod i18n;
 pub mod media_browser;
+pub mod menu_bar;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
@@ -64,11 +65,24 @@ pub enum UIAction {
     SetLoopMode(mapmap_media::LoopMode),
 
     // File actions
+    NewProject,
     LoadVideo(String),
     SaveProject(String),
+    SaveProjectAs,
     LoadProject(String),
     LoadRecentProject(String),
+    Export,
+    OpenSettings,
     Exit,
+
+    // Edit actions
+    Undo,
+    Redo,
+    Cut,
+    Copy,
+    Paste,
+    Delete,
+    SelectAll,
 
     // Mapping actions
     AddMapping,
@@ -109,12 +123,18 @@ pub enum UIAction {
 
     // View actions
     ToggleFullscreen,
+    ResetLayout,
 
     // Audio actions
     SelectAudioDevice(String),
 
     // Settings
     SetLanguage(String),
+
+    // Help actions
+    OpenDocs,
+    OpenAbout,
+    OpenLicense,
 }
 
 pub struct ImGuiContext {
@@ -237,6 +257,7 @@ use mapmap_control::ControlTarget;
 
 /// UI state for the application
 pub struct AppUI {
+    pub menu_bar: menu_bar::MenuBar,
     pub dashboard: Dashboard,
     pub show_osc_panel: bool,
     pub selected_control_target: ControlTarget,
@@ -274,6 +295,7 @@ pub struct AppUI {
 impl Default for AppUI {
     fn default() -> Self {
         Self {
+            menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
             show_osc_panel: true,
             selected_control_target: ControlTarget::Custom("".to_string()),
@@ -411,93 +433,6 @@ impl AppUI {
                     frame_time_ms
                 ));
             });
-    }
-
-    /// Render main menu bar
-    pub fn render_menu_bar(&mut self, ui: &Ui) {
-        ui.main_menu_bar(|| {
-            ui.menu(self.i18n.t("menu-file"), || {
-                if ui.menu_item(self.i18n.t("menu-file-load-video")) {
-                    // TODO: Open file dialog
-                    self.actions.push(UIAction::LoadVideo(String::new()));
-                }
-                if ui.menu_item(self.i18n.t("menu-file-save-project")) {
-                    self.actions.push(UIAction::SaveProject(String::new()));
-                }
-                if ui.menu_item(self.i18n.t("menu-file-load-project")) {
-                    self.actions.push(UIAction::LoadProject(String::new()));
-                }
-
-                // Recent Files Submenu
-                if !self.recent_files.is_empty() {
-                    ui.menu(self.i18n.t("menu-file-open-recent"), || {
-                        for path in &self.recent_files {
-                            // Display only the filename if possible, otherwise full path
-                            let label = std::path::Path::new(path)
-                                .file_name()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or(path);
-
-                            if ui.menu_item(label) {
-                                self.actions.push(UIAction::LoadRecentProject(path.clone()));
-                            }
-                        }
-                    });
-                }
-
-                ui.separator();
-                if ui.menu_item(self.i18n.t("menu-file-exit")) {
-                    self.actions.push(UIAction::Exit);
-                }
-            });
-
-            ui.menu(self.i18n.t("menu-view"), || {
-                ui.checkbox(self.i18n.t("check-show-osc"), &mut self.show_osc_panel);
-                ui.checkbox(self.i18n.t("check-show-controls"), &mut self.show_controls);
-                ui.checkbox(self.i18n.t("check-show-layers"), &mut self.show_layers);
-                ui.checkbox(self.i18n.t("check-show-paints"), &mut self.show_paints);
-                ui.checkbox(self.i18n.t("check-show-mappings"), &mut self.show_mappings);
-                ui.checkbox(
-                    self.i18n.t("check-show-transforms"),
-                    &mut self.show_transforms,
-                );
-                ui.checkbox(
-                    self.i18n.t("check-show-master"),
-                    &mut self.show_master_controls,
-                );
-                ui.checkbox(
-                    self.i18n.t("check-show-oscillator"),
-                    &mut self.show_oscillator,
-                );
-                ui.checkbox(
-                    self.i18n.t("panel-effect-chain"),
-                    &mut self.effect_chain_panel.visible,
-                );
-                ui.checkbox(self.i18n.t("check-show-audio"), &mut self.show_audio);
-                ui.checkbox(self.i18n.t("check-show-cues"), &mut self.show_cue_panel);
-                ui.checkbox(self.i18n.t("check-show-stats"), &mut self.show_stats);
-                ui.separator();
-                if ui.menu_item(self.i18n.t("btn-fullscreen")) {
-                    self.actions.push(UIAction::ToggleFullscreen);
-                }
-            });
-
-            ui.menu(self.i18n.t("menu-help"), || {
-                if ui.menu_item(self.i18n.t("menu-help-about")) {
-                    // Show about dialog
-                }
-
-                ui.separator();
-
-                // Language Selection
-                if ui.menu_item(self.i18n.t("menu-help-lang-en")) {
-                    self.actions.push(UIAction::SetLanguage("en".to_string()));
-                }
-                if ui.menu_item(self.i18n.t("menu-help-lang-de")) {
-                    self.actions.push(UIAction::SetLanguage("de".to_string()));
-                }
-            });
-        });
     }
 
     /// Render layer management panel
