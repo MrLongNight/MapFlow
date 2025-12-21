@@ -23,6 +23,7 @@ pub mod media_browser;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
+pub mod output_panel;
 pub mod theme;
 pub mod timeline_v2;
 pub mod undo_redo;
@@ -44,6 +45,7 @@ pub use imgui::OwnedDrawData;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
+pub use output_panel::OutputPanel;
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
@@ -249,7 +251,6 @@ pub struct AppUI {
     pub show_mappings: bool,
     pub show_transforms: bool,        // Phase 1
     pub show_master_controls: bool,   // Phase 1
-    pub show_outputs: bool,           // Phase 2
     pub show_edge_blend: bool,        // Phase 2
     pub show_color_calibration: bool, // Phase 2
     pub show_oscillator: bool,        // Oscillator distortion effect
@@ -259,8 +260,6 @@ pub struct AppUI {
     pub loop_mode: mapmap_media::LoopMode,
     // Phase 1: Transform editing state
     pub selected_layer_id: Option<u64>,
-    // Phase 2: Output configuration state
-    pub selected_output_id: Option<u64>,
     pub audio_devices: Vec<String>,
     pub selected_audio_device: String,
     pub recent_files: Vec<String>,
@@ -268,6 +267,7 @@ pub struct AppUI {
     pub i18n: LocaleManager,
     pub effect_chain_panel: EffectChainPanel,
     pub cue_panel: CuePanel,
+    pub output_panel: OutputPanel,
     pub user_config: config::UserConfig,
 }
 
@@ -286,7 +286,6 @@ impl Default for AppUI {
             show_mappings: true,
             show_transforms: true,
             show_master_controls: true,
-            show_outputs: true,
             show_edge_blend: false,        // Show only when output selected
             show_color_calibration: false, // Show only when output selected
             show_oscillator: true,
@@ -295,7 +294,6 @@ impl Default for AppUI {
             playback_speed: 1.0,
             loop_mode: mapmap_media::LoopMode::Loop,
             selected_layer_id: None,
-            selected_output_id: None,
             audio_devices: vec!["None".to_string()],
             selected_audio_device: "None".to_string(),
             recent_files: {
@@ -309,6 +307,7 @@ impl Default for AppUI {
             },
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
+            output_panel: OutputPanel::default(),
             user_config: config::UserConfig::load(),
         }
     }
@@ -958,267 +957,6 @@ impl AppUI {
             });
     }
 
-    /// Render master controls panel (Phase 1)
-    pub fn render_master_controls(
-        &mut self,
-        ui: &Ui,
-        layer_manager: &mut mapmap_core::LayerManager,
-    ) {
-        if !self.show_master_controls {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-master"))
-            .size([360.0, 300.0], Condition::FirstUseEver)
-            .position([10.0, 670.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text(self.i18n.t("header-master"));
-                ui.separator();
-
-                let composition = &mut layer_manager.composition;
-
-                // Composition name (Phase 1, Month 5)
-                ui.text(self.i18n.t("label-composition"));
-                ui.text_wrapped(&composition.name);
-
-                // Note: ImGui text input requires mutable String buffer
-                // For now, just display the name
-                ui.separator();
-
-                // Master Opacity (Phase 1, Month 4)
-                let old_master_opacity = composition.master_opacity;
-                ui.slider(
-                    self.i18n.t("label-master-opacity"),
-                    0.0,
-                    1.0,
-                    &mut composition.master_opacity,
-                );
-                if (composition.master_opacity - old_master_opacity).abs() > 0.001 {
-                    self.actions
-                        .push(UIAction::SetMasterOpacity(composition.master_opacity));
-                }
-
-                // Master Speed (Phase 1, Month 5)
-                let old_master_speed = composition.master_speed;
-                ui.slider(
-                    self.i18n.t("label-master-speed"),
-                    0.1,
-                    10.0,
-                    &mut composition.master_speed,
-                );
-                if (composition.master_speed - old_master_speed).abs() > 0.001 {
-                    self.actions
-                        .push(UIAction::SetMasterSpeed(composition.master_speed));
-                }
-
-                ui.separator();
-                ui.text(format!(
-                    "{} {}x{}",
-                    self.i18n.t("label-size"),
-                    composition.size.0,
-                    composition.size.1
-                ));
-                ui.text(format!(
-                    "{} {:.1} fps",
-                    self.i18n.t("label-frame-rate"),
-                    composition.frame_rate
-                ));
-
-                ui.separator();
-                ui.text(self.i18n.t("label-effective-multipliers"));
-                ui.text(self.i18n.t("text-mult-opacity"));
-                ui.text(self.i18n.t("text-mult-speed"));
-            });
-    }
-
-    /// Phase 2: Render output configuration panel
-    pub fn render_output_panel(
-        &mut self,
-        ui: &Ui,
-        output_manager: &mut mapmap_core::OutputManager,
-    ) {
-        if !self.show_outputs {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-outputs"))
-            .size([420.0, 500.0], Condition::FirstUseEver)
-            .position([380.0, 380.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text(self.i18n.t("header-outputs"));
-                ui.separator();
-
-                // Canvas size display
-                let canvas_size = output_manager.canvas_size();
-                ui.text(format!(
-                    "{}: {}x{}",
-                    self.i18n.t("label-canvas"),
-                    canvas_size.0,
-                    canvas_size.1
-                ));
-                ui.separator();
-
-                // Output list
-                ui.text(format!(
-                    "{}: {}",
-                    self.i18n.t("panel-outputs"),
-                    output_manager.outputs().len()
-                ));
-
-                for output in output_manager.outputs() {
-                    let _id = ui.push_id_usize(output.id as usize);
-
-                    let is_selected = self.selected_output_id == Some(output.id);
-                    if ui
-                        .selectable_config(&output.name)
-                        .selected(is_selected)
-                        .build()
-                    {
-                        self.selected_output_id = Some(output.id);
-                    }
-
-                    // Show output info
-                    ui.same_line();
-                    ui.text_disabled(format!(
-                        "{}x{} | {}",
-                        output.resolution.0,
-                        output.resolution.1,
-                        if output.fullscreen { "FS" } else { "Win" }
-                    ));
-                }
-
-                ui.separator();
-
-                // Quick setup buttons
-                if ui.button(self.i18n.t("btn-projector-array")) {
-                    self.actions.push(UIAction::CreateProjectorArray2x2(
-                        (1920, 1080),
-                        0.1, // 10% overlap
-                    ));
-                }
-
-                ui.same_line();
-                if ui.button(self.i18n.t("btn-add-output")) {
-                    // Add a single output covering full canvas
-                    self.actions.push(UIAction::AddOutput(
-                        "New Output".to_string(),
-                        mapmap_core::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
-                        (1920, 1080),
-                    ));
-                }
-
-                ui.separator();
-
-                // Edit selected output
-                if let Some(output_id) = self.selected_output_id {
-                    if let Some(output) =
-                        output_manager.outputs().iter().find(|o| o.id == output_id)
-                    {
-                        ui.text(self.i18n.t("header-selected-output"));
-                        ui.separator();
-
-                        ui.text(format!("{}: {}", self.i18n.t("label-name"), output.name));
-                        ui.text(format!(
-                            "{}: {}x{}",
-                            self.i18n.t("label-resolution"),
-                            output.resolution.0,
-                            output.resolution.1
-                        ));
-
-                        ui.separator();
-                        ui.text(self.i18n.t("label-canvas-region"));
-                        ui.text(format!(
-                            "  {}: {:.2}, {}: {:.2}",
-                            self.i18n.t("label-x"),
-                            output.canvas_region.x,
-                            self.i18n.t("label-y"),
-                            output.canvas_region.y
-                        ));
-                        ui.text(format!(
-                            "  {}: {:.2}, {}: {:.2}",
-                            self.i18n.t("label-width"),
-                            output.canvas_region.width,
-                            self.i18n.t("label-height"),
-                            output.canvas_region.height
-                        ));
-
-                        ui.separator();
-
-                        // Edge blending status
-                        let blend = &output.edge_blend;
-                        ui.text(format!("{}:", self.i18n.t("panel-edge-blend")));
-                        if blend.left.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-left")));
-                        }
-                        if blend.right.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-right")));
-                        }
-                        if blend.top.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-top")));
-                        }
-                        if blend.bottom.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-bottom")));
-                        }
-                        if !blend.left.enabled
-                            && !blend.right.enabled
-                            && !blend.top.enabled
-                            && !blend.bottom.enabled
-                        {
-                            ui.text_disabled(format!("  {}", self.i18n.t("label-none")));
-                        }
-
-                        ui.separator();
-
-                        // Color calibration status
-                        let cal = &output.color_calibration;
-                        ui.text(format!("{}:", self.i18n.t("panel-color-cal")));
-                        if cal.brightness != 0.0 {
-                            ui.text(format!(
-                                "  {}: {:.2}",
-                                self.i18n.t("label-brightness"),
-                                cal.brightness
-                            ));
-                        }
-                        if cal.contrast != 1.0 {
-                            ui.text(format!(
-                                "  {}: {:.2}",
-                                self.i18n.t("label-contrast"),
-                                cal.contrast
-                            ));
-                        }
-                        if cal.saturation != 1.0 {
-                            ui.text(format!(
-                                "  {}: {:.2}",
-                                self.i18n.t("label-saturation"),
-                                cal.saturation
-                            ));
-                        }
-                        if cal.brightness == 0.0 && cal.contrast == 1.0 && cal.saturation == 1.0 {
-                            ui.text_disabled(format!("  ({})", self.i18n.t("label-none")));
-                        }
-
-                        ui.separator();
-
-                        ui.text_colored(
-                            [0.5, 0.8, 1.0, 1.0],
-                            format!("{}:", self.i18n.t("output-tip")),
-                        );
-                        ui.text_wrapped(self.i18n.t("tip-panels-auto-open"));
-
-                        ui.separator();
-
-                        if ui.button(self.i18n.t("btn-remove-output")) {
-                            self.actions.push(UIAction::RemoveOutput(output_id));
-                            self.selected_output_id = None;
-                        }
-                    }
-                }
-
-                ui.separator();
-                ui.text_colored([0.0, 1.0, 0.0, 1.0], self.i18n.t("msg-multi-window-active"));
-                ui.text_disabled(self.i18n.t("msg-output-windows-tip"));
-            });
-    }
 
     /// Phase 2: Render edge blend configuration
     pub fn render_edge_blend_panel(
@@ -1227,15 +965,15 @@ impl AppUI {
         output_manager: &mut mapmap_core::OutputManager,
     ) {
         // Auto-show when output is selected
-        if self.selected_output_id.is_some() {
+        if self.output_panel.selected_output_id.is_some() {
             self.show_edge_blend = true;
         }
 
-        if !self.show_edge_blend || self.selected_output_id.is_none() {
+        if !self.show_edge_blend || self.output_panel.selected_output_id.is_none() {
             return;
         }
 
-        let output_id = self.selected_output_id.unwrap();
+        let output_id = self.output_panel.selected_output_id.unwrap();
         let output = output_manager.get_output_mut(output_id);
 
         if output.is_none() {
@@ -1355,15 +1093,15 @@ impl AppUI {
         output_manager: &mut mapmap_core::OutputManager,
     ) {
         // Auto-show when output is selected
-        if self.selected_output_id.is_some() {
+        if self.output_panel.selected_output_id.is_some() {
             self.show_color_calibration = true;
         }
 
-        if !self.show_color_calibration || self.selected_output_id.is_none() {
+        if !self.show_color_calibration || self.output_panel.selected_output_id.is_none() {
             return;
         }
 
-        let output_id = self.selected_output_id.unwrap();
+        let output_id = self.output_panel.selected_output_id.unwrap();
         let output = output_manager.get_output_mut(output_id);
 
         if output.is_none() {

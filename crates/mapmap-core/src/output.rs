@@ -61,7 +61,7 @@ impl CanvasRegion {
 }
 
 /// Edge blending configuration for seamless projector overlap
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EdgeBlendConfig {
     pub left: EdgeBlendZone,
     pub right: EdgeBlendZone,
@@ -83,7 +83,7 @@ impl Default for EdgeBlendConfig {
 }
 
 /// Configuration for one edge of the blend zone
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EdgeBlendZone {
     pub enabled: bool,
     pub width: f32,  // 0.0-0.5 (percentage of output width/height)
@@ -101,7 +101,7 @@ impl Default for EdgeBlendZone {
 }
 
 /// Color calibration for per-output color correction
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ColorCalibration {
     pub brightness: f32, // -1.0 to 1.0
     pub contrast: f32,   // 0.0 to 2.0
@@ -125,15 +125,17 @@ impl Default for ColorCalibration {
 }
 
 /// Configuration for a single output window (projector)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OutputConfig {
     pub id: OutputId,
     pub name: String,
+    pub monitor_id: Option<String>,
     pub canvas_region: CanvasRegion,
     pub resolution: (u32, u32),
     pub edge_blend: EdgeBlendConfig,
     pub color_calibration: ColorCalibration,
     pub fullscreen: bool,
+    pub enabled: bool,
 }
 
 impl OutputConfig {
@@ -147,11 +149,13 @@ impl OutputConfig {
         Self {
             id,
             name,
+            monitor_id: None,
             canvas_region,
             resolution,
             edge_blend: EdgeBlendConfig::default(),
             color_calibration: ColorCalibration::default(),
             fullscreen: false,
+            enabled: true,
         }
     }
 }

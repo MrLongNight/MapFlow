@@ -277,6 +277,10 @@ btn-remove-output = Ausgang entfernen
 msg-multi-window-active = Multi-Fenster-Rendering: AKTIV
 msg-output-windows-tip = Ausgabefenster werden automatisch erstellt und synchronisiert
 label-saturation = Sättigung
+label-width = Breite
+label-height = Höhe
+check-fullscreen = Vollbild
+check-enabled = Aktiviert
 
 # Edge Blend (Harmonized with User edits)
 panel-edge-blend = Kantenüberblendung
