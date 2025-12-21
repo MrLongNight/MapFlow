@@ -7,6 +7,7 @@
 //! Multi-threaded decoding pipeline is planned for a future phase.
 
 use thiserror::Error;
+use std::path::Path;
 
 pub mod decoder;
 pub mod image_decoder;
@@ -46,8 +47,6 @@ pub enum MediaError {
     #[error("Seek error: {0}")]
     SeekError(String),
 }
-
-use std::path::Path;
 
 /// Result type for media operations
 pub type Result<T> = std::result::Result<T, MediaError>;
