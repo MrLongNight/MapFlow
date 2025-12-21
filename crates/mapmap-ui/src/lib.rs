@@ -14,6 +14,7 @@ pub mod timeline;
 
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
+pub mod config;
 pub mod dashboard;
 pub mod effect_chain_panel;
 pub mod i18n;
@@ -32,6 +33,7 @@ pub use timeline::{TimelineAction, TimelineEditor};
 
 // Phase 6 exports
 pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
+pub use config::UserConfig;
 pub use dashboard::{Dashboard, DashboardAction, DashboardWidget, WidgetType};
 pub use effect_chain_panel::{
     EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
@@ -262,6 +264,7 @@ pub struct AppUI {
     pub actions: Vec<UIAction>,
     pub i18n: LocaleManager,
     pub effect_chain_panel: EffectChainPanel,
+    pub user_config: config::UserConfig,
 }
 
 impl Default for AppUI {
@@ -292,8 +295,12 @@ impl Default for AppUI {
             selected_audio_device: "None".to_string(),
             recent_files: Vec::new(),
             actions: Vec::new(),
-            i18n: LocaleManager::default(),
+            i18n: {
+                let config = config::UserConfig::load();
+                LocaleManager::new(&config.language)
+            },
             effect_chain_panel: EffectChainPanel::default(),
+            user_config: config::UserConfig::load(),
         }
     }
 }
