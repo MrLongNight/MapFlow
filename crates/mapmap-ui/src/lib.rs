@@ -15,6 +15,7 @@ pub mod timeline;
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
 pub mod config;
+pub mod cue_panel;
 pub mod dashboard;
 pub mod effect_chain_panel;
 pub mod i18n;
@@ -34,6 +35,7 @@ pub use timeline::{TimelineAction, TimelineEditor};
 // Phase 6 exports
 pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
 pub use config::UserConfig;
+pub use cue_panel::CuePanel;
 pub use dashboard::{Dashboard, DashboardAction, DashboardWidget, WidgetType};
 pub use effect_chain_panel::{
     EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
@@ -252,6 +254,7 @@ pub struct AppUI {
     pub show_color_calibration: bool, // Phase 2
     pub show_oscillator: bool,        // Oscillator distortion effect
     pub show_audio: bool,
+    pub show_cue_panel: bool,
     pub playback_speed: f32,
     pub loop_mode: mapmap_media::LoopMode,
     // Phase 1: Transform editing state
@@ -264,6 +267,7 @@ pub struct AppUI {
     pub actions: Vec<UIAction>,
     pub i18n: LocaleManager,
     pub effect_chain_panel: EffectChainPanel,
+    pub cue_panel: CuePanel,
     pub user_config: config::UserConfig,
 }
 
@@ -287,6 +291,7 @@ impl Default for AppUI {
             show_color_calibration: false, // Show only when output selected
             show_oscillator: true,
             show_audio: true,
+            show_cue_panel: true,
             playback_speed: 1.0,
             loop_mode: mapmap_media::LoopMode::Loop,
             selected_layer_id: None,
@@ -303,6 +308,7 @@ impl Default for AppUI {
                 LocaleManager::new(&config.language)
             },
             effect_chain_panel: EffectChainPanel::default(),
+            cue_panel: CuePanel::default(),
             user_config: config::UserConfig::load(),
         }
     }
@@ -312,6 +318,15 @@ impl AppUI {
     /// Take all pending actions and clear the list
     pub fn take_actions(&mut self) -> Vec<UIAction> {
         std::mem::take(&mut self.actions)
+    }
+
+    /// Render the cue panel
+    pub fn render_cue_panel(&mut self, ui: &Ui) {
+        if !self.show_cue_panel {
+            return;
+        }
+
+        self.cue_panel.render(ui);
     }
 
     /// Render the control panel
@@ -459,6 +474,7 @@ impl AppUI {
                     &mut self.effect_chain_panel.visible,
                 );
                 ui.checkbox(self.i18n.t("check-show-audio"), &mut self.show_audio);
+                ui.checkbox(self.i18n.t("check-show-cues"), &mut self.show_cue_panel);
                 ui.checkbox(self.i18n.t("check-show-stats"), &mut self.show_stats);
                 ui.separator();
                 if ui.menu_item(self.i18n.t("btn-fullscreen")) {

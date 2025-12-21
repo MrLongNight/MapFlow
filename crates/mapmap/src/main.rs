@@ -472,6 +472,7 @@ impl App {
                         .render_transform_panel(ui, &mut self.state.layer_manager);
                     self.ui_state
                         .render_master_controls(ui, &mut self.state.layer_manager);
+                    self.ui_state.render_cue_panel(ui);
                 });
 
             // --------- egui: UI separat zeichnen ---------

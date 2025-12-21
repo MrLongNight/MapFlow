@@ -341,3 +341,4 @@ label-add-client = Add Client
 btn-add = Add
 header-address-mappings = Address Mappings
 text-osc-edit-tip = (Edit osc_mappings.json for now)
+check-show-cues = Show Cues
