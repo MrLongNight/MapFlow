@@ -348,3 +348,15 @@ btn-add = Hinzufügen
 header-address-mappings = Adress-Zuweisungen
 text-osc-edit-tip = (Bearbeite vorerst die osc_mappings.json)
 check-show-cues = Cues anzeigen
+
+# Shortcuts
+shortcuts-panel-title = Tastenkürzel
+shortcuts-reset-defaults = Auf Standard zurücksetzen
+shortcuts-header-action = Aktion
+shortcuts-header-shortcut = Kürzel
+shortcuts-edit = Bearbeiten
+check-show-shortcuts = Tastenkürzel anzeigen
+shortcuts-edit-dialog-title = Tastenkürzel bearbeiten
+shortcuts-edit-dialog-prompt = Drücken Sie eine neue Tastenkombination für das Kürzel.
+shortcuts-edit-dialog-cancel = Drücken Sie Esc zum Abbrechen.
+shortcuts-edit-dialog-conflict-warning = Diese Tastenkombination wird bereits verwendet.

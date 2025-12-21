@@ -342,3 +342,15 @@ btn-add = Add
 header-address-mappings = Address Mappings
 text-osc-edit-tip = (Edit osc_mappings.json for now)
 check-show-cues = Show Cues
+
+# Shortcuts
+shortcuts-panel-title = Keyboard Shortcuts
+shortcuts-reset-defaults = Reset to Defaults
+shortcuts-header-action = Action
+shortcuts-header-shortcut = Shortcut
+shortcuts-edit = Edit
+check-show-shortcuts = Show Shortcuts
+shortcuts-edit-dialog-title = Edit Shortcut
+shortcuts-edit-dialog-prompt = Press a new key combination for the shortcut.
+shortcuts-edit-dialog-cancel = Press Esc to cancel.
+shortcuts-edit-dialog-conflict-warning = This key combination is already in use.

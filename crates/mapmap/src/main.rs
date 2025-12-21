@@ -146,6 +146,11 @@ impl App {
             1,
         );
 
+        let control_manager = ControlManager::new();
+        ui_state
+            .shortcuts_panel
+            .detect_conflicts(&control_manager.key_bindings);
+
         Ok(Self {
             window_manager,
             imgui_context,
@@ -159,7 +164,7 @@ impl App {
             egui_renderer,
             last_autosave: std::time::Instant::now(),
             mcp_receiver,
-            control_manager: ControlManager::new(),
+            control_manager,
         })
     }
 
@@ -488,6 +493,17 @@ impl App {
                     self.ui_state
                         .effect_chain_panel
                         .ui(ctx, &self.ui_state.i18n);
+
+                    // Render Shortcuts Panel
+                    egui::Window::new(self.ui_state.i18n.t("shortcuts-panel-title"))
+                        .open(&mut self.ui_state.show_shortcuts_panel)
+                        .show(ctx, |ui| {
+                            self.ui_state.shortcuts_panel.render(
+                                ui,
+                                &self.ui_state.i18n,
+                                &mut self.control_manager.key_bindings,
+                            );
+                        });
                 });
 
                 self.egui_state

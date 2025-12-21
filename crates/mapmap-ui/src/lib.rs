@@ -23,6 +23,7 @@ pub mod media_browser;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
+pub mod shortcuts_panel;
 pub mod theme;
 pub mod timeline_v2;
 pub mod undo_redo;
@@ -44,6 +45,7 @@ pub use imgui::OwnedDrawData;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
+pub use shortcuts_panel::ShortcutsPanel;
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
@@ -238,6 +240,8 @@ use mapmap_control::ControlTarget;
 /// UI state for the application
 pub struct AppUI {
     pub dashboard: Dashboard,
+    pub shortcuts_panel: ShortcutsPanel,
+    pub show_shortcuts_panel: bool,
     pub show_osc_panel: bool,
     pub selected_control_target: ControlTarget,
     pub osc_port_input: String,
@@ -275,6 +279,8 @@ impl Default for AppUI {
     fn default() -> Self {
         Self {
             dashboard: Dashboard::default(),
+            shortcuts_panel: ShortcutsPanel::default(),
+            show_shortcuts_panel: false,
             show_osc_panel: true,
             selected_control_target: ControlTarget::Custom("".to_string()),
             osc_port_input: "8000".to_string(),
@@ -452,6 +458,10 @@ impl AppUI {
             });
 
             ui.menu(self.i18n.t("menu-view"), || {
+                ui.checkbox(
+                    self.i18n.t("check-show-shortcuts"),
+                    &mut self.show_shortcuts_panel,
+                );
                 ui.checkbox(self.i18n.t("check-show-osc"), &mut self.show_osc_panel);
                 ui.checkbox(self.i18n.t("check-show-controls"), &mut self.show_controls);
                 ui.checkbox(self.i18n.t("check-show-layers"), &mut self.show_layers);
