@@ -45,7 +45,13 @@ impl PaintPanel {
                 for paint_id in paint_ids {
                     if let Some(paint) = paint_manager.get_paint_mut(paint_id) {
                         ui.group(|ui| {
-                            ui.heading(format!("{} ({:?})", paint.name, paint.paint_type));
+                            ui.heading(i18n.t_args(
+                                "paint-label-name-type",
+                                &[
+                                    ("name", &paint.name),
+                                    ("type", &format!("{:?}", paint.paint_type)),
+                                ],
+                            ));
 
                             // Opacity slider
                             ui.add(
@@ -71,7 +77,7 @@ impl PaintPanel {
                                 });
                             }
 
-                            if ui.button(i18n.t("btn-remove")).clicked() {
+                            if ui.button(i18n.t("btn-remove-paint")).clicked() {
                                 self.action = Some(PaintPanelAction::RemovePaint(paint.id));
                             }
                         });

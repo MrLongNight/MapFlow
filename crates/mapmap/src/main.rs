@@ -84,13 +84,18 @@ impl App {
 
         let mut ui_state = AppUI::default();
 
-        let state = AppState::new("New Project");
+        let state = AppState::new(ui_state.i18n.t("new-project-name"));
 
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
             Ok(None) => vec![],
             Err(e) => {
-                error!("Failed to list audio devices: {}", e);
+                error!(
+                    "{}",
+                    ui_state
+                        .i18n
+                        .t_args("error-list-audio-devices", &[("error", &e.to_string())])
+                );
                 vec![]
             }
         };
@@ -99,14 +104,24 @@ impl App {
         let mut audio_backend = match CpalBackend::new(None) {
             Ok(backend) => Some(backend),
             Err(e) => {
-                error!("Failed to initialize audio backend: {}", e);
+                error!(
+                    "{}",
+                    ui_state
+                        .i18n
+                        .t_args("error-init-audio-backend", &[("error", &e.to_string())])
+                );
                 None
             }
         };
 
         if let Some(backend) = &mut audio_backend {
             if let Err(e) = backend.start() {
-                error!("Failed to start audio stream: {}", e);
+                error!(
+                    "{}",
+                    ui_state
+                        .i18n
+                        .t_args("error-start-audio-stream", &[("error", &e.to_string())])
+                );
                 audio_backend = None;
             }
         }
@@ -127,7 +142,12 @@ impl App {
             rt.block_on(async {
                 let server = McpServer::new(Some(mcp_sender));
                 if let Err(e) = server.run_stdio().await {
-                    error!("MCP Server error: {}", e);
+                    error!(
+                        "{}",
+                        // Note: Can't access ui_state here, so using a static string.
+                        // For a real app, a shared logging localization instance would be better.
+                        format!("MCP Server error: {}", e)
+                    );
                 }
             });
         });
@@ -168,13 +188,19 @@ impl App {
 
     /// Runs the application loop.
     pub fn run(mut self, event_loop: EventLoop<()>) {
+        // This is a developer-facing log, so it doesn't need translation.
         info!("Entering event loop");
 
         event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
         let _ = event_loop.run(move |event, elwt| {
             if let Err(e) = self.handle_event(event, elwt) {
-                error!("Error handling event: {}", e);
+                error!(
+                    "{}",
+                    self.ui_state
+                        .i18n
+                        .t_args("error-handle-event", &[("error", &e.to_string())])
+                );
             }
         });
     }
@@ -235,7 +261,16 @@ impl App {
                     }
                     WindowEvent::RedrawRequested => {
                         if let Err(e) = self.render(output_id) {
-                            error!("Render error on output {}: {}", output_id, e);
+                            error!(
+                                "{}",
+                                self.ui_state.i18n.t_args(
+                                    "error-render",
+                                    &[
+                                        ("output_id", &output_id.to_string()),
+                                        ("error", &e.to_string())
+                                    ]
+                                )
+                            );
                         }
                     }
                     _ => (),
@@ -248,9 +283,14 @@ impl App {
                 {
                     let autosave_path = PathBuf::from(".mapmap_autosave");
                     if let Err(e) = save_project(&self.state, &autosave_path) {
-                        error!("Autosave failed: {}", e);
+                        error!(
+                            "{}",
+                            self.ui_state
+                                .i18n
+                                .t_args("error-autosave", &[("error", &e.to_string())])
+                        );
                     } else {
-                        info!("Autosave successful");
+                        info!("{}", self.ui_state.i18n.t("info-autosave"));
                         self.last_autosave = std::time::Instant::now();
                         // Note: We don't clear dirty flag on autosave, only on explicit save
                     }
@@ -286,21 +326,39 @@ impl App {
             match action {
                 mapmap_ui::UIAction::SaveProjectAs => {
                     if let Some(path) = FileDialog::new()
-                        .add_filter("MapFlow Project", &["mflow", "mapmap", "ron", "json"])
+                        .add_filter(
+                            self.ui_state.i18n.t("project-filter-name"),
+                            &["mflow", "mapmap", "ron", "json"],
+                        )
                         .set_file_name("project.mflow")
                         .save_file()
                     {
                         if let Err(e) = save_project(&self.state, &path) {
-                            error!("Failed to save project: {}", e);
+                            error!(
+                                "{}",
+                                self.ui_state.i18n.t_args(
+                                    "error-save-project",
+                                    &[("error", &e.to_string())]
+                                )
+                            );
                         } else {
-                            info!("Project saved to {:?}", path);
+                            info!(
+                                "{}",
+                                self.ui_state.i18n.t_args(
+                                    "info-save-project",
+                                    &[("path", &path.to_string_lossy())]
+                                )
+                            );
                         }
                     }
                 }
                 mapmap_ui::UIAction::SaveProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
-                            .add_filter("MapFlow Project", &["mflow", "mapmap", "ron", "json"])
+                            .add_filter(
+                                self.ui_state.i18n.t("project-filter-name"),
+                                &["mflow", "mapmap", "ron", "json"],
+                            )
                             .set_file_name("project.mflow")
                             .save_file()
                         {
@@ -315,16 +373,31 @@ impl App {
 
                     if !path.as_os_str().is_empty() {
                         if let Err(e) = save_project(&self.state, &path) {
-                            error!("Failed to save project: {}", e);
+                            error!(
+                                "{}",
+                                self.ui_state.i18n.t_args(
+                                    "error-save-project",
+                                    &[("error", &e.to_string())]
+                                )
+                            );
                         } else {
-                            info!("Project saved to {:?}", path);
+                            info!(
+                                "{}",
+                                self.ui_state.i18n.t_args(
+                                    "info-save-project",
+                                    &[("path", &path.to_string_lossy())]
+                                )
+                            );
                         }
                     }
                 }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
-                            .add_filter("MapFlow Project", &["mflow", "mapmap", "ron", "json"])
+                            .add_filter(
+                                self.ui_state.i18n.t("project-filter-name"),
+                                &["mflow", "mapmap", "ron", "json"],
+                            )
                             .pick_file()
                         {
                             path
@@ -348,7 +421,13 @@ impl App {
                     self.state.settings.language = lang_code.clone();
                     self.state.dirty = true;
                     self.ui_state.i18n.set_locale(&lang_code);
-                    info!("Language switched to: {}", lang_code);
+                    info!(
+                        "{}",
+                        self.ui_state.i18n.t_args(
+                            "info-language-switch",
+                            &[("lang_code", &lang_code)]
+                        )
+                    );
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
                 _ => {}
@@ -359,61 +438,92 @@ impl App {
         while let Ok(action) = self.mcp_receiver.try_recv() {
             match action {
                 McpAction::SaveProject(path) => {
-                    info!("MCP: Saving project to {:?}", path);
+                    info!(
+                        "{}",
+                        self.ui_state
+                            .i18n
+                            .t_args("mcp-info-save", &[("path", &path.to_string_lossy())])
+                    );
                     if let Err(e) = save_project(&self.state, &path) {
-                        error!("MCP: Failed to save project: {}", e);
+                        error!(
+                            "{}",
+                            self.ui_state
+                                .i18n
+                                .t_args("mcp-error-save", &[("error", &e.to_string())])
+                        );
                     }
                 }
                 McpAction::LoadProject(path) => {
-                    info!("MCP: Loading project from {:?}", path);
+                    info!(
+                        "{}",
+                        self.ui_state
+                            .i18n
+                            .t_args("mcp-info-load", &[("path", &path.to_string_lossy())])
+                    );
                     self.load_project_file(&path);
                 }
                 McpAction::AddLayer(name) => {
-                    info!("MCP: Adding layer '{}'", name);
+                    info!(
+                        "{}",
+                        self.ui_state
+                            .i18n
+                            .t_args("mcp-info-add-layer", &[("name", &name)])
+                    );
                     self.state.layer_manager.create_layer(name);
                     self.state.dirty = true;
                 }
                 McpAction::RemoveLayer(id) => {
-                    info!("MCP: Removing layer {}", id);
+                    info!(
+                        "{}",
+                        self.ui_state
+                            .i18n
+                            .t_args("mcp-info-remove-layer", &[("id", &id.to_string())])
+                    );
                     self.state.layer_manager.remove_layer(id);
                     self.state.dirty = true;
                 }
                 McpAction::TriggerCue(id) => {
-                    info!("MCP: Triggering cue {}", id);
+                    info!(
+                        "{}",
+                        self.ui_state
+                            .i18n
+                            .t_args("mcp-info-trigger-cue", &[("id", &id.to_string())])
+                    );
                     self.control_manager
                         .execute_action(Action::GotoCue(id as u32));
                 }
                 McpAction::NextCue => {
-                    info!("MCP: Next cue");
+                    info!("{}", self.ui_state.i18n.t("mcp-info-next-cue"));
                     self.control_manager.execute_action(Action::NextCue);
                 }
                 McpAction::PrevCue => {
-                    info!("MCP: Prev cue");
+                    info!("{}", self.ui_state.i18n.t("mcp-info-prev-cue"));
                     println!("Triggering PrevCue"); // Debug print as per earlier pattern
                     self.control_manager.execute_action(Action::PrevCue);
                 }
                 McpAction::MediaPlay => {
-                    info!("MCP: Media Play");
-                    // TODO: Integrate with media player when available
+                    info!("MCP: Media Play"); // Dev log
                 }
                 McpAction::MediaPause => {
-                    info!("MCP: Media Pause");
-                    // TODO: Integrate with media player when available
+                    info!("MCP: Media Pause"); // Dev log
                 }
                 McpAction::MediaStop => {
-                    info!("MCP: Media Stop");
-                    // TODO: Integrate with media player when available
+                    info!("MCP: Media Stop"); // Dev log
                 }
                 McpAction::SetLayerOpacity(id, opacity) => {
-                    info!("MCP: Set layer {} opacity to {}", id, opacity);
-                    // TODO: Implement layer opacity update
+                    info!("MCP: Set layer {} opacity to {}", id, opacity); // Dev log
                 }
                 McpAction::SetLayerVisibility(id, visible) => {
-                    info!("MCP: Set layer {} visibility to {}", id, visible);
-                    // TODO: Implement layer visibility update
+                    info!("MCP: Set layer {} visibility to {}", id, visible); // Dev log
                 }
                 _ => {
-                    info!("MCP: Unimplemented action received: {:?}", action);
+                    info!(
+                        "{}",
+                        self.ui_state.i18n.t_args(
+                            "mcp-info-unimplemented",
+                            &[("action", &format!("{:?}", action))]
+                        )
+                    );
                 }
             }
         }
@@ -426,7 +536,7 @@ impl App {
                         .paint_manager
                         .add_paint(mapmap_core::paint::Paint::color(
                             0,
-                            "New Color",
+                            self.ui_state.i18n.t("paint-new-color-name"),
                             [1.0, 1.0, 1.0, 1.0],
                         ));
                     self.state.dirty = true;
@@ -449,7 +559,13 @@ impl App {
                 // Sync language to UI
                 self.ui_state.i18n.set_locale(&self.state.settings.language);
 
-                info!("Project loaded from {:?}", path);
+                info!(
+                    "{}",
+                    self.ui_state.i18n.t_args(
+                        "info-load-project",
+                        &[("path", &path.to_string_lossy())]
+                    )
+                );
 
                 // Add to recent files
                 if let Some(path_str) = path.to_str() {
@@ -467,7 +583,12 @@ impl App {
                     self.ui_state.user_config.add_recent_file(&p);
                 }
             }
-            Err(e) => error!("Failed to load project: {}", e),
+            Err(e) => error!(
+                "{}",
+                self.ui_state
+                    .i18n
+                    .t_args("error-load-project", &[("error", &e.to_string())])
+            ),
         }
     }
 
@@ -486,7 +607,7 @@ impl App {
             self.backend
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
+                    label: Some(self.ui_state.i18n.t("label-render-encoder")),
                 });
 
         if output_id == 0 {
@@ -539,13 +660,25 @@ impl App {
                                     match CpalBackend::new(Some(action)) {
                                         Ok(mut backend) => {
                                             if let Err(e) = backend.start() {
-                                                error!("Failed to start audio stream: {}", e);
+                                                error!(
+                                                    "{}",
+                                                    self.ui_state.i18n.t_args(
+                                                        "error-start-audio-stream",
+                                                        &[("error", &e.to_string())]
+                                                    )
+                                                );
                                             } else {
                                                 self.audio_backend = Some(backend);
                                             }
                                         }
                                         Err(e) => {
-                                            error!("Failed to initialize audio backend: {}", e);
+                                            error!(
+                                                "{}",
+                                                self.ui_state.i18n.t_args(
+                                                    "error-init-audio-backend",
+                                                    &[("error", &e.to_string())]
+                                                )
+                                            );
                                         }
                                     }
                                 }
@@ -659,7 +792,7 @@ impl App {
 
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Egui Render Pass"),
+                    label: Some(self.ui_state.i18n.t("label-egui-render-pass")),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &view,
                         resolve_target: None,
@@ -687,20 +820,32 @@ impl App {
                 match CpalBackend::new(Some(device)) {
                     Ok(mut backend) => {
                         if let Err(e) = backend.start() {
-                            error!("Failed to start audio stream: {}", e);
+                            error!(
+                                "{}",
+                                self.ui_state.i18n.t_args(
+                                    "error-start-audio-stream",
+                                    &[("error", &e.to_string())]
+                                )
+                            );
                         } else {
                             self.audio_backend = Some(backend);
                         }
                     }
                     Err(e) => {
-                        error!("Failed to initialize audio backend: {}", e);
+                        error!(
+                            "{}",
+                            self.ui_state.i18n.t_args(
+                                "error-init-audio-backend",
+                                &[("error", &e.to_string())]
+                            )
+                        );
                     }
                 }
             }
         } else {
             // Output-Fenster Management: Clear To Black oder dein Mapping-Rendering!
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Output Render Pass"),
+                label: Some(self.ui_state.i18n.t("label-output-render-pass")),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -726,6 +871,7 @@ impl App {
 fn main() -> Result<()> {
     // Initialize logging
     tracing_subscriber::fmt::init();
+    // This log happens before localization is initialized, so it remains a static string.
     info!("Starting MapFlow...");
 
     // Create the event loop

@@ -147,7 +147,7 @@ impl Dashboard {
 
         if self.visible {
             let mut is_open = self.visible;
-            egui::Window::new("Dashboard")
+            egui::Window::new(locale.t("panel-dashboard-title"))
                 .open(&mut is_open)
                 .show(ctx, |ui| {
                     action = self.render_contents(ui, locale);
@@ -196,18 +196,18 @@ impl Dashboard {
 
         // Playback controls
         ui.horizontal(|ui| {
-            if ui.button("▶").clicked() {
+            if ui.button(locale.t("btn-play-icon")).clicked() {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Play));
             }
-            if ui.button("⏸").clicked() {
+            if ui.button(locale.t("btn-pause-icon")).clicked() {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Pause));
             }
-            if ui.button("⏹").clicked() {
+            if ui.button(locale.t("btn-stop-icon")).clicked() {
                 action = Some(DashboardAction::SendCommand(PlaybackCommand::Stop));
             }
 
             ui.label(format!(
-                "{} {:?}",
+                "{}: {:?}",
                 locale.t("dashboard-state"),
                 self.playback_state
             ));

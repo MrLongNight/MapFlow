@@ -88,14 +88,14 @@ impl TransformPanel {
                             .add(
                                 egui::DragValue::new(&mut self.current_transform.position.0)
                                     .speed(1.0)
-                                    .prefix("X: "),
+                                    .prefix(i18n.t("drag-val-x")),
                             )
                             .changed();
                         changed |= ui
                             .add(
                                 egui::DragValue::new(&mut self.current_transform.position.1)
                                     .speed(1.0)
-                                    .prefix("Y: "),
+                                    .prefix(i18n.t("drag-val-y")),
                             )
                             .changed();
                     });
@@ -119,7 +119,7 @@ impl TransformPanel {
                     changed |= ui
                         .add(
                             egui::Slider::new(&mut self.current_transform.rotation, 0.0..=360.0)
-                                .text("Z"),
+                                .text(i18n.t("slider-z")),
                         )
                         .changed();
                     if ui.button(i18n.t("btn-reset-rotation")).clicked() {
@@ -136,7 +136,7 @@ impl TransformPanel {
                                 egui::DragValue::new(&mut self.current_transform.scale.0)
                                     .speed(0.01)
                                     .clamp_range(0.01..=5.0)
-                                    .prefix("W: "),
+                                    .prefix(i18n.t("drag-val-w")),
                             )
                             .changed();
                         changed |= ui
@@ -144,7 +144,7 @@ impl TransformPanel {
                                 egui::DragValue::new(&mut self.current_transform.scale.1)
                                     .speed(0.01)
                                     .clamp_range(0.01..=5.0)
-                                    .prefix("H: "),
+                                    .prefix(i18n.t("drag-val-h")),
                             )
                             .changed();
                     });
@@ -166,13 +166,13 @@ impl TransformPanel {
                     changed |= ui
                         .add(
                             egui::Slider::new(&mut self.current_transform.anchor.0, 0.0..=1.0)
-                                .text("X"),
+                                .text(i18n.t("drag-val-x")),
                         )
                         .changed();
                     changed |= ui
                         .add(
                             egui::Slider::new(&mut self.current_transform.anchor.1, 0.0..=1.0)
-                                .text("Y"),
+                                .text(i18n.t("drag-val-y")),
                         )
                         .changed();
 

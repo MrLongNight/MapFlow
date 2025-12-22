@@ -197,12 +197,12 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui.close_menu();
                 }
                 ui.separator();
-                ui.menu_button("Language", |ui| {
-                    if ui.button("English").clicked() {
+                ui.menu_button(ui_state.i18n.t("menu-language"), |ui| {
+                    if ui.button(ui_state.i18n.t("language-en")).clicked() {
                         actions.push(UIAction::SetLanguage("en".to_string()));
                         ui.close_menu();
                     }
-                    if ui.button("Deutsch").clicked() {
+                    if ui.button(ui_state.i18n.t("language-de")).clicked() {
                         actions.push(UIAction::SetLanguage("de".to_string()));
                         ui.close_menu();
                     }

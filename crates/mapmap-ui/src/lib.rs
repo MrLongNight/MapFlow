@@ -225,10 +225,12 @@ impl ImGuiContext {
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
+        locale: &LocaleManager,
     ) {
         if let Some(draw_data) = self.draw_data.take() {
+            let render_pass_label = locale.t("label-imgui-render-pass");
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("ImGui Render Pass"),
+                label: Some(&render_pass_label),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view,
                     resolve_target: None,
@@ -327,7 +329,7 @@ impl Default for AppUI {
             loop_mode: mapmap_media::LoopMode::Loop,
             selected_layer_id: None,
             selected_output_id: None,
-            audio_devices: vec!["None".to_string()],
+            audio_devices: vec![],
             selected_audio_device: None,
             recent_files: {
                 let config = config::UserConfig::load();
@@ -592,30 +594,29 @@ impl AppUI {
 
                         // Blend mode selector
                         let blend_modes = [
-                            "Normal",
-                            "Add",
-                            "Subtract",
-                            "Multiply",
-                            "Screen",
-                            "Overlay",
-                            "Soft Light",
-                            "Hard Light",
-                            "Lighten",
-                            "Darken",
-                            "Color Dodge",
-                            "Color Burn",
-                            "Difference",
-                            "Exclusion",
+                            self.i18n.t("blend-mode-normal"),
+                            self.i18n.t("blend-mode-add"),
+                            self.i18n.t("blend-mode-subtract"),
+                            self.i18n.t("blend-mode-multiply"),
+                            self.i18n.t("blend-mode-screen"),
+                            self.i18n.t("blend-mode-overlay"),
+                            self.i18n.t("blend-mode-soft-light"),
+                            self.i18n.t("blend-mode-hard-light"),
+                            self.i18n.t("blend-mode-lighten"),
+                            self.i18n.t("blend-mode-darken"),
+                            self.i18n.t("blend-mode-color-dodge"),
+                            self.i18n.t("blend-mode-color-burn"),
+                            self.i18n.t("blend-mode-difference"),
+                            self.i18n.t("blend-mode-exclusion"),
                         ];
 
                         let current_mode_idx = layer.blend_mode as usize;
                         let mut selected = current_mode_idx;
 
-                        if ui.combo(
+                        if ui.combo_simple_string(
                             self.i18n.t("label-mode"),
                             &mut selected,
                             &blend_modes,
-                            |item| std::borrow::Cow::Borrowed(item),
                         ) {
                             layer.blend_mode = match selected {
                                 0 => BlendMode::Normal,
@@ -918,7 +919,7 @@ impl AppUI {
                 if ui.button(self.i18n.t("btn-add-output")) {
                     // Add a single output covering full canvas
                     self.actions.push(UIAction::AddOutput(
-                        "New Output".to_string(),
+                        self.i18n.t("new-output-name"),
                         mapmap_core::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
                         (1920, 1080),
                     ));
@@ -963,54 +964,59 @@ impl AppUI {
 
                         // Edge blending status
                         let blend = &output.edge_blend;
-                        ui.text(format!("{}:", self.i18n.t("panel-edge-blend")));
+                        ui.text(self.i18n.t("panel-edge-blend"));
+                        let mut blend_active = false;
                         if blend.left.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-left")));
+                            ui.text(format!("  - {}", self.i18n.t("check-left")));
+                            blend_active = true;
                         }
                         if blend.right.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-right")));
+                            ui.text(format!("  - {}", self.i18n.t("check-right")));
+                            blend_active = true;
                         }
                         if blend.top.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-top")));
+                            ui.text(format!("  - {}", self.i18n.t("check-top")));
+                            blend_active = true;
                         }
                         if blend.bottom.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-bottom")));
+                            ui.text(format!("  - {}", self.i18n.t("check-bottom")));
+                            blend_active = true;
                         }
-                        if !blend.left.enabled
-                            && !blend.right.enabled
-                            && !blend.top.enabled
-                            && !blend.bottom.enabled
-                        {
-                            ui.text_disabled(format!("  {}", self.i18n.t("label-none")));
+                        if !blend_active {
+                            ui.text_disabled(format!("  ({})", self.i18n.t("label-none")));
                         }
 
                         ui.separator();
 
                         // Color calibration status
                         let cal = &output.color_calibration;
-                        ui.text(format!("{}:", self.i18n.t("panel-color-cal")));
-                        if cal.brightness != 0.0 {
+                        ui.text(self.i18n.t("panel-color-cal"));
+                        let mut cal_active = false;
+                        if (cal.brightness).abs() > 0.001 {
                             ui.text(format!(
-                                "  {}: {:.2}",
+                                "  - {}: {:.2}",
                                 self.i18n.t("label-brightness"),
                                 cal.brightness
                             ));
+                            cal_active = true;
                         }
-                        if cal.contrast != 1.0 {
+                        if (cal.contrast - 1.0).abs() > 0.001 {
                             ui.text(format!(
-                                "  {}: {:.2}",
+                                "  - {}: {:.2}",
                                 self.i18n.t("label-contrast"),
                                 cal.contrast
                             ));
+                            cal_active = true;
                         }
-                        if cal.saturation != 1.0 {
+                        if (cal.saturation - 1.0).abs() > 0.001 {
                             ui.text(format!(
-                                "  {}: {:.2}",
+                                "  - {}: {:.2}",
                                 self.i18n.t("label-saturation"),
                                 cal.saturation
                             ));
+                            cal_active = true;
                         }
-                        if cal.brightness == 0.0 && cal.contrast == 1.0 && cal.saturation == 1.0 {
+                        if !cal_active {
                             ui.text_disabled(format!("  ({})", self.i18n.t("label-none")));
                         }
 
@@ -1252,7 +1258,7 @@ impl AppUI {
                 ui.separator();
 
                 // Preset buttons
-                ui.text(format!("{}:", self.i18n.t("header-quick-presets")));
+                ui.text(self.i18n.t("header-quick-presets"));
                 if ui.button(self.i18n.t("btn-subtle")) {
                     *config = mapmap_core::OscillatorConfig::preset_subtle();
                 }
@@ -1280,7 +1286,7 @@ impl AppUI {
                     &mut config.distortion_amount,
                 );
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Intensity of the distortion effect");
+                    ui.tooltip_text(self.i18n.t("tooltip-intensity"));
                 }
 
                 ui.slider(
@@ -1290,7 +1296,7 @@ impl AppUI {
                     &mut config.distortion_scale,
                 );
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Spatial scale of distortion");
+                    ui.tooltip_text(self.i18n.t("tooltip-dist-scale"));
                 }
 
                 ui.slider(
@@ -1300,7 +1306,7 @@ impl AppUI {
                     &mut config.distortion_speed,
                 );
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Animation speed");
+                    ui.tooltip_text(self.i18n.t("tooltip-dist-speed"));
                 }
 
                 ui.separator();
@@ -1315,7 +1321,12 @@ impl AppUI {
                 );
 
                 // Color mode combo
-                let color_modes = ["Off", "Rainbow", "Black & White", "Complementary"];
+                let color_modes = [
+                    self.i18n.t("color-mode-off"),
+                    self.i18n.t("color-mode-rainbow"),
+                    self.i18n.t("color-mode-black-white"),
+                    self.i18n.t("color-mode-complementary"),
+                ];
                 let mut color_idx = match config.color_mode {
                     mapmap_core::ColorMode::Off => 0,
                     mapmap_core::ColorMode::Rainbow => 1,
@@ -1344,7 +1355,11 @@ impl AppUI {
                 ui.text(self.i18n.t("header-simulation"));
 
                 // Resolution combo
-                let res_names = ["Low (128x128)", "Medium (256x256)", "High (512x512)"];
+                let res_names = [
+                    self.i18n.t("sim-res-low"),
+                    self.i18n.t("sim-res-medium"),
+                    self.i18n.t("sim-res-high"),
+                ];
                 let mut res_idx = match config.simulation_resolution {
                     mapmap_core::SimulationResolution::Low => 0,
                     mapmap_core::SimulationResolution::Medium => 1,
@@ -1365,7 +1380,7 @@ impl AppUI {
                     };
                 }
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Higher resolution = more detail but slower");
+                    ui.tooltip_text(self.i18n.t("tooltip-sim-res"));
                 }
 
                 ui.slider(
@@ -1375,7 +1390,7 @@ impl AppUI {
                     &mut config.kernel_radius,
                 );
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Coupling interaction distance");
+                    ui.tooltip_text(self.i18n.t("tooltip-kernel-radius"));
                 }
 
                 ui.slider(
@@ -1385,7 +1400,7 @@ impl AppUI {
                     &mut config.noise_amount,
                 );
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Random variation in oscillation");
+                    ui.tooltip_text(self.i18n.t("tooltip-noise-amount"));
                 }
 
                 ui.slider(
@@ -1404,7 +1419,10 @@ impl AppUI {
                 ui.separator();
 
                 // Coordinate mode
-                let coord_modes = ["Cartesian", "Log-Polar"];
+                let coord_modes = [
+                    self.i18n.t("coord-mode-cartesian"),
+                    self.i18n.t("coord-mode-log-polar"),
+                ];
                 let mut coord_idx = match config.coordinate_mode {
                     mapmap_core::CoordinateMode::Cartesian => 0,
                     mapmap_core::CoordinateMode::LogPolar => 1,
@@ -1423,11 +1441,17 @@ impl AppUI {
                     };
                 }
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Log-Polar creates radial/spiral patterns");
+                    ui.tooltip_text(self.i18n.t("tooltip-coord-mode"));
                 }
 
                 // Phase initialization mode
-                let phase_modes = ["Random", "Uniform", "Plane H", "Plane V", "Diagonal"];
+                let phase_modes = [
+                    self.i18n.t("phase-init-random"),
+                    self.i18n.t("phase-init-uniform"),
+                    self.i18n.t("phase-init-plane-h"),
+                    self.i18n.t("phase-init-plane-v"),
+                    self.i18n.t("phase-init-diagonal"),
+                ];
                 let mut phase_idx = match config.phase_init_mode {
                     mapmap_core::PhaseInitMode::Random => 0,
                     mapmap_core::PhaseInitMode::Uniform => 1,
@@ -1452,7 +1476,7 @@ impl AppUI {
                     };
                 }
                 if ui.is_item_hovered() {
-                    ui.tooltip_text("Initial phase pattern for oscillators");
+                    ui.tooltip_text(self.i18n.t("tooltip-phase-init"));
                 }
 
                 ui.separator();
@@ -1466,8 +1490,11 @@ impl AppUI {
                             || config.rings[i].width > 0.0
                             || config.rings[i].coupling.abs() > 0.01;
 
+                        let ring_header = self
+                            .i18n
+                            .t_args("header-coupling-ring", &[("id", &(i + 1).to_string())]);
                         if let Some(_token) = ui
-                            .tree_node_config(format!("Ring {}", i + 1))
+                            .tree_node_config(ring_header)
                             .default_open(is_active)
                             .build(|| {
                                 ui.slider(
@@ -1477,7 +1504,7 @@ impl AppUI {
                                     &mut config.rings[i].distance,
                                 );
                                 if ui.is_item_hovered() {
-                                    ui.tooltip_text("Distance from center (0-1)");
+                                    ui.tooltip_text(self.i18n.t("tooltip-ring-dist"));
                                 }
 
                                 ui.slider(
@@ -1487,7 +1514,7 @@ impl AppUI {
                                     &mut config.rings[i].width,
                                 );
                                 if ui.is_item_hovered() {
-                                    ui.tooltip_text("Ring width (0-1)");
+                                    ui.tooltip_text(self.i18n.t("tooltip-ring-width"));
                                 }
 
                                 ui.slider(
@@ -1497,7 +1524,7 @@ impl AppUI {
                                     &mut config.rings[i].coupling,
                                 );
                                 if ui.is_item_hovered() {
-                                    ui.tooltip_text("Negative = anti-sync, Positive = sync");
+                                    ui.tooltip_text(self.i18n.t("tooltip-ring-coupling"));
                                 }
 
                                 if ui.button(self.i18n.t("btn-reset-ring")) {
