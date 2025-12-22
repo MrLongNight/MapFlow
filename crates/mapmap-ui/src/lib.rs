@@ -25,6 +25,7 @@ pub mod menu_bar;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
+pub mod output_panel;
 pub mod paint_panel;
 pub mod theme;
 pub mod timeline_v2;
@@ -49,6 +50,7 @@ pub use imgui::OwnedDrawData;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
+pub use output_panel::OutputPanel;
 pub use paint_panel::PaintPanel;
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
@@ -266,6 +268,7 @@ pub struct AppUI {
     pub menu_bar: menu_bar::MenuBar,
     pub dashboard: Dashboard,
     pub paint_panel: PaintPanel,
+    pub output_panel: OutputPanel,
     pub show_osc_panel: bool,
     pub selected_control_target: ControlTarget,
     pub osc_port_input: String,
@@ -276,7 +279,6 @@ pub struct AppUI {
     pub show_mappings: bool,
     pub show_transforms: bool,        // Phase 1
     pub show_master_controls: bool,   // Phase 1
-    pub show_outputs: bool,           // Phase 2
     pub show_edge_blend: bool,        // Phase 2
     pub show_color_calibration: bool, // Phase 2
     pub show_oscillator: bool,        // Oscillator distortion effect
@@ -306,6 +308,7 @@ impl Default for AppUI {
             menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
             paint_panel: PaintPanel::default(),
+            output_panel: OutputPanel::default(),
             show_osc_panel: true,
             selected_control_target: ControlTarget::Custom("".to_string()),
             osc_port_input: "8000".to_string(),
@@ -316,7 +319,6 @@ impl Default for AppUI {
             show_mappings: true,
             show_transforms: true,
             show_master_controls: true,
-            show_outputs: true,
             show_edge_blend: false,        // Show only when output selected
             show_color_calibration: false, // Show only when output selected
             show_oscillator: true,
@@ -845,195 +847,6 @@ impl AppUI {
                 ui.text(self.i18n.t("label-effective-multipliers"));
                 ui.text(self.i18n.t("text-mult-opacity"));
                 ui.text(self.i18n.t("text-mult-speed"));
-            });
-    }
-
-    /// Phase 2: Render output configuration panel
-    pub fn render_output_panel(
-        &mut self,
-        ui: &Ui,
-        output_manager: &mut mapmap_core::OutputManager,
-    ) {
-        if !self.show_outputs {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-outputs"))
-            .size([420.0, 500.0], Condition::FirstUseEver)
-            .position([380.0, 380.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text(self.i18n.t("header-outputs"));
-                ui.separator();
-
-                // Canvas size display
-                let canvas_size = output_manager.canvas_size();
-                ui.text(format!(
-                    "{}: {}x{}",
-                    self.i18n.t("label-canvas"),
-                    canvas_size.0,
-                    canvas_size.1
-                ));
-                ui.separator();
-
-                // Output list
-                ui.text(format!(
-                    "{}: {}",
-                    self.i18n.t("panel-outputs"),
-                    output_manager.outputs().len()
-                ));
-
-                for output in output_manager.outputs() {
-                    let _id = ui.push_id_usize(output.id as usize);
-
-                    let is_selected = self.selected_output_id == Some(output.id);
-                    if ui
-                        .selectable_config(&output.name)
-                        .selected(is_selected)
-                        .build()
-                    {
-                        self.selected_output_id = Some(output.id);
-                    }
-
-                    // Show output info
-                    ui.same_line();
-                    ui.text_disabled(format!(
-                        "{}x{} | {}",
-                        output.resolution.0,
-                        output.resolution.1,
-                        if output.fullscreen { "FS" } else { "Win" }
-                    ));
-                }
-
-                ui.separator();
-
-                // Quick setup buttons
-                if ui.button(self.i18n.t("btn-projector-array")) {
-                    self.actions.push(UIAction::CreateProjectorArray2x2(
-                        (1920, 1080),
-                        0.1, // 10% overlap
-                    ));
-                }
-
-                ui.same_line();
-                if ui.button(self.i18n.t("btn-add-output")) {
-                    // Add a single output covering full canvas
-                    self.actions.push(UIAction::AddOutput(
-                        "New Output".to_string(),
-                        mapmap_core::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
-                        (1920, 1080),
-                    ));
-                }
-
-                ui.separator();
-
-                // Edit selected output
-                if let Some(output_id) = self.selected_output_id {
-                    if let Some(output) =
-                        output_manager.outputs().iter().find(|o| o.id == output_id)
-                    {
-                        ui.text(self.i18n.t("header-selected-output"));
-                        ui.separator();
-
-                        ui.text(format!("{}: {}", self.i18n.t("label-name"), output.name));
-                        ui.text(format!(
-                            "{}: {}x{}",
-                            self.i18n.t("label-resolution"),
-                            output.resolution.0,
-                            output.resolution.1
-                        ));
-
-                        ui.separator();
-                        ui.text(self.i18n.t("label-canvas-region"));
-                        ui.text(format!(
-                            "  {}: {:.2}, {}: {:.2}",
-                            self.i18n.t("label-x"),
-                            output.canvas_region.x,
-                            self.i18n.t("label-y"),
-                            output.canvas_region.y
-                        ));
-                        ui.text(format!(
-                            "  {}: {:.2}, {}: {:.2}",
-                            self.i18n.t("label-width"),
-                            output.canvas_region.width,
-                            self.i18n.t("label-height"),
-                            output.canvas_region.height
-                        ));
-
-                        ui.separator();
-
-                        // Edge blending status
-                        let blend = &output.edge_blend;
-                        ui.text(format!("{}:", self.i18n.t("panel-edge-blend")));
-                        if blend.left.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-left")));
-                        }
-                        if blend.right.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-right")));
-                        }
-                        if blend.top.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-top")));
-                        }
-                        if blend.bottom.enabled {
-                            ui.text(format!("  {}", self.i18n.t("check-bottom")));
-                        }
-                        if !blend.left.enabled
-                            && !blend.right.enabled
-                            && !blend.top.enabled
-                            && !blend.bottom.enabled
-                        {
-                            ui.text_disabled(format!("  {}", self.i18n.t("label-none")));
-                        }
-
-                        ui.separator();
-
-                        // Color calibration status
-                        let cal = &output.color_calibration;
-                        ui.text(format!("{}:", self.i18n.t("panel-color-cal")));
-                        if cal.brightness != 0.0 {
-                            ui.text(format!(
-                                "  {}: {:.2}",
-                                self.i18n.t("label-brightness"),
-                                cal.brightness
-                            ));
-                        }
-                        if cal.contrast != 1.0 {
-                            ui.text(format!(
-                                "  {}: {:.2}",
-                                self.i18n.t("label-contrast"),
-                                cal.contrast
-                            ));
-                        }
-                        if cal.saturation != 1.0 {
-                            ui.text(format!(
-                                "  {}: {:.2}",
-                                self.i18n.t("label-saturation"),
-                                cal.saturation
-                            ));
-                        }
-                        if cal.brightness == 0.0 && cal.contrast == 1.0 && cal.saturation == 1.0 {
-                            ui.text_disabled(format!("  ({})", self.i18n.t("label-none")));
-                        }
-
-                        ui.separator();
-
-                        ui.text_colored(
-                            [0.5, 0.8, 1.0, 1.0],
-                            format!("{}:", self.i18n.t("output-tip")),
-                        );
-                        ui.text_wrapped(self.i18n.t("tip-panels-auto-open"));
-
-                        ui.separator();
-
-                        if ui.button(self.i18n.t("btn-remove-output")) {
-                            self.actions.push(UIAction::RemoveOutput(output_id));
-                            self.selected_output_id = None;
-                        }
-                    }
-                }
-
-                ui.separator();
-                ui.text_colored([0.0, 1.0, 0.0, 1.0], self.i18n.t("msg-multi-window-active"));
-                ui.text_disabled(self.i18n.t("msg-output-windows-tip"));
             });
     }
 

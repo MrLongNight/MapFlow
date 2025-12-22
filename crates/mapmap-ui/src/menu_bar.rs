@@ -122,6 +122,10 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui_state.i18n.t("panel-dashboard"),
                 );
                 ui.checkbox(
+                    &mut ui_state.output_panel.visible,
+                    ui_state.i18n.t("output-panel-title"),
+                );
+                ui.checkbox(
                     &mut ui_state.effect_chain_panel.visible,
                     ui_state.i18n.t("panel-effect-chain"),
                 );

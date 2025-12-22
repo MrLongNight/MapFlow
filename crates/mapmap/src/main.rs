@@ -12,6 +12,7 @@ use egui_winit::State;
 use mapmap_control::{shortcuts::Action, ControlManager};
 use mapmap_core::{
     audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer},
+    monitor::{detect_monitors_winit, MonitorTopology},
     AppState, OutputId,
 };
 
@@ -62,6 +63,8 @@ struct App {
     mcp_receiver: Receiver<McpAction>,
     /// Unified control manager
     control_manager: ControlManager,
+    /// Detected monitor topology
+    monitor_topology: MonitorTopology,
 }
 
 impl App {
@@ -132,6 +135,10 @@ impl App {
             });
         });
 
+        // Detect monitors
+        let monitor_topology = detect_monitors_winit(event_loop);
+        info!("Detected {} monitors.", monitor_topology.monitors.len());
+
         // Initialize egui
         let egui_context = egui::Context::default();
         let egui_state = State::new(
@@ -163,6 +170,7 @@ impl App {
             last_autosave: std::time::Instant::now(),
             mcp_receiver,
             control_manager: ControlManager::new(),
+            monitor_topology,
         })
     }
 
@@ -577,6 +585,54 @@ impl App {
                     self.ui_state
                         .transform_panel
                         .render(ctx, &self.ui_state.i18n);
+
+                    // Render Output Panel
+                    let output_actions = self.ui_state.output_panel.show(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.output_manager,
+                        &self.monitor_topology.monitors,
+                    );
+
+                    // Handle output panel actions immediately
+                    for action in output_actions {
+                        match action {
+                            mapmap_ui::output_panel::OutputPanelAction::AddOutput => {
+                                self.state.output_manager.add_output(
+                                    "New Output".to_string(),
+                                    mapmap_core::output::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
+                                    (1920, 1080),
+                                );
+                                self.state.dirty = true;
+                            }
+                            mapmap_ui::output_panel::OutputPanelAction::RemoveOutput(id) => {
+                                self.state.output_manager.remove_output(id);
+                                self.state.dirty = true;
+                            }
+                            mapmap_ui::output_panel::OutputPanelAction::UpdateOutput(config) => {
+                                if let Some(output) =
+                                    self.state.output_manager.get_output_mut(config.id)
+                                {
+                                    *output = config;
+                                    self.state.dirty = true;
+                                }
+                            }
+                            mapmap_ui::output_panel::OutputPanelAction::ShowTestPattern(id) => {
+                                info!("Action: Show test pattern for output {}", id);
+                                // TODO: Implement test pattern logic
+                            }
+                            mapmap_ui::output_panel::OutputPanelAction::ShowColorCalibration(
+                                id,
+                            ) => {
+                                info!("Action: Show color calibration for output {}", id);
+                                // TODO: Link to a dedicated color calibration panel
+                            }
+                            mapmap_ui::output_panel::OutputPanelAction::ShowEdgeBlend(id) => {
+                                info!("Action: Show edge blend for output {}", id);
+                                // TODO: Link to a dedicated edge blend panel
+                            }
+                        }
+                    }
                 });
 
                 self.egui_state

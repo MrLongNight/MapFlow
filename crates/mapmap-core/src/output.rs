@@ -129,6 +129,8 @@ impl Default for ColorCalibration {
 pub struct OutputConfig {
     pub id: OutputId,
     pub name: String,
+    /// The name of the monitor this output is assigned to.
+    pub monitor_name: Option<String>,
     pub canvas_region: CanvasRegion,
     pub resolution: (u32, u32),
     pub edge_blend: EdgeBlendConfig,
@@ -147,6 +149,7 @@ impl OutputConfig {
         Self {
             id,
             name,
+            monitor_name: None,
             canvas_region,
             resolution,
             edge_blend: EdgeBlendConfig::default(),

@@ -381,3 +381,22 @@ btn-add = Add
 header-address-mappings = Address Mappings
 text-osc-edit-tip = (Edit osc_mappings.json for now)
 check-show-cues = Show Cues
+
+# Output Panel (egui)
+output-panel-title = Output Configuration
+output-panel-list-header = Outputs
+output-panel-add = Add
+output-panel-remove = Remove
+output-panel-no-output-selected = No output selected.
+output-panel-no-outputs = No outputs configured.
+output-panel-no-device = No Monitor Assigned
+output-panel-details-header = Selected Output Details
+output-panel-name = Name
+output-panel-monitor = Monitor
+output-panel-fullscreen = Fullscreen
+output-panel-resolution = Resolution
+output-panel-canvas-region = Canvas Region
+output-panel-tools = Tools
+output-panel-test-pattern = Test Pattern
+output-panel-color-calibration = Color Calibration
+output-panel-edge-blend = Edge Blend
