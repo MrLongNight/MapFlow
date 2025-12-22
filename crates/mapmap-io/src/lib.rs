@@ -85,6 +85,7 @@ pub mod converter;
 pub mod error;
 pub mod format;
 pub mod project;
+pub mod project_format;
 pub mod sink;
 pub mod source;
 
@@ -130,7 +131,7 @@ pub mod virtual_camera;
 pub use converter::FormatConverter;
 pub use error::{IoError, Result};
 pub use format::{FrameMetadata, PixelFormat, VideoFormat, VideoFrame};
-pub use project::{load_project, save_project, ProjectError};
+pub use project::{load_project, save_project};
 pub use sink::{SinkStatistics, VideoSink};
 pub use source::VideoSource;
 
