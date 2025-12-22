@@ -1,0 +1,64 @@
+﻿cargo :     Checking 
+mapmap-core v0.2.0 (C:\Us
+ers\Vinyl\Desktop\VJMappe
+r\VjMapper\crates\mapmap-
+core)
+In Zeile:1 Zeichen:1
++ cargo clippy 2>&1 | 
+Out-File -FilePath 
+clippy_output.txt 
+-Encoding ut ...
++ ~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (    Checking ma...e   
+ s\mapmap-core):Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+    Checking 
+mapmap-control v0.2.0 (C:
+\Users\Vinyl\Desktop\VJMa
+pper\VjMapper\crates\mapm
+ap-control)
+   Compiling mapmap 
+v0.2.0 (C:\Users\Vinyl\De
+sktop\VJMapper\VjMapper\c
+rates\mapmap)
+    Checking imgui-wgpu 
+v0.25.0 (C:\Users\Vinyl\D
+esktop\VJMapper\VjMapper\
+crates\vendor\imgui-wgpu)
+    Checking 
+mapmap-media v0.2.0 (C:\U
+sers\Vinyl\Desktop\VJMapp
+er\VjMapper\crates\mapmap
+-media)
+    Checking mapmap-ffi 
+v0.2.0 (C:\Users\Vinyl\De
+sktop\VJMapper\VjMapper\c
+rates\mapmap-ffi)
+    Checking mapmap-mcp 
+v0.2.0 (C:\Users\Vinyl\De
+sktop\VJMapper\VjMapper\c
+rates\mapmap-mcp)
+    Checking 
+mapmap-render v0.2.0 (C:\
+Users\Vinyl\Desktop\VJMap
+per\VjMapper\crates\mapma
+p-render)
+    Checking mapmap-io 
+v0.2.0 (C:\Users\Vinyl\De
+sktop\VJMapper\VjMapper\c
+rates\mapmap-io)
+    Checking mapmap-ui 
+v0.2.0 (C:\Users\Vinyl\De
+sktop\VJMapper\VjMapper\c
+rates\mapmap-ui)
+    Finished `dev` 
+profile [optimized + 
+debuginfo] target(s) in 
+9.06s

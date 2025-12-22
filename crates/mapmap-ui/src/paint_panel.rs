@@ -21,7 +21,12 @@ impl PaintPanel {
         self.action.take()
     }
 
-    pub fn render(&mut self, ctx: &Context, i18n: &LocaleManager, paint_manager: &mut PaintManager) {
+    pub fn render(
+        &mut self,
+        ctx: &Context,
+        i18n: &LocaleManager,
+        paint_manager: &mut PaintManager,
+    ) {
         if !self.visible {
             return;
         }

@@ -48,9 +48,7 @@ impl AudioPanel {
 
         // --- Audio Device Selector ---
         let no_device_text = locale.t("audio-panel-no-device");
-        let selected_text = selected_audio_device
-            .as_deref()
-            .unwrap_or(&no_device_text);
+        let selected_text = selected_audio_device.as_deref().unwrap_or(&no_device_text);
 
         egui::ComboBox::from_label(locale.t("audio-panel-device"))
             .selected_text(selected_text)
@@ -157,11 +155,7 @@ impl AudioPanel {
             );
 
             // Bar color based on energy
-            let color = Color32::from_rgb(
-                (energy * 200.0) as u8,
-                255 - (energy * 200.0) as u8,
-                50,
-            );
+            let color = Color32::from_rgb((energy * 200.0) as u8, 255 - (energy * 200.0) as u8, 50);
             painter.rect_filled(bar_rect, 1.0, color);
 
             // Peak indicator
@@ -171,10 +165,7 @@ impl AudioPanel {
                     .max(1.0);
 
             painter.line_segment(
-                [
-                    Pos2::new(x, peak_y),
-                    Pos2::new(x + bar_width, peak_y),
-                ],
+                [Pos2::new(x, peak_y), Pos2::new(x + bar_width, peak_y)],
                 Stroke::new(2.0, Color32::from_rgb(255, 100, 100)),
             );
         }

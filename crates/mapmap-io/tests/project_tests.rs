@@ -1,6 +1,6 @@
 //! Project serialization and deserialization tests
 
-use mapmap_core::{AppState, AppSettings};
+use mapmap_core::{AppSettings, AppState};
 use mapmap_io::project::{load_project, save_project, ProjectError};
 use std::fs::File;
 use std::io::Write;

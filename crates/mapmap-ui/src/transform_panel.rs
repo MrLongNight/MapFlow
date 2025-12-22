@@ -130,12 +130,30 @@ impl TransformPanel {
 
                     // Scale controls
                     ui.label(i18n.t("transform-scale"));
-                     ui.horizontal(|ui| {
-                        changed |= ui.add(egui::DragValue::new(&mut self.current_transform.scale.0).speed(0.01).clamp_range(0.01..=5.0).prefix("W: ")).changed();
-                        changed |= ui.add(egui::DragValue::new(&mut self.current_transform.scale.1).speed(0.01).clamp_range(0.01..=5.0).prefix("H: ")).changed();
+                    ui.horizontal(|ui| {
+                        changed |= ui
+                            .add(
+                                egui::DragValue::new(&mut self.current_transform.scale.0)
+                                    .speed(0.01)
+                                    .clamp_range(0.01..=5.0)
+                                    .prefix("W: "),
+                            )
+                            .changed();
+                        changed |= ui
+                            .add(
+                                egui::DragValue::new(&mut self.current_transform.scale.1)
+                                    .speed(0.01)
+                                    .clamp_range(0.01..=5.0)
+                                    .prefix("H: "),
+                            )
+                            .changed();
                     });
-                    changed |= ui.add(Slider::new(&mut self.current_transform.scale.0, 0.1..=5.0)).changed();
-                    changed |= ui.add(Slider::new(&mut self.current_transform.scale.1, 0.1..=5.0)).changed();
+                    changed |= ui
+                        .add(Slider::new(&mut self.current_transform.scale.0, 0.1..=5.0))
+                        .changed();
+                    changed |= ui
+                        .add(Slider::new(&mut self.current_transform.scale.1, 0.1..=5.0))
+                        .changed();
 
                     if ui.button(i18n.t("btn-reset-scale")).clicked() {
                         self.current_transform.scale = (1.0, 1.0);
@@ -169,25 +187,30 @@ impl TransformPanel {
 
                     // By default, any change updates the transform.
                     if changed {
-                        self.last_action =
-                            Some(TransformAction::UpdateTransform(self.current_transform.clone()));
+                        self.last_action = Some(TransformAction::UpdateTransform(
+                            self.current_transform.clone(),
+                        ));
                     }
 
                     // More specific actions below can overwrite the default action.
                     ui.horizontal(|ui| {
                         if ui.button(i18n.t("transform-fill")).clicked() {
-                            self.last_action = Some(TransformAction::ApplyResizeMode(ResizeMode::Fill));
+                            self.last_action =
+                                Some(TransformAction::ApplyResizeMode(ResizeMode::Fill));
                         }
                         if ui.button(i18n.t("btn-resize-fit")).clicked() {
-                            self.last_action = Some(TransformAction::ApplyResizeMode(ResizeMode::Fit));
+                            self.last_action =
+                                Some(TransformAction::ApplyResizeMode(ResizeMode::Fit));
                         }
                     });
-                     ui.horizontal(|ui| {
+                    ui.horizontal(|ui| {
                         if ui.button(i18n.t("btn-resize-stretch")).clicked() {
-                            self.last_action = Some(TransformAction::ApplyResizeMode(ResizeMode::Stretch));
+                            self.last_action =
+                                Some(TransformAction::ApplyResizeMode(ResizeMode::Stretch));
                         }
                         if ui.button(i18n.t("btn-resize-original")).clicked() {
-                            self.last_action = Some(TransformAction::ApplyResizeMode(ResizeMode::Original));
+                            self.last_action =
+                                Some(TransformAction::ApplyResizeMode(ResizeMode::Original));
                         }
                     });
 

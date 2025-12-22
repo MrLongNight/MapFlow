@@ -287,7 +287,6 @@ impl Dashboard {
         action
     }
 
-
     /// Render grid layout
     fn render_grid_layout(
         &mut self,
