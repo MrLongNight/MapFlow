@@ -95,7 +95,7 @@ impl Default for EffectParams {
 }
 
 /// An effect instance in the chain
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Effect {
     /// Unique ID for this effect instance
     pub id: u64,
@@ -175,7 +175,7 @@ impl Effect {
 }
 
 /// Effect chain containing multiple effects
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct EffectChain {
     /// Effects in order of application
     pub effects: Vec<Effect>,

@@ -27,6 +27,7 @@ rand = "0.8"
 [dev-dependencies]
 criterion = { workspace = true }
 pollster = { workspace = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [[bench]]
 name = "texture_upload"
