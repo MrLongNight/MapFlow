@@ -1,6 +1,6 @@
 # Build Instructions
 
-This document provides comprehensive build instructions for VjMapper (Rust Edition) on all supported platforms.
+This document provides comprehensive build instructions for MapFlow (Rust Edition) on all supported platforms.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This document provides comprehensive build instructions for VjMapper (Rust Editi
 
 ### Rust Toolchain
 
-VjMapper requires **Rust 1.75 or later**. Install it using rustup:
+MapFlow requires **Rust 1.75 or later**. Install it using rustup:
 
 ```bash
 # Install Rust
@@ -143,8 +143,8 @@ sudo pacman -S ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/VjMapper.git
-cd VjMapper
+git clone https://github.com/MrLongNight/MapFlow.git
+cd MapFlow
 
 # Build in debug mode (faster compile, slower runtime)
 cargo build
@@ -185,8 +185,8 @@ brew install ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/VjMapper.git
-cd VjMapper
+git clone https://github.com/MrLongNight/MapFlow.git
+cd MapFlow
 
 # Build in release mode
 cargo build --release
@@ -231,8 +231,8 @@ Open Command Prompt or PowerShell:
 
 ```cmd
 # Clone the repository
-git clone https://github.com/MrLongNight/VjMapper.git
-cd VjMapper
+git clone https://github.com/MrLongNight/MapFlow.git
+cd MapFlow
 
 # Build in release mode
 cargo build --release
@@ -368,4 +368,4 @@ Ensure your GPU drivers are up-to-date:
 - **Documentation:** See [docs/](docs/) directory
 - **Architecture:** [docs/03-ARCHITECTURE/ARCHITECTURE.md](docs/03-ARCHITECTURE/ARCHITECTURE.md)
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Issues:** https://github.com/MrLongNight/VjMapper/issues
+- **Issues:** https://github.com/MrLongNight/MapFlow/issues

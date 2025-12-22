@@ -1,6 +1,6 @@
 # Project Phases (0-7)
 
-This document outlines the complete project roadmap for the VjMapper Rust rewrite, from the initial core engine development to the final polish and release.
+This document outlines the complete project roadmap for the MapFlow Rust rewrite, from the initial core engine development to the final polish and release.
 
 ## Phase Overview
 

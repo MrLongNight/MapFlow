@@ -1,7 +1,7 @@
 # Machbarkeitsstudie: Multi-PC Architektur
 
 ## 1. Zusammenfassung
-Die Erweiterung von VjMapper für den Multi-PC-Betrieb ist technisch **machbar** und würde die Software auf ein professionelles Level heben.
+Die Erweiterung von MapFlow für den Multi-PC-Betrieb ist technisch **machbar** und würde die Software auf ein professionelles Level heben.
 
 Basierend auf den Anforderungen (Option A: Streaming, Unterstützung alter Hardware/Raspberry Pi, professioneller Installer) empfehle ich einen **Single-Binary-Ansatz** mit integriertem **NDI-Streaming**. Dies ermöglicht es, dieselbe ausführbare Datei sowohl als "Master" als auch als "Player" zu nutzen, gesteuert durch Startparameter.
 
@@ -24,7 +24,7 @@ Der Master sendet nur Steuerbefehle (OSC/Netzwerk-Events). Die Clients berechnen
 
 ## 3. Technische Umsetzung: Der "Single-Binary"-Ansatz
 
-Anstatt zwei separate Apps zu entwickeln, refaktorieren wir `VjMapper` so, dass es in zwei Modi starten kann. Dies erfüllt den Wunsch nach einem professionellen Installer und einfacher Wartung.
+Anstatt zwei separate Apps zu entwickeln, refaktorieren wir `MapFlow` so, dass es in zwei Modi starten kann. Dies erfüllt den Wunsch nach einem professionellen Installer und einfacher Wartung.
 
 ### Konzept
 Die `main.rs` wird zur Weiche:
@@ -55,10 +55,10 @@ Wie gewünscht, nutzen wir die bestehende Modulstruktur. Der Installer (WiX für
 
 *   **Windows Installer (`.msi`):**
     *   Der User wählt im Installer: "Full Installation" oder "Player Only" (oder beides).
-    *   Technisch wird immer dieselbe `VjMapper.exe` installiert.
+    *   Technisch wird immer dieselbe `MapFlow.exe` installiert.
     *   Die Auswahl steuert lediglich, welche **Verknüpfungen** (Shortcuts) erstellt werden:
-        1.  `VjMapper` (Startet normal)
-        2.  `VjMapper Player` (Startet mit `VjMapper.exe --player`)
+        1.  `MapFlow` (Startet normal)
+        2.  `MapFlow Player` (Startet mit `MapFlow.exe --player`)
 *   **Linux (`.deb`):**
     *   Ähnliches Prinzip via `.desktop` Files.
 
@@ -82,7 +82,7 @@ Um dieses Feature als **MVP (Minimum Viable Product)** umzusetzen:
 
 ## 7. Fazit & Nächste Schritte
 
-Das Vorhaben ist **sinnvoll und machbar**. Es positioniert VjMapper als ernstzunehmende Alternative zu teuren Profi-Lösungen (wie Resolume Arena oder MadMapper).
+Das Vorhaben ist **sinnvoll und machbar**. Es positioniert MapFlow als ernstzunehmende Alternative zu teuren Profi-Lösungen (wie Resolume Arena oder MadMapper).
 
 **Empfohlener erster Schritt:**
-Erstellung eines Proof-of-Concept (POC), der lediglich ein Videobild von einer `VjMapper`-Instanz zu einer anderen über LAN sendet, um die Latenz und Performance von Rust+NDI zu verifizieren.
+Erstellung eines Proof-of-Concept (POC), der lediglich ein Videobild von einer `MapFlow`-Instanz zu einer anderen über LAN sendet, um die Latenz und Performance von Rust+NDI zu verifizieren.

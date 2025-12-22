@@ -1,4 +1,4 @@
-# VjMapper
+# MapFlow
 
 <!-- Dynamic CI/CD Status Badges -->
 [![Build & Test](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-01_build-and-test.yml/badge.svg)](https://github.com/MrLongNight/VjMapper/actions/workflows/CI-01_build-and-test.yml)
@@ -8,17 +8,17 @@
 
 > **Modern, High-Performance Projection Mapping Suite**
 
-VjMapper is a professional-grade, open-source projection mapping system being completely rewritten in Rust. Originally a C++/Qt application, VjMapper is being transformed into a modern, high-performance tool capable of competing with commercial solutions like Resolume Arena.
+MapFlow is a professional-grade, open-source projection mapping system being completely rewritten in Rust. Originally a C++/Qt application, MapFlow is being transformed into a modern, high-performance tool capable of competing with commercial solutions like Resolume Arena.
 
 ## 🎯 Vision
 
-Projection mapping (also known as video mapping and spatial augmented reality) is a projection technology used to turn objects—often irregularly shaped—into display surfaces for video projection. VjMapper aims to provide a professional, open-source alternative for artists, designers, and technical professionals who need powerful projection mapping capabilities without the cost of commercial software.
+Projection mapping (also known as video mapping and spatial augmented reality) is a projection technology used to turn objects—often irregularly shaped—into display surfaces for video projection. MapFlow aims to provide a professional, open-source alternative for artists, designers, and technical professionals who need powerful projection mapping capabilities without the cost of commercial software.
 
 ## 🚀 Project Status
 
 **Current Phase: Phase 1 (Core Engine) - 🚧 IN PROGRESS**
 
-VjMapper is a complete rewrite of the original C++/Qt application in Rust. The project is in its early stages, focusing on building a solid foundation for a high-performance, memory-safe, and modern projection mapping tool.
+MapFlow is a complete rewrite of the original C++/Qt application in Rust. The project is in its early stages, focusing on building a solid foundation for a high-performance, memory-safe, and modern projection mapping tool.
 
 ### From C++/Qt to Rust:
 - **Memory Safety:** Eliminates entire classes of crashes common in live performance software.
@@ -28,7 +28,7 @@ VjMapper is a complete rewrite of the original C++/Qt application in Rust. The p
 
 ## 🗺️ Roadmap
 
-The development of VjMapper is planned in several phases, starting with the core engine and gradually adding more advanced features.
+The development of MapFlow is planned in several phases, starting with the core engine and gradually adding more advanced features.
 
 **Phase 1: Core Engine**
 -   [ ] Layer system with transforms, opacity, and blend modes
@@ -101,7 +101,7 @@ cargo test
 
 ## 🏗️ Architecture
 
-VjMapper is organized as a Cargo workspace with specialized crates to ensure a clean separation of concerns:
+MapFlow is organized as a Cargo workspace with specialized crates to ensure a clean separation of concerns:
 
 ```
 crates/
@@ -126,7 +126,7 @@ This project is in active development. Contributions will be welcome as the core
 
 ## 📄 License
 
-VjMapper is licensed under the **GNU General Public License v3.0** (GPL-3.0). See [LICENSE](LICENSE) for the full license text.
+MapFlow is licensed under the **GNU General Public License v3.0** (GPL-3.0). See [LICENSE](LICENSE) for the full license text.
 
 ## 🙏 Acknowledgments
 

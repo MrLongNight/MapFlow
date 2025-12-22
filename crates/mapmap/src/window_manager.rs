@@ -57,7 +57,7 @@ impl WindowManager {
     ) -> Result<OutputId> {
         let window = Arc::new(
             WindowBuilder::new()
-                .with_title("MapMap - Main Control")
+                .with_title("MapFlow - Main Control")
                 .with_inner_size(winit::dpi::PhysicalSize::new(1920, 1080))
                 .build(event_loop)?,
         );
@@ -116,7 +116,7 @@ impl WindowManager {
 
         let window = Arc::new(
             WindowBuilder::new()
-                .with_title(format!("MapMap Output - {}", output_config.name))
+                .with_title(format!("MapFlow Output - {}", output_config.name))
                 .with_inner_size(winit::dpi::PhysicalSize::new(
                     output_config.resolution.0,
                     output_config.resolution.1,

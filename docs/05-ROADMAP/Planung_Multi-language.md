@@ -3,7 +3,7 @@
 > **Status:** Geplant  
 > **Priorität:** Niedrig (nach UI-Stabilisierung)  
 > **Geschätzter Aufwand:** 3-5 Entwicklertage  
-> **Ziel:** VjMapper soll mehrere Sprachen in der Benutzeroberfläche unterstützen
+> **Ziel:** MapFlow soll mehrere Sprachen in der Benutzeroberfläche unterstützen
 
 ---
 
@@ -140,7 +140,7 @@ en:
     undo: "Undo"
     redo: "Redo"
     preferences: "Preferences..."
-    about: "About VjMapper"
+    about: "About MapFlow"
   
   # Statusmeldungen
   status:
@@ -234,7 +234,7 @@ de:
     undo: "Rückgängig"
     redo: "Wiederholen"
     preferences: "Einstellungen..."
-    about: "Über VjMapper"
+    about: "Über MapFlow"
   
   status:
     loading: "Wird geladen..."
@@ -315,7 +315,7 @@ Die Texte aus den `. ts`-Dateien können manuell als Referenz für neue YAML-Üb
 |-----------|--------|
 | UI-Layout stabil | ⏳ In Arbeit |
 | Kern-Features fertig | ⏳ In Arbeit |
-| App umbenannt zu VjMapper | ⏳ Ausstehend |
+| App umbenannt zu MapFlow | ⏳ Ausstehend |
 | Community-Interesse | ✅ Vorhanden |
 
 **Empfohlener Zeitpunkt:** Nach Phase 2 Abschluss, wenn die UI weitgehend stabil ist.

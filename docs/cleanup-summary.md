@@ -92,7 +92,7 @@ Removed C++ and Qt specific entries:
 
 ### Repository Structure (After Cleanup)
 ```
-VjMapper/
+MapFlow/
 ├── crates/           # Rust workspace crates
 │   ├── mapmap/           # Main application
 │   ├── mapmap-core/      # Domain model

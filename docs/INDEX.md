@@ -1,6 +1,6 @@
-# VjMapper Documentation
+# MapFlow Documentation
 
-Welcome to VjMapper - Professional Open-Source Projection Mapping Software.
+Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 
 ## 🚀 Quick Navigation
 
@@ -56,7 +56,7 @@ docs/
 | Architecture | `03-ARCHITECTURE/ARCHITECTURE.md` | System design |
 | Contributing | `02-CONTRIBUTING/CONTRIBUTING.md` | Development workflow |
 | Roadmap | `05-ROADMAP/PROJECT-PHASES.md` | Phase overview |
-| Features | `04-USER-GUIDE/FEATURES.md` | What VjMapper can do |
+| Features | `04-USER-GUIDE/FEATURES.md` | What MapFlow can do |
 | Tutorials | `06-TUTORIALS/README.md` | Learning path |
 
 ---

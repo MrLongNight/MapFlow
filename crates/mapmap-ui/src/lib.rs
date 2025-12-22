@@ -445,7 +445,6 @@ impl AppUI {
             });
     }
 
-<<<<<<< HEAD
     /// Render main menu bar
     pub fn render_menu_bar(&mut self, ui: &Ui) {
         ui.main_menu_bar(|| {
@@ -536,8 +535,6 @@ impl AppUI {
         });
     }
 
-=======
->>>>>>> origin/feature/menu-bar-egui-514237342778400185
     /// Render layer management panel
     pub fn render_layer_panel(&mut self, ui: &Ui, layer_manager: &mut mapmap_core::LayerManager) {
         use mapmap_core::BlendMode;
