@@ -21,6 +21,7 @@ pub mod dashboard;
 pub mod edge_blend_panel;
 pub mod effect_chain_panel;
 pub mod i18n;
+pub mod layer_panel;
 pub mod media_browser;
 pub mod menu_bar;
 pub mod mesh_editor;
@@ -48,6 +49,7 @@ pub use effect_chain_panel::{
     EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
 };
 pub use imgui::OwnedDrawData;
+pub use layer_panel::{LayerPanel, LayerPanelAction};
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
@@ -275,6 +277,7 @@ pub struct AppUI {
     pub show_controls: bool,
     pub show_stats: bool,
     pub show_layers: bool,
+    pub layer_panel: LayerPanel,
     pub show_mappings: bool,
     pub show_transforms: bool,      // Phase 1
     pub show_master_controls: bool, // Phase 1
@@ -314,6 +317,7 @@ impl Default for AppUI {
             show_controls: true,
             show_stats: true,
             show_layers: true,
+            layer_panel: LayerPanel { visible: true },
             show_mappings: true,
             show_transforms: true,
             show_master_controls: true,
@@ -486,7 +490,10 @@ impl AppUI {
             ui.menu(self.i18n.t("menu-view"), || {
                 ui.checkbox(self.i18n.t("check-show-osc"), &mut self.show_osc_panel);
                 ui.checkbox(self.i18n.t("check-show-controls"), &mut self.show_controls);
-                ui.checkbox(self.i18n.t("check-show-layers"), &mut self.show_layers);
+                ui.checkbox(
+                    self.i18n.t("check-show-layers"),
+                    &mut self.layer_panel.visible,
+                );
                 ui.checkbox(
                     self.i18n.t("check-show-paints"),
                     &mut self.paint_panel.visible,
