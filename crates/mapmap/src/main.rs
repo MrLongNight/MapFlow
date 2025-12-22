@@ -488,8 +488,6 @@ impl App {
                     self.ui_state
                         .render_mapping_panel(ui, &mut self.state.mapping_manager);
                     self.ui_state
-                        .render_transform_panel(ui, &mut self.state.layer_manager);
-                    self.ui_state
                         .render_master_controls(ui, &mut self.state.layer_manager);
                     self.ui_state.render_cue_panel(ui);
                 });
@@ -514,6 +512,19 @@ impl App {
                         &self.ui_state.i18n,
                         &mut self.state.paint_manager,
                     );
+                    // Update and render Transform Panel
+                    if let Some(selected_id) = self.ui_state.selected_layer_id {
+                        if let Some(layer) = self.state.layer_manager.get_layer(selected_id) {
+                            self.ui_state
+                                .transform_panel
+                                .set_transform(&layer.name, &layer.transform);
+                        }
+                    } else {
+                        self.ui_state.transform_panel.clear_selection();
+                    }
+                    self.ui_state
+                        .transform_panel
+                        .render(ctx, &self.ui_state.i18n);
                 });
 
                 self.egui_state
@@ -553,6 +564,39 @@ impl App {
 
                 (tris, screen_descriptor)
             };
+
+            // Handle TransformPanel actions
+            if let Some(action) = self.ui_state.transform_panel.take_action() {
+                if let Some(selected_id) = self.ui_state.selected_layer_id {
+                    match action {
+                        mapmap_ui::TransformAction::UpdateTransform(values) => {
+                            if let Some(layer) = self.state.layer_manager.get_layer_mut(selected_id)
+                            {
+                                layer.transform.position.x = values.position.0;
+                                layer.transform.position.y = values.position.1;
+                                layer.transform.rotation.z = values.rotation.to_radians();
+                                layer.transform.scale.x = values.scale.0;
+                                layer.transform.scale.y = values.scale.1;
+                                layer.transform.anchor.x = values.anchor.0;
+                                layer.transform.anchor.y = values.anchor.1;
+                                self.state.dirty = true;
+                            }
+                        }
+                        mapmap_ui::TransformAction::ResetTransform => {
+                            if let Some(layer) = self.state.layer_manager.get_layer_mut(selected_id)
+                            {
+                                layer.transform = mapmap_core::Transform::default();
+                                self.state.dirty = true;
+                            }
+                        }
+                        mapmap_ui::TransformAction::ApplyResizeMode(mode) => {
+                            self.ui_state
+                                .actions
+                                .push(mapmap_ui::UIAction::ApplyResizeMode(selected_id, mode));
+                        }
+                    }
+                }
+            }
 
             self.imgui_context.render_frame(
                 &self.backend.device,

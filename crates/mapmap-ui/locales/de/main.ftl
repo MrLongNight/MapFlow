@@ -227,7 +227,7 @@ btn-add-quad = Quad-Mapping hinzufügen
 
 # Transform
 panel-transforms = Transformations-Steuerung
-header-transform-sys = Phase 1: Transformations-System
+header-transform-sys = Transformations-System
 label-editing = Bearbeite
 transform-position = Position:
 transform-position-x = X
@@ -235,21 +235,22 @@ transform-position-y = Y
 transform-scale = Skalierung:
 transform-width = Breite
 transform-height = Höhe
-btn-reset-scale = Skalierung zurücksetzen (1:1)
-transform-rotation = Rotation (Grad):
+btn-reset-scale = Skalierung zurücksetzen
+transform-rotation = Rotation
 btn-reset-rotation = Rotation zurücksetzen
-label-anchor = Ankerpunkt (0-1)
+label-anchor = Ankerpunkt
 transform-anchor-x = Anker X
 transform-anchor-y = Anker Y
-btn-center-anchor = Anker zentrieren (0.5, 0.5)
-transform-presets = Größe-Presets:
-transform-fill = Füllen (Cover)
-btn-resize-fit = Einpassen (Contain)
-btn-resize-stretch = Strecken (Distort)
-btn-resize-original = Original (1:1)
+btn-center-anchor = Anker zentrieren
+transform-presets = Größen-Voreinstellungen
+transform-fill = Füllen
+btn-resize-fit = Einpassen
+btn-resize-stretch = Strecken
+btn-resize-original = Original
+btn-reset-defaults = Auf Standard zurücksetzen
 transform-no-selection = Ausgewählte Ebene nicht gefunden.
 transform-no-layer = Keine Ebene ausgewählt.
-transform-select-tip = Klicken Sie auf einen Ebenennamen im\nEbenen-Panel, um ihn auszuwählen.
+transform-select-tip = Klicke auf eine Ebene im Ebenen-Panel, um sie auszuwählen.
 
 # Master
 panel-master = Master-Steuerung
