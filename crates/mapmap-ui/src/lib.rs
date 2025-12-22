@@ -25,6 +25,7 @@ pub mod node_editor;
 pub mod osc_panel;
 pub mod theme;
 pub mod timeline_v2;
+pub mod transform_panel;
 pub mod undo_redo;
 
 pub use i18n::LocaleManager;
@@ -46,6 +47,7 @@ pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
+pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
 
 use imgui::*;
@@ -268,6 +270,7 @@ pub struct AppUI {
     pub i18n: LocaleManager,
     pub effect_chain_panel: EffectChainPanel,
     pub cue_panel: CuePanel,
+    pub transform_panel: TransformPanel,
     pub user_config: config::UserConfig,
 }
 
@@ -309,6 +312,7 @@ impl Default for AppUI {
             },
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
+            transform_panel: TransformPanel::default(),
             user_config: config::UserConfig::load(),
         }
     }
@@ -459,7 +463,7 @@ impl AppUI {
                 ui.checkbox(self.i18n.t("check-show-mappings"), &mut self.show_mappings);
                 ui.checkbox(
                     self.i18n.t("check-show-transforms"),
-                    &mut self.show_transforms,
+                    &mut self.transform_panel.visible,
                 );
                 ui.checkbox(
                     self.i18n.t("check-show-master"),
@@ -801,159 +805,6 @@ impl AppUI {
                 // Mapping management buttons
                 if ui.button(self.i18n.t("btn-add-quad")) {
                     self.actions.push(UIAction::AddMapping);
-                }
-            });
-    }
-
-    /// Render transform controls panel (Phase 1)
-    pub fn render_transform_panel(
-        &mut self,
-        ui: &Ui,
-        layer_manager: &mut mapmap_core::LayerManager,
-    ) {
-        use mapmap_core::ResizeMode;
-
-        if !self.show_transforms {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-transforms"))
-            .size([360.0, 520.0], Condition::FirstUseEver)
-            .position([10.0, 140.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text(self.i18n.t("header-transform-sys"));
-                ui.separator();
-
-                if let Some(selected_id) = self.selected_layer_id {
-                    if let Some(layer) = layer_manager.get_layer_mut(selected_id) {
-                        ui.text(format!("{}: {}", self.i18n.t("label-editing"), layer.name));
-                        ui.separator();
-
-                        let transform = &mut layer.transform;
-
-                        // Position controls
-                        ui.text(self.i18n.t("transform-position"));
-                        ui.slider(
-                            self.i18n.t("transform-position-x"),
-                            -1000.0,
-                            1000.0,
-                            &mut transform.position.x,
-                        );
-                        ui.slider(
-                            self.i18n.t("transform-position-y"),
-                            -1000.0,
-                            1000.0,
-                            &mut transform.position.y,
-                        );
-
-                        ui.separator();
-
-                        // Scale controls
-                        ui.text(self.i18n.t("transform-scale"));
-                        ui.slider(
-                            self.i18n.t("transform-width"),
-                            0.1,
-                            5.0,
-                            &mut transform.scale.x,
-                        );
-                        ui.slider(
-                            self.i18n.t("transform-height"),
-                            0.1,
-                            5.0,
-                            &mut transform.scale.y,
-                        );
-
-                        // Uniform scale toggle
-                        if ui.button(self.i18n.t("btn-reset-scale")) {
-                            transform.scale.x = 1.0;
-                            transform.scale.y = 1.0;
-                        }
-
-                        ui.separator();
-
-                        // Rotation controls (in degrees for UI)
-                        ui.text(self.i18n.t("transform-rotation"));
-                        let mut rot_x_deg = transform.rotation.x.to_degrees();
-                        let mut rot_y_deg = transform.rotation.y.to_degrees();
-                        let mut rot_z_deg = transform.rotation.z.to_degrees();
-
-                        ui.slider(
-                            format!("X##{}", self.i18n.t("transform-rotation")),
-                            -180.0,
-                            180.0,
-                            &mut rot_x_deg,
-                        );
-                        ui.slider(
-                            format!("Y##{}", self.i18n.t("transform-rotation")),
-                            -180.0,
-                            180.0,
-                            &mut rot_y_deg,
-                        );
-                        ui.slider(
-                            format!("Z##{}", self.i18n.t("transform-rotation")),
-                            -180.0,
-                            180.0,
-                            &mut rot_z_deg,
-                        );
-
-                        transform.rotation.x = rot_x_deg.to_radians();
-                        transform.rotation.y = rot_y_deg.to_radians();
-                        transform.rotation.z = rot_z_deg.to_radians();
-
-                        if ui.button(self.i18n.t("btn-reset-rotation")) {
-                            transform.rotation = glam::Vec3::ZERO;
-                        }
-
-                        ui.separator();
-
-                        // Anchor point controls
-                        ui.text(format!("{}:", self.i18n.t("label-anchor")));
-                        ui.slider(
-                            self.i18n.t("transform-anchor-x"),
-                            0.0,
-                            1.0,
-                            &mut transform.anchor.x,
-                        );
-                        ui.slider(
-                            self.i18n.t("transform-anchor-y"),
-                            0.0,
-                            1.0,
-                            &mut transform.anchor.y,
-                        );
-
-                        if ui.button(self.i18n.t("btn-center-anchor")) {
-                            transform.anchor = glam::Vec2::splat(0.5);
-                        }
-
-                        ui.separator();
-
-                        // Resize mode presets (Phase 1, Month 6)
-                        ui.text(self.i18n.t("transform-presets"));
-                        if ui.button(self.i18n.t("transform-fill")) {
-                            self.actions
-                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Fill));
-                        }
-                        ui.same_line();
-                        if ui.button(self.i18n.t("btn-resize-fit")) {
-                            self.actions
-                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Fit));
-                        }
-
-                        if ui.button(self.i18n.t("btn-resize-stretch")) {
-                            self.actions
-                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Stretch));
-                        }
-                        ui.same_line();
-                        if ui.button(self.i18n.t("btn-resize-original")) {
-                            self.actions
-                                .push(UIAction::ApplyResizeMode(selected_id, ResizeMode::Original));
-                        }
-                    } else {
-                        ui.text(self.i18n.t("transform-no-selection"));
-                    }
-                } else {
-                    ui.text(self.i18n.t("transform-no-layer"));
-                    ui.text(self.i18n.t("transform-select-tip"));
                 }
             });
     }
