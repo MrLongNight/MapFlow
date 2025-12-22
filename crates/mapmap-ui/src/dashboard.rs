@@ -12,6 +12,8 @@ use std::time::Duration;
 
 /// Dashboard control panel
 pub struct Dashboard {
+    /// Is the panel currently visible?
+    pub visible: bool,
     /// Dashboard widgets
     widgets: Vec<DashboardWidget>,
     /// Layout mode
@@ -85,6 +87,7 @@ impl Default for Dashboard {
 impl Dashboard {
     pub fn new() -> Self {
         Self {
+            visible: true,
             widgets: Vec::new(),
             layout: LayoutMode::Grid,
             grid_columns: 4,
@@ -139,7 +142,24 @@ impl Dashboard {
     }
 
     /// Render the dashboard UI
-    pub fn ui(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<DashboardAction> {
+    pub fn ui(&mut self, ctx: &egui::Context, locale: &LocaleManager) -> Option<DashboardAction> {
+        let mut action = None;
+
+        if self.visible {
+            let mut is_open = self.visible;
+            egui::Window::new("Dashboard")
+                .open(&mut is_open)
+                .show(ctx, |ui| {
+                    action = self.render_contents(ui, locale);
+                });
+            self.visible = is_open;
+        }
+
+        action
+    }
+
+    /// Renders the contents of the dashboard panel.
+    fn render_contents(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<DashboardAction> {
         let mut action = None;
 
         // Toolbar
@@ -266,6 +286,7 @@ impl Dashboard {
 
         action
     }
+
 
     /// Render grid layout
     fn render_grid_layout(

@@ -329,6 +329,37 @@ label-diff-coupling = Kopplung
 btn-reset-ring = Ring zurücksetzen
 btn-clear-ring = Ring leeren
 
+#
+# Main Menu & Toolbar (egui)
+#
+menu-edit = Bearbeiten
+menu-file-new-project = Neues Projekt...
+menu-file-open-project = Projekt öffnen...
+menu-file-save-as = Speichern unter...
+menu-file-export = Exportieren...
+menu-file-settings = Einstellungen...
+menu-edit-undo = Rückgängig
+menu-edit-redo = Wiederherstellen
+menu-edit-cut = Ausschneiden
+menu-edit-copy = Kopieren
+menu-edit-paste = Einfügen
+menu-edit-delete = Löschen
+menu-edit-select-all = Alles auswählen
+view-egui-panels = Egui-Bedienfelder
+panel-dashboard = Dashboard
+panel-media-browser = Medienbrowser
+panel-asset-manager = Asset-Manager
+panel-mesh-editor = Mesh-Editor
+panel-node-editor = Node-Editor
+panel-timeline = Zeitleiste
+view-legacy-panels = Legacy-Bedienfelder
+view-reset-layout = Layout zurücksetzen
+menu-help-docs = Dokumentation
+menu-help-license = Lizenz
+toolbar-save = Speichern
+toolbar-undo = Rückgängig
+toolbar-redo = Wiederherstellen
+
 # Audio (Harmonized with User edits)
 panel-audio = Audio-Analyse
 header-audio-input = Audio-Eingang

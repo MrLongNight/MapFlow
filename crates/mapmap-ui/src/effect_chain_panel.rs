@@ -223,6 +223,7 @@ pub struct PresetEntry {
 }
 
 /// Effect Chain Panel
+#[derive(Default, Debug)]
 pub struct EffectChainPanel {
     /// Current effect chain
     pub chain: UIEffectChain,
@@ -251,12 +252,6 @@ pub struct EffectChainPanel {
 
     /// Pending actions
     actions: Vec<EffectChainAction>,
-}
-
-impl Default for EffectChainPanel {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl EffectChainPanel {

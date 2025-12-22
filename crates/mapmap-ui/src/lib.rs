@@ -21,6 +21,7 @@ pub mod dashboard;
 pub mod effect_chain_panel;
 pub mod i18n;
 pub mod media_browser;
+pub mod menu_bar;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
@@ -70,11 +71,24 @@ pub enum UIAction {
     SetLoopMode(mapmap_media::LoopMode),
 
     // File actions
+    NewProject,
     LoadVideo(String),
     SaveProject(String),
+    SaveProjectAs,
     LoadProject(String),
     LoadRecentProject(String),
+    Export,
+    OpenSettings,
     Exit,
+
+    // Edit actions
+    Undo,
+    Redo,
+    Cut,
+    Copy,
+    Paste,
+    Delete,
+    SelectAll,
 
     // Mapping actions
     AddMapping,
@@ -115,12 +129,18 @@ pub enum UIAction {
 
     // View actions
     ToggleFullscreen,
+    ResetLayout,
 
     // Audio actions
     SelectAudioDevice(String),
 
     // Settings
     SetLanguage(String),
+
+    // Help actions
+    OpenDocs,
+    OpenAbout,
+    OpenLicense,
 }
 
 pub struct ImGuiContext {
@@ -243,6 +263,7 @@ use mapmap_control::ControlTarget;
 
 /// UI state for the application
 pub struct AppUI {
+    pub menu_bar: menu_bar::MenuBar,
     pub dashboard: Dashboard,
     pub paint_panel: PaintPanel,
     pub show_osc_panel: bool,
@@ -282,6 +303,7 @@ pub struct AppUI {
 impl Default for AppUI {
     fn default() -> Self {
         Self {
+            menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
             paint_panel: PaintPanel::default(),
             show_osc_panel: true,
@@ -423,6 +445,7 @@ impl AppUI {
             });
     }
 
+<<<<<<< HEAD
     /// Render main menu bar
     pub fn render_menu_bar(&mut self, ui: &Ui) {
         ui.main_menu_bar(|| {
@@ -513,6 +536,8 @@ impl AppUI {
         });
     }
 
+=======
+>>>>>>> origin/feature/menu-bar-egui-514237342778400185
     /// Render layer management panel
     pub fn render_layer_panel(&mut self, ui: &Ui, layer_manager: &mut mapmap_core::LayerManager) {
         use mapmap_core::BlendMode;
