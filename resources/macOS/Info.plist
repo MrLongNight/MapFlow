@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 <key>CFBundleIdentifier</key>
-<string>info.mapmapteam.MapMap</string>
+<string>info.mapmapteam.MapFlow</string>
 <key>CFBundleName</key>
-<string>mapmap</string>
+<string>MapFlow</string>
 <key>CFBundleExecutable</key>
-<string>MapMap</string>
+<string>MapFlow</string>
 <key>CFBundlePackageGetInfoString</key>
 <string>Open source video mapping software</string>
 <key>CFBundleIconFile</key>
@@ -15,9 +15,9 @@
 <key>CFBundlePackageType</key>
 <string>APPL</string>
 <key>CFBundleVersion</key>
-<string>063</string>
+<string>0.2.0</string>
 <key>CFBundleShortVersionString</key>
-<string>0.6.3</string>
+<string>0.2.0</string>
 <key>LSMinimumSystemVersion</key>
 <string>10.10</string>
 <key>NSPrincipalClass</key>

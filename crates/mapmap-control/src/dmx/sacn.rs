@@ -228,22 +228,22 @@ mod tests {
 
     #[test]
     fn test_sacn_sender_creation() {
-        let sender = SacnSender::new(1, "MapMap");
+        let sender = SacnSender::new(1, "MapFlow");
         assert!(sender.is_ok());
     }
 
     #[test]
     fn test_invalid_universe() {
         // Universe 0 is invalid
-        assert!(SacnSender::new(0, "MapMap").is_err());
+        assert!(SacnSender::new(0, "MapFlow").is_err());
 
         // Universe > 63999 is invalid
-        assert!(SacnSender::new(64000, "MapMap").is_err());
+        assert!(SacnSender::new(64000, "MapFlow").is_err());
     }
 
     #[test]
     fn test_sacn_packet_structure() {
-        let sender = SacnSender::new(1, "MapMap").unwrap();
+        let sender = SacnSender::new(1, "MapFlow").unwrap();
         let channels = [0u8; 512];
         let packet = sender.build_sacn_packet(&channels);
 
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn test_priority_setting() {
-        let mut sender = SacnSender::new(1, "MapMap").unwrap();
+        let mut sender = SacnSender::new(1, "MapFlow").unwrap();
         sender.set_priority(150);
 
         let channels = [0u8; 512];
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_sequence_increment() {
-        let mut sender = SacnSender::new(1, "MapMap").unwrap();
+        let mut sender = SacnSender::new(1, "MapFlow").unwrap();
 
         let channels = [0u8; 512];
 

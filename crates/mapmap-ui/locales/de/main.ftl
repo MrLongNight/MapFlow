@@ -1,5 +1,5 @@
 
-app-title = MapMap - VJ Projection Mapping
+app-title = MapFlow - VJ Projection Mapping
 menu-file = Datei
 menu-file-load-video = Video laden
 menu-file-save-project = Projekt speichern
@@ -189,7 +189,7 @@ mode-play-once = Einmal abspielen
 panel-performance = Leistung
 label-fps = FPS
 label-frame-time = Frame-Zeit
-perf-demo = MapMap Phase 0 Demo
+perf-demo = MapFlow Phase 0 Demo
 
 # Layers
 panel-layers = Ebenen

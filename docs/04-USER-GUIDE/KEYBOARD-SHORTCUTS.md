@@ -9,7 +9,7 @@
 | <kbd>Ctrl</kbd> + <kbd>I</kbd>                    | Import media file  |
 | <kbd>Ctrl</kbd> + <kbd>C</kbd>                    | Open camera device |
 | <kbd>Shift</kbd> + <kbd>Ctrl</kbd> + <kbd>A</kbd> | Add color paint    |
-| <kbd>Ctrl</kbd> + <kbd>Q</kbd>                    | Quit MapMap        |
+| <kbd>Ctrl</kbd> + <kbd>Q</kbd>                    | Quit MapFlow       |
 
 | Mapping & shapes                                |                        |
 | ----------------------------------------------- | -----------------------|

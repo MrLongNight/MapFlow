@@ -14,7 +14,7 @@ pub struct MidiOutputHandler {
 impl MidiOutputHandler {
     /// Create a new MIDI output handler
     pub fn new() -> Result<Self> {
-        let midi_output = MidirOutput::new("MapMap MIDI Output")?;
+        let midi_output = MidirOutput::new("MapFlow MIDI Output")?;
 
         Ok(Self {
             _midi_output: midi_output,
@@ -24,7 +24,7 @@ impl MidiOutputHandler {
 
     /// List available MIDI output ports
     pub fn list_ports() -> Result<Vec<String>> {
-        let midi_output = MidirOutput::new("MapMap MIDI Output")?;
+        let midi_output = MidirOutput::new("MapFlow MIDI Output")?;
         let mut ports = Vec::new();
 
         for port in midi_output.ports() {
@@ -41,7 +41,7 @@ impl MidiOutputHandler {
         // Disconnect existing connection if any
         self.disconnect();
 
-        let midi_output = MidirOutput::new("MapMap MIDI Output")?;
+        let midi_output = MidirOutput::new("MapFlow MIDI Output")?;
         let ports = midi_output.ports();
 
         if port_index >= ports.len() {
@@ -60,7 +60,7 @@ impl MidiOutputHandler {
         info!("Connecting to MIDI output port: {}", port_name);
 
         let connection = midi_output
-            .connect(port, "mapmap-output")
+            .connect(port, "mapflow-output")
             .map_err(|e| ControlError::MidiError(format!("Connection failed: {:?}", e)))?;
 
         self.connection = Some(connection);
