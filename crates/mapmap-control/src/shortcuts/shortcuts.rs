@@ -288,7 +288,7 @@ impl Shortcut {
     }
 }
 
-/// Default shortcuts for MapMap
+/// Default shortcuts for MapFlow
 pub struct DefaultShortcuts;
 
 impl DefaultShortcuts {

@@ -1,6 +1,6 @@
-//! MapMap Core - Domain Model and Data Structures
+//! MapFlow Core - Domain Model and Data Structures
 //!
-//! This crate contains the core domain model for MapMap, including:
+//! This crate contains the core domain model for MapFlow, including:
 //! - Paint/Mapping/Mesh hierarchy
 //! - Layer system for compositing
 //! - Project file format

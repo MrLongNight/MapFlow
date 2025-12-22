@@ -1,6 +1,6 @@
 //! Virtual camera output support.
 //!
-//! Virtual cameras allow MapMap to appear as a camera device to other applications.
+//! Virtual cameras allow MapFlow to appear as a camera device to other applications.
 //! This is useful for integrating with video conferencing software, OBS, etc.
 //!
 //! # Platform Support

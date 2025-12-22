@@ -1,6 +1,6 @@
-//! Professional video I/O for MapMap.
+//! Professional video I/O for MapFlow.
 //!
-//! This crate provides video input/output capabilities for MapMap, including support for:
+//! This crate provides video input/output capabilities for MapFlow, including support for:
 //!
 //! - **NDI** - Network Device Interface for IP-based video
 //! - **DeckLink** - Blackmagic Design SDI/HDMI capture cards
@@ -224,7 +224,7 @@ impl FeatureInfo {
 
 impl std::fmt::Display for FeatureInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "MapMap I/O v{} (", VERSION)?;
+        write!(f, "MapFlow I/O v{} (", VERSION)?;
         let mut first = true;
 
         if self.ndi {
@@ -291,7 +291,7 @@ mod tests {
     fn test_feature_info_display() {
         let features = features();
         let display = format!("{}", features);
-        assert!(display.contains("MapMap I/O"));
+        assert!(display.contains("MapFlow I/O"));
         assert!(display.contains(VERSION));
     }
 

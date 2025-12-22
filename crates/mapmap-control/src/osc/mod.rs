@@ -1,6 +1,6 @@
 //! OSC (Open Sound Control) system
 //!
-//! This module provides OSC server and client functionality for remote control of MapMap.
+//! This module provides OSC server and client functionality for remote control of MapFlow.
 //!
 //! ## OSC Address Space
 //!

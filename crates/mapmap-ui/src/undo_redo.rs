@@ -1,6 +1,6 @@
 //! Phase 6: Undo/Redo Command Pattern Architecture
 //!
-//! This module implements a command pattern for undo/redo functionality across all MapMap operations.
+//! This module implements a command pattern for undo/redo functionality across all MapFlow operations.
 //! All editor operations should be wrapped in commands to enable comprehensive undo/redo support.
 
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,6 @@
-//! MapMap Render - Graphics Abstraction Layer
+//! MapFlow Render - Graphics Abstraction Layer
 //!
-//! This crate provides the rendering abstraction for MapMap, including:
+//! This crate provides the rendering abstraction for MapFlow, including:
 //! - wgpu backend implementation
 //! - Texture pool management
 //! - Shader compilation and hot-reloading

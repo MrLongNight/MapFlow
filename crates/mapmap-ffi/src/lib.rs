@@ -1,4 +1,4 @@
-//! MapMap FFI - Foreign Function Interface Bridge
+//! MapFlow FFI - Foreign Function Interface Bridge
 //!
 //! This crate provides FFI bindings to external SDKs including:
 //! - NDI (Network Device Interface)

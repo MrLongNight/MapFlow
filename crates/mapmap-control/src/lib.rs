@@ -1,6 +1,6 @@
-//! MapMap Control - Professional Control System Integration
+//! MapFlow Control - Professional Control System Integration
 //!
-//! This crate provides comprehensive control system integration for MapMap including:
+//! This crate provides comprehensive control system integration for MapFlow including:
 //! - **MIDI**: Input/output, learn mode, controller profiles, clock sync
 //! - **OSC**: Server/client for TouchOSC, Lemur, and custom apps
 //! - **DMX**: Art-Net and sACN output for lighting control

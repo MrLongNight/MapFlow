@@ -1,6 +1,6 @@
 //! Web control interface
 //!
-//! This module provides a REST API and WebSocket interface for remote control of MapMap.
+//! This module provides a REST API and WebSocket interface for remote control of MapFlow.
 //!
 //! ## REST API Endpoints
 //!
