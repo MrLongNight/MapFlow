@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub type VertexId = usize;
 
 /// Mesh vertex with position and texture coordinates
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct MeshVertex {
     /// Position in output space (normalized 0-1)
     pub position: Vec2,
@@ -45,7 +45,7 @@ pub enum MeshType {
 }
 
 /// Mesh - defines geometry for mapping
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Mesh {
     pub mesh_type: MeshType,
     pub vertices: Vec<MeshVertex>,

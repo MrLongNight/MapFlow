@@ -84,22 +84,3 @@ pub fn load_project(path: &Path) -> Result<AppState, ProjectError> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_save_load_project() {
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("test_project.mapmap");
-
-        let mut state = AppState::default();
-        state.name = "My Test Project".to_string();
-
-        save_project(&state, &file_path).unwrap();
-
-        let loaded_state = load_project(&file_path).unwrap();
-        assert_eq!(loaded_state.name, "My Test Project");
-    }
-}

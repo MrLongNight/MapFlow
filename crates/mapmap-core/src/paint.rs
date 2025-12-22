@@ -25,7 +25,7 @@ pub enum PaintType {
 }
 
 /// Paint - represents a media source
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Paint {
     pub id: PaintId,
     pub name: String,
@@ -111,7 +111,7 @@ impl Paint {
 }
 
 /// Manages all paints in the project
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PaintManager {
     paints: Vec<Paint>,
     next_id: PaintId,

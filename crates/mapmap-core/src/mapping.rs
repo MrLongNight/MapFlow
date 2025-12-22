@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub type MappingId = u64;
 
 /// Mapping - connects a Paint to an output Mesh
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Mapping {
     pub id: MappingId,
     pub name: String,
@@ -70,7 +70,7 @@ impl Mapping {
 }
 
 /// Manages all mappings in the project
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct MappingManager {
     mappings: Vec<Mapping>,
     next_id: MappingId,
