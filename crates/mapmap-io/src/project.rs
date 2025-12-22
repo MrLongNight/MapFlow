@@ -84,3 +84,18 @@ pub fn load_project(path: &Path) -> Result<AppState, ProjectError> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mapmap_core::AppState;
+
+    #[test]
+    fn project_serde_json_roundtrip() {
+        let original_state = AppState::default();
+
+        let serialized_state = serde_json::to_string(&original_state).unwrap();
+        let deserialized_state: AppState = serde_json::from_str(&serialized_state).unwrap();
+
+        assert_eq!(original_state, deserialized_state);
+    }
+}
