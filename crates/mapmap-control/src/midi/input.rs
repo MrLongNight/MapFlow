@@ -19,7 +19,7 @@ pub struct MidiInputHandler {
 impl MidiInputHandler {
     /// Create a new MIDI input handler
     pub fn new() -> Result<Self> {
-        let midi_input = MidirInput::new("MapMap MIDI Input")?;
+        let midi_input = MidirInput::new("MapFlow MIDI Input")?;
         let (message_sender, message_receiver) = channel();
 
         Ok(Self {
@@ -33,7 +33,7 @@ impl MidiInputHandler {
 
     /// List available MIDI input ports
     pub fn list_ports() -> Result<Vec<String>> {
-        let midi_input = MidirInput::new("MapMap MIDI Input")?;
+        let midi_input = MidirInput::new("MapFlow MIDI Input")?;
         let mut ports = Vec::new();
 
         for port in midi_input.ports() {
@@ -50,7 +50,7 @@ impl MidiInputHandler {
         // Disconnect existing connection if any
         self.disconnect();
 
-        let mut midi_input = MidirInput::new("MapMap MIDI Input")?;
+        let mut midi_input = MidirInput::new("MapFlow MIDI Input")?;
         midi_input.ignore(Ignore::None);
 
         let ports = midi_input.ports();
@@ -74,7 +74,7 @@ impl MidiInputHandler {
         let connection = midi_input
             .connect(
                 port,
-                "mapmap-input",
+                "mapflow-input",
                 move |_timestamp, message, _| {
                     if let Some(midi_msg) = MidiMessage::from_bytes(message) {
                         if let Err(e) = message_sender.send(midi_msg) {
