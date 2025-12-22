@@ -253,17 +253,17 @@
   - ✅ Asset-Manager (`asset_manager.rs`)
   - ✅ Theme (`theme.rs`)
 
-- ⬜ **Pending Migration (Legacy ImGui Panels)**
-  - ⬜ Layer Manager (`render_layer_panel`)
-  - ⬜ Paint Manager (`render_paint_panel`)
-  - ⬜ Mapping Manager (`render_mapping_panel`)
-  - ⬜ Transform Controls (`render_transform_panel`)
-  - ⬜ Output Configuration (`render_output_panel`)
-  - ⬜ Edge Blend & Color Calibration (`render_edge_blend_panel`)
-  - ⬜ Audio Visualization (`render_audio_panel`)
-  - ⬜ Oscillator Control (`render_oscillator_panel`)
-  - ⬜ Main Menu & Toolbar (`render_menu_bar`)
-  - ⬜ Shader Graph Editor (`shader_graph_editor.rs` - Legacy Version)
+- 🟡 **UI Panel Migration Status (egui)** – COMPLETED PR #78 (2025-12-22)
+  - ✅ Transform Controls (`transform_panel.rs`) – Migriert
+  - ✅ Paint Manager (`paint_panel.rs`) – Migriert
+  - ✅ Audio Visualization (`audio_panel.rs`) – Migriert
+  - ✅ Main Menu & Toolbar (`menu_bar.rs`) – Migriert
+  - ⬜ Layer Manager (`render_layer_panel`) – Noch ImGui
+  - ⬜ Mapping Manager (`render_mapping_panel`) – Noch ImGui
+  - ⬜ Output Configuration (`render_output_panel`) – Noch ImGui
+  - ⬜ Edge Blend & Color Calibration (`render_edge_blend_panel`) – Noch ImGui
+  - ⬜ Oscillator Control (`render_oscillator_panel`) – Noch ImGui
+  - ⬜ Shader Graph Editor (`shader_graph_editor.rs` - Legacy Version) – Noch ImGui
 
 - 🟡 **Internationalisierung (i18n) – NEU**
   - ✅ Sprachauswahl UI (Deutsch / Englisch)
@@ -340,9 +340,9 @@
 - 🟡 **Fehlende Tests**
   - ✅ Audio-System-Tests mit Audio-Feature aktiviert (COMPLETED 2025-12-21, 16 Tests)
   - ✅ OSC-Integration-Tests (COMPLETED 2025-12-21, 19 Tests)
+  - ✅ Project-Save/Load-Tests (COMPLETED PR #68, 2025-12-22)
   - ⬜ Multi-Output-Rendering-Tests
   - ⬜ Effect-Chain-Tests
-  - ⬜ Project-Save/Load-Tests
   - ⬜ End-to-End-Tests
 
 ### Packaging / Developer Experience (DX)
