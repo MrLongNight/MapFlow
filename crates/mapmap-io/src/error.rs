@@ -13,6 +13,31 @@ pub enum IoError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// RON serialization error
+    #[error("RON Serialization error: {0}")]
+    RonSerialization(#[from] ron::Error),
+
+    /// RON deserialization error
+    #[error("RON Deserialization error: {0}")]
+    RonDeserialization(#[from] ron::error::SpannedError),
+
+    /// JSON serialization error
+    #[error("JSON Serialization error: {0}")]
+    JsonSerialization(#[from] serde_json::Error),
+
+    /// Unsupported file format for project files or other I/O.
+    #[error("Format not supported: {0}")]
+    UnsupportedFormat(String),
+
+    /// Project file version mismatch
+    #[error("Project file version mismatch. Expected {expected}, got {found}.")]
+    VersionMismatch {
+        /// The version expected by the application.
+        expected: String,
+        /// The version found in the project file.
+        found: String,
+    },
+
     /// NDI-related errors
     #[error("NDI error: {0}")]
     NdiError(String),

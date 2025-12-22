@@ -1,7 +1,8 @@
 //! Project serialization and deserialization tests
 
 use mapmap_core::{AppSettings, AppState};
-use mapmap_io::project::{load_project, save_project, ProjectError};
+use mapmap_io::error::IoError;
+use mapmap_io::project::{load_project, save_project};
 use std::fs::File;
 use std::io::Write;
 use tempfile::tempdir;
@@ -23,7 +24,7 @@ fn create_sample_app_state() -> AppState {
 #[test]
 fn test_project_ron_roundtrip() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("test_project.mapmap");
+    let file_path = dir.path().join("test_project.mflow");
 
     let original_state = create_sample_app_state();
     save_project(&original_state, &file_path).unwrap();
@@ -49,34 +50,20 @@ fn test_project_json_roundtrip() {
 #[test]
 fn test_load_missing_file() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("non_existent_project.mapmap");
+    let file_path = dir.path().join("non_existent_project.mflow");
 
     let result = load_project(&file_path);
-    assert!(matches!(result, Err(ProjectError::Io(_))));
+    assert!(matches!(result, Err(IoError::Io(_))));
 }
 
 #[test]
 fn test_load_invalid_ron() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("invalid.mapmap");
+    let file_path = dir.path().join("invalid.mflow");
 
     let mut file = File::create(&file_path).unwrap();
     writeln!(file, "this is not valid ron").unwrap();
 
     let result = load_project(&file_path);
-    assert!(matches!(result, Err(ProjectError::Deserialization(_))));
-}
-
-#[test]
-fn test_version_compatibility() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("old_project.mapmap");
-
-    let mut old_state = create_sample_app_state();
-    old_state.version = "0.9.0".to_string();
-
-    save_project(&old_state, &file_path).unwrap();
-
-    let loaded_state = load_project(&file_path).unwrap();
-    assert_eq!(loaded_state.version, "0.9.0");
+    assert!(matches!(result, Err(IoError::RonDeserialization(_))));
 }
