@@ -546,8 +546,8 @@ impl App {
                     // Panels
                     self.ui_state
                         .render_layer_panel(ui, &mut self.state.layer_manager);
-                    self.ui_state
-                        .render_mapping_panel(ui, &mut self.state.mapping_manager);
+                    // Mapping panel migrated to egui
+                    // self.ui_state.render_mapping_panel(ui, &mut self.state.mapping_manager);
                     self.ui_state
                         .render_master_controls(ui, &mut self.state.layer_manager);
                     self.ui_state.render_cue_panel(ui);
@@ -636,6 +636,13 @@ impl App {
                     self.ui_state
                         .edge_blend_panel
                         .show(ctx, &self.ui_state.i18n);
+
+                    // Render Mapping Panel (egui)
+                    self.ui_state.mapping_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &self.state.mapping_manager,
+                    );
                 });
 
                 self.egui_state

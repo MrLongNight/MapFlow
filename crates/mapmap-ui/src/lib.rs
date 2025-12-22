@@ -21,6 +21,7 @@ pub mod dashboard;
 pub mod edge_blend_panel;
 pub mod effect_chain_panel;
 pub mod i18n;
+pub mod mapping_panel;
 pub mod media_browser;
 pub mod menu_bar;
 pub mod mesh_editor;
@@ -48,6 +49,7 @@ pub use effect_chain_panel::{
     EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
 };
 pub use imgui::OwnedDrawData;
+pub use mapping_panel::{MappingAction, MappingPanel};
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
@@ -93,10 +95,10 @@ pub enum UIAction {
     SelectAll,
 
     // Mapping actions
-    AddMapping,
-    RemoveMapping(u64),
-    ToggleMappingVisibility(u64, bool),
-    SelectMapping(u64),
+    AddMapping, // Deprecated in favor of MappingPanel actions, but kept for compatibility
+    RemoveMapping(u64), // Deprecated
+    ToggleMappingVisibility(u64, bool), // Deprecated
+    SelectMapping(u64), // Deprecated
 
     // Paint actions
     AddPaint,
@@ -268,6 +270,7 @@ pub struct AppUI {
     pub menu_bar: menu_bar::MenuBar,
     pub dashboard: Dashboard,
     pub paint_panel: PaintPanel,
+    pub mapping_panel: MappingPanel, // Migrated to egui
     pub show_osc_panel: bool,
     pub selected_control_target: ControlTarget,
     pub osc_port_input: String,
@@ -275,7 +278,7 @@ pub struct AppUI {
     pub show_controls: bool,
     pub show_stats: bool,
     pub show_layers: bool,
-    pub show_mappings: bool,
+    // pub show_mappings: bool, // Removed as it's now in mapping_panel.visible
     pub show_transforms: bool,      // Phase 1
     pub show_master_controls: bool, // Phase 1
     pub show_outputs: bool,         // Phase 2
@@ -307,6 +310,7 @@ impl Default for AppUI {
             menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
             paint_panel: PaintPanel::default(),
+            mapping_panel: MappingPanel::default(),
             show_osc_panel: true,
             selected_control_target: ControlTarget::Custom("".to_string()),
             osc_port_input: "8000".to_string(),
@@ -314,7 +318,7 @@ impl Default for AppUI {
             show_controls: true,
             show_stats: true,
             show_layers: true,
-            show_mappings: true,
+            // show_mappings: true, // Removed
             show_transforms: true,
             show_master_controls: true,
             show_outputs: true,
@@ -491,7 +495,11 @@ impl AppUI {
                     self.i18n.t("check-show-paints"),
                     &mut self.paint_panel.visible,
                 );
-                ui.checkbox(self.i18n.t("check-show-mappings"), &mut self.show_mappings);
+                // Updated to use egui panel visibility
+                ui.checkbox(
+                    self.i18n.t("check-show-mappings"),
+                    &mut self.mapping_panel.visible,
+                );
                 ui.checkbox(
                     self.i18n.t("check-show-transforms"),
                     &mut self.transform_panel.visible,
@@ -676,105 +684,6 @@ impl AppUI {
                 ui.same_line();
                 if ui.button(self.i18n.t("btn-eject-all")) {
                     self.actions.push(UIAction::EjectAllLayers);
-                }
-            });
-    }
-
-    /// Render mapping management panel
-    pub fn render_mapping_panel(
-        &mut self,
-        ui: &Ui,
-        mapping_manager: &mut mapmap_core::MappingManager,
-    ) {
-        if !self.show_mappings {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-mappings"))
-            .size([380.0, 300.0], Condition::FirstUseEver)
-            .position([1530.0, 420.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text(self.i18n.t_args(
-                    "label-total-mappings",
-                    &[("count", &mapping_manager.mappings().len().to_string())],
-                ));
-                ui.separator();
-
-                // Mapping list
-                let mapping_ids: Vec<mapmap_core::MappingId> =
-                    mapping_manager.mappings().iter().map(|m| m.id).collect();
-
-                for mapping_id in mapping_ids {
-                    if let Some(mapping) = mapping_manager.get_mapping_mut(mapping_id) {
-                        let _id = ui.push_id_usize(mapping.id as usize);
-
-                        // Mapping header with visibility
-                        let old_visible = mapping.visible;
-                        if ui.checkbox(format!("##visible_{}", mapping.id), &mut mapping.visible)
-                            && mapping.visible != old_visible
-                        {
-                            self.actions.push(UIAction::ToggleMappingVisibility(
-                                mapping.id,
-                                mapping.visible,
-                            ));
-                        }
-                        ui.same_line();
-
-                        // Make the mapping name clickable to select it
-                        if ui
-                            .small_button(format!("{} (Paint #{})", mapping.name, mapping.paint_id))
-                        {
-                            self.actions.push(UIAction::SelectMapping(mapping.id));
-                        }
-
-                        // Indent for mapping properties
-                        ui.indent();
-
-                        // Solo and Lock toggles
-                        ui.checkbox(self.i18n.t("check-solo"), &mut mapping.solo);
-                        ui.same_line();
-                        ui.checkbox(self.i18n.t("check-lock"), &mut mapping.locked);
-
-                        // Opacity slider
-                        ui.slider(
-                            self.i18n.t("label-master-opacity"),
-                            0.0,
-                            1.0,
-                            &mut mapping.opacity,
-                        );
-
-                        // Depth (Z-order)
-                        ui.slider(
-                            self.i18n.t("label-frame-time"),
-                            -10.0,
-                            10.0,
-                            &mut mapping.depth,
-                        );
-
-                        // Mesh info
-                        ui.text(self.i18n.t_args(
-                            "label-mesh",
-                            &[
-                                ("type", &format!("{:?}", mapping.mesh.mesh_type)),
-                                ("count", &mapping.mesh.vertex_count().to_string()),
-                            ],
-                        ));
-
-                        // Remove button for this mapping
-                        if ui.button(self.i18n.t("btn-remove-this")) {
-                            self.actions.push(UIAction::RemoveMapping(mapping.id));
-                        }
-
-                        ui.unindent();
-                        ui.separator();
-                    }
-                }
-
-                ui.separator();
-
-                // Mapping management buttons
-                if ui.button(self.i18n.t("btn-add-quad")) {
-                    self.actions.push(UIAction::AddMapping);
                 }
             });
     }
