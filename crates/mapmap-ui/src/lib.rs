@@ -14,6 +14,7 @@ pub mod timeline;
 
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
+pub mod audio_panel;
 pub mod config;
 pub mod cue_panel;
 pub mod dashboard;
@@ -36,6 +37,7 @@ pub use timeline::{TimelineAction, TimelineEditor};
 
 // Phase 6 exports
 pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
+pub use audio_panel::AudioPanel;
 pub use config::UserConfig;
 pub use cue_panel::CuePanel;
 pub use dashboard::{Dashboard, DashboardAction, DashboardWidget, WidgetType};
@@ -258,6 +260,7 @@ pub struct AppUI {
     pub show_color_calibration: bool, // Phase 2
     pub show_oscillator: bool,        // Oscillator distortion effect
     pub show_audio: bool,
+    pub audio_panel: AudioPanel,
     pub show_cue_panel: bool,
     pub playback_speed: f32,
     pub loop_mode: mapmap_media::LoopMode,
@@ -266,7 +269,7 @@ pub struct AppUI {
     // Phase 2: Output configuration state
     pub selected_output_id: Option<u64>,
     pub audio_devices: Vec<String>,
-    pub selected_audio_device: String,
+    pub selected_audio_device: Option<String>,
     pub recent_files: Vec<String>,
     pub actions: Vec<UIAction>,
     pub i18n: LocaleManager,
@@ -296,13 +299,14 @@ impl Default for AppUI {
             show_color_calibration: false, // Show only when output selected
             show_oscillator: true,
             show_audio: true,
+            audio_panel: AudioPanel::default(),
             show_cue_panel: true,
             playback_speed: 1.0,
             loop_mode: mapmap_media::LoopMode::Loop,
             selected_layer_id: None,
             selected_output_id: None,
             audio_devices: vec!["None".to_string()],
-            selected_audio_device: "None".to_string(),
+            selected_audio_device: None,
             recent_files: {
                 let config = config::UserConfig::load();
                 config.recent_files.clone()
@@ -1492,99 +1496,4 @@ impl AppUI {
             });
     }
 
-    /// Render audio analysis panel
-    pub fn render_audio_panel(
-        &mut self,
-        ui: &Ui,
-        audio_analyzer: &mapmap_core::audio::AudioAnalyzer,
-    ) {
-        if !self.show_audio {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-audio"))
-            .size([380.0, 450.0], Condition::FirstUseEver)
-            .position([810.0, 10.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text(self.i18n.t("header-audio-input"));
-                ui.separator();
-
-                let mut selected_idx = self
-                    .audio_devices
-                    .iter()
-                    .position(|d| d == &self.selected_audio_device)
-                    .unwrap_or(0);
-
-                if ui.combo(
-                    self.i18n.t("label-device"),
-                    &mut selected_idx,
-                    &self.audio_devices,
-                    |item| std::borrow::Cow::Borrowed(item),
-                ) {
-                    self.selected_audio_device = self.audio_devices[selected_idx].clone();
-                    self.actions.push(UIAction::SelectAudioDevice(
-                        self.selected_audio_device.clone(),
-                    ));
-                }
-
-                let analysis = audio_analyzer.get_latest_analysis();
-
-                // RMS and Peak Volume Meters
-                draw_progress_bar(ui, analysis.rms_volume, "RMS");
-                draw_progress_bar(ui, analysis.peak_volume, "Peak");
-
-                ui.separator();
-
-                // FFT Visualization
-                ui.text(self.i18n.t("label-freq-spectrum"));
-                let fft_magnitudes = &analysis.fft_magnitudes;
-                let draw_list = ui.get_window_draw_list();
-                let pos = ui.cursor_screen_pos();
-                let width = ui.content_region_avail()[0];
-                let height = 80.0;
-                let bar_width = width / (fft_magnitudes.len() / 4) as f32;
-
-                for (i, &magnitude) in fft_magnitudes.iter().step_by(4).enumerate() {
-                    let bar_height = (magnitude * height).min(height);
-                    let x = pos[0] + i as f32 * bar_width;
-                    let y = pos[1] + height;
-                    draw_list
-                        .add_rect(
-                            [x, y - bar_height],
-                            [x + bar_width, y],
-                            [0.0, 1.0, 0.0, 1.0],
-                        )
-                        .filled(true)
-                        .build();
-                }
-                ui.dummy([width, height]);
-            });
-    }
-}
-
-#[inline]
-fn draw_progress_bar(ui: &Ui, fraction: f32, overlay_text: &str) {
-    let pos = ui.cursor_screen_pos();
-    let width = ui.content_region_avail()[0];
-    let height = ui.text_line_height_with_spacing();
-    let draw_list = ui.get_window_draw_list();
-
-    draw_list
-        .add_rect(pos, [pos[0] + width, pos[1] + height], [0.2, 0.2, 0.2, 1.0])
-        .filled(true)
-        .build();
-
-    draw_list
-        .add_rect(
-            pos,
-            [pos[0] + width * fraction, pos[1] + height],
-            [0.0, 0.8, 0.0, 1.0],
-        )
-        .filled(true)
-        .build();
-
-    let text_pos = [pos[0] + 4.0, pos[1] + 2.0];
-    draw_list.add_text(text_pos, [1.0, 1.0, 1.0, 1.0], overlay_text);
-
-    ui.dummy([width, height]);
 }

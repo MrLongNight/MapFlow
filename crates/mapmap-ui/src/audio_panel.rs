@@ -1,0 +1,182 @@
+//! Phase 6: Egui-based Audio Visualization Panel
+//!
+//! Displays audio analysis data such as frequency band levels, peak indicators,
+//! beat detection, and RMS volume.
+
+use crate::i18n::LocaleManager;
+use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
+use mapmap_core::audio::AudioAnalysis;
+use std::time::Instant;
+
+const PEAK_DECAY_RATE: f32 = 0.5; // units per second
+const PEAK_HOLD_TIME_SECS: f32 = 1.5;
+
+/// Audio visualization panel widget
+pub struct AudioPanel {
+    /// Peak levels for each of the 7 frequency bands
+    peak_levels: [f32; 7],
+    /// Timestamps of the last peak for each band
+    peak_timers: [Instant; 7],
+    /// Timestamp of the last beat detection
+    last_beat_time: Instant,
+}
+
+impl Default for AudioPanel {
+    fn default() -> Self {
+        Self {
+            peak_levels: [0.0; 7],
+            peak_timers: [Instant::now(); 7],
+            last_beat_time: Instant::now(),
+        }
+    }
+}
+
+impl AudioPanel {
+    /// Renders the audio panel UI and returns the selected audio device if it was changed.
+    pub fn ui(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        analysis: Option<&AudioAnalysis>,
+        audio_devices: &[String],
+        selected_audio_device: &mut Option<String>,
+    ) -> Option<String> {
+        let mut device_changed_action = None;
+
+        ui.heading(locale.t("audio-panel-title"));
+        ui.separator();
+
+        // --- Audio Device Selector ---
+        let no_device_text = locale.t("audio-panel-no-device");
+        let selected_text = selected_audio_device
+            .as_deref()
+            .unwrap_or(&no_device_text);
+
+        egui::ComboBox::from_label(locale.t("audio-panel-device"))
+            .selected_text(selected_text)
+            .show_ui(ui, |ui| {
+                for device in audio_devices {
+                    if ui
+                        .selectable_value(selected_audio_device, Some(device.clone()), device)
+                        .changed()
+                    {
+                        if let Some(new_device) = selected_audio_device.clone() {
+                            device_changed_action = Some(new_device);
+                        }
+                    }
+                }
+            });
+
+        ui.separator();
+
+        // --- Visualizations ---
+        if let Some(analysis) = analysis {
+            // Update beat timer
+            if analysis.beat_detected {
+                self.last_beat_time = Instant::now();
+            }
+
+            // RMS Volume
+            self.render_rms_volume(ui, locale, analysis.rms_volume);
+
+            // Beat Indicator
+            self.render_beat_indicator(ui, locale);
+
+            // Frequency Bands
+            self.render_frequency_bands(ui, locale, &analysis.band_energies);
+        } else {
+            ui.label(locale.t("audio-panel-no-data"));
+        }
+
+        device_changed_action
+    }
+
+    /// Renders the RMS volume progress bar
+    fn render_rms_volume(&self, ui: &mut Ui, locale: &LocaleManager, rms_volume: f32) {
+        let rms_text = format!("{}: {:.2}", locale.t("audio-panel-rms"), rms_volume);
+        ui.add(egui::ProgressBar::new(rms_volume).text(rms_text));
+    }
+
+    /// Renders the beat indicator
+    fn render_beat_indicator(&self, ui: &mut Ui, locale: &LocaleManager) {
+        ui.horizontal(|ui| {
+            ui.label(locale.t("audio-panel-beat"));
+            let beat_pulse =
+                (1.0 - (self.last_beat_time.elapsed().as_secs_f32() * 5.0).min(1.0)).powi(2);
+
+            let (rect, _) = ui.allocate_exact_size(Vec2::splat(20.0), Sense::hover());
+            ui.painter().circle_filled(
+                rect.center(),
+                10.0,
+                Color32::from_rgba_premultiplied(
+                    (beat_pulse * 255.0) as u8,
+                    (beat_pulse * 150.0) as u8,
+                    (beat_pulse * 50.0) as u8,
+                    255,
+                ),
+            );
+        });
+    }
+
+    /// Renders the 7 frequency band meters
+    fn render_frequency_bands(&mut self, ui: &mut Ui, locale: &LocaleManager, bands: &[f32; 7]) {
+        ui.label(locale.t("audio-panel-bands"));
+
+        let (rect, _response) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 150.0), Sense::hover());
+        let painter = ui.painter();
+        painter.rect_filled(rect, 3.0, Color32::from_rgb(20, 20, 20));
+
+        let num_bands = bands.len();
+        let bar_spacing = 5.0;
+        let total_spacing = (num_bands + 1) as f32 * bar_spacing;
+        let bar_width = (rect.width() - total_spacing) / num_bands as f32;
+        let dt = ui.input(|i| i.stable_dt);
+
+        for (i, &energy) in bands.iter().enumerate() {
+            // Update peak level
+            if energy >= self.peak_levels[i] {
+                self.peak_levels[i] = energy;
+                self.peak_timers[i] = Instant::now();
+            } else {
+                // Decay peak level after hold time
+                if self.peak_timers[i].elapsed().as_secs_f32() > PEAK_HOLD_TIME_SECS {
+                    self.peak_levels[i] -= PEAK_DECAY_RATE * dt;
+                    if self.peak_levels[i] < energy {
+                        self.peak_levels[i] = energy;
+                    }
+                }
+            }
+            self.peak_levels[i] = self.peak_levels[i].max(0.0);
+
+            let bar_height = (energy * rect.height()).min(rect.height()).max(1.0);
+            let x = rect.min.x + (i + 1) as f32 * bar_spacing + i as f32 * bar_width;
+            let bar_rect = Rect::from_min_size(
+                Pos2::new(x, rect.max.y - bar_height),
+                Vec2::new(bar_width, bar_height),
+            );
+
+            // Bar color based on energy
+            let color = Color32::from_rgb(
+                (energy * 200.0) as u8,
+                255 - (energy * 200.0) as u8,
+                50,
+            );
+            painter.rect_filled(bar_rect, 1.0, color);
+
+            // Peak indicator
+            let peak_y = rect.max.y
+                - (self.peak_levels[i] * rect.height())
+                    .min(rect.height())
+                    .max(1.0);
+
+            painter.line_segment(
+                [
+                    Pos2::new(x, peak_y),
+                    Pos2::new(x + bar_width, peak_y),
+                ],
+                Stroke::new(2.0, Color32::from_rgb(255, 100, 100)),
+            );
+        }
+    }
+}
