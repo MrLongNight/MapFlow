@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-22: Migrate Transform Controls Panel to egui (#70)
 - 2025-12-22: Fix: CI-Testfehler und Clippy-Warnungen (#77)
 - 2025-12-21: feat: Complete media pipeline for GIFs and image sequences (#67)
 - 2025-12-21: fix(ci): Correct formatting in mapmap-media/src/lib.rs (#65)
