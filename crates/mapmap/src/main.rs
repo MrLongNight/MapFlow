@@ -545,8 +545,6 @@ impl App {
 
                     // Panels
                     self.ui_state
-                        .render_layer_panel(ui, &mut self.state.layer_manager);
-                    self.ui_state
                         .render_mapping_panel(ui, &mut self.state.mapping_manager);
                     self.ui_state
                         .render_master_controls(ui, &mut self.state.layer_manager);
@@ -605,6 +603,15 @@ impl App {
                         .effect_chain_panel
                         .ui(ctx, &self.ui_state.i18n);
 
+                    // Render Layer Panel
+                    self.ui_state.layer_panel.show(
+                        ctx,
+                        &mut self.state.layer_manager,
+                        &mut self.ui_state.selected_layer_id,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                    );
+
                     // Render Paint Panel
                     self.ui_state.paint_panel.render(
                         ctx,
@@ -636,6 +643,13 @@ impl App {
                     self.ui_state
                         .edge_blend_panel
                         .show(ctx, &self.ui_state.i18n);
+
+                    // Render Oscillator Panel
+                    self.ui_state.oscillator_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.oscillator_config,
+                    );
                 });
 
                 self.egui_state
