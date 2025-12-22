@@ -156,7 +156,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui_state.i18n.t("check-show-master"),
                 );
                 ui.checkbox(
-                    &mut ui_state.show_oscillator,
+                    &mut ui_state.oscillator_panel.visible,
                     ui_state.i18n.t("check-show-oscillator"),
                 );
                 ui.checkbox(

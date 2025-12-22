@@ -438,6 +438,15 @@ impl App {
             }
         }
 
+        if let Some(action) = self.ui_state.oscillator_panel.take_action() {
+            match action {
+                mapmap_ui::oscillator_panel::OscillatorAction::UpdateConfig(config) => {
+                    self.state.oscillator_config = config;
+                    self.state.dirty = true;
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -577,6 +586,14 @@ impl App {
                     self.ui_state
                         .transform_panel
                         .render(ctx, &self.ui_state.i18n);
+
+                    // Render Oscillator Panel
+                    self.ui_state
+                        .oscillator_panel
+                        .set_config(&self.state.oscillator_config);
+                    self.ui_state
+                        .oscillator_panel
+                        .show(ctx, &self.ui_state.i18n);
                 });
 
                 self.egui_state

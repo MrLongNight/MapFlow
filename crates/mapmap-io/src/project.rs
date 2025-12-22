@@ -86,7 +86,6 @@ pub fn load_project(path: &Path) -> Result<AppState, ProjectError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use mapmap_core::AppState;
 
     #[test]

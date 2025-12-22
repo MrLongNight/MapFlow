@@ -25,6 +25,7 @@ pub mod menu_bar;
 pub mod mesh_editor;
 pub mod node_editor;
 pub mod osc_panel;
+pub mod oscillator_panel;
 pub mod paint_panel;
 pub mod theme;
 pub mod timeline_v2;
@@ -49,6 +50,7 @@ pub use imgui::OwnedDrawData;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
+pub use oscillator_panel::OscillatorPanel;
 pub use paint_panel::PaintPanel;
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
@@ -279,7 +281,7 @@ pub struct AppUI {
     pub show_outputs: bool,           // Phase 2
     pub show_edge_blend: bool,        // Phase 2
     pub show_color_calibration: bool, // Phase 2
-    pub show_oscillator: bool,        // Oscillator distortion effect
+    pub oscillator_panel: OscillatorPanel,
     pub show_audio: bool,
     pub audio_panel: AudioPanel,
     pub show_cue_panel: bool,
@@ -319,7 +321,7 @@ impl Default for AppUI {
             show_outputs: true,
             show_edge_blend: false,        // Show only when output selected
             show_color_calibration: false, // Show only when output selected
-            show_oscillator: true,
+            oscillator_panel: OscillatorPanel::default(),
             show_audio: true,
             audio_panel: AudioPanel::default(),
             show_cue_panel: true,
@@ -502,7 +504,7 @@ impl AppUI {
                 );
                 ui.checkbox(
                     self.i18n.t("check-show-oscillator"),
-                    &mut self.show_oscillator,
+                    &mut self.oscillator_panel.visible,
                 );
                 ui.checkbox(
                     self.i18n.t("panel-effect-chain"),
@@ -1233,287 +1235,6 @@ impl AppUI {
 
                 if ui.button(self.i18n.t("btn-reset-defaults")) {
                     *cal = mapmap_core::ColorCalibration::default();
-                }
-            });
-    }
-
-    /// Render oscillator distortion effect control panel
-    pub fn render_oscillator_panel(&mut self, ui: &Ui, config: &mut mapmap_core::OscillatorConfig) {
-        if !self.show_oscillator {
-            return;
-        }
-
-        ui.window(self.i18n.t("panel-oscillator"))
-            .size([450.0, 750.0], Condition::FirstUseEver)
-            .position([1560.0, 520.0], Condition::FirstUseEver)
-            .build(|| {
-                // Master enable
-                ui.checkbox(self.i18n.t("check-enable"), &mut config.enabled);
-                ui.separator();
-
-                // Preset buttons
-                ui.text(format!("{}:", self.i18n.t("header-quick-presets")));
-                if ui.button(self.i18n.t("btn-subtle")) {
-                    *config = mapmap_core::OscillatorConfig::preset_subtle();
-                }
-                ui.same_line();
-                if ui.button(self.i18n.t("btn-dramatic")) {
-                    *config = mapmap_core::OscillatorConfig::preset_dramatic();
-                }
-                ui.same_line();
-                if ui.button(self.i18n.t("btn-rings")) {
-                    *config = mapmap_core::OscillatorConfig::preset_rings();
-                }
-                ui.same_line();
-                if ui.button(self.i18n.t("btn-reset")) {
-                    *config = mapmap_core::OscillatorConfig::default();
-                }
-
-                ui.separator();
-
-                // Distortion parameters
-                ui.text(self.i18n.t("header-distortion"));
-                ui.slider(
-                    self.i18n.t("label-amount"),
-                    0.0,
-                    1.0,
-                    &mut config.distortion_amount,
-                );
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Intensity of the distortion effect");
-                }
-
-                ui.slider(
-                    self.i18n.t("label-dist-scale"),
-                    0.0,
-                    0.1,
-                    &mut config.distortion_scale,
-                );
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Spatial scale of distortion");
-                }
-
-                ui.slider(
-                    self.i18n.t("label-dist-speed"),
-                    0.0,
-                    5.0,
-                    &mut config.distortion_speed,
-                );
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Animation speed");
-                }
-
-                ui.separator();
-
-                // Visual overlay
-                ui.text(self.i18n.t("header-visual-overlay"));
-                ui.slider(
-                    self.i18n.t("label-overlay-opacity"),
-                    0.0,
-                    1.0,
-                    &mut config.overlay_opacity,
-                );
-
-                // Color mode combo
-                let color_modes = ["Off", "Rainbow", "Black & White", "Complementary"];
-                let mut color_idx = match config.color_mode {
-                    mapmap_core::ColorMode::Off => 0,
-                    mapmap_core::ColorMode::Rainbow => 1,
-                    mapmap_core::ColorMode::BlackWhite => 2,
-                    mapmap_core::ColorMode::Complementary => 3,
-                };
-
-                if ui.combo(
-                    self.i18n.t("label-color-mode"),
-                    &mut color_idx,
-                    &color_modes,
-                    |item| std::borrow::Cow::Borrowed(item),
-                ) {
-                    config.color_mode = match color_idx {
-                        0 => mapmap_core::ColorMode::Off,
-                        1 => mapmap_core::ColorMode::Rainbow,
-                        2 => mapmap_core::ColorMode::BlackWhite,
-                        3 => mapmap_core::ColorMode::Complementary,
-                        _ => mapmap_core::ColorMode::Off,
-                    };
-                }
-
-                ui.separator();
-
-                // Simulation parameters
-                ui.text(self.i18n.t("header-simulation"));
-
-                // Resolution combo
-                let res_names = ["Low (128x128)", "Medium (256x256)", "High (512x512)"];
-                let mut res_idx = match config.simulation_resolution {
-                    mapmap_core::SimulationResolution::Low => 0,
-                    mapmap_core::SimulationResolution::Medium => 1,
-                    mapmap_core::SimulationResolution::High => 2,
-                };
-
-                if ui.combo(
-                    self.i18n.t("label-resolution"),
-                    &mut res_idx,
-                    &res_names,
-                    |item| std::borrow::Cow::Borrowed(item),
-                ) {
-                    config.simulation_resolution = match res_idx {
-                        0 => mapmap_core::SimulationResolution::Low,
-                        1 => mapmap_core::SimulationResolution::Medium,
-                        2 => mapmap_core::SimulationResolution::High,
-                        _ => mapmap_core::SimulationResolution::Medium,
-                    };
-                }
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Higher resolution = more detail but slower");
-                }
-
-                ui.slider(
-                    self.i18n.t("label-kernel-radius"),
-                    1.0,
-                    64.0,
-                    &mut config.kernel_radius,
-                );
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Coupling interaction distance");
-                }
-
-                ui.slider(
-                    self.i18n.t("label-noise-amount"),
-                    0.0,
-                    1.0,
-                    &mut config.noise_amount,
-                );
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Random variation in oscillation");
-                }
-
-                ui.slider(
-                    self.i18n.t("label-freq-min"),
-                    0.0,
-                    10.0,
-                    &mut config.frequency_min,
-                );
-                ui.slider(
-                    self.i18n.t("label-freq-max"),
-                    0.0,
-                    10.0,
-                    &mut config.frequency_max,
-                );
-
-                ui.separator();
-
-                // Coordinate mode
-                let coord_modes = ["Cartesian", "Log-Polar"];
-                let mut coord_idx = match config.coordinate_mode {
-                    mapmap_core::CoordinateMode::Cartesian => 0,
-                    mapmap_core::CoordinateMode::LogPolar => 1,
-                };
-
-                if ui.combo(
-                    self.i18n.t("label-coordinate-mode"),
-                    &mut coord_idx,
-                    &coord_modes,
-                    |item| std::borrow::Cow::Borrowed(item),
-                ) {
-                    config.coordinate_mode = match coord_idx {
-                        0 => mapmap_core::CoordinateMode::Cartesian,
-                        1 => mapmap_core::CoordinateMode::LogPolar,
-                        _ => mapmap_core::CoordinateMode::Cartesian,
-                    };
-                }
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Log-Polar creates radial/spiral patterns");
-                }
-
-                // Phase initialization mode
-                let phase_modes = ["Random", "Uniform", "Plane H", "Plane V", "Diagonal"];
-                let mut phase_idx = match config.phase_init_mode {
-                    mapmap_core::PhaseInitMode::Random => 0,
-                    mapmap_core::PhaseInitMode::Uniform => 1,
-                    mapmap_core::PhaseInitMode::PlaneHorizontal => 2,
-                    mapmap_core::PhaseInitMode::PlaneVertical => 3,
-                    mapmap_core::PhaseInitMode::PlaneDiagonal => 4,
-                };
-
-                if ui.combo(
-                    self.i18n.t("label-phase-init"),
-                    &mut phase_idx,
-                    &phase_modes,
-                    |item| std::borrow::Cow::Borrowed(item),
-                ) {
-                    config.phase_init_mode = match phase_idx {
-                        0 => mapmap_core::PhaseInitMode::Random,
-                        1 => mapmap_core::PhaseInitMode::Uniform,
-                        2 => mapmap_core::PhaseInitMode::PlaneHorizontal,
-                        3 => mapmap_core::PhaseInitMode::PlaneVertical,
-                        4 => mapmap_core::PhaseInitMode::PlaneDiagonal,
-                        _ => mapmap_core::PhaseInitMode::Random,
-                    };
-                }
-                if ui.is_item_hovered() {
-                    ui.tooltip_text("Initial phase pattern for oscillators");
-                }
-
-                ui.separator();
-
-                // Coupling rings
-                if ui.collapsing_header(self.i18n.t("header-coupling"), TreeNodeFlags::empty()) {
-                    for i in 0..4 {
-                        let _id = ui.push_id_usize(i);
-
-                        let is_active = config.rings[i].distance > 0.0
-                            || config.rings[i].width > 0.0
-                            || config.rings[i].coupling.abs() > 0.01;
-
-                        if let Some(_token) = ui
-                            .tree_node_config(format!("Ring {}", i + 1))
-                            .default_open(is_active)
-                            .build(|| {
-                                ui.slider(
-                                    format!("{}##ring", self.i18n.t("label-dist-scale")),
-                                    0.0,
-                                    1.0,
-                                    &mut config.rings[i].distance,
-                                );
-                                if ui.is_item_hovered() {
-                                    ui.tooltip_text("Distance from center (0-1)");
-                                }
-
-                                ui.slider(
-                                    format!("{}##ring", self.i18n.t("label-width")),
-                                    0.0,
-                                    1.0,
-                                    &mut config.rings[i].width,
-                                );
-                                if ui.is_item_hovered() {
-                                    ui.tooltip_text("Ring width (0-1)");
-                                }
-
-                                ui.slider(
-                                    self.i18n.t("label-diff-coupling"),
-                                    -5.0,
-                                    5.0,
-                                    &mut config.rings[i].coupling,
-                                );
-                                if ui.is_item_hovered() {
-                                    ui.tooltip_text("Negative = anti-sync, Positive = sync");
-                                }
-
-                                if ui.button(self.i18n.t("btn-reset-ring")) {
-                                    config.rings[i] = mapmap_core::RingParams::default();
-                                }
-                                ui.same_line();
-                                if ui.button(self.i18n.t("btn-clear-ring")) {
-                                    config.rings[i] = mapmap_core::RingParams {
-                                        distance: 0.0,
-                                        width: 0.0,
-                                        coupling: 0.0,
-                                    };
-                                }
-                            })
-                        {}
-                    }
                 }
             });
     }
