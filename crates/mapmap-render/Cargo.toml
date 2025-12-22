@@ -25,6 +25,7 @@ crossbeam-channel = { workspace = true }
 rand = "0.8"
 
 [dev-dependencies]
+futures-channel = "0.3.30"
 criterion = { workspace = true }
 pollster = { workspace = true }
 
