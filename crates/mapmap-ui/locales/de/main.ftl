@@ -208,6 +208,7 @@ panel-paints = Farben/Medien
 label-total-paints = Paints insgesamt: { $count }
 check-playing = Wiedergabe
 paints-color = Farbe
+paints-source = Quelle
 mode-loop = Schleife
 label-speed = Geschwindigkeit
 label-composition = Komposition
@@ -220,10 +221,12 @@ label-total-mappings = Mappings insgesamt: { $count }
 check-solo = Solo
 check-lock = Sperren
 label-master-opacity = Deckkraft
-label-frame-time = Tiefe
+label-depth = Tiefe
 label-mesh = Mesh: { $type } ({ $count } Vertices)
+label-mesh-type = Mesh-Typ
 btn-remove = Entfernen
 btn-add-quad = Quad-Mapping hinzufügen
+btn-add-mapping = Mapping hinzufügen
 
 # Transform
 panel-transforms = Transformations-Steuerung

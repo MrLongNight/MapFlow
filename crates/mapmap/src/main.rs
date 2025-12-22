@@ -438,6 +438,21 @@ impl App {
             }
         }
 
+        if let Some(action) = self.ui_state.mapping_panel.take_action() {
+            use mapmap_ui::mapping_panel::MappingPanelAction;
+            match action {
+                MappingPanelAction::AddMapping => {
+                    let new_mapping = mapmap_core::Mapping::quad(0, "New Quad", 0);
+                    self.state.mapping_manager.add_mapping(new_mapping);
+                    self.state.dirty = true;
+                }
+                MappingPanelAction::RemoveMapping(id) => {
+                    self.state.mapping_manager.remove_mapping(id);
+                    self.state.dirty = true;
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -500,8 +515,6 @@ impl App {
                     self.ui_state
                         .render_layer_panel(ui, &mut self.state.layer_manager);
                     self.ui_state
-                        .render_mapping_panel(ui, &mut self.state.mapping_manager);
-                    self.ui_state
                         .render_master_controls(ui, &mut self.state.layer_manager);
                     self.ui_state.render_cue_panel(ui);
                 });
@@ -563,6 +576,13 @@ impl App {
                         ctx,
                         &self.ui_state.i18n,
                         &mut self.state.paint_manager,
+                    );
+                    // Render Mapping Panel
+                    self.ui_state.mapping_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.mapping_manager,
+                        &self.state.paint_manager,
                     );
                     // Update and render Transform Panel
                     if let Some(selected_id) = self.ui_state.selected_layer_id {

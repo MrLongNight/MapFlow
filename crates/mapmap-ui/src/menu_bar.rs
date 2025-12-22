@@ -144,11 +144,11 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui_state.i18n.t("check-show-paints"),
                 );
                 ui.checkbox(
-                    &mut ui_state.show_mappings,
+                    &mut ui_state.mapping_panel.visible,
                     ui_state.i18n.t("check-show-mappings"),
                 );
                 ui.checkbox(
-                    &mut ui_state.show_transforms,
+                    &mut ui_state.transform_panel.visible,
                     ui_state.i18n.t("check-show-transforms"),
                 );
                 ui.checkbox(
