@@ -61,7 +61,7 @@ pub enum CoordinateMode {
 }
 
 /// Ring parameters for coupling kernel
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct RingParams {
     /// Distance from center (0-1)
     pub distance: f32,
@@ -82,7 +82,7 @@ impl Default for RingParams {
 }
 
 /// Oscillator effect configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OscillatorConfig {
     // Simulation parameters
     pub simulation_resolution: SimulationResolution,

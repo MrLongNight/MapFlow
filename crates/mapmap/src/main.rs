@@ -643,6 +643,13 @@ impl App {
                     self.ui_state
                         .edge_blend_panel
                         .show(ctx, &self.ui_state.i18n);
+
+                    // Render Oscillator Panel
+                    self.ui_state.oscillator_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.oscillator_config,
+                    );
                 });
 
                 self.egui_state
