@@ -3,9 +3,7 @@
 //! UI Panel for viewing and customizing keyboard shortcuts.
 
 use egui::{self, Key as EguiKey, RichText, ScrollArea};
-use mapmap_control::shortcuts::{
-    Action, DefaultShortcuts, Key, Modifiers, Shortcut, ShortcutContext,
-};
+use mapmap_control::shortcuts::{DefaultShortcuts, Key, Modifiers, Shortcut, ShortcutContext};
 
 use crate::i18n::LocaleManager;
 

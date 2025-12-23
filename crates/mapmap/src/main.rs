@@ -741,6 +741,9 @@ impl App {
                         &self.ui_state.i18n,
                     );
 
+                    // Render Icon Gallery
+                    self.ui_state.render_icon_demo(ctx);
+
                     // Render Timeline
                     egui::Window::new("Timeline")
                         .open(&mut self.ui_state.show_timeline)

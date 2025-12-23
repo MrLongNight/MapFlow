@@ -173,6 +173,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                 );
                 ui.checkbox(&mut ui_state.show_timeline, "Timeline");
                 ui.checkbox(&mut ui_state.show_shader_graph, "Shader Graph");
+                ui.checkbox(&mut ui_state.icon_demo_panel.visible, "Icon Gallery");
                 ui.separator();
                 if ui.button(ui_state.i18n.t("btn-fullscreen")).clicked() {
                     actions.push(UIAction::ToggleFullscreen);
