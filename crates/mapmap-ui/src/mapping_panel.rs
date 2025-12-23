@@ -59,8 +59,10 @@ impl MappingPanel {
                                             // Name (Click to select)
                                             // We don't have a specific "selected_mapping_id" passed in yet,
                                             // but we can fire an action to select it.
-                                            let label =
-                                                format!("{} (Paint #{})", mapping.name, mapping.paint_id);
+                                            let label = format!(
+                                                "{} (Paint #{})",
+                                                mapping.name, mapping.paint_id
+                                            );
                                             if ui.button(label).clicked() {
                                                 actions.push(UIAction::SelectMapping(mapping.id));
                                             }
@@ -68,8 +70,14 @@ impl MappingPanel {
                                             ui.with_layout(
                                                 egui::Layout::right_to_left(egui::Align::Center),
                                                 |ui| {
-                                                    if ui.small_button("🗑").on_hover_text(i18n.t("btn-remove")).clicked() {
-                                                        actions.push(UIAction::RemoveMapping(mapping.id));
+                                                    if ui
+                                                        .small_button("🗑")
+                                                        .on_hover_text(i18n.t("btn-remove"))
+                                                        .clicked()
+                                                    {
+                                                        actions.push(UIAction::RemoveMapping(
+                                                            mapping.id,
+                                                        ));
                                                     }
                                                 },
                                             );
@@ -78,8 +86,14 @@ impl MappingPanel {
                                         // Indented properties
                                         ui.indent("mapping_props", |ui| {
                                             ui.horizontal(|ui| {
-                                                ui.checkbox(&mut mapping.solo, i18n.t("check-solo"));
-                                                ui.checkbox(&mut mapping.locked, i18n.t("check-lock"));
+                                                ui.checkbox(
+                                                    &mut mapping.solo,
+                                                    i18n.t("check-solo"),
+                                                );
+                                                ui.checkbox(
+                                                    &mut mapping.locked,
+                                                    i18n.t("check-lock"),
+                                                );
                                             });
 
                                             // Opacity
@@ -106,9 +120,21 @@ impl MappingPanel {
                                                 egui::ComboBox::from_id_source("mesh_type")
                                                     .selected_text(format!("{:?}", current_type))
                                                     .show_ui(ui, |ui| {
-                                                        ui.selectable_value(&mut selected_type, MeshType::Quad, "Quad");
-                                                        ui.selectable_value(&mut selected_type, MeshType::Triangle, "Triangle");
-                                                        ui.selectable_value(&mut selected_type, MeshType::Ellipse, "Ellipse");
+                                                        ui.selectable_value(
+                                                            &mut selected_type,
+                                                            MeshType::Quad,
+                                                            "Quad",
+                                                        );
+                                                        ui.selectable_value(
+                                                            &mut selected_type,
+                                                            MeshType::Triangle,
+                                                            "Triangle",
+                                                        );
+                                                        ui.selectable_value(
+                                                            &mut selected_type,
+                                                            MeshType::Ellipse,
+                                                            "Ellipse",
+                                                        );
                                                     });
 
                                                 if selected_type != current_type {
@@ -118,7 +144,9 @@ impl MappingPanel {
                                                         MeshType::Triangle => Mesh::triangle(),
                                                         MeshType::Ellipse => Mesh::ellipse(
                                                             glam::Vec2::new(0.5, 0.5),
-                                                            0.5, 0.5, 32
+                                                            0.5,
+                                                            0.5,
+                                                            32,
                                                         ),
                                                         _ => Mesh::quad(), // Fallback
                                                     };
@@ -127,7 +155,10 @@ impl MappingPanel {
 
                                             ui.label(i18n.t_args(
                                                 "label-mesh-info",
-                                                &[("count", &mapping.mesh.vertex_count().to_string())],
+                                                &[(
+                                                    "count",
+                                                    &mapping.mesh.vertex_count().to_string(),
+                                                )],
                                             ));
 
                                             // Transform Controls (Pseudo-transform by modifying mesh vertices)
@@ -137,16 +168,28 @@ impl MappingPanel {
                                                 ui.label(i18n.t("transform-move-mesh"));
                                                 ui.horizontal(|ui| {
                                                     if ui.button("⬅").clicked() {
-                                                        translate_mesh(&mut mapping.mesh, glam::Vec2::new(-0.01, 0.0));
+                                                        translate_mesh(
+                                                            &mut mapping.mesh,
+                                                            glam::Vec2::new(-0.01, 0.0),
+                                                        );
                                                     }
                                                     if ui.button("➡").clicked() {
-                                                        translate_mesh(&mut mapping.mesh, glam::Vec2::new(0.01, 0.0));
+                                                        translate_mesh(
+                                                            &mut mapping.mesh,
+                                                            glam::Vec2::new(0.01, 0.0),
+                                                        );
                                                     }
                                                     if ui.button("⬆").clicked() {
-                                                        translate_mesh(&mut mapping.mesh, glam::Vec2::new(0.0, -0.01));
+                                                        translate_mesh(
+                                                            &mut mapping.mesh,
+                                                            glam::Vec2::new(0.0, -0.01),
+                                                        );
                                                     }
                                                     if ui.button("⬇").clicked() {
-                                                        translate_mesh(&mut mapping.mesh, glam::Vec2::new(0.0, 0.01));
+                                                        translate_mesh(
+                                                            &mut mapping.mesh,
+                                                            glam::Vec2::new(0.0, 0.01),
+                                                        );
                                                     }
                                                 });
                                             });

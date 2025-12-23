@@ -47,8 +47,7 @@ struct App {
     audio_backend: Option<CpalBackend>,
     /// The audio analyzer.
     audio_analyzer: AudioAnalyzer,
-    /// List of available audio devices (reserved for future use).
-    #[allow(dead_code)]
+    /// List of available audio devices.
     audio_devices: Vec<String>,
     /// The egui context.
     egui_context: egui::Context,
@@ -128,7 +127,6 @@ impl App {
 
         // Initialize egui
         let egui_context = egui::Context::default();
-        egui_extras::install_image_loaders(&egui_context);
         let egui_state = State::new(
             egui_context.clone(),
             egui::ViewportId::default(),
@@ -349,27 +347,6 @@ impl App {
                     self.ui_state.show_settings = true;
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
-                mapmap_ui::UIAction::SelectAudioDevice(device_name) => {
-                    info!("Switching audio device to: {}", device_name);
-                    if let Some(backend) = &mut self.audio_backend {
-                        backend.stop();
-                    }
-                    self.audio_backend = None;
-
-                    match CpalBackend::new(Some(device_name.clone())) {
-                        Ok(mut backend) => {
-                            if let Err(e) = backend.start() {
-                                error!("Failed to start audio stream: {}", e);
-                            } else {
-                                self.audio_backend = Some(backend);
-                            }
-                        }
-                        Err(e) => {
-                            error!("Failed to initialize audio backend: {}", e);
-                        }
-                    }
-                    self.ui_state.selected_audio_device = Some(device_name);
-                }
                 _ => {}
             }
         }
@@ -559,20 +536,131 @@ impl App {
             // --------- ImGui removed (Phase 6 Complete) ----------
 
             // --------- egui: UI separat zeichnen ---------
-
+            let mut dashboard_action = None;
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
-                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state, 60.0, 16.0); // TODO: pass real stats
+                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
-                    // Docked Layout
-                    self.ui_state.render_docked_layout(
+                    // Render Dashboard
+                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n);
+
+                    // Migrated Panels Integration (Controls, Stats, Master, Cue)
+                    self.ui_state.render_controls(ctx);
+                    self.ui_state.render_stats(ctx, 60.0, 16.6);
+                    self.ui_state
+                        .render_master_controls(ctx, &mut self.state.layer_manager);
+                    self.ui_state.cue_panel.show(
+                        ctx,
+                        &mut self.control_manager,
+                        &self.ui_state.i18n,
+                        &mut self.ui_state.actions,
+                    );
+
+                    // Render Audio Panel
+                    if self.ui_state.show_audio {
+                        let analysis = self.audio_analyzer.get_latest_analysis();
+                        egui::Window::new(self.ui_state.i18n.t("audio-panel-title")).show(
+                            ctx,
+                            |ui| {
+                                if let Some(action) = self.ui_state.audio_panel.ui(
+                                    ui,
+                                    &self.ui_state.i18n,
+                                    Some(&analysis),
+                                    &self.audio_devices,
+                                    &mut self.ui_state.selected_audio_device,
+                                ) {
+                                    // Handle device change
+                                    if let Some(backend) = &mut self.audio_backend {
+                                        backend.stop();
+                                    }
+                                    self.audio_backend = None;
+
+                                    match CpalBackend::new(Some(action)) {
+                                        Ok(mut backend) => {
+                                            if let Err(e) = backend.start() {
+                                                error!("Failed to start audio stream: {}", e);
+                                            } else {
+                                                self.audio_backend = Some(backend);
+                                            }
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to initialize audio backend: {}", e);
+                                        }
+                                    }
+                                }
+                            },
+                        );
+                    }
+
+                    // Render Effect Chain Panel
+                    self.ui_state
+                        .effect_chain_panel
+                        .ui(ctx, &self.ui_state.i18n);
+
+                    // Render Layer Panel
+                    self.ui_state.layer_panel.show(
                         ctx,
                         &mut self.state.layer_manager,
-                        60.0,
-                        16.0,
+                        &mut self.ui_state.selected_layer_id,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
                     );
+
+                    // Render Paint Panel
+                    self.ui_state.paint_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.paint_manager,
+                    );
+
+                    // Render Mapping Panel
+                    self.ui_state.mapping_panel.show(
+                        ctx,
+                        &mut self.state.mapping_manager,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                    );
+
+                    // Render Output Panel
+                    self.ui_state.output_panel.show(
+                        ctx,
+                        &mut self.state.output_manager,
+                        &mut self.ui_state.selected_output_id,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                    );
+
+                    // Render Timeline
+                    egui::Window::new("Timeline")
+                        .open(&mut self.ui_state.show_timeline)
+                        .default_size([800.0, 300.0])
+                        .show(ctx, |ui| {
+                            let _ = self.ui_state.timeline_panel.ui(ui);
+                        });
+
+                    // Render Shader Graph
+                    egui::Window::new("Shader Graph")
+                        .open(&mut self.ui_state.show_shader_graph)
+                        .default_size([800.0, 600.0])
+                        .show(ctx, |ui| {
+                            let _ = self.ui_state.node_editor_panel.ui(ui, &self.ui_state.i18n);
+                        });
+
+                    // Update and render Transform Panel
+                    if let Some(selected_id) = self.ui_state.selected_layer_id {
+                        if let Some(layer) = self.state.layer_manager.get_layer(selected_id) {
+                            self.ui_state
+                                .transform_panel
+                                .set_transform(&layer.name, &layer.transform);
+                        }
+                    } else {
+                        self.ui_state.transform_panel.clear_selection();
+                    }
+                    self.ui_state
+                        .transform_panel
+                        .render(ctx, &self.ui_state.i18n);
 
                     // Update and show the edge blend panel
                     if let Some(output_id) = self.ui_state.selected_output_id {
@@ -730,7 +818,26 @@ impl App {
                     .render(&mut render_pass, &tris, &screen_descriptor);
             }
 
-            // Dashboard actions handled via UIAction now
+            // Post-render logic for egui actions
+            if let Some(mapmap_ui::DashboardAction::AudioDeviceChanged(device)) = dashboard_action {
+                if let Some(backend) = &mut self.audio_backend {
+                    backend.stop();
+                }
+                self.audio_backend = None;
+
+                match CpalBackend::new(Some(device)) {
+                    Ok(mut backend) => {
+                        if let Err(e) = backend.start() {
+                            error!("Failed to start audio stream: {}", e);
+                        } else {
+                            self.audio_backend = Some(backend);
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to initialize audio backend: {}", e);
+                    }
+                }
+            }
         } else {
             // Output-Fenster Management: Clear To Black oder dein Mapping-Rendering!
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

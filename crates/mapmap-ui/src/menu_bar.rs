@@ -9,7 +9,7 @@ use crate::{AppUI, UIAction};
 pub struct MenuBar {}
 
 /// Renders the main menu bar and returns any action triggered.
-pub fn show(ctx: &egui::Context, ui_state: &mut AppUI, fps: f32, frame_time: f32) -> Vec<UIAction> {
+pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
     let mut actions = vec![];
 
     egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -182,29 +182,6 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI, fps: f32, frame_time: f32
                     actions.push(UIAction::ResetLayout);
                     ui.close_menu();
                 }
-
-                ui.separator();
-                ui.label("UI Settings");
-
-                // Theme
-                let mut theme = ui_state
-                    .user_config
-                    .theme
-                    .unwrap_or(crate::theme::Theme::Dark);
-                if crate::theme::theme_picker(ui, &mut theme) {
-                    ui_state.user_config.theme = Some(theme);
-                    let _ = ui_state.user_config.save();
-                }
-
-                // Scaling
-                let mut scale = ui_state.user_config.ui_scale.unwrap_or(1.0);
-                ui.horizontal(|ui| {
-                    ui.label("UI Scale:");
-                    if ui.add(egui::Slider::new(&mut scale, 0.5..=2.5)).changed() {
-                        ui_state.user_config.ui_scale = Some(scale);
-                        let _ = ui_state.user_config.save();
-                    }
-                });
             });
 
             // --- Help Menu ---
@@ -233,21 +210,27 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI, fps: f32, frame_time: f32
                     }
                 });
             });
-
-            // Theme is applied in render_docked_layout
-            let _ = ui_state.user_config.theme;
-
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.add_space(8.0);
-                ui.label(format!("{:.1} FPS", fps));
-                ui.separator();
-                ui.label(format!("{:.2} ms", frame_time));
-            });
         });
 
         ui.add_space(4.0);
 
+        // --- Toolbar ---
+        ui.horizontal(|ui| {
+            ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
+
+            if ui.button(ui_state.i18n.t("toolbar-save")).clicked() {
+                actions.push(UIAction::SaveProject(String::new()));
+            }
+            if ui.button(ui_state.i18n.t("toolbar-undo")).clicked() {
+                actions.push(UIAction::Undo);
+            }
+            if ui.button(ui_state.i18n.t("toolbar-redo")).clicked() {
+                actions.push(UIAction::Redo);
+            }
+        });
+
         ui.add_space(4.0);
+        ui.separator();
     });
 
     actions

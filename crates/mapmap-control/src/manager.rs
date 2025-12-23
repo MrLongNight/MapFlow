@@ -321,6 +321,11 @@ impl ControlManager {
             ControlTarget::MasterBlackout,
         ]
     }
+
+    /// Get a mutable reference to the cue list
+    pub fn cue_list_mut(&mut self) -> &mut CueList {
+        &mut self.cue_list
+    }
 }
 
 impl Default for ControlManager {

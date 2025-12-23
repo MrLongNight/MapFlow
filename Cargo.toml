@@ -10,7 +10,6 @@ members = [
     "crates/mapmap-io",
     "crates/mapmap",
     "crates/mapmap-mcp",
-    "crates/streamline-icons-mcp",
 ]
 
 [workspace.package]
