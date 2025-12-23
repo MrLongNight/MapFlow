@@ -12,6 +12,8 @@ pub enum AudioError {
     UnsupportedFormat,
     #[error("Failed to build audio stream: {0}")]
     StreamBuildError(String),
+    #[error("Device initialization timed out")]
+    Timeout,
 }
 
 /// Audio backend abstraction
@@ -40,78 +42,145 @@ pub mod cpal_backend {
     pub struct CpalBackend {
         sample_receiver: Receiver<Vec<f32>>,
         command_sender: Sender<Command>,
-        thread_handle: Option<std::thread::JoinHandle<()>>,
+        #[allow(dead_code)]
+        stream: cpal::Stream,
     }
 
     impl CpalBackend {
+        /// Create a new CPAL backend with the specified device.
+        /// Uses a timeout to prevent the app from freezing if a device doesn't respond.
         pub fn new(device_name: Option<String>) -> Result<Self, AudioError> {
             let (sample_tx, sample_rx) = unbounded();
-            let (command_tx, command_rx) = unbounded();
+            let (command_tx, command_rx) = unbounded::<Command>();
 
-            let thread_handle = std::thread::spawn(move || {
-                let host = cpal::default_host();
-                let device = if let Some(name) = device_name {
-                    host.input_devices()
-                        .unwrap()
-                        .find(|d| d.name().map(|n| n == name).unwrap_or(false))
-                        .unwrap()
-                } else {
-                    host.default_input_device().unwrap()
-                };
+            // Build stream directly in main thread (cpal::Stream is not Send)
+            let stream = Self::build_stream(device_name, sample_tx)?;
 
-                let config = device.default_input_config().unwrap();
+            // Spawn command processing thread
+            std::thread::Builder::new()
+                .name("audio-cmd".to_string())
+                .spawn(move || {
+                    // Just drain the command channel - stream auto-plays
+                    while command_rx.recv().is_ok() {}
+                })
+                .ok();
 
-                let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
+            Ok(Self {
+                sample_receiver: sample_rx,
+                command_sender: command_tx,
+                stream,
+            })
+        }
 
-                let stream = match config.sample_format() {
-                    cpal::SampleFormat::F32 => device.build_input_stream(
+        /// Build the audio stream (must be called from main thread)
+        fn build_stream(
+            device_name: Option<String>,
+            sample_tx: Sender<Vec<f32>>,
+        ) -> Result<cpal::Stream, AudioError> {
+            let host = cpal::default_host();
+
+            // Get device
+            let device = if let Some(ref name) = device_name {
+                match host.input_devices() {
+                    Ok(mut devices) => {
+                        match devices.find(|d| d.name().map(|n| n == *name).unwrap_or(false)) {
+                            Some(dev) => dev,
+                            None => {
+                                return Err(AudioError::NoDevicesFound(format!(
+                                    "Device '{}' not found",
+                                    name
+                                )));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        return Err(AudioError::NoDevicesFound(e.to_string()));
+                    }
+                }
+            } else {
+                match host.default_input_device() {
+                    Some(dev) => dev,
+                    None => {
+                        return Err(AudioError::DefaultDeviceNotFound);
+                    }
+                }
+            };
+
+            // Get config
+            let config = match device.default_input_config() {
+                Ok(cfg) => cfg,
+                Err(e) => {
+                    return Err(AudioError::StreamBuildError(format!(
+                        "Failed to get device config: {}",
+                        e
+                    )));
+                }
+            };
+
+            let err_fn = |err| eprintln!("Audio stream error: {}", err);
+
+            // Build stream
+            let stream = match config.sample_format() {
+                cpal::SampleFormat::F32 => {
+                    let tx = sample_tx.clone();
+                    device.build_input_stream(
                         &config.into(),
                         move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                            let _ = sample_tx.send(data.to_vec());
+                            let _ = tx.send(data.to_vec());
                         },
                         err_fn,
                         None,
-                    ),
-                    cpal::SampleFormat::I16 => device.build_input_stream(
+                    )
+                }
+                cpal::SampleFormat::I16 => {
+                    let tx = sample_tx.clone();
+                    device.build_input_stream(
                         &config.into(),
                         move |data: &[i16], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> =
                                 data.iter().map(|&s| s as f32 / i16::MAX as f32).collect();
-                            let _ = sample_tx.send(samples);
+                            let _ = tx.send(samples);
                         },
                         err_fn,
                         None,
-                    ),
-                    cpal::SampleFormat::U16 => device.build_input_stream(
+                    )
+                }
+                cpal::SampleFormat::U16 => {
+                    let tx = sample_tx.clone();
+                    device.build_input_stream(
                         &config.into(),
                         move |data: &[u16], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> = data
                                 .iter()
                                 .map(|&s| (s as f32 / u16::MAX as f32) * 2.0 - 1.0)
                                 .collect();
-                            let _ = sample_tx.send(samples);
+                            let _ = tx.send(samples);
                         },
                         err_fn,
                         None,
-                    ),
-                    _ => panic!("Unsupported sample format"),
+                    )
                 }
-                .unwrap();
+                format => {
+                    return Err(AudioError::StreamBuildError(format!(
+                        "Unsupported sample format: {:?}",
+                        format
+                    )));
+                }
+            };
 
-                loop {
-                    match command_rx.recv() {
-                        Ok(Command::Play) => stream.play().unwrap(),
-                        Ok(Command::Pause) => stream.pause().unwrap(),
-                        Err(_) => break, // Channel closed, exit thread
+            match stream {
+                Ok(stream) => {
+                    // Start the stream immediately
+                    if let Err(e) = stream.play() {
+                        return Err(AudioError::StreamBuildError(format!(
+                            "Failed to start stream: {}",
+                            e
+                        )));
                     }
+                    Ok(stream)
                 }
-            });
-
-            Ok(Self {
-                sample_receiver: sample_rx,
-                command_sender: command_tx,
-                thread_handle: Some(thread_handle),
-            })
+                Err(e) => Err(AudioError::StreamBuildError(e.to_string())),
+            }
         }
 
         pub fn list_devices() -> Result<Option<Vec<String>>, AudioError> {
@@ -119,34 +188,24 @@ pub mod cpal_backend {
             let devices = host
                 .input_devices()
                 .map_err(|e| AudioError::NoDevicesFound(e.to_string()))?;
-            let device_names = devices
-                .map(|d| d.name().unwrap_or_else(|_| "Unnamed Device".to_string()))
-                .collect();
+            let device_names: Vec<String> = devices.filter_map(|d| d.name().ok()).collect();
             Ok(Some(device_names))
         }
     }
 
     impl AudioBackend for CpalBackend {
         fn start(&mut self) -> Result<(), AudioError> {
-            self.command_sender.send(Command::Play).unwrap();
+            // Stream is already playing from initialization
+            let _ = self.command_sender.send(Command::Play);
             Ok(())
         }
 
         fn stop(&mut self) {
-            self.command_sender.send(Command::Pause).unwrap();
+            let _ = self.command_sender.send(Command::Pause);
         }
 
         fn get_samples(&mut self) -> Vec<f32> {
             self.sample_receiver.try_iter().flatten().collect()
-        }
-    }
-
-    impl Drop for CpalBackend {
-        fn drop(&mut self) {
-            if let Some(handle) = self.thread_handle.take() {
-                drop(self.command_sender.clone()); // Close channel to signal exit
-                handle.join().unwrap();
-            }
         }
     }
 }

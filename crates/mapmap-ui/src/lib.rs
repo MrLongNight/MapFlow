@@ -17,6 +17,7 @@ pub mod dashboard;
 pub mod edge_blend_panel;
 pub mod effect_chain_panel;
 pub mod i18n;
+pub mod icons;
 pub mod layer_panel;
 pub mod mapping_panel;
 pub mod media_browser;
@@ -56,7 +57,6 @@ pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
 pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
-
 
 /// UI actions that can be triggered by the user interface
 #[derive(Debug, Clone)]
