@@ -272,10 +272,8 @@ impl AppUI {
 
     /// Render the icon demo panel
     pub fn render_icon_demo(&mut self, ctx: &egui::Context) {
-        egui::Window::new("temp_icon_demo").show(ctx, |ui| {
-            self.icon_demo_panel
-                .ui(ui, self.icon_manager.as_ref(), &self.i18n);
-        });
+        self.icon_demo_panel
+            .ui(ctx, self.icon_manager.as_ref(), &self.i18n);
     }
 
     /// Toggle icon demo panel visibility

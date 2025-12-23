@@ -656,9 +656,12 @@ impl App {
                     // Render Icon Gallery
                     self.ui_state.render_icon_demo(ctx);
 
+<<<<<<< HEAD
                     // Render Media Browser
                     self.ui_state.render_media_browser(ctx);
 
+=======
+>>>>>>> origin/main
                     // Render Timeline
                     egui::Window::new("Timeline")
                         .open(&mut self.ui_state.show_timeline)

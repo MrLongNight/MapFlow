@@ -4,7 +4,6 @@
 
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
-use egui::Ui;
 
 /// Panel to display all available icons
 pub struct IconDemoPanel {
@@ -30,7 +29,12 @@ impl IconDemoPanel {
     }
 
     /// Render the icon demo panel
-    pub fn ui(&mut self, ui: &mut Ui, icons: Option<&IconManager>, _locale: &LocaleManager) {
+    pub fn ui(
+        &mut self,
+        ctx: &egui::Context,
+        icons: Option<&IconManager>,
+        _locale: &LocaleManager,
+    ) {
         if !self.visible {
             return;
         }
@@ -39,7 +43,7 @@ impl IconDemoPanel {
             .default_size([500.0, 400.0])
             .resizable(true)
             .open(&mut self.visible)
-            .show(ui.ctx(), |ui| {
+            .show(ctx, |ui| {
                 ui.heading("Ultimate Colors - Free Icons");
                 ui.separator();
 
