@@ -2,6 +2,7 @@
 //!
 //! This module provides the main menu bar and toolbar for the application.
 
+use crate::icons::AppIcon;
 use crate::{AppUI, UIAction};
 
 /// State-holding struct for the main menu bar.
@@ -160,10 +161,6 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui_state.i18n.t("check-show-oscillator"),
                 );
                 ui.checkbox(
-                    &mut ui_state.show_audio,
-                    ui_state.i18n.t("check-show-audio"),
-                );
-                ui.checkbox(
                     &mut ui_state.show_cue_panel,
                     ui_state.i18n.t("check-show-cues"),
                 );
@@ -219,13 +216,28 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
         ui.horizontal(|ui| {
             ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
 
-            if ui.button(ui_state.i18n.t("toolbar-save")).clicked() {
+            let icon_size = 24.0;
+
+            // Helper for icon buttons
+            let mut icon_btn = |icon: AppIcon, tooltip: &str| -> bool {
+                if let Some(mgr) = &ui_state.icon_manager {
+                    if let Some(img) = mgr.image(icon, icon_size) {
+                        return ui
+                            .add(egui::ImageButton::new(img).frame(false))
+                            .on_hover_text(tooltip)
+                            .clicked();
+                    }
+                }
+                ui.button(tooltip).clicked()
+            };
+
+            if icon_btn(AppIcon::FloppyDisk, &ui_state.i18n.t("toolbar-save")) {
                 actions.push(UIAction::SaveProject(String::new()));
             }
-            if ui.button(ui_state.i18n.t("toolbar-undo")).clicked() {
+            if icon_btn(AppIcon::ArrowLeft, &ui_state.i18n.t("toolbar-undo")) {
                 actions.push(UIAction::Undo);
             }
-            if ui.button(ui_state.i18n.t("toolbar-redo")).clicked() {
+            if icon_btn(AppIcon::ArrowRight, &ui_state.i18n.t("toolbar-redo")) {
                 actions.push(UIAction::Redo);
             }
         });

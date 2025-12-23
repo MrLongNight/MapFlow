@@ -134,6 +134,8 @@ pub enum UIAction {
 
     // Audio actions
     SelectAudioDevice(String),
+    UpdateAudioConfig(mapmap_core::audio::AudioConfig),
+    ToggleAudioPanel,
 
     // Settings
     SetLanguage(String),

@@ -25,6 +25,12 @@ pub struct AudioConfig {
 
     /// Smoothing factor for FFT results (0.0-1.0)
     pub smoothing: f32,
+
+    /// Input gain multiplier (default: 1.0)
+    pub gain: f32,
+
+    /// Noise gate threshold (0.0-1.0) - samples below this are silenced
+    pub noise_gate: f32,
 }
 
 impl Default for AudioConfig {
@@ -34,6 +40,8 @@ impl Default for AudioConfig {
             fft_size: 1024,
             overlap: 0.5,
             smoothing: 0.8,
+            gain: 1.0,
+            noise_gate: 0.01,
         }
     }
 }
@@ -184,13 +192,31 @@ impl AudioAnalyzer {
         }
     }
 
+    /// Update audio configuration
+    pub fn update_config(&mut self, config: AudioConfig) {
+        // If FFT size changed, we need to re-initialize buffers
+        if config.fft_size != self.config.fft_size {
+            let mut planner = FftPlanner::new();
+            self.fft = planner.plan_fft_forward(config.fft_size);
+            self.input_buffer = VecDeque::with_capacity(config.fft_size * 2);
+            self.fft_buffer = vec![Complex::new(0.0, 0.0); config.fft_size];
+            self.magnitude_buffer = vec![0.0; config.fft_size / 2];
+            self.previous_magnitudes = vec![0.0; config.fft_size / 2];
+        }
+        self.config = config;
+    }
+
     /// Process audio samples
     pub fn process_samples(&mut self, samples: &[f32], timestamp: f64) -> AudioAnalysis {
         self.current_time = timestamp;
 
-        // Add samples to input buffer
+        // Add samples to input buffer with gain and noise gate
         for &sample in samples {
-            self.input_buffer.push_back(sample);
+            let mut processed = sample * self.config.gain;
+            if processed.abs() < self.config.noise_gate {
+                processed = 0.0;
+            }
+            self.input_buffer.push_back(processed);
         }
 
         // Check if we have enough samples for FFT
@@ -682,6 +708,8 @@ mod tests {
                 fft_size,
                 overlap: 0.5,
                 smoothing: 0.8,
+                gain: 1.0,
+                noise_gate: 0.0,
             };
             let analyzer = AudioAnalyzer::new(config);
             assert_eq!(analyzer.magnitude_buffer.len(), fft_size / 2);

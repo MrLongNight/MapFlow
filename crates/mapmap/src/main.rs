@@ -746,25 +746,45 @@ impl App {
                                     ui,
                                     &self.ui_state.i18n,
                                     Some(&analysis),
+                                    &self.state.audio_config,
                                     &self.audio_devices,
                                     &mut self.ui_state.selected_audio_device,
                                 ) {
-                                    // Handle device change
-                                    if let Some(backend) = &mut self.audio_backend {
-                                        backend.stop();
-                                    }
-                                    self.audio_backend = None;
+                                    match action {
+                                        mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(
+                                            new_device,
+                                        ) => {
+                                            // Handle device change
+                                            if let Some(backend) = &mut self.audio_backend {
+                                                backend.stop();
+                                            }
+                                            self.audio_backend = None;
 
-                                    match CpalBackend::new(Some(action)) {
-                                        Ok(mut backend) => {
-                                            if let Err(e) = backend.start() {
-                                                error!("Failed to start audio stream: {}", e);
-                                            } else {
-                                                self.audio_backend = Some(backend);
+                                            match CpalBackend::new(Some(new_device)) {
+                                                Ok(mut backend) => {
+                                                    if let Err(e) = backend.start() {
+                                                        error!(
+                                                            "Failed to start audio stream: {}",
+                                                            e
+                                                        );
+                                                    } else {
+                                                        self.audio_backend = Some(backend);
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to initialize audio backend: {}",
+                                                        e
+                                                    );
+                                                }
                                             }
                                         }
-                                        Err(e) => {
-                                            error!("Failed to initialize audio backend: {}", e);
+                                        mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(
+                                            new_config,
+                                        ) => {
+                                            self.audio_analyzer.update_config(new_config.clone());
+                                            self.state.audio_config = new_config;
+                                            self.state.dirty = true;
                                         }
                                     }
                                 }
@@ -949,6 +969,23 @@ impl App {
                 (tris, screen_descriptor)
             };
 
+            // Handle Dashboard actions
+            if let Some(action) = dashboard_action {
+                match action {
+                    mapmap_ui::DashboardAction::ToggleAudioPanel => {
+                        self.ui_state.show_audio = !self.ui_state.show_audio;
+                    }
+                    mapmap_ui::DashboardAction::AudioDeviceChanged(_device) => {}
+                    mapmap_ui::DashboardAction::SendCommand(_cmd) => {
+                        // TODO: Implement playback commands if not handled elsewhere
+                        // Currently PlaybackCommand handling seems missing in main.rs or handled via Mcp?
+                        // "McpAction::MediaPlay" has TODO.
+                        // This suggests buttons in Dashboard might do nothing currently!
+                        // But fixing playback is not my task.
+                    }
+                }
+            }
+
             // Handle TransformPanel actions
             if let Some(action) = self.ui_state.transform_panel.take_action() {
                 if let Some(selected_id) = self.ui_state.selected_layer_id {
@@ -1003,25 +1040,6 @@ impl App {
             }
 
             // Post-render logic for egui actions
-            if let Some(mapmap_ui::DashboardAction::AudioDeviceChanged(device)) = dashboard_action {
-                if let Some(backend) = &mut self.audio_backend {
-                    backend.stop();
-                }
-                self.audio_backend = None;
-
-                match CpalBackend::new(Some(device)) {
-                    Ok(mut backend) => {
-                        if let Err(e) = backend.start() {
-                            error!("Failed to start audio stream: {}", e);
-                        } else {
-                            self.audio_backend = Some(backend);
-                        }
-                    }
-                    Err(e) => {
-                        error!("Failed to initialize audio backend: {}", e);
-                    }
-                }
-            }
         } else {
             // Ensure textures are the correct size
             self.texture_pool.resize_if_needed(

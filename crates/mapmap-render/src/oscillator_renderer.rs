@@ -137,6 +137,7 @@ pub struct OscillatorRenderer {
 
     // Sampler
     sampler: wgpu::Sampler,
+    non_filtering_sampler: wgpu::Sampler,
 
     // State
     sim_width: u32,
@@ -173,6 +174,18 @@ impl OscillatorRenderer {
             ..Default::default()
         });
 
+        // Create non-filtering sampler for R32Float textures
+        let non_filtering_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Oscillator Non-Filtering Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
         // Create phase textures (ping-pong)
         let phase_texture_a =
             Self::create_phase_texture(&device, sim_width, sim_height, "Phase Texture A");
@@ -202,7 +215,7 @@ impl OscillatorRenderer {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
                         count: None,
                     },
                 ],
@@ -248,7 +261,7 @@ impl OscillatorRenderer {
                         binding: 2,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
                             view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
                         },
@@ -257,7 +270,7 @@ impl OscillatorRenderer {
                     wgpu::BindGroupLayoutEntry {
                         binding: 3,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
                         count: None,
                     },
                 ],
@@ -414,7 +427,7 @@ impl OscillatorRenderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
+                    resource: wgpu::BindingResource::Sampler(&non_filtering_sampler),
                 },
             ],
         });
@@ -429,7 +442,7 @@ impl OscillatorRenderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
+                    resource: wgpu::BindingResource::Sampler(&non_filtering_sampler),
                 },
             ],
         });
@@ -474,6 +487,7 @@ impl OscillatorRenderer {
             sim_uniform_bind_group,
             dist_uniform_bind_group,
             sampler,
+            non_filtering_sampler,
             sim_width,
             sim_height,
             current_phase: false,
@@ -781,7 +795,7 @@ impl OscillatorRenderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                    resource: wgpu::BindingResource::Sampler(&self.non_filtering_sampler),
                 },
             ],
         });

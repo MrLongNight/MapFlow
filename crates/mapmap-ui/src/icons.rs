@@ -20,6 +20,13 @@ pub enum AppIcon {
     ImageFile,
     Screen,
     Monitor,
+    FloppyDisk,
+    ArrowLeft,
+    ArrowRight,
+    Pencil,
+    AppWindow,
+    InfoCircle,
+    Hand,
 }
 
 impl AppIcon {
@@ -37,6 +44,13 @@ impl AppIcon {
             Self::ImageFile => "ultimate_image_file.svg",
             Self::Screen => "ultimate_screen.svg",
             Self::Monitor => "ultimate_monitor.svg",
+            Self::FloppyDisk => "ultimate_floppy_disk.svg",
+            Self::ArrowLeft => "ultimate_arrow_left.svg",
+            Self::ArrowRight => "ultimate_arrow_right.svg",
+            Self::Pencil => "ultimate_pencil.svg",
+            Self::AppWindow => "ultimate_app_window.svg",
+            Self::InfoCircle => "ultimate_info_circle.svg",
+            Self::Hand => "ultimate_hand.svg",
         }
     }
 
@@ -54,6 +68,13 @@ impl AppIcon {
             Self::ImageFile,
             Self::Screen,
             Self::Monitor,
+            Self::FloppyDisk,
+            Self::ArrowLeft,
+            Self::ArrowRight,
+            Self::Pencil,
+            Self::AppWindow,
+            Self::InfoCircle,
+            Self::Hand,
         ]
     }
 }

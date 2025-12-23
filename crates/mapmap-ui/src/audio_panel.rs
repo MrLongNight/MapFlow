@@ -5,11 +5,26 @@
 
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
-use mapmap_core::audio::AudioAnalysis;
+use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 use std::time::Instant;
 
 const PEAK_DECAY_RATE: f32 = 0.5; // units per second
 const PEAK_HOLD_TIME_SECS: f32 = 1.5;
+
+/// Visualization mode for the audio panel
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ViewMode {
+    Spectrum,
+    Waveform,
+    Bars,
+}
+
+/// Actions that can be triggered by the audio panel
+#[derive(Debug, Clone)]
+pub enum AudioPanelAction {
+    DeviceChanged(String),
+    ConfigChanged(AudioConfig),
+}
 
 /// Audio visualization panel widget
 pub struct AudioPanel {
@@ -19,6 +34,10 @@ pub struct AudioPanel {
     peak_timers: [Instant; 7],
     /// Timestamp of the last beat detection
     last_beat_time: Instant,
+    /// Current view mode
+    view_mode: ViewMode,
+    /// Local configuration state for sliders (to avoid jumpiness)
+    local_config: Option<AudioConfig>,
 }
 
 impl Default for AudioPanel {
@@ -27,21 +46,34 @@ impl Default for AudioPanel {
             peak_levels: [0.0; 7],
             peak_timers: [Instant::now(); 7],
             last_beat_time: Instant::now(),
+            view_mode: ViewMode::Spectrum,
+            local_config: None,
         }
     }
 }
 
 impl AudioPanel {
-    /// Renders the audio panel UI and returns the selected audio device if it was changed.
+    /// Renders the audio panel UI and returns actions.
     pub fn ui(
         &mut self,
         ui: &mut Ui,
         locale: &LocaleManager,
         analysis: Option<&AudioAnalysis>,
+        current_config: &AudioConfig,
         audio_devices: &[String],
         selected_audio_device: &mut Option<String>,
-    ) -> Option<String> {
-        let mut device_changed_action = None;
+    ) -> Option<AudioPanelAction> {
+        let mut action = None;
+
+        // Initialize local config if needed
+        if self.local_config.is_none() {
+            self.local_config = Some(current_config.clone());
+        }
+        // Sync local config if external config changed significantly (e.g. preset load)
+        // For simplicity, we trust local config while editing, assuming single user.
+
+        let mut config = self.local_config.clone().unwrap_or(current_config.clone());
+        let mut config_changed = false;
 
         ui.heading(locale.t("audio-panel-title"));
         ui.separator();
@@ -59,11 +91,60 @@ impl AudioPanel {
                         .changed()
                     {
                         if let Some(new_device) = selected_audio_device.clone() {
-                            device_changed_action = Some(new_device);
+                            action = Some(AudioPanelAction::DeviceChanged(new_device));
                         }
                     }
                 }
             });
+
+        ui.separator();
+
+        // --- Settings (Gain, Gate, Smoothing) ---
+        ui.collapsing(locale.t("audio-panel-settings"), |ui| {
+            if ui
+                .add(
+                    egui::Slider::new(&mut config.gain, 0.0..=5.0)
+                        .text("Gain")
+                        .logarithmic(false),
+                )
+                .changed()
+            {
+                config_changed = true;
+            }
+
+            if ui
+                .add(
+                    egui::Slider::new(&mut config.noise_gate, 0.0..=0.2)
+                        .text("Noise Gate")
+                        .clamp_to_range(true),
+                )
+                .changed()
+            {
+                config_changed = true;
+            }
+
+            if ui
+                .add(egui::Slider::new(&mut config.smoothing, 0.0..=0.99).text("Smoothing"))
+                .changed()
+            {
+                config_changed = true;
+            }
+        });
+
+        if config_changed {
+            self.local_config = Some(config.clone());
+            action = Some(AudioPanelAction::ConfigChanged(config));
+        }
+
+        ui.separator();
+
+        // --- View Mode Switcher ---
+        ui.horizontal(|ui| {
+            ui.label("View:");
+            ui.selectable_value(&mut self.view_mode, ViewMode::Spectrum, "Spectrum");
+            ui.selectable_value(&mut self.view_mode, ViewMode::Bars, "Bands");
+            ui.selectable_value(&mut self.view_mode, ViewMode::Waveform, "Waveform");
+        });
 
         ui.separator();
 
@@ -80,13 +161,19 @@ impl AudioPanel {
             // Beat Indicator
             self.render_beat_indicator(ui, locale);
 
-            // Frequency Bands
-            self.render_frequency_bands(ui, locale, &analysis.band_energies);
+            // Main Visualization
+            match self.view_mode {
+                ViewMode::Spectrum => self.render_spectrum(ui, analysis),
+                ViewMode::Bars => self.render_frequency_bands(ui, locale, &analysis.band_energies),
+                ViewMode::Waveform => {
+                    ui.label("Waveform view not implemented yet");
+                }
+            }
         } else {
             ui.label(locale.t("audio-panel-no-data"));
         }
 
-        device_changed_action
+        action
     }
 
     /// Renders the RMS volume progress bar
@@ -114,6 +201,40 @@ impl AudioPanel {
                 ),
             );
         });
+    }
+
+    /// Renders the FFT Spectrum
+    fn render_spectrum(&self, ui: &mut Ui, analysis: &AudioAnalysis) {
+        let (rect, _response) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 150.0), Sense::hover());
+        let painter = ui.painter();
+        painter.rect_filled(rect, 3.0, Color32::from_rgb(20, 20, 20));
+
+        let fft_magnitudes = &analysis.fft_magnitudes;
+        let num_bars = (fft_magnitudes.len() / 2).min(128); // Limit bars for performance
+        if num_bars > 0 {
+            let bar_width = rect.width() / num_bars as f32;
+            for (i, &magnitude) in fft_magnitudes.iter().take(num_bars).enumerate() {
+                let bar_height = (magnitude.powf(0.5) * rect.height())
+                    .min(rect.height())
+                    .max(1.0);
+                let x = rect.min.x + i as f32 * bar_width;
+                let y = rect.max.y;
+                let color = Color32::from_rgb(
+                    (magnitude * 200.0) as u8,
+                    255 - (magnitude * 200.0) as u8,
+                    50,
+                );
+                painter.rect_filled(
+                    Rect::from_min_size(
+                        Pos2::new(x, y - bar_height),
+                        Vec2::new(bar_width.ceil(), bar_height),
+                    ),
+                    1.0,
+                    color,
+                );
+            }
+        }
     }
 
     /// Renders the 7 frequency band meters

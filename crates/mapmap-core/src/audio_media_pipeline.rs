@@ -171,6 +171,11 @@ impl AudioMediaPipeline {
         }
     }
 
+    /// Update the audio analyzer configuration
+    pub fn update_audio_config(&self, config: AudioConfig) {
+        self.analyzer.write().update_config(config);
+    }
+
     /// Send audio samples to the pipeline
     pub fn process_samples(&mut self, samples: &[f32]) {
         match self.sample_sender.try_send(samples.to_vec()) {
