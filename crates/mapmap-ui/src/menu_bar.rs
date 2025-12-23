@@ -116,6 +116,11 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI, fps: f32, frame_time: f32
 
             // --- View Menu ---
             ui.menu_button(ui_state.i18n.t("menu-view"), |ui| {
+                ui.checkbox(
+                    &mut ui_state.show_toolbar,
+                    ui_state.i18n.t("view-toolbar"),
+                );
+                ui.separator();
                 ui.label(ui_state.i18n.t("view-egui-panels"));
                 ui.checkbox(
                     &mut ui_state.dashboard.visible,
@@ -247,7 +252,55 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI, fps: f32, frame_time: f32
 
         ui.add_space(4.0);
 
-        ui.add_space(4.0);
+        // --- Icon Toolbar ---
+        if ui_state.show_toolbar {
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                ui.style_mut().spacing.button_padding = egui::vec2(8.0, 8.0);
+
+                if ui.button("💾").on_hover_text("Save").clicked() {
+                    actions.push(UIAction::SaveProject(String::new()));
+                }
+                if ui.button("↩️").on_hover_text("Undo").clicked() {
+                    actions.push(UIAction::Undo);
+                }
+                if ui.button("↪️").on_hover_text("Redo").clicked() {
+                    actions.push(UIAction::Redo);
+                }
+
+                ui.separator();
+
+                if ui.button("➕").on_hover_text("Add Layer").clicked() {
+                    actions.push(UIAction::AddLayer);
+                }
+
+                let remove_button = egui::Button::new("➖");
+                let response = if ui_state.selected_layer_id.is_none() {
+                    ui.add_enabled(false, remove_button)
+                } else {
+                    ui.add(remove_button)
+                };
+
+                if response.on_hover_text("Remove Layer").clicked() {
+                    if let Some(id) = ui_state.selected_layer_id {
+                        actions.push(UIAction::RemoveLayer(id));
+                    }
+                }
+
+                ui.separator();
+
+                if ui.button("▶️").on_hover_text("Play").clicked() {
+                    actions.push(UIAction::Play);
+                }
+                if ui.button("⏸️").on_hover_text("Pause").clicked() {
+                    actions.push(UIAction::Pause);
+                }
+                if ui.button("⏹️").on_hover_text("Stop").clicked() {
+                    actions.push(UIAction::Stop);
+                }
+            });
+            ui.add_space(4.0);
+        }
     });
 
     actions

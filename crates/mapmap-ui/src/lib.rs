@@ -31,6 +31,7 @@ pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;
 pub mod undo_redo;
+pub mod widgets;
 
 pub use i18n::LocaleManager;
 
@@ -58,8 +59,9 @@ pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
 
 use egui;
+use sysinfo::{CpuExt, System, SystemExt};
 
-/// UI actions that can be triggered by the user interface
+/// UI actions that can betriggered by the user interface
 #[derive(Debug, Clone)]
 pub enum UIAction {
     // Playback actions
@@ -155,6 +157,7 @@ pub struct AppUI {
     pub osc_client_input: String,
     pub show_controls: bool,
     pub show_stats: bool,
+    pub show_toolbar: bool,
     pub show_layers: bool,
 
     pub show_timeline: bool,
@@ -190,6 +193,7 @@ pub struct AppUI {
     pub user_config: config::UserConfig,
     /// Show settings window
     pub show_settings: bool,
+    pub sys: System,
 }
 
 impl Default for AppUI {
@@ -204,6 +208,7 @@ impl Default for AppUI {
             osc_client_input: "127.0.0.1:9000".to_string(),
             show_controls: true,
             show_stats: true,
+            show_toolbar: true,
             show_layers: true,
             layer_panel: LayerPanel { visible: true },
             show_mappings: true,
@@ -241,6 +246,7 @@ impl Default for AppUI {
             transform_panel: TransformPanel::default(),
             user_config: config::UserConfig::load(),
             show_settings: false,
+            sys: System::new_all(),
         }
     }
 }
@@ -323,10 +329,12 @@ impl AppUI {
     }
 
     /// Render performance stats (Phase 6 Migration)
-    pub fn render_stats(&mut self, ctx: &egui::Context, fps: f32, frame_time_ms: f32) {
+    pub fn render_performance_panel(&mut self, ctx: &egui::Context, fps: f32, frame_time_ms: f32) {
         if !self.show_stats {
             return;
         }
+
+        self.sys.refresh_all();
 
         egui::Window::new(self.i18n.t("panel-performance"))
             .default_size([250.0, 120.0])
@@ -337,6 +345,20 @@ impl AppUI {
                     self.i18n.t("label-frame-time"),
                     frame_time_ms
                 ));
+
+                let total_memory = self.sys.total_memory() as f32 / 1024.0;
+                let used_memory = self.sys.used_memory() as f32 / 1024.0;
+                let memory_usage = used_memory / total_memory;
+
+                ui.label(format!(
+                    "RAM: {:.2} MB / {:.2} MB",
+                    used_memory, total_memory
+                ));
+                widgets::colored_progress_bar(ui, memory_usage);
+
+                let cpu_usage = self.sys.global_cpu_info().cpu_usage() / 100.0;
+                ui.label(format!("CPU: {:.2}%", cpu_usage * 100.0));
+                widgets::colored_progress_bar(ui, cpu_usage);
             });
     }
 
@@ -462,82 +484,82 @@ impl AppUI {
         layer_manager: &mut mapmap_core::LayerManager,
     ) {
         // Dashboard
-        egui::CollapsingHeader::new("Dashboard")
-            .default_open(true)
-            .show(ui, |ui| {
-                if let Some(action) = self.dashboard.ui_embedded(ui, &self.i18n) {
-                    if let crate::dashboard::DashboardAction::AudioDeviceChanged(device) = action {
-                        self.actions.push(UIAction::SelectAudioDevice(device));
-                    }
-                    // TODO: Map other dashboard actions
-                }
-            });
+        widgets::render_header(ui, "Dashboard");
+        ui.add_space(4.0);
+        if let Some(action) = self.dashboard.ui_embedded(ui, &self.i18n) {
+            if let crate::dashboard::DashboardAction::AudioDeviceChanged(device) = action {
+                self.actions.push(UIAction::SelectAudioDevice(device));
+            }
+            // TODO: Map other dashboard actions
+        }
 
         // Transport
-        egui::CollapsingHeader::new(self.i18n.t("panel-playback"))
-            .default_open(true)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    if ui.button(self.i18n.t("btn-play")).clicked() {
-                        self.actions.push(UIAction::Play);
-                    }
-                    if ui.button(self.i18n.t("btn-pause")).clicked() {
-                        self.actions.push(UIAction::Pause);
-                    }
-                    if ui.button(self.i18n.t("btn-stop")).clicked() {
-                        self.actions.push(UIAction::Stop);
-                    }
+        ui.separator();
+        widgets::render_header(ui, &self.i18n.t("panel-playback"));
+        ui.add_space(4.0);
+        ui.horizontal(|ui| {
+            if ui.button(self.i18n.t("btn-play")).clicked() {
+                self.actions.push(UIAction::Play);
+            }
+            if ui.button(self.i18n.t("btn-pause")).clicked() {
+                self.actions.push(UIAction::Pause);
+            }
+            if ui.button(self.i18n.t("btn-stop")).clicked() {
+                self.actions.push(UIAction::Stop);
+            }
 
-                    ui.separator();
-                    ui.add(
-                        egui::Slider::new(&mut self.playback_speed, 0.1..=2.0)
-                            .text(self.i18n.t("label-speed")),
-                    );
-                });
-            });
+            ui.separator();
+            ui.add(
+                egui::Slider::new(&mut self.playback_speed, 0.1..=2.0)
+                    .text(self.i18n.t("label-speed")),
+            );
+        });
+        ui.add_space(4.0);
 
         // Composition
-        egui::CollapsingHeader::new(self.i18n.t("header-master"))
-            .default_open(true)
-            .show(ui, |ui| {
-                let composition = &mut layer_manager.composition;
-                ui.horizontal(|ui| {
-                    ui.label(self.i18n.t("label-master-opacity"));
-                    if ui
-                        .add(egui::Slider::new(
-                            &mut composition.master_opacity,
-                            0.0..=1.0,
-                        ))
-                        .changed()
-                    {
-                        self.actions
-                            .push(UIAction::SetMasterOpacity(composition.master_opacity));
-                    }
-                });
-            });
+        ui.separator();
+        widgets::render_header(ui, &self.i18n.t("header-master"));
+        ui.add_space(4.0);
+        let composition = &mut layer_manager.composition;
+        ui.horizontal(|ui| {
+            ui.label(self.i18n.t("label-master-opacity"));
+            if widgets::styled_slider(ui, &mut composition.master_opacity, 0.0..=1.0)
+                .changed()
+            {
+                self.actions
+                    .push(UIAction::SetMasterOpacity(composition.master_opacity));
+            }
+        });
+        ui.add_space(4.0);
 
         // Audio
-        egui::CollapsingHeader::new(self.i18n.t("panel-audio"))
-            .default_open(true)
-            .show(ui, |ui| {
-                ui.label("Audio Controls (Refactoring...)");
-                // ToDo: Embed AudioPanel::ui here
-            });
+        ui.separator();
+        widgets::render_header(ui, &self.i18n.t("panel-audio"));
+        ui.add_space(4.0);
+        ui.label("Audio Controls (Refactoring...)");
+        // ToDo: Embed AudioPanel::ui here
+        ui.add_space(4.0);
 
         // Effects
-        egui::CollapsingHeader::new("Effects")
-            .default_open(true)
-            .show(ui, |ui| {
-                ui.label("Effect Chain (Refactoring...)");
-                // ToDo: Embed EffectChainPanel::ui here
-            });
+        ui.separator();
+        widgets::render_header(ui, "Effects");
+        ui.add_space(4.0);
+        ui.horizontal(|ui| {
+            ui.label("Effect 1");
+            widgets::bypass_button(ui, true);
+            widgets::param_button(ui);
+            widgets::delete_button(ui);
+        });
+        ui.label("Effect Chain (Refactoring...)");
+        // ToDo: Embed EffectChainPanel::ui here
+        ui.add_space(4.0);
 
         // Transform
-        egui::CollapsingHeader::new("Transform")
-            .default_open(true)
-            .show(ui, |ui| {
-                // ToDo: Embed TransformPanel::ui
-                ui.label("Transform Controls");
-            });
+        ui.separator();
+        widgets::render_header(ui, "Transform");
+        ui.add_space(4.0);
+        // ToDo: Embed TransformPanel::ui
+        ui.label("Transform Controls");
+        ui.add_space(4.0);
     }
 }

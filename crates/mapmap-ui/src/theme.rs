@@ -19,6 +19,8 @@ pub enum Theme {
     NeonPurple,
     /// Custom theme
     Custom,
+    /// Resolume Arena-like theme
+    Resolume,
 }
 
 /// Theme configuration
@@ -63,6 +65,7 @@ impl ThemeConfig {
             Theme::Light => Self::light_visuals(),
             Theme::HighContrast => Self::high_contrast_visuals(),
             Theme::NeonPurple => Self::neon_purple_visuals(),
+            Theme::Resolume => Self::resolume_visuals(),
             Theme::Custom => self.custom_visuals(),
         };
 
@@ -73,7 +76,7 @@ impl ThemeConfig {
         style.spacing.button_padding = egui::vec2(self.spacing * 2.0, self.spacing);
 
         ctx.set_style(style);
-        ctx.set_pixels_per_point(self.ui_scale);
+        ctx.set_zoom_factor(self.ui_scale);
     }
 
     /// Dark theme visuals (professional video application style)
@@ -370,6 +373,70 @@ impl ThemeConfig {
             Self::dark_visuals()
         }
     }
+
+    /// Resolume Arena-like theme visuals
+    fn resolume_visuals() -> Visuals {
+        Visuals {
+            dark_mode: true,
+            override_text_color: Some(Color32::from_rgb(234, 234, 234)),
+            widgets: egui::style::Widgets {
+                noninteractive: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(22, 33, 62),
+                    weak_bg_fill: Color32::from_rgb(22, 33, 62),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(160, 160, 160)),
+                    rounding: egui::Rounding::same(2.0),
+                    expansion: 0.0,
+                },
+                inactive: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(26, 26, 46),
+                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(234, 234, 234)),
+                    rounding: egui::Rounding::same(2.0),
+                    expansion: 0.0,
+                },
+                hovered: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(26, 26, 46),
+                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+                    fg_stroke: egui::Stroke::new(1.5, Color32::from_rgb(234, 234, 234)),
+                    rounding: egui::Rounding::same(2.0),
+                    expansion: 1.0,
+                },
+                active: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(233, 69, 96),
+                    weak_bg_fill: Color32::from_rgb(233, 69, 96),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    rounding: egui::Rounding::same(2.0),
+                    expansion: 1.0,
+                },
+                open: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(26, 26, 46),
+                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(234, 234, 234)),
+                    rounding: egui::Rounding::same(2.0),
+                    expansion: 0.0,
+                },
+            },
+            selection: egui::style::Selection {
+                bg_fill: Color32::from_rgb(157, 78, 221).linear_multiply(0.4),
+                stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+            },
+            hyperlink_color: Color32::from_rgb(233, 69, 96),
+            faint_bg_color: Color32::from_rgb(15, 15, 35),
+            extreme_bg_color: Color32::from_rgb(22, 33, 62),
+            code_bg_color: Color32::from_rgb(15, 15, 35),
+            warn_fg_color: Color32::from_rgb(255, 179, 71),
+            error_fg_color: Color32::from_rgb(255, 107, 107),
+            window_fill: Color32::from_rgb(26, 26, 46),
+            panel_fill: Color32::from_rgb(15, 15, 35),
+            window_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+            ..Default::default()
+        }
+    }
 }
 
 /// Theme picker widget
@@ -385,6 +452,9 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
             .clicked();
         changed |= ui
             .selectable_value(theme, Theme::NeonPurple, "Neon Purple")
+            .clicked();
+        changed |= ui
+            .selectable_value(theme, Theme::Resolume, "Resolume")
             .clicked();
     });
 

@@ -18,6 +18,7 @@ mapmap-mcp = { path = "../mapmap-mcp" }
 
 rfd = "0.14"
 
+sysinfo = "0.29"
 wgpu = { workspace = true }
 winit = { workspace = true }
 pollster = { workspace = true }

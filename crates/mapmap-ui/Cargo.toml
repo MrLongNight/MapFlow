@@ -13,7 +13,7 @@ mapmap-media = { path = "../mapmap-media" }
 mapmap-render = { path = "../mapmap-render" }
 mapmap-control = { path = "../mapmap-control", features = ["osc"] }
 cpal = { workspace = true, optional = true }
-
+sysinfo = "0.29"
 
 
 # Phase 6: egui migration
