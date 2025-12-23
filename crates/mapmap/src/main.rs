@@ -551,7 +551,12 @@ impl App {
                     self.ui_state.render_stats(ctx, 60.0, 16.6);
                     self.ui_state
                         .render_master_controls(ctx, &mut self.state.layer_manager);
-                    self.ui_state.cue_panel.show(ctx);
+                    self.ui_state.cue_panel.show(
+                        ctx,
+                        &mut self.control_manager,
+                        &self.ui_state.i18n,
+                        &mut self.ui_state.actions,
+                    );
 
                     // Render Audio Panel
                     if self.ui_state.show_audio {
