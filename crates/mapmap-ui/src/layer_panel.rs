@@ -158,7 +158,9 @@ impl LayerPanel {
 
                                                 // TODO: Icon
                                                 // Solo Button
-                                                let solo_button = ui.add(egui::SelectableLabel::new(layer.solo, "S"));
+                                                let solo_button = ui.add(
+                                                    egui::SelectableLabel::new(layer.solo, "S"),
+                                                );
                                                 if solo_button.clicked() {
                                                     layer.solo = !layer.solo;
                                                 }
@@ -166,7 +168,9 @@ impl LayerPanel {
 
                                                 // TODO: Icon
                                                 // Bypass Button
-                                                let bypass_button = ui.add(egui::SelectableLabel::new(layer.bypass, "B"));
+                                                let bypass_button = ui.add(
+                                                    egui::SelectableLabel::new(layer.bypass, "B"),
+                                                );
                                                 if bypass_button.clicked() {
                                                     layer.bypass = !layer.bypass;
                                                 }
