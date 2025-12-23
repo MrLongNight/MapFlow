@@ -141,6 +141,24 @@ impl App {
             1,
         );
 
+        // Initialize icons from assets directory
+        let assets_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("..")
+            .join("..")
+            .join("assets");
+
+        // Try alternative paths for development
+        let assets_path = if assets_dir.exists() {
+            assets_dir
+        } else {
+            std::path::PathBuf::from("assets")
+        };
+
+        ui_state.initialize_icons(&egui_context, &assets_path);
+
         Ok(Self {
             window_manager,
 

@@ -17,6 +17,8 @@ pub mod dashboard;
 pub mod edge_blend_panel;
 pub mod effect_chain_panel;
 pub mod i18n;
+pub mod icon_demo_panel;
+pub mod icons;
 pub mod layer_panel;
 pub mod mapping_panel;
 pub mod media_browser;
@@ -27,6 +29,7 @@ pub mod osc_panel;
 pub mod oscillator_panel;
 pub mod output_panel;
 pub mod paint_panel;
+pub mod shortcut_panel;
 pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;
@@ -52,6 +55,7 @@ pub use mesh_editor::{MeshEditor, MeshEditorAction};
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;
 pub use paint_panel::PaintPanel;
+pub use shortcut_panel::{ShortcutAction, ShortcutPanel};
 pub use theme::{Theme, ThemeConfig};
 pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
 pub use transform_panel::{TransformAction, TransformPanel};
@@ -185,6 +189,9 @@ pub struct AppUI {
     pub timeline_panel: timeline_v2::TimelineV2,
     pub node_editor_panel: node_editor::NodeEditor,
     pub transform_panel: TransformPanel,
+    pub shortcut_panel: ShortcutPanel,
+    pub icon_manager: Option<icons::IconManager>,
+    pub icon_demo_panel: icon_demo_panel::IconDemoPanel,
     pub user_config: config::UserConfig,
     /// Show settings window
     pub show_settings: bool,
@@ -237,6 +244,9 @@ impl Default for AppUI {
             show_shader_graph: true,
             node_editor_panel: node_editor::NodeEditor::default(),
             transform_panel: TransformPanel::default(),
+            shortcut_panel: ShortcutPanel::new(),
+            icon_manager: None, // Will be initialized with egui context
+            icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
             user_config: config::UserConfig::load(),
             show_settings: false,
         }
@@ -247,6 +257,26 @@ impl AppUI {
     /// Take all pending actions and clear the list
     pub fn take_actions(&mut self) -> Vec<UIAction> {
         std::mem::take(&mut self.actions)
+    }
+
+    /// Initialize the icon manager with the egui context
+    pub fn initialize_icons(&mut self, ctx: &egui::Context, assets_dir: &std::path::Path) {
+        if self.icon_manager.is_none() {
+            self.icon_manager = Some(icons::IconManager::new(ctx, assets_dir, 64));
+        }
+    }
+
+    /// Render the icon demo panel
+    pub fn render_icon_demo(&mut self, ctx: &egui::Context) {
+        egui::Window::new("temp_icon_demo").show(ctx, |ui| {
+            self.icon_demo_panel
+                .ui(ui, self.icon_manager.as_ref(), &self.i18n);
+        });
+    }
+
+    /// Toggle icon demo panel visibility
+    pub fn toggle_icon_demo(&mut self) {
+        self.icon_demo_panel.visible = !self.icon_demo_panel.visible;
     }
 
     /// Render the control panel
