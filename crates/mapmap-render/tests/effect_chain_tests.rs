@@ -74,6 +74,7 @@ async fn read_texture_data(
     let bytes_per_pixel = 4;
     let unpadded_bytes_per_row = bytes_per_pixel * width;
     let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    // Padded bytes per row must be a multiple of the alignment.
     let padded_bytes_per_row = (unpadded_bytes_per_row + alignment - 1) & !(alignment - 1);
     let buffer_size = (padded_bytes_per_row * height) as u64;
 
@@ -107,25 +108,27 @@ async fn read_texture_data(
 
     queue.submit(Some(encoder.finish()));
 
+    // Map the buffer
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
-    slice.map_async(wgpu::MapMode::Read, |result| {
+    slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
     device.poll(wgpu::Maintain::Wait);
     rx.await.unwrap().unwrap();
 
-    let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);
-    {
-        let padded_data = slice.get_mapped_range();
-        for i in 0..height as usize {
-            let start = i * padded_bytes_per_row as usize;
-            unpadded_data.extend_from_slice(&padded_data[start..(start + unpadded_bytes_per_row as usize)]);
-        }
-    }
+    // The view is a guard that must be dropped before unmap is called.
+    let data = {
+        let view = slice.get_mapped_range();
+        view.chunks_exact(padded_bytes_per_row as usize)
+            .flat_map(|row| &row[..unpadded_bytes_per_row as usize])
+            .copied()
+            .collect::<Vec<u8>>()
+    };
+
     buffer.unmap();
 
-    unpadded_data
+    data
 }
 
 
