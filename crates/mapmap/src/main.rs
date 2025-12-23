@@ -21,7 +21,8 @@ use mapmap_mcp::{McpAction, McpServer};
 use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
 use mapmap_render::{
-    Compositor, EffectChainRenderer, MeshRenderer, QuadRenderer, TexturePool, WgpuBackend,
+    Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
+    WgpuBackend,
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
@@ -74,6 +75,8 @@ struct App {
     egui_renderer: Renderer,
     /// Last autosave timestamp.
     last_autosave: std::time::Instant,
+    /// Last update timestamp for delta time calculation.
+    last_update: std::time::Instant,
     /// Application start time.
     start_time: std::time::Instant,
     /// Receiver for MCP commands
@@ -124,8 +127,8 @@ impl App {
         // Create textures for rendering pipeline
         let composite_texture = texture_pool.create(
             "composite",
-            main_window_context.surface_config.width,
-            main_window_context.surface_config.height,
+            width,
+            height,
             backend.surface_format(),
             wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
         );
@@ -133,15 +136,15 @@ impl App {
         let layer_ping_pong = [
             texture_pool.create(
                 "layer_pong_0",
-                main_window_context.surface_config.width,
-                main_window_context.surface_config.height,
+                width,
+                height,
                 backend.surface_format(),
                 wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             ),
             texture_pool.create(
                 "layer_pong_1",
-                main_window_context.surface_config.width,
-                main_window_context.surface_config.height,
+                width,
+                height,
                 backend.surface_format(),
                 wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             ),
@@ -261,6 +264,7 @@ impl App {
             egui_state,
             egui_renderer,
             last_autosave: std::time::Instant::now(),
+            last_update: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
             mcp_receiver,
             control_manager: ControlManager::new(),
