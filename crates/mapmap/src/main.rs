@@ -151,12 +151,7 @@ impl App {
             None,
             None,
         );
-        let egui_renderer = Renderer::new(
-            &backend.device,
-            format,
-            None,
-            1,
-        );
+        let egui_renderer = Renderer::new(&backend.device, format, None, 1);
 
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
@@ -173,6 +168,24 @@ impl App {
                 None
             }
         };
+
+        // Initialize icons from assets directory
+        let assets_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("..")
+            .join("..")
+            .join("assets");
+
+        // Try alternative paths for development
+        let assets_path = if assets_dir.exists() {
+            assets_dir
+        } else {
+            std::path::PathBuf::from("assets")
+        };
+
+        ui_state.initialize_icons(&egui_context, &assets_path);
 
         let mut app = Self {
             window_manager,
@@ -203,20 +216,24 @@ impl App {
 
     /// Creates or recreates the dummy texture for effect input.
     fn create_dummy_texture(&mut self, width: u32, height: u32, format: wgpu::TextureFormat) {
-        let texture = self.backend.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Dummy Input Texture"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
+        let texture = self
+            .backend
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: Some("Dummy Input Texture"),
+                size: wgpu::Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            });
         self.dummy_view = Some(texture.create_view(&wgpu::TextureViewDescriptor::default()));
         self.dummy_texture = Some(texture);
     }
@@ -271,34 +288,35 @@ impl App {
                         elwt.exit();
                     }
                     WindowEvent::Resized(size) => {
-                        let new_size = if let Some(window_context) =
-                            self.window_manager.get_mut(output_id)
-                        {
-                            if size.width > 0 && size.height > 0 {
-                                window_context.surface_config.width = size.width;
-                                window_context.surface_config.height = size.height;
-                                window_context.surface.configure(
-                                    &self.backend.device,
-                                    &window_context.surface_config,
-                                );
-                                Some((
-                                    size.width,
-                                    size.height,
-                                    window_context.surface_config.format,
-                                ))
+                        let new_size =
+                            if let Some(window_context) = self.window_manager.get_mut(output_id) {
+                                if size.width > 0 && size.height > 0 {
+                                    window_context.surface_config.width = size.width;
+                                    window_context.surface_config.height = size.height;
+                                    window_context.surface.configure(
+                                        &self.backend.device,
+                                        &window_context.surface_config,
+                                    );
+                                    Some((
+                                        size.width,
+                                        size.height,
+                                        window_context.surface_config.format,
+                                    ))
+                                } else {
+                                    None
+                                }
                             } else {
                                 None
-                            }
-                        } else {
-                            None
-                        };
+                            };
                         // Recreate dummy texture for the new size
                         match new_size {
                             Some((width, height, format)) => {
                                 self.create_dummy_texture(width, height, format);
                             }
                             None => {
-                                tracing::warn!("Resize event received but no valid new size was determined.");
+                                tracing::warn!(
+                                    "Resize event received but no valid new size was determined."
+                                );
                             }
                         }
                     }
