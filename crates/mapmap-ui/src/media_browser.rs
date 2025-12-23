@@ -288,6 +288,7 @@ impl MediaBrowser {
             .collect()
     }
 
+    /// Render the media browser UI
     pub fn ui(
         &mut self,
         ui: &mut Ui,

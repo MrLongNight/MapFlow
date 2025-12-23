@@ -82,6 +82,12 @@ struct App {
     control_manager: ControlManager,
     /// Flag to track if exit was requested
     exit_requested: bool,
+    /// The oscillator distortion renderer.
+    oscillator_renderer: Option<OscillatorRenderer>,
+    /// A dummy texture used as input for effects when no other source is available.
+    dummy_texture: Option<wgpu::Texture>,
+    /// A view of the dummy texture.
+    dummy_view: Option<wgpu::TextureView>,
 }
 
 impl App {
@@ -104,7 +110,16 @@ impl App {
 
         // Create main window
         let main_window_id = window_manager.create_main_window(event_loop, &backend)?;
-        let main_window_context = window_manager.get(main_window_id).unwrap();
+
+        let (width, height, format, main_window_for_egui) = {
+            let main_window_context = window_manager.get(main_window_id).unwrap();
+            (
+                main_window_context.surface_config.width,
+                main_window_context.surface_config.height,
+                main_window_context.surface_config.format,
+                main_window_context.window.clone(),
+            )
+        };
 
         // Create textures for rendering pipeline
         let composite_texture = texture_pool.create(
@@ -187,16 +202,27 @@ impl App {
         let egui_state = State::new(
             egui_context.clone(),
             egui::ViewportId::default(),
-            &main_window_context.window,
+            &main_window_for_egui,
             None,
             None,
         );
-        let egui_renderer = Renderer::new(
-            &backend.device,
-            main_window_context.surface_config.format,
-            None,
-            1,
-        );
+        let egui_renderer = Renderer::new(&backend.device, format, None, 1);
+
+        let oscillator_renderer = match OscillatorRenderer::new(
+            backend.device.clone(),
+            backend.queue.clone(),
+            format,
+            &state.oscillator_config,
+        ) {
+            Ok(mut renderer) => {
+                renderer.initialize_phases(state.oscillator_config.phase_init_mode);
+                Some(renderer)
+            }
+            Err(e) => {
+                error!("Failed to create oscillator renderer: {}", e);
+                None
+            }
+        };
 
         // Initialize icons from assets directory
         let assets_dir = std::env::current_exe()
@@ -216,9 +242,8 @@ impl App {
 
         ui_state.initialize_icons(&egui_context, &assets_path);
 
-        Ok(Self {
+        let mut app = Self {
             window_manager,
-
             ui_state,
             backend,
             texture_pool,
@@ -240,7 +265,39 @@ impl App {
             mcp_receiver,
             control_manager: ControlManager::new(),
             exit_requested: false,
-        })
+            oscillator_renderer,
+            dummy_texture: None,
+            dummy_view: None,
+        };
+
+        // Create initial dummy texture
+        app.create_dummy_texture(width, height, format);
+
+        Ok(app)
+    }
+
+    /// Creates or recreates the dummy texture for effect input.
+    fn create_dummy_texture(&mut self, width: u32, height: u32, format: wgpu::TextureFormat) {
+        let texture = self
+            .backend
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: Some("Dummy Input Texture"),
+                size: wgpu::Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            });
+        self.dummy_view = Some(texture.create_view(&wgpu::TextureViewDescriptor::default()));
+        self.dummy_texture = Some(texture);
     }
 
     /// Runs the application loop.
@@ -293,13 +350,34 @@ impl App {
                         elwt.exit();
                     }
                     WindowEvent::Resized(size) => {
-                        if let Some(window_context) = self.window_manager.get_mut(output_id) {
-                            if size.width > 0 && size.height > 0 {
-                                window_context.surface_config.width = size.width;
-                                window_context.surface_config.height = size.height;
-                                window_context.surface.configure(
-                                    &self.backend.device,
-                                    &window_context.surface_config,
+                        let new_size =
+                            if let Some(window_context) = self.window_manager.get_mut(output_id) {
+                                if size.width > 0 && size.height > 0 {
+                                    window_context.surface_config.width = size.width;
+                                    window_context.surface_config.height = size.height;
+                                    window_context.surface.configure(
+                                        &self.backend.device,
+                                        &window_context.surface_config,
+                                    );
+                                    Some((
+                                        size.width,
+                                        size.height,
+                                        window_context.surface_config.format,
+                                    ))
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            };
+                        // Recreate dummy texture for the new size
+                        match new_size {
+                            Some((width, height, format)) => {
+                                self.create_dummy_texture(width, height, format);
+                            }
+                            None => {
+                                tracing::warn!(
+                                    "Resize event received but no valid new size was determined."
                                 );
                             }
                         }
@@ -599,6 +677,16 @@ impl App {
 
     /// Renders a single frame for a given output.
     fn render(&mut self, output_id: OutputId) -> Result<()> {
+        let now = std::time::Instant::now();
+        let delta_time = now.duration_since(self.last_update).as_secs_f32();
+        self.last_update = now;
+
+        if let Some(renderer) = &mut self.oscillator_renderer {
+            if self.state.oscillator_config.enabled {
+                renderer.update(delta_time, &self.state.oscillator_config);
+            }
+        }
+
         let window_context = self.window_manager.get(output_id).unwrap();
 
         // Get surface texture and view for final output
@@ -623,6 +711,9 @@ impl App {
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
+                    // Apply the theme at the beginning of each UI render pass
+                    self.ui_state.user_config.theme.apply(ctx);
+
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
@@ -717,6 +808,9 @@ impl App {
 
                     // Render Icon Gallery
                     self.ui_state.render_icon_demo(ctx);
+
+                    // Render Media Browser
+                    self.ui_state.render_media_browser(ctx);
 
                     // Render Timeline
                     egui::Window::new("Timeline")

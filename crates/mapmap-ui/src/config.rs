@@ -2,6 +2,7 @@
 //!
 //! Handles saving and loading user preferences including language settings.
 
+use crate::theme::ThemeConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -17,6 +18,9 @@ pub struct UserConfig {
     /// Recently opened files
     #[serde(default)]
     pub recent_files: Vec<String>,
+    /// UI Theme settings
+    #[serde(default)]
+    pub theme: ThemeConfig,
 }
 
 impl Default for UserConfig {
@@ -25,6 +29,7 @@ impl Default for UserConfig {
             language: "en".to_string(),
             last_project: None,
             recent_files: Vec::new(),
+            theme: ThemeConfig::default(),
         }
     }
 }
@@ -105,6 +110,7 @@ mod tests {
             language: "de".to_string(),
             last_project: Some("/path/to/project.MapFlow".to_string()),
             recent_files: vec!["file1.mp4".to_string(), "file2.mp4".to_string()],
+            theme: ThemeConfig::default(),
         };
 
         let json = serde_json::to_string(&config).unwrap();

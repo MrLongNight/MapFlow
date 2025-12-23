@@ -42,7 +42,7 @@ pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, Transfor
 pub use audio_panel::AudioPanel;
 pub use config::UserConfig;
 pub use cue_panel::CuePanel;
-pub use dashboard::{Dashboard, DashboardAction, DashboardWidget, WidgetType};
+pub use dashboard::{Dashboard, DashboardAction};
 pub use edge_blend_panel::{EdgeBlendAction, EdgeBlendPanel};
 pub use effect_chain_panel::{
     EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
@@ -279,6 +279,22 @@ impl AppUI {
     /// Toggle icon demo panel visibility
     pub fn toggle_icon_demo(&mut self) {
         self.icon_demo_panel.visible = !self.icon_demo_panel.visible;
+    }
+
+    /// Render the media browser
+    pub fn render_media_browser(&mut self, ctx: &egui::Context) {
+        if !self.show_media_browser {
+            return;
+        }
+
+        egui::Window::new("Media Browser")
+            .default_size([400.0, 300.0])
+            .open(&mut self.show_media_browser) // Allow closing it
+            .show(ctx, |ui| {
+                let _ = self
+                    .media_browser
+                    .ui(ui, &self.i18n, self.icon_manager.as_ref());
+            });
     }
 
     /// Render the control panel

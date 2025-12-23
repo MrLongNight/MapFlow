@@ -30,6 +30,3 @@ criterion = { workspace = true }
 pollster = { workspace = true }
 tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
 
-[[bench]]
-name = "texture_upload"
-harness = false

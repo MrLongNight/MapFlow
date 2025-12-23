@@ -2,7 +2,7 @@
 use crate::i18n::LocaleManager;
 use crate::UIAction;
 use egui::*;
-use mapmap_core::{MappingId, MappingManager, Mesh, MeshType};
+use mapmap_core::{MappingId, MappingManager};
 
 #[derive(Debug, Default)]
 pub struct MappingPanel {
@@ -71,7 +71,7 @@ impl MappingPanel {
                                                 egui::Layout::right_to_left(egui::Align::Center),
                                                 |ui| {
                                                     if ui
-                                                        .small_button("🗑")
+                                                        .button(i18n.t("btn-remove"))
                                                         .on_hover_text(i18n.t("btn-remove"))
                                                         .clicked()
                                                     {
@@ -101,98 +101,6 @@ impl MappingPanel {
                                                 Slider::new(&mut mapping.opacity, 0.0..=1.0)
                                                     .text(i18n.t("label-master-opacity")),
                                             );
-
-                                            // Depth (Transform Z)
-                                            ui.add(
-                                                Slider::new(&mut mapping.depth, -10.0..=10.0)
-                                                    .text(i18n.t("transform-depth")),
-                                            );
-
-                                            ui.separator();
-
-                                            // Mesh Selection
-                                            ui.horizontal(|ui| {
-                                                ui.label(i18n.t("label-mesh-type"));
-
-                                                let current_type = mapping.mesh.mesh_type;
-                                                let mut selected_type = current_type;
-
-                                                egui::ComboBox::from_id_source("mesh_type")
-                                                    .selected_text(format!("{:?}", current_type))
-                                                    .show_ui(ui, |ui| {
-                                                        ui.selectable_value(
-                                                            &mut selected_type,
-                                                            MeshType::Quad,
-                                                            "Quad",
-                                                        );
-                                                        ui.selectable_value(
-                                                            &mut selected_type,
-                                                            MeshType::Triangle,
-                                                            "Triangle",
-                                                        );
-                                                        ui.selectable_value(
-                                                            &mut selected_type,
-                                                            MeshType::Ellipse,
-                                                            "Ellipse",
-                                                        );
-                                                    });
-
-                                                if selected_type != current_type {
-                                                    // Replace mesh with new type
-                                                    mapping.mesh = match selected_type {
-                                                        MeshType::Quad => Mesh::quad(),
-                                                        MeshType::Triangle => Mesh::triangle(),
-                                                        MeshType::Ellipse => Mesh::ellipse(
-                                                            glam::Vec2::new(0.5, 0.5),
-                                                            0.5,
-                                                            0.5,
-                                                            32,
-                                                        ),
-                                                        _ => Mesh::quad(), // Fallback
-                                                    };
-                                                }
-                                            });
-
-                                            ui.label(i18n.t_args(
-                                                "label-mesh-info",
-                                                &[(
-                                                    "count",
-                                                    &mapping.mesh.vertex_count().to_string(),
-                                                )],
-                                            ));
-
-                                            // Transform Controls (Pseudo-transform by modifying mesh vertices)
-                                            ui.collapsing(i18n.t("header-transform"), |ui| {
-                                                // Position (Translation)
-                                                // Since we don't store position, we just offer to move vertices
-                                                ui.label(i18n.t("transform-move-mesh"));
-                                                ui.horizontal(|ui| {
-                                                    if ui.button("⬅").clicked() {
-                                                        translate_mesh(
-                                                            &mut mapping.mesh,
-                                                            glam::Vec2::new(-0.01, 0.0),
-                                                        );
-                                                    }
-                                                    if ui.button("➡").clicked() {
-                                                        translate_mesh(
-                                                            &mut mapping.mesh,
-                                                            glam::Vec2::new(0.01, 0.0),
-                                                        );
-                                                    }
-                                                    if ui.button("⬆").clicked() {
-                                                        translate_mesh(
-                                                            &mut mapping.mesh,
-                                                            glam::Vec2::new(0.0, -0.01),
-                                                        );
-                                                    }
-                                                    if ui.button("⬇").clicked() {
-                                                        translate_mesh(
-                                                            &mut mapping.mesh,
-                                                            glam::Vec2::new(0.0, 0.01),
-                                                        );
-                                                    }
-                                                });
-                                            });
                                         });
                                     });
                                 });
@@ -203,18 +111,11 @@ impl MappingPanel {
                 ui.separator();
 
                 // Add Mapping Button
-                if ui.button(i18n.t("btn-add-quad")).clicked() {
+                if ui.button(i18n.t("btn-add-mapping")).clicked() {
                     actions.push(UIAction::AddMapping);
                 }
             });
 
         self.visible = open;
-    }
-}
-
-/// Helper to translate all vertices of a mesh
-fn translate_mesh(mesh: &mut Mesh, delta: glam::Vec2) {
-    for vertex in &mut mesh.vertices {
-        vertex.position += delta;
     }
 }
