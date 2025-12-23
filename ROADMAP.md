@@ -276,8 +276,8 @@
 
 - 🟡 **UI Redesign (Resolume Style)**
   - 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
-  - ⬜ Docking Layout & Unified Inspector
-  - ⬜ Icon System (Streamline Ultimate)
+  - 🔄 Docking Layout & Unified Inspector (Jules Session: 12159547036669143793)
+  - ✅ Icon System Infrastructure (Ready for Assets)
 
 - 🟡 **Internationalisierung (i18n) – NEU**
   - ✅ Sprachauswahl UI (Deutsch / Englisch)

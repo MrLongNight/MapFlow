@@ -17,6 +17,12 @@ pub struct UserConfig {
     /// Recently opened files
     #[serde(default)]
     pub recent_files: Vec<String>,
+    /// Last used UI scale
+    #[serde(default)]
+    pub ui_scale: Option<f32>,
+    /// Last used theme
+    #[serde(default)]
+    pub theme: Option<crate::theme::Theme>,
 }
 
 impl Default for UserConfig {
@@ -25,6 +31,8 @@ impl Default for UserConfig {
             language: "en".to_string(),
             last_project: None,
             recent_files: Vec::new(),
+            ui_scale: Some(1.0),
+            theme: Some(crate::theme::Theme::Dark),
         }
     }
 }
@@ -105,6 +113,8 @@ mod tests {
             language: "de".to_string(),
             last_project: Some("/path/to/project.MapFlow".to_string()),
             recent_files: vec!["file1.mp4".to_string(), "file2.mp4".to_string()],
+            ui_scale: Some(1.2),
+            theme: Some(crate::theme::Theme::Light),
         };
 
         let json = serde_json::to_string(&config).unwrap();
