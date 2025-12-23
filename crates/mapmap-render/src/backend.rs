@@ -125,6 +125,12 @@ impl WgpuBackend {
     pub fn finish_staging_belt(&mut self) {
         self.staging_belt.finish();
     }
+
+    /// Get the preferred surface format.
+    /// Note: This is hardcoded for now as the backend is surface-agnostic.
+    pub fn surface_format(&self) -> wgpu::TextureFormat {
+        wgpu::TextureFormat::Bgra8UnormSrgb
+    }
 }
 
 impl RenderBackend for WgpuBackend {

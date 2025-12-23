@@ -23,6 +23,7 @@ pub mod output;
 pub mod paint;
 
 // Phase 3: Effects Pipeline
+pub mod effects;
 pub mod animation;
 pub mod audio;
 pub mod audio_media_pipeline;
@@ -46,6 +47,7 @@ pub use audio_reactive::{
     AudioAnimationBlendMode, AudioReactiveAnimationSystem, AudioReactiveController,
     AudioReactivePreset,
 };
+pub use effects::{Effect, EffectChain, EffectType};
 pub use codegen::{CodegenError, WGSLCodegen};
 pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
 pub use mapping::{Mapping, MappingId, MappingManager};

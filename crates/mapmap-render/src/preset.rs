@@ -3,7 +3,7 @@
 //! Save/Load Effect Chain configurations as JSON files.
 //! Provides preset management with categories and favorites.
 
-use crate::effect_chain_renderer::{EffectChain, EffectType};
+use mapmap_core::{EffectChain, EffectType};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;

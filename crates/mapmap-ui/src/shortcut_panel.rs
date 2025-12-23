@@ -191,9 +191,8 @@ impl ShortcutPanel {
                     ui.end_row();
 
                     let search_lower = self.search_filter.to_lowercase();
-
-                    let mut pending_record = None;
-                    let mut pending_reset = None;
+                    let mut pending_record: Option<usize> = None;
+                    let mut pending_reset: Option<usize> = None;
 
                     for (idx, shortcut) in self.shortcuts.iter().enumerate() {
                         // Apply search filter

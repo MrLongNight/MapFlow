@@ -258,6 +258,8 @@ pub struct Layer {
     pub locked: bool,
     /// Layer transform - position, scale, rotation, anchor (Phase 1, Month 4)
     pub transform: Transform,
+    /// The effect chain for this layer.
+    pub effect_chain: super::effects::EffectChain,
     /// Legacy transform matrix (for backward compatibility)
     #[serde(skip)]
     pub legacy_transform: Mat4,
@@ -278,6 +280,7 @@ impl Layer {
             bypass: false,
             locked: false,
             transform: Transform::default(),
+            effect_chain: super::effects::EffectChain::default(),
             legacy_transform: Mat4::IDENTITY,
         }
     }

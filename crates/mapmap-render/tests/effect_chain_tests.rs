@@ -1,5 +1,5 @@
-use mapmap_render::effect_chain_renderer::{EffectChain, EffectChainRenderer, EffectType};
-use mapmap_render::WgpuBackend;
+use mapmap_core::{EffectChain, EffectType};
+use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
 use wgpu::{Device, Queue};
 
@@ -240,11 +240,10 @@ fn test_effect_chain_serialization() {
 
 // --- GPU Integration Tests ---
 
-#[test]
-fn test_empty_chain_is_passthrough() {
-    pollster::block_on(async {
-        if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+#[tokio::test]
+async fn test_empty_chain_is_passthrough() {
+    if let Some(env) = setup_test_environment().await {
+        let TestEnvironment { device, queue } = env;
             let width = 32;
             let height = 32;
             let color = [255, 0, 0, 255]; // Red
@@ -271,7 +270,8 @@ fn test_empty_chain_is_passthrough() {
             });
             let output_view = output.create_view(&Default::default());
 
-            let mut renderer = EffectChainRenderer::new(device.clone(), format).unwrap();
+            let mut renderer =
+                EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
             let chain = EffectChain::new(); // Empty chain
 
             let mut encoder = device.create_command_encoder(&Default::default());
@@ -291,14 +291,12 @@ fn test_empty_chain_is_passthrough() {
             // With the fix, an empty chain should copy the source, so the output should be red.
             assert_eq!(&data[0..4], &color);
         }
-    });
 }
 
-#[test]
-fn test_blur_plus_coloradjust_chain() {
-    pollster::block_on(async {
-        if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+#[tokio::test]
+async fn test_blur_plus_coloradjust_chain() {
+    if let Some(env) = setup_test_environment().await {
+        let TestEnvironment { device, queue } = env;
             let width = 32;
             let height = 32;
             let color = [0, 0, 255, 255]; // Blue
@@ -324,7 +322,8 @@ fn test_blur_plus_coloradjust_chain() {
             });
             let output_view = output.create_view(&Default::default());
 
-            let mut renderer = EffectChainRenderer::new(device.clone(), format).unwrap();
+            let mut renderer =
+                EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
             let mut chain = EffectChain::new();
             let blur_id = chain.add_effect(EffectType::Blur);
             let color_id = chain.add_effect(EffectType::ColorAdjust);
@@ -378,14 +377,12 @@ fn test_blur_plus_coloradjust_chain() {
                 r
             );
         }
-    });
 }
 
-#[test]
-fn test_vignette_plus_filmgrain_chain() {
-    pollster::block_on(async {
-        if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+#[tokio::test]
+async fn test_vignette_plus_filmgrain_chain() {
+    if let Some(env) = setup_test_environment().await {
+        let TestEnvironment { device, queue } = env;
             let width = 32;
             let height = 32;
             let color = [255, 255, 255, 255]; // White
@@ -410,7 +407,8 @@ fn test_vignette_plus_filmgrain_chain() {
             });
             let output_view = output.create_view(&Default::default());
 
-            let mut renderer = EffectChainRenderer::new(device.clone(), format).unwrap();
+            let mut renderer =
+                EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
             let mut chain = EffectChain::new();
             let vignette_id = chain.add_effect(EffectType::Vignette);
             let grain_id = chain.add_effect(EffectType::FilmGrain);
@@ -458,5 +456,4 @@ fn test_vignette_plus_filmgrain_chain() {
                 center_brightness
             );
         }
-    });
 }

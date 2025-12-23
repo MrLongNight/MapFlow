@@ -20,7 +20,9 @@ use mapmap_mcp::{McpAction, McpServer};
 
 use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
-use mapmap_render::{OscillatorRenderer, WgpuBackend};
+use mapmap_render::{
+    Compositor, EffectChainRenderer, MeshRenderer, QuadRenderer, TexturePool, WgpuBackend,
+};
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
@@ -41,6 +43,21 @@ struct App {
     ui_state: AppUI,
     /// The application's render backend.
     backend: WgpuBackend,
+    /// Texture pool for intermediate textures.
+    texture_pool: TexturePool,
+    /// The main compositor.
+    compositor: Compositor,
+    /// The effect chain renderer.
+    effect_chain_renderer: EffectChainRenderer,
+    /// The mesh renderer.
+    #[allow(dead_code)]
+    mesh_renderer: MeshRenderer,
+    /// Quad renderer for passthrough.
+    quad_renderer: QuadRenderer,
+    /// Final composite texture before output processing.
+    composite_texture: String,
+    /// Ping-pong textures for layer composition.
+    layer_ping_pong: [String; 2],
     /// The application state (project data).
     state: AppState,
     /// The audio backend.
@@ -57,8 +74,8 @@ struct App {
     egui_renderer: Renderer,
     /// Last autosave timestamp.
     last_autosave: std::time::Instant,
-    /// Last frame update timestamp.
-    last_update: std::time::Instant,
+    /// Application start time.
+    start_time: std::time::Instant,
     /// Receiver for MCP commands
     mcp_receiver: Receiver<McpAction>,
     /// Unified control manager
@@ -77,6 +94,18 @@ impl App {
     /// Creates a new `App`.
     async fn new(event_loop: &EventLoop<()>) -> Result<Self> {
         let backend = WgpuBackend::new().await?;
+
+        // Initialize renderers
+        let texture_pool = TexturePool::new(backend.device.clone());
+        let compositor = Compositor::new(backend.device.clone(), backend.surface_format())?;
+        let effect_chain_renderer = EffectChainRenderer::new(
+            backend.device.clone(),
+            backend.queue.clone(),
+            backend.surface_format(),
+        )?;
+        let mesh_renderer = MeshRenderer::new(backend.device.clone(), backend.surface_format())?;
+        let quad_renderer = QuadRenderer::new(&backend.device, backend.surface_format())?;
+
         let mut window_manager = WindowManager::new();
 
         // Create main window
@@ -91,6 +120,32 @@ impl App {
                 main_window_context.window.clone(),
             )
         };
+
+        // Create textures for rendering pipeline
+        let composite_texture = texture_pool.create(
+            "composite",
+            main_window_context.surface_config.width,
+            main_window_context.surface_config.height,
+            backend.surface_format(),
+            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        );
+
+        let layer_ping_pong = [
+            texture_pool.create(
+                "layer_pong_0",
+                main_window_context.surface_config.width,
+                main_window_context.surface_config.height,
+                backend.surface_format(),
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            ),
+            texture_pool.create(
+                "layer_pong_1",
+                main_window_context.surface_config.width,
+                main_window_context.surface_config.height,
+                backend.surface_format(),
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            ),
+        ];
 
         let mut ui_state = AppUI::default();
 
@@ -191,6 +246,13 @@ impl App {
             window_manager,
             ui_state,
             backend,
+            texture_pool,
+            compositor,
+            effect_chain_renderer,
+            mesh_renderer,
+            quad_renderer,
+            composite_texture,
+            layer_ping_pong,
             state,
             audio_backend,
             audio_analyzer,
@@ -199,7 +261,7 @@ impl App {
             egui_state,
             egui_renderer,
             last_autosave: std::time::Instant::now(),
-            last_update: std::time::Instant::now(),
+            start_time: std::time::Instant::now(),
             mcp_receiver,
             control_manager: ControlManager::new(),
             exit_requested: false,
@@ -649,6 +711,9 @@ impl App {
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
+                    // Apply the theme at the beginning of each UI render pass
+                    self.ui_state.user_config.theme.apply(ctx);
+
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
@@ -743,6 +808,9 @@ impl App {
 
                     // Render Icon Gallery
                     self.ui_state.render_icon_demo(ctx);
+
+                    // Render Media Browser
+                    self.ui_state.render_media_browser(ctx);
 
                     // Render Timeline
                     egui::Window::new("Timeline")
@@ -951,28 +1019,72 @@ impl App {
                 }
             }
         } else {
-            // Output-Fenster Management
-            if let Some(renderer) = &mut self.oscillator_renderer {
-                if self.state.oscillator_config.enabled {
-                    if let Some(dummy_view) = &self.dummy_view {
-                        renderer.render(
-                            &mut encoder,
-                            dummy_view,
-                            &view,
-                            window_context.surface_config.width,
-                            window_context.surface_config.height,
-                            &self.state.oscillator_config,
-                        );
-                    }
-                } else {
-                    // Just clear to black if effect is disabled
-                    let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Output Clear Pass"),
+            // Ensure textures are the correct size
+            self.texture_pool.resize_if_needed(
+                &self.composite_texture,
+                window_context.surface_config.width,
+                window_context.surface_config.height,
+            );
+            self.texture_pool.resize_if_needed(
+                &self.layer_ping_pong[0],
+                window_context.surface_config.width,
+                window_context.surface_config.height,
+            );
+            self.texture_pool.resize_if_needed(
+                &self.layer_ping_pong[1],
+                window_context.surface_config.width,
+                window_context.surface_config.height,
+            );
+
+            // Get layer textures
+            let composite_view = self.texture_pool.get_view(&self.composite_texture);
+            let layer_pp_views = [
+                self.texture_pool.get_view(&self.layer_ping_pong[0]),
+                self.texture_pool.get_view(&self.layer_ping_pong[1]),
+            ];
+
+            let mut current_target_idx = 0;
+
+            // Clear the initial composite target
+            {
+                let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Clear Composite Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &layer_pp_views[0],
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+            }
+
+            // Main layer composition loop
+            for layer in self.state.layer_manager.visible_layers() {
+                // TODO: Render layer content (mesh, media) into a temp texture
+                // For now, let's just use a solid color from the paint manager
+                let temp_layer_content = self.texture_pool.create(
+                    "temp_layer_content",
+                    window_context.surface_config.width,
+                    window_context.surface_config.height,
+                    self.backend.surface_format(),
+                    wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                );
+                let temp_layer_content_view = self.texture_pool.get_view(&temp_layer_content);
+
+                // Placeholder: Clear to a debug color
+                {
+                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Layer Content Placeholder"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
+                            view: &temp_layer_content_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLUE), // Debug color
                                 store: wgpu::StoreOp::Store,
                             },
                         })],
@@ -981,7 +1093,83 @@ impl App {
                         timestamp_writes: None,
                     });
                 }
+
+                // Apply effect chain to the layer content
+                self.effect_chain_renderer.apply_chain(
+                    &mut encoder,
+                    &temp_layer_content_view,
+                    &composite_view, // Output of effects goes to composite texture
+                    &layer.effect_chain,
+                    self.start_time.elapsed().as_secs_f32(),
+                    window_context.surface_config.width,
+                    window_context.surface_config.height,
+                );
+
+                // Composite the result with the previous layers
+                let current_base_view = &layer_pp_views[current_target_idx];
+                let next_target_view = &layer_pp_views[1 - current_target_idx];
+
+                let bind_group = self
+                    .compositor
+                    .create_bind_group(current_base_view, &composite_view);
+                let uniform_buffer = self
+                    .compositor
+                    .create_uniform_buffer(layer.blend_mode, layer.opacity);
+                let uniform_bind_group = self.compositor.create_uniform_bind_group(&uniform_buffer);
+
+                {
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Layer Composite Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: next_target_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+
+                    self.compositor.composite(
+                        &mut rpass,
+                        self.quad_renderer.vertex_buffer(),
+                        self.quad_renderer.index_buffer(),
+                        &bind_group,
+                        &uniform_bind_group,
+                    );
+                }
+
+                // Swap for next iteration
+                current_target_idx = 1 - current_target_idx;
+                self.texture_pool.release(&temp_layer_content);
             }
+
+            // TODO: Apply output transforms (edge blend, color calibration) here
+
+            // Final copy to the screen
+            let final_texture_view = &layer_pp_views[current_target_idx];
+            let bind_group = self
+                .quad_renderer
+                .create_bind_group(&self.backend.device, final_texture_view);
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Final Blit to Screen"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
+
+            self.quad_renderer.draw(&mut rpass, &bind_group);
         }
 
         self.backend.queue.submit(Some(encoder.finish()));
