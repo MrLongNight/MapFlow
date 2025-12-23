@@ -72,13 +72,15 @@ impl ShortcutPanel {
             return actions;
         }
 
+        let mut is_open = self.visible;
         egui::Window::new(i18n.t("panel-shortcuts"))
             .default_size([600.0, 500.0])
             .resizable(true)
-            .open(&mut self.visible)
+            .open(&mut is_open)
             .show(ctx, |ui| {
                 self.render_ui(ui, i18n, &mut actions);
             });
+        self.visible = is_open;
 
         actions
     }
@@ -103,10 +105,10 @@ impl ShortcutPanel {
 
             // Context filter
             ui.label(i18n.t("label-context"));
-            egui::ComboBox::from_id_salt("context_filter")
+            egui::ComboBox::from_id_source("context_filter")
                 .selected_text(match &self.context_filter {
                     None => i18n.t("filter-all"),
-                    Some(ctx) => context_display_name(ctx),
+                    Some(ctx) => context_display_name(ctx).to_string(),
                 })
                 .show_ui(ui, |ui| {
                     if ui
@@ -192,6 +194,9 @@ impl ShortcutPanel {
 
                     let search_lower = self.search_filter.to_lowercase();
 
+                    let mut pending_record = None;
+                    let mut pending_reset = None;
+
                     for (idx, shortcut) in self.shortcuts.iter().enumerate() {
                         // Apply filters
                         if !self.search_filter.is_empty() {
@@ -229,26 +234,33 @@ impl ShortcutPanel {
                                 .on_hover_text(i18n.t("tip-edit-shortcut"))
                                 .clicked()
                             {
-                                self.recording_index = Some(idx);
+                                pending_record = Some(idx);
                             }
                             if ui
                                 .small_button("↺")
                                 .on_hover_text(i18n.t("tip-reset-shortcut"))
                                 .clicked()
                             {
-                                // Reset to default
-                                let defaults = DefaultShortcuts::all();
-                                if let Some(default) = defaults.get(idx) {
-                                    if let Some(current) = self.shortcuts.get_mut(idx) {
-                                        current.key = default.key;
-                                        current.modifiers = default.modifiers.clone();
-                                        actions.push(ShortcutAction::ResetShortcut(idx));
-                                    }
-                                }
+                                pending_reset = Some(idx);
                             }
                         });
 
                         ui.end_row();
+                    }
+
+                    if let Some(idx) = pending_record {
+                        self.recording_index = Some(idx);
+                    }
+                    if let Some(idx) = pending_reset {
+                        // Reset to default
+                        let defaults = DefaultShortcuts::all();
+                        if let Some(default) = defaults.get(idx) {
+                            if let Some(current) = self.shortcuts.get_mut(idx) {
+                                current.key = default.key;
+                                current.modifiers = default.modifiers.clone();
+                                actions.push(ShortcutAction::ResetShortcut(idx));
+                            }
+                        }
                     }
                 });
         });
