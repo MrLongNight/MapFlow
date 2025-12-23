@@ -293,8 +293,13 @@ impl App {
                             None
                         };
                         // Recreate dummy texture for the new size
-                        if let Some((width, height, format)) = new_size {
-                            self.create_dummy_texture(width, height, format);
+                        match new_size {
+                            Some((width, height, format)) => {
+                                self.create_dummy_texture(width, height, format);
+                            }
+                            None => {
+                                tracing::warn!("Resize event received but no valid new size was determined.");
+                            }
                         }
                     }
                     WindowEvent::RedrawRequested => {
