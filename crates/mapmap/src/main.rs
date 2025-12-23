@@ -91,6 +91,12 @@ struct App {
     dummy_texture: Option<wgpu::Texture>,
     /// A view of the dummy texture.
     dummy_view: Option<wgpu::TextureView>,
+    /// FPS calculation: accumulated frame times
+    fps_samples: Vec<f32>,
+    /// Current calculated FPS
+    current_fps: f32,
+    /// Current frame time in ms
+    current_frame_time_ms: f32,
 }
 
 impl App {
@@ -272,6 +278,9 @@ impl App {
             oscillator_renderer,
             dummy_texture: None,
             dummy_view: None,
+            fps_samples: Vec::with_capacity(60),
+            current_fps: 60.0,
+            current_frame_time_ms: 16.6,
         };
 
         // Create initial dummy texture
@@ -413,7 +422,17 @@ impl App {
                 if let Some(backend) = &mut self.audio_backend {
                     let samples = backend.get_samples();
                     if !samples.is_empty() {
-                        let analysis = self.audio_analyzer.process_samples(&samples, 0.0);
+                        let timestamp = self.start_time.elapsed().as_secs_f64();
+                        let analysis = self.audio_analyzer.process_samples(&samples, timestamp);
+                        // Log periodically (every ~5 seconds based on timestamp)
+                        if (timestamp as i64) % 5 == 0 {
+                            tracing::debug!(
+                                "Audio: {} samples, RMS={:.3}, Peak={:.3}",
+                                samples.len(),
+                                analysis.rms_volume,
+                                analysis.peak_volume
+                            );
+                        }
                         self.ui_state.dashboard.set_audio_analysis(analysis);
                     }
                 }
@@ -685,6 +704,23 @@ impl App {
         let delta_time = now.duration_since(self.last_update).as_secs_f32();
         self.last_update = now;
 
+        // Calculate FPS with smoothing (rolling average of last 60 frames)
+        let frame_time_ms = delta_time * 1000.0;
+        self.fps_samples.push(frame_time_ms);
+        if self.fps_samples.len() > 60 {
+            self.fps_samples.remove(0);
+        }
+        if !self.fps_samples.is_empty() {
+            let avg_frame_time: f32 =
+                self.fps_samples.iter().sum::<f32>() / self.fps_samples.len() as f32;
+            self.current_frame_time_ms = avg_frame_time;
+            self.current_fps = if avg_frame_time > 0.0 {
+                1000.0 / avg_frame_time
+            } else {
+                0.0
+            };
+        }
+
         if let Some(renderer) = &mut self.oscillator_renderer {
             if self.state.oscillator_config.enabled {
                 renderer.update(delta_time, &self.state.oscillator_config);
@@ -730,7 +766,8 @@ impl App {
 
                     // Migrated Panels Integration (Controls, Stats, Master, Cue)
                     self.ui_state.render_controls(ctx);
-                    self.ui_state.render_stats(ctx, 60.0, 16.6);
+                    self.ui_state
+                        .render_stats(ctx, self.current_fps, self.current_frame_time_ms);
                     self.ui_state
                         .render_master_controls(ctx, &mut self.state.layer_manager);
                     self.ui_state.cue_panel.show(

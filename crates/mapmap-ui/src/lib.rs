@@ -372,22 +372,44 @@ impl AppUI {
             });
     }
 
-    /// Render performance stats (Phase 6 Migration)
-    pub fn render_stats(&mut self, ctx: &egui::Context, fps: f32, frame_time_ms: f32) {
+    /// Render performance stats as top-right overlay (Phase 6 Migration)
+    pub fn render_stats_overlay(&mut self, ctx: &egui::Context, fps: f32, frame_time_ms: f32) {
         if !self.show_stats {
             return;
         }
 
-        egui::Window::new(self.i18n.t("panel-performance"))
-            .default_size([250.0, 120.0])
+        // Use Area with anchor to position in top-right corner
+        egui::Area::new(egui::Id::new("performance_overlay"))
+            .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0]) // Offset from menu bar
+            .order(egui::Order::Foreground)
+            .interactable(false)
             .show(ctx, |ui| {
-                ui.label(format!("{}: {:.1}", self.i18n.t("label-fps"), fps));
-                ui.label(format!(
-                    "{}: {:.2} ms",
-                    self.i18n.t("label-frame-time"),
-                    frame_time_ms
-                ));
+                egui::Frame::popup(ui.style())
+                    .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
+                    .rounding(4.0)
+                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
+                    .inner_margin(8.0)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                egui::RichText::new(format!("FPS: {:.0}", fps))
+                                    .color(egui::Color32::from_rgb(100, 200, 100))
+                                    .strong(),
+                            );
+                            ui.separator();
+                            ui.label(
+                                egui::RichText::new(format!("{:.1}ms", frame_time_ms))
+                                    .color(egui::Color32::from_rgb(150, 150, 200)),
+                            );
+                        });
+                    });
             });
+    }
+
+    /// Legacy floating window version (deprecated)
+    pub fn render_stats(&mut self, ctx: &egui::Context, fps: f32, frame_time_ms: f32) {
+        // Redirect to overlay version
+        self.render_stats_overlay(ctx, fps, frame_time_ms);
     }
 
     /// Render master controls panel (Phase 6 Migration)
