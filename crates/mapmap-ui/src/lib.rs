@@ -307,6 +307,8 @@ pub struct AppUI {
     pub cue_panel: CuePanel,
     pub transform_panel: TransformPanel,
     pub user_config: config::UserConfig,
+    /// Show settings window
+    pub show_settings: bool,
 }
 
 impl Default for AppUI {
@@ -352,6 +354,7 @@ impl Default for AppUI {
             cue_panel: CuePanel::default(),
             transform_panel: TransformPanel::default(),
             user_config: config::UserConfig::load(),
+            show_settings: false,
         }
     }
 }
@@ -955,5 +958,4 @@ impl AppUI {
                 ui.text_disabled(self.i18n.t("msg-output-windows-tip"));
             });
     }
-
 }

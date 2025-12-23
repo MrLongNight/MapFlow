@@ -62,6 +62,8 @@ struct App {
     mcp_receiver: Receiver<McpAction>,
     /// Unified control manager
     control_manager: ControlManager,
+    /// Flag to track if exit was requested
+    exit_requested: bool,
 }
 
 impl App {
@@ -163,6 +165,7 @@ impl App {
             last_autosave: std::time::Instant::now(),
             mcp_receiver,
             control_manager: ControlManager::new(),
+            exit_requested: false,
         })
     }
 
@@ -173,6 +176,13 @@ impl App {
         event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
         let _ = event_loop.run(move |event, elwt| {
+            // Check if exit was requested
+            if self.exit_requested {
+                info!("Exiting application...");
+                elwt.exit();
+                return;
+            }
+
             if let Err(e) = self.handle_event(event, elwt) {
                 error!("Error handling event: {}", e);
             }
@@ -349,6 +359,14 @@ impl App {
                     self.state.dirty = true;
                     self.ui_state.i18n.set_locale(&lang_code);
                     info!("Language switched to: {}", lang_code);
+                }
+                mapmap_ui::UIAction::Exit => {
+                    info!("Exit requested via menu");
+                    self.exit_requested = true;
+                }
+                mapmap_ui::UIAction::OpenSettings => {
+                    info!("Settings requested");
+                    self.ui_state.show_settings = true;
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
                 _ => {}
@@ -657,6 +675,51 @@ impl App {
                         &self.ui_state.i18n,
                         &mut self.state.oscillator_config,
                     );
+
+                    // Render Settings Window
+                    if self.ui_state.show_settings {
+                        let mut close_settings = false;
+                        egui::Window::new(self.ui_state.i18n.t("menu-file-settings"))
+                            .collapsible(false)
+                            .resizable(true)
+                            .default_size([400.0, 300.0])
+                            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                            .show(ctx, |ui| {
+                                ui.heading(self.ui_state.i18n.t("menu-file-settings"));
+                                ui.separator();
+
+                                // Language selection
+                                ui.horizontal(|ui| {
+                                    ui.label("Language / Sprache:");
+                                    if ui.button("English").clicked() {
+                                        self.ui_state.actions.push(
+                                            mapmap_ui::UIAction::SetLanguage("en".to_string()),
+                                        );
+                                    }
+                                    if ui.button("Deutsch").clicked() {
+                                        self.ui_state.actions.push(
+                                            mapmap_ui::UIAction::SetLanguage("de".to_string()),
+                                        );
+                                    }
+                                });
+
+                                ui.separator();
+
+                                // Close button
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::TOP),
+                                    |ui| {
+                                        if ui.button("✕ Close / Schließen").clicked() {
+                                            close_settings = true;
+                                        }
+                                    },
+                                );
+                            });
+
+                        if close_settings {
+                            self.ui_state.show_settings = false;
+                        }
+                    }
                 });
 
                 self.egui_state

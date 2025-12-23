@@ -308,7 +308,7 @@ jobs:
             }
 
       - name: Re-trigger self if timeout approaching
-        if: !cancelled()  # Geändert von 'always()' zu '!cancelled()', um manuelle Abbrüche zu respektieren
+        if: "!cancelled()"  # Geändert von 'always()' zu '!cancelled()', um manuelle Abbrüche zu respektieren
         uses: actions/github-script@v7
         with:
           script: |
