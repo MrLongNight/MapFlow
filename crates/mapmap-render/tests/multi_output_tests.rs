@@ -41,10 +41,10 @@ fn create_solid_color_texture(
         view_formats: &[],
     });
 
-    let data: Vec<u8> = vec![color; (width * height) as usize]
-        .into_iter()
-        .flat_map(|a| a)
-        .collect();
+    let mut data = Vec::with_capacity((width * height * 4) as usize);
+    for _ in 0..(width * height) {
+        data.extend_from_slice(&color);
+    }
 
     queue.write_texture(
         wgpu::ImageCopyTexture {
@@ -121,10 +121,39 @@ async fn read_texture_data(
     device.poll(wgpu::Maintain::Wait);
     rx.await.unwrap().unwrap();
 
-    let padded_data = slice.get_mapped_range();
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);
-    for chunk in padded_data.chunks_exact(padded_bytes_per_row as usize) {
-        unpadded_data.extend_from_slice(&chunk[..unpadded_bytes_per_row as usize]);
+
+    {
+        let padded_data = slice.get_mapped_range();
+        let padded_row_size = padded_bytes_per_row as usize;
+        let unpadded_row_size = unpadded_bytes_per_row as usize;
+
+        // Safety check: Ensure we have enough data
+        let expected_size = padded_row_size * height as usize;
+        if padded_data.len() < expected_size {
+            panic!(
+                "Readback buffer too small! Expected {} bytes, got {}",
+                expected_size,
+                padded_data.len()
+            );
+        }
+
+        for i in 0..height as usize {
+            let start = i * padded_row_size;
+            let end = start + unpadded_row_size;
+
+            if end > padded_data.len() {
+                panic!(
+                    "Buffer overrun detected at row {}: start={}, end={}, buffer_len={}",
+                    i,
+                    start,
+                    end,
+                    padded_data.len()
+                );
+            }
+
+            unpadded_data.extend_from_slice(&padded_data[start..end]);
+        }
     }
     buffer.unmap();
 

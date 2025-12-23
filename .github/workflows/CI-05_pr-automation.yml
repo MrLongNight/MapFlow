@@ -75,9 +75,8 @@ jobs:
             core.setOutput('pr_number', pr.number);
             core.setOutput('has_pr', 'true');
           } else {
+          } else {
             core.exportVariable('HAS_PR', 'false');
-            core.setOutput('has_pr', 'false');
-            core.setOutput('pr_number', '');
           }
 
     - name: Check for check failures and comment if needed

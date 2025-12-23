@@ -563,8 +563,6 @@ impl App {
 
                     // Panels
                     self.ui_state
-                        .render_mapping_panel(ui, &mut self.state.mapping_manager);
-                    self.ui_state
                         .render_master_controls(ui, &mut self.state.layer_manager);
                     self.ui_state.render_cue_panel(ui);
                 });
@@ -636,6 +634,15 @@ impl App {
                         &self.ui_state.i18n,
                         &mut self.state.paint_manager,
                     );
+
+                    // Render Mapping Panel
+                    self.ui_state.mapping_panel.show(
+                        ctx,
+                        &mut self.state.mapping_manager,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                    );
+
                     // Update and render Transform Panel
                     if let Some(selected_id) = self.ui_state.selected_layer_id {
                         if let Some(layer) = self.state.layer_manager.get_layer(selected_id) {
