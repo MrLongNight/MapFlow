@@ -264,7 +264,7 @@
   - ✅ Paint Manager (`paint_panel.rs`) – Migriert
   - ✅ Audio Visualization (`audio_panel.rs`) – Migriert
   - ✅ Main Menu & Toolbar (`menu_bar.rs`) – Migriert
-  - ⬜ Layer Manager (`render_layer_panel`) – Noch ImGui
+  - ✅ Layer Manager (`render_layer_panel`) – Migriert (COMPLETED 2025-12-22)
   - ✅ Mapping Manager (`render_mapping_panel`) – Migriert (COMPLETED PR #97, 2025-12-23)
   - ⬜ Output Configuration (`render_output_panel`) – Noch ImGui
   - ⬜ Edge Blend & Color Calibration (`render_edge_blend_panel`) – Noch ImGui
