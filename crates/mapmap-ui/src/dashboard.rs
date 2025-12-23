@@ -158,11 +158,6 @@ impl Dashboard {
         action
     }
 
-    /// Renders the dashboard UI embedded in a parent UI
-    pub fn ui_embedded(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<DashboardAction> {
-        self.render_contents(ui, locale)
-    }
-
     /// Renders the contents of the dashboard panel.
     fn render_contents(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<DashboardAction> {
         let mut action = None;

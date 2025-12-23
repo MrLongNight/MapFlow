@@ -15,8 +15,6 @@ pub enum Theme {
     Light,
     /// High contrast for accessibility
     HighContrast,
-    /// Neon Purple theme (Dark purple/pink)
-    NeonPurple,
     /// Custom theme
     Custom,
 }
@@ -28,7 +26,6 @@ pub struct ThemeConfig {
     pub custom_colors: Option<CustomColors>,
     pub font_size: f32,
     pub spacing: f32,
-    pub ui_scale: f32,
 }
 
 impl Default for ThemeConfig {
@@ -38,7 +35,6 @@ impl Default for ThemeConfig {
             custom_colors: None,
             font_size: 14.0,
             spacing: 4.0,
-            ui_scale: 1.0,
         }
     }
 }
@@ -62,18 +58,14 @@ impl ThemeConfig {
             Theme::Dark => Self::dark_visuals(),
             Theme::Light => Self::light_visuals(),
             Theme::HighContrast => Self::high_contrast_visuals(),
-            Theme::NeonPurple => Self::neon_purple_visuals(),
             Theme::Custom => self.custom_visuals(),
         };
 
         style.visuals = visuals;
-        // Apply font scale via pixels_per_point in context instead of just here if preferred,
-        // but here we can at least set some layout factors.
         style.spacing.item_spacing = egui::vec2(self.spacing * 2.0, self.spacing);
         style.spacing.button_padding = egui::vec2(self.spacing * 2.0, self.spacing);
 
         ctx.set_style(style);
-        ctx.set_pixels_per_point(self.ui_scale);
     }
 
     /// Dark theme visuals (professional video application style)
@@ -268,70 +260,6 @@ impl ThemeConfig {
         }
     }
 
-    /// Neon Purple theme visuals (Dark purple/pink)
-    fn neon_purple_visuals() -> Visuals {
-        Visuals {
-            dark_mode: true,
-            override_text_color: Some(Color32::from_rgb(240, 230, 255)),
-            widgets: egui::style::Widgets {
-                noninteractive: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(20, 10, 35), // Deep purple background
-                    weak_bg_fill: Color32::from_rgb(25, 12, 45),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(60, 30, 80)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 160, 220)),
-                    rounding: egui::Rounding::same(2.0),
-                    expansion: 0.0,
-                },
-                inactive: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(35, 15, 60),
-                    weak_bg_fill: Color32::from_rgb(40, 20, 70),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(80, 40, 110)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(210, 200, 240)),
-                    rounding: egui::Rounding::same(2.0),
-                    expansion: 0.0,
-                },
-                hovered: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(55, 25, 90),
-                    weak_bg_fill: Color32::from_rgb(60, 30, 100),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(130, 60, 180)),
-                    fg_stroke: egui::Stroke::new(1.5, Color32::from_rgb(255, 180, 255)),
-                    rounding: egui::Rounding::same(2.0),
-                    expansion: 1.0,
-                },
-                active: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(255, 0, 255), // Neon Magenta
-                    weak_bg_fill: Color32::from_rgb(255, 0, 255),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(255, 100, 255)),
-                    fg_stroke: egui::Stroke::new(2.0, Color32::BLACK),
-                    rounding: egui::Rounding::same(2.0),
-                    expansion: 1.0,
-                },
-                open: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(35, 15, 60),
-                    weak_bg_fill: Color32::from_rgb(40, 20, 70),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(100, 50, 150)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(230, 220, 255)),
-                    rounding: egui::Rounding::same(2.0),
-                    expansion: 0.0,
-                },
-            },
-            selection: egui::style::Selection {
-                bg_fill: Color32::from_rgb(255, 0, 255).linear_multiply(0.4),
-                stroke: egui::Stroke::new(1.0, Color32::from_rgb(255, 0, 255)),
-            },
-            hyperlink_color: Color32::from_rgb(255, 80, 255),
-            faint_bg_color: Color32::from_rgb(15, 8, 25),
-            extreme_bg_color: Color32::from_rgb(10, 5, 20),
-            code_bg_color: Color32::from_rgb(30, 15, 50),
-            warn_fg_color: Color32::from_rgb(255, 200, 50),
-            error_fg_color: Color32::from_rgb(255, 80, 80),
-            window_fill: Color32::from_rgb(20, 10, 35),
-            panel_fill: Color32::from_rgb(30, 15, 50),
-            window_stroke: egui::Stroke::new(1.0, Color32::from_rgb(70, 40, 100)),
-            ..Default::default()
-        }
-    }
-
     /// Custom theme visuals
     fn custom_visuals(&self) -> Visuals {
         if let Some(colors) = &self.custom_colors {
@@ -382,9 +310,6 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
         changed |= ui.selectable_value(theme, Theme::Light, "Light").clicked();
         changed |= ui
             .selectable_value(theme, Theme::HighContrast, "High Contrast")
-            .clicked();
-        changed |= ui
-            .selectable_value(theme, Theme::NeonPurple, "Neon Purple")
             .clicked();
     });
 
