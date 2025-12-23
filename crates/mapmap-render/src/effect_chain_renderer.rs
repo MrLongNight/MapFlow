@@ -9,7 +9,7 @@
 //! - Parameter uniforms
 //! - Hot-reload support (via shader recompilation)
 
-use crate::Result;
+use crate::{QuadRenderer, Result};
 use bytemuck::{Pod, Zeroable};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -95,7 +95,7 @@ impl Default for EffectParams {
 }
 
 /// An effect instance in the chain
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Effect {
     /// Unique ID for this effect instance
     pub id: u64,
@@ -175,7 +175,7 @@ impl Effect {
 }
 
 /// Effect chain containing multiple effects
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct EffectChain {
     /// Effects in order of application
     pub effects: Vec<Effect>,
@@ -316,12 +316,17 @@ pub struct EffectChainRenderer {
     // Fullscreen quad vertices
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+
+    // Passthrough renderer
+    quad_renderer: QuadRenderer,
 }
 
 impl EffectChainRenderer {
     /// Create a new effect chain renderer
     pub fn new(device: Arc<wgpu::Device>, target_format: wgpu::TextureFormat) -> Result<Self> {
         info!("Creating EffectChainRenderer");
+
+        let quad_renderer = QuadRenderer::new(&device, target_format)?;
 
         // Create bind group layout for texture sampling
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -455,6 +460,7 @@ impl EffectChainRenderer {
             current_size: (0, 0),
             vertex_buffer,
             index_buffer,
+            quad_renderer,
         })
     }
 
@@ -616,8 +622,26 @@ impl EffectChainRenderer {
         let enabled_effects: Vec<_> = chain.enabled_effects().collect();
 
         if enabled_effects.is_empty() {
-            // No effects, just copy input to output
-            debug!("No effects enabled, passing through");
+            // No effects, use quad renderer to copy input to output
+            debug!("No effects enabled, passing through with QuadRenderer");
+            let bind_group = self
+                .quad_renderer
+                .create_bind_group(&self.device, input_view);
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Passthrough Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: output_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            self.quad_renderer.draw(&mut rpass, &bind_group);
             return;
         }
 
@@ -642,17 +666,34 @@ impl EffectChainRenderer {
             };
 
             // Create effect parameters
-            let params = EffectParams {
+            let mut params = EffectParams {
                 time,
                 intensity: effect.intensity,
-                param_a: effect.get_param("param_a", 0.0),
-                param_b: effect.get_param("param_b", 0.0),
-                param_c: [
-                    effect.get_param("param_c_x", 0.0),
-                    effect.get_param("param_c_y", 0.0),
-                ],
                 resolution: [width as f32, height as f32],
+                ..Default::default()
             };
+
+            match effect.effect_type {
+                EffectType::ColorAdjust => {
+                    params.param_a = effect.get_param("brightness", 0.0);
+                    params.param_b = effect.get_param("contrast", 1.0);
+                    params.param_c[0] = effect.get_param("saturation", 1.0);
+                }
+                EffectType::Blur => {
+                    params.param_a = effect.get_param("radius", 5.0);
+                    params.param_b = effect.get_param("samples", 9.0);
+                }
+                EffectType::Vignette => {
+                    params.param_a = effect.get_param("radius", 0.5);
+                    params.param_b = effect.get_param("softness", 0.5);
+                }
+                EffectType::FilmGrain => {
+                    params.param_a = effect.get_param("amount", 0.1);
+                    params.param_b = effect.get_param("speed", 1.0);
+                }
+                // Add other effect types here as needed
+                _ => {}
+            }
 
             // Get input view
             let current_input = if use_input {

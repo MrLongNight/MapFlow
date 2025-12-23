@@ -127,7 +127,7 @@ mod tests {
         let t = lm.t("menu-file");
         assert_ne!(t, "menu-file");
         // Assuming "File" is the translation
-        assert!(t.contains("File") || t.contains("Datei") == false);
+        assert!(t.contains("File") || !t.contains("Datei"));
     }
 
     #[test]
