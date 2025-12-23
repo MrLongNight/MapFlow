@@ -659,6 +659,13 @@ impl App {
                             let _ = self.ui_state.timeline_panel.ui(ui);
                         });
 
+                    // Render Shader Graph
+                    egui::Window::new("Shader Graph")
+                        .default_size([800.0, 600.0])
+                        .show(ctx, |ui| {
+                            let _ = self.ui_state.node_editor_panel.ui(ui, &self.ui_state.i18n);
+                        });
+
                     // Update and render Transform Panel
                     if let Some(selected_id) = self.ui_state.selected_layer_id {
                         if let Some(layer) = self.state.layer_manager.get_layer(selected_id) {

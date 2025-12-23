@@ -8,9 +8,6 @@
 //! - Advanced authoring UI (Phase 6)
 //! - Effect Chain Panel (Phase 3)
 
-// Phase 3: Effects Pipeline UI (ImGui-based)
-pub mod shader_graph_editor;
-
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
 pub mod audio_panel;
@@ -36,8 +33,6 @@ pub mod transform_panel;
 pub mod undo_redo;
 
 pub use i18n::LocaleManager;
-
-pub use shader_graph_editor::{ShaderGraphAction, ShaderGraphEditor};
 
 // Phase 6 exports
 pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
@@ -306,6 +301,7 @@ pub struct AppUI {
     pub effect_chain_panel: EffectChainPanel,
     pub cue_panel: CuePanel,
     pub timeline_panel: timeline_v2::TimelineV2,
+    pub node_editor_panel: node_editor::NodeEditor,
     pub transform_panel: TransformPanel,
     pub user_config: config::UserConfig,
     /// Show settings window
@@ -355,6 +351,7 @@ impl Default for AppUI {
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
             timeline_panel: timeline_v2::TimelineV2::default(),
+            node_editor_panel: node_editor::NodeEditor::default(),
             transform_panel: TransformPanel::default(),
             user_config: config::UserConfig::load(),
             show_settings: false,
