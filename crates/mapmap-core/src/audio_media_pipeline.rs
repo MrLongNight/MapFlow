@@ -214,11 +214,11 @@ impl AudioMediaPipeline {
             let latency_duration = Duration::from_secs_f32(self.config.latency_ms / 1000.0);
             let target_time = Instant::now() - latency_duration;
 
-            // Find the analysis closest to target time
+            // Find the analysis closest to target time (latest one before target)
             self.analysis_buffer
                 .iter()
-                .filter(|a| a.timestamp <= target_time)
-                .last()
+                .rev()
+                .find(|a| a.timestamp <= target_time)
                 .map(|a| a.analysis.clone())
         } else {
             // No latency compensation, return latest

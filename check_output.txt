@@ -1,0 +1,30 @@
+﻿cargo :     Checking 
+mapmap-mcp v0.2.0 (C:\Use
+rs\Vinyl\Desktop\VJMapper
+\VjMapper\crates\mapmap-m
+cp)
+In Zeile:1 Zeichen:1
++ cargo check 
+--workspace 2>&1 | 
+Out-File -FilePath 
+check_output.txt -E ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (    Checking ma...t   
+ es\mapmap-mcp):Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+    Checking mapmap 
+v0.2.0 (C:\Users\Vinyl\De
+sktop\VJMapper\VjMapper\c
+rates\mapmap)
+    Finished `dev` 
+profile [optimized + 
+debuginfo] target(s) in 
+11.15s

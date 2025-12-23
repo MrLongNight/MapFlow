@@ -196,11 +196,11 @@ impl ShortcutPanel {
                     let mut pending_reset = None;
 
                     for (idx, shortcut) in self.shortcuts.iter().enumerate() {
-                        // Apply filters
-                        if !self.search_filter.is_empty() {
-                            if !shortcut.description.to_lowercase().contains(&search_lower) {
-                                continue;
-                            }
+                        // Apply search filter
+                        if !self.search_filter.is_empty()
+                            && !shortcut.description.to_lowercase().contains(&search_lower)
+                        {
+                            continue;
                         }
 
                         if let Some(ref ctx_filter) = self.context_filter {

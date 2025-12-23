@@ -1,0 +1,24 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+    Checking mapmap-ui v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-ui)
+error: this `if` statement can be collapsed
+   --> crates\mapmap-ui\src\shortcut_panel.rs:200:25
+    |
+200 | /                         if !self.search_filter.is_empty() {
+201 | |                             if !shortcut.description.to_lowercase().contains(&search_lower) {
+202 | |                                 continue;
+203 | |                             }
+204 | |                         }
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+200 ~                         if !self.search_filter.is_empty()
+201 ~                             && !shortcut.description.to_lowercase().contains(&search_lower) {
+202 |                                 continue;
+203 ~                             }
+    |
+
+error: could not compile `mapmap-ui` (lib) due to 1 previous error
