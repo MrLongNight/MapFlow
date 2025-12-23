@@ -34,9 +34,7 @@ ffmpeg-next = { workspace = true, optional = true }
 cpal = { workspace = true }
 rustfft = { workspace = true }
 hound = { workspace = true }
-imgui = { workspace = true }
-imgui-wgpu = { workspace = true }
-imgui-winit-support = { workspace = true }
+
 egui = { workspace = true }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }

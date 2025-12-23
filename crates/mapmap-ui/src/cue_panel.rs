@@ -1,16 +1,21 @@
 //! Cue System UI Panel
-
-use imgui::{Condition, Ui};
+use egui;
 
 #[derive(Default)]
-pub struct CuePanel {}
+pub struct CuePanel {
+    pub visible: bool, // Allow visibility control
+}
 
 impl CuePanel {
-    pub fn render(&mut self, ui: &Ui) {
-        ui.window("Cue System")
-            .size([300.0, 400.0], Condition::FirstUseEver)
-            .build(|| {
-                ui.text("Cues will be listed here.");
+    pub fn show(&mut self, ctx: &egui::Context) {
+        if !self.visible {
+            return;
+        }
+        egui::Window::new("Cue System")
+            .open(&mut self.visible) // Allow closing
+            .default_size([300.0, 400.0])
+            .show(ctx, |ui| {
+                ui.label("Cues will be listed here.");
             });
     }
 }

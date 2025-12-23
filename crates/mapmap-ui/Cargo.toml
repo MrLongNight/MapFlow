@@ -14,10 +14,7 @@ mapmap-render = { path = "../mapmap-render" }
 mapmap-control = { path = "../mapmap-control", features = ["osc"] }
 cpal = { workspace = true, optional = true }
 
-# Legacy ImGui (Phase 0-5)
-imgui = { workspace = true }
-imgui-wgpu = { workspace = true }
-imgui-winit-support = { workspace = true }
+
 
 # Phase 6: egui migration
 egui = { workspace = true }

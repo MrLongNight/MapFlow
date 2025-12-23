@@ -21,7 +21,7 @@ use mapmap_mcp::{McpAction, McpServer};
 use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
 use mapmap_render::WgpuBackend;
-use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction, ImGuiContext};
+use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -36,8 +36,7 @@ use winit::{
 struct App {
     /// Manages all application windows.
     window_manager: WindowManager,
-    /// The ImGui rendering context.
-    imgui_context: ImGuiContext,
+
     /// The UI state.
     ui_state: AppUI,
     /// The application's render backend.
@@ -75,14 +74,6 @@ impl App {
         // Create main window
         let main_window_id = window_manager.create_main_window(event_loop, &backend)?;
         let main_window_context = window_manager.get(main_window_id).unwrap();
-
-        // Initialize UI
-        let imgui_context = ImGuiContext::new(
-            &main_window_context.window,
-            &backend.device,
-            &backend.queue,
-            main_window_context.surface_config.format,
-        );
 
         let mut ui_state = AppUI::default();
 
@@ -152,7 +143,7 @@ impl App {
 
         Ok(Self {
             window_manager,
-            imgui_context,
+
             ui_state,
             backend,
             state,
@@ -201,13 +192,6 @@ impl App {
                 .window_manager
                 .get_output_id_from_window_id(*window_id)
                 .unwrap_or(0);
-
-            if let Some(window_context) = self.window_manager.get(output_id) {
-                if output_id == 0 {
-                    self.imgui_context
-                        .handle_event(&window_context.window, &event);
-                }
-            }
         }
 
         if let Event::WindowEvent { event, window_id } = &event {
@@ -555,17 +539,7 @@ impl App {
                 });
 
         if output_id == 0 {
-            // --------- ImGui: UI zeichnen (mutable Borrow ist hier auf das Minimum begrenzt) ----------
-            self.imgui_context
-                .prepare_frame(&window_context.window, |ui| {
-                    self.ui_state.render_controls(ui);
-                    self.ui_state.render_stats(ui, 60.0, 16.6);
-
-                    // Panels
-                    self.ui_state
-                        .render_master_controls(ui, &mut self.state.layer_manager);
-                    self.ui_state.render_cue_panel(ui);
-                });
+            // --------- ImGui removed (Phase 6 Complete) ----------
 
             // --------- egui: UI separat zeichnen ---------
             let mut dashboard_action = None;
@@ -577,6 +551,13 @@ impl App {
 
                     // Render Dashboard
                     dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n);
+
+                    // Migrated Panels Integration (Controls, Stats, Master, Cue)
+                    self.ui_state.render_controls(ctx);
+                    self.ui_state.render_stats(ctx, 60.0, 16.6);
+                    self.ui_state
+                        .render_master_controls(ctx, &mut self.state.layer_manager);
+                    self.ui_state.cue_panel.show(ctx);
 
                     // Render Audio Panel
                     if self.ui_state.show_audio {
@@ -816,13 +797,6 @@ impl App {
                 }
             }
 
-            self.imgui_context.render_frame(
-                &self.backend.device,
-                &self.backend.queue,
-                &mut encoder,
-                &view,
-            );
-
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Egui Render Pass"),
@@ -830,7 +804,7 @@ impl App {
                         view: &view,
                         resolve_target: None,
                         ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
                     })],
