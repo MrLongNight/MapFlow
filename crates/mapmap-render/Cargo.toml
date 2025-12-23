@@ -29,6 +29,3 @@ futures-channel = "0.3.30"
 criterion = { workspace = true }
 pollster = { workspace = true }
 
-[[bench]]
-name = "texture_upload"
-harness = false
