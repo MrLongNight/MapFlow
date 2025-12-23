@@ -574,8 +574,7 @@ impl App {
                         16.0,
                     );
 
-                    self.ui_state
-                        .render_performance_panel(ctx, 60.0, 16.0);
+                    self.ui_state.render_performance_panel(ctx, 60.0, 16.0);
 
                     // Update and show the edge blend panel
                     if let Some(output_id) = self.ui_state.selected_output_id {

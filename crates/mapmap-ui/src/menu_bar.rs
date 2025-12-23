@@ -116,10 +116,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI, fps: f32, frame_time: f32
 
             // --- View Menu ---
             ui.menu_button(ui_state.i18n.t("menu-view"), |ui| {
-                ui.checkbox(
-                    &mut ui_state.show_toolbar,
-                    ui_state.i18n.t("view-toolbar"),
-                );
+                ui.checkbox(&mut ui_state.show_toolbar, ui_state.i18n.t("view-toolbar"));
                 ui.separator();
                 ui.label(ui_state.i18n.t("view-egui-panels"));
                 ui.checkbox(

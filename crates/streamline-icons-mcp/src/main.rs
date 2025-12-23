@@ -10,7 +10,7 @@
 //! ```
 
 use streamline_icons_mcp::McpServer;
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

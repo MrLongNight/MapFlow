@@ -15,10 +15,10 @@ pub struct StreamlineClient {
 }
 
 impl StreamlineClient {
-    /// Create a new client using the ICON_API_KEY environment variable
+    /// Create a new client using the ICONS_API_KEY environment variable
     pub fn from_env() -> Result<Self> {
-        let api_key = env::var("ICON_API_KEY")
-            .context("ICON_API_KEY environment variable not set")?;
+        let api_key =
+            env::var("ICONS_API_KEY").context("ICONS_API_KEY environment variable not set")?;
         Ok(Self::new(api_key))
     }
 
@@ -32,13 +32,13 @@ impl StreamlineClient {
 
     /// Search for icons, illustrations, emojis, or elements
     pub async fn search(&self, params: SearchParams) -> Result<SearchResponse> {
-        let url = format!("{}/icons/search", API_BASE_URL);
-        
+        let url = format!("{}/v1/search/global", API_BASE_URL);
+
         let mut query = vec![
             ("productType", params.product_type.to_string()),
             ("query", params.query),
         ];
-        
+
         if let Some(offset) = params.offset {
             query.push(("offset", offset.to_string()));
         }
@@ -52,7 +52,8 @@ impl StreamlineClient {
             query.push(("style", style));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("X-API-Key", &self.api_key)
             .query(&query)
@@ -66,15 +67,18 @@ impl StreamlineClient {
             anyhow::bail!("API request failed with status {}: {}", status, error_text);
         }
 
-        response.json().await.context("Failed to parse search response")
+        response
+            .json()
+            .await
+            .context("Failed to parse search response")
     }
 
     /// Search within a specific family
     pub async fn family_search(&self, params: FamilySearchParams) -> Result<SearchResponse> {
-        let url = format!("{}/icons/family/{}/search", API_BASE_URL, params.family_slug);
-        
+        let url = format!("{}/v1/search/family/{}", API_BASE_URL, params.family_slug);
+
         let mut query = vec![("query", params.query)];
-        
+
         if let Some(offset) = params.offset {
             query.push(("offset", offset.to_string()));
         }
@@ -82,7 +86,8 @@ impl StreamlineClient {
             query.push(("limit", limit.to_string()));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("X-API-Key", &self.api_key)
             .query(&query)
@@ -96,14 +101,18 @@ impl StreamlineClient {
             anyhow::bail!("API request failed with status {}: {}", status, error_text);
         }
 
-        response.json().await.context("Failed to parse family search response")
+        response
+            .json()
+            .await
+            .context("Failed to parse family search response")
     }
 
     /// Get detailed information about a specific icon
     pub async fn get_icon_by_hash(&self, icon_hash: &str) -> Result<IconDetails> {
-        let url = format!("{}/icons/{}", API_BASE_URL, icon_hash);
+        let url = format!("{}/v1/icons/{}", API_BASE_URL, icon_hash);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("X-API-Key", &self.api_key)
             .send()
@@ -116,17 +125,18 @@ impl StreamlineClient {
             anyhow::bail!("API request failed with status {}: {}", status, error_text);
         }
 
-        response.json().await.context("Failed to parse icon details response")
+        response
+            .json()
+            .await
+            .context("Failed to parse icon details response")
     }
 
     /// Download an icon as SVG
     pub async fn download_svg(&self, params: DownloadSvgParams) -> Result<String> {
-        let url = format!("{}/icons/{}/svg", API_BASE_URL, params.icon_hash);
-        
-        let mut query: Vec<(&str, String)> = vec![
-            ("size", params.size.to_string()),
-        ];
-        
+        let url = format!("{}/v1/icons/{}/svg", API_BASE_URL, params.icon_hash);
+
+        let mut query: Vec<(&str, String)> = vec![("size", params.size.to_string())];
+
         if let Some(colors) = params.colors {
             for color in colors {
                 query.push(("colors", color));
@@ -148,7 +158,8 @@ impl StreamlineClient {
             query.push(("base64", base64.to_string()));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("X-API-Key", &self.api_key)
             .query(&query)
@@ -167,12 +178,10 @@ impl StreamlineClient {
 
     /// Download an icon as PNG (returns base64-encoded data)
     pub async fn download_png(&self, params: DownloadPngParams) -> Result<Vec<u8>> {
-        let url = format!("{}/icons/{}/png", API_BASE_URL, params.icon_hash);
-        
-        let mut query: Vec<(&str, String)> = vec![
-            ("size", params.size.to_string()),
-        ];
-        
+        let url = format!("{}/v1/icons/{}/png", API_BASE_URL, params.icon_hash);
+
+        let mut query: Vec<(&str, String)> = vec![("size", params.size.to_string())];
+
         if let Some(colors) = params.colors {
             for color in colors {
                 query.push(("colors", color));
@@ -185,7 +194,8 @@ impl StreamlineClient {
             query.push(("strokeWidth", stroke_width.to_string()));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("X-API-Key", &self.api_key)
             .query(&query)
@@ -199,7 +209,9 @@ impl StreamlineClient {
             anyhow::bail!("API request failed with status {}: {}", status, error_text);
         }
 
-        response.bytes().await
+        response
+            .bytes()
+            .await
             .map(|b| b.to_vec())
             .context("Failed to get PNG content")
     }
@@ -232,14 +244,17 @@ impl std::fmt::Display for ProductType {
 
 impl std::str::FromStr for ProductType {
     type Err = anyhow::Error;
-    
+
     fn from_str(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
             "icons" => Ok(ProductType::Icons),
             "illustrations" => Ok(ProductType::Illustrations),
             "emojis" => Ok(ProductType::Emojis),
             "elements" => Ok(ProductType::Elements),
-            _ => anyhow::bail!("Invalid product type: {}. Must be one of: icons, illustrations, emojis, elements", s),
+            _ => anyhow::bail!(
+                "Invalid product type: {}. Must be one of: icons, illustrations, emojis, elements",
+                s
+            ),
         }
     }
 }
@@ -288,13 +303,24 @@ pub struct DownloadPngParams {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResponse {
     #[serde(default)]
-    pub data: Vec<IconResult>,
+    pub query: String,
+    #[serde(default)]
+    pub results: Vec<IconResult>,
+    #[serde(default)]
+    pub pagination: Pagination,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Pagination {
     #[serde(default)]
     pub total: u32,
     #[serde(default)]
+    pub has_more: bool,
+    #[serde(default)]
     pub offset: u32,
     #[serde(default)]
-    pub limit: u32,
+    pub next_skip: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -304,13 +330,21 @@ pub struct IconResult {
     #[serde(default)]
     pub name: String,
     #[serde(default)]
-    pub family_name: String,
+    pub image_preview_url: String,
+    #[serde(default)]
+    pub is_free: bool,
     #[serde(default)]
     pub family_slug: String,
     #[serde(default)]
-    pub style: String,
+    pub family_name: String,
     #[serde(default)]
-    pub is_free: bool,
+    pub category_slug: String,
+    #[serde(default)]
+    pub category_name: String,
+    #[serde(default)]
+    pub subcategory_slug: String,
+    #[serde(default)]
+    pub subcategory_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

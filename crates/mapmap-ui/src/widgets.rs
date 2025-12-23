@@ -39,7 +39,11 @@ pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
     ui.add(bar)
 }
 
-pub fn styled_slider(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>) -> Response {
+pub fn styled_slider(
+    ui: &mut Ui,
+    value: &mut f32,
+    range: std::ops::RangeInclusive<f32>,
+) -> Response {
     let desired_size = ui.spacing().slider_width * Vec2::new(1.0, 0.5);
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
@@ -63,7 +67,10 @@ pub fn styled_slider(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusi
     let fill_rect = Rect::from_min_max(
         rect.min,
         Pos2::new(
-            lerp((rect.left())..=(rect.right()), (*value - *range.start()) / (*range.end() - *range.start())),
+            lerp(
+                (rect.left())..=(rect.right()),
+                (*value - *range.start()) / (*range.end() - *range.start()),
+            ),
             rect.max.y,
         ),
     );
@@ -90,12 +97,8 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
         visuals.bg_fill
     };
 
-    ui.painter().rect(
-        rect,
-        visuals.rounding,
-        bg_fill,
-        visuals.bg_stroke,
-    );
+    ui.painter()
+        .rect(rect, visuals.rounding, bg_fill, visuals.bg_stroke);
 
     let text_pos = rect.center();
     ui.painter().text(
@@ -103,7 +106,9 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
         egui::Align2::CENTER_CENTER,
         text,
         egui::FontId::proportional(14.0),
-        ui.visuals().override_text_color.unwrap_or(visuals.fg_stroke.color),
+        ui.visuals()
+            .override_text_color
+            .unwrap_or(visuals.fg_stroke.color),
     );
 
     response
@@ -121,12 +126,8 @@ pub fn param_button(ui: &mut Ui) -> Response {
         visuals.bg_fill
     };
 
-    ui.painter().rect(
-        rect,
-        visuals.rounding,
-        bg_fill,
-        visuals.bg_stroke,
-    );
+    ui.painter()
+        .rect(rect, visuals.rounding, bg_fill, visuals.bg_stroke);
 
     let text_pos = rect.center();
     ui.painter().text(
@@ -134,7 +135,9 @@ pub fn param_button(ui: &mut Ui) -> Response {
         egui::Align2::CENTER_CENTER,
         text,
         egui::FontId::proportional(14.0),
-        ui.visuals().override_text_color.unwrap_or(visuals.fg_stroke.color),
+        ui.visuals()
+            .override_text_color
+            .unwrap_or(visuals.fg_stroke.color),
     );
 
     response
@@ -152,12 +155,8 @@ pub fn delete_button(ui: &mut Ui) -> Response {
         visuals.bg_fill
     };
 
-    ui.painter().rect(
-        rect,
-        visuals.rounding,
-        bg_fill,
-        visuals.bg_stroke,
-    );
+    ui.painter()
+        .rect(rect, visuals.rounding, bg_fill, visuals.bg_stroke);
 
     let text_pos = rect.center();
     ui.painter().text(
@@ -165,7 +164,9 @@ pub fn delete_button(ui: &mut Ui) -> Response {
         egui::Align2::CENTER_CENTER,
         text,
         egui::FontId::proportional(14.0),
-        ui.visuals().override_text_color.unwrap_or(visuals.fg_stroke.color),
+        ui.visuals()
+            .override_text_color
+            .unwrap_or(visuals.fg_stroke.color),
     );
 
     response

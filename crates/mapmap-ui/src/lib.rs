@@ -523,9 +523,7 @@ impl AppUI {
         let composition = &mut layer_manager.composition;
         ui.horizontal(|ui| {
             ui.label(self.i18n.t("label-master-opacity"));
-            if widgets::styled_slider(ui, &mut composition.master_opacity, 0.0..=1.0)
-                .changed()
-            {
+            if widgets::styled_slider(ui, &mut composition.master_opacity, 0.0..=1.0).changed() {
                 self.actions
                     .push(UIAction::SetMasterOpacity(composition.master_opacity));
             }
