@@ -693,7 +693,6 @@ impl AppUI {
             });
     }
 
-
     /// Render master controls panel (Phase 1)
     pub fn render_master_controls(
         &mut self,
@@ -955,5 +954,4 @@ impl AppUI {
                 ui.text_disabled(self.i18n.t("msg-output-windows-tip"));
             });
     }
-
 }
