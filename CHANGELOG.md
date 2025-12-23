@@ -5,13 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2025-12-22: MapFlow Rebranding
-- **REBRANDING:** Das Projekt wurde von **MapFlow** in **MapFlow** umbenannt.
+## [0.2.0] - 2025-12-23: MapFlow & UI Modernization
+
+### Rebranding
+- **REBRANDING:** Das Projekt wurde von **VjMapper** in **MapFlow** umbenannt.
   - Windows Executable: `mapflow.exe`
   - Linux Executable: `mapflow`
   - Repository URL: `https://github.com/MrLongNight/MapFlow`
   - Neue CI Icons und Application Icons integriert.
   - Alle Dokumentationen aktualisiert.
+
+### UI Migration (Phase 6 COMPLETE)
+- 2025-12-23: **COMPLETE ImGui Removal** – Alle Panels auf egui migriert
+- 2025-12-23: Cyber Dark Theme implementiert (Jules Session)
+- 2025-12-23: UI Modernization mit Themes, Scaling, und Docking Layout
+- 2025-12-23: Node Editor (Shader Graph) vollständig aktiviert
+- 2025-12-23: Timeline V2 Panel vollständig aktiviert
+- 2025-12-23: Mapping Manager Panel migriert (PR #97)
+- 2025-12-23: Output Panel vollständig migriert
+- 2025-12-23: Edge Blend & Oscillator Panels verifiziert
+- 2025-12-23: OSC Panel und Cue Panel migriert
+- 2025-12-22: Layer Manager Panel migriert
+
+### Multi-PC Architecture (Phase 8 Documentation)
+- 2025-12-23: Multi-PC-Architektur umfassend dokumentiert
+  - Option A: NDI Video-Streaming
+  - Option B: Distributed Rendering
+  - Option C: Legacy Slave Client (H.264/RTSP)
+  - Option D: Raspberry Pi Player
+
+### Tests & CI
+- 2025-12-22: Effect Chain Integration Tests hinzugefügt (PR #100)
+- 2025-12-22: Cue System UI Panel implementiert (PR #99)
+- 2025-12-22: Multi-Output-Rendering-Tests abgeschlossen
+
+### Audio & Media Pipeline (COMPLETED 2025-12-23)
+- **Audio-Media-Pipeline Integration**: Audio-Stream vollständig in Media-Pipeline integriert
+  - Konfigurierbare Sample-Rate (default: 44100 Hz)
+  - Ring-Buffer für Audio-Analyse-Historie
+  - Audio-Position-Tracking für Frame-genaue Synchronisation
+  - Pipeline-Statistiken (Samples processed, frames analyzed, buffer fill level)
+- **Latenz-Kompensation**: Implementiert mit konfigurierbarem Delay (0-500ms)
+  - Automatische Latenz-Schätzung basierend auf Buffer-Status
+  - Zeitstempel-basierte Analyse-Auswahl für Audio-Video-Sync
+  - Smoothed-Analysis für geglättete Audio-Reaktivität
+- **GIF-Animation**: Vollständig implementiert mit korrektem Timing
+  - Frame-genaue Delay-Unterstützung aus GIF-Metadaten
+  - Loop-Unterstützung
+- **Image-Sequence-Playback**: Directory-basierte Bild-Sequenzen
+  - Automatische Erkennung von Bild-Formaten (PNG, JPG, TIFF, BMP, WebP)
+  - Sortierte Wiedergabe nach Dateiname
+  - Konfigurierbares FPS
+- **GPU-Upload-Optimierung**: Staging-Buffer-Pool implementiert
+  - Automatische Entscheidung zwischen Direct-Upload (<64KB) und Staged-Upload (>64KB)
+  - Row-Padding für wgpu Alignment Requirements
+  - Reduzierte CPU-GPU-Synchronisierungen für Video-Streaming
 
 ## [0.1.0] - Unreleased
 - 2025-12-22: [CONSOLIDATED] All Jules UI Migrations (#78)

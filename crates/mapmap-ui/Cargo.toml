@@ -40,5 +40,10 @@ rust-embed = { workspace = true }
 once_cell = { workspace = true }
 dirs = "5.0"
 
+# SVG icon rendering
+resvg = { workspace = true }
+usvg = { workspace = true }
+tiny-skia = { workspace = true }
+
 [features]
 default = ["cpal"]

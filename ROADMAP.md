@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.3  
-> **Stand:** 2025-12-23  
+> **Version:** 1.5  
+> **Stand:** 2025-12-23 11:45  
 > **Zielgruppe:** @jules und Entwickler-Team  
 > **Projekt-Version:** 0.1.0
 
@@ -11,21 +11,22 @@
 
 1. [Feature-Status-Übersicht](#feature-status-übersicht)
 2. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
-3. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
-4. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
-5. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
-6. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
-7. [Build- und Test-Strategie](#build--und-test-strategie)
+3. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8)
+4. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
+5. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
+6. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
+7. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
+8. [Build- und Test-Strategie](#build--und-test-strategie)
 
 ---
 
 ## Feature-Status-Übersicht
 
 ### General Updates
-- 🟡 **Rebranding: MapFlow -> MapFlow**
+- ✅ **Rebranding: VjMapper -> MapFlow** (COMPLETED 2025-12-22)
   - ✅ Rename Project (2025-12-22)
-  - 🟡 Update UI Strings & Docs (In Progress)
-  - 🟡 Rename WiX Installer Config (In Progress)
+  - ✅ Update UI Strings & Docs (2025-12-22)
+  - ✅ Rename WiX Installer Config (2025-12-22)
 
 ### Core / Layer / Mapping System
 
@@ -121,8 +122,8 @@
   - ✅ Linux: ALSA/PulseAudio-Backend über CPAL integriert
   - ⬜ macOS: CoreAudio-Backend (optional, ungetestet)
   - ✅ Audio-Input-Device-Auswahl in UI (Dashboard)
-  - ⬜ Audio-Stream in Media-Pipeline verdrahten (Phase 2)
-  - ⬜ Latenz-Kompensation implementieren (Phase 3)
+  - ✅ Audio-Stream in Media-Pipeline verdrahtet (COMPLETED 2025-12-23)
+  - ✅ Latenz-Kompensation implementiert (COMPLETED 2025-12-23)
 
 - ✅ **Audio-Build-Enforcement**
   - ✅ Default-Feature `audio` in Workspace aktivieren (aktuell optional)
@@ -140,8 +141,8 @@
 - ✅ **Image-Decoder** (`mapmap-media/src/image_decoder.rs`)
   - ✅ PNG, JPG, BMP, TGA Support
   - ✅ Image-Crate-basierte Dekodierung
-  - ⬜ GIF-Animation noch nicht vollständig implementiert
-  - ⬜ Image-Sequence-Playback fehlt (walkdir-Dependency vorhanden)
+  - ✅ GIF-Animation vollständig implementiert (COMPLETED 2025-12-23)
+  - ✅ Image-Sequence-Playback via walkdir (COMPLETED 2025-12-23)
 
 - ✅ **Player** (`mapmap-media/src/player.rs`)
   - ✅ Robust State-Machine (Idle, Loading, Playing, Paused, Stopped, Error)
@@ -155,11 +156,11 @@
   - ✅ Async-Channel-basierte Frame-Delivery
   - ✅ Thread-Pool-Integration
 
-- ⬜ **GPU-Upload-Optimierung**
+- ✅ **GPU-Upload-Optimierung** (COMPLETED 2025-12-23)
   - ✅ Texture-Upload-Benchmark vorhanden (`mapmap-render/benches/texture_upload.rs`)
-  - ⬜ Zero-Copy-Upload fehlt (aktuell: CPU→GPU-Copy)
-  - ⬜ PBO (Pixel Buffer Objects) für asynchronen Upload fehlt
-  - ⬜ Hardware-Decode-zu-GPU-Direct-Upload fehlt
+  - ✅ Staging-Buffer-Pool für asynchronen Upload implementiert
+  - ✅ Automatische Entscheidung staging vs. direct basierend auf Textur-Größe
+  - ⬜ Hardware-Decode-zu-GPU-Direct-Upload fehlt (benötigt FFmpeg HW-Accel Integration)
 
 - ⬜ **Codec-Support**
   - ✅ H.264, H.265, VP8, VP9 über FFmpeg
@@ -316,6 +317,114 @@
   - ✅ Prompt-Definitionen für AI-Assistenz implementiert
   - ✅ Integration mit Gemini CLI / Claude Desktop
   - ✅ Dokumentation: MCP-API-Referenz (TODO)
+
+### Multi-PC-Architektur (Phase 8) – NEU
+
+MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optionen sind geplant:
+
+> **Detaillierte Dokumentation:** [`docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md`](docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md)
+
+#### Option A: NDI Video-Streaming (Empfohlen)
+
+- ⬜ **NDI-Integration** (`mapmap-ndi/`)
+  - ⬜ `grafton-ndi` Rust Bindings integrieren
+  - ⬜ NDI Sender (wgpu Texture → NDI Stream)
+  - ⬜ NDI Receiver (NDI Stream → Fullscreen Texture)
+  - ⬜ Multi-Source-Diüscovery (NDI Finder)
+  - ⬜ Latenz-Optimierung (<100ms Ziel)
+
+- ⬜ **Player-Modus** (`--player-ndi`)
+  - ⬜ Headless Player ohne Editor-UI
+  - ⬜ Auto-Connect zu Master
+  - ⬜ Fullscreen-Rendering auf ausgewähltem Output
+  - ⬜ Status-Overlay (optional)
+
+- ⬜ **Hardware-Anforderungen**
+  - Master: 8+ Cores, 16GB RAM, RTX 3060+, Gigabit LAN
+  - Player: 4+ Cores, 8GB RAM, Intel HD 4000+, Gigabit LAN
+
+#### Option B: Distributed Rendering (High-End)
+
+- ⬜ **Control-Protocol** (`mapmap-sync/`)
+  - ⬜ OSC-basierte Steuerung
+  - ⬜ Timecode-Synchronisation (NTP-basiert)
+  - ⬜ Frame-Sync über Hardware-Genlock (optional)
+  - ⬜ Asset-Distribution (NFS/S3)
+
+- ⬜ **Distributed Render Client**
+  - ⬜ Lokales wgpu-Rendering
+  - ⬜ Szenen-Replikation vom Master
+  - ⬜ Unabhängige Auflösung pro Client
+
+- ⬜ **Hardware-Anforderungen**
+  - Master: 4+ Cores, 8GB RAM, beliebige GPU
+  - Client: 8+ Cores, 16GB RAM, RTX 3060+, Gigabit + Storage
+
+#### Option C: Legacy Slave Client (Sehr alte Hardware)
+
+- ⬜ **H.264/RTSP Streaming** (`mapmap-legacy/`)
+  - ⬜ H.264 Encoder (x264 Software / NvEnc Hardware)
+  - ⬜ RTSP Server für Stream-Distribution
+  - ⬜ Hardware-Decoder-Support (DXVA, VA-API, VideoToolbox)
+  - ⬜ SDL2-basierter Fullscreen-Player
+
+- ⬜ **Mindest-Hardware**
+  - CPU: Dual-Core 1.6 GHz
+  - RAM: 2 GB
+  - GPU: Intel HD 2000 (Sandy Bridge, 2011+)
+  - Netzwerk: 100 Mbps
+
+- ⬜ **Performance-Ziele**
+  - 720p30: 5 Mbps, <15% CPU
+  - 1080p30: 10 Mbps, <25% CPU
+  - 1080p60: 15 Mbps, <35% CPU
+
+#### Option D: Raspberry Pi Player (Optional, Budget)
+
+- ⬜ **Unterstützte Hardware**
+  - ✅ Raspberry Pi 5 (8GB) – Empfohlen
+  - ✅ Raspberry Pi 4 (4GB+) – Budget
+  - ⚠️ Raspberry Pi 3B+ – Eingeschränkt
+  - ✅ Compute Module 4 – Industrial
+
+- ⬜ **Software-Optionen**
+  - ⬜ Dicaffeine NDI Player (Empfohlen)
+  - ⬜ Custom ARM64 MapFlow Build (Cross-Compilation)
+  - ⬜ VLC RTSP Fallback
+
+- ⬜ **Deployment**
+  - ⬜ ARM64 Cross-Compilation Pipeline
+  - ⬜ Raspberry Pi OS Image (vorkonfiguriert)
+  - ⬜ Systemd Auto-Start Service
+  - ⬜ Read-Only Filesystem (optional)
+
+- ⬜ **Performance-Ziele (Pi 5)**
+  - 720p60: ✅ Stabil
+  - 1080p30: ✅ Stabil
+  - 1080p60: ✅ Stabil (erwartet)
+  - 4K30: ⚠️ Experimentell
+
+#### Installer-Anpassungen
+
+- ⬜ **Windows Installer (WiX)**
+  - ⬜ Feature-Auswahl: "Full", "Player Only", "Legacy Player"
+  - ⬜ Separate Shortcuts für Editor und Player-Modi
+  - ⬜ NDI Runtime Dependency-Check
+
+- ⬜ **Linux Packaging**
+  - ⬜ Desktop-Entries für alle Modi
+  - ⬜ ARM64 DEB-Paket für Raspberry Pi
+  - ⬜ Raspberry Pi OS Image Builder
+
+#### Aufwandsschätzung
+
+| Phase | Aufgabe | Dauer |
+|-------|---------|-------|
+| 8.1 | Option A: NDI Streaming (MVP) | 3 Wochen |
+| 8.2 | Option C: Legacy Client | 2 Wochen |
+| 8.3 | Option D: Raspberry Pi | 1-2 Wochen |
+| 8.4 | Option B: Distributed Rendering | 5-6 Wochen |
+| **Gesamt** | Alle Optionen | **10-12 Wochen** |
 
 ### Persistenz / IO (Projektformat, Save/Load)
 

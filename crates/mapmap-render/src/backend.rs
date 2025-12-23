@@ -195,6 +195,10 @@ impl RenderBackend for WgpuBackend {
             )));
         }
 
+        // Calculate row stride
+        let bytes_per_row = handle.width * bytes_per_pixel;
+
+        // Use direct write for all textures (queue.write_texture is efficient)
         self.queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: &handle.texture,
@@ -205,7 +209,7 @@ impl RenderBackend for WgpuBackend {
             data,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(handle.width * bytes_per_pixel),
+                bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(handle.height),
             },
             wgpu::Extent3d {
@@ -216,8 +220,11 @@ impl RenderBackend for WgpuBackend {
         );
 
         debug!(
-            "Uploaded texture {} ({}x{})",
-            handle.id, handle.width, handle.height
+            "Uploaded texture {} ({}x{}, {} bytes)",
+            handle.id,
+            handle.width,
+            handle.height,
+            data.len()
         );
         Ok(())
     }
