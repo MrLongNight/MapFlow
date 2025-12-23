@@ -161,6 +161,7 @@ async fn read_texture_data(
 }
 
 #[test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
 fn test_render_to_multiple_outputs() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {

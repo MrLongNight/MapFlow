@@ -27,9 +27,7 @@ pub use backend::{RenderBackend, WgpuBackend};
 pub use color_calibration_renderer::ColorCalibrationRenderer;
 pub use compositor::Compositor;
 pub use edge_blend_renderer::EdgeBlendRenderer;
-pub use effect_chain_renderer::{
-    Effect, EffectChain, EffectChainRenderer, EffectParams, EffectType,
-};
+pub use effect_chain_renderer::{EffectChainRenderer, EffectParams};
 pub use hot_reload::{HotReloadIntegration, ShaderChangeEvent, ShaderHotReload, ShaderStatus};
 pub use mesh_renderer::MeshRenderer;
 pub use oscillator_renderer::OscillatorRenderer;
