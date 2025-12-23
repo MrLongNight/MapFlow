@@ -878,13 +878,29 @@ impl App {
                     // Render Media Browser
                     self.ui_state.render_media_browser(ctx);
 
-                    // Render Timeline
-                    egui::Window::new("Timeline")
-                        .open(&mut self.ui_state.show_timeline)
-                        .default_size([800.0, 300.0])
-                        .show(ctx, |ui| {
-                            let _ = self.ui_state.timeline_panel.ui(ui);
-                        });
+                    // Render Timeline as bottom panel
+                    if self.ui_state.show_timeline {
+                        egui::TopBottomPanel::bottom("timeline_panel")
+                            .resizable(true)
+                            .default_height(200.0)
+                            .min_height(100.0)
+                            .max_height(400.0)
+                            .show(ctx, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.heading("Timeline");
+                                    ui.with_layout(
+                                        egui::Layout::right_to_left(egui::Align::Center),
+                                        |ui| {
+                                            if ui.button("✕").clicked() {
+                                                self.ui_state.show_timeline = false;
+                                            }
+                                        },
+                                    );
+                                });
+                                ui.separator();
+                                let _ = self.ui_state.timeline_panel.ui(ui);
+                            });
+                    }
 
                     // Render Shader Graph
                     egui::Window::new("Shader Graph")

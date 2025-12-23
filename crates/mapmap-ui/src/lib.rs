@@ -208,25 +208,25 @@ impl Default for AppUI {
             menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
             paint_panel: PaintPanel::default(),
-            show_osc_panel: true,
+            show_osc_panel: false, // Hide by default - advanced feature
             selected_control_target: ControlTarget::Custom("".to_string()),
             osc_port_input: "8000".to_string(),
             osc_client_input: "127.0.0.1:9000".to_string(),
-            show_controls: true,
-            show_stats: true,
+            show_controls: false, // Hide by default - use Dashboard instead
+            show_stats: true,     // Keep performance overlay
             show_layers: true,
             layer_panel: LayerPanel { visible: true },
-            show_mappings: true,
-            mapping_panel: MappingPanel { visible: true },
-            show_transforms: true,
-            show_master_controls: true,
-            show_outputs: true,
-            output_panel: output_panel::OutputPanel { visible: true },
+            show_mappings: false, // Hide by default - use Inspector when ready
+            mapping_panel: MappingPanel { visible: false },
+            show_transforms: false,     // Hide - will move to Inspector
+            show_master_controls: true, // Keep visible
+            show_outputs: false,        // Hide by default
+            output_panel: output_panel::OutputPanel { visible: false },
             edge_blend_panel: EdgeBlendPanel::default(),
-            oscillator_panel: OscillatorPanel { visible: true },
-            show_audio: true,
+            oscillator_panel: OscillatorPanel { visible: false }, // Hide by default
+            show_audio: false, // Hide by default - use Dashboard toggle
             audio_panel: AudioPanel::default(),
-            show_cue_panel: true,
+            show_cue_panel: false, // Hide by default
             playback_speed: 1.0,
             loop_mode: mapmap_media::LoopMode::Loop,
             selected_layer_id: None,
@@ -245,8 +245,8 @@ impl Default for AppUI {
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
             timeline_panel: timeline_v2::TimelineV2::default(),
-            show_timeline: true,
-            show_shader_graph: true,
+            show_timeline: true,      // Essential panel
+            show_shader_graph: false, // Advanced - hide by default
             node_editor_panel: node_editor::NodeEditor::default(),
             transform_panel: TransformPanel::default(),
             shortcut_panel: ShortcutPanel::new(),
@@ -255,7 +255,7 @@ impl Default for AppUI {
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
             user_config: config::UserConfig::load(),
             show_settings: false,
-            show_media_browser: true,
+            show_media_browser: true, // Essential panel
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
         }
     }
@@ -285,16 +285,27 @@ impl AppUI {
         self.icon_demo_panel.visible = !self.icon_demo_panel.visible;
     }
 
-    /// Render the media browser
+    /// Render the media browser as left side panel
     pub fn render_media_browser(&mut self, ctx: &egui::Context) {
         if !self.show_media_browser {
             return;
         }
 
-        egui::Window::new("Media Browser")
-            .default_size([400.0, 300.0])
-            .open(&mut self.show_media_browser) // Allow closing it
+        egui::SidePanel::left("media_browser_panel")
+            .resizable(true)
+            .default_width(280.0)
+            .min_width(200.0)
+            .max_width(400.0)
             .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.heading(self.i18n.t("panel-media-browser"));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("✕").clicked() {
+                            self.show_media_browser = false;
+                        }
+                    });
+                });
+                ui.separator();
                 let _ = self
                     .media_browser
                     .ui(ui, &self.i18n, self.icon_manager.as_ref());
