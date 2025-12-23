@@ -165,6 +165,9 @@ pub struct AudioAnalyzer {
 
     // Time tracking
     current_time: f64,
+
+    // Caching
+    last_analysis: AudioAnalysis,
 }
 
 impl AudioAnalyzer {
@@ -189,6 +192,7 @@ impl AudioAnalyzer {
             analysis_sender: tx,
             analysis_receiver: rx,
             current_time: 0.0,
+            last_analysis: AudioAnalysis::default(),
         }
     }
 
@@ -417,9 +421,12 @@ impl AudioAnalyzer {
         }
     }
 
-    /// Get the latest analysis result
-    pub fn get_latest_analysis(&self) -> AudioAnalysis {
-        self.analysis_receiver.try_recv().unwrap_or_default()
+    /// Get the latest analysis result, draining any pending updates
+    pub fn get_latest_analysis(&mut self) -> AudioAnalysis {
+        while let Ok(analysis) = self.analysis_receiver.try_recv() {
+            self.last_analysis = analysis;
+        }
+        self.last_analysis.clone()
     }
 
     /// Get analysis receiver for async updates
