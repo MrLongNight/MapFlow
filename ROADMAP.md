@@ -267,8 +267,8 @@
   - ✅ Layer Manager (`render_layer_panel`) – Migriert (COMPLETED 2025-12-22)
   - ✅ Mapping Manager (`render_mapping_panel`) – Migriert (COMPLETED PR #97, 2025-12-23)
   - ✅ Output Configuration (`output_panel.rs`) – Migriert (COMPLETED 2025-12-23)
-  - ⬜ Edge Blend & Color Calibration (`render_edge_blend_panel`) – Noch ImGui
-  - ⬜ Oscillator Control (`render_oscillator_panel`) – Noch ImGui
+  - ✅ Edge Blend & Color Calibration (`edge_blend_panel.rs`) – Migriert (COMPLETED Verified 2025-12-23)
+  - ✅ Oscillator Control (`oscillator_panel.rs`) – Migriert (COMPLETED Verified 2025-12-23)
   - ⬜ Shader Graph Editor (`shader_graph_editor.rs` - Legacy Version) – Noch ImGui
 
 - 🟡 **Internationalisierung (i18n) – NEU**
