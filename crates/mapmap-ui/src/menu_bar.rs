@@ -29,19 +29,8 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             let menu_item = |ui: &mut egui::Ui, text: String, icon: Option<AppIcon>| -> bool {
                 if let Some(mgr) = &ui_state.icon_manager {
                     if let Some(icon) = icon {
-                        if let Some(texture) = mgr.get(icon) {
-                            // Use image_and_text if available, or horizontal layout
-                            // For simplicity and compatibility, we use horizontal layout for now to simulate an icon button
-                            // But standard implementation is cleaner.
-                            // Let's try egui::Button::image_and_text with texture and text (size inferred from handle or default?)
-                            // Use image_and_text with Image widget
-                            return ui
-                                .add(egui::Button::image_and_text(
-                                    egui::Image::new(texture)
-                                        .fit_to_exact_size(egui::vec2(14.0, 14.0)),
-                                    text,
-                                ))
-                                .clicked();
+                        if let Some(img) = mgr.image(icon, 14.0) {
+                            return ui.add(egui::Button::image_and_text(img, text)).clicked();
                         }
                     }
                 }
@@ -54,17 +43,19 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                 // --- File Menu ---
                 ui.menu_button(ui_state.i18n.t("menu-file"), |ui| {
-                    if ui
-                        .button(ui_state.i18n.t("menu-file-new-project"))
-                        .clicked()
-                    {
+                    if menu_item(
+                        ui,
+                        ui_state.i18n.t("menu-file-new-project"),
+                        Some(AppIcon::Add),
+                    ) {
                         actions.push(UIAction::NewProject);
                         ui.close_menu();
                     }
-                    if ui
-                        .button(ui_state.i18n.t("menu-file-open-project"))
-                        .clicked()
-                    {
+                    if menu_item(
+                        ui,
+                        ui_state.i18n.t("menu-file-open-project"),
+                        Some(AppIcon::LockOpen),
+                    ) {
                         actions.push(UIAction::LoadProject(String::new()));
                         ui.close_menu();
                     }
@@ -155,7 +146,11 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         actions.push(UIAction::Paste);
                         ui.close_menu();
                     }
-                    if ui.button(ui_state.i18n.t("menu-edit-delete")).clicked() {
+                    if menu_item(
+                        ui,
+                        ui_state.i18n.t("menu-edit-delete"),
+                        Some(AppIcon::Remove),
+                    ) {
                         actions.push(UIAction::Delete);
                         ui.close_menu();
                     }

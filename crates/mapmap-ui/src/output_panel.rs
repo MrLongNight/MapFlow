@@ -1,4 +1,5 @@
 use crate::i18n::LocaleManager;
+use crate::icons::{AppIcon, IconManager};
 use crate::UIAction;
 use egui::*;
 use mapmap_core::OutputManager;
@@ -16,6 +17,7 @@ impl OutputPanel {
         selected_output_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -53,15 +55,22 @@ impl OutputPanel {
                             let is_selected = *selected_output_id == Some(output.id);
 
                             ui.horizontal(|ui| {
+                                if let Some(mgr) = icon_manager {
+                                    let icon = if output.fullscreen {
+                                        AppIcon::Screen
+                                    } else {
+                                        AppIcon::AppWindow
+                                    };
+                                    mgr.show(ui, icon, 16.0);
+                                }
+
                                 if ui.selectable_label(is_selected, &output.name).clicked() {
                                     *selected_output_id = Some(output.id);
                                 }
 
                                 ui.label(format!(
-                                    "{}x{} | {}",
-                                    output.resolution.0,
-                                    output.resolution.1,
-                                    if output.fullscreen { "FS" } else { "Win" }
+                                    "{}x{}",
+                                    output.resolution.0, output.resolution.1
                                 ));
                             });
                         }

@@ -775,6 +775,7 @@ impl App {
                         &mut self.control_manager,
                         &self.ui_state.i18n,
                         &mut self.ui_state.actions,
+                        self.ui_state.icon_manager.as_ref(),
                     );
 
                     // Render Audio Panel
@@ -834,9 +835,11 @@ impl App {
                     }
 
                     // Render Effect Chain Panel
-                    self.ui_state
-                        .effect_chain_panel
-                        .ui(ctx, &self.ui_state.i18n);
+                    self.ui_state.effect_chain_panel.ui(
+                        ctx,
+                        &self.ui_state.i18n,
+                        self.ui_state.icon_manager.as_ref(),
+                    );
 
                     // Render Layer Panel
                     self.ui_state.layer_panel.show(
@@ -853,6 +856,7 @@ impl App {
                         ctx,
                         &self.ui_state.i18n,
                         &mut self.state.paint_manager,
+                        self.ui_state.icon_manager.as_ref(),
                     );
 
                     // Render Mapping Panel
@@ -870,6 +874,7 @@ impl App {
                         &mut self.ui_state.selected_output_id,
                         &mut self.ui_state.actions,
                         &self.ui_state.i18n,
+                        self.ui_state.icon_manager.as_ref(),
                     );
 
                     // Render Icon Gallery

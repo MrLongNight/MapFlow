@@ -7,7 +7,11 @@ use mapmap_control::{
     ControlManager,
 };
 
-use crate::{i18n::LocaleManager, UIAction};
+use crate::{
+    i18n::LocaleManager,
+    icons::{AppIcon, IconManager},
+    UIAction,
+};
 
 // This will be moved to lib.rs's UIAction enum later
 // to integrate properly with the main application action loop.
@@ -44,6 +48,7 @@ impl CuePanel {
         control_manager: &mut ControlManager,
         i18n: &LocaleManager,
         actions: &mut Vec<UIAction>,
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -54,7 +59,13 @@ impl CuePanel {
             .open(&mut open)
             .default_size([300.0, 500.0])
             .show(ctx, |ui| {
-                self.render_ui(ui, control_manager.cue_list_mut(), i18n, actions);
+                self.render_ui(
+                    ui,
+                    control_manager.cue_list_mut(),
+                    i18n,
+                    actions,
+                    icon_manager,
+                );
             });
         self.visible = open;
     }
@@ -65,15 +76,32 @@ impl CuePanel {
         cue_list: &mut CueList,
         i18n: &LocaleManager,
         _actions: &mut Vec<UIAction>,
+        icon_manager: Option<&IconManager>,
     ) {
         // --- Top Control Bar ---
         ui.horizontal(|ui| {
-            if ui.button(i18n.t("btn-go")).clicked() {
-                // TODO: Fire CueAction::Next
+            if let Some(mgr) = icon_manager {
+                if let Some(img) = mgr.image(AppIcon::ButtonPlay, 24.0) {
+                    if ui
+                        .add(egui::ImageButton::new(img))
+                        .on_hover_text(i18n.t("btn-go"))
+                        .clicked()
+                    {
+                        // TODO: Fire CueAction::Next
+                    }
+                }
             }
 
-            if ui.button(i18n.t("btn-back")).clicked() {
-                // TODO: Fire CueAction::Prev
+            if let Some(mgr) = icon_manager {
+                if let Some(img) = mgr.image(AppIcon::ArrowLeft, 24.0) {
+                    if ui
+                        .add(egui::ImageButton::new(img))
+                        .on_hover_text(i18n.t("btn-back"))
+                        .clicked()
+                    {
+                        // TODO: Fire CueAction::Prev
+                    }
+                }
             }
 
             ui.separator();
@@ -149,18 +177,33 @@ impl CuePanel {
 
         // --- Management Buttons ---
         ui.horizontal(|ui| {
-            if ui.button(i18n.t("btn-add-cue")).clicked() {
-                // Find the highest existing ID to generate a new unique ID.
-                let new_id = cue_list.cues().iter().map(|c| c.id).max().unwrap_or(0) + 1;
-                let new_cue = Cue::new(new_id, format!("New Cue {}", new_id));
-                cue_list.add_cue(new_cue);
-                self.selected_cue_id = Some(new_id);
+            if let Some(mgr) = icon_manager {
+                if let Some(img) = mgr.image(AppIcon::Add, 16.0) {
+                    if ui
+                        .add(egui::ImageButton::new(img))
+                        .on_hover_text(i18n.t("btn-add-cue"))
+                        .clicked()
+                    {
+                        let new_id = cue_list.cues().iter().map(|c| c.id).max().unwrap_or(0) + 1;
+                        let new_cue = Cue::new(new_id, format!("New Cue {}", new_id));
+                        cue_list.add_cue(new_cue);
+                        self.selected_cue_id = Some(new_id);
+                    }
+                }
             }
 
             if let Some(selected_id) = self.selected_cue_id {
-                if ui.button(i18n.t("btn-remove-cue")).clicked() {
-                    cue_list.remove_cue(selected_id);
-                    self.selected_cue_id = None;
+                if let Some(mgr) = icon_manager {
+                    if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
+                        if ui
+                            .add(egui::ImageButton::new(img))
+                            .on_hover_text(i18n.t("btn-remove-cue"))
+                            .clicked()
+                        {
+                            cue_list.remove_cue(selected_id);
+                            self.selected_cue_id = None;
+                        }
+                    }
                 }
             }
         });
