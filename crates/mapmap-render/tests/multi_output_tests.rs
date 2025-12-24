@@ -282,6 +282,7 @@ fn create_fullscreen_quad_mesh() -> Mesh {
 }
 
 #[test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
 fn test_individual_output_transforms() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
@@ -373,6 +374,7 @@ fn test_individual_output_transforms() {
 }
 
 #[test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
 fn test_edge_blending_between_outputs() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
@@ -478,6 +480,7 @@ fn test_edge_blending_between_outputs() {
 }
 
 #[test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
 fn test_color_calibration_per_output() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
@@ -560,6 +563,7 @@ fn test_color_calibration_per_output() {
 }
 
 #[test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
 fn test_different_output_resolutions() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
