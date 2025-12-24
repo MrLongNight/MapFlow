@@ -19,6 +19,7 @@ pub mod effect_chain_panel;
 pub mod i18n;
 pub mod icon_demo_panel;
 pub mod icons;
+pub mod inspector_panel;
 pub mod layer_panel;
 pub mod mapping_panel;
 pub mod media_browser;
@@ -48,6 +49,7 @@ pub use effect_chain_panel::{
     EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
 };
 
+pub use inspector_panel::{InspectorAction, InspectorContext, InspectorPanel};
 pub use layer_panel::{LayerPanel, LayerPanelAction};
 pub use mapping_panel::MappingPanel;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
@@ -200,6 +202,9 @@ pub struct AppUI {
     pub show_settings: bool,
     pub show_media_browser: bool,
     pub media_browser: MediaBrowser,
+    /// Inspector panel for context-sensitive properties
+    pub inspector_panel: InspectorPanel,
+    pub show_inspector: bool,
 }
 
 impl Default for AppUI {
@@ -257,6 +262,8 @@ impl Default for AppUI {
             show_settings: false,
             show_media_browser: true, // Essential panel
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
+            inspector_panel: InspectorPanel::default(),
+            show_inspector: true, // Essential panel
         }
     }
 }
