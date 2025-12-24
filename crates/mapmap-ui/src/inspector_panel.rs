@@ -94,17 +94,17 @@ impl InspectorPanel {
     }
 
     /// Show placeholder when nothing is selected
-    fn show_no_selection(&self, ui: &mut Ui, i18n: &LocaleManager) {
+    fn show_no_selection(&self, ui: &mut Ui, _i18n: &LocaleManager) {
         ui.vertical_centered(|ui| {
             ui.add_space(40.0);
             ui.label(
-                egui::RichText::new(i18n.t("inspector-no-selection"))
+                egui::RichText::new("No Selection")
                     .size(16.0)
                     .color(egui::Color32::from_rgb(120, 120, 140)),
             );
             ui.add_space(10.0);
             ui.label(
-                egui::RichText::new(i18n.t("inspector-no-selection-tip"))
+                egui::RichText::new("Select a layer or output to view properties")
                     .size(12.0)
                     .color(egui::Color32::from_rgb(100, 100, 120)),
             );
@@ -117,7 +117,7 @@ impl InspectorPanel {
         ui: &mut Ui,
         layer: &Layer,
         transform: &Transform,
-        i18n: &LocaleManager,
+        _i18n: &LocaleManager,
         _icon_manager: Option<&IconManager>,
     ) -> Option<InspectorAction> {
         let action = None;
@@ -130,12 +130,12 @@ impl InspectorPanel {
         ui.separator();
 
         // Transform section
-        egui::CollapsingHeader::new(i18n.t("inspector-transform"))
+        egui::CollapsingHeader::new("Transform")
             .default_open(true)
             .show(ui, |ui| {
                 // Position
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-position"));
+                    ui.label("Position:");
                     ui.label(format!(
                         "({:.1}, {:.1})",
                         transform.position.x, transform.position.y
@@ -144,7 +144,7 @@ impl InspectorPanel {
 
                 // Scale
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-scale"));
+                    ui.label("Scale:");
                     ui.label(format!(
                         "({:.2}, {:.2})",
                         transform.scale.x, transform.scale.y
@@ -153,42 +153,42 @@ impl InspectorPanel {
 
                 // Rotation
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-rotation"));
+                    ui.label("Rotation:");
                     ui.label(format!("{:.1}°", transform.rotation.z.to_degrees()));
                 });
             });
 
         // Blending section
-        egui::CollapsingHeader::new(i18n.t("inspector-blending"))
+        egui::CollapsingHeader::new("Blending")
             .default_open(true)
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-opacity"));
+                    ui.label("Opacity:");
                     ui.label(format!("{:.0}%", layer.opacity * 100.0));
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-blend-mode"));
+                    ui.label("Blend Mode:");
                     ui.label(format!("{:?}", layer.blend_mode));
                 });
             });
 
         // Layer state
-        egui::CollapsingHeader::new(i18n.t("inspector-state"))
+        egui::CollapsingHeader::new("State")
             .default_open(false)
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-visible"));
+                    ui.label("Visible:");
                     ui.label(if layer.visible { "✅" } else { "❌" });
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-solo"));
+                    ui.label("Solo:");
                     ui.label(if layer.solo { "🔊" } else { "—" });
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-bypass"));
+                    ui.label("Bypass:");
                     ui.label(if layer.bypass { "⏸" } else { "—" });
                 });
             });
@@ -197,7 +197,7 @@ impl InspectorPanel {
     }
 
     /// Show output properties inspector
-    fn show_output_inspector(&self, ui: &mut Ui, output: &OutputConfig, i18n: &LocaleManager) {
+    fn show_output_inspector(&self, ui: &mut Ui, output: &OutputConfig, _i18n: &LocaleManager) {
         // Output header
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new("🖥").size(18.0));
@@ -206,49 +206,49 @@ impl InspectorPanel {
         ui.separator();
 
         // Resolution section
-        egui::CollapsingHeader::new(i18n.t("inspector-resolution"))
+        egui::CollapsingHeader::new("Resolution")
             .default_open(true)
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-size"));
+                    ui.label("Size:");
                     ui.label(format!("{}x{}", output.resolution.0, output.resolution.1));
                 });
             });
 
         // Canvas Region section
-        egui::CollapsingHeader::new(i18n.t("inspector-canvas-region"))
+        egui::CollapsingHeader::new("Canvas Region")
             .default_open(true)
             .show(ui, |ui| {
                 let region = &output.canvas_region;
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-position"));
+                    ui.label("Position:");
                     ui.label(format!("({:.0}, {:.0})", region.x, region.y));
                 });
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-size"));
+                    ui.label("Size:");
                     ui.label(format!("{:.0}x{:.0}", region.width, region.height));
                 });
             });
 
         // Edge Blend indicator
-        egui::CollapsingHeader::new(i18n.t("inspector-edge-blend"))
+        egui::CollapsingHeader::new("Edge Blend")
             .default_open(false)
             .show(ui, |ui| {
                 let eb = &output.edge_blend;
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-left"));
+                    ui.label("Left:");
                     ui.label(format!("{:.0}px", eb.left.width * 100.0));
                 });
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-right"));
+                    ui.label("Right:");
                     ui.label(format!("{:.0}px", eb.right.width * 100.0));
                 });
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-top"));
+                    ui.label("Top:");
                     ui.label(format!("{:.0}px", eb.top.width * 100.0));
                 });
                 ui.horizontal(|ui| {
-                    ui.label(i18n.t("inspector-bottom"));
+                    ui.label("Bottom:");
                     ui.label(format!("{:.0}px", eb.bottom.width * 100.0));
                 });
             });

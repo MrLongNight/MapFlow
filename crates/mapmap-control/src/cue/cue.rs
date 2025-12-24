@@ -8,7 +8,6 @@ use std::time::Duration;
 
 use super::crossfade::FadeCurve;
 use super::triggers::{MidiTrigger, TimeTrigger};
-use std::hash::{Hash, Hasher};
 
 /// A cue stores a complete snapshot of project state
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,20 +138,6 @@ impl Cue {
         self.layer_states.is_empty()
             && self.paint_states.is_empty()
             && self.effect_states.is_empty()
-    }
-}
-
-impl PartialEq for Cue {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Eq for Cue {}
-
-impl Hash for Cue {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
     }
 }
 

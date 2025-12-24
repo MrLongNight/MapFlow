@@ -33,6 +33,18 @@ pub enum AppIcon {
     EyeSlash,
     Lock,
     LockOpen,
+
+    // Added Icons
+    Add,
+    Remove,
+    Duplicate,
+    Eject,
+    Solo,
+    Bypass,
+    PaintBucket,
+    ButtonPlay,
+    Transition,
+    MenuFile,
 }
 
 impl AppIcon {
@@ -63,6 +75,18 @@ impl AppIcon {
             Self::EyeSlash => "ultimate_eye_slash.svg",
             Self::Lock => "ultimate_lock.svg",
             Self::LockOpen => "ultimate_lock_open.svg",
+
+            // Placeholders for now, will need to add icons
+            Self::Add => "ultimate_pencil.svg",
+            Self::Remove => "ultimate_button_stop.svg",
+            Self::Duplicate => "ultimate_repeat.svg",
+            Self::Eject => "ultimate_arrow_right.svg",
+            Self::Solo => "ultimate_music_note.svg",
+            Self::Bypass => "ultimate_magic_wand.svg",
+            Self::PaintBucket => "ultimate_magic_wand.svg",
+            Self::ButtonPlay => "ultimate_video_player.svg",
+            Self::Transition => "ultimate_arrow_right.svg",
+            Self::MenuFile => "ultimate_floppy_disk.svg",
         }
     }
 
@@ -93,6 +117,16 @@ impl AppIcon {
             Self::EyeSlash,
             Self::Lock,
             Self::LockOpen,
+            Self::Add,
+            Self::Remove,
+            Self::Duplicate,
+            Self::Eject,
+            Self::Solo,
+            Self::Bypass,
+            Self::PaintBucket,
+            Self::ButtonPlay,
+            Self::Transition,
+            Self::MenuFile,
         ]
     }
 }

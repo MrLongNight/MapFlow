@@ -403,27 +403,3 @@ panel-edge-blend-color = Kantenüberblendung & Farbkalibrierung
 edge-blend-no-output = Wählen Sie einen Ausgang im Ausgabe-Panel, um dessen Kantenüberblendungs- und Farbeinstellungen zu konfigurieren.
 header-edge-blend = Kantenüberblendung
 header-color-calibration = Farbkalibrierung
-
-# Inspector Panel
-panel-inspector = Inspektor
-inspector-no-selection = Keine Auswahl
-inspector-no-selection-tip = Wählen Sie eine Ebene oder einen Ausgang aus, um die Eigenschaften anzuzeigen
-inspector-transform = Transformieren
-inspector-position = Position
-inspector-scale = Skalierung
-inspector-rotation = Drehung
-inspector-blending = Mischung
-inspector-opacity = Deckkraft
-inspector-blend-mode = Mischmodus
-inspector-state = Zustand
-inspector-visible = Sichtbar
-inspector-solo = Solo
-inspector-bypass = Bypass
-inspector-resolution = Auflösung
-inspector-size = Größe
-inspector-canvas-region = Leinwandbereich
-inspector-edge-blend = Kantenüberblendung
-inspector-left = Links
-inspector-right = Rechts
-inspector-top = Oben
-inspector-bottom = Unten

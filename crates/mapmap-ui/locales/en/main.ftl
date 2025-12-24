@@ -387,27 +387,3 @@ panel-edge-blend-color = Edge Blend & Color Calibration
 edge-blend-no-output = Select an output from the Output panel to configure its edge blend and color settings.
 header-edge-blend = Edge Blending
 header-color-calibration = Color Calibration
-
-# Inspector Panel
-panel-inspector = Inspector
-inspector-no-selection = No Selection
-inspector-no-selection-tip = Select a layer or output to view properties
-inspector-transform = Transform
-inspector-position = Position
-inspector-scale = Scale
-inspector-rotation = Rotation
-inspector-blending = Blending
-inspector-opacity = Opacity
-inspector-blend-mode = Blend Mode
-inspector-state = State
-inspector-visible = Visible
-inspector-solo = Solo
-inspector-bypass = Bypass
-inspector-resolution = Resolution
-inspector-size = Size
-inspector-canvas-region = Canvas Region
-inspector-edge-blend = Edge Blend
-inspector-left = Left
-inspector-right = Right
-inspector-top = Top
-inspector-bottom = Bottom

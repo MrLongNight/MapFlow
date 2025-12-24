@@ -4,6 +4,7 @@
 //! parameter sliders, and preset browser.
 
 use crate::i18n::LocaleManager;
+use crate::icons::{AppIcon, IconManager};
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
 
@@ -53,6 +54,22 @@ impl EffectType {
             EffectType::Vignette => "⭕",
             EffectType::FilmGrain => "📽️",
             EffectType::Custom => "⚙️",
+        }
+    }
+
+    pub fn app_icon(&self) -> AppIcon {
+        match self {
+            EffectType::ColorAdjust => AppIcon::MagicWand,
+            EffectType::Blur => AppIcon::MagicWand,
+            EffectType::ChromaticAberration => AppIcon::MagicWand,
+            EffectType::EdgeDetect => AppIcon::Pencil,
+            EffectType::Glow => AppIcon::MagicWand,
+            EffectType::Kaleidoscope => AppIcon::MagicWand,
+            EffectType::Invert => AppIcon::Repeat,
+            EffectType::Pixelate => AppIcon::Screen,
+            EffectType::Vignette => AppIcon::AppWindow,
+            EffectType::FilmGrain => AppIcon::VideoFile,
+            EffectType::Custom => AppIcon::Cog,
         }
     }
 
@@ -280,37 +297,44 @@ impl EffectChainPanel {
     }
 
     /// Render the effect chain panel
-    pub fn ui(&mut self, ctx: &egui::Context, locale: &LocaleManager) {
+    pub fn ui(
+        &mut self,
+        ctx: &egui::Context,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         if !self.visible {
             return;
         }
 
-        egui::Window::new(format!("🎬 {}", locale.t("panel-effect-chain")))
+        egui::Window::new(locale.t("panel-effect-chain"))
             .default_size([320.0, 500.0])
             .resizable(true)
             .show(ctx, |ui| {
-                self.render_toolbar(ui, locale);
+                self.render_toolbar(ui, locale, icon_manager);
                 ui.separator();
-                self.render_effect_list(ui, locale);
+                self.render_effect_list(ui, locale, icon_manager);
                 ui.separator();
-                self.render_footer(ui, locale);
+                self.render_footer(ui, locale, icon_manager);
             });
 
         // Render popups
         if self.show_preset_browser {
-            // We need a way to render the preset browser window too.
-            // Since render_preset_browser expects ui, we might need to change it or call it inside a Window here.
-            // But render_preset_browser creates its OWN window in the code I saw (`egui::Window::new`).
-            // So it also needs Context.
-            self.render_preset_browser(ctx, locale);
+            self.render_preset_browser(ctx, locale, icon_manager);
         }
     }
 
-    fn render_toolbar(&mut self, ui: &mut Ui, locale: &LocaleManager) {
+    fn render_toolbar(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         ui.horizontal(|ui| {
             // Add effect button
             if ui
-                .button(format!("➕ {}", locale.t("effect-add")))
+                .button(locale.t("effect-add"))
+                .on_hover_text(locale.t("effect-add"))
                 .clicked()
             {
                 self.show_add_menu = !self.show_add_menu;
@@ -318,19 +342,25 @@ impl EffectChainPanel {
 
             // Preset buttons
             if ui
-                .button(format!("📂 {}", locale.t("effect-presets")))
+                .button(locale.t("effect-presets"))
+                .on_hover_text(locale.t("effect-presets"))
                 .clicked()
             {
                 self.show_preset_browser = !self.show_preset_browser;
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui
-                    .button(format!("🗑️ {}", locale.t("effect-clear")))
-                    .clicked()
-                {
-                    self.actions.push(EffectChainAction::ClearAll);
-                    self.chain.effects.clear();
+                if let Some(mgr) = icon_manager {
+                    if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
+                        if ui
+                            .add(egui::ImageButton::new(img))
+                            .on_hover_text(locale.t("effect-clear"))
+                            .clicked()
+                        {
+                            self.actions.push(EffectChainAction::ClearAll);
+                            self.chain.effects.clear();
+                        }
+                    }
                 }
             });
         });
@@ -341,17 +371,16 @@ impl EffectChainPanel {
                 ui.label(locale.t("effect-select-type"));
                 ui.horizontal_wrapped(|ui| {
                     for effect_type in EffectType::all() {
-                        let label = format!(
-                            "{} {}",
-                            effect_type.icon(),
-                            effect_type.display_name(locale)
-                        );
-                        if ui.button(label).clicked() {
-                            let id = self.chain.add_effect(*effect_type);
-                            self.actions
-                                .push(EffectChainAction::AddEffect(*effect_type));
-                            self.show_add_menu = false;
-                            let _ = id;
+                        let label = effect_type.display_name(locale);
+                        if let Some(mgr) = icon_manager {
+                            if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
+                                if ui.add(egui::Button::image_and_text(img, label)).clicked() {
+                                    self.chain.add_effect(*effect_type);
+                                    self.actions
+                                        .push(EffectChainAction::AddEffect(*effect_type));
+                                    self.show_add_menu = false;
+                                }
+                            }
                         }
                     }
                 });
@@ -359,7 +388,12 @@ impl EffectChainPanel {
         }
     }
 
-    fn render_effect_list(&mut self, ui: &mut Ui, locale: &LocaleManager) {
+    fn render_effect_list(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         egui::ScrollArea::vertical()
             .max_height(350.0)
             .show(ui, |ui| {
@@ -412,6 +446,7 @@ impl EffectChainPanel {
                             is_first,
                             is_last,
                             locale,
+                            icon_manager,
                         );
 
                         // Apply changes
@@ -477,6 +512,7 @@ impl EffectChainPanel {
         is_first: bool,
         is_last: bool,
         locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
     ) -> (bool, bool, bool, bool, bool, f32, Vec<(String, f32)>) {
         let mut remove = false;
         let mut move_up = false;
@@ -501,22 +537,29 @@ impl EffectChainPanel {
                     ui.checkbox(&mut enabled, "");
 
                     // Effect name with icon
-                    let header_text = format!(
-                        "{} {}",
-                        effect_type.icon(),
-                        effect_type.display_name(locale)
-                    );
-                    if ui
-                        .selectable_label(expanded, RichText::new(header_text).strong())
-                        .clicked()
-                    {
-                        expanded = !expanded;
+                    let header_text = effect_type.display_name(locale);
+                    if let Some(mgr) = icon_manager {
+                        if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
+                            if ui
+                                .add(
+                                    egui::Button::image_and_text(img, header_text)
+                                        .selected(expanded),
+                                )
+                                .clicked()
+                            {
+                                expanded = !expanded;
+                            }
+                        }
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // Delete button
-                        if ui.small_button("✖").clicked() {
-                            remove = true;
+                        if let Some(mgr) = icon_manager {
+                            if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
+                                if ui.add(egui::ImageButton::new(img)).clicked() {
+                                    remove = true;
+                                }
+                            }
                         }
 
                         // Move buttons
@@ -744,33 +787,47 @@ impl EffectChainPanel {
         });
     }
 
-    fn render_footer(&mut self, ui: &mut Ui, locale: &LocaleManager) {
+    fn render_footer(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         ui.horizontal(|ui| {
             ui.label(format!(
                 "{} {}",
                 self.chain.effects.len(),
                 locale.t("panel-effect-chain")
-            )); // TODO: "effects" word check
+            ));
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 // Save preset button
-                if ui
-                    .button(format!("💾 {}", locale.t("effect-save")))
-                    .clicked()
-                {
-                    // Show save dialog
-                    self.show_preset_browser = true;
+                if let Some(mgr) = icon_manager {
+                    if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
+                        if ui
+                            .add(egui::ImageButton::new(img))
+                            .on_hover_text(locale.t("effect-save"))
+                            .clicked()
+                        {
+                            self.show_preset_browser = true;
+                        }
+                    }
                 }
             });
         });
     }
 
-    fn render_preset_browser(&mut self, ctx: &egui::Context, locale: &LocaleManager) {
+    fn render_preset_browser(
+        &mut self,
+        ctx: &egui::Context,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         let mut close_browser = false;
         let mut load_preset_path: Option<String> = None;
 
         let mut open = self.show_preset_browser;
-        egui::Window::new(format!("📂 {}", locale.t("effect-presets-browser")))
+        egui::Window::new(locale.t("effect-presets-browser"))
             .default_size([400.0, 300.0])
             .resizable(true)
             .open(&mut open)
@@ -823,12 +880,20 @@ impl EffectChainPanel {
                 ui.horizontal(|ui| {
                     ui.label(locale.t("effect-save-as"));
                     ui.text_edit_singleline(&mut self.save_preset_name);
-                    if ui.button(locale.t("effect-save")).clicked()
-                        && !self.save_preset_name.is_empty()
-                    {
-                        self.actions
-                            .push(EffectChainAction::SavePreset(self.save_preset_name.clone()));
-                        self.save_preset_name.clear();
+                    if let Some(mgr) = icon_manager {
+                        if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
+                            if ui
+                                .add(egui::ImageButton::new(img))
+                                .on_hover_text(locale.t("effect-save"))
+                                .clicked()
+                                && !self.save_preset_name.is_empty()
+                            {
+                                self.actions.push(EffectChainAction::SavePreset(
+                                    self.save_preset_name.clone(),
+                                ));
+                                self.save_preset_name.clear();
+                            }
+                        }
                     }
                 });
             });

@@ -1,6 +1,7 @@
 // crates/mapmap-ui/src/paint_panel.rs
 
 use crate::i18n::LocaleManager;
+use crate::icons::{AppIcon, IconManager};
 use egui::Context;
 use mapmap_core::{PaintId, PaintManager, PaintType};
 
@@ -26,6 +27,7 @@ impl PaintPanel {
         ctx: &Context,
         i18n: &LocaleManager,
         paint_manager: &mut PaintManager,
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -45,7 +47,17 @@ impl PaintPanel {
                 for paint_id in paint_ids {
                     if let Some(paint) = paint_manager.get_paint_mut(paint_id) {
                         ui.group(|ui| {
-                            ui.heading(format!("{} ({:?})", paint.name, paint.paint_type));
+                            ui.horizontal(|ui| {
+                                if let Some(mgr) = icon_manager {
+                                    let icon = match paint.paint_type {
+                                        PaintType::Video => AppIcon::VideoFile,
+                                        PaintType::Color => AppIcon::PaintBucket,
+                                        _ => AppIcon::Pencil, // Fallback
+                                    };
+                                    mgr.show(ui, icon, 16.0);
+                                }
+                                ui.heading(&paint.name);
+                            });
 
                             // Opacity slider
                             ui.add(
@@ -71,7 +83,17 @@ impl PaintPanel {
                                 });
                             }
 
-                            if ui.button(i18n.t("btn-remove")).clicked() {
+                            if let Some(mgr) = icon_manager {
+                                if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
+                                    if ui
+                                        .add(egui::ImageButton::new(img))
+                                        .on_hover_text(i18n.t("btn-remove"))
+                                        .clicked()
+                                    {
+                                        self.action = Some(PaintPanelAction::RemovePaint(paint.id));
+                                    }
+                                }
+                            } else if ui.button(i18n.t("btn-remove")).clicked() {
                                 self.action = Some(PaintPanelAction::RemovePaint(paint.id));
                             }
                         });
@@ -80,7 +102,17 @@ impl PaintPanel {
 
                 ui.separator();
 
-                if ui.button(i18n.t("btn-add-paint")).clicked() {
+                if let Some(mgr) = icon_manager {
+                    if let Some(img) = mgr.image(AppIcon::Add, 16.0) {
+                        if ui
+                            .add(egui::ImageButton::new(img))
+                            .on_hover_text(i18n.t("btn-add-paint"))
+                            .clicked()
+                        {
+                            self.action = Some(PaintPanelAction::AddPaint);
+                        }
+                    }
+                } else if ui.button(i18n.t("btn-add-paint")).clicked() {
                     self.action = Some(PaintPanelAction::AddPaint);
                 }
             });

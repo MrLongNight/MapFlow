@@ -179,26 +179,35 @@ impl LayerPanel {
                                                     }
                                                 });
 
-                                                // TODO: Icon
                                                 // Solo Button
-                                                let solo_button = ui.add(
-                                                    egui::SelectableLabel::new(layer.solo, "S"),
-                                                );
-                                                if solo_button.clicked() {
-                                                    layer.solo = !layer.solo;
+                                                if let Some(mgr) = icon_manager {
+                                                    if let Some(img) =
+                                                        mgr.image(crate::icons::AppIcon::Solo, 16.0)
+                                                    {
+                                                        if ui
+                                                            .add(egui::ImageButton::new(img))
+                                                            .on_hover_text(i18n.t("tooltip-solo"))
+                                                            .clicked()
+                                                        {
+                                                            layer.solo = !layer.solo;
+                                                        }
+                                                    }
                                                 }
-                                                solo_button.on_hover_text(i18n.t("tooltip-solo"));
 
-                                                // TODO: Icon
                                                 // Bypass Button
-                                                let bypass_button = ui.add(
-                                                    egui::SelectableLabel::new(layer.bypass, "B"),
-                                                );
-                                                if bypass_button.clicked() {
-                                                    layer.bypass = !layer.bypass;
+                                                if let Some(mgr) = icon_manager {
+                                                    if let Some(img) = mgr
+                                                        .image(crate::icons::AppIcon::Bypass, 16.0)
+                                                    {
+                                                        if ui
+                                                            .add(egui::ImageButton::new(img))
+                                                            .on_hover_text(i18n.t("tooltip-bypass"))
+                                                            .clicked()
+                                                        {
+                                                            layer.bypass = !layer.bypass;
+                                                        }
+                                                    }
                                                 }
-                                                bypass_button
-                                                    .on_hover_text(i18n.t("tooltip-bypass"));
                                             },
                                         );
                                     });

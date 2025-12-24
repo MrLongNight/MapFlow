@@ -22,7 +22,6 @@ egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
 egui_dock = { workspace = true }
 egui_extras = { workspace = true }
-egui_dnd = "0.8.0"
 
 wgpu = { workspace = true }
 winit = { workspace = true }

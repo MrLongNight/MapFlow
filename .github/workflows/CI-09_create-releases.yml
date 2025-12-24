@@ -76,8 +76,6 @@ jobs:
   build-windows-installer:
     name: Windows (Installer MSI)
     runs-on: windows-latest
-    env:
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
     steps:
       - uses: actions/checkout@v4
         with:
@@ -95,19 +93,9 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: ${{ env.VCPKG_ROOT }}
-          # Pinning to a version that provides ffmpeg 6.x
-          vcpkgGitCommitId: 01c2383864c781878f8959d481f211568c07e01b
-
-      - name: Install FFmpeg via vcpkg
-        run: vcpkg install ffmpeg[avcodec,avformat,avutil,swresample,swscale,avfilter,avdevice]:x64-windows
-        shell: pwsh
-
-      - name: Build Release (with ffmpeg - Windows)
-        run: cargo build --release -p mapmap --features ffmpeg
+      # Build WITHOUT ffmpeg on Windows (ffmpeg-next 6.x is incompatible with FFmpeg 7.x)
+      - name: Build Release (no ffmpeg - Windows)
+        run: cargo build --release -p mapmap
         shell: pwsh
 
       - name: Check if binary exists
@@ -118,45 +106,15 @@ jobs:
           }
         shell: pwsh
 
-      - name: Copy FFmpeg DLLs to target directory
-        run: |
-          $ffmpegDir = Join-Path $env:VCPKG_ROOT "installed/x64-windows/bin"
-          Write-Host "Searching for FFmpeg DLLs in $ffmpegDir"
-          Get-ChildItem -Path $ffmpegDir -Filter *.dll | ForEach-Object {
-            Write-Host "Copying $($_.Name) to target\release"
-            Copy-Item -Path $_.FullName -Destination "target\release"
-          }
-        shell: pwsh
-
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
-
-      - name: Find VCRedist Merge Modules
-        id: find_vc_redist
-        shell: pwsh
-        run: |
-          $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath -prerelease
-          if (-not $vsPath) {
-              Write-Error "Visual Studio installation not found by vswhere."
-              exit 1
-          }
-          Write-Host "Found Visual Studio at: $vsPath"
-          $msmDir = Get-ChildItem -Path "$vsPath\VC\Redist\MSVC" -Recurse -Filter "Microsoft_VC*.msm" | Where-Object { $_.Directory.Name -eq "MergeModules" } | Sort-Object FullName -Descending | Select-Object -First 1 | Select-Object -ExpandProperty Directory
-          if (-not $msmDir) {
-              Write-Error "VCRedist Merge Modules could not be found in $vsPath."
-              exit 1
-          }
-          $msmPath = $msmDir.FullName
-          Write-Host "Found VCRedist Merge Modules at: $msmPath"
-          echo "VCRedistPath=$msmPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Build MSI
         shell: pwsh
         run: |
           $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
           $cargoTargetBinDir = "${{ github.workspace }}\target\release"
-          $vcRedistPath = "${{ steps.find_vc_redist.outputs.VCRedistPath }}"
-          candle.exe .\crates\mapmap\wix\main.wxs -dCargoTargetBinDir="$cargoTargetBinDir" -dVCRedistPath="$vcRedistPath" -out mapflow.wixobj -ext WixUIExtension
+          candle.exe .\crates\mapmap\wix\main.wxs -dCargoTargetBinDir="$cargoTargetBinDir" -out mapflow.wixobj -ext WixUIExtension
           light.exe mapflow.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
 
       - name: Upload MSI
@@ -227,60 +185,9 @@ jobs:
           name: mapflow-linux-tar
           path: mapflow-linux-x64.tar.gz
 
-  build-linux-deb:
-    name: Linux (DEB Package)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Configure Git (post-checkout)
-        run: git config --global --add safe.directory ${{ github.workspace }}
-
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: true
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y \
-            build-essential pkg-config \
-            clang libclang-dev \
-            libfontconfig1-dev libfreetype6-dev \
-            libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
-            libx11-dev libavcodec-dev libavformat-dev libavutil-dev \
-            libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
-            ffmpeg libasound2-dev
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-deb
-        run: cargo install cargo-deb
-
-      - name: Build .deb Package
-        run: cargo deb -p mapmap --features ffmpeg
-
-      - name: Upload Linux DEB Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mapflow-linux-deb
-          path: target/debian/*.deb
-
   publish:
     name: "Create GitHub Release & Attach Assets"
-    needs: [build-windows-portable, build-windows-installer, build-linux, build-linux-deb]
+    needs: [build-windows-portable, build-windows-installer, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
@@ -331,6 +238,5 @@ jobs:
             artifacts/mapflow-windows-portable-zip/mapflow-windows-x64.zip
             artifacts/mapflow-windows-installer-msi/mapflow-windows-installer.msi
             artifacts/mapflow-linux-tar/mapflow-linux-x64.tar.gz
-            artifacts/mapflow-linux-deb/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
