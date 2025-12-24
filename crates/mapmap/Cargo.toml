@@ -70,3 +70,17 @@ winres = { workspace = true }
 [[bin]]
 name = "MapFlow"
 path = "src/main.rs"
+
+[package.metadata.deb]
+name = "mapflow"
+maintainer = "MapFlow Team"
+copyright = "2024 MapFlow Team"
+extended-description = "Professional projection mapping software"
+section = "graphics"
+priority = "optional"
+depends = "$auto, libasound2, libgl1"
+assets = [
+  ["target/release/MapFlow", "usr/bin/mapflow", "755"],
+  ["resources/linux/mapflow.desktop", "usr/share/applications/", "644"],
+  ["resources/app_icons/mapflow.png", "usr/share/icons/hicolor/128x128/apps/mapflow.png", "644"],
+]

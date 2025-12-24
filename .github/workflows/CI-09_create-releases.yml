@@ -185,9 +185,60 @@ jobs:
           name: mapflow-linux-tar
           path: mapflow-linux-x64.tar.gz
 
+  build-linux-deb:
+    name: Linux (DEB Package)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configure Git (post-checkout)
+        run: git config --global --add safe.directory ${{ github.workspace }}
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            build-essential pkg-config \
+            clang libclang-dev \
+            libfontconfig1-dev libfreetype6-dev \
+            libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libx11-dev libavcodec-dev libavformat-dev libavutil-dev \
+            libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+            ffmpeg libasound2-dev
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Build .deb Package
+        run: cargo deb -p mapmap --features ffmpeg
+
+      - name: Upload Linux DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapflow-linux-deb
+          path: target/debian/*.deb
+
   publish:
     name: "Create GitHub Release & Attach Assets"
-    needs: [build-windows-portable, build-windows-installer, build-linux]
+    needs: [build-windows-portable, build-windows-installer, build-linux, build-linux-deb]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
@@ -238,5 +289,6 @@ jobs:
             artifacts/mapflow-windows-portable-zip/mapflow-windows-x64.zip
             artifacts/mapflow-windows-installer-msi/mapflow-windows-installer.msi
             artifacts/mapflow-linux-tar/mapflow-linux-x64.tar.gz
+            artifacts/mapflow-linux-deb/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
