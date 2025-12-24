@@ -277,8 +277,10 @@
 
 - 🟡 **UI Redesign (Resolume Style)**
   - 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
-  - ⬜ Docking Layout & Unified Inspector
-  - ⬜ Icon System (Streamline Ultimate)
+  - ✅ Zone-Based Layout (Left MediaBrowser, Right Inspector, Bottom Timeline) - COMPLETED 2025-12-24
+  - ✅ Performance Overlay (Top-Right, Real FPS) - COMPLETED 2025-12-24
+  - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - COMPLETED 2025-12-24
+  - ⬜ Icon System (Streamline Ultimate) - Partial
 
 - 🟡 **Internationalisierung (i18n) – NEU**
   - ✅ Sprachauswahl UI (Deutsch / Englisch)
