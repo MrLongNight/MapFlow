@@ -531,6 +531,61 @@ impl App {
                     self.ui_state.show_settings = true;
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
+                mapmap_ui::UIAction::NextCue => {
+                    if let Err(e) = self.control_manager.cue_list_mut().next() {
+                        tracing::error!("Failed to go to next cue: {}", e);
+                    }
+                }
+                mapmap_ui::UIAction::PrevCue => {
+                    if let Err(e) = self.control_manager.cue_list_mut().prev() {
+                        tracing::error!("Failed to go to previous cue: {}", e);
+                    }
+                }
+                mapmap_ui::UIAction::StopCue => {
+                    self.control_manager.cue_list_mut().stop();
+                }
+                mapmap_ui::UIAction::JumpCue(id) => {
+                    if let Err(e) = self.control_manager.cue_list_mut().goto_cue(id, None) {
+                        tracing::error!("Failed to jump to cue {}: {}", id, e);
+                    }
+                }
+                mapmap_ui::UIAction::AddCue => {
+                    let cue_list = self.control_manager.cue_list_mut();
+                    let new_id = cue_list.cues().iter().map(|c| c.id).max().unwrap_or(0) + 1;
+                    let new_cue =
+                        mapmap_control::cue::Cue::new(new_id, format!("New Cue {}", new_id));
+                    cue_list.add_cue(new_cue);
+                }
+                mapmap_ui::UIAction::RemoveCue(id) => {
+                    self.control_manager.cue_list_mut().remove_cue(id);
+                }
+                mapmap_ui::UIAction::UpdateCue(cue) => {
+                    if let Some(original_cue) =
+                        self.control_manager.cue_list_mut().get_cue_mut(cue.id)
+                    {
+                        *original_cue = *cue;
+                    }
+                }
+                mapmap_ui::UIAction::CaptureStateToCue(id) => {
+                    if let Some(cue) = self.control_manager.cue_list_mut().get_cue_mut(id) {
+                        cue.layer_states.clear();
+                        for layer in self.state.layer_manager.layers() {
+                            let layer_state = mapmap_control::cue::LayerState {
+                                opacity: layer.opacity,
+                                visible: layer.visible,
+                                position: (layer.transform.position.x, layer.transform.position.y),
+                                rotation: layer.transform.rotation.z,
+                                scale: layer.transform.scale.x,
+                            };
+                            cue.add_layer_state(layer.id as u32, layer_state);
+                        }
+                    }
+                }
+                mapmap_ui::UIAction::GoCue(id) => {
+                    if let Err(e) = self.control_manager.cue_list_mut().goto_cue(id, None) {
+                        tracing::error!("Failed to go to cue {}: {}", id, e);
+                    }
+                }
                 _ => {}
             }
         }

@@ -146,6 +146,17 @@ pub enum UIAction {
     OpenDocs,
     OpenAbout,
     OpenLicense,
+
+    // Cue actions
+    AddCue,
+    RemoveCue(u32),
+    GoCue(u32),
+    NextCue,
+    PrevCue,
+    StopCue,
+    JumpCue(u32),
+    UpdateCue(Box<mapmap_control::cue::Cue>),
+    CaptureStateToCue(u32),
 }
 
 use mapmap_control::ControlTarget;

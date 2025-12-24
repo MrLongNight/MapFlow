@@ -2,25 +2,13 @@
 use std::time::Duration;
 
 use egui::{self, ComboBox, RichText, ScrollArea, Slider};
+use egui_dnd::dnd;
 use mapmap_control::{
     cue::{triggers::*, Cue, CueList},
     ControlManager,
 };
 
 use crate::{i18n::LocaleManager, UIAction};
-
-// This will be moved to lib.rs's UIAction enum later
-// to integrate properly with the main application action loop.
-#[derive(Debug, Clone)]
-pub enum CueAction {
-    Add,
-    Remove(u32),
-    Go(u32),
-    Next,
-    Prev,
-    Jump(u32),
-    UpdateCue(Box<Cue>),
-}
 
 #[derive(Default)]
 pub struct CuePanel {
@@ -64,16 +52,20 @@ impl CuePanel {
         ui: &mut egui::Ui,
         cue_list: &mut CueList,
         i18n: &LocaleManager,
-        _actions: &mut Vec<UIAction>,
+        actions: &mut Vec<UIAction>,
     ) {
         // --- Top Control Bar ---
         ui.horizontal(|ui| {
             if ui.button(i18n.t("btn-go")).clicked() {
-                // TODO: Fire CueAction::Next
+                actions.push(UIAction::NextCue);
             }
 
             if ui.button(i18n.t("btn-back")).clicked() {
-                // TODO: Fire CueAction::Prev
+                actions.push(UIAction::PrevCue);
+            }
+
+            if ui.button(i18n.t("btn-stop")).clicked() {
+                actions.push(UIAction::StopCue);
             }
 
             ui.separator();
@@ -82,9 +74,35 @@ impl CuePanel {
             ui.text_edit_singleline(&mut self.jump_target_id);
             if ui.button(i18n.t("btn-jump")).clicked() {
                 if let Ok(id) = self.jump_target_id.parse::<u32>() {
-                    // TODO: Fire CueAction::Jump(id)
-                    println!("Jump to {}", id);
+                    actions.push(UIAction::JumpCue(id));
                 }
+            }
+        });
+
+        ui.separator();
+
+        // --- Transport Display ---
+        ui.group(|ui| {
+            if let Some(crossfade) = cue_list.current_crossfade() {
+                let progress = crossfade.progress();
+                let duration = crossfade.duration();
+                let elapsed = duration.as_secs_f32() * progress;
+
+                ui.add(egui::ProgressBar::new(progress).show_percentage());
+                ui.horizontal(|ui| {
+                    ui.label(format!("{:.1}s", elapsed));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.label(format!("{:.1}s", duration.as_secs_f32()));
+                    });
+                });
+            } else {
+                ui.add(egui::ProgressBar::new(0.0).show_percentage());
+                ui.horizontal(|ui| {
+                    ui.label("0.0s");
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.label("0.0s");
+                    });
+                });
             }
         });
 
@@ -93,26 +111,53 @@ impl CuePanel {
         // --- Cue List ---
         ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
             let current_cue_id = cue_list.current_cue();
-            let cues_to_render: Vec<_> = cue_list.cues().to_vec();
+            let response =
+                dnd(ui, "cue_list_dnd").show(cue_list.cues().iter(), |ui, cue, handle, _state| {
+                    ui.horizontal(|ui| {
+                        handle.ui(ui, |ui| {
+                            let is_current = current_cue_id == Some(cue.id);
+                            let is_selected = self.selected_cue_id == Some(cue.id);
 
-            if cues_to_render.is_empty() {
-                ui.label(i18n.t("label-no-cues"));
-            } else {
-                for cue in cues_to_render {
-                    let is_current = current_cue_id == Some(cue.id);
-                    let is_selected = self.selected_cue_id == Some(cue.id);
+                            let trigger_type = if cue.midi_trigger.is_some() {
+                                "MIDI"
+                            } else if cue.time_trigger.is_some() {
+                                "Time"
+                            } else {
+                                "Manual"
+                            };
+                            let duration_str = format!("{:.1}s", cue.fade_duration.as_secs_f32());
 
-                    let label_text = format!("{} - {}", cue.id, cue.name);
-                    let label = if is_current {
-                        RichText::new(label_text).color(ui.visuals().selection.bg_fill)
-                    } else {
-                        RichText::new(label_text)
-                    };
+                            let name = if cue.name.len() > 18 {
+                                format!("{}...", &cue.name[..15])
+                            } else {
+                                cue.name.clone()
+                            };
 
-                    if ui.selectable_label(is_selected, label).clicked() {
-                        self.selected_cue_id = Some(cue.id);
-                    }
-                }
+                            let label_text = format!(
+                                "{:<4} {:<18} {:<6} {:<8}",
+                                cue.id, name, duration_str, trigger_type
+                            );
+
+                            let mut rich_text = RichText::new(label_text).monospace();
+                            if is_current {
+                                rich_text = rich_text.color(ui.visuals().selection.bg_fill);
+                            }
+
+                            let response = ui.selectable_label(is_selected, rich_text);
+
+                            if response.clicked() {
+                                actions.push(UIAction::GoCue(cue.id));
+                            }
+
+                            if response.secondary_clicked() {
+                                self.selected_cue_id = Some(cue.id);
+                            }
+                        });
+                    });
+                });
+
+            if let Some(response) = response.update {
+                cue_list.move_cue(response.from, response.to);
             }
         });
 
@@ -132,11 +177,8 @@ impl CuePanel {
                     ui.heading(i18n.t("header-cue-editor"));
 
                     let mut updated_cue = cue_to_edit;
-                    if self.render_cue_editor(ui, &mut updated_cue, i18n) {
-                        // If changed, find the original cue in the list and update it.
-                        if let Some(original_cue) = cue_list.get_cue_mut(selected_id) {
-                            *original_cue = updated_cue;
-                        }
+                    if self.render_cue_editor(ui, &mut updated_cue, i18n, actions) {
+                        actions.push(UIAction::UpdateCue(Box::new(updated_cue)));
                     }
                 });
             } else {
@@ -150,16 +192,12 @@ impl CuePanel {
         // --- Management Buttons ---
         ui.horizontal(|ui| {
             if ui.button(i18n.t("btn-add-cue")).clicked() {
-                // Find the highest existing ID to generate a new unique ID.
-                let new_id = cue_list.cues().iter().map(|c| c.id).max().unwrap_or(0) + 1;
-                let new_cue = Cue::new(new_id, format!("New Cue {}", new_id));
-                cue_list.add_cue(new_cue);
-                self.selected_cue_id = Some(new_id);
+                actions.push(UIAction::AddCue);
             }
 
             if let Some(selected_id) = self.selected_cue_id {
                 if ui.button(i18n.t("btn-remove-cue")).clicked() {
-                    cue_list.remove_cue(selected_id);
+                    actions.push(UIAction::RemoveCue(selected_id));
                     self.selected_cue_id = None;
                 }
             }
@@ -173,6 +211,7 @@ impl CuePanel {
         ui: &mut egui::Ui,
         cue: &mut Cue,
         i18n: &LocaleManager,
+        actions: &mut Vec<UIAction>,
     ) -> bool {
         let mut changed = false;
 
@@ -180,6 +219,14 @@ impl CuePanel {
         ui.horizontal(|ui| {
             ui.label(i18n.t("label-name"));
             if ui.text_edit_singleline(&mut cue.name).changed() {
+                changed = true;
+            }
+        });
+
+        // --- Description ---
+        ui.horizontal(|ui| {
+            ui.label(i18n.t("label-description"));
+            if ui.text_edit_multiline(&mut cue.description).changed() {
                 changed = true;
             }
         });
@@ -239,18 +286,61 @@ impl CuePanel {
                 ui.label("OSC trigger settings (not implemented).");
             }
             TriggerTypeUI::Midi => {
-                if let Some(_midi_trigger) = &mut cue.midi_trigger {
-                    ui.label("MIDI trigger settings (not implemented).");
+                if let Some(midi_trigger) = &mut cue.midi_trigger {
+                    ui.horizontal(|ui| {
+                        ui.label("Channel:");
+                        if ui
+                            .add(Slider::new(&mut midi_trigger.channel, 0..=15))
+                            .changed()
+                        {
+                            changed = true;
+                        }
+                    });
+                    // Note field as a drag value for now, can be improved later
+                    if let MidiTriggerType::Note { ref mut note } = midi_trigger.trigger_type {
+                        ui.horizontal(|ui| {
+                            ui.label("Note:");
+                            if ui.add(egui::DragValue::new(note)).changed() {
+                                changed = true;
+                            }
+                        });
+                    }
                 }
             }
             TriggerTypeUI::Time => {
-                if let Some(_time_trigger) = &mut cue.time_trigger {
-                    ui.label("Time trigger settings (not implemented).");
+                if let Some(time_trigger) = &mut cue.time_trigger {
+                    ui.horizontal(|ui| {
+                        ui.label("Time (H:M:S):");
+                        if ui
+                            .add(egui::DragValue::new(&mut time_trigger.hour).clamp_range(0..=23))
+                            .changed()
+                        {
+                            changed = true;
+                        }
+                        if ui
+                            .add(egui::DragValue::new(&mut time_trigger.minute).clamp_range(0..=59))
+                            .changed()
+                        {
+                            changed = true;
+                        }
+                        if ui
+                            .add(egui::DragValue::new(&mut time_trigger.second).clamp_range(0..=59))
+                            .changed()
+                        {
+                            changed = true;
+                        }
+                    });
                 }
             }
             TriggerTypeUI::Manual => {
                 // No settings for manual triggers
             }
+        }
+
+        ui.separator();
+
+        if ui.button(i18n.t("btn-capture-state")).clicked() {
+            actions.push(UIAction::CaptureStateToCue(cue.id));
         }
 
         changed
