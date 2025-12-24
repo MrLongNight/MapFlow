@@ -66,6 +66,14 @@ impl CueList {
         &self.cues
     }
 
+    /// Move a cue from an old index to a new index
+    pub fn move_cue(&mut self, old_index: usize, new_index: usize) {
+        if old_index < self.cues.len() && new_index < self.cues.len() {
+            let cue = self.cues.remove(old_index);
+            self.cues.insert(new_index, cue);
+        }
+    }
+
     /// Get the current cue ID
     pub fn current_cue(&self) -> Option<u32> {
         self.current_cue
@@ -156,6 +164,14 @@ impl CueList {
     /// Get the current state
     pub fn state(&self) -> CueListState {
         self.state
+    }
+
+    /// Stop playback and reset state
+    pub fn stop(&mut self) {
+        self.current_cue = None;
+        self.next_cue = None;
+        self.state = CueListState::Idle;
+        self.current_crossfade = None;
     }
 
     /// Clear all cues
