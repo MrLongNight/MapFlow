@@ -98,7 +98,7 @@ impl CuePanel {
             } else {
                 ui.add(egui::ProgressBar::new(0.0).show_percentage());
                 ui.horizontal(|ui| {
-                     ui.label("0.0s");
+                    ui.label("0.0s");
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.label("0.0s");
                     });
@@ -111,49 +111,50 @@ impl CuePanel {
         // --- Cue List ---
         ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
             let current_cue_id = cue_list.current_cue();
-            let response = dnd(ui, "cue_list_dnd").show(cue_list.cues().iter(), |ui, cue, handle, _state| {
-                ui.horizontal(|ui| {
-                    handle.ui(ui, |ui| {
-                        let is_current = current_cue_id == Some(cue.id);
-                        let is_selected = self.selected_cue_id == Some(cue.id);
+            let response =
+                dnd(ui, "cue_list_dnd").show(cue_list.cues().iter(), |ui, cue, handle, _state| {
+                    ui.horizontal(|ui| {
+                        handle.ui(ui, |ui| {
+                            let is_current = current_cue_id == Some(cue.id);
+                            let is_selected = self.selected_cue_id == Some(cue.id);
 
-                        let trigger_type = if cue.midi_trigger.is_some() {
-                            "MIDI"
-                        } else if cue.time_trigger.is_some() {
-                            "Time"
-                        } else {
-                            "Manual"
-                        };
-                        let duration_str = format!("{:.1}s", cue.fade_duration.as_secs_f32());
+                            let trigger_type = if cue.midi_trigger.is_some() {
+                                "MIDI"
+                            } else if cue.time_trigger.is_some() {
+                                "Time"
+                            } else {
+                                "Manual"
+                            };
+                            let duration_str = format!("{:.1}s", cue.fade_duration.as_secs_f32());
 
-                        let name = if cue.name.len() > 18 {
-                            format!("{}...", &cue.name[..15])
-                        } else {
-                            cue.name.clone()
-                        };
+                            let name = if cue.name.len() > 18 {
+                                format!("{}...", &cue.name[..15])
+                            } else {
+                                cue.name.clone()
+                            };
 
-                        let label_text = format!(
-                            "{:<4} {:<18} {:<6} {:<8}",
-                            cue.id, name, duration_str, trigger_type
-                        );
+                            let label_text = format!(
+                                "{:<4} {:<18} {:<6} {:<8}",
+                                cue.id, name, duration_str, trigger_type
+                            );
 
-                        let mut rich_text = RichText::new(label_text).monospace();
-                        if is_current {
-                            rich_text = rich_text.color(ui.visuals().selection.bg_fill);
-                        }
+                            let mut rich_text = RichText::new(label_text).monospace();
+                            if is_current {
+                                rich_text = rich_text.color(ui.visuals().selection.bg_fill);
+                            }
 
-                        let response = ui.selectable_label(is_selected, rich_text);
+                            let response = ui.selectable_label(is_selected, rich_text);
 
-                        if response.clicked() {
-                            actions.push(UIAction::GoCue(cue.id));
-                        }
+                            if response.clicked() {
+                                actions.push(UIAction::GoCue(cue.id));
+                            }
 
-                        if response.secondary_clicked() {
-                             self.selected_cue_id = Some(cue.id);
-                        }
+                            if response.secondary_clicked() {
+                                self.selected_cue_id = Some(cue.id);
+                            }
+                        });
                     });
                 });
-            });
 
             if let Some(response) = response.update {
                 cue_list.move_cue(response.from, response.to);
@@ -288,7 +289,10 @@ impl CuePanel {
                 if let Some(midi_trigger) = &mut cue.midi_trigger {
                     ui.horizontal(|ui| {
                         ui.label("Channel:");
-                        if ui.add(Slider::new(&mut midi_trigger.channel, 0..=15)).changed() {
+                        if ui
+                            .add(Slider::new(&mut midi_trigger.channel, 0..=15))
+                            .changed()
+                        {
                             changed = true;
                         }
                     });
@@ -305,15 +309,24 @@ impl CuePanel {
             }
             TriggerTypeUI::Time => {
                 if let Some(time_trigger) = &mut cue.time_trigger {
-                     ui.horizontal(|ui| {
+                    ui.horizontal(|ui| {
                         ui.label("Time (H:M:S):");
-                        if ui.add(egui::DragValue::new(&mut time_trigger.hour).clamp_range(0..=23)).changed() {
+                        if ui
+                            .add(egui::DragValue::new(&mut time_trigger.hour).clamp_range(0..=23))
+                            .changed()
+                        {
                             changed = true;
                         }
-                        if ui.add(egui::DragValue::new(&mut time_trigger.minute).clamp_range(0..=59)).changed() {
+                        if ui
+                            .add(egui::DragValue::new(&mut time_trigger.minute).clamp_range(0..=59))
+                            .changed()
+                        {
                             changed = true;
                         }
-                        if ui.add(egui::DragValue::new(&mut time_trigger.second).clamp_range(0..=59)).changed() {
+                        if ui
+                            .add(egui::DragValue::new(&mut time_trigger.second).clamp_range(0..=59))
+                            .changed()
+                        {
                             changed = true;
                         }
                     });

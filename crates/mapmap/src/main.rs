@@ -532,28 +532,37 @@ impl App {
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
                 mapmap_ui::UIAction::NextCue => {
-                    self.control_manager.cue_list_mut().next().unwrap_or_else(|e| error!("Failed to go to next cue: {}", e));
+                    if let Err(e) = self.control_manager.cue_list_mut().next() {
+                        tracing::error!("Failed to go to next cue: {}", e);
+                    }
                 }
                 mapmap_ui::UIAction::PrevCue => {
-                    self.control_manager.cue_list_mut().prev().unwrap_or_else(|e| error!("Failed to go to previous cue: {}", e));
+                    if let Err(e) = self.control_manager.cue_list_mut().prev() {
+                        tracing::error!("Failed to go to previous cue: {}", e);
+                    }
                 }
                 mapmap_ui::UIAction::StopCue => {
                     self.control_manager.cue_list_mut().stop();
                 }
                 mapmap_ui::UIAction::JumpCue(id) => {
-                    self.control_manager.cue_list_mut().goto_cue(id, None).unwrap_or_else(|e| error!("Failed to jump to cue {}: {}", id, e));
+                    if let Err(e) = self.control_manager.cue_list_mut().goto_cue(id, None) {
+                        tracing::error!("Failed to jump to cue {}: {}", id, e);
+                    }
                 }
                 mapmap_ui::UIAction::AddCue => {
                     let cue_list = self.control_manager.cue_list_mut();
                     let new_id = cue_list.cues().iter().map(|c| c.id).max().unwrap_or(0) + 1;
-                    let new_cue = mapmap_control::cue::Cue::new(new_id, format!("New Cue {}", new_id));
+                    let new_cue =
+                        mapmap_control::cue::Cue::new(new_id, format!("New Cue {}", new_id));
                     cue_list.add_cue(new_cue);
                 }
                 mapmap_ui::UIAction::RemoveCue(id) => {
                     self.control_manager.cue_list_mut().remove_cue(id);
                 }
                 mapmap_ui::UIAction::UpdateCue(cue) => {
-                    if let Some(original_cue) = self.control_manager.cue_list_mut().get_cue_mut(cue.id) {
+                    if let Some(original_cue) =
+                        self.control_manager.cue_list_mut().get_cue_mut(cue.id)
+                    {
                         *original_cue = *cue;
                     }
                 }
@@ -573,7 +582,9 @@ impl App {
                     }
                 }
                 mapmap_ui::UIAction::GoCue(id) => {
-                    self.control_manager.cue_list_mut().goto_cue(id, None).unwrap_or_else(|e| error!("Failed to go to cue {}: {}", id, e));
+                    if let Err(e) = self.control_manager.cue_list_mut().goto_cue(id, None) {
+                        tracing::error!("Failed to go to cue {}: {}", id, e);
+                    }
                 }
                 _ => {}
             }
