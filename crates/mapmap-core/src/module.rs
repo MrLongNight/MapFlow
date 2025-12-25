@@ -60,9 +60,7 @@ impl MapFlowModule {
                 }],
             ),
             PartType::Modulator => (
-                ModulePartType::Modulizer(ModulizerType::Effect {
-                    name: "New Effect".to_string(),
-                }),
+                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
                 vec![
                     ModuleSocket {
                         name: "Media In".to_string(),
@@ -92,7 +90,7 @@ impl MapFlowModule {
             PartType::Output => (
                 ModulePartType::Output(OutputType::Projector {
                     id: 0,
-                    preview_disabled: false,
+                    name: "Projector 1".to_string(),
                 }),
                 vec![ModuleSocket {
                     name: "Layer In".to_string(),
@@ -283,21 +281,153 @@ pub enum ResourceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulizerType {
-    Effect { name: String },
-    BlendMode { mode: String },
+    Effect(EffectType),
+    BlendMode(BlendModeType),
     AudioReactive { source: String },
+}
+
+/// Available visual effects
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum EffectType {
+    // Basic
+    Blur,
+    Sharpen,
+    Invert,
+    Threshold,
+    // Color
+    Brightness,
+    Contrast,
+    Saturation,
+    HueShift,
+    Colorize,
+    // Distortion
+    Wave,
+    Spiral,
+    Pinch,
+    Mirror,
+    Kaleidoscope,
+    // Stylize
+    Pixelate,
+    Halftone,
+    EdgeDetect,
+    Posterize,
+    Glitch,
+    // Composite
+    RgbSplit,
+    ChromaticAberration,
+    VHS,
+    FilmGrain,
+}
+
+impl EffectType {
+    /// Get all available effect types
+    pub fn all() -> &'static [EffectType] {
+        &[
+            EffectType::Blur,
+            EffectType::Sharpen,
+            EffectType::Invert,
+            EffectType::Threshold,
+            EffectType::Brightness,
+            EffectType::Contrast,
+            EffectType::Saturation,
+            EffectType::HueShift,
+            EffectType::Colorize,
+            EffectType::Wave,
+            EffectType::Spiral,
+            EffectType::Pinch,
+            EffectType::Mirror,
+            EffectType::Kaleidoscope,
+            EffectType::Pixelate,
+            EffectType::Halftone,
+            EffectType::EdgeDetect,
+            EffectType::Posterize,
+            EffectType::Glitch,
+            EffectType::RgbSplit,
+            EffectType::ChromaticAberration,
+            EffectType::VHS,
+            EffectType::FilmGrain,
+        ]
+    }
+
+    /// Get display name for effect
+    pub fn name(&self) -> &'static str {
+        match self {
+            EffectType::Blur => "Blur",
+            EffectType::Sharpen => "Sharpen",
+            EffectType::Invert => "Invert",
+            EffectType::Threshold => "Threshold",
+            EffectType::Brightness => "Brightness",
+            EffectType::Contrast => "Contrast",
+            EffectType::Saturation => "Saturation",
+            EffectType::HueShift => "Hue Shift",
+            EffectType::Colorize => "Colorize",
+            EffectType::Wave => "Wave",
+            EffectType::Spiral => "Spiral",
+            EffectType::Pinch => "Pinch",
+            EffectType::Mirror => "Mirror",
+            EffectType::Kaleidoscope => "Kaleidoscope",
+            EffectType::Pixelate => "Pixelate",
+            EffectType::Halftone => "Halftone",
+            EffectType::EdgeDetect => "Edge Detect",
+            EffectType::Posterize => "Posterize",
+            EffectType::Glitch => "Glitch",
+            EffectType::RgbSplit => "RGB Split",
+            EffectType::ChromaticAberration => "Chromatic Aberration",
+            EffectType::VHS => "VHS",
+            EffectType::FilmGrain => "Film Grain",
+        }
+    }
+}
+
+/// Blend mode types
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum BlendModeType {
+    Normal,
+    Add,
+    Multiply,
+    Screen,
+    Overlay,
+    Difference,
+    Exclusion,
+}
+
+impl BlendModeType {
+    pub fn all() -> &'static [BlendModeType] {
+        &[
+            BlendModeType::Normal,
+            BlendModeType::Add,
+            BlendModeType::Multiply,
+            BlendModeType::Screen,
+            BlendModeType::Overlay,
+            BlendModeType::Difference,
+            BlendModeType::Exclusion,
+        ]
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            BlendModeType::Normal => "Normal",
+            BlendModeType::Add => "Add",
+            BlendModeType::Multiply => "Multiply",
+            BlendModeType::Screen => "Screen",
+            BlendModeType::Overlay => "Overlay",
+            BlendModeType::Difference => "Difference",
+            BlendModeType::Exclusion => "Exclusion",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum LayerAssignmentType {
-    SingleLayer { id: u64 },
+    SingleLayer { id: u64, name: String },
     Group { name: String },
     AllLayers,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OutputType {
-    Projector { id: u64, preview_disabled: bool },
+    Projector { id: u64, name: String },
+    Preview { window_id: u32 },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
