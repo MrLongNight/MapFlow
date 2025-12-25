@@ -29,14 +29,31 @@ impl MapFlowModule {
                     socket_type: ModuleSocketType::Trigger,
                 }],
             ),
-            PartType::Media => (
-                ModulePartType::Resource(ResourceType::MediaFile {
+            PartType::Source => (
+                ModulePartType::Source(SourceType::MediaFile {
                     path: String::new(),
                 }),
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
                     socket_type: ModuleSocketType::Trigger,
                 }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            PartType::Mask => (
+                ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
+                vec![
+                    ModuleSocket {
+                        name: "Media In".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Mask In".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                ],
                 vec![ModuleSocket {
                     name: "Media Out".to_string(),
                     socket_type: ModuleSocketType::Media,
@@ -170,7 +187,8 @@ pub enum ModuleSocketType {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePartType {
     Trigger(TriggerType),
-    Resource(ResourceType),
+    Source(SourceType),
+    Mask(MaskType),
     Modulizer(ModulizerType),
     LayerAssignment(LayerAssignmentType),
     Output(OutputType),
@@ -180,18 +198,80 @@ pub enum ModulePartType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartType {
     Trigger,
+    Source,
+    Mask,
     Modulator,
     Layer,
     Output,
-    Media,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TriggerType {
+    /// Audio FFT analysis with frequency band outputs
+    AudioFFT { band: AudioBand, threshold: f32 },
+    /// Random trigger with configurable interval and probability
+    Random {
+        min_interval_ms: u32,
+        max_interval_ms: u32,
+        probability: f32,
+    },
+    /// Fixed time-based trigger
+    Fixed { interval_ms: u32, offset_ms: u32 },
+    /// MIDI note/CC trigger
     Midi { channel: u8, note: u8 },
+    /// OSC message trigger
     Osc { address: String },
-    Keyboard { key_code: String },
+    /// Keyboard shortcut trigger
+    Shortcut {
+        key_code: String,
+        modifiers: u8, // Ctrl=1, Shift=2, Alt=4
+    },
+    /// Beat detection (legacy)
     Beat,
+}
+
+/// Audio frequency bands for FFT trigger
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum AudioBand {
+    SubBass,    // 20-60Hz
+    Bass,       // 60-250Hz
+    LowMid,     // 250-500Hz
+    Mid,        // 500-2kHz
+    HighMid,    // 2-4kHz
+    Presence,   // 4-6kHz
+    Brilliance, // 6-20kHz
+    Peak,       // Peak detection
+    BPM,        // Beat per minute
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum SourceType {
+    MediaFile {
+        path: String,
+    },
+    Shader {
+        name: String,
+        params: Vec<(String, f32)>,
+    },
+    LiveInput {
+        device_id: u32,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum MaskType {
+    File { path: String },
+    Shape(MaskShape),
+    Gradient { angle: f32, softness: f32 },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MaskShape {
+    Circle,
+    Rectangle,
+    Triangle,
+    Star,
+    Ellipse,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -1,6 +1,18 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
-use mapmap_core::module::{MapFlowModule, ModuleManager, ModulePart, ModulePartId};
+use mapmap_core::module::{
+    MapFlowModule, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
+};
+
+/// Information about a socket position for hit detection
+#[derive(Clone)]
+struct SocketInfo {
+    part_id: ModulePartId,
+    socket_idx: usize,
+    is_output: bool,
+    socket_type: ModuleSocketType,
+    position: Pos2,
+}
 
 #[allow(dead_code)]
 pub struct ModuleCanvas {
@@ -12,8 +24,10 @@ pub struct ModuleCanvas {
     zoom: f32,
     /// Part being dragged
     dragging_part: Option<(ModulePartId, Vec2)>,
-    /// Connection being created
-    creating_connection: Option<(ModulePartId, usize, Pos2)>,
+    /// Connection being created: (from_part, from_socket_idx, is_output, socket_type, start_pos)
+    creating_connection: Option<(ModulePartId, usize, bool, ModuleSocketType, Pos2)>,
+    /// Part ID pending deletion (set when X button clicked)
+    pending_delete: Option<ModulePartId>,
 }
 
 impl Default for ModuleCanvas {
@@ -24,6 +38,7 @@ impl Default for ModuleCanvas {
             zoom: 1.0,
             dragging_part: None,
             creating_connection: None,
+            pending_delete: None,
         }
     }
 }
@@ -60,9 +75,11 @@ impl ModuleCanvas {
             let has_module = self.active_module_id.is_some();
 
             ui.add_enabled_ui(has_module, |ui| {
+                // === SIGNAL FLOW ORDER: Trigger → Source → Mask → Modulator → Layer → Output ===
+
                 if ui
                     .button("⚡ Trigger")
-                    .on_hover_text("Add a Trigger node")
+                    .on_hover_text("Add a Trigger node (Audio/MIDI/OSC/Keyboard)")
                     .clicked()
                 {
                     if let Some(id) = self.active_module_id {
@@ -73,38 +90,62 @@ impl ModuleCanvas {
                 }
 
                 if ui
+                    .button("🎬 Source")
+                    .on_hover_text("Add a Source node (Media/Shader/Live Input)")
+                    .clicked()
+                {
+                    if let Some(id) = self.active_module_id {
+                        if let Some(module) = manager.get_module_mut(id) {
+                            module.add_part(mapmap_core::module::PartType::Source, (200.0, 100.0));
+                        }
+                    }
+                }
+
+                if ui
+                    .button("🎭 Mask")
+                    .on_hover_text("Add a Mask node (File/Shape/Gradient)")
+                    .clicked()
+                {
+                    if let Some(id) = self.active_module_id {
+                        if let Some(module) = manager.get_module_mut(id) {
+                            module.add_part(mapmap_core::module::PartType::Mask, (300.0, 100.0));
+                        }
+                    }
+                }
+
+                if ui
                     .button("〰️ Modulator")
-                    .on_hover_text("Add a Modulator node")
+                    .on_hover_text("Add a Modulator/Effect node")
                     .clicked()
                 {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             module
-                                .add_part(mapmap_core::module::PartType::Modulator, (200.0, 100.0));
+                                .add_part(mapmap_core::module::PartType::Modulator, (400.0, 100.0));
                         }
                     }
                 }
 
                 if ui
                     .button("📑 Layer")
-                    .on_hover_text("Add a Layer node")
+                    .on_hover_text("Add a Layer node (Mapping/Mesh)")
                     .clicked()
                 {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
-                            module.add_part(mapmap_core::module::PartType::Layer, (300.0, 100.0));
+                            module.add_part(mapmap_core::module::PartType::Layer, (500.0, 100.0));
                         }
                     }
                 }
 
                 if ui
                     .button("📺 Output")
-                    .on_hover_text("Add an Output node")
+                    .on_hover_text("Add an Output node (Projector/Preview)")
                     .clicked()
                 {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
-                            module.add_part(mapmap_core::module::PartType::Output, (400.0, 100.0));
+                            module.add_part(mapmap_core::module::PartType::Output, (600.0, 100.0));
                         }
                     }
                 }
@@ -246,12 +287,12 @@ impl ModuleCanvas {
         }
 
         // Draw connection being created
-        if let Some((_from_part_id, _from_socket_idx, start_pos)) = self.creating_connection {
+        if let Some((_from_part_id, _from_socket_idx, _is_output, ref socket_type, start_pos)) =
+            self.creating_connection
+        {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                painter.line_segment(
-                    [start_pos, pointer_pos],
-                    Stroke::new(2.0, Color32::from_rgb(100, 200, 100)),
-                );
+                let color = Self::get_socket_color(&socket_type);
+                painter.line_segment([start_pos, pointer_pos], Stroke::new(3.0, color));
             }
         }
     }
@@ -427,11 +468,17 @@ impl ModuleCanvas {
                 "⚡",
                 "Trigger",
             ),
-            ModulePartType::Resource(_) => (
+            ModulePartType::Source(_) => (
                 Color32::from_rgb(50, 60, 70),
                 Color32::from_rgb(80, 140, 180),
                 "🎬",
-                "Media",
+                "Source",
+            ),
+            ModulePartType::Mask(_) => (
+                Color32::from_rgb(60, 55, 70),
+                Color32::from_rgb(160, 100, 180),
+                "🎭",
+                "Mask",
             ),
             ModulePartType::Modulizer(_) => (
                 Color32::from_rgb(60, 60, 50),
