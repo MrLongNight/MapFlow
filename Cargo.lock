@@ -2751,6 +2751,7 @@ dependencies = [
 name = "mapmap-core"
 version = "0.2.0"
 dependencies = [
+ "chrono",
  "cpal",
  "crossbeam-channel",
  "glam",
@@ -2761,6 +2762,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tracing",
  "winit",
 ]
 

@@ -29,6 +29,7 @@ pub mod audio_media_pipeline;
 pub mod audio_reactive;
 pub mod codegen;
 pub mod effects;
+pub mod logging;
 pub mod lut;
 pub mod module;
 pub mod oscillator;
@@ -50,6 +51,7 @@ pub use audio_reactive::{
 };
 pub use codegen::{CodegenError, WGSLCodegen};
 pub use effects::{Effect, EffectChain, EffectType};
+pub use logging::LogConfig;
 pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
 pub use mapping::{Mapping, MappingId, MappingManager};
 pub use mesh::{keystone, BezierPatch, Mesh, MeshType, MeshVertex, VertexId};

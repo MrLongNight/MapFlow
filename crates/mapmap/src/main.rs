@@ -416,7 +416,8 @@ impl App {
                 if self.state.dirty
                     && self.last_autosave.elapsed() >= std::time::Duration::from_secs(300)
                 {
-                    let autosave_path = PathBuf::from(".mapmap_autosave");
+                    let autosave_path = PathBuf::from(".MapFlowAutoSave");
+
                     if let Err(e) = save_project(&self.state, &autosave_path) {
                         error!("Autosave failed: {}", e);
                     } else {
