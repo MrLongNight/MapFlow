@@ -213,9 +213,7 @@ impl AudioPanel {
         if num_bars > 0 {
             let bar_width = rect.width() / num_bars as f32;
             for (i, &magnitude) in fft_magnitudes.iter().take(num_bars).enumerate() {
-                let bar_height = (magnitude.powf(0.5) * rect.height())
-                    .min(rect.height())
-                    .max(1.0);
+                let bar_height = (magnitude.powf(0.5) * rect.height()).clamp(1.0, rect.height());
                 let x = rect.min.x + i as f32 * bar_width;
                 let y = rect.max.y;
                 let color = Color32::from_rgb(
@@ -266,7 +264,7 @@ impl AudioPanel {
             }
             self.peak_levels[i] = self.peak_levels[i].max(0.0);
 
-            let bar_height = (energy * rect.height()).min(rect.height()).max(1.0);
+            let bar_height = (energy * rect.height()).clamp(1.0, rect.height());
             let x = rect.min.x + (i + 1) as f32 * bar_spacing + i as f32 * bar_width;
             let bar_rect = Rect::from_min_size(
                 Pos2::new(x, rect.max.y - bar_height),
@@ -279,9 +277,7 @@ impl AudioPanel {
 
             // Peak indicator
             let peak_y = rect.max.y
-                - (self.peak_levels[i] * rect.height())
-                    .min(rect.height())
-                    .max(1.0);
+                - (self.peak_levels[i] * rect.height()).clamp(1.0, rect.height());
 
             painter.line_segment(
                 [Pos2::new(x, peak_y), Pos2::new(x + bar_width, peak_y)],

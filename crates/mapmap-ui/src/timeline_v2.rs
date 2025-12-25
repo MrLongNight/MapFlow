@@ -503,7 +503,7 @@ impl TimelineV2 {
                 if let Some(pos) = response.interact_pointer_pos() {
                     // Set playhead
                     let time = (pos.x - rect.min.x) / self.zoom;
-                    self.playhead = self.snap_time(time.max(0.0).min(self.duration));
+                    self.playhead = self.snap_time(time.clamp(0.0, self.duration));
                     action = Some(TimelineAction::Seek(self.playhead));
                 }
             }
