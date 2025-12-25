@@ -210,6 +210,63 @@ impl ModuleCanvas {
                 self.pan_offset = Vec2::ZERO;
             }
 
+            // === MODULE MANAGEMENT (only when module selected) ===
+            if let Some(module_id) = self.active_module_id {
+                ui.separator();
+
+                // Get module for editing
+                if let Some(module) = manager.get_module_mut(module_id) {
+                    // Module name editor
+                    ui.label("Name:");
+                    let mut name = module.name.clone();
+                    let name_response = ui.add(
+                        egui::TextEdit::singleline(&mut name)
+                            .desired_width(100.0)
+                            .hint_text("Module name"),
+                    );
+                    if name_response.changed() {
+                        module.name = name;
+                    }
+
+                    // Color picker button (shows current color)
+                    let color = Color32::from_rgba_unmultiplied(
+                        (module.color[0] * 255.0) as u8,
+                        (module.color[1] * 255.0) as u8,
+                        (module.color[2] * 255.0) as u8,
+                        (module.color[3] * 255.0) as u8,
+                    );
+                    let color_btn = ui
+                        .add(
+                            egui::Button::new("🎨")
+                                .fill(color)
+                                .min_size(Vec2::splat(20.0)),
+                        )
+                        .on_hover_text("Module timeline color");
+
+                    if color_btn.clicked() {
+                        // Cycle through preset colors
+                        let presets = [
+                            [0.8, 0.3, 0.3, 1.0], // Red
+                            [0.3, 0.8, 0.3, 1.0], // Green
+                            [0.3, 0.3, 0.8, 1.0], // Blue
+                            [0.8, 0.8, 0.3, 1.0], // Yellow
+                            [0.8, 0.3, 0.8, 1.0], // Magenta
+                            [0.3, 0.8, 0.8, 1.0], // Cyan
+                            [0.8, 0.5, 0.2, 1.0], // Orange
+                        ];
+                        let current_idx =
+                            presets.iter().position(|c| *c == module.color).unwrap_or(0);
+                        module.color = presets[(current_idx + 1) % presets.len()];
+                    }
+                }
+
+                // Delete module button
+                if ui.button("🗑").on_hover_text("Delete this module").clicked() {
+                    manager.delete_module(module_id);
+                    self.active_module_id = None;
+                }
+            }
+
             ui.add_space(4.0);
         });
 
