@@ -883,8 +883,8 @@ impl App {
                     // Render Icon Gallery
                     self.ui_state.render_icon_demo(ctx);
 
-                    // Render Module Sidebar
-                    if self.ui_state.show_module_sidebar {
+                    // Render Module Sidebar (only when Module Canvas is open)
+                    if self.ui_state.show_module_canvas && self.ui_state.show_module_sidebar {
                         egui::SidePanel::left("module_sidebar_panel")
                             .resizable(true)
                             .default_width(200.0)
@@ -914,25 +914,10 @@ impl App {
                             });
                     }
 
-                    // Render Module Canvas as a window
-                    if self.ui_state.show_module_canvas {
-                        let mut show = self.ui_state.show_module_canvas;
-                        egui::Window::new("Module Canvas")
-                            .open(&mut show)
-                            .default_size([800.0, 600.0])
-                            .resizable(true)
-                            .show(ctx, |ui| {
-                                self.ui_state.module_canvas.show(
-                                    ui,
-                                    &mut self.state.module_manager,
-                                    &self.ui_state.i18n,
-                                );
-                            });
-                        self.ui_state.show_module_canvas = show;
+                    // Render Media Browser (only when NOT in Module Canvas mode)
+                    if !self.ui_state.show_module_canvas {
+                        self.ui_state.render_media_browser(ctx);
                     }
-
-                    // Render Media Browser
-                    self.ui_state.render_media_browser(ctx);
 
                     // Render Timeline as bottom panel
                     if self.ui_state.show_timeline {
@@ -1073,6 +1058,17 @@ impl App {
                         if close_settings {
                             self.ui_state.show_settings = false;
                         }
+                    }
+
+                    // Render Module Canvas as CentralPanel (replaces normal viewport when active)
+                    if self.ui_state.show_module_canvas {
+                        egui::CentralPanel::default().show(ctx, |ui| {
+                            self.ui_state.module_canvas.show(
+                                ui,
+                                &mut self.state.module_manager,
+                                &self.ui_state.i18n,
+                            );
+                        });
                     }
                 });
 

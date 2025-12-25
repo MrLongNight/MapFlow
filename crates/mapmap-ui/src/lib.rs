@@ -273,7 +273,7 @@ impl Default for AppUI {
             inspector_panel: InspectorPanel::default(),
             show_inspector: true, // Essential panel
             module_sidebar: ModuleSidebar::default(),
-            show_module_sidebar: false, // Hide by default - toggle via View menu
+            show_module_sidebar: true, // Show when Module Canvas is active
             module_canvas: ModuleCanvas::default(),
             show_module_canvas: false,
         }
