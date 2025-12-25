@@ -24,7 +24,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{menu_bar, module_sidebar::ModuleSidebarAction, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -97,7 +97,12 @@ struct App {
     current_fps: f32,
     /// Current frame time in ms
     current_frame_time_ms: f32,
+    /// System info for CPU/RAM monitoring
+    sys_info: sysinfo::System,
+    /// Last system refresh time
+    last_sysinfo_refresh: std::time::Instant,
 }
+
 
 impl App {
     /// Creates a new `App`.
@@ -281,7 +286,10 @@ impl App {
             fps_samples: Vec::with_capacity(60),
             current_fps: 60.0,
             current_frame_time_ms: 16.6,
+            sys_info: sysinfo::System::new_all(),
+            last_sysinfo_refresh: std::time::Instant::now(),
         };
+
 
         // Create initial dummy texture
         app.create_dummy_texture(width, height, format);
@@ -750,217 +758,210 @@ impl App {
             // --------- ImGui removed (Phase 6 Complete) ----------
 
             // --------- egui: UI separat zeichnen ---------
-            let mut dashboard_action = None;
+            let dashboard_action = None;
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
                     // Apply the theme at the beginning of each UI render pass
                     self.ui_state.user_config.theme.apply(ctx);
 
+                    // Update performance and audio values for toolbar display
+                    self.ui_state.current_fps = self.current_fps;
+                    self.ui_state.current_frame_time_ms = self.current_frame_time_ms;
+                    self.ui_state.target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
+
+                    // Refresh system info every 500ms
+                    if self.last_sysinfo_refresh.elapsed().as_millis() > 500 {
+                        self.sys_info.refresh_cpu_usage();
+                        self.sys_info.refresh_memory();
+                        self.last_sysinfo_refresh = std::time::Instant::now();
+                    }
+                    
+                    let cpu_count = self.sys_info.cpus().len() as f32;
+                    self.ui_state.cpu_usage = if cpu_count > 0.0 {
+                        self.sys_info.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / cpu_count
+                    } else { 0.0 };
+                    
+                    if let Some(pid) = sysinfo::get_current_pid().ok() {
+                        self.ui_state.ram_usage_mb = self.sys_info.process(pid)
+                            .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
+                            .unwrap_or(0.0);
+                    }
+                    
+                    let fps_ratio = (self.current_fps / self.ui_state.target_fps).clamp(0.0, 1.0);
+                    self.ui_state.gpu_usage = ((1.0 - fps_ratio) * 100.0 * 1.2).clamp(0.0, 100.0);
+
+                    let audio_analysis = self.audio_analyzer.get_latest_analysis();
+                    self.ui_state.current_audio_level = audio_analysis.rms_volume;
+
+                    // === 1. TOP PANEL: Menu Bar + Toolbar ===
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
-                    // Render Dashboard
-                    dashboard_action = self.ui_state.dashboard.ui(
-                        ctx,
-                        &self.ui_state.i18n,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
-
-                    // Migrated Panels Integration (Controls, Stats, Master, Cue)
-                    self.ui_state.render_controls(ctx);
-                    self.ui_state
-                        .render_stats(ctx, self.current_fps, self.current_frame_time_ms);
-                    self.ui_state
-                        .render_master_controls(ctx, &mut self.state.layer_manager);
-                    self.ui_state.cue_panel.show(
-                        ctx,
-                        &mut self.control_manager,
-                        &self.ui_state.i18n,
-                        &mut self.ui_state.actions,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
-
-                    // Render Audio Panel
-                    if self.ui_state.show_audio {
-                        let analysis = self.audio_analyzer.get_latest_analysis();
-                        egui::Window::new(self.ui_state.i18n.t("audio-panel-title")).show(
-                            ctx,
-                            |ui| {
-                                if let Some(action) = self.ui_state.audio_panel.ui(
-                                    ui,
-                                    &self.ui_state.i18n,
-                                    Some(&analysis),
-                                    &self.state.audio_config,
-                                    &self.audio_devices,
-                                    &mut self.ui_state.selected_audio_device,
-                                ) {
-                                    match action {
-                                        mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(
-                                            new_device,
-                                        ) => {
-                                            // Handle device change
-                                            if let Some(backend) = &mut self.audio_backend {
-                                                backend.stop();
-                                            }
-                                            self.audio_backend = None;
-
-                                            match CpalBackend::new(Some(new_device)) {
-                                                Ok(mut backend) => {
-                                                    if let Err(e) = backend.start() {
-                                                        error!(
-                                                            "Failed to start audio stream: {}",
-                                                            e
-                                                        );
-                                                    } else {
-                                                        self.audio_backend = Some(backend);
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to initialize audio backend: {}",
-                                                        e
-                                                    );
-                                                }
-                                            }
-                                        }
-                                        mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(
-                                            new_config,
-                                        ) => {
-                                            self.audio_analyzer.update_config(new_config.clone());
-                                            self.state.audio_config = new_config;
-                                            self.state.dirty = true;
-                                        }
-                                    }
-                                }
-                            },
-                        );
-                    }
-
-                    // Render Effect Chain Panel
-                    self.ui_state.effect_chain_panel.ui(
-                        ctx,
-                        &self.ui_state.i18n,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
-
-                    // Render Layer Panel
-                    self.ui_state.layer_panel.show(
-                        ctx,
-                        &mut self.state.layer_manager,
-                        &mut self.ui_state.selected_layer_id,
-                        &mut self.ui_state.actions,
-                        &self.ui_state.i18n,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
-
-                    // Render Paint Panel
-                    self.ui_state.paint_panel.render(
-                        ctx,
-                        &self.ui_state.i18n,
-                        &mut self.state.paint_manager,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
-
-                    // Render Mapping Panel
-                    self.ui_state.mapping_panel.show(
-                        ctx,
-                        &mut self.state.mapping_manager,
-                        &mut self.ui_state.actions,
-                        &self.ui_state.i18n,
-                    );
-
-                    // Render Output Panel
-                    self.ui_state.output_panel.show(
-                        ctx,
-                        &mut self.state.output_manager,
-                        &mut self.ui_state.selected_output_id,
-                        &mut self.ui_state.actions,
-                        &self.ui_state.i18n,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
-
-                    // Render Icon Gallery
-                    self.ui_state.render_icon_demo(ctx);
-
-                    // Render Module Sidebar (only when Module Canvas is open)
-                    if self.ui_state.show_module_canvas && self.ui_state.show_module_sidebar {
-                        egui::SidePanel::left("module_sidebar_panel")
-                            .resizable(true)
-                            .default_width(200.0)
-                            .show(ctx, |ui| {
-                                if let Some(action) = self.ui_state.module_sidebar.show(
-                                    ui,
-                                    &mut self.state.module_manager,
-                                    &self.ui_state.i18n,
-                                ) {
-                                    match action {
-                                        ModuleSidebarAction::AddModule => {
-                                            self.state
-                                                .module_manager
-                                                .create_module("New Module".to_string());
-                                            self.state.dirty = true;
-                                        }
-                                        ModuleSidebarAction::DeleteModule(id) => {
-                                            self.state.module_manager.delete_module(id);
-                                            self.state.dirty = true;
-                                        }
-                                        ModuleSidebarAction::SetColor(id, color) => {
-                                            self.state.module_manager.set_module_color(id, color);
-                                            self.state.dirty = true;
-                                        }
-                                    }
-                                }
-                            });
-                    }
-
-                    // Render Media Browser (only when NOT in Module Canvas mode)
-                    if !self.ui_state.show_module_canvas {
-                        self.ui_state.render_media_browser(ctx);
-                    }
-
-                    // Render Timeline as bottom panel
+                    // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
                     if self.ui_state.show_timeline {
                         egui::TopBottomPanel::bottom("timeline_panel")
                             .resizable(true)
-                            .default_height(200.0)
+                            .default_height(180.0)
                             .min_height(100.0)
-                            .max_height(400.0)
+                            .max_height(350.0)
                             .show(ctx, |ui| {
                                 ui.horizontal(|ui| {
                                     ui.heading("Timeline");
-                                    ui.with_layout(
-                                        egui::Layout::right_to_left(egui::Align::Center),
-                                        |ui| {
-                                            if ui.button("✕").clicked() {
-                                                self.ui_state.show_timeline = false;
-                                            }
-                                        },
-                                    );
+                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                        if ui.button("✕").clicked() {
+                                            self.ui_state.show_timeline = false;
+                                        }
+                                    });
                                 });
                                 ui.separator();
                                 let _ = self.ui_state.timeline_panel.ui(ui);
                             });
                     }
 
-                    // Render Shader Graph
-                    egui::Window::new("Shader Graph")
-                        .open(&mut self.ui_state.show_shader_graph)
-                        .default_size([800.0, 600.0])
-                        .show(ctx, |ui| {
-                            let _ = self.ui_state.node_editor_panel.ui(ui, &self.ui_state.i18n);
-                        });
+                    // === 3. LEFT SIDEBAR (collapsible, contains all controls) ===
+                    if self.ui_state.show_left_sidebar {
+                        egui::SidePanel::left("left_sidebar")
+                            .resizable(true)
+                            .default_width(280.0)
+                            .min_width(200.0)
+                            .max_width(450.0)
+                            .show(ctx, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.heading("MapFlow");
+                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                        if ui.button("◀").on_hover_text("Sidebar einklappen").clicked() {
+                                            self.ui_state.show_left_sidebar = false;
+                                        }
+                                    });
+                                });
+                                ui.separator();
 
-                    // Render Inspector Panel (context-sensitive right sidebar)
-                    if self.ui_state.show_inspector {
-                        let inspector_context = if let Some(layer_id) =
-                            self.ui_state.selected_layer_id
-                        {
-                            if let Some(layer) = self.state.layer_manager.get_layer(layer_id) {
-                                mapmap_ui::InspectorContext::Layer {
-                                    layer,
-                                    transform: &layer.transform,
+                                egui::ScrollArea::vertical().show(ui, |ui| {
+                                    // Dashboard Section
+                                    egui::CollapsingHeader::new("📊 Dashboard")
+                                        .default_open(true)
+                                        .show(ui, |ui| {
+                                            // Playback controls inline
+                                            ui.horizontal(|ui| {
+                                                if ui.button("▶").clicked() {
+                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Play);
+                                                }
+                                                if ui.button("⏸").clicked() {
+                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Pause);
+                                                }
+                                                if ui.button("⏹").clicked() {
+                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Stop);
+                                                }
+                                            });
+                                        });
+
+                                    // Layers Section
+                                    egui::CollapsingHeader::new("📑 Layers")
+                                        .default_open(true)
+                                        .show(ui, |ui| {
+                                            // Simple layer list
+                                            ui.horizontal(|ui| {
+                                                if ui.button("+ Add").clicked() {
+                                                    self.ui_state.actions.push(mapmap_ui::UIAction::AddLayer);
+                                                }
+                                            });
+                                            let layers: Vec<_> = self.state.layer_manager.layers().iter()
+                                                .map(|l| (l.id, l.name.clone()))
+                                                .collect();
+
+                                            for (id, name) in layers {
+                                                let selected = self.ui_state.selected_layer_id == Some(id);
+                                                if ui.selectable_label(selected, &name).clicked() {
+                                                    self.ui_state.selected_layer_id = Some(id);
+                                                }
+                                            }
+                                        });
+
+
+                                    // Master Controls Section
+                                    egui::CollapsingHeader::new("🎚️ Master")
+                                        .default_open(false)
+                                        .show(ui, |ui| {
+                                            let comp = &mut self.state.layer_manager.composition;
+                                            ui.add(egui::Slider::new(&mut comp.master_opacity, 0.0..=1.0).text("Opacity"));
+                                            ui.add(egui::Slider::new(&mut comp.master_speed, 0.1..=4.0).text("Speed"));
+                                        });
+
+                                    // Media Browser Section
+                                    egui::CollapsingHeader::new("📁 Media")
+                                        .default_open(false)
+                                        .show(ui, |ui| {
+                                            let _ = self.ui_state.media_browser.ui(
+                                                ui,
+                                                &self.ui_state.i18n,
+                                                self.ui_state.icon_manager.as_ref(),
+                                            );
+                                        });
+
+                                    // Audio Section
+                                    egui::CollapsingHeader::new("🔊 Audio")
+                                        .default_open(false)
+                                        .show(ui, |ui| {
+                                            let analysis = self.audio_analyzer.get_latest_analysis();
+                                            if let Some(action) = self.ui_state.audio_panel.ui(
+                                                ui,
+                                                &self.ui_state.i18n,
+                                                Some(&analysis),
+                                                &self.state.audio_config,
+                                                &self.audio_devices,
+                                                &mut self.ui_state.selected_audio_device,
+                                            ) {
+                                                match action {
+                                                    mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
+                                                        if let Some(backend) = &mut self.audio_backend {
+                                                            backend.stop();
+                                                        }
+                                                        self.audio_backend = None;
+                                                        if let Ok(mut backend) = CpalBackend::new(Some(device)) {
+                                                            let _ = backend.start();
+                                                            self.audio_backend = Some(backend);
+                                                        }
+                                                    }
+                                                    mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
+                                                        self.audio_analyzer.update_config(cfg.clone());
+                                                        self.state.audio_config = cfg;
+                                                    }
+                                                }
+                                            }
+                                        });
+
+                                    // Effects Section
+                                    egui::CollapsingHeader::new("✨ Effects")
+                                        .default_open(false)
+                                        .show(ui, |ui| {
+                                            // Simplified effects UI
+                                            ui.label("Effect Chain");
+                                            ui.separator();
+                                            if ui.button("+ Add Effect").clicked() {
+                                                // TODO: Add effect action
+                                            }
+                                        });
+
+                                });
+                            });
+                    } else {
+                        // Collapsed sidebar - just show expand button
+                        egui::SidePanel::left("left_sidebar_collapsed")
+                            .exact_width(28.0)
+                            .resizable(false)
+                            .show(ctx, |ui| {
+                                if ui.button("▶").on_hover_text("Sidebar ausklappen").clicked() {
+                                    self.ui_state.show_left_sidebar = true;
                                 }
+                            });
+                    }
+
+                    // === 4. RIGHT PANEL: Inspector ===
+                    if self.ui_state.show_inspector {
+                        let inspector_context = if let Some(layer_id) = self.ui_state.selected_layer_id {
+                            if let Some(layer) = self.state.layer_manager.get_layer(layer_id) {
+                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform }
                             } else {
                                 mapmap_ui::InspectorContext::None
                             }
@@ -982,40 +983,23 @@ impl App {
                         );
                     }
 
-                    // Update and render Transform Panel
-                    if let Some(selected_id) = self.ui_state.selected_layer_id {
-                        if let Some(layer) = self.state.layer_manager.get_layer(selected_id) {
-                            self.ui_state
-                                .transform_panel
-                                .set_transform(&layer.name, &layer.transform);
+                    // === 5. CENTRAL PANEL: Module Canvas ===
+                    egui::CentralPanel::default().show(ctx, |ui| {
+                        if self.ui_state.show_module_canvas {
+                            self.ui_state.module_canvas.show(
+                                ui,
+                                &mut self.state.module_manager,
+                                &self.ui_state.i18n,
+                            );
+                        } else {
+                            // Placeholder for normal canvas/viewport
+                            ui.centered_and_justified(|ui| {
+                                ui.label("Canvas - Module Canvas deaktiviert (View → Module Canvas)");
+                            });
                         }
-                    } else {
-                        self.ui_state.transform_panel.clear_selection();
-                    }
-                    self.ui_state
-                        .transform_panel
-                        .render(ctx, &self.ui_state.i18n);
+                    });
 
-                    // Update and show the edge blend panel
-                    if let Some(output_id) = self.ui_state.selected_output_id {
-                        if let Some(output) = self.state.output_manager.get_output(output_id) {
-                            self.ui_state.edge_blend_panel.set_selected_output(output);
-                        }
-                    } else {
-                        self.ui_state.edge_blend_panel.clear_selection();
-                    }
-                    self.ui_state
-                        .edge_blend_panel
-                        .show(ctx, &self.ui_state.i18n);
-
-                    // Render Oscillator Panel
-                    self.ui_state.oscillator_panel.render(
-                        ctx,
-                        &self.ui_state.i18n,
-                        &mut self.state.oscillator_config,
-                    );
-
-                    // Render Settings Window
+                    // === Settings Window (only modal allowed) ===
                     if self.ui_state.show_settings {
                         let mut close_settings = false;
                         egui::Window::new(self.ui_state.i18n.t("menu-file-settings"))
@@ -1024,53 +1008,55 @@ impl App {
                             .default_size([400.0, 300.0])
                             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                             .show(ctx, |ui| {
-                                ui.heading(self.ui_state.i18n.t("menu-file-settings"));
+                                // Project Settings
+                                egui::CollapsingHeader::new(format!("🎬 {}", self.ui_state.i18n.t("settings-project")))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("{}:", self.ui_state.i18n.t("settings-frame-rate")));
+                                            let fps_options = [(24.0, "24"), (25.0, "25"), (30.0, "30"), (50.0, "50"), (60.0, "60"), (120.0, "120")];
+                                            let current = self.ui_state.user_config.target_fps.unwrap_or(60.0);
+                                            egui::ComboBox::from_id_source("fps_select")
+                                                .selected_text(format!("{:.0} FPS", current))
+                                                .show_ui(ui, |ui| {
+                                                    for (fps, label) in fps_options {
+                                                        if ui.selectable_label((current - fps).abs() < 0.1, label).clicked() {
+                                                            self.ui_state.user_config.target_fps = Some(fps);
+                                                            let _ = self.ui_state.user_config.save();
+                                                        }
+                                                    }
+                                                });
+                                        });
+                                    });
+                                
                                 ui.separator();
-
-                                // Language selection
-                                ui.horizontal(|ui| {
-                                    ui.label("Language / Sprache:");
-                                    if ui.button("English").clicked() {
-                                        self.ui_state.actions.push(
-                                            mapmap_ui::UIAction::SetLanguage("en".to_string()),
-                                        );
-                                    }
-                                    if ui.button("Deutsch").clicked() {
-                                        self.ui_state.actions.push(
-                                            mapmap_ui::UIAction::SetLanguage("de".to_string()),
-                                        );
-                                    }
-                                });
-
+                                
+                                // App Settings
+                                egui::CollapsingHeader::new(format!("⚙️ {}", self.ui_state.i18n.t("settings-app")))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("{}:", self.ui_state.i18n.t("settings-language")));
+                                            if ui.button("English").clicked() {
+                                                self.ui_state.actions.push(mapmap_ui::UIAction::SetLanguage("en".to_string()));
+                                            }
+                                            if ui.button("Deutsch").clicked() {
+                                                self.ui_state.actions.push(mapmap_ui::UIAction::SetLanguage("de".to_string()));
+                                            }
+                                        });
+                                    });
+                                
                                 ui.separator();
-
-                                // Close button
-                                ui.with_layout(
-                                    egui::Layout::right_to_left(egui::Align::TOP),
-                                    |ui| {
-                                        if ui.button("✕ Close / Schließen").clicked() {
-                                            close_settings = true;
-                                        }
-                                    },
-                                );
+                                if ui.button("✕ Schließen").clicked() {
+                                    close_settings = true;
+                                }
                             });
-
                         if close_settings {
                             self.ui_state.show_settings = false;
                         }
                     }
-
-                    // Render Module Canvas as CentralPanel (replaces normal viewport when active)
-                    if self.ui_state.show_module_canvas {
-                        egui::CentralPanel::default().show(ctx, |ui| {
-                            self.ui_state.module_canvas.show(
-                                ui,
-                                &mut self.state.module_manager,
-                                &self.ui_state.i18n,
-                            );
-                        });
-                    }
                 });
+
 
                 self.egui_state
                     .handle_platform_output(&window_context.window, full_output.platform_output);

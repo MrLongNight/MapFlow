@@ -213,6 +213,22 @@ pub struct AppUI {
     pub show_module_sidebar: bool,
     pub module_canvas: ModuleCanvas,
     pub show_module_canvas: bool,
+    /// Left sidebar visibility (collapsible)
+    pub show_left_sidebar: bool,
+    /// Current audio level (0.0-1.0) for toolbar display
+    pub current_audio_level: f32,
+    /// Current FPS for toolbar display
+    pub current_fps: f32,
+    /// Current frame time in ms for toolbar display
+    pub current_frame_time_ms: f32,
+    /// Target FPS from settings
+    pub target_fps: f32,
+    /// CPU usage percentage (0.0-100.0)
+    pub cpu_usage: f32,
+    /// GPU usage percentage (0.0-100.0)
+    pub gpu_usage: f32,
+    /// RAM usage in MB
+    pub ram_usage_mb: f32,
 }
 
 impl Default for AppUI {
@@ -276,6 +292,14 @@ impl Default for AppUI {
             show_module_sidebar: true, // Show when Module Canvas is active
             module_canvas: ModuleCanvas::default(),
             show_module_canvas: false,
+            show_left_sidebar: true, // Essential panel - collapsible
+            current_audio_level: 0.0,
+            current_fps: 60.0,
+            current_frame_time_ms: 16.67,
+            target_fps: 60.0,
+            cpu_usage: 0.0,
+            gpu_usage: 0.0,
+            ram_usage_mb: 0.0,
         }
     }
 }

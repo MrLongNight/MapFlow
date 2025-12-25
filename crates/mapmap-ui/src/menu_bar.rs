@@ -315,6 +315,92 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     if icon_btn(AppIcon::Cog, &ui_state.i18n.t("menu-file-settings")) {
                         actions.push(UIAction::OpenSettings);
                     }
+
+                    ui.separator();
+
+                    // === AUDIO LEVEL METER (150px, dB scale) ===
+                    let audio_level = ui_state.current_audio_level;
+                    let db = if audio_level > 0.0001 {
+                        20.0 * audio_level.log10()
+                    } else {
+                        -60.0
+                    };
+                    let db_normalized = ((db + 60.0) / 60.0).clamp(0.0_f32, 1.0_f32);
+
+                    let audio_color = if db > -6.0 {
+                        egui::Color32::from_rgb(255, 50, 50) // Red - clipping
+                    } else if db > -12.0 {
+                        egui::Color32::from_rgb(255, 200, 50) // Yellow
+                    } else {
+                        egui::Color32::from_rgb(50, 200, 50) // Green
+                    };
+
+                    ui.label("🔊");
+                    ui.add(
+                        egui::ProgressBar::new(db_normalized)
+                            .fill(audio_color)
+                            .desired_width(150.0)
+                            .text(format!("{:.0} dB", db)),
+                    );
+
+                    // === SPACER - push performance to right ===
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let fps = ui_state.current_fps;
+                        let target_fps = ui_state.target_fps;
+                        let frame_time = ui_state.current_frame_time_ms;
+                        let cpu = ui_state.cpu_usage;
+                        let gpu = ui_state.gpu_usage;
+                        let ram = ui_state.ram_usage_mb;
+
+                        // Traffic light colors
+                        let traffic_light = |value: f32, warn: f32, crit: f32| -> egui::Color32 {
+                            if value >= crit {
+                                egui::Color32::from_rgb(255, 50, 50)
+                            } else if value >= warn {
+                                egui::Color32::from_rgb(255, 200, 50)
+                            } else {
+                                egui::Color32::from_rgb(50, 200, 50)
+                            }
+                        };
+
+                        let fps_ratio = fps / target_fps.max(1.0);
+                        let fps_color = if fps_ratio >= 0.95 {
+                            egui::Color32::from_rgb(50, 200, 50)
+                        } else if fps_ratio >= 0.8 {
+                            egui::Color32::from_rgb(255, 200, 50)
+                        } else {
+                            egui::Color32::from_rgb(255, 50, 50)
+                        };
+
+                        // Overall traffic light
+                        let overall_color = if cpu >= 90.0 || gpu >= 90.0 || fps_ratio < 0.8 {
+                            egui::Color32::from_rgb(255, 50, 50)
+                        } else if cpu >= 70.0 || gpu >= 70.0 || fps_ratio < 0.95 {
+                            egui::Color32::from_rgb(255, 200, 50)
+                        } else {
+                            egui::Color32::from_rgb(50, 200, 50)
+                        };
+
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(14.0, 14.0), egui::Sense::hover());
+                        ui.painter()
+                            .circle_filled(rect.center(), 7.0, overall_color);
+
+                        ui.label(format!("RAM:{:.0}MB", ram));
+
+                        let gpu_color = traffic_light(gpu, 70.0, 90.0);
+                        ui.colored_label(gpu_color, format!("GPU:{:.0}%", gpu));
+
+                        let cpu_color = traffic_light(cpu, 70.0, 90.0);
+                        ui.colored_label(cpu_color, format!("CPU:{:.0}%", cpu));
+
+                        ui.separator();
+
+                        ui.label(format!("{:.1}ms/f", frame_time))
+                            .on_hover_text("Millisekunden pro Frame");
+
+                        ui.colored_label(fps_color, format!("{:.0}/{:.0}FPS", fps, target_fps));
+                    });
                 });
             }
 

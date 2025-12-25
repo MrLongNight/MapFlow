@@ -21,6 +21,9 @@ pub struct UserConfig {
     /// UI Theme settings
     #[serde(default)]
     pub theme: ThemeConfig,
+    /// Target frame rate (FPS)
+    #[serde(default)]
+    pub target_fps: Option<f32>,
 }
 
 impl Default for UserConfig {
@@ -30,6 +33,7 @@ impl Default for UserConfig {
             last_project: None,
             recent_files: Vec::new(),
             theme: ThemeConfig::default(),
+            target_fps: Some(60.0),
         }
     }
 }
@@ -111,6 +115,7 @@ mod tests {
             last_project: Some("/path/to/project.MapFlow".to_string()),
             recent_files: vec!["file1.mp4".to_string(), "file2.mp4".to_string()],
             theme: ThemeConfig::default(),
+            target_fps: Some(60.0),
         };
 
         let json = serde_json::to_string(&config).unwrap();
