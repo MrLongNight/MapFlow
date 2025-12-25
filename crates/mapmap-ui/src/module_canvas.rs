@@ -430,41 +430,51 @@ impl ModuleCanvas {
                                                             )
                                                             .selected_text(format!("{:?}", band))
                                                             .show_ui(ui, |ui| {
-                                                                if ui
-                                                                    .selectable_label(
-                                                                        matches!(
-                                                                            band,
-                                                                            AudioBand::Bass
-                                                                        ),
-                                                                        "Bass",
-                                                                    )
-                                                                    .clicked()
-                                                                {
-                                                                    *band = AudioBand::Bass;
-                                                                }
-                                                                if ui
-                                                                    .selectable_label(
-                                                                        matches!(
-                                                                            band,
-                                                                            AudioBand::Mid
-                                                                        ),
-                                                                        "Mid",
-                                                                    )
-                                                                    .clicked()
-                                                                {
-                                                                    *band = AudioBand::Mid;
-                                                                }
-                                                                if ui
-                                                                    .selectable_label(
-                                                                        matches!(
-                                                                            band,
-                                                                            AudioBand::HighMid
-                                                                        ),
-                                                                        "High",
-                                                                    )
-                                                                    .clicked()
-                                                                {
-                                                                    *band = AudioBand::HighMid;
+                                                                let bands = [
+                                                                    (
+                                                                        AudioBand::SubBass,
+                                                                        "SubBass (20-60Hz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Bass,
+                                                                        "Bass (60-250Hz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::LowMid,
+                                                                        "LowMid (250-500Hz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Mid,
+                                                                        "Mid (500-2kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::HighMid,
+                                                                        "HighMid (2-4kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Presence,
+                                                                        "Presence (4-6kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Brilliance,
+                                                                        "Brilliance (6-20kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Peak,
+                                                                        "Peak Detection",
+                                                                    ),
+                                                                    (AudioBand::BPM, "BPM"),
+                                                                ];
+                                                                for (b, label) in bands {
+                                                                    if ui
+                                                                        .selectable_label(
+                                                                            *band == b,
+                                                                            label,
+                                                                        )
+                                                                        .clicked()
+                                                                    {
+                                                                        *band = b;
+                                                                    }
                                                                 }
                                                             });
                                                         });
@@ -563,9 +573,29 @@ impl ModuleCanvas {
                                                     SourceType::MediaFile { path } => {
                                                         ui.label("📁 Media File");
                                                         ui.horizontal(|ui| {
-                                                            ui.text_edit_singleline(path);
+                                                            ui.add(
+                                                                egui::TextEdit::singleline(path)
+                                                                    .desired_width(120.0),
+                                                            );
                                                             if ui.button("📂").clicked() {
-                                                                // TODO: Open file dialog
+                                                                if let Some(picked) =
+                                                                    rfd::FileDialog::new()
+                                                                        .add_filter(
+                                                                            "Media",
+                                                                            &[
+                                                                                "mp4", "mov",
+                                                                                "avi", "mkv",
+                                                                                "webm", "gif",
+                                                                                "png", "jpg",
+                                                                                "jpeg",
+                                                                            ],
+                                                                        )
+                                                                        .pick_file()
+                                                                {
+                                                                    *path = picked
+                                                                        .display()
+                                                                        .to_string();
+                                                                }
                                                             }
                                                         });
                                                     }
@@ -591,9 +621,27 @@ impl ModuleCanvas {
                                                     MaskType::File { path } => {
                                                         ui.label("📁 Mask File");
                                                         ui.horizontal(|ui| {
-                                                            ui.text_edit_singleline(path);
+                                                            ui.add(
+                                                                egui::TextEdit::singleline(path)
+                                                                    .desired_width(120.0),
+                                                            );
                                                             if ui.button("📂").clicked() {
-                                                                // TODO: Open file dialog
+                                                                if let Some(picked) =
+                                                                    rfd::FileDialog::new()
+                                                                        .add_filter(
+                                                                            "Image",
+                                                                            &[
+                                                                                "png", "jpg",
+                                                                                "jpeg", "webp",
+                                                                                "bmp",
+                                                                            ],
+                                                                        )
+                                                                        .pick_file()
+                                                                {
+                                                                    *path = picked
+                                                                        .display()
+                                                                        .to_string();
+                                                                }
                                                             }
                                                         });
                                                     }

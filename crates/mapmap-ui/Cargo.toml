@@ -11,9 +11,8 @@ repository.workspace = true
 mapmap-core = { path = "../mapmap-core" }
 mapmap-media = { path = "../mapmap-media" }
 mapmap-render = { path = "../mapmap-render" }
-mapmap-control = { path = "../mapmap-control", features = ["osc"] }
+mapmap-control = { path = "../mapmap-control", features = ["osc", "midi"] }
 cpal = { workspace = true, optional = true }
-
 
 
 # Phase 6: egui migration
@@ -39,6 +38,7 @@ unic-langid = { workspace = true }
 rust-embed = { workspace = true }
 once_cell = { workspace = true }
 dirs = "5.0"
+rfd = "0.14"
 
 # SVG icon rendering
 resvg = { workspace = true }
@@ -47,3 +47,4 @@ tiny-skia = { workspace = true }
 
 [features]
 default = ["cpal"]
+midi = []

@@ -7,12 +7,14 @@
 //! - Control panels
 //! - Advanced authoring UI (Phase 6)
 //! - Effect Chain Panel (Phase 3)
+//! - Controller Overlay Panel (MIDI visualization)
 
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
 pub mod audio_meter;
 pub mod audio_panel;
 pub mod config;
+pub mod controller_overlay_panel;
 pub mod cue_panel;
 pub mod dashboard;
 pub mod edge_blend_panel;
@@ -39,6 +41,7 @@ pub mod timeline_v2;
 pub mod transform_panel;
 pub mod undo_redo;
 
+pub use controller_overlay_panel::ControllerOverlayPanel;
 pub use i18n::LocaleManager;
 
 // Phase 6 exports

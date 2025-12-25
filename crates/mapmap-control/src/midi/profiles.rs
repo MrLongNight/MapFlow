@@ -78,6 +78,7 @@ impl BuiltInProfiles {
             Self::generic_controller(),
             Self::akai_apc40(),
             Self::novation_launchpad(),
+            super::ecler_nuo4::ecler_nuo4(),
         ]
     }
 
