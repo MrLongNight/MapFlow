@@ -613,7 +613,37 @@ impl ModuleCanvas {
             self.creating_connection.clone()
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                let color = Self::get_socket_color(&socket_type);
+                // Check if hovering over a compatible socket
+                let socket_radius = 8.0 * self.zoom;
+                let mut is_valid_target = false;
+                let mut near_socket = false;
+
+                for socket in &all_sockets {
+                    if socket.position.distance(pointer_pos) < socket_radius * 2.0 {
+                        near_socket = true;
+                        // Valid if: different part, opposite direction, same type
+                        if socket.part_id != from_part_id
+                            && socket.is_output != from_is_output
+                            && socket.socket_type == *from_type
+                        {
+                            is_valid_target = true;
+                        }
+                        break;
+                    }
+                }
+
+                // Color based on validity
+                let color = if near_socket {
+                    if is_valid_target {
+                        Color32::from_rgb(50, 255, 100) // Green = valid
+                    } else {
+                        Color32::from_rgb(255, 80, 80) // Red = invalid
+                    }
+                } else {
+                    Self::get_socket_color(from_type) // Default socket color
+                };
+
+                // Draw the connection line
                 painter.line_segment([start_pos, pointer_pos], Stroke::new(3.0, color));
 
                 // Draw a circle at the end point
