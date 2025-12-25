@@ -781,8 +781,10 @@ impl App {
                         self.sys_info.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / cpu_count
                     } else { 0.0 };
 
-                    if let Some(pid) = sysinfo::get_current_pid().ok() {
-                        self.ui_state.ram_usage_mb = self.sys_info.process(pid)
+                    if let Ok(pid) = sysinfo::get_current_pid() {
+                        self.ui_state.ram_usage_mb = self
+                            .sys_info
+                            .process(pid)
                             .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
                             .unwrap_or(0.0);
                     }
