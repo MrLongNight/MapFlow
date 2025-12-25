@@ -829,7 +829,7 @@ impl App {
                             .max_width(450.0)
                             .show(ctx, |ui| {
                                 ui.horizontal(|ui| {
-                                    ui.heading("MapFlow");
+                                    ui.heading("Controls");
                                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                         if ui.button("◀").on_hover_text("Sidebar einklappen").clicked() {
                                             self.ui_state.show_left_sidebar = false;
@@ -915,13 +915,23 @@ impl App {
                                             ) {
                                                 match action {
                                                     mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
+                                                        info!("Audio device changed to: {}", device);
                                                         if let Some(backend) = &mut self.audio_backend {
                                                             backend.stop();
                                                         }
                                                         self.audio_backend = None;
-                                                        if let Ok(mut backend) = CpalBackend::new(Some(device)) {
-                                                            let _ = backend.start();
-                                                            self.audio_backend = Some(backend);
+                                                        match CpalBackend::new(Some(device.clone())) {
+                                                            Ok(mut backend) => {
+                                                                if let Err(e) = backend.start() {
+                                                                    error!("Failed to start audio backend: {}", e);
+                                                                } else {
+                                                                    info!("Audio backend started successfully");
+                                                                }
+                                                                self.audio_backend = Some(backend);
+                                                            }
+                                                            Err(e) => {
+                                                                error!("Failed to create audio backend for device '{}': {}", device, e);
+                                                            }
                                                         }
                                                     }
                                                     mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
