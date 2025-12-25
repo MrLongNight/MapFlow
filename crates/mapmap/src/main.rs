@@ -103,7 +103,6 @@ struct App {
     last_sysinfo_refresh: std::time::Instant,
 }
 
-
 impl App {
     /// Creates a new `App`.
     async fn new(event_loop: &EventLoop<()>) -> Result<Self> {
@@ -289,7 +288,6 @@ impl App {
             sys_info: sysinfo::System::new_all(),
             last_sysinfo_refresh: std::time::Instant::now(),
         };
-
 
         // Create initial dummy texture
         app.create_dummy_texture(width, height, format);
@@ -777,18 +775,20 @@ impl App {
                         self.sys_info.refresh_memory();
                         self.last_sysinfo_refresh = std::time::Instant::now();
                     }
-                    
+
                     let cpu_count = self.sys_info.cpus().len() as f32;
                     self.ui_state.cpu_usage = if cpu_count > 0.0 {
                         self.sys_info.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>() / cpu_count
                     } else { 0.0 };
-                    
-                    if let Some(pid) = sysinfo::get_current_pid().ok() {
-                        self.ui_state.ram_usage_mb = self.sys_info.process(pid)
+
+                    if let Ok(pid) = sysinfo::get_current_pid() {
+                        self.ui_state.ram_usage_mb = self
+                            .sys_info
+                            .process(pid)
                             .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
                             .unwrap_or(0.0);
                     }
-                    
+
                     let fps_ratio = (self.current_fps / self.ui_state.target_fps).clamp(0.0, 1.0);
                     self.ui_state.gpu_usage = ((1.0 - fps_ratio) * 100.0 * 1.2).clamp(0.0, 100.0);
 
@@ -1039,9 +1039,9 @@ impl App {
                                                 });
                                         });
                                     });
-                                
+
                                 ui.separator();
-                                
+
                                 // App Settings
                                 egui::CollapsingHeader::new(format!("⚙️ {}", self.ui_state.i18n.t("settings-app")))
                                     .default_open(true)
@@ -1055,8 +1055,26 @@ impl App {
                                                 self.ui_state.actions.push(mapmap_ui::UIAction::SetLanguage("de".to_string()));
                                             }
                                         });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Audio Meter:");
+                                            let current = self.ui_state.user_config.meter_style;
+                                            egui::ComboBox::from_id_source("meter_style_select")
+                                                .selected_text(format!("{}", current))
+                                                .show_ui(ui, |ui| {
+                                                    let styles = [
+                                                        mapmap_ui::config::AudioMeterStyle::Retro,
+                                                        mapmap_ui::config::AudioMeterStyle::Digital,
+                                                    ];
+                                                    for style in styles {
+                                                        if ui.selectable_value(&mut self.ui_state.user_config.meter_style, style, format!("{}", style)).clicked() {
+                                                            let _ = self.ui_state.user_config.save();
+                                                        }
+                                                    }
+                                                });
+                                        });
                                     });
-                                
+
                                 ui.separator();
                                 if ui.button("✕ Schließen").clicked() {
                                     close_settings = true;
@@ -1067,7 +1085,6 @@ impl App {
                         }
                     }
                 });
-
 
                 self.egui_state
                     .handle_platform_output(&window_context.window, full_output.platform_output);

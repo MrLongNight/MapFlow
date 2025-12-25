@@ -4,8 +4,26 @@
 
 use crate::theme::ThemeConfig;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::fs;
 use std::path::PathBuf;
+
+/// Style for the audio meter
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum AudioMeterStyle {
+    #[default]
+    Retro,
+    Digital,
+}
+
+impl fmt::Display for AudioMeterStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Retro => write!(f, "Retro (Analog)"),
+            Self::Digital => write!(f, "Digital (LED)"),
+        }
+    }
+}
 
 /// User configuration settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,6 +42,9 @@ pub struct UserConfig {
     /// Target frame rate (FPS)
     #[serde(default)]
     pub target_fps: Option<f32>,
+    /// Audio meter style
+    #[serde(default)]
+    pub meter_style: AudioMeterStyle,
 }
 
 impl Default for UserConfig {
@@ -34,6 +55,7 @@ impl Default for UserConfig {
             recent_files: Vec::new(),
             theme: ThemeConfig::default(),
             target_fps: Some(60.0),
+            meter_style: AudioMeterStyle::default(),
         }
     }
 }
@@ -116,6 +138,7 @@ mod tests {
             recent_files: vec!["file1.mp4".to_string(), "file2.mp4".to_string()],
             theme: ThemeConfig::default(),
             target_fps: Some(60.0),
+            meter_style: AudioMeterStyle::Digital,
         };
 
         let json = serde_json::to_string(&config).unwrap();
@@ -123,5 +146,6 @@ mod tests {
 
         assert_eq!(loaded.language, "de");
         assert_eq!(loaded.recent_files.len(), 2);
+        assert_eq!(loaded.meter_style, AudioMeterStyle::Digital);
     }
 }

@@ -503,7 +503,7 @@ impl ModuleCanvas {
             self.creating_connection
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                let color = Self::get_socket_color(&socket_type);
+                let color = Self::get_socket_color(socket_type);
                 painter.line_segment([start_pos, pointer_pos], Stroke::new(3.0, color));
             }
         }
@@ -772,7 +772,7 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "📁 Select file...".to_string()
                     } else {
-                        format!("📁 {}", path.split(['/', '\\']).last().unwrap_or(path))
+                        format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
                 SourceType::Shader { name, .. } => format!("🎨 {}", name),
@@ -783,7 +783,7 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "📁 Select mask...".to_string()
                     } else {
-                        format!("📁 {}", path.split(['/', '\\']).last().unwrap_or(path))
+                        format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
                 MaskType::Shape(shape) => format!("🔷 {:?}", shape),

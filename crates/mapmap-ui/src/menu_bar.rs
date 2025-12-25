@@ -2,6 +2,7 @@
 //!
 //! This module provides the main menu bar and toolbar for the application.
 
+use crate::audio_meter::AudioMeter;
 use crate::icons::AppIcon;
 use crate::{AppUI, UIAction};
 
@@ -318,29 +319,30 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                     ui.separator();
 
-                    // === AUDIO LEVEL METER (150px, dB scale) ===
+                    // === AUDIO LEVEL METER (variable width, dB scale) ===
                     let audio_level = ui_state.current_audio_level;
                     let db = if audio_level > 0.0001 {
                         20.0 * audio_level.log10()
                     } else {
                         -60.0
                     };
-                    let db_normalized = ((db + 60.0) / 60.0).clamp(0.0_f32, 1.0_f32);
 
-                    let audio_color = if db > -6.0 {
-                        egui::Color32::from_rgb(255, 50, 50) // Red - clipping
-                    } else if db > -12.0 {
-                        egui::Color32::from_rgb(255, 200, 50) // Yellow
-                    } else {
-                        egui::Color32::from_rgb(50, 200, 50) // Green
+                    // Choose width based on style
+                    let meter_width = match ui_state.user_config.meter_style {
+                        crate::config::AudioMeterStyle::Retro => 160.0,
+                        crate::config::AudioMeterStyle::Digital => 180.0,
+                    };
+
+                    // Allow slightly more height for Retro look if needed
+                    let meter_height = match ui_state.user_config.meter_style {
+                        crate::config::AudioMeterStyle::Retro => 40.0,
+                        crate::config::AudioMeterStyle::Digital => 24.0,
                     };
 
                     ui.label("🔊");
                     ui.add(
-                        egui::ProgressBar::new(db_normalized)
-                            .fill(audio_color)
-                            .desired_width(150.0)
-                            .text(format!("{:.0} dB", db)),
+                        AudioMeter::new(ui_state.user_config.meter_style, db)
+                            .desired_size(egui::vec2(meter_width, meter_height)),
                     );
 
                     // === SPACER - push performance to right ===
