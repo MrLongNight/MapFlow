@@ -56,16 +56,19 @@ pub struct ModuleCanvas {
     context_menu_connection: Option<usize>,
 }
 
+pub type PresetPart = (
+    mapmap_core::module::ModulePartType,
+    (f32, f32),
+    Option<(f32, f32)>,
+);
+pub type PresetConnection = (usize, usize, usize, usize); // from_idx, from_socket, to_idx, to_socket
+
 /// A saved module preset/template
 #[derive(Debug, Clone)]
 pub struct ModulePreset {
     pub name: String,
-    pub parts: Vec<(
-        mapmap_core::module::ModulePartType,
-        (f32, f32),
-        Option<(f32, f32)>,
-    )>,
-    pub connections: Vec<(usize, usize, usize, usize)>, // from_idx, from_socket, to_idx, to_socket
+    pub parts: Vec<PresetPart>,
+    pub connections: Vec<PresetConnection>,
 }
 
 /// Actions that can be undone/redone
