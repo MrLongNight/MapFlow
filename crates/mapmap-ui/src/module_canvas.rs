@@ -36,6 +36,33 @@ pub struct ModuleCanvas {
     search_filter: String,
     /// Whether search popup is visible
     show_search: bool,
+    /// Undo history stack
+    undo_stack: Vec<CanvasAction>,
+    /// Redo history stack
+    redo_stack: Vec<CanvasAction>,
+}
+
+/// Actions that can be undone/redone
+#[derive(Debug, Clone)]
+pub enum CanvasAction {
+    AddPart {
+        part_id: ModulePartId,
+        part_data: mapmap_core::module::ModulePart,
+    },
+    DeletePart {
+        part_data: mapmap_core::module::ModulePart,
+    },
+    MovePart {
+        part_id: ModulePartId,
+        old_pos: (f32, f32),
+        new_pos: (f32, f32),
+    },
+    AddConnection {
+        connection: mapmap_core::module::ModuleConnection,
+    },
+    DeleteConnection {
+        connection: mapmap_core::module::ModuleConnection,
+    },
 }
 
 impl Default for ModuleCanvas {
@@ -51,6 +78,8 @@ impl Default for ModuleCanvas {
             clipboard: Vec::new(),
             search_filter: String::new(),
             show_search: false,
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
         }
     }
 }
@@ -428,9 +457,97 @@ impl ModuleCanvas {
             self.selected_parts.clear();
         }
 
-        // Escape: Deselect all
+        // Escape: Deselect all or close search
         if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-            self.selected_parts.clear();
+            if self.show_search {
+                self.show_search = false;
+            } else {
+                self.selected_parts.clear();
+            }
+        }
+
+        // Ctrl+F: Toggle search popup
+        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::F)) {
+            self.show_search = !self.show_search;
+            if self.show_search {
+                self.search_filter.clear();
+            }
+        }
+
+        // Ctrl+Z: Undo
+        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Z)) && !self.undo_stack.is_empty() {
+            if let Some(action) = self.undo_stack.pop() {
+                match &action {
+                    CanvasAction::AddPart { part_id, .. } => {
+                        // Undo add = delete
+                        module.parts.retain(|p| p.id != *part_id);
+                    }
+                    CanvasAction::DeletePart { part_data } => {
+                        // Undo delete = restore
+                        module.parts.push(part_data.clone());
+                    }
+                    CanvasAction::MovePart {
+                        part_id, old_pos, ..
+                    } => {
+                        // Undo move = restore old position
+                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                            part.position = *old_pos;
+                        }
+                    }
+                    CanvasAction::AddConnection { connection } => {
+                        // Undo add connection = delete
+                        module.connections.retain(|c| {
+                            !(c.from_part == connection.from_part
+                                && c.to_part == connection.to_part
+                                && c.from_socket == connection.from_socket
+                                && c.to_socket == connection.to_socket)
+                        });
+                    }
+                    CanvasAction::DeleteConnection { connection } => {
+                        // Undo delete connection = restore
+                        module.connections.push(connection.clone());
+                    }
+                }
+                self.redo_stack.push(action);
+            }
+        }
+
+        // Ctrl+Y: Redo
+        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Y)) && !self.redo_stack.is_empty() {
+            if let Some(action) = self.redo_stack.pop() {
+                match &action {
+                    CanvasAction::AddPart { part_data, .. } => {
+                        // Redo add = add again
+                        module.parts.push(part_data.clone());
+                    }
+                    CanvasAction::DeletePart { part_data } => {
+                        // Redo delete = delete again
+                        module.parts.retain(|p| p.id != part_data.id);
+                    }
+                    CanvasAction::MovePart {
+                        part_id, new_pos, ..
+                    } => {
+                        // Redo move = apply new position
+                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                            part.position = *new_pos;
+                        }
+                    }
+                    CanvasAction::AddConnection { connection } => {
+                        // Redo add connection = add again
+                        module.connections.push(connection.clone());
+                    }
+                    CanvasAction::DeleteConnection { connection } => {
+                        // Redo delete connection = delete again
+                        module.connections.retain(|c| {
+                            !(c.from_part == connection.from_part
+                                && c.to_part == connection.to_part
+                                && c.from_socket == connection.from_socket
+                                && c.to_socket == connection.to_socket)
+                        });
+                    }
+                }
+                self.undo_stack.push(action);
+            }
         }
 
         // For shift_held - used in click handling below
@@ -740,6 +857,91 @@ impl ModuleCanvas {
 
         // Draw mini-map in bottom-right corner
         self.draw_mini_map(&painter, canvas_rect, module);
+
+        // Draw search popup if visible
+        if self.show_search {
+            self.draw_search_popup(ui, canvas_rect, module);
+        }
+    }
+
+    fn draw_search_popup(&mut self, ui: &mut Ui, canvas_rect: Rect, module: &mut MapFlowModule) {
+        // Search popup in top-center
+        let popup_width = 300.0;
+        let popup_height = 200.0;
+        let popup_rect = Rect::from_min_size(
+            Pos2::new(
+                canvas_rect.center().x - popup_width / 2.0,
+                canvas_rect.min.y + 50.0,
+            ),
+            Vec2::new(popup_width, popup_height),
+        );
+
+        // Draw popup background
+        let painter = ui.painter();
+        painter.rect_filled(
+            popup_rect,
+            8.0,
+            Color32::from_rgba_unmultiplied(30, 30, 40, 240),
+        );
+        painter.rect_stroke(
+            popup_rect,
+            8.0,
+            Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
+        );
+
+        // Popup content
+        let inner_rect = popup_rect.shrink(10.0);
+        ui.allocate_ui_at_rect(inner_rect, |ui| {
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("🔍");
+                    ui.text_edit_singleline(&mut self.search_filter);
+                });
+                ui.add_space(8.0);
+
+                // Filter and show matching nodes
+                let filter_lower = self.search_filter.to_lowercase();
+                let matching_parts: Vec<_> = module
+                    .parts
+                    .iter()
+                    .filter(|p| {
+                        if filter_lower.is_empty() {
+                            return true;
+                        }
+                        let name = Self::get_part_property_text(&p.part_type).to_lowercase();
+                        let (_, _, _, type_name) = Self::get_part_style(&p.part_type);
+                        name.contains(&filter_lower)
+                            || type_name.to_lowercase().contains(&filter_lower)
+                    })
+                    .take(6)
+                    .collect();
+
+                egui::ScrollArea::vertical()
+                    .max_height(120.0)
+                    .show(ui, |ui| {
+                        for part in matching_parts {
+                            let (_, _, icon, type_name) = Self::get_part_style(&part.part_type);
+                            let label = format!(
+                                "{} {} - {}",
+                                icon,
+                                type_name,
+                                Self::get_part_property_text(&part.part_type)
+                            );
+                            if ui
+                                .selectable_label(self.selected_parts.contains(&part.id), &label)
+                                .clicked()
+                            {
+                                self.selected_parts.clear();
+                                self.selected_parts.push(part.id);
+                                // Center view on selected node
+                                self.pan_offset =
+                                    Vec2::new(-part.position.0 + 200.0, -part.position.1 + 150.0);
+                                self.show_search = false;
+                            }
+                        }
+                    });
+            });
+        });
     }
 
     fn draw_mini_map(&self, painter: &egui::Painter, canvas_rect: Rect, module: &MapFlowModule) {
