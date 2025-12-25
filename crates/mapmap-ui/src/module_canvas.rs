@@ -175,6 +175,41 @@ impl ModuleCanvas {
                     }
                 });
 
+            ui.separator();
+
+            // === ZOOM CONTROLS ===
+            ui.label("Zoom:");
+
+            // Zoom out button
+            if ui.button("−").on_hover_text("Zoom out").clicked() {
+                self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
+            }
+
+            // Zoom slider
+            ui.add(
+                egui::Slider::new(&mut self.zoom, 0.2..=3.0)
+                    .show_value(false)
+                    .clamp_to_range(true),
+            );
+
+            // Zoom in button
+            if ui.button("+").on_hover_text("Zoom in").clicked() {
+                self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
+            }
+
+            // Zoom percentage display
+            ui.label(format!("{:.0}%", self.zoom * 100.0));
+
+            // Fit to view button
+            if ui
+                .button("⊡")
+                .on_hover_text("Fit to view / Reset zoom")
+                .clicked()
+            {
+                self.zoom = 1.0;
+                self.pan_offset = Vec2::ZERO;
+            }
+
             ui.add_space(4.0);
         });
 
@@ -233,29 +268,125 @@ impl ModuleCanvas {
         // Draw connections first (behind nodes)
         self.draw_connections(&painter, module, &to_screen);
 
-        // Collect part info for dragging (need to avoid borrow issues)
+        // Collect socket positions for hit detection
+        let mut all_sockets: Vec<SocketInfo> = Vec::new();
+
+        // Collect part info and socket positions
         let part_rects: Vec<_> = module
             .parts
             .iter()
             .map(|part| {
                 let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
-                let part_size = Vec2::new(
-                    180.0,
-                    80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0,
-                );
-                (
-                    part.id,
-                    Rect::from_min_size(part_screen_pos, part_size * self.zoom),
-                )
+                let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                let part_size = Vec2::new(180.0, part_height);
+                let rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
+
+                // Calculate socket positions
+                let title_height = 28.0 * self.zoom;
+                let socket_start_y = rect.min.y + title_height + 10.0 * self.zoom;
+
+                // Input sockets (left side)
+                for (i, socket) in part.inputs.iter().enumerate() {
+                    let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
+                    all_sockets.push(SocketInfo {
+                        part_id: part.id,
+                        socket_idx: i,
+                        is_output: false,
+                        socket_type: socket.socket_type.clone(),
+                        position: Pos2::new(rect.min.x, socket_y),
+                    });
+                }
+
+                // Output sockets (right side)
+                for (i, socket) in part.outputs.iter().enumerate() {
+                    let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
+                    all_sockets.push(SocketInfo {
+                        part_id: part.id,
+                        socket_idx: i,
+                        is_output: true,
+                        socket_type: socket.socket_type.clone(),
+                        position: Pos2::new(rect.max.x, socket_y),
+                    });
+                }
+
+                (part.id, rect)
             })
             .collect();
 
-        // Handle part dragging
+        // Handle socket clicks for creating connections
+        let socket_radius = 8.0 * self.zoom;
+        let pointer_pos = ui.input(|i| i.pointer.hover_pos());
+        let clicked = ui.input(|i| i.pointer.button_clicked(egui::PointerButton::Primary));
+        let released = ui.input(|i| i.pointer.button_released(egui::PointerButton::Primary));
+
+        if let Some(pos) = pointer_pos {
+            // Check if clicking on a socket
+            if clicked {
+                for socket in &all_sockets {
+                    if socket.position.distance(pos) < socket_radius {
+                        // Start creating a connection
+                        self.creating_connection = Some((
+                            socket.part_id,
+                            socket.socket_idx,
+                            socket.is_output,
+                            socket.socket_type.clone(),
+                            socket.position,
+                        ));
+                        break;
+                    }
+                }
+            }
+
+            // Check if releasing on a compatible socket
+            if released && self.creating_connection.is_some() {
+                if let Some((from_part, from_socket, from_is_output, ref from_type, _)) =
+                    self.creating_connection.clone()
+                {
+                    for socket in &all_sockets {
+                        if socket.position.distance(pos) < socket_radius {
+                            // Validate connection: must be different parts, opposite directions, same type
+                            if socket.part_id != from_part
+                                && socket.is_output != from_is_output
+                                && socket.socket_type == *from_type
+                            {
+                                // Create connection (from output to input)
+                                if from_is_output {
+                                    module.add_connection(
+                                        from_part,
+                                        from_socket,
+                                        socket.part_id,
+                                        socket.socket_idx,
+                                    );
+                                } else {
+                                    module.add_connection(
+                                        socket.part_id,
+                                        socket.socket_idx,
+                                        from_part,
+                                        from_socket,
+                                    );
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                self.creating_connection = None;
+            }
+        }
+
+        // Clear connection if mouse released without hitting a socket
+        if released && self.creating_connection.is_some() {
+            self.creating_connection = None;
+        }
+
+        // Handle part dragging and delete buttons
+        let mut delete_part_id: Option<ModulePartId> = None;
+
         for (part_id, rect) in &part_rects {
             let part_response =
                 ui.interact(*rect, egui::Id::new(*part_id), Sense::click_and_drag());
 
-            if part_response.drag_started() {
+            if part_response.drag_started() && self.creating_connection.is_none() {
                 self.dragging_part = Some((*part_id, Vec2::ZERO));
             }
 
@@ -274,16 +405,40 @@ impl ModuleCanvas {
             if part_response.drag_stopped() {
                 self.dragging_part = None;
             }
+
+            // Check for delete button click (× in top-right corner of title bar)
+            let delete_button_rect = Rect::from_min_size(
+                Pos2::new(rect.max.x - 20.0 * self.zoom, rect.min.y),
+                Vec2::splat(20.0 * self.zoom),
+            );
+            let delete_response = ui.interact(
+                delete_button_rect,
+                egui::Id::new((*part_id, "delete")),
+                Sense::click(),
+            );
+            if delete_response.clicked() {
+                delete_part_id = Some(*part_id);
+            }
         }
 
-        // Draw parts (nodes)
+        // Process pending deletion
+        if let Some(part_id) = delete_part_id {
+            // Remove all connections involving this part
+            module
+                .connections
+                .retain(|c| c.from_part != part_id && c.to_part != part_id);
+            // Remove the part
+            module.parts.retain(|p| p.id != part_id);
+        }
+
+        // Draw parts (nodes) with delete buttons
         for part in &module.parts {
             let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
             let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
             let part_size = Vec2::new(180.0, part_height);
             let part_screen_rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
 
-            self.draw_part(&painter, part, part_screen_rect);
+            self.draw_part_with_delete(&painter, part, part_screen_rect);
         }
 
         // Draw connection being created
@@ -377,7 +532,7 @@ impl ModuleCanvas {
         )
     }
 
-    fn draw_part(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
+    fn draw_part_with_delete(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
         // Get part color and name based on type
         let (bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
 
@@ -403,14 +558,30 @@ impl ModuleCanvas {
             title_color,
         );
 
-        // Title text with icon
+        // Title text with icon (offset slightly left to make room for × button)
         let title_text = format!("{} {}", icon, name);
         painter.text(
-            title_rect.center(),
+            Pos2::new(
+                title_rect.center().x - 8.0 * self.zoom,
+                title_rect.center().y,
+            ),
             egui::Align2::CENTER_CENTER,
             title_text,
             egui::FontId::proportional(13.0 * self.zoom),
             Color32::WHITE,
+        );
+
+        // Delete button (× in top-right corner)
+        let delete_button_pos = Pos2::new(
+            rect.max.x - 12.0 * self.zoom,
+            rect.min.y + title_height * 0.5,
+        );
+        painter.text(
+            delete_button_pos,
+            egui::Align2::CENTER_CENTER,
+            "×",
+            egui::FontId::proportional(16.0 * self.zoom),
+            Color32::from_rgba_unmultiplied(255, 100, 100, 200),
         );
 
         // Draw input sockets (left side)
