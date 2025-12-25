@@ -29,7 +29,116 @@ impl Default for ModuleCanvas {
 }
 
 impl ModuleCanvas {
+    /// Set the active module ID
+    pub fn set_active_module(&mut self, module_id: Option<u64>) {
+        self.active_module_id = module_id;
+    }
+
+    /// Get the active module ID
+    pub fn active_module_id(&self) -> Option<u64> {
+        self.active_module_id
+    }
+
     pub fn show(&mut self, ui: &mut Ui, manager: &mut ModuleManager, locale: &LocaleManager) {
+        // === CANVAS TOOLBAR ===
+        ui.horizontal(|ui| {
+            ui.add_space(4.0);
+
+            // Create New Module
+            if ui
+                .button("➕ New Module")
+                .on_hover_text("Create a new module")
+                .clicked()
+            {
+                let new_module_id = manager.create_module("New Module".to_string());
+                self.active_module_id = Some(new_module_id);
+            }
+
+            ui.separator();
+
+            // Part creation tools (only enabled when module is active)
+            let has_module = self.active_module_id.is_some();
+
+            ui.add_enabled_ui(has_module, |ui| {
+                if ui
+                    .button("⚡ Trigger")
+                    .on_hover_text("Add a Trigger node")
+                    .clicked()
+                {
+                    if let Some(id) = self.active_module_id {
+                        if let Some(module) = manager.get_module_mut(id) {
+                            module.add_part(mapmap_core::module::PartType::Trigger, (100.0, 100.0));
+                        }
+                    }
+                }
+
+                if ui
+                    .button("〰️ Modulator")
+                    .on_hover_text("Add a Modulator node")
+                    .clicked()
+                {
+                    if let Some(id) = self.active_module_id {
+                        if let Some(module) = manager.get_module_mut(id) {
+                            module
+                                .add_part(mapmap_core::module::PartType::Modulator, (200.0, 100.0));
+                        }
+                    }
+                }
+
+                if ui
+                    .button("📑 Layer")
+                    .on_hover_text("Add a Layer node")
+                    .clicked()
+                {
+                    if let Some(id) = self.active_module_id {
+                        if let Some(module) = manager.get_module_mut(id) {
+                            module.add_part(mapmap_core::module::PartType::Layer, (300.0, 100.0));
+                        }
+                    }
+                }
+
+                if ui
+                    .button("📺 Output")
+                    .on_hover_text("Add an Output node")
+                    .clicked()
+                {
+                    if let Some(id) = self.active_module_id {
+                        if let Some(module) = manager.get_module_mut(id) {
+                            module.add_part(mapmap_core::module::PartType::Output, (400.0, 100.0));
+                        }
+                    }
+                }
+            });
+
+            ui.separator();
+
+            // Module selector dropdown
+            ui.label("Module:");
+            let module_names: Vec<_> = manager
+                .list_modules()
+                .iter()
+                .map(|m| (m.id, m.name.clone()))
+                .collect();
+            let current_name = self
+                .active_module_id
+                .and_then(|id| manager.get_module_mut(id))
+                .map(|m| m.name.clone())
+                .unwrap_or_else(|| "None".to_string());
+
+            egui::ComboBox::from_id_source("module_selector")
+                .selected_text(current_name)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.active_module_id, None, "None");
+                    for (id, name) in module_names {
+                        ui.selectable_value(&mut self.active_module_id, Some(id), name);
+                    }
+                });
+
+            ui.add_space(4.0);
+        });
+
+        ui.separator();
+
         // Find the active module
         let active_module = self
             .active_module_id
@@ -40,7 +149,13 @@ impl ModuleCanvas {
         } else {
             // Show a message if no module is selected
             ui.centered_and_justified(|ui| {
-                ui.label("Select a module from the sidebar to start editing.");
+                ui.vertical_centered(|ui| {
+                    ui.add_space(50.0);
+                    ui.heading("🔧 Module Canvas");
+                    ui.add_space(10.0);
+                    ui.label("Click '➕ New Module' to create a module.");
+                    ui.label("Or select an existing module from the dropdown above.");
+                });
             });
         }
     }

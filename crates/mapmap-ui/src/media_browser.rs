@@ -78,6 +78,8 @@ pub struct ThumbnailHandle {
 pub struct MediaBrowser {
     /// Current directory
     current_dir: PathBuf,
+    /// Path input for editing
+    path_input: String,
     /// Media entries in current directory
     entries: Vec<MediaEntry>,
     /// Search query
@@ -108,6 +110,10 @@ pub struct MediaBrowser {
     /// Directory history (for back/forward navigation)
     history: Vec<PathBuf>,
     history_index: usize,
+    /// Media folders per type
+    pub media_folders: MediaFolders,
+    /// Show folder settings
+    show_folder_settings: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,16 +130,39 @@ pub enum SortMode {
     DateModified,
 }
 
+/// Media folder configuration per type
+#[derive(Debug, Clone)]
+pub struct MediaFolders {
+    pub video_folder: PathBuf,
+    pub image_folder: PathBuf,
+    pub audio_folder: PathBuf,
+    pub default_folder: PathBuf,
+}
+
+impl Default for MediaFolders {
+    fn default() -> Self {
+        let default = std::env::current_dir().unwrap_or_default();
+        Self {
+            video_folder: default.clone(),
+            image_folder: default.clone(),
+            audio_folder: default.clone(),
+            default_folder: default,
+        }
+    }
+}
+
 impl MediaBrowser {
     pub fn new(initial_dir: PathBuf) -> Self {
+        let path_str = initial_dir.display().to_string();
         let mut browser = Self {
             current_dir: initial_dir.clone(),
+            path_input: path_str,
             entries: Vec::new(),
             search_query: String::new(),
             filter_type: None,
             view_mode: ViewMode::Grid,
             grid_columns: 4,
-            thumbnail_size: 120.0,
+            thumbnail_size: 80.0, // Reduced from 120 for compact view
             selected: None,
             hovered: None,
             hover_start: None,
@@ -141,8 +170,15 @@ impl MediaBrowser {
             thumbnail_cache: Arc::new(RwLock::new(HashMap::new())),
             show_hidden: false,
             sort_mode: SortMode::Name,
-            history: vec![initial_dir],
+            history: vec![initial_dir.clone()],
             history_index: 0,
+            media_folders: MediaFolders {
+                video_folder: initial_dir.clone(),
+                image_folder: initial_dir.clone(),
+                audio_folder: initial_dir.clone(),
+                default_folder: initial_dir,
+            },
+            show_folder_settings: false,
         };
         browser.refresh();
         browser
@@ -226,6 +262,7 @@ impl MediaBrowser {
     pub fn navigate_to(&mut self, path: PathBuf) {
         if path.is_dir() {
             self.current_dir = path.clone();
+            self.path_input = path.display().to_string();
             self.refresh();
 
             // Update history
@@ -240,6 +277,7 @@ impl MediaBrowser {
         if self.history_index > 0 {
             self.history_index -= 1;
             self.current_dir = self.history[self.history_index].clone();
+            self.path_input = self.current_dir.display().to_string();
             self.refresh();
         }
     }
@@ -249,6 +287,7 @@ impl MediaBrowser {
         if self.history_index < self.history.len() - 1 {
             self.history_index += 1;
             self.current_dir = self.history[self.history_index].clone();
+            self.path_input = self.current_dir.display().to_string();
             self.refresh();
         }
     }
@@ -297,12 +336,13 @@ impl MediaBrowser {
     ) -> Option<MediaBrowserAction> {
         let mut action = None;
 
-        // Toolbar
+        // Compact toolbar with navigation
         ui.horizontal(|ui| {
-            // Navigation buttons
+            // Navigation buttons (compact, icons only)
             ui.add_enabled_ui(self.history_index > 0, |ui| {
                 if ui
-                    .button(format!("◀ {}", locale.t("media-browser-back")))
+                    .button("◀")
+                    .on_hover_text(locale.t("media-browser-back"))
                     .clicked()
                 {
                     self.navigate_back();
@@ -311,7 +351,8 @@ impl MediaBrowser {
 
             ui.add_enabled_ui(self.history_index < self.history.len() - 1, |ui| {
                 if ui
-                    .button(format!("{} ▶", locale.t("media-browser-forward")))
+                    .button("▶")
+                    .on_hover_text(locale.t("media-browser-forward"))
                     .clicked()
                 {
                     self.navigate_forward();
@@ -319,25 +360,97 @@ impl MediaBrowser {
             });
 
             if ui
-                .button(format!("⬆ {}", locale.t("media-browser-up")))
+                .button("⬆")
+                .on_hover_text(locale.t("media-browser-up"))
                 .clicked()
             {
                 self.navigate_up();
             }
 
             if ui
-                .button(format!("🔄 {}", locale.t("media-browser-refresh")))
+                .button("🔄")
+                .on_hover_text(locale.t("media-browser-refresh"))
                 .clicked()
             {
                 self.refresh();
             }
 
+            if ui.button("⚙").on_hover_text("Folder Settings").clicked() {
+                self.show_folder_settings = !self.show_folder_settings;
+            }
+
             ui.separator();
 
-            // Path display
-            ui.label(locale.t("media-browser-path"));
-            ui.label(self.current_dir.display().to_string());
+            // Editable path input
+            let path_response = ui.add(
+                egui::TextEdit::singleline(&mut self.path_input)
+                    .desired_width(ui.available_width() - 30.0)
+                    .hint_text("Enter path..."),
+            );
+
+            if path_response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                let new_path = PathBuf::from(&self.path_input);
+                if new_path.is_dir() {
+                    self.navigate_to(new_path);
+                }
+            }
         });
+
+        // Folder Settings Panel (collapsible)
+        if self.show_folder_settings {
+            ui.group(|ui| {
+                ui.label("📁 Media Folder Settings");
+                ui.separator();
+
+                ui.horizontal(|ui| {
+                    ui.label("🎬 Video:");
+                    let mut video_path = self.media_folders.video_folder.display().to_string();
+                    if ui.text_edit_singleline(&mut video_path).changed() {
+                        self.media_folders.video_folder = PathBuf::from(video_path);
+                    }
+                    if ui.button("📂").on_hover_text("Browse").clicked() {
+                        // Would trigger folder dialog
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("🖼 Image:");
+                    let mut image_path = self.media_folders.image_folder.display().to_string();
+                    if ui.text_edit_singleline(&mut image_path).changed() {
+                        self.media_folders.image_folder = PathBuf::from(image_path);
+                    }
+                    if ui.button("📂").on_hover_text("Browse").clicked() {
+                        // Would trigger folder dialog
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("🎵 Audio:");
+                    let mut audio_path = self.media_folders.audio_folder.display().to_string();
+                    if ui.text_edit_singleline(&mut audio_path).changed() {
+                        self.media_folders.audio_folder = PathBuf::from(audio_path);
+                    }
+                    if ui.button("📂").on_hover_text("Browse").clicked() {
+                        // Would trigger folder dialog
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    if ui.button("Apply Video Folder").clicked() {
+                        let path = self.media_folders.video_folder.clone();
+                        self.navigate_to(path);
+                    }
+                    if ui.button("Apply Image Folder").clicked() {
+                        let path = self.media_folders.image_folder.clone();
+                        self.navigate_to(path);
+                    }
+                    if ui.button("Apply Audio Folder").clicked() {
+                        let path = self.media_folders.audio_folder.clone();
+                        self.navigate_to(path);
+                    }
+                });
+            });
+        }
 
         ui.separator();
 

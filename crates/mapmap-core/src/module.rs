@@ -14,6 +14,40 @@ pub struct MapFlowModule {
     pub playback_mode: ModulePlaybackMode,
 }
 
+impl MapFlowModule {
+    /// Add a part to this module
+    pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
+        static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+
+        let module_part_type = match part_type {
+            PartType::Trigger => ModulePartType::Trigger(TriggerType::Beat),
+            PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
+                name: "New Effect".to_string(),
+            }),
+            PartType::Layer => ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers),
+            PartType::Output => ModulePartType::Output(OutputType::Projector {
+                id: 0,
+                preview_disabled: false,
+            }),
+            PartType::Media => ModulePartType::Resource(ResourceType::MediaFile {
+                path: String::new(),
+            }),
+        };
+
+        let part = ModulePart {
+            id,
+            part_type: module_part_type,
+            position,
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+        };
+
+        self.parts.push(part);
+        id
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePlaybackMode {
     TimelineDuration { duration_ms: u64 },
@@ -51,6 +85,16 @@ pub enum ModulePartType {
     Modulizer(ModulizerType),
     LayerAssignment(LayerAssignmentType),
     Output(OutputType),
+}
+
+/// Simplified part type for UI creation
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PartType {
+    Trigger,
+    Modulator,
+    Layer,
+    Output,
+    Media,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -178,6 +222,23 @@ impl ModuleManager {
 
     pub fn get_module_mut(&mut self, id: ModuleId) -> Option<&mut MapFlowModule> {
         self.modules.get_mut(&id)
+    }
+
+    /// Get a module by ID (immutable)
+    pub fn get_module(&self, id: ModuleId) -> Option<&MapFlowModule> {
+        self.modules.get(&id)
+    }
+
+    /// Get all modules as a slice-like iterator
+    pub fn modules(&self) -> Vec<&MapFlowModule> {
+        self.modules.values().collect()
+    }
+
+    /// Generate a new part ID
+    pub fn next_part_id(&mut self) -> ModulePartId {
+        let id = self.next_part_id;
+        self.next_part_id += 1;
+        id
     }
 }
 
