@@ -9,16 +9,11 @@ use std::fs;
 use std::path::PathBuf;
 
 /// Style for the audio meter
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AudioMeterStyle {
+    #[default]
     Retro,
     Digital,
-}
-
-impl Default for AudioMeterStyle {
-    fn default() -> Self {
-        Self::Retro
-    }
 }
 
 impl fmt::Display for AudioMeterStyle {
