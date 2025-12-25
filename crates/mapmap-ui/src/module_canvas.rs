@@ -32,6 +32,10 @@ pub struct ModuleCanvas {
     selected_parts: Vec<ModulePartId>,
     /// Clipboard for copy/paste (stores part types and relative positions)
     clipboard: Vec<(mapmap_core::module::ModulePartType, (f32, f32))>,
+    /// Search filter text
+    search_filter: String,
+    /// Whether search popup is visible
+    show_search: bool,
 }
 
 impl Default for ModuleCanvas {
@@ -45,6 +49,8 @@ impl Default for ModuleCanvas {
             pending_delete: None,
             selected_parts: Vec::new(),
             clipboard: Vec::new(),
+            search_filter: String::new(),
+            show_search: false,
         }
     }
 }
@@ -270,6 +276,24 @@ impl ModuleCanvas {
                 if ui.button("🗑").on_hover_text("Delete this module").clicked() {
                     manager.delete_module(module_id);
                     self.active_module_id = None;
+                }
+
+                ui.separator();
+
+                // Search button
+                if ui
+                    .button("🔍")
+                    .on_hover_text("Search nodes (Ctrl+F)")
+                    .clicked()
+                {
+                    self.show_search = !self.show_search;
+                }
+
+                // Auto-layout button
+                if ui.button("⊞").on_hover_text("Auto-layout nodes").clicked() {
+                    if let Some(module) = manager.get_module_mut(module_id) {
+                        Self::auto_layout_parts(&mut module.parts);
+                    }
                 }
             }
 
@@ -521,8 +545,29 @@ impl ModuleCanvas {
             let part_response =
                 ui.interact(*rect, egui::Id::new(*part_id), Sense::click_and_drag());
 
+            // Handle click for selection
+            if part_response.clicked() && self.creating_connection.is_none() {
+                if shift_held {
+                    // Shift+Click: toggle selection
+                    if self.selected_parts.contains(part_id) {
+                        self.selected_parts.retain(|id| id != part_id);
+                    } else {
+                        self.selected_parts.push(*part_id);
+                    }
+                } else {
+                    // Normal click: replace selection
+                    self.selected_parts.clear();
+                    self.selected_parts.push(*part_id);
+                }
+            }
+
             if part_response.drag_started() && self.creating_connection.is_none() {
                 self.dragging_part = Some((*part_id, Vec2::ZERO));
+                // If dragging a non-selected part, select only it
+                if !self.selected_parts.contains(part_id) {
+                    self.selected_parts.clear();
+                    self.selected_parts.push(*part_id);
+                }
             }
 
             if part_response.dragged() {
@@ -598,12 +643,22 @@ impl ModuleCanvas {
             module.parts.retain(|p| p.id != part_id);
         }
 
-        // Draw parts (nodes) with delete buttons
+        // Draw parts (nodes) with delete buttons and selection highlight
         for part in &module.parts {
             let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
             let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
             let part_size = Vec2::new(180.0, part_height);
             let part_screen_rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
+
+            // Draw selection highlight if selected
+            if self.selected_parts.contains(&part.id) {
+                let highlight_rect = part_screen_rect.expand(4.0 * self.zoom);
+                painter.rect_stroke(
+                    highlight_rect,
+                    8.0 * self.zoom,
+                    Stroke::new(3.0 * self.zoom, Color32::from_rgb(100, 200, 255)),
+                );
+            }
 
             self.draw_part_with_delete(&painter, part, part_screen_rect);
         }
@@ -650,6 +705,93 @@ impl ModuleCanvas {
                 painter.circle_filled(pointer_pos, 5.0, color);
             }
         }
+
+        // Draw mini-map in bottom-right corner
+        self.draw_mini_map(&painter, canvas_rect, module);
+    }
+
+    fn draw_mini_map(&self, painter: &egui::Painter, canvas_rect: Rect, module: &MapFlowModule) {
+        if module.parts.is_empty() {
+            return;
+        }
+
+        // Mini-map size and position
+        let map_size = Vec2::new(150.0, 100.0);
+        let map_margin = 10.0;
+        let map_rect = Rect::from_min_size(
+            Pos2::new(
+                canvas_rect.max.x - map_size.x - map_margin,
+                canvas_rect.max.y - map_size.y - map_margin,
+            ),
+            map_size,
+        );
+
+        // Background
+        painter.rect_filled(
+            map_rect,
+            4.0,
+            Color32::from_rgba_unmultiplied(30, 30, 40, 200),
+        );
+        painter.rect_stroke(map_rect, 4.0, Stroke::new(1.0, Color32::from_gray(80)));
+
+        // Calculate bounds of all parts
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut max_y = f32::MIN;
+
+        for part in &module.parts {
+            let height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+            min_x = min_x.min(part.position.0);
+            min_y = min_y.min(part.position.1);
+            max_x = max_x.max(part.position.0 + 180.0);
+            max_y = max_y.max(part.position.1 + height);
+        }
+
+        // Add padding
+        let padding = 50.0;
+        min_x -= padding;
+        min_y -= padding;
+        max_x += padding;
+        max_y += padding;
+
+        let world_width = (max_x - min_x).max(1.0);
+        let world_height = (max_y - min_y).max(1.0);
+
+        // Scale to fit in mini-map
+        let scale_x = (map_size.x - 8.0) / world_width;
+        let scale_y = (map_size.y - 8.0) / world_height;
+        let scale = scale_x.min(scale_y);
+
+        let to_map = |pos: Pos2| -> Pos2 {
+            Pos2::new(
+                map_rect.min.x + 4.0 + (pos.x - min_x) * scale,
+                map_rect.min.y + 4.0 + (pos.y - min_y) * scale,
+            )
+        };
+
+        // Draw parts as small rectangles
+        for part in &module.parts {
+            let height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+            let part_min = to_map(Pos2::new(part.position.0, part.position.1));
+            let part_max = to_map(Pos2::new(part.position.0 + 180.0, part.position.1 + height));
+            let part_rect = Rect::from_min_max(part_min, part_max);
+
+            let (_, title_color, _, _) = Self::get_part_style(&part.part_type);
+            painter.rect_filled(part_rect, 1.0, title_color);
+        }
+
+        // Draw viewport rectangle
+        let viewport_min = to_map(Pos2::new(
+            -self.pan_offset.x / self.zoom,
+            -self.pan_offset.y / self.zoom,
+        ));
+        let viewport_max = to_map(Pos2::new(
+            (-self.pan_offset.x + canvas_rect.width()) / self.zoom,
+            (-self.pan_offset.y + canvas_rect.height()) / self.zoom,
+        ));
+        let viewport_rect = Rect::from_min_max(viewport_min, viewport_max).intersect(map_rect);
+        painter.rect_stroke(viewport_rect, 0.0, Stroke::new(1.5, Color32::WHITE));
     }
 
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
@@ -964,6 +1106,54 @@ impl ModuleCanvas {
             ModulePartType::Modulizer(_) => PartType::Modulator,
             ModulePartType::LayerAssignment(_) => PartType::Layer,
             ModulePartType::Output(_) => PartType::Output,
+        }
+    }
+
+    /// Auto-layout parts in a grid by type (left to right: Trigger → Source → Mask → Modulator → Layer → Output)
+    fn auto_layout_parts(parts: &mut [mapmap_core::module::ModulePart]) {
+        use mapmap_core::module::ModulePartType;
+
+        // Sort parts by type category for left-to-right flow
+        let type_order = |pt: &ModulePartType| -> usize {
+            match pt {
+                ModulePartType::Trigger(_) => 0,
+                ModulePartType::Source(_) => 1,
+                ModulePartType::Mask(_) => 2,
+                ModulePartType::Modulizer(_) => 3,
+                ModulePartType::LayerAssignment(_) => 4,
+                ModulePartType::Output(_) => 5,
+            }
+        };
+
+        // Group parts by type
+        let mut columns: [Vec<usize>; 6] = Default::default();
+        for (i, part) in parts.iter().enumerate() {
+            let col = type_order(&part.part_type);
+            columns[col].push(i);
+        }
+
+        // Layout parameters
+        let node_width = 200.0;
+        let node_height = 120.0;
+        let h_spacing = 50.0;
+        let v_spacing = 30.0;
+        let start_x = 50.0;
+        let start_y = 50.0;
+
+        // Position each column
+        let mut x = start_x;
+        for col in &columns {
+            if col.is_empty() {
+                continue;
+            }
+
+            let mut y = start_y;
+            for &part_idx in col {
+                parts[part_idx].position = (x, y);
+                y += node_height + v_spacing;
+            }
+
+            x += node_width + h_spacing;
         }
     }
 }
