@@ -387,3 +387,11 @@ panel-edge-blend-color = Edge Blend & Color Calibration
 edge-blend-no-output = Select an output from the Output panel to configure its edge blend and color settings.
 header-edge-blend = Edge Blending
 header-color-calibration = Color Calibration
+
+# Module System
+panel-modules = Modules
+btn-add-module = Add Module
+panel-module-canvas = Module Canvas
+menu-rename = Rename
+menu-duplicate = Duplicate
+menu-delete = Delete

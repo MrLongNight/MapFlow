@@ -24,7 +24,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, module_sidebar::ModuleSidebarAction, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -522,6 +522,9 @@ impl App {
                     self.ui_state.i18n.set_locale(&lang_code);
                     info!("Language switched to: {}", lang_code);
                 }
+                mapmap_ui::UIAction::ToggleModuleCanvas => {
+                    self.ui_state.show_module_canvas = !self.ui_state.show_module_canvas;
+                }
                 mapmap_ui::UIAction::Exit => {
                     info!("Exit requested via menu");
                     self.exit_requested = true;
@@ -879,6 +882,48 @@ impl App {
 
                     // Render Icon Gallery
                     self.ui_state.render_icon_demo(ctx);
+
+                    // Render Module Sidebar
+                    if self.ui_state.show_module_sidebar {
+                        egui::SidePanel::left("module_sidebar_panel")
+                            .resizable(true)
+                            .default_width(200.0)
+                            .show(ctx, |ui| {
+                                if let Some(action) = self.ui_state.module_sidebar.show(
+                                    ui,
+                                    &mut self.state.module_manager,
+                                    &self.ui_state.i18n,
+                                ) {
+                                    match action {
+                                        ModuleSidebarAction::AddModule => {
+                                            self.state
+                                                .module_manager
+                                                .create_module("New Module".to_string());
+                                            self.state.dirty = true;
+                                        }
+                                        ModuleSidebarAction::DeleteModule(id) => {
+                                            self.state.module_manager.delete_module(id);
+                                            self.state.dirty = true;
+                                        }
+                                        ModuleSidebarAction::SetColor(id, color) => {
+                                            self.state.module_manager.set_module_color(id, color);
+                                            self.state.dirty = true;
+                                        }
+                                    }
+                                }
+                            });
+                    }
+
+                    // Render Module Canvas
+                    if self.ui_state.show_module_canvas {
+                        egui::CentralPanel::default().show(ctx, |ui| {
+                            self.ui_state.module_canvas.show(
+                                ui,
+                                &mut self.state.module_manager,
+                                &self.ui_state.i18n,
+                            );
+                        });
+                    }
 
                     // Render Media Browser
                     self.ui_state.render_media_browser(ctx);

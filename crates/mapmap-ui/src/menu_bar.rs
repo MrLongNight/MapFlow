@@ -172,6 +172,18 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         &mut ui_state.effect_chain_panel.visible,
                         ui_state.i18n.t("panel-effect-chain"),
                     );
+                    if ui.input_mut(|i| {
+                        i.consume_shortcut(&egui::KeyboardShortcut::new(
+                            egui::Modifiers::CTRL,
+                            egui::Key::M,
+                        ))
+                    }) {
+                        actions.push(UIAction::ToggleModuleCanvas);
+                    }
+                    ui.checkbox(
+                        &mut ui_state.show_module_canvas,
+                        ui_state.i18n.t("panel-module-canvas"),
+                    );
                     ui.separator();
                     ui.label(ui_state.i18n.t("view-legacy-panels"));
                     ui.checkbox(

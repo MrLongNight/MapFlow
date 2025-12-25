@@ -25,6 +25,8 @@ pub mod mapping_panel;
 pub mod media_browser;
 pub mod menu_bar;
 pub mod mesh_editor;
+pub mod module_canvas;
+pub mod module_sidebar;
 pub mod node_editor;
 pub mod osc_panel;
 pub mod oscillator_panel;
@@ -54,12 +56,13 @@ pub use layer_panel::{LayerPanel, LayerPanelAction};
 pub use mapping_panel::MappingPanel;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
+pub use module_canvas::ModuleCanvas;
+pub use module_sidebar::ModuleSidebar;
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;
 pub use paint_panel::PaintPanel;
 pub use shortcut_panel::{ShortcutAction, ShortcutPanel};
 pub use theme::{Theme, ThemeConfig};
-pub use timeline_v2::{InterpolationType, TimelineAction as TimelineV2Action, TimelineV2};
 pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
 
@@ -133,6 +136,7 @@ pub enum UIAction {
     // View actions
     ToggleFullscreen,
     ResetLayout,
+    ToggleModuleCanvas,
 
     // Audio actions
     SelectAudioDevice(String),
@@ -205,6 +209,10 @@ pub struct AppUI {
     /// Inspector panel for context-sensitive properties
     pub inspector_panel: InspectorPanel,
     pub show_inspector: bool,
+    pub module_sidebar: ModuleSidebar,
+    pub show_module_sidebar: bool,
+    pub module_canvas: ModuleCanvas,
+    pub show_module_canvas: bool,
 }
 
 impl Default for AppUI {
@@ -264,6 +272,10 @@ impl Default for AppUI {
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
             inspector_panel: InspectorPanel::default(),
             show_inspector: true, // Essential panel
+            module_sidebar: ModuleSidebar::default(),
+            show_module_sidebar: true,
+            module_canvas: ModuleCanvas::default(),
+            show_module_canvas: false,
         }
     }
 }

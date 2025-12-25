@@ -403,3 +403,11 @@ panel-edge-blend-color = Kantenüberblendung & Farbkalibrierung
 edge-blend-no-output = Wählen Sie einen Ausgang im Ausgabe-Panel, um dessen Kantenüberblendungs- und Farbeinstellungen zu konfigurieren.
 header-edge-blend = Kantenüberblendung
 header-color-calibration = Farbkalibrierung
+
+# Module System
+panel-modules = Module
+btn-add-module = Modul hinzufügen
+panel-module-canvas = Modul-Editor
+menu-rename = Umbenennen
+menu-duplicate = Duplizieren
+menu-delete = Löschen

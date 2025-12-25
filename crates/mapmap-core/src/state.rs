@@ -3,7 +3,8 @@
 //! This module defines the core state structures that are persisted to disk.
 
 use crate::{
-    AudioConfig, LayerManager, MappingManager, OscillatorConfig, OutputManager, PaintManager,
+    module::ModuleManager, AudioConfig, LayerManager, MappingManager, OscillatorConfig,
+    OutputManager, PaintManager,
 };
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +27,10 @@ pub struct AppState {
 
     /// Output manager (display configuration)
     pub output_manager: OutputManager,
+
+    /// Module manager (show control)
+    #[serde(default)]
+    pub module_manager: ModuleManager,
 
     /// Audio configuration
     pub audio_config: AudioConfig,
@@ -51,6 +56,7 @@ impl Default for AppState {
             mapping_manager: MappingManager::new(),
             layer_manager: LayerManager::new(),
             output_manager: OutputManager::new((1920, 1080)),
+            module_manager: ModuleManager::default(),
             audio_config: AudioConfig::default(),
             oscillator_config: OscillatorConfig::default(),
             settings: AppSettings::default(),

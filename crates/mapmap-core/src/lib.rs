@@ -30,6 +30,7 @@ pub mod audio_reactive;
 pub mod codegen;
 pub mod effects;
 pub mod lut;
+pub mod module;
 pub mod oscillator;
 pub mod shader_graph;
 pub mod state;
