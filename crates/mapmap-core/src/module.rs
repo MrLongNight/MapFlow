@@ -124,6 +124,17 @@ impl MapFlowModule {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            PartType::Mesh => (
+                ModulePartType::Mesh(MeshType::Quad),
+                vec![ModuleSocket {
+                    name: "Media In".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+                vec![ModuleSocket {
+                    name: "Mesh Out".to_string(),
+                    socket_type: ModuleSocketType::Layer,
+                }],
+            ),
             PartType::Layer => (
                 ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
                     opacity: 1.0,
@@ -222,6 +233,16 @@ impl MapFlowModule {
                 vec![ModuleSocket {
                     name: "Media Out".to_string(),
                     socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::Mesh(_) => (
+                vec![ModuleSocket {
+                    name: "Media In".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+                vec![ModuleSocket {
+                    name: "Mesh Out".to_string(),
+                    socket_type: ModuleSocketType::Layer,
                 }],
             ),
             ModulePartType::LayerAssignment(_) => (
@@ -335,6 +356,7 @@ pub enum ModulePartType {
     Source(SourceType),
     Mask(MaskType),
     Modulizer(ModulizerType),
+    Mesh(MeshType),
     LayerAssignment(LayerAssignmentType),
     Output(OutputType),
 }
@@ -346,6 +368,7 @@ pub enum PartType {
     Source,
     Mask,
     Modulator,
+    Mesh,
     Layer,
     Output,
 }
@@ -417,6 +440,32 @@ pub enum MaskShape {
     Triangle,
     Star,
     Ellipse,
+}
+
+/// Mesh types for projection mapping
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum MeshType {
+    /// Simple quad mesh (4 corner points)
+    Quad,
+    /// Grid mesh with configurable subdivision
+    Grid { rows: u32, cols: u32 },
+    /// Bezier surface with control points
+    BezierSurface { control_points: Vec<(f32, f32)> },
+    /// Freeform polygon mesh
+    Polygon { vertices: Vec<(f32, f32)> },
+    /// Triangle mesh
+    TriMesh,
+    /// Circle/Arc for curved surfaces
+    Circle { segments: u32, arc_angle: f32 },
+    /// Cylinder projection (for 3D surfaces)
+    Cylinder { segments: u32, height: f32 },
+    /// Sphere segment (for dome projections)
+    Sphere {
+        lat_segments: u32,
+        lon_segments: u32,
+    },
+    /// Custom mesh from file
+    Custom { path: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

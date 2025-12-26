@@ -2,8 +2,8 @@ use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
-    MaskShape, MaskType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType, ModulizerType,
-    OutputType, SourceType, TriggerType,
+    MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
+    ModulizerType, OutputType, SourceType, TriggerType,
 };
 
 /// Information about a socket position for hit detection
@@ -204,6 +204,19 @@ impl ModuleCanvas {
         }
     }
 
+    /// Add a Mesh node with specified type
+    fn add_mesh_node(&mut self, manager: &mut ModuleManager, mesh_type: MeshType) {
+        if let Some(id) = self.active_module_id {
+            if let Some(module) = manager.get_module_mut(id) {
+                let pos = Self::find_free_position(&module.parts, (450.0, 100.0));
+                module.add_part_with_type(
+                    mapmap_core::module::ModulePartType::Mesh(mesh_type),
+                    pos,
+                );
+            }
+        }
+    }
+
     /// Add an Output node with specified type
     fn add_output_node(&mut self, manager: &mut ModuleManager, output_type: OutputType) {
         if let Some(id) = self.active_module_id {
@@ -380,7 +393,53 @@ impl ModuleCanvas {
                     }
                 });
 
-                // OUTPUT DROPDOWN
+                // MESH DROPDOWN
+                egui::menu::menu_button(ui, "🔷 Mesh", |ui| {
+                    ui.set_min_width(200.0);
+                    ui.label("--- Basic Shapes ---");
+                    if ui.button("⬜ Quad").clicked() {
+                        self.add_mesh_node(manager, MeshType::Quad);
+                        ui.close_menu();
+                    }
+                    if ui.button("🔺 Triangle").clicked() {
+                        self.add_mesh_node(manager, MeshType::TriMesh);
+                        ui.close_menu();
+                    }
+                    if ui.button("⭕ Circle/Arc").clicked() {
+                        self.add_mesh_node(manager, MeshType::Circle { segments: 32, arc_angle: 360.0 });
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    ui.label("--- Subdivided ---");
+                    if ui.button("▦ Grid (4x4)").clicked() {
+                        self.add_mesh_node(manager, MeshType::Grid { rows: 4, cols: 4 });
+                        ui.close_menu();
+                    }
+                    if ui.button("▦ Grid (8x8)").clicked() {
+                        self.add_mesh_node(manager, MeshType::Grid { rows: 8, cols: 8 });
+                        ui.close_menu();
+                    }
+                    if ui.button("〰️ Bezier Surface").clicked() {
+                        self.add_mesh_node(manager, MeshType::BezierSurface { control_points: vec![] });
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    ui.label("--- 3D Mapping ---");
+                    if ui.button("🌐 Cylinder").clicked() {
+                        self.add_mesh_node(manager, MeshType::Cylinder { segments: 16, height: 1.0 });
+                        ui.close_menu();
+                    }
+                    if ui.button("🌍 Sphere (Dome)").clicked() {
+                        self.add_mesh_node(manager, MeshType::Sphere { lat_segments: 8, lon_segments: 16 });
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    if ui.button("📁 Custom Mesh...").clicked() {
+                        self.add_mesh_node(manager, MeshType::Custom { path: String::new() });
+                        ui.close_menu();
+                    }
+                });
+
                 egui::menu::menu_button(ui, "📺 Output", |ui| {
                     ui.set_min_width(180.0);
                     if ui.button("📽️ Projector").clicked() {
@@ -552,17 +611,17 @@ impl ModuleCanvas {
             if !self.selected_parts.is_empty() {
                 ui.horizontal(|ui| {
                     // Canvas area (left side - takes most space)
-                    let canvas_width = ui.available_width() - 220.0;
+                    let canvas_width = ui.available_width() - 300.0;
                     ui.allocate_ui(Vec2::new(canvas_width, ui.available_height()), |ui| {
                         self.render_canvas(ui, module, locale);
                     });
 
                     ui.separator();
 
-                    // Inspector panel (right side - 200px width)
+                    // Node Control panel (right side - 280px width)
                     ui.vertical(|ui| {
-                        ui.set_min_width(200.0);
-                        ui.heading("📋 Node Inspector");
+                        ui.set_min_width(280.0);
+                        ui.heading("🎛️ Node Control");
                         ui.separator();
 
                         // Get first selected part
@@ -1081,6 +1140,53 @@ impl ModuleCanvas {
                                                                 if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Normal)), "Normal").clicked() { *blend_mode = Some(BlendModeType::Normal); }
                                                                 if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Add)), "Add").clicked() { *blend_mode = Some(BlendModeType::Add); }
                                                             });
+                                                    }
+                                                }
+                                            }
+                                            ModulePartType::Mesh(mesh_type) => {
+                                                ui.label("Mesh:");
+                                                match mesh_type {
+                                                    MeshType::Quad => {
+                                                        ui.label("⬜ Quad Mesh");
+                                                        ui.label("4-corner mapping surface");
+                                                    }
+                                                    MeshType::Grid { rows, cols } => {
+                                                        ui.label("▦ Grid Mesh");
+                                                        ui.add(egui::Slider::new(rows, 1..=16).text("Rows"));
+                                                        ui.add(egui::Slider::new(cols, 1..=16).text("Cols"));
+                                                    }
+                                                    MeshType::BezierSurface { .. } => {
+                                                        ui.label("〰️ Bezier Surface");
+                                                        ui.label("Curved surface with control points");
+                                                    }
+                                                    MeshType::Polygon { .. } => {
+                                                        ui.label("⬡ Polygon Mesh");
+                                                        ui.label("Freeform polygon vertices");
+                                                    }
+                                                    MeshType::TriMesh => {
+                                                        ui.label("🔺 Triangle Mesh");
+                                                    }
+                                                    MeshType::Circle { segments, arc_angle } => {
+                                                        ui.label("⭕ Circle/Arc");
+                                                        ui.add(egui::Slider::new(segments, 8..=64).text("Segments"));
+                                                        ui.add(egui::Slider::new(arc_angle, 0.0..=360.0).text("Arc °"));
+                                                    }
+                                                    MeshType::Cylinder { segments, height } => {
+                                                        ui.label("🌐 Cylinder");
+                                                        ui.add(egui::Slider::new(segments, 8..=64).text("Segments"));
+                                                        ui.add(egui::Slider::new(height, 0.1..=10.0).text("Height"));
+                                                    }
+                                                    MeshType::Sphere { lat_segments, lon_segments } => {
+                                                        ui.label("🌍 Sphere/Dome");
+                                                        ui.add(egui::Slider::new(lat_segments, 4..=32).text("Lat Segs"));
+                                                        ui.add(egui::Slider::new(lon_segments, 4..=64).text("Lon Segs"));
+                                                    }
+                                                    MeshType::Custom { path } => {
+                                                        ui.label("📁 Custom Mesh");
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("File:");
+                                                            ui.text_edit_singleline(path);
+                                                        });
                                                     }
                                                 }
                                             }
@@ -2126,6 +2232,16 @@ impl ModuleCanvas {
                     socket_type: ModuleSocketType::Layer,
                 }],
             ),
+            ModulePartType::Mesh(_) => (
+                vec![ModuleSocket {
+                    name: "Media In".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+                vec![ModuleSocket {
+                    name: "Mesh Out".to_string(),
+                    socket_type: ModuleSocketType::Layer,
+                }],
+            ),
             ModulePartType::Output(_) => (
                 vec![ModuleSocket {
                     name: "Layer In".to_string(),
@@ -2607,6 +2723,10 @@ impl ModuleCanvas {
                         }
                     });
             }
+            ModulePartType::Mesh(_) => {
+                ui.label("Mesh Type:");
+                ui.label("Configure mesh in Node Control panel.");
+            }
             ModulePartType::Output(output_type) => {
                 ui.label("Output Type:");
                 let current = match output_type {
@@ -2676,43 +2796,51 @@ impl ModuleCanvas {
     where
         F: Fn(Pos2) -> Pos2,
     {
+        let node_width = 180.0;
+        let title_height = 28.0;
+        let socket_spacing = 20.0;
+        let socket_radius = 6.0;
+
         for conn in &module.connections {
             // Find source and target parts
             let from_part = module.parts.iter().find(|p| p.id == conn.from_part);
             let to_part = module.parts.iter().find(|p| p.id == conn.to_part);
 
             if let (Some(from), Some(to)) = (from_part, to_part) {
-                // Calculate socket positions
-                let from_pos = to_screen(Pos2::new(from.position.0, from.position.1));
-                let to_pos = to_screen(Pos2::new(to.position.0, to.position.1));
-
-                let _from_height = 80.0 + (from.inputs.len().max(from.outputs.len()) as f32) * 20.0;
-                let socket_y_offset = 50.0 + conn.from_socket as f32 * 20.0;
-                let from_socket_pos = Pos2::new(
-                    from_pos.x + 180.0 * self.zoom, // Right side
-                    from_pos.y + socket_y_offset * self.zoom,
+                // Calculate socket positions on the actual nodes
+                // Output sockets are on the right side of the node
+                let from_socket_y = title_height + 12.0 + conn.from_socket as f32 * socket_spacing;
+                let from_socket_world = Pos2::new(
+                    from.position.0 + node_width, // Right edge
+                    from.position.1 + from_socket_y,
                 );
+                let from_socket_screen = to_screen(from_socket_world);
 
-                let to_socket_y_offset = 50.0 + conn.to_socket as f32 * 20.0;
-                let to_socket_pos = Pos2::new(
-                    to_pos.x, // Left side
-                    to_pos.y + to_socket_y_offset * self.zoom,
+                // Input sockets are on the left side of the node
+                let to_socket_y = title_height + 12.0 + conn.to_socket as f32 * socket_spacing;
+                let to_socket_world = Pos2::new(
+                    to.position.0, // Left edge
+                    to.position.1 + to_socket_y,
                 );
+                let to_socket_screen = to_screen(to_socket_world);
+
+                // Adjust for socket radius (start from center of socket)
+                let from_pos = Pos2::new(from_socket_screen.x + socket_radius * self.zoom, from_socket_screen.y);
+                let to_pos = Pos2::new(to_socket_screen.x - socket_radius * self.zoom, to_socket_screen.y);
 
                 // Draw bezier curve
-                let control_offset = (to_socket_pos.x - from_socket_pos.x).abs() * 0.4;
-                let ctrl1 = Pos2::new(from_socket_pos.x + control_offset, from_socket_pos.y);
-                let ctrl2 = Pos2::new(to_socket_pos.x - control_offset, to_socket_pos.y);
+                let control_offset = (to_pos.x - from_pos.x).abs() * 0.4;
+                let ctrl1 = Pos2::new(from_pos.x + control_offset, from_pos.y);
+                let ctrl2 = Pos2::new(to_pos.x - control_offset, to_pos.y);
 
                 // Draw as line segments (approximating bezier)
                 let steps = 20;
                 for i in 0..steps {
                     let t1 = i as f32 / steps as f32;
                     let t2 = (i + 1) as f32 / steps as f32;
-                    let p1 = Self::bezier_point(from_socket_pos, ctrl1, ctrl2, to_socket_pos, t1);
-                    let p2 = Self::bezier_point(from_socket_pos, ctrl1, ctrl2, to_socket_pos, t2);
-                    painter
-                        .line_segment([p1, p2], Stroke::new(2.0, Color32::from_rgb(100, 180, 255)));
+                    let p1 = Self::bezier_point(from_pos, ctrl1, ctrl2, to_pos, t1);
+                    let p2 = Self::bezier_point(from_pos, ctrl1, ctrl2, to_pos, t2);
+                    painter.line_segment([p1, p2], Stroke::new(2.0, Color32::from_rgb(100, 180, 255)));
                 }
             }
         }
@@ -2843,44 +2971,111 @@ impl ModuleCanvas {
     fn get_part_style(
         part_type: &mapmap_core::module::ModulePartType,
     ) -> (Color32, Color32, &'static str, &'static str) {
-        use mapmap_core::module::ModulePartType;
+        use mapmap_core::module::{ModulePartType, TriggerType, SourceType, MaskType, MaskShape, ModulizerType, EffectType, BlendModeType, LayerAssignmentType, OutputType};
         match part_type {
-            ModulePartType::Trigger(_) => (
-                Color32::from_rgb(60, 50, 70),   // bg
-                Color32::from_rgb(130, 80, 180), // title
-                "⚡",
-                "Trigger",
-            ),
-            ModulePartType::Source(_) => (
-                Color32::from_rgb(50, 60, 70),
-                Color32::from_rgb(80, 140, 180),
-                "🎬",
-                "Source",
-            ),
-            ModulePartType::Mask(_) => (
-                Color32::from_rgb(60, 55, 70),
-                Color32::from_rgb(160, 100, 180),
-                "🎭",
-                "Mask",
-            ),
-            ModulePartType::Modulizer(_) => (
-                Color32::from_rgb(60, 60, 50),
-                Color32::from_rgb(180, 140, 60),
-                "〰️",
-                "Modulator",
-            ),
-            ModulePartType::LayerAssignment(_) => (
-                Color32::from_rgb(50, 70, 60),
-                Color32::from_rgb(80, 180, 120),
-                "📑",
-                "Layer",
-            ),
-            ModulePartType::Output(_) => (
-                Color32::from_rgb(70, 50, 50),
-                Color32::from_rgb(180, 80, 80),
-                "📺",
-                "Output",
-            ),
+            ModulePartType::Trigger(trigger) => {
+                let name = match trigger {
+                    TriggerType::AudioFFT { .. } => "Audio FFT",
+                    TriggerType::Beat => "Beat",
+                    TriggerType::Midi { .. } => "MIDI",
+                    TriggerType::Osc { .. } => "OSC",
+                    TriggerType::Shortcut { .. } => "Shortcut",
+                    TriggerType::Random { .. } => "Random",
+                    TriggerType::Fixed { .. } => "Fixed Timer",
+                };
+                (Color32::from_rgb(60, 50, 70), Color32::from_rgb(130, 80, 180), "⚡", name)
+            },
+            ModulePartType::Source(source) => {
+                let name = match source {
+                    SourceType::MediaFile { .. } => "Media File",
+                    SourceType::Shader { .. } => "Shader",
+                    SourceType::LiveInput { .. } => "Live Input",
+                };
+                (Color32::from_rgb(50, 60, 70), Color32::from_rgb(80, 140, 180), "🎬", name)
+            },
+            ModulePartType::Mask(mask) => {
+                let name = match mask {
+                    MaskType::File { .. } => "File Mask",
+                    MaskType::Shape(shape) => match shape {
+                        MaskShape::Circle => "Circle",
+                        MaskShape::Rectangle => "Rectangle",
+                        MaskShape::Triangle => "Triangle",
+                        MaskShape::Star => "Star",
+                        MaskShape::Ellipse => "Ellipse",
+                    },
+                    MaskType::Gradient { .. } => "Gradient",
+                };
+                (Color32::from_rgb(60, 55, 70), Color32::from_rgb(160, 100, 180), "🎭", name)
+            },
+            ModulePartType::Modulizer(mod_type) => {
+                let name = match mod_type {
+                    ModulizerType::Effect(effect) => match effect {
+                        EffectType::Blur => "Blur",
+                        EffectType::Sharpen => "Sharpen",
+                        EffectType::Invert => "Invert",
+                        EffectType::Threshold => "Threshold",
+                        EffectType::Brightness => "Brightness",
+                        EffectType::Contrast => "Contrast",
+                        EffectType::Saturation => "Saturation",
+                        EffectType::HueShift => "Hue Shift",
+                        EffectType::Colorize => "Colorize",
+                        EffectType::Wave => "Wave",
+                        EffectType::Spiral => "Spiral",
+                        EffectType::Pinch => "Pinch",
+                        EffectType::Mirror => "Mirror",
+                        EffectType::Kaleidoscope => "Kaleidoscope",
+                        EffectType::Pixelate => "Pixelate",
+                        EffectType::Halftone => "Halftone",
+                        EffectType::EdgeDetect => "Edge Detect",
+                        EffectType::Posterize => "Posterize",
+                        EffectType::Glitch => "Glitch",
+                        EffectType::RgbSplit => "RGB Split",
+                        EffectType::ChromaticAberration => "Chromatic",
+                        EffectType::VHS => "VHS",
+                        EffectType::FilmGrain => "Film Grain",
+                    },
+                    ModulizerType::BlendMode(blend) => match blend {
+                        BlendModeType::Normal => "Normal",
+                        BlendModeType::Add => "Add",
+                        BlendModeType::Multiply => "Multiply",
+                        BlendModeType::Screen => "Screen",
+                        BlendModeType::Overlay => "Overlay",
+                        BlendModeType::Difference => "Difference",
+                        BlendModeType::Exclusion => "Exclusion",
+                    },
+                    ModulizerType::AudioReactive { .. } => "Audio Reactive",
+                };
+                (Color32::from_rgb(60, 60, 50), Color32::from_rgb(180, 140, 60), "〰️", name)
+            },
+            ModulePartType::LayerAssignment(layer) => {
+                let name = match layer {
+                    LayerAssignmentType::SingleLayer { .. } => "Single Layer",
+                    LayerAssignmentType::Group { .. } => "Layer Group",
+                    LayerAssignmentType::AllLayers { .. } => "All Layers",
+                };
+                (Color32::from_rgb(50, 70, 60), Color32::from_rgb(80, 180, 120), "📑", name)
+            },
+            ModulePartType::Mesh(mesh) => {
+                let name = match mesh {
+                    MeshType::Quad => "Quad",
+                    MeshType::Grid { .. } => "Grid",
+                    MeshType::BezierSurface { .. } => "Bezier",
+                    MeshType::Polygon { .. } => "Polygon",
+                    MeshType::TriMesh => "Triangle",
+                    MeshType::Circle { .. } => "Circle",
+                    MeshType::Cylinder { .. } => "Cylinder",
+                    MeshType::Sphere { .. } => "Sphere",
+                    MeshType::Custom { .. } => "Custom",
+                };
+                (Color32::from_rgb(55, 60, 70), Color32::from_rgb(100, 150, 200), "🔷", name)
+            },
+            ModulePartType::Output(output) => {
+                let name = match output {
+                    OutputType::Projector { .. } => "Projector",
+                    OutputType::Preview { .. } => "Preview",
+                };
+                (Color32::from_rgb(70, 50, 50), Color32::from_rgb(180, 80, 80), "📺", name)
+            },
         }
     }
 
@@ -2944,6 +3139,26 @@ impl ModuleCanvas {
                     LayerAssignmentType::AllLayers { .. } => "📑 All Layers".to_string(),
                 }
             }
+            ModulePartType::Mesh(mesh_type) => {
+                use mapmap_core::module::MeshType;
+                match mesh_type {
+                    MeshType::Quad => "⬜ Quad".to_string(),
+                    MeshType::Grid { rows, cols } => format!("▦ Grid {}x{}", rows, cols),
+                    MeshType::BezierSurface { .. } => "〰️ Bezier".to_string(),
+                    MeshType::Polygon { .. } => "⬡ Polygon".to_string(),
+                    MeshType::TriMesh => "🔺 Triangle".to_string(),
+                    MeshType::Circle { segments, .. } => format!("⭕ Circle ({})", segments),
+                    MeshType::Cylinder { segments, .. } => format!("🌐 Cylinder ({})", segments),
+                    MeshType::Sphere { .. } => "🌍 Sphere".to_string(),
+                    MeshType::Custom { path } => {
+                        if path.is_empty() {
+                            "📁 Custom...".to_string()
+                        } else {
+                            format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                        }
+                    }
+                }
+            }
             ModulePartType::Output(output_type) => match output_type {
                 OutputType::Projector { name, .. } => format!("📺 {}", name),
                 OutputType::Preview { window_id } => format!("👁 Preview {}", window_id),
@@ -2961,6 +3176,7 @@ impl ModuleCanvas {
             ModulePartType::Source(_) => PartType::Source,
             ModulePartType::Mask(_) => PartType::Mask,
             ModulePartType::Modulizer(_) => PartType::Modulator,
+            ModulePartType::Mesh(_) => PartType::Mesh,
             ModulePartType::LayerAssignment(_) => PartType::Layer,
             ModulePartType::Output(_) => PartType::Output,
         }
@@ -2977,13 +3193,14 @@ impl ModuleCanvas {
                 ModulePartType::Source(_) => 1,
                 ModulePartType::Mask(_) => 2,
                 ModulePartType::Modulizer(_) => 3,
-                ModulePartType::LayerAssignment(_) => 4,
-                ModulePartType::Output(_) => 5,
+                ModulePartType::Mesh(_) => 4,
+                ModulePartType::LayerAssignment(_) => 5,
+                ModulePartType::Output(_) => 6,
             }
         };
 
         // Group parts by type
-        let mut columns: [Vec<usize>; 6] = Default::default();
+        let mut columns: [Vec<usize>; 7] = Default::default();
         for (i, part) in parts.iter().enumerate() {
             let col = type_order(&part.part_type);
             columns[col].push(i);
