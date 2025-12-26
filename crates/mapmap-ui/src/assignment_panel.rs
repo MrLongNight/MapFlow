@@ -107,31 +107,45 @@ impl AssignmentPanel {
                 ui.separator();
                 ui.heading(format!("Editing Assignment #{}", editing_id));
 
-                Grid::new("assignment_editor").num_columns(2).show(ui, |ui| {
-                    ui.label("Name:");
-                    ui.text_edit_singleline(&mut self.edited_name);
-                    ui.end_row();
+                Grid::new("assignment_editor")
+                    .num_columns(2)
+                    .show(ui, |ui| {
+                        ui.label("Name:");
+                        ui.text_edit_singleline(&mut self.edited_name);
+                        ui.end_row();
 
-                    ui.label("Source:");
-                    ComboBox::from_label("Select Source")
-                        .selected_text(format!("Source ID: {}", assignment.source_id))
-                        .show_ui(ui, |ui| {
-                            // TODO: Populate with real sources
-                            ui.selectable_value(&mut assignment.source_id, 0, "MIDI CC 1");
-                            ui.selectable_value(&mut assignment.source_id, 1, "OSC /layer/opacity");
-                        });
-                    ui.end_row();
+                        ui.label("Source:");
+                        ComboBox::from_label("Select Source")
+                            .selected_text(format!("Source ID: {}", assignment.source_id))
+                            .show_ui(ui, |ui| {
+                                // TODO: Populate with real sources
+                                ui.selectable_value(&mut assignment.source_id, 0, "MIDI CC 1");
+                                ui.selectable_value(
+                                    &mut assignment.source_id,
+                                    1,
+                                    "OSC /layer/opacity",
+                                );
+                            });
+                        ui.end_row();
 
-                    ui.label("Target:");
-                    ComboBox::from_label("Select Target")
-                        .selected_text(format!("Target ID: {}", assignment.target_module_id))
-                        .show_ui(ui, |ui| {
-                            // TODO: Populate with real targets
-                            ui.selectable_value(&mut assignment.target_module_id, 0, "Layer 1 Opacity");
-                            ui.selectable_value(&mut assignment.target_module_id, 1, "Effect Radius");
-                        });
-                    ui.end_row();
-                });
+                        ui.label("Target:");
+                        ComboBox::from_label("Select Target")
+                            .selected_text(format!("Target ID: {}", assignment.target_module_id))
+                            .show_ui(ui, |ui| {
+                                // TODO: Populate with real targets
+                                ui.selectable_value(
+                                    &mut assignment.target_module_id,
+                                    0,
+                                    "Layer 1 Opacity",
+                                );
+                                ui.selectable_value(
+                                    &mut assignment.target_module_id,
+                                    1,
+                                    "Effect Radius",
+                                );
+                            });
+                        ui.end_row();
+                    });
 
                 ui.horizontal(|ui| {
                     if ui.button("Done").clicked() {
@@ -139,7 +153,6 @@ impl AssignmentPanel {
                         self.editing_id = None;
                     }
                 });
-
             } else {
                 // The assignment was removed while being edited
                 self.editing_id = None;

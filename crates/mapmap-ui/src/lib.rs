@@ -10,8 +10,8 @@
 //! - Controller Overlay Panel (MIDI visualization)
 
 // Phase 6: Advanced Authoring UI (egui-based)
-pub mod assignment_panel;
 pub mod asset_manager;
+pub mod assignment_panel;
 pub mod audio_meter;
 pub mod audio_panel;
 pub mod config;

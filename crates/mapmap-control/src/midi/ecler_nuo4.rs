@@ -26,6 +26,7 @@ pub enum Nuo4Section {
 }
 
 /// Create Ecler NUO 4 controller profile with exact MIDI values from Control 4 Lab
+#[allow(clippy::vec_init_then_push)]
 pub fn ecler_nuo4() -> ControllerProfile {
     let mut mappings = Vec::new();
 

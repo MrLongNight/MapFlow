@@ -63,7 +63,7 @@ impl Default for AppState {
             module_manager: ModuleManager::default(),
             audio_config: AudioConfig::default(),
             oscillator_config: OscillatorConfig::default(),
-             assignment_manager: AssignmentManager::default(),
+            assignment_manager: AssignmentManager::default(),
             settings: AppSettings::default(),
             dirty: false,
         }

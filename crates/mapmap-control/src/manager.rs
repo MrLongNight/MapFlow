@@ -222,9 +222,9 @@ impl ControlManager {
                 for assignment in assignment_manager.assignments() {
                     if assignment.enabled && assignment.source_id == source_id {
                         let target = match assignment.target_param_name.as_str() {
-                            "opacity" => {
-                                Some(ControlTarget::LayerOpacity(assignment.target_module_id as u32))
-                            }
+                            "opacity" => Some(ControlTarget::LayerOpacity(
+                                assignment.target_module_id as u32,
+                            )),
                             "visibility" => Some(ControlTarget::LayerVisibility(
                                 assignment.target_module_id as u32,
                             )),
@@ -272,7 +272,8 @@ impl ControlManager {
 
                             if let Some(target) = target {
                                 // TODO: More robust OSC arg to ControlValue conversion
-                                let value = if let Some(rosc::OscType::Float(v)) = msg.args.get(0) {
+                                let value = if let Some(rosc::OscType::Float(v)) = msg.args.first()
+                                {
                                     ControlValue::Float(*v)
                                 } else {
                                     ControlValue::Float(0.0)

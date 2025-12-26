@@ -7,9 +7,10 @@ use super::{MidiMappingKey, MidiMessage};
 use std::time::{Duration, Instant};
 
 /// State of the MIDI learn mode
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum MidiLearnState {
     /// Not in learn mode
+    #[default]
     Inactive,
     /// Waiting for user to trigger a MIDI control
     WaitingForInput {
@@ -34,12 +35,6 @@ pub enum MidiLearnState {
     },
     /// Learn mode was cancelled
     Cancelled,
-}
-
-impl Default for MidiLearnState {
-    fn default() -> Self {
-        Self::Inactive
-    }
 }
 
 impl MidiLearnState {

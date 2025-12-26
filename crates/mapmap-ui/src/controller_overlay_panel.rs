@@ -232,8 +232,8 @@ impl ControllerOverlayPanel {
                     self.learn_manager.update();
 
                     // Draw controller overlay
-                    if let Some(elements) = &self.elements {
-                        self.draw_controller(ui, elements);
+                    if let Some(elements) = self.elements.clone() {
+                        self.draw_controller(ui, &elements);
                     } else {
                         ui.label("Kein Controller geladen");
                         if ui.button("Ecler NUO 4 laden").clicked() {
@@ -257,12 +257,12 @@ impl ControllerOverlayPanel {
 
     /// Draw the controller visualization
     #[cfg(feature = "midi")]
-    fn draw_controller(&mut self, ui: &mut Ui, elements: &ControllerElements) {
+    fn draw_controller(&mut self, ui: &mut egui::Ui, elements: &ControllerElements) {
         let available_size = ui.available_size();
         let panel_size = Vec2::new(available_size.x.min(600.0), available_size.y.min(400.0));
 
         let (response, painter) = ui.allocate_painter(panel_size, Sense::click());
-        let rect = response.rect;
+        let rect: egui::Rect = response.rect;
 
         // Background
         painter.rect_filled(rect, 8.0, Color32::from_rgb(30, 30, 35));

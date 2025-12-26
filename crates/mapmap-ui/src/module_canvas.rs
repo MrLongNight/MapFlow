@@ -851,29 +851,29 @@ impl ModuleCanvas {
 
                 // Context Menu Logic
                 if let Some(menu_pos) = self.context_menu_pos {
-                     ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::Default);
-                     let menu_rect = Rect::from_min_size(menu_pos, Vec2::new(140.0, 100.0));
+                    ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::Default);
+                    let menu_rect = Rect::from_min_size(menu_pos, Vec2::new(140.0, 100.0));
 
-                     // Check for click outside to close
-                     if ui.input(|i| i.pointer.any_pressed()) {
-                         let pointer = ui.input(|i| i.pointer.hover_pos());
-                         if let Some(pos) = pointer {
-                             if !menu_rect.contains(pos) {
-                                 self.context_menu_pos = None;
-                                 self.context_menu_connection = None;
-                                 self.context_menu_part = None;
-                             }
-                         }
-                     }
+                    // Check for click outside to close
+                    if ui.input(|i| i.pointer.any_pressed()) {
+                        let pointer = ui.input(|i| i.pointer.hover_pos());
+                        if let Some(pos) = pointer {
+                            if !menu_rect.contains(pos) {
+                                self.context_menu_pos = None;
+                                self.context_menu_connection = None;
+                                self.context_menu_part = None;
+                            }
+                        }
+                    }
 
-                     if self.context_menu_pos.is_some() {
-                         egui::Window::new("Context Menu")
-                             .fixed_pos(menu_pos)
-                             .collapsible(false)
-                             .resizable(false)
-                             .title_bar(false)
-                             .frame(egui::Frame::popup(ui.style()))
-                             .show(ui.ctx(), |ui| {
+                    if self.context_menu_pos.is_some() {
+                        egui::Window::new("Context Menu")
+                            .fixed_pos(menu_pos)
+                            .collapsible(false)
+                            .resizable(false)
+                            .title_bar(false)
+                            .frame(egui::Frame::popup(ui.style()))
+                            .show(ui.ctx(), |ui| {
                                 if let Some(conn_idx) = self.context_menu_connection {
                                     if ui.button("🗑 Delete Connection").clicked() {
                                         if conn_idx < module.connections.len() {
@@ -885,8 +885,10 @@ impl ModuleCanvas {
                                 }
                                 if let Some(part_id) = self.context_menu_part {
                                     if ui.button("🗑 Delete Node").clicked() {
-                                         // Remove connections
-                                        module.connections.retain(|c| c.from_part != part_id && c.to_part != part_id);
+                                        // Remove connections
+                                        module.connections.retain(|c| {
+                                            c.from_part != part_id && c.to_part != part_id
+                                        });
                                         // Remove part
                                         module.parts.retain(|p| p.id != part_id);
                                         self.context_menu_pos = None;
@@ -894,21 +896,29 @@ impl ModuleCanvas {
                                     }
                                     if ui.button("📄 Duplicate Node").clicked() {
                                         // Find part to duplicate
-                                        if let Some(part) = module.parts.iter().find(|p| p.id == part_id).cloned() {
-                                             // Generate new ID locally to avoid borrowing manager/module conflict
-                                             let new_id = module.parts.iter().map(|p| p.id).max().unwrap_or(0) + 1;
-                                             let mut new_part = part.clone();
-                                             new_part.id = new_id;
-                                             new_part.position.0 += 20.0;
-                                             new_part.position.1 += 20.0;
-                                             module.parts.push(new_part);
+                                        if let Some(part) =
+                                            module.parts.iter().find(|p| p.id == part_id).cloned()
+                                        {
+                                            // Generate new ID locally to avoid borrowing manager/module conflict
+                                            let new_id = module
+                                                .parts
+                                                .iter()
+                                                .map(|p| p.id)
+                                                .max()
+                                                .unwrap_or(0)
+                                                + 1;
+                                            let mut new_part = part.clone();
+                                            new_part.id = new_id;
+                                            new_part.position.0 += 20.0;
+                                            new_part.position.1 += 20.0;
+                                            module.parts.push(new_part);
                                         }
                                         self.context_menu_pos = None;
                                         self.context_menu_part = None;
                                     }
                                 }
-                             });
-                     }
+                            });
+                    }
                 }
             }
         } else {
@@ -1239,17 +1249,18 @@ impl ModuleCanvas {
                         module.parts.iter().find(|p| p.id == conn.from_part),
                         module.parts.iter().find(|p| p.id == conn.to_part),
                     ) {
-
-                         // Adjust for socket offset (approximation)
-                         let from_socket_y = 50.0 + conn.from_socket as f32 * 20.0;
-                         let from_screen_socket = to_screen(Pos2::new(
-                                from_part.position.0 + 180.0,
-                                from_part.position.1 + from_socket_y,
-                         ));
+                        // Adjust for socket offset (approximation)
+                        let from_socket_y = 50.0 + conn.from_socket as f32 * 20.0;
+                        let from_screen_socket = to_screen(Pos2::new(
+                            from_part.position.0 + 180.0,
+                            from_part.position.1 + from_socket_y,
+                        ));
 
                         let to_socket_y = 50.0 + conn.to_socket as f32 * 20.0;
-                        let to_screen_socket =
-                            to_screen(Pos2::new(to_part.position.0, to_part.position.1 + to_socket_y));
+                        let to_screen_socket = to_screen(Pos2::new(
+                            to_part.position.0,
+                            to_part.position.1 + to_socket_y,
+                        ));
 
                         // Simple distance check to bezier curve (approximate with line)
                         let mid = Pos2::new(
@@ -1474,12 +1485,12 @@ impl ModuleCanvas {
                 }
 
                 if resize_response.dragged() {
-                     if let Some((id, _original_size)) = self.resizing_part {
-                         if id == part.id {
-                             let delta = resize_response.drag_delta() / self.zoom;
-                             resize_ops.push((part.id, delta));
-                         }
-                     }
+                    if let Some((id, _original_size)) = self.resizing_part {
+                        if id == part.id {
+                            let delta = resize_response.drag_delta() / self.zoom;
+                            resize_ops.push((part.id, delta));
+                        }
+                    }
                 }
 
                 if resize_response.drag_stopped() {
@@ -1492,19 +1503,17 @@ impl ModuleCanvas {
 
         // Apply resize operations
         for (part_id, delta) in resize_ops {
-             if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                 // Initialize size if None
-                 let current_size = part.size.unwrap_or_else(|| {
-                     let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                     (180.0, h)
-                 });
-                 let new_w = (current_size.0 + delta.x).max(100.0);
-                 let new_h = (current_size.1 + delta.y).max(50.0);
-                 part.size = Some((new_w, new_h));
-             }
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                // Initialize size if None
+                let current_size = part.size.unwrap_or_else(|| {
+                    let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                    (180.0, h)
+                });
+                let new_w = (current_size.0 + delta.x).max(100.0);
+                let new_h = (current_size.1 + delta.y).max(50.0);
+                part.size = Some((new_w, new_h));
+            }
         }
-
-
 
         // Draw connection being created with visual feedback
         if let Some((from_part_id, _from_socket_idx, from_is_output, ref from_type, start_pos)) =
@@ -1554,19 +1563,22 @@ impl ModuleCanvas {
 
         // Draw search popup if visible
         if self.show_search {
-            self.draw_search_popup(ui, canvas_rect, module);
+            self.draw_search_popup(ui, canvas_rect, module, _locale);
         }
 
         // Draw presets popup if visible
         if self.show_presets {
             self.draw_presets_popup(ui, canvas_rect, module);
         }
-
-
-
     }
 
-    fn draw_search_popup(&mut self, ui: &mut Ui, canvas_rect: Rect, module: &mut MapFlowModule) {
+    fn draw_search_popup(
+        &mut self,
+        ui: &mut Ui,
+        canvas_rect: Rect,
+        module: &mut MapFlowModule,
+        _locale: &LocaleManager,
+    ) {
         // Search popup in top-center
         let popup_width = 300.0;
         let popup_height = 200.0;

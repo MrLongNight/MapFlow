@@ -24,10 +24,10 @@ pub mod paint;
 
 // Phase 3: Effects Pipeline
 pub mod animation;
+pub mod assignment;
 pub mod audio;
 pub mod audio_media_pipeline;
 pub mod audio_reactive;
-pub mod assignment;
 pub mod codegen;
 pub mod effects;
 pub mod logging;
@@ -41,6 +41,7 @@ pub use animation::{
     AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,
     TimePoint,
 };
+pub use assignment::{Assignment, AssignmentManager};
 pub use audio::{
     AudioAnalysis, AudioAnalyzer, AudioConfig, AudioMappingType, AudioReactiveMapping, AudioSource,
     FrequencyBand,
@@ -50,7 +51,6 @@ pub use audio_reactive::{
     AudioAnimationBlendMode, AudioReactiveAnimationSystem, AudioReactiveController,
     AudioReactivePreset,
 };
-pub use assignment::{Assignment, AssignmentManager};
 pub use codegen::{CodegenError, WGSLCodegen};
 pub use effects::{Effect, EffectChain, EffectType};
 pub use logging::LogConfig;

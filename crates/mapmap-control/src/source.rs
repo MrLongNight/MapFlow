@@ -4,8 +4,8 @@
 //! in a stable, serializable way.
 
 use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 /// Represents a unique source of control values.
 ///
