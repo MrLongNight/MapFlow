@@ -539,7 +539,7 @@ impl ModuleCanvas {
                                                     }
                                                     TriggerType::Midi { channel, note } => {
                                                         ui.label("🎹 MIDI Trigger");
-                                                        
+
                                                         // Available MIDI ports dropdown
                                                         ui.horizontal(|ui| {
                                                             ui.label("Device:");
@@ -566,7 +566,7 @@ impl ModuleCanvas {
                                                                 ui.label("(MIDI disabled)");
                                                             }
                                                         });
-                                                        
+
                                                         ui.add(
                                                             egui::Slider::new(channel, 1..=16)
                                                                 .text("Channel"),
@@ -575,7 +575,7 @@ impl ModuleCanvas {
                                                             egui::Slider::new(note, 0..=127)
                                                                 .text("Note"),
                                                         );
-                                                        
+
                                                         // MIDI Learn button
                                                         let is_learning = self.midi_learn_part_id == Some(part_id);
                                                         let learn_text = if is_learning {
