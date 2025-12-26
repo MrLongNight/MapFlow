@@ -547,7 +547,7 @@ impl ModuleCanvas {
                                                                             .selected_text(ports.first().cloned().unwrap_or_default())
                                                                             .show_ui(ui, |ui| {
                                                                                 for port in &ports {
-                                                                                    ui.selectable_label(false, port);
+                                                                                    let _ = ui.selectable_label(false, port);
                                                                                 }
                                                                             });
                                                                     }
@@ -1852,6 +1852,7 @@ impl ModuleCanvas {
         painter.rect_stroke(viewport_rect, 0.0, Stroke::new(1.5, Color32::WHITE));
     }
 
+    #[allow(dead_code)]
     fn render_node_inspector(ui: &mut Ui, part: &mut mapmap_core::module::ModulePart) {
         use mapmap_core::module::{
             BlendModeType, EffectType, LayerAssignmentType, MaskShape, MaskType, ModulePartType,

@@ -3,13 +3,14 @@
 //! Visual representation of the Ecler NUO 4 (or other MIDI controllers)
 //! with live state visualization and MIDI Learn functionality.
 
-use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
-use std::collections::HashMap;
+use egui::Ui;
+#[cfg(feature = "midi")]
+use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Vec2};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
-    ControllerElement, ControllerElements, ElementState, ElementStateManager,
-    ElementType, MidiLearnManager, MidiMessage,
+    ControllerElement, ControllerElements, ElementState, ElementStateManager, ElementType,
+    MidiLearnManager, MidiMessage,
 };
 
 /// Controller Overlay Panel for visualizing MIDI controller state
@@ -17,27 +18,29 @@ pub struct ControllerOverlayPanel {
     /// Currently loaded controller elements
     #[cfg(feature = "midi")]
     elements: Option<ControllerElements>,
-    
+
     /// Runtime state for each element
     #[cfg(feature = "midi")]
     state_manager: ElementStateManager,
-    
+
     /// MIDI Learn manager
     #[cfg(feature = "midi")]
     learn_manager: MidiLearnManager,
-    
+
     /// Show element labels
     show_labels: bool,
-    
+
     /// Show element values
     show_values: bool,
-    
+
     /// Show MIDI info on hover
+    #[allow(dead_code)]
     show_midi_info: bool,
-    
+
     /// Selected element for editing
+    #[allow(dead_code)]
     selected_element: Option<String>,
-    
+
     /// Panel is expanded
     is_expanded: bool,
 }
@@ -106,22 +109,49 @@ impl ControllerOverlayPanel {
 
     /// Check if a MIDI message matches an element's config
     #[cfg(feature = "midi")]
-    fn message_matches_config(message: &MidiMessage, config: &mapmap_control::midi::MidiConfig) -> bool {
+    fn message_matches_config(
+        message: &MidiMessage,
+        config: &mapmap_control::midi::MidiConfig,
+    ) -> bool {
         use mapmap_control::midi::MidiConfig;
-        
+
         match (message, config) {
-            (MidiMessage::ControlChange { channel, controller, .. }, MidiConfig::Cc { channel: cfg_ch, controller: cfg_cc }) => {
-                *channel == *cfg_ch && *controller == *cfg_cc
-            }
-            (MidiMessage::ControlChange { channel, controller, .. }, MidiConfig::CcRelative { channel: cfg_ch, controller: cfg_cc }) => {
-                *channel == *cfg_ch && *controller == *cfg_cc
-            }
-            (MidiMessage::NoteOn { channel, note, .. }, MidiConfig::Note { channel: cfg_ch, note: cfg_note }) => {
-                *channel == *cfg_ch && *note == *cfg_note
-            }
-            (MidiMessage::NoteOff { channel, note }, MidiConfig::Note { channel: cfg_ch, note: cfg_note }) => {
-                *channel == *cfg_ch && *note == *cfg_note
-            }
+            (
+                MidiMessage::ControlChange {
+                    channel,
+                    controller,
+                    ..
+                },
+                MidiConfig::Cc {
+                    channel: cfg_ch,
+                    controller: cfg_cc,
+                },
+            ) => *channel == *cfg_ch && *controller == *cfg_cc,
+            (
+                MidiMessage::ControlChange {
+                    channel,
+                    controller,
+                    ..
+                },
+                MidiConfig::CcRelative {
+                    channel: cfg_ch,
+                    controller: cfg_cc,
+                },
+            ) => *channel == *cfg_ch && *controller == *cfg_cc,
+            (
+                MidiMessage::NoteOn { channel, note, .. },
+                MidiConfig::Note {
+                    channel: cfg_ch,
+                    note: cfg_note,
+                },
+            ) => *channel == *cfg_ch && *note == *cfg_note,
+            (
+                MidiMessage::NoteOff { channel, note },
+                MidiConfig::Note {
+                    channel: cfg_ch,
+                    note: cfg_note,
+                },
+            ) => *channel == *cfg_ch && *note == *cfg_note,
             _ => false,
         }
     }
@@ -142,13 +172,16 @@ impl ControllerOverlayPanel {
     pub fn show(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("🎛️ Controller Overlay");
-            
-            if ui.button(if self.is_expanded { "⏷" } else { "⏵" }).clicked() {
+
+            if ui
+                .button(if self.is_expanded { "⏷" } else { "⏵" })
+                .clicked()
+            {
                 self.is_expanded = !self.is_expanded;
             }
-            
+
             ui.separator();
-            
+
             ui.checkbox(&mut self.show_labels, "Labels");
             ui.checkbox(&mut self.show_values, "Values");
         });
@@ -201,7 +234,8 @@ impl ControllerOverlayPanel {
                 ui.label("Kein Controller geladen");
                 if ui.button("Ecler NUO 4 laden").clicked() {
                     // Load default Ecler NUO 4 elements
-                    let json = include_str!("../../../resources/controllers/ecler_nuo4/elements.json");
+                    let json =
+                        include_str!("../../../resources/controllers/ecler_nuo4/elements.json");
                     if let Err(e) = self.load_elements(json) {
                         tracing::error!("Failed to load elements: {}", e);
                     }
@@ -220,7 +254,7 @@ impl ControllerOverlayPanel {
     fn draw_controller(&mut self, ui: &mut Ui, elements: &ControllerElements) {
         let available_size = ui.available_size();
         let panel_size = Vec2::new(available_size.x.min(600.0), available_size.y.min(400.0));
-        
+
         let (response, painter) = ui.allocate_painter(panel_size, Sense::click());
         let rect = response.rect;
 
@@ -264,7 +298,10 @@ impl ControllerOverlayPanel {
                 container.min.x + pos.x * container.width(),
                 container.min.y + pos.y * container.height(),
             ),
-            Vec2::new(pos.width * container.width(), pos.height * container.height()),
+            Vec2::new(
+                pos.width * container.width(),
+                pos.height * container.height(),
+            ),
         );
 
         let normalized = state.map(|s| s.normalized).unwrap_or(0.0);
@@ -296,7 +333,11 @@ impl ControllerOverlayPanel {
 
         // Knob body
         painter.circle_filled(center, radius, Color32::from_rgb(50, 50, 55));
-        painter.circle_stroke(center, radius, Stroke::new(2.0, Color32::from_rgb(80, 80, 90)));
+        painter.circle_stroke(
+            center,
+            radius,
+            Stroke::new(2.0, Color32::from_rgb(80, 80, 90)),
+        );
 
         // Indicator line
         let angle = std::f32::consts::PI * 0.75 + value * std::f32::consts::PI * 1.5;
@@ -397,7 +438,7 @@ impl ControllerOverlayPanel {
         } else {
             Color32::from_rgb(50, 50, 55)
         };
-        
+
         painter.rect_filled(rect, 3.0, color);
         painter.rect_stroke(rect, 3.0, Stroke::new(1.0, Color32::from_rgb(80, 80, 90)));
 
@@ -419,7 +460,7 @@ impl ControllerOverlayPanel {
         } else {
             Color32::from_rgb(50, 50, 55)
         };
-        
+
         painter.rect_filled(rect, 2.0, color);
         painter.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgb(80, 80, 90)));
 
