@@ -22,12 +22,60 @@ impl MapFlowModule {
 
         let (module_part_type, inputs, outputs) = match part_type {
             PartType::Trigger => (
-                ModulePartType::Trigger(TriggerType::Beat),
+                ModulePartType::Trigger(TriggerType::AudioFFT {
+                    band: AudioBand::Bass,
+                    threshold: 0.5,
+                }),
                 vec![], // No inputs - triggers are sources
-                vec![ModuleSocket {
-                    name: "Trigger Out".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
+                vec![
+                    // FFT Band Outputs
+                    ModuleSocket {
+                        name: "SubBass Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Bass Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "LowMid Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Mid Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "HighMid Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Presence Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Brilliance Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    // Volume Outputs
+                    ModuleSocket {
+                        name: "RMS Volume".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Peak Volume".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    // Beat Detection
+                    ModuleSocket {
+                        name: "Beat Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "BPM Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
             ),
             PartType::Source => (
                 ModulePartType::Source(SourceType::MediaFile {

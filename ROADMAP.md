@@ -327,6 +327,38 @@
   - ⬜ R32Float Validation Error in OscillatorRenderer
   - ⬜ Pipeline Sampler Error (NonFiltering)
 
+### 🔴 Bekannte Probleme (Gemeldet 2025-12-26)
+
+- 🔴 **Node-Verbindungen im Module Canvas**
+  - ⬜ Wire-Drag erstellt keine tatsächlichen Connections (kritisch!)
+  - ⬜ Socket-Typen matchen nicht korrekt
+  - ⬜ Visuelle Verbindung vorhanden, aber keine Datenverbindung
+
+- 🔴 **Audio Trigger Node - Fehlende Outputs**
+  - ⬜ Nur Beat Trigger Out vorhanden
+  - ⬜ FFT-Outputs fehlen (SubBass, Bass, LowMid, Mid, HighMid, Presence, Brilliance)
+  - ⬜ RMS-Volume Output fehlt
+  - ⬜ Peak-Volume Output fehlt
+  - ⬜ AudioAnalysis-Daten zu Node-Outputs verknüpfen
+
+- 🔴 **Panel-Redundanz**
+  - ⬜ Node Inspector UND Properties Panel sind redundant
+  - ⬜ Zu EINEM Panel konsolidieren
+
+- 🔴 **MIDI-System Fehler**
+  - ⬜ "MIDI Feature nicht verfügbar" Meldung
+  - ⬜ MIDI-Ports werden nicht korrekt aufgelistet
+  - ⬜ MIDI Learn Funktion testen und fixen
+
+- 🔴 **Level Meter Redesign**
+  - ⬜ Beide Meter mittig platzieren
+  - ⬜ Volle Höhe bis oberen App-Rand
+  - ⬜ STEREO für beide Varianten
+  - ⬜ Digitales Meter: doppelt so breit, beschriftete Skala
+  - ⬜ Digitales Meter: Einbaurahmen mit 4 Kreuzschlitz-Schrauben
+  - ⬜ Analoges Meter: Einbaurahmen mit 4 Schrauben
+  - ⬜ Analoges Meter: Scheibe/Glas-Effekt (wie Referenzbild)
+
 ### Phase 7: Advanced Show Control (Module-Based Timeline) – PLANNED
 
 - ⬜ **Architecture Refactor (Timeline V3)**
