@@ -301,6 +301,7 @@
   - ⬜ MIDI/OSC Device Selectors
   - ⬜ Mesh Editor für Layer
   - ⬜ File Picker für Source/Mask
+  - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
 - 🟡 **Assignment System**
   - ⬜ `AssignmentManager` implementieren
