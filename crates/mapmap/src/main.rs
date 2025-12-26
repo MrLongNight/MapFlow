@@ -53,7 +53,6 @@ struct App {
     /// The effect chain renderer.
     effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
-    #[allow(dead_code)]
     mesh_renderer: MeshRenderer,
     /// Quad renderer for passthrough.
     quad_renderer: QuadRenderer,
@@ -1284,8 +1283,7 @@ impl App {
 
             // Main layer composition loop
             for layer in self.state.layer_manager.visible_layers() {
-                // TODO: Render layer content (mesh, media) into a temp texture
-                // For now, let's just use a solid color from the paint manager
+                // Render layer content (render mappings via mesh renderer)
                 let temp_layer_content = self.texture_pool.create(
                     "temp_layer_content",
                     window_context.surface_config.width,
@@ -1295,15 +1293,15 @@ impl App {
                 );
                 let temp_layer_content_view = self.texture_pool.get_view(&temp_layer_content);
 
-                // Placeholder: Clear to a debug color
+                // Clear layer content texture to transparent
                 {
                     let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Layer Content Placeholder"),
+                        label: Some("Layer Content Clear"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                             view: &temp_layer_content_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLUE), // Debug color
+                                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                                 store: wgpu::StoreOp::Store,
                             },
                         })],
@@ -1311,6 +1309,68 @@ impl App {
                         occlusion_query_set: None,
                         timestamp_writes: None,
                     });
+                }
+
+                // Render all visible mappings for this layer
+                // Check if layer has associated paint_id and find mappings
+                if let Some(paint_id) = layer.paint_id {
+                    let mappings_for_layer: Vec<_> = self
+                        .state
+                        .mapping_manager
+                        .mappings_for_paint(paint_id)
+                        .into_iter()
+                        .filter(|m| m.visible && m.opacity > 0.0)
+                        .collect();
+
+                    for mapping in mappings_for_layer {
+                        // Create GPU buffers for this mapping's mesh
+                        let (vertex_buffer, index_buffer) =
+                            self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
+                        let index_count = mapping.mesh.indices.len() as u32;
+
+                        // Create transform matrix for this mapping
+                        let transform = glam::Mat4::IDENTITY; // TODO: Apply layer transform
+                        let uniform_buffer = self
+                            .mesh_renderer
+                            .create_uniform_buffer(transform, mapping.opacity);
+                        let uniform_bind_group = self
+                            .mesh_renderer
+                            .create_uniform_bind_group(&uniform_buffer);
+
+                        // Use dummy texture for now (TODO: Get paint's actual texture)
+                        let texture_view = self.dummy_view.as_ref().unwrap();
+                        let texture_bind_group =
+                            self.mesh_renderer.create_texture_bind_group(texture_view);
+
+                        // Render the mesh
+                        {
+                            let mut render_pass =
+                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: Some("Mesh Render Pass"),
+                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                        view: &temp_layer_content_view,
+                                        resolve_target: None,
+                                        ops: wgpu::Operations {
+                                            load: wgpu::LoadOp::Load, // Don't clear, accumulate
+                                            store: wgpu::StoreOp::Store,
+                                        },
+                                    })],
+                                    depth_stencil_attachment: None,
+                                    occlusion_query_set: None,
+                                    timestamp_writes: None,
+                                });
+
+                            self.mesh_renderer.draw(
+                                &mut render_pass,
+                                &vertex_buffer,
+                                &index_buffer,
+                                index_count,
+                                &uniform_bind_group,
+                                &texture_bind_group,
+                                true, // Use perspective correction
+                            );
+                        }
+                    }
                 }
 
                 // Apply effect chain to the layer content
