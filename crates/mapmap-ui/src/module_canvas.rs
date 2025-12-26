@@ -527,7 +527,7 @@ impl ModuleCanvas {
                                                         // Available MIDI ports dropdown
                                                         ui.horizontal(|ui| {
                                                             ui.label("Device:");
-                                                            #[cfg(feature = "cpal")]
+                                                            #[cfg(feature = "midi")]
                                                             {
                                                                 if let Ok(ports) = mapmap_control::midi::MidiInputHandler::list_ports() {
                                                                     if ports.is_empty() {
@@ -545,7 +545,7 @@ impl ModuleCanvas {
                                                                     ui.label("MIDI unavailable");
                                                                 }
                                                             }
-                                                            #[cfg(not(feature = "cpal"))]
+                                                            #[cfg(not(feature = "midi"))]
                                                             {
                                                                 ui.label("(MIDI disabled)");
                                                             }

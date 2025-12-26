@@ -46,5 +46,5 @@ usvg = { workspace = true }
 tiny-skia = { workspace = true }
 
 [features]
-default = ["cpal"]
-midi = []
+default = ["cpal", "midi"]
+midi = ["mapmap-control/midi"]

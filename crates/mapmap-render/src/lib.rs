@@ -18,6 +18,7 @@ pub mod effect_chain_renderer;
 pub mod hot_reload;
 pub mod mesh_renderer;
 pub mod oscillator_renderer;
+pub mod paint_texture_cache;
 pub mod preset;
 pub mod quad;
 pub mod shader;
