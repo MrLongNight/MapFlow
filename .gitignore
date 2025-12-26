@@ -41,6 +41,9 @@
 # Allow assets icons
 !assets/icons/*.svg
 
+# Allow controller definitions
+!resources/controllers/**/*.json
+
 *.json
 
 # Rust
