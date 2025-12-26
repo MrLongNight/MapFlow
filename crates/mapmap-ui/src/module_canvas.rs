@@ -160,11 +160,15 @@ impl ModuleCanvas {
             ui.add_enabled_ui(has_module, |ui| {
                 // === SIGNAL FLOW ORDER: Trigger → Source → Mask → Modulator → Layer → Output ===
 
-                if ui
-                    .button("⚡ Trigger")
-                    .on_hover_text("Add a Trigger node (Audio/MIDI/OSC/Keyboard)")
-                    .clicked()
-                {
+                // Helper for styled node buttons
+                let add_node_btn = |ui: &mut Ui, text: &str, tooltip: &str| -> bool {
+                    ui.add(egui::Button::new(egui::RichText::new(text).size(14.0))
+                        .min_size(Vec2::new(80.0, 24.0)))
+                        .on_hover_text(tooltip)
+                        .clicked()
+                };
+
+                if add_node_btn(ui, "⚡ Trigger", "Add a Trigger node (Audio/MIDI/OSC/Keyboard)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (100.0, 100.0));
@@ -173,11 +177,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("🎬 Source")
-                    .on_hover_text("Add a Source node (Media/Shader/Live Input)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "🎬 Source", "Add a Source node (Media/Shader/Live Input)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (200.0, 100.0));
@@ -186,11 +186,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("🎭 Mask")
-                    .on_hover_text("Add a Mask node (File/Shape/Gradient)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "🎭 Mask", "Add a Mask node (File/Shape/Gradient)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (300.0, 100.0));
@@ -199,11 +195,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("〰️ Modulator")
-                    .on_hover_text("Add a Modulator/Effect node")
-                    .clicked()
-                {
+                if add_node_btn(ui, "〰️ Modulator", "Add a Modulator/Effect node") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (400.0, 100.0));
@@ -212,11 +204,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("📑 Layer")
-                    .on_hover_text("Add a Layer node (Mapping/Mesh)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "📑 Layer", "Add a Layer node (Mapping/Mesh)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (500.0, 100.0));
@@ -225,11 +213,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("📺 Output")
-                    .on_hover_text("Add an Output node (Projector/Preview)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "📺 Output", "Add an Output node (Projector/Preview)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (600.0, 100.0));
@@ -1137,7 +1121,7 @@ impl ModuleCanvas {
             .map(|part| {
                 let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
                 let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                let part_size = Vec2::new(180.0, part_height);
+                let part_size = Vec2::new(200.0, part_height);
                 let rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
 
                 // Calculate socket positions
@@ -1369,7 +1353,7 @@ impl ModuleCanvas {
                                 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
                             let new_rect = Rect::from_min_size(
                                 Pos2::new(new_x, new_y),
-                                Vec2::new(180.0, part_height),
+                                Vec2::new(200.0, part_height),
                             );
 
                             // Check collision with other parts
@@ -1381,7 +1365,7 @@ impl ModuleCanvas {
                                     + (other.inputs.len().max(other.outputs.len()) as f32) * 20.0;
                                 let other_rect = Rect::from_min_size(
                                     Pos2::new(other.position.0, other.position.1),
-                                    Vec2::new(180.0, other_height),
+                                    Vec2::new(200.0, other_height),
                                 );
                                 new_rect.intersects(other_rect)
                             });
@@ -1440,7 +1424,7 @@ impl ModuleCanvas {
             let (part_width, part_height) = part.size.unwrap_or_else(|| {
                 let default_height =
                     80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                (180.0, default_height)
+                (200.0, default_height)
             });
             let part_size = Vec2::new(part_width, part_height);
             let part_screen_rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
@@ -1867,7 +1851,7 @@ impl ModuleCanvas {
             let height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
             min_x = min_x.min(part.position.0);
             min_y = min_y.min(part.position.1);
-            max_x = max_x.max(part.position.0 + 180.0);
+            max_x = max_x.max(part.position.0 + 200.0);
             max_y = max_y.max(part.position.1 + height);
         }
 
@@ -1897,7 +1881,7 @@ impl ModuleCanvas {
         for part in &module.parts {
             let height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
             let part_min = to_map(Pos2::new(part.position.0, part.position.1));
-            let part_max = to_map(Pos2::new(part.position.0 + 180.0, part.position.1 + height));
+            let part_max = to_map(Pos2::new(part.position.0 + 200.0, part.position.1 + height));
             let part_rect = Rect::from_min_max(part_min, part_max);
 
             let (_, title_color, _, _) = Self::get_part_style(&part.part_type);
@@ -2203,13 +2187,15 @@ impl ModuleCanvas {
             }
             ModulePartType::LayerAssignment(layer_type) => {
                 ui.label("Layer Type:");
-                let current = match layer_type {
+                let current_type_name = match layer_type {
                     LayerAssignmentType::SingleLayer { .. } => "Single Layer",
                     LayerAssignmentType::Group { .. } => "Group",
-                    LayerAssignmentType::AllLayers => "All Layers",
+                    LayerAssignmentType::AllLayers { .. } => "All Layers",
                 };
+
+                // Type Selector
                 egui::ComboBox::from_id_source("layer_type")
-                    .selected_text(current)
+                    .selected_text(current_type_name)
                     .show_ui(ui, |ui| {
                         if ui
                             .selectable_label(
@@ -2221,6 +2207,8 @@ impl ModuleCanvas {
                             *layer_type = LayerAssignmentType::SingleLayer {
                                 id: 0,
                                 name: "Layer 1".to_string(),
+                                opacity: 1.0,
+                                blend_mode: None,
                             };
                         }
                         if ui
@@ -2232,16 +2220,71 @@ impl ModuleCanvas {
                         {
                             *layer_type = LayerAssignmentType::Group {
                                 name: "Group 1".to_string(),
+                                opacity: 1.0,
+                                blend_mode: None,
                             };
                         }
                         if ui
                             .selectable_label(
-                                matches!(layer_type, LayerAssignmentType::AllLayers),
+                                matches!(layer_type, LayerAssignmentType::AllLayers { .. }),
                                 "All Layers",
                             )
                             .clicked()
                         {
-                            *layer_type = LayerAssignmentType::AllLayers;
+                            *layer_type = LayerAssignmentType::AllLayers {
+                                opacity: 1.0,
+                                blend_mode: None,
+                            };
+                        }
+                    });
+
+                ui.separator();
+
+                // Common Properties access
+                let (opacity, blend_mode) = match layer_type {
+                    LayerAssignmentType::SingleLayer {
+                        opacity,
+                        blend_mode,
+                        ..
+                    } => (opacity, blend_mode),
+                    LayerAssignmentType::Group {
+                        opacity,
+                        blend_mode,
+                        ..
+                    } => (opacity, blend_mode),
+                    LayerAssignmentType::AllLayers {
+                        opacity,
+                        blend_mode,
+                    } => (opacity, blend_mode),
+                };
+
+                // Opacity Slider
+                ui.label("Opacity:");
+                ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Value"));
+
+                // Blend Mode Selector
+                ui.label("Blend Mode:");
+                let current_blend = blend_mode.map(|b| b.name()).unwrap_or("Keep Original");
+                egui::ComboBox::from_id_source("layer_blend")
+                    .selected_text(current_blend)
+                    .show_ui(ui, |ui| {
+                        if ui
+                            .selectable_label(blend_mode.is_none(), "Keep Original")
+                            .clicked()
+                        {
+                            *blend_mode = None;
+                        }
+                        ui.separator();
+                        for b in BlendModeType::all() {
+                            if ui
+                                .selectable_label(
+                                    blend_mode.as_ref().map_or(false, |current| *current == *b),
+                                    b.name(),
+                                )
+                                .clicked()
+                            {
+                                *blend_mode = Some(*b);
+                            }
                         }
                     });
             }
@@ -2578,8 +2621,8 @@ impl ModuleCanvas {
                 use mapmap_core::module::LayerAssignmentType;
                 match layer_type {
                     LayerAssignmentType::SingleLayer { name, .. } => format!("📑 {}", name),
-                    LayerAssignmentType::Group { name } => format!("📁 {}", name),
-                    LayerAssignmentType::AllLayers => "📑 All Layers".to_string(),
+                    LayerAssignmentType::Group { name, .. } => format!("📁 {}", name),
+                    LayerAssignmentType::AllLayers { .. } => "📑 All Layers".to_string(),
                 }
             }
             ModulePartType::Output(output_type) => match output_type {
@@ -2657,7 +2700,7 @@ impl ModuleCanvas {
         parts: &[mapmap_core::module::ModulePart],
         preferred: (f32, f32),
     ) -> (f32, f32) {
-        let node_width = 190.0;
+        let node_width = 200.0;
         let node_height = 130.0;
         let grid_step = 30.0;
 
@@ -2788,7 +2831,10 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers),
+                        ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+                            opacity: 1.0,
+                            blend_mode: None,
+                        }),
                         (650.0, 100.0),
                         None,
                     ),

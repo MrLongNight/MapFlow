@@ -290,6 +290,43 @@
   - ✅ Persistierung der Spracheinstellung in User-Config (COMPLETED 2025-12-21)
   - ⬜ Alle UI-Strings extrahieren und übersetzen
 
+### Offene UI-Features (Konsolidiert 2025-12-26)
+
+- 🟡 **Module Canvas Features**
+  - ✅ Box Selection, Right-Click Context Menu, Presets Popup
+  - ✅ Multi-select, Mini-map, Auto-layout, Search popup
+  - ✅ Undo/Redo, Node Inspector Dropdowns
+  - ⬜ Resize Drag Interaction (Handle vorhanden, Drag-Logik fehlt)
+  - ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
+  - ⬜ MIDI/OSC Device Selectors
+  - ⬜ Mesh Editor für Layer
+  - ⬜ File Picker für Source/Mask
+  - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
+
+- 🟡 **Assignment System**
+  - ⬜ `AssignmentManager` implementieren
+  - ⬜ `AssignmentPanel` UI erstellen
+  - ⬜ Source Selector (Dropdown)
+  - ⬜ Target Selector (Dropdown mit ID-Auflösung)
+  - ⬜ ControlSource zu ControlTarget Routing
+
+- 🟡 **Logging & Debug**
+  - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
+  - ✅ LogConfig Struct mit Settings
+  - ⬜ Settings-UI für Logging (Log-Level, Pfad, Max-Files)
+  - ⬜ Audio-Device Debug validieren (manueller Test)
+
+- ✅ **Ecler NUO 4 MIDI Integration** (COMPLETED 2025-12-25)
+  - ✅ Controller-Profil (89 MIDI-Mappings)
+  - ✅ Element-Datenstruktur (30 Elemente)
+  - ✅ MIDI-Learn Modul
+  - ✅ Overlay UI Panel
+  - ✅ Zuweisungstabelle
+
+- 🟡 **WGPU Rendering Fixes**
+  - ⬜ R32Float Validation Error in OscillatorRenderer
+  - ⬜ Pipeline Sampler Error (NonFiltering)
+
 ### Phase 7: Advanced Show Control (Module-Based Timeline) – PLANNED
 
 - ⬜ **Architecture Refactor (Timeline V3)**
