@@ -160,11 +160,15 @@ impl ModuleCanvas {
             ui.add_enabled_ui(has_module, |ui| {
                 // === SIGNAL FLOW ORDER: Trigger → Source → Mask → Modulator → Layer → Output ===
 
-                if ui
-                    .button("⚡ Trigger")
-                    .on_hover_text("Add a Trigger node (Audio/MIDI/OSC/Keyboard)")
-                    .clicked()
-                {
+                // Helper for styled node buttons
+                let add_node_btn = |ui: &mut Ui, text: &str, tooltip: &str| -> bool {
+                    ui.add(egui::Button::new(egui::RichText::new(text).size(14.0))
+                        .min_size(Vec2::new(80.0, 24.0)))
+                        .on_hover_text(tooltip)
+                        .clicked()
+                };
+
+                if add_node_btn(ui, "⚡ Trigger", "Add a Trigger node (Audio/MIDI/OSC/Keyboard)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (100.0, 100.0));
@@ -173,11 +177,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("🎬 Source")
-                    .on_hover_text("Add a Source node (Media/Shader/Live Input)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "🎬 Source", "Add a Source node (Media/Shader/Live Input)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (200.0, 100.0));
@@ -186,11 +186,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("🎭 Mask")
-                    .on_hover_text("Add a Mask node (File/Shape/Gradient)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "🎭 Mask", "Add a Mask node (File/Shape/Gradient)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (300.0, 100.0));
@@ -199,11 +195,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("〰️ Modulator")
-                    .on_hover_text("Add a Modulator/Effect node")
-                    .clicked()
-                {
+                if add_node_btn(ui, "〰️ Modulator", "Add a Modulator/Effect node") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (400.0, 100.0));
@@ -212,11 +204,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("📑 Layer")
-                    .on_hover_text("Add a Layer node (Mapping/Mesh)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "📑 Layer", "Add a Layer node (Mapping/Mesh)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (500.0, 100.0));
@@ -225,11 +213,7 @@ impl ModuleCanvas {
                     }
                 }
 
-                if ui
-                    .button("📺 Output")
-                    .on_hover_text("Add an Output node (Projector/Preview)")
-                    .clicked()
-                {
+                if add_node_btn(ui, "📺 Output", "Add an Output node (Projector/Preview)") {
                     if let Some(id) = self.active_module_id {
                         if let Some(module) = manager.get_module_mut(id) {
                             let pos = Self::find_free_position(&module.parts, (600.0, 100.0));
@@ -1127,7 +1111,7 @@ impl ModuleCanvas {
             .map(|part| {
                 let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
                 let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                let part_size = Vec2::new(180.0, part_height);
+                let part_size = Vec2::new(200.0, part_height);
                 let rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
 
                 // Calculate socket positions
@@ -1358,7 +1342,7 @@ impl ModuleCanvas {
                                 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
                             let new_rect = Rect::from_min_size(
                                 Pos2::new(new_x, new_y),
-                                Vec2::new(180.0, part_height),
+                                Vec2::new(200.0, part_height),
                             );
 
                             // Check collision with other parts
@@ -1370,7 +1354,7 @@ impl ModuleCanvas {
                                     + (other.inputs.len().max(other.outputs.len()) as f32) * 20.0;
                                 let other_rect = Rect::from_min_size(
                                     Pos2::new(other.position.0, other.position.1),
-                                    Vec2::new(180.0, other_height),
+                                    Vec2::new(200.0, other_height),
                                 );
                                 new_rect.intersects(other_rect)
                             });
@@ -1429,7 +1413,7 @@ impl ModuleCanvas {
             let (part_width, part_height) = part.size.unwrap_or_else(|| {
                 let default_height =
                     80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                (180.0, default_height)
+                (200.0, default_height)
             });
             let part_size = Vec2::new(part_width, part_height);
             let part_screen_rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
@@ -1496,7 +1480,7 @@ impl ModuleCanvas {
                  // Initialize size if None
                  let current_size = part.size.unwrap_or_else(|| {
                      let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                     (180.0, h)
+                     (200.0, h)
                  });
                  let new_w = (current_size.0 + delta.x).max(100.0);
                  let new_h = (current_size.1 + delta.y).max(50.0);
@@ -1855,7 +1839,7 @@ impl ModuleCanvas {
             let height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
             min_x = min_x.min(part.position.0);
             min_y = min_y.min(part.position.1);
-            max_x = max_x.max(part.position.0 + 180.0);
+            max_x = max_x.max(part.position.0 + 200.0);
             max_y = max_y.max(part.position.1 + height);
         }
 
@@ -1885,7 +1869,7 @@ impl ModuleCanvas {
         for part in &module.parts {
             let height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
             let part_min = to_map(Pos2::new(part.position.0, part.position.1));
-            let part_max = to_map(Pos2::new(part.position.0 + 180.0, part.position.1 + height));
+            let part_max = to_map(Pos2::new(part.position.0 + 200.0, part.position.1 + height));
             let part_rect = Rect::from_min_max(part_min, part_max);
 
             let (_, title_color, _, _) = Self::get_part_style(&part.part_type);
@@ -2704,7 +2688,7 @@ impl ModuleCanvas {
         parts: &[mapmap_core::module::ModulePart],
         preferred: (f32, f32),
     ) -> (f32, f32) {
-        let node_width = 190.0;
+        let node_width = 200.0;
         let node_height = 130.0;
         let grid_step = 30.0;
 

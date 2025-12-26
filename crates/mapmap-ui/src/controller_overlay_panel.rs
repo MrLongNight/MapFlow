@@ -63,7 +63,7 @@ impl ControllerOverlayPanel {
             show_values: true,
             show_midi_info: true,
             selected_element: None,
-            is_expanded: true,
+            is_expanded: false,
         }
     }
 
