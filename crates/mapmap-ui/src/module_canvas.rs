@@ -1212,6 +1212,43 @@ impl ModuleCanvas {
             self.creating_connection = None;
         }
 
+        // Draw wire preview while dragging (visual feedback)
+        if let Some((_, _, is_output, ref socket_type, start_pos)) = self.creating_connection.clone() {
+            if let Some(mouse_pos) = pointer_pos {
+                // Draw bezier curve from start to mouse
+                let wire_color = Self::get_socket_color(&socket_type);
+                let control_offset = 50.0 * self.zoom;
+                
+                // Calculate control points for smooth curve
+                let (ctrl1, ctrl2) = if is_output {
+                    // Dragging from output (right side) - curve goes right then to mouse
+                    (
+                        Pos2::new(start_pos.x + control_offset, start_pos.y),
+                        Pos2::new(mouse_pos.x - control_offset, mouse_pos.y),
+                    )
+                } else {
+                    // Dragging from input (left side) - curve goes left then to mouse
+                    (
+                        Pos2::new(start_pos.x - control_offset, start_pos.y),
+                        Pos2::new(mouse_pos.x + control_offset, mouse_pos.y),
+                    )
+                };
+
+                // Draw bezier path
+                let segments = 20;
+                for i in 0..segments {
+                    let t0 = i as f32 / segments as f32;
+                    let t1 = (i + 1) as f32 / segments as f32;
+                    let p0 = Self::bezier_point(start_pos, ctrl1, ctrl2, mouse_pos, t0);
+                    let p1 = Self::bezier_point(start_pos, ctrl1, ctrl2, mouse_pos, t1);
+                    painter.line_segment([p0, p1], Stroke::new(3.0 * self.zoom, wire_color));
+                }
+
+                // Draw endpoint circle at mouse
+                painter.circle_filled(mouse_pos, 6.0 * self.zoom, wire_color);
+            }
+        }
+
         // Handle right-click for context menu
         let right_clicked = ui.input(|i| i.pointer.button_clicked(egui::PointerButton::Secondary));
         if right_clicked {
