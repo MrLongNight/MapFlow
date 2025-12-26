@@ -54,6 +54,8 @@ pub struct ModuleCanvas {
     context_menu_pos: Option<Pos2>,
     /// Context menu target (connection index or None)
     context_menu_connection: Option<usize>,
+    /// MIDI Learn mode - which part is waiting for MIDI input
+    midi_learn_part_id: Option<ModulePartId>,
 }
 
 /// A saved module preset/template
@@ -113,6 +115,7 @@ impl Default for ModuleCanvas {
             new_preset_name: String::new(),
             context_menu_pos: None,
             context_menu_connection: None,
+            midi_learn_part_id: None,
         }
     }
 }
@@ -568,16 +571,31 @@ impl ModuleCanvas {
                                                         );
                                                         
                                                         // MIDI Learn button
-                                                        if ui.button("🎯 MIDI Learn").clicked() {
-                                                            // TODO: Start MIDI learn mode
+                                                        let is_learning = self.midi_learn_part_id == Some(part_id);
+                                                        let learn_text = if is_learning {
+                                                            "⏳ Waiting for MIDI..."
+                                                        } else {
+                                                            "🎯 MIDI Learn"
+                                                        };
+                                                        if ui.button(learn_text).clicked() {
+                                                            if is_learning {
+                                                                self.midi_learn_part_id = None;
+                                                            } else {
+                                                                self.midi_learn_part_id = Some(part_id);
+                                                            }
+                                                        }
+                                                        if is_learning {
+                                                            ui.label("Press any MIDI key/knob...");
                                                         }
                                                     }
                                                     TriggerType::Osc { address } => {
-                                                        ui.label("📡 OSC");
+                                                        ui.label("📡 OSC Trigger");
                                                         ui.horizontal(|ui| {
                                                             ui.label("Address:");
-                                                            ui.text_edit_singleline(address);
+                                                            ui.add(egui::TextEdit::singleline(address).desired_width(150.0));
                                                         });
+                                                        ui.label("Format: /path/to/trigger");
+                                                        ui.label("Default port: 8000");
                                                     }
                                                     TriggerType::Shortcut {
                                                         key_code,
