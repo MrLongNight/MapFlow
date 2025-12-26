@@ -2,8 +2,8 @@ use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
-    MaskShape, MaskType, ModuleManager, ModulePart, ModulePartId, ModulePartType,
-    ModuleSocketType, ModulizerType, OutputType, SourceType, TriggerType,
+    MaskShape, MaskType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType, ModulizerType,
+    OutputType, SourceType, TriggerType,
 };
 
 /// Information about a socket position for hit detection
