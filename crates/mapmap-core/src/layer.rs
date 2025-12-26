@@ -751,4 +751,78 @@ mod tests {
         assert_eq!(layer.mapping_ids.len(), 1);
         assert_eq!(layer.mapping_ids[0], 20);
     }
+
+    #[test]
+    fn test_layer_manager_move_layer_to() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("Layer 1");
+        let id2 = manager.create_layer("Layer 2");
+        let id3 = manager.create_layer("Layer 3");
+
+        // Initial state: [1, 2, 3]
+        assert_eq!(manager.layers()[0].id, id1);
+        assert_eq!(manager.layers()[1].id, id2);
+        assert_eq!(manager.layers()[2].id, id3);
+
+        // Move Layer 1 to the end (index 2)
+        // Expected: [2, 3, 1]
+        assert!(manager.move_layer_to(id1, 2));
+        assert_eq!(manager.layers()[0].id, id2);
+        assert_eq!(manager.layers()[1].id, id3);
+        assert_eq!(manager.layers()[2].id, id1);
+
+        // Move Layer 3 to the beginning (index 0)
+        // Expected: [3, 2, 1]
+        assert!(manager.move_layer_to(id3, 0));
+        assert_eq!(manager.layers()[0].id, id3);
+        assert_eq!(manager.layers()[1].id, id2);
+        assert_eq!(manager.layers()[2].id, id1);
+
+        // Try moving to invalid index
+        assert!(!manager.move_layer_to(id1, 100));
+        // State should remain [3, 2, 1]
+        assert_eq!(manager.layers()[2].id, id1);
+    }
+
+    #[test]
+    fn test_layer_manager_rename() {
+        let mut manager = LayerManager::new();
+        let id = manager.create_layer("Old Name");
+
+        assert!(manager.rename_layer(id, "New Name"));
+        assert_eq!(manager.get_layer(id).unwrap().name, "New Name");
+
+        assert!(!manager.rename_layer(999, "Ghost"));
+    }
+
+    #[test]
+    fn test_resize_mode_calculations() {
+        let source = Vec2::new(100.0, 50.0); // 2:1 aspect ratio
+        let target = Vec2::new(200.0, 200.0); // 1:1 aspect ratio
+
+        // 1. FILL: Should scale to cover.
+        // Scale X = 200/100 = 2.0
+        // Scale Y = 200/50 = 4.0
+        // Fill takes max(2.0, 4.0) = 4.0
+        let (scale, pos) = ResizeMode::Fill.calculate_transform(source, target);
+        assert_eq!(scale, Vec2::splat(4.0));
+        assert_eq!(pos, Vec2::ZERO);
+
+        // 2. FIT: Should scale to fit inside.
+        // Scale X = 2.0, Scale Y = 4.0
+        // Fit takes min(2.0, 4.0) = 2.0
+        let (scale, pos) = ResizeMode::Fit.calculate_transform(source, target);
+        assert_eq!(scale, Vec2::splat(2.0));
+        assert_eq!(pos, Vec2::ZERO);
+
+        // 3. STRETCH: Should scale distinct X and Y.
+        let (scale, pos) = ResizeMode::Stretch.calculate_transform(source, target);
+        assert_eq!(scale, Vec2::new(2.0, 4.0));
+        assert_eq!(pos, Vec2::ZERO);
+
+        // 4. ORIGINAL: 1:1
+        let (scale, pos) = ResizeMode::Original.calculate_transform(source, target);
+        assert_eq!(scale, Vec2::ONE);
+        assert_eq!(pos, Vec2::ZERO);
+    }
 }
