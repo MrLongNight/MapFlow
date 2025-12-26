@@ -333,20 +333,18 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                     // Choose width based on style
                     let meter_width = match ui_state.user_config.meter_style {
-                        crate::config::AudioMeterStyle::Retro => 160.0,
-                        crate::config::AudioMeterStyle::Digital => 180.0,
+                        crate::config::AudioMeterStyle::Retro => 300.0,
+                        crate::config::AudioMeterStyle::Digital => 360.0,
                     };
 
-                    // Allow slightly more height for Retro look if needed
-                    let meter_height = match ui_state.user_config.meter_style {
-                        crate::config::AudioMeterStyle::Retro => 40.0,
-                        crate::config::AudioMeterStyle::Digital => 24.0,
-                    };
+                    // Fill available height up to a max
+                    let max_height = 120.0;
+                    let available_height = ui.available_height().clamp(40.0, max_height);
 
                     ui.label("🔊");
                     ui.add(
-                        AudioMeter::new(ui_state.user_config.meter_style, db)
-                            .desired_size(egui::vec2(meter_width, meter_height)),
+                        AudioMeter::new(ui_state.user_config.meter_style, db, db)
+                            .desired_size(egui::vec2(meter_width, available_height)),
                     );
 
                     // === SPACER - push performance to right ===
