@@ -91,6 +91,13 @@ impl ModuleSidebar {
         let (rect, response) = ui.allocate_exact_size(item_size, Sense::click());
 
         if ui.is_rect_visible(rect) {
+            let visuals = ui.style().interact(&response);
+
+            if response.hovered() || response.clicked() {
+                ui.painter().rect_filled(rect, 2.0, visuals.bg_fill);
+                ui.painter().rect_stroke(rect, 2.0, visuals.bg_stroke);
+            }
+
             let color = Color32::from_rgba_premultiplied(
                 (module.color[0] * 255.0) as u8,
                 (module.color[1] * 255.0) as u8,
@@ -108,7 +115,7 @@ impl ModuleSidebar {
                 egui::Align2::LEFT_CENTER,
                 &module.name,
                 egui::FontId::proportional(14.0),
-                Color32::WHITE,
+                visuals.text_color(),
             );
         }
 

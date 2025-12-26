@@ -168,10 +168,9 @@ impl ControllerOverlayPanel {
     }
 
     /// Show the panel UI
-    /// Show the panel UI
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub fn show(&mut self, ctx: &egui::Context, is_open: &mut bool) {
         egui::Window::new("Controller Overlay")
-            .open(&mut true) // Controlled by parent boolean usually, but we can just show it if called
+            .open(is_open)
             .resizable(true)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {

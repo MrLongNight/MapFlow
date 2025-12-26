@@ -50,8 +50,8 @@ impl Widget for AudioMeter {
 fn draw_retro_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
     let painter = ui.painter();
 
-    // Background - Dark Retro
-    painter.rect_filled(rect, 4.0, Color32::from_rgb(30, 30, 30));
+    // Background - Dark Retro (#16213E)
+    painter.rect_filled(rect, 4.0, Color32::from_rgb(22, 33, 62));
     painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_rgb(80, 80, 80)));
 
     // Calculate geometry to fit within the box while maximizing arc radius

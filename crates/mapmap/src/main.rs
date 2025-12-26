@@ -832,9 +832,7 @@ impl App {
                     self.ui_state.current_audio_level = audio_analysis.rms_volume;
 
                     // MIDI Controller Overlay
-                    if self.ui_state.show_controller_overlay {
-                        self.ui_state.controller_overlay.show(ctx);
-                    }
+                    self.ui_state.controller_overlay.show(ctx, &mut self.ui_state.show_controller_overlay);
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
