@@ -60,6 +60,8 @@ pub struct ModuleCanvas {
     context_menu_part: Option<ModulePartId>,
     /// MIDI Learn mode - which part is waiting for MIDI input
     midi_learn_part_id: Option<ModulePartId>,
+    /// Whether we are currently panning the canvas (started on empty area)
+    panning_canvas: bool,
 }
 
 pub type PresetPart = (
@@ -124,6 +126,7 @@ impl Default for ModuleCanvas {
             context_menu_connection: None,
             context_menu_part: None,
             midi_learn_part_id: None,
+            panning_canvas: false,
         }
     }
 }
@@ -398,7 +401,9 @@ impl ModuleCanvas {
                     ui.set_min_width(200.0);
                     ui.label("--- Basic Shapes ---");
                     if ui.button("⬜ Quad").clicked() {
-                        self.add_mesh_node(manager, MeshType::Quad);
+                        self.add_mesh_node(manager, MeshType::Quad { 
+                            tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) 
+                        });
                         ui.close_menu();
                     }
                     if ui.button("🔺 Triangle").clicked() {
@@ -634,7 +639,7 @@ impl ModuleCanvas {
                                 ui.add_space(8.0);
 
                                 egui::ScrollArea::vertical()
-                                    .max_height(400.0)
+                                    .auto_shrink([false, false])
                                     .show(ui, |ui| {
                                         match &mut part.part_type {
                                             ModulePartType::Trigger(trigger) => {
@@ -1146,9 +1151,89 @@ impl ModuleCanvas {
                                             ModulePartType::Mesh(mesh_type) => {
                                                 ui.label("Mesh:");
                                                 match mesh_type {
-                                                    MeshType::Quad => {
+                                                    MeshType::Quad { tl, tr, br, bl } => {
                                                         ui.label("⬜ Quad Mesh");
-                                                        ui.label("4-corner mapping surface");
+                                                        ui.separator();
+                                                        ui.label("Corner Mapping:");
+                                                        
+                                                        let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
+                                                            ui.horizontal(|ui| {
+                                                                ui.label(name);
+                                                                ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).clamp_range(0.0..=1.0).prefix("X: "));
+                                                                ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).clamp_range(0.0..=1.0).prefix("Y: "));
+                                                            });
+                                                        };
+                                                        
+                                                        coord_ui("Top Left:", tl);
+                                                        coord_ui("Top Right:", tr);
+                                                        coord_ui("Bottom Right:", br);
+                                                        coord_ui("Bottom Left:", bl);
+                                                        
+                                                        ui.separator();
+                                                        ui.label("Visual Editor:");
+                                                        
+                                                        let (response, painter) = ui.allocate_painter(Vec2::new(240.0, 180.0), Sense::click_and_drag());
+                                                        let rect = response.rect;
+                                                        
+                                                        // Draw background
+                                                        painter.rect_filled(rect, 0.0, Color32::from_gray(30));
+                                                        painter.rect_stroke(rect, 0.0, Stroke::new(1.0, Color32::GRAY));
+                                                        
+                                                        let to_screen = |norm: (f32, f32)| -> Pos2 {
+                                                            Pos2::new(
+                                                                rect.min.x + norm.0 * rect.width(),
+                                                                rect.min.y + norm.1 * rect.height()
+                                                            )
+                                                        };
+                                                        
+                                                        let from_screen = |pos: Pos2| -> (f32, f32) {
+                                                            (
+                                                                ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0),
+                                                                ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0)
+                                                            )
+                                                        };
+
+                                                        // Draw Quad Lines
+                                                        let p_tl = to_screen(*tl);
+                                                        let p_tr = to_screen(*tr);
+                                                        let p_br = to_screen(*br);
+                                                        let p_bl = to_screen(*bl);
+                                                        
+                                                        painter.add(egui::Shape::convex_polygon(
+                                                            vec![p_tl, p_tr, p_br, p_bl],
+                                                            Color32::from_rgba_unmultiplied(100, 150, 255, 50),
+                                                            Stroke::new(1.0, Color32::LIGHT_BLUE),
+                                                        ));
+                                                        
+                                                        // Handles
+                                                        let mut draw_handle = |coord: &mut (f32, f32), name: &str| {
+                                                            let pos = to_screen(*coord);
+                                                            let handle_radius = 6.0;
+                                                            let handle_rect = Rect::from_center_size(pos, Vec2::splat(handle_radius * 2.0));
+                                                            
+                                                            // Interaction
+                                                            let handle_id = response.id.with(name);
+                                                            let handle_response = ui.interact(handle_rect, handle_id, Sense::drag());
+                                                            
+                                                            if handle_response.dragged() {
+                                                                if let Some(mouse_pos) = ui.input(|i| i.pointer.interact_pos()) {
+                                                                    *coord = from_screen(mouse_pos);
+                                                                }
+                                                            }
+                                                            
+                                                            let color = if handle_response.hovered() || handle_response.dragged() {
+                                                                Color32::WHITE
+                                                            } else {
+                                                                Color32::LIGHT_BLUE
+                                                            };
+                                                            
+                                                            painter.circle_filled(pos, handle_radius, color);
+                                                        };
+                                                        
+                                                        draw_handle(tl, "tl");
+                                                        draw_handle(tr, "tr");
+                                                        draw_handle(br, "br");
+                                                        draw_handle(bl, "bl");
                                                     }
                                                     MeshType::Grid { rows, cols } => {
                                                         ui.label("▦ Grid Mesh");
@@ -1311,9 +1396,26 @@ impl ModuleCanvas {
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
 
-        // Handle canvas pan (only when not dragging a part)
-        if response.dragged() && self.dragging_part.is_none() {
-            self.pan_offset += response.drag_delta();
+        // Store drag_started state before we check parts
+        let drag_started_on_empty = response.drag_started() && self.dragging_part.is_none();
+        
+        // Handle canvas pan (only when not dragging a part and not creating connection)
+        // We also need middle mouse button for panning to avoid conflicts
+        let middle_button = ui.input(|i| i.pointer.middle_down());
+        if response.dragged() && self.dragging_part.is_none() && self.creating_connection.is_none() {
+            // Only pan with middle mouse or when not over a part
+            if middle_button || self.panning_canvas {
+                self.pan_offset += response.drag_delta();
+            }
+        }
+        
+        // Track if we started panning (for continuing the pan)
+        if drag_started_on_empty && !middle_button {
+            // Will be set to true if click was on empty canvas
+            self.panning_canvas = false;
+        }
+        if !response.dragged() {
+            self.panning_canvas = false;
         }
 
         // Handle keyboard shortcuts
@@ -2796,10 +2898,11 @@ impl ModuleCanvas {
     where
         F: Fn(Pos2) -> Pos2,
     {
-        let node_width = 180.0;
+        let node_width = 200.0;
         let title_height = 28.0;
-        let socket_spacing = 20.0;
-        let socket_radius = 6.0;
+        let socket_offset_y = 10.0;
+        let socket_spacing = 22.0;
+        // let socket_radius = 6.0; // Not used directly, we draw plugs from center
 
         for conn in &module.connections {
             // Find source and target parts
@@ -2807,40 +2910,80 @@ impl ModuleCanvas {
             let to_part = module.parts.iter().find(|p| p.id == conn.to_part);
 
             if let (Some(from), Some(to)) = (from_part, to_part) {
-                // Calculate socket positions on the actual nodes
-                // Output sockets are on the right side of the node
-                let from_socket_y = title_height + 12.0 + conn.from_socket as f32 * socket_spacing;
+                // Determine cable color based on socket type
+                let socket_type = if let Some(socket) = from.outputs.get(conn.from_socket) {
+                    &socket.socket_type
+                } else if let Some(socket) = to.inputs.get(conn.to_socket) {
+                     &socket.socket_type
+                } else {
+                    &mapmap_core::module::ModuleSocketType::Media // Fallback
+                };
+                let cable_color = Self::get_socket_color(socket_type);
+                let shadow_color = Color32::from_black_alpha(100);
+
+                // Calculate WORLD positions
+                // Output: Right side + center of socket height
+                let from_local_y = title_height + socket_offset_y + conn.from_socket as f32 * socket_spacing + socket_spacing / 2.0;
                 let from_socket_world = Pos2::new(
-                    from.position.0 + node_width, // Right edge
-                    from.position.1 + from_socket_y,
+                    from.position.0 + node_width,
+                    from.position.1 + from_local_y,
                 );
-                let from_socket_screen = to_screen(from_socket_world);
-
-                // Input sockets are on the left side of the node
-                let to_socket_y = title_height + 12.0 + conn.to_socket as f32 * socket_spacing;
+                
+                // Input: Left side + center of socket height
+                let to_local_y = title_height + socket_offset_y + conn.to_socket as f32 * socket_spacing + socket_spacing / 2.0;
                 let to_socket_world = Pos2::new(
-                    to.position.0, // Left edge
-                    to.position.1 + to_socket_y,
+                    to.position.0,
+                    to.position.1 + to_local_y,
                 );
-                let to_socket_screen = to_screen(to_socket_world);
 
-                // Adjust for socket radius (start from center of socket)
-                let from_pos = Pos2::new(from_socket_screen.x + socket_radius * self.zoom, from_socket_screen.y);
-                let to_pos = Pos2::new(to_socket_screen.x - socket_radius * self.zoom, to_socket_screen.y);
+                // Convert to SCREEN positions
+                let start_pos = to_screen(from_socket_world);
+                let end_pos = to_screen(to_socket_world);
 
-                // Draw bezier curve
-                let control_offset = (to_pos.x - from_pos.x).abs() * 0.4;
-                let ctrl1 = Pos2::new(from_pos.x + control_offset, from_pos.y);
-                let ctrl2 = Pos2::new(to_pos.x - control_offset, to_pos.y);
+                // Draw Plugs
+                let plug_len = 15.0 * self.zoom;
+                let plug_width = 8.0 * self.zoom;
+                
+                // Source Plug (Right facing)
+                let start_plug_rect = Rect::from_min_max(
+                    start_pos,
+                    Pos2::new(start_pos.x + plug_len, start_pos.y + plug_width / 2.0)
+                ).translate(Vec2::new(0.0, -plug_width / 2.0));
+                
+                painter.rect_filled(start_plug_rect, 2.0, cable_color);
+                painter.rect_stroke(start_plug_rect, 2.0, Stroke::new(1.0, Color32::BLACK));
 
-                // Draw as line segments (approximating bezier)
-                let steps = 20;
+                // Target Plug (Left facing)
+                let end_plug_rect = Rect::from_min_max(
+                    Pos2::new(end_pos.x - plug_len, end_pos.y - plug_width / 2.0),
+                    Pos2::new(end_pos.x, end_pos.y + plug_width / 2.0)
+                );
+                
+                painter.rect_filled(end_plug_rect, 2.0, cable_color);
+                painter.rect_stroke(end_plug_rect, 2.0, Stroke::new(1.0, Color32::BLACK));
+
+                // Draw Cable (Bezier)
+                // Start cable from end of plugs
+                let cable_start = Pos2::new(start_pos.x + plug_len, start_pos.y);
+                let cable_end = Pos2::new(end_pos.x - plug_len, end_pos.y);
+
+                let control_offset = (cable_end.x - cable_start.x).abs() * 0.5;
+                let control_offset = control_offset.max(50.0 * self.zoom); // Minimum curve
+
+                let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
+                let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
+
+                // Draw shadow/outline first
+                 let steps = 40;
                 for i in 0..steps {
                     let t1 = i as f32 / steps as f32;
                     let t2 = (i + 1) as f32 / steps as f32;
-                    let p1 = Self::bezier_point(from_pos, ctrl1, ctrl2, to_pos, t1);
-                    let p2 = Self::bezier_point(from_pos, ctrl1, ctrl2, to_pos, t2);
-                    painter.line_segment([p1, p2], Stroke::new(2.0, Color32::from_rgb(100, 180, 255)));
+                    let p1 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t1);
+                    let p2 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t2);
+                    // Shadow/Outline
+                    painter.line_segment([p1, p2], Stroke::new(5.0 * self.zoom, shadow_color));
+                    // Inner Cable
+                    painter.line_segment([p1, p2], Stroke::new(3.0 * self.zoom, cable_color));
                 }
             }
         }
@@ -3057,7 +3200,7 @@ impl ModuleCanvas {
             },
             ModulePartType::Mesh(mesh) => {
                 let name = match mesh {
-                    MeshType::Quad => "Quad",
+                    MeshType::Quad { .. } => "Quad",
                     MeshType::Grid { .. } => "Grid",
                     MeshType::BezierSurface { .. } => "Bezier",
                     MeshType::Polygon { .. } => "Polygon",
@@ -3142,7 +3285,7 @@ impl ModuleCanvas {
             ModulePartType::Mesh(mesh_type) => {
                 use mapmap_core::module::MeshType;
                 match mesh_type {
-                    MeshType::Quad => "⬜ Quad".to_string(),
+                    MeshType::Quad { .. } => "⬜ Quad".to_string(),
                     MeshType::Grid { rows, cols } => format!("▦ Grid {}x{}", rows, cols),
                     MeshType::BezierSurface { .. } => "〰️ Bezier".to_string(),
                     MeshType::Polygon { .. } => "⬡ Polygon".to_string(),

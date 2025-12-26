@@ -125,7 +125,12 @@ impl MapFlowModule {
                 }],
             ),
             PartType::Mesh => (
-                ModulePartType::Mesh(MeshType::Quad),
+                ModulePartType::Mesh(MeshType::Quad {
+                    tl: (0.0, 0.0),
+                    tr: (1.0, 0.0),
+                    br: (1.0, 1.0),
+                    bl: (0.0, 1.0),
+                }),
                 vec![ModuleSocket {
                     name: "Media In".to_string(),
                     socket_type: ModuleSocketType::Media,
@@ -446,7 +451,12 @@ pub enum MaskShape {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MeshType {
     /// Simple quad mesh (4 corner points)
-    Quad,
+    Quad {
+        tl: (f32, f32),
+        tr: (f32, f32),
+        br: (f32, f32),
+        bl: (f32, f32),
+    },
     /// Grid mesh with configurable subdivision
     Grid { rows: u32, cols: u32 },
     /// Bezier surface with control points
