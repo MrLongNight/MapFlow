@@ -2879,6 +2879,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "resvg 0.40.0",
+ "rfd",
  "rust-embed",
  "serde",
  "serde_json",

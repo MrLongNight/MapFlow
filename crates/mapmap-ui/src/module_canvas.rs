@@ -24,6 +24,10 @@ pub struct ModuleCanvas {
     zoom: f32,
     /// Part being dragged
     dragging_part: Option<(ModulePartId, Vec2)>,
+    /// Part being resized: (part_id, original_size)
+    resizing_part: Option<(ModulePartId, (f32, f32))>,
+    /// Box selection start position (screen coords)
+    box_select_start: Option<Pos2>,
     /// Connection being created: (from_part, from_socket_idx, is_output, socket_type, start_pos)
     creating_connection: Option<(ModulePartId, usize, bool, ModuleSocketType, Pos2)>,
     /// Part ID pending deletion (set when X button clicked)
@@ -40,6 +44,28 @@ pub struct ModuleCanvas {
     undo_stack: Vec<CanvasAction>,
     /// Redo history stack
     redo_stack: Vec<CanvasAction>,
+    /// Saved module presets
+    presets: Vec<ModulePreset>,
+    /// Whether preset panel is visible
+    show_presets: bool,
+    /// New preset name input
+    new_preset_name: String,
+    /// Context menu position
+    context_menu_pos: Option<Pos2>,
+    /// Context menu target (connection index or None)
+    context_menu_connection: Option<usize>,
+}
+
+/// A saved module preset/template
+#[derive(Debug, Clone)]
+pub struct ModulePreset {
+    pub name: String,
+    pub parts: Vec<(
+        mapmap_core::module::ModulePartType,
+        (f32, f32),
+        Option<(f32, f32)>,
+    )>,
+    pub connections: Vec<(usize, usize, usize, usize)>, // from_idx, from_socket, to_idx, to_socket
 }
 
 /// Actions that can be undone/redone
@@ -72,6 +98,8 @@ impl Default for ModuleCanvas {
             pan_offset: Vec2::ZERO,
             zoom: 1.0,
             dragging_part: None,
+            resizing_part: None,
+            box_select_start: None,
             creating_connection: None,
             pending_delete: None,
             selected_parts: Vec::new(),
@@ -80,6 +108,11 @@ impl Default for ModuleCanvas {
             show_search: false,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
+            presets: Self::default_presets(),
+            show_presets: false,
+            new_preset_name: String::new(),
+            context_menu_pos: None,
+            context_menu_connection: None,
         }
     }
 }
@@ -329,6 +362,15 @@ impl ModuleCanvas {
                         Self::auto_layout_parts(&mut module.parts);
                     }
                 }
+
+                // Presets button
+                if ui
+                    .button("📋")
+                    .on_hover_text("Load preset template")
+                    .clicked()
+                {
+                    self.show_presets = !self.show_presets;
+                }
             }
 
             ui.add_space(4.0);
@@ -362,7 +404,420 @@ impl ModuleCanvas {
                         // Get first selected part
                         if let Some(part_id) = self.selected_parts.first().copied() {
                             if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                                Self::render_node_inspector(ui, part);
+                                use mapmap_core::module::*;
+
+                                let (_, _, icon, type_name) = Self::get_part_style(&part.part_type);
+                                ui.label(format!("{} {}", icon, type_name));
+                                ui.add_space(8.0);
+
+                                egui::ScrollArea::vertical()
+                                    .max_height(400.0)
+                                    .show(ui, |ui| {
+                                        match &mut part.part_type {
+                                            ModulePartType::Trigger(trigger) => {
+                                                ui.label("Trigger Type:");
+                                                match trigger {
+                                                    TriggerType::Beat => {
+                                                        ui.label("🥁 Beat Sync");
+                                                        ui.label("Triggers on BPM beat.");
+                                                    }
+                                                    TriggerType::AudioFFT { band, threshold } => {
+                                                        ui.label("🔊 Audio FFT");
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Band:");
+                                                            egui::ComboBox::from_id_source(
+                                                                "audio_band",
+                                                            )
+                                                            .selected_text(format!("{:?}", band))
+                                                            .show_ui(ui, |ui| {
+                                                                let bands = [
+                                                                    (
+                                                                        AudioBand::SubBass,
+                                                                        "SubBass (20-60Hz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Bass,
+                                                                        "Bass (60-250Hz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::LowMid,
+                                                                        "LowMid (250-500Hz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Mid,
+                                                                        "Mid (500-2kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::HighMid,
+                                                                        "HighMid (2-4kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Presence,
+                                                                        "Presence (4-6kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Brilliance,
+                                                                        "Brilliance (6-20kHz)",
+                                                                    ),
+                                                                    (
+                                                                        AudioBand::Peak,
+                                                                        "Peak Detection",
+                                                                    ),
+                                                                    (AudioBand::BPM, "BPM"),
+                                                                ];
+                                                                for (b, label) in bands {
+                                                                    if ui
+                                                                        .selectable_label(
+                                                                            *band == b,
+                                                                            label,
+                                                                        )
+                                                                        .clicked()
+                                                                    {
+                                                                        *band = b;
+                                                                    }
+                                                                }
+                                                            });
+                                                        });
+                                                        ui.add(
+                                                            egui::Slider::new(threshold, 0.0..=1.0)
+                                                                .text("Threshold"),
+                                                        );
+                                                    }
+                                                    TriggerType::Random {
+                                                        min_interval_ms,
+                                                        max_interval_ms,
+                                                        probability,
+                                                    } => {
+                                                        ui.label("🎲 Random");
+                                                        ui.add(
+                                                            egui::Slider::new(
+                                                                min_interval_ms,
+                                                                50..=5000,
+                                                            )
+                                                            .text("Min (ms)"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(
+                                                                max_interval_ms,
+                                                                100..=10000,
+                                                            )
+                                                            .text("Max (ms)"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(
+                                                                probability,
+                                                                0.0..=1.0,
+                                                            )
+                                                            .text("Probability"),
+                                                        );
+                                                    }
+                                                    TriggerType::Fixed {
+                                                        interval_ms,
+                                                        offset_ms,
+                                                    } => {
+                                                        ui.label("⏱️ Fixed Timer");
+                                                        ui.add(
+                                                            egui::Slider::new(
+                                                                interval_ms,
+                                                                16..=10000,
+                                                            )
+                                                            .text("Interval (ms)"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(offset_ms, 0..=5000)
+                                                                .text("Offset (ms)"),
+                                                        );
+                                                    }
+                                                    TriggerType::Midi { channel, note } => {
+                                                        ui.label("🎹 MIDI Trigger");
+                                                        
+                                                        // Available MIDI ports dropdown
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Device:");
+                                                            #[cfg(feature = "cpal")]
+                                                            {
+                                                                if let Ok(ports) = mapmap_control::midi::MidiInputHandler::list_ports() {
+                                                                    if ports.is_empty() {
+                                                                        ui.label("No MIDI devices");
+                                                                    } else {
+                                                                        egui::ComboBox::from_id_source("midi_device")
+                                                                            .selected_text(ports.first().cloned().unwrap_or_default())
+                                                                            .show_ui(ui, |ui| {
+                                                                                for port in &ports {
+                                                                                    ui.selectable_label(false, port);
+                                                                                }
+                                                                            });
+                                                                    }
+                                                                } else {
+                                                                    ui.label("MIDI unavailable");
+                                                                }
+                                                            }
+                                                            #[cfg(not(feature = "cpal"))]
+                                                            {
+                                                                ui.label("(MIDI disabled)");
+                                                            }
+                                                        });
+                                                        
+                                                        ui.add(
+                                                            egui::Slider::new(channel, 1..=16)
+                                                                .text("Channel"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(note, 0..=127)
+                                                                .text("Note"),
+                                                        );
+                                                        
+                                                        // MIDI Learn button
+                                                        if ui.button("🎯 MIDI Learn").clicked() {
+                                                            // TODO: Start MIDI learn mode
+                                                        }
+                                                    }
+                                                    TriggerType::Osc { address } => {
+                                                        ui.label("📡 OSC");
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Address:");
+                                                            ui.text_edit_singleline(address);
+                                                        });
+                                                    }
+                                                    TriggerType::Shortcut {
+                                                        key_code,
+                                                        modifiers,
+                                                    } => {
+                                                        ui.label("⌨️ Shortcut");
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Key:");
+                                                            ui.text_edit_singleline(key_code);
+                                                        });
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Mods:");
+                                                            ui.label(format!(
+                                                                "Ctrl={} Shift={} Alt={}",
+                                                                *modifiers & 1 != 0,
+                                                                *modifiers & 2 != 0,
+                                                                *modifiers & 4 != 0
+                                                            ));
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            ModulePartType::Source(source) => {
+                                                ui.label("Source Type:");
+                                                match source {
+                                                    SourceType::MediaFile { path } => {
+                                                        ui.label("📁 Media File");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(
+                                                                egui::TextEdit::singleline(path)
+                                                                    .desired_width(120.0),
+                                                            );
+                                                            if ui.button("📂").clicked() {
+                                                                if let Some(picked) =
+                                                                    rfd::FileDialog::new()
+                                                                        .add_filter(
+                                                                            "Media",
+                                                                            &[
+                                                                                "mp4", "mov",
+                                                                                "avi", "mkv",
+                                                                                "webm", "gif",
+                                                                                "png", "jpg",
+                                                                                "jpeg",
+                                                                            ],
+                                                                        )
+                                                                        .pick_file()
+                                                                {
+                                                                    *path = picked
+                                                                        .display()
+                                                                        .to_string();
+                                                                }
+                                                            }
+                                                        });
+                                                    }
+                                                    SourceType::Shader { name, params: _ } => {
+                                                        ui.label("🎨 Shader");
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Name:");
+                                                            ui.text_edit_singleline(name);
+                                                        });
+                                                    }
+                                                    SourceType::LiveInput { device_id } => {
+                                                        ui.label("📹 Live Input");
+                                                        ui.add(
+                                                            egui::Slider::new(device_id, 0..=10)
+                                                                .text("Device ID"),
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                            ModulePartType::Mask(mask) => {
+                                                ui.label("Mask Type:");
+                                                match mask {
+                                                    MaskType::File { path } => {
+                                                        ui.label("📁 Mask File");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(
+                                                                egui::TextEdit::singleline(path)
+                                                                    .desired_width(120.0),
+                                                            );
+                                                            if ui.button("📂").clicked() {
+                                                                if let Some(picked) =
+                                                                    rfd::FileDialog::new()
+                                                                        .add_filter(
+                                                                            "Image",
+                                                                            &[
+                                                                                "png", "jpg",
+                                                                                "jpeg", "webp",
+                                                                                "bmp",
+                                                                            ],
+                                                                        )
+                                                                        .pick_file()
+                                                                {
+                                                                    *path = picked
+                                                                        .display()
+                                                                        .to_string();
+                                                                }
+                                                            }
+                                                        });
+                                                    }
+                                                    MaskType::Shape(shape) => {
+                                                        ui.label("🔷 Shape Mask");
+                                                        egui::ComboBox::from_id_source(
+                                                            "mask_shape",
+                                                        )
+                                                        .selected_text(format!("{:?}", shape))
+                                                        .show_ui(ui, |ui| {
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(
+                                                                        shape,
+                                                                        MaskShape::Circle
+                                                                    ),
+                                                                    "Circle",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                *shape = MaskShape::Circle;
+                                                            }
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(
+                                                                        shape,
+                                                                        MaskShape::Rectangle
+                                                                    ),
+                                                                    "Rectangle",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                *shape = MaskShape::Rectangle;
+                                                            }
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(
+                                                                        shape,
+                                                                        MaskShape::Triangle
+                                                                    ),
+                                                                    "Triangle",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                *shape = MaskShape::Triangle;
+                                                            }
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(
+                                                                        shape,
+                                                                        MaskShape::Star
+                                                                    ),
+                                                                    "Star",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                *shape = MaskShape::Star;
+                                                            }
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(
+                                                                        shape,
+                                                                        MaskShape::Ellipse
+                                                                    ),
+                                                                    "Ellipse",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                *shape = MaskShape::Ellipse;
+                                                            }
+                                                        });
+                                                    }
+                                                    MaskType::Gradient { angle, softness } => {
+                                                        ui.label("🌈 Gradient Mask");
+                                                        ui.add(
+                                                            egui::Slider::new(angle, 0.0..=360.0)
+                                                                .text("Angle °"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(softness, 0.0..=1.0)
+                                                                .text("Softness"),
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                            ModulePartType::Modulizer(mod_type) => {
+                                                ui.label("Modulator:");
+                                                match mod_type {
+                                                    ModulizerType::Effect(effect) => {
+                                                        ui.label("✨ Effect");
+                                                        ui.label(format!("Type: {:?}", effect));
+                                                    }
+                                                    ModulizerType::BlendMode(blend) => {
+                                                        ui.label("🎨 Blend Mode");
+                                                        ui.label(format!("Mode: {:?}", blend));
+                                                    }
+                                                    ModulizerType::AudioReactive { source } => {
+                                                        ui.label("🔊 Audio Reactive");
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Source:");
+                                                            ui.text_edit_singleline(source);
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            ModulePartType::LayerAssignment(layer) => {
+                                                ui.label("Layer Assignment:");
+                                                ui.label(format!("{:?}", layer));
+                                            }
+                                            ModulePartType::Output(output) => {
+                                                ui.label("Output:");
+                                                match output {
+                                                    OutputType::Projector { id, name } => {
+                                                        ui.label("📽️ Projector");
+                                                        ui.add(
+                                                            egui::Slider::new(id, 0..=8).text("ID"),
+                                                        );
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Name:");
+                                                            ui.text_edit_singleline(name);
+                                                        });
+                                                    }
+                                                    OutputType::Preview { window_id: _ } => {
+                                                        ui.label("👁️ Preview Window");
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        ui.add_space(16.0);
+                                        ui.separator();
+
+                                        // Node position info
+                                        ui.label(format!(
+                                            "Position: ({:.0}, {:.0})",
+                                            part.position.0, part.position.1
+                                        ));
+                                        if let Some((w, h)) = part.size {
+                                            ui.label(format!("Size: {:.0} × {:.0}", w, h));
+                                        }
+                                        ui.label(format!("Inputs: {}", part.inputs.len()));
+                                        ui.label(format!("Outputs: {}", part.outputs.len()));
+                                    });
                             }
                         }
                     });
@@ -687,6 +1142,86 @@ impl ModuleCanvas {
             self.creating_connection = None;
         }
 
+        // Handle right-click for context menu
+        let right_clicked = ui.input(|i| i.pointer.button_clicked(egui::PointerButton::Secondary));
+        if right_clicked {
+            if let Some(pos) = pointer_pos {
+                // Check if clicking near a connection line
+                for (conn_idx, conn) in module.connections.iter().enumerate() {
+                    // Find positions of connected sockets
+                    if let (Some(from_part), Some(to_part)) = (
+                        module.parts.iter().find(|p| p.id == conn.from_part),
+                        module.parts.iter().find(|p| p.id == conn.to_part),
+                    ) {
+                        let from_screen = to_screen(Pos2::new(
+                            from_part.position.0 + 180.0,
+                            from_part.position.1 + 50.0,
+                        ));
+                        let to_screen_pos =
+                            to_screen(Pos2::new(to_part.position.0, to_part.position.1 + 50.0));
+
+                        // Simple distance check to bezier curve (approximate with line)
+                        let mid = Pos2::new(
+                            (from_screen.x + to_screen_pos.x) / 2.0,
+                            (from_screen.y + to_screen_pos.y) / 2.0,
+                        );
+                        if pos.distance(mid) < 20.0 * self.zoom {
+                            self.context_menu_pos = Some(pos);
+                            self.context_menu_connection = Some(conn_idx);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle box selection start (on empty canvas)
+        if clicked && self.creating_connection.is_none() && self.dragging_part.is_none() {
+            if let Some(pos) = pointer_pos {
+                // Check if not clicking on any part
+                let on_part = part_rects.iter().any(|(_, rect)| rect.contains(pos));
+                if !on_part && canvas_rect.contains(pos) {
+                    self.box_select_start = Some(pos);
+                }
+            }
+        }
+
+        // Handle box selection drag
+        if let Some(start_pos) = self.box_select_start {
+            if let Some(current_pos) = pointer_pos {
+                // Draw selection rectangle
+                let select_rect = Rect::from_two_pos(start_pos, current_pos);
+                painter.rect_stroke(
+                    select_rect,
+                    0.0,
+                    Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+                );
+                painter.rect_filled(
+                    select_rect,
+                    0.0,
+                    Color32::from_rgba_unmultiplied(100, 200, 255, 30),
+                );
+            }
+
+            if released {
+                // Select all parts within the box
+                if let Some(current_pos) = pointer_pos {
+                    let select_rect = Rect::from_two_pos(start_pos, current_pos);
+                    if !shift_held {
+                        self.selected_parts.clear();
+                    }
+                    for (part_id, part_rect) in &part_rects {
+                        if select_rect.intersects(*part_rect)
+                            && !self.selected_parts.contains(part_id)
+                        {
+                            self.selected_parts.push(*part_id);
+                        }
+                    }
+                }
+                self.box_select_start = None;
+            }
+        }
+
         // Handle part dragging and delete buttons
         let mut delete_part_id: Option<ModulePartId> = None;
 
@@ -795,8 +1330,14 @@ impl ModuleCanvas {
         // Draw parts (nodes) with delete buttons and selection highlight
         for part in &module.parts {
             let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
-            let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-            let part_size = Vec2::new(180.0, part_height);
+
+            // Use custom size or calculate default
+            let (part_width, part_height) = part.size.unwrap_or_else(|| {
+                let default_height =
+                    80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                (180.0, default_height)
+            });
+            let part_size = Vec2::new(part_width, part_height);
             let part_screen_rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
 
             // Draw selection highlight if selected
@@ -807,9 +1348,62 @@ impl ModuleCanvas {
                     8.0 * self.zoom,
                     Stroke::new(3.0 * self.zoom, Color32::from_rgb(100, 200, 255)),
                 );
+
+                // Draw resize handle at bottom-right corner
+                let handle_size = 12.0 * self.zoom;
+                let handle_rect = Rect::from_min_size(
+                    Pos2::new(
+                        part_screen_rect.max.x - handle_size,
+                        part_screen_rect.max.y - handle_size,
+                    ),
+                    Vec2::splat(handle_size),
+                );
+                painter.rect_filled(handle_rect, 2.0, Color32::from_rgb(100, 200, 255));
+                // Draw diagonal lines for resize indicator
+                painter.line_segment(
+                    [
+                        handle_rect.min + Vec2::new(3.0, handle_size - 3.0),
+                        handle_rect.min + Vec2::new(handle_size - 3.0, 3.0),
+                    ],
+                    Stroke::new(1.5, Color32::from_gray(40)),
+                );
+
+                // Handle resize drag interaction
+                let resize_response = ui.interact(
+                    handle_rect,
+                    egui::Id::new((part.id, "resize")),
+                    Sense::drag(),
+                );
+
+                if resize_response.drag_started() {
+                    self.resizing_part = Some((part.id, (part_width, part_height)));
+                }
             }
 
             self.draw_part_with_delete(&painter, part, part_screen_rect);
+        }
+
+        // Handle resize dragging
+        if let Some((resize_id, (orig_w, orig_h))) = self.resizing_part {
+            if ui.input(|i| i.pointer.any_released()) {
+                self.resizing_part = None;
+            } else if let Some(delta) = ui.input(|i| {
+                if i.pointer.any_down() {
+                    Some(i.pointer.delta())
+                } else {
+                    None
+                }
+            }) {
+                // Calculate new size
+                let new_w = (orig_w + delta.x / self.zoom).max(120.0).min(400.0);
+                let new_h = (orig_h + delta.y / self.zoom).max(60.0).min(300.0);
+
+                if let Some(part) = module.parts.iter_mut().find(|p| p.id == resize_id) {
+                    part.size = Some((new_w, new_h));
+                }
+
+                self.resizing_part = Some((resize_id, (new_w, new_h)));
+            }
         }
 
         // Draw connection being created with visual feedback
@@ -861,6 +1455,43 @@ impl ModuleCanvas {
         // Draw search popup if visible
         if self.show_search {
             self.draw_search_popup(ui, canvas_rect, module);
+        }
+
+        // Draw presets popup if visible
+        if self.show_presets {
+            self.draw_presets_popup(ui, canvas_rect, module);
+        }
+
+        // Draw context menu for connections
+        if let Some(menu_pos) = self.context_menu_pos {
+            let menu_rect = Rect::from_min_size(menu_pos, Vec2::new(120.0, 30.0));
+            let painter = ui.painter();
+            painter.rect_filled(menu_rect, 4.0, Color32::from_rgb(50, 50, 60));
+            painter.rect_stroke(
+                menu_rect,
+                4.0,
+                Stroke::new(1.0, Color32::from_rgb(100, 100, 120)),
+            );
+
+            ui.allocate_ui_at_rect(menu_rect.shrink(4.0), |ui| {
+                if ui.button("🗑 Delete Connection").clicked() {
+                    if let Some(conn_idx) = self.context_menu_connection {
+                        if conn_idx < module.connections.len() {
+                            module.connections.remove(conn_idx);
+                        }
+                    }
+                    self.context_menu_pos = None;
+                    self.context_menu_connection = None;
+                }
+            });
+
+            // Close menu on click elsewhere
+            if ui.input(|i| i.pointer.any_click())
+                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos()).unwrap_or(Pos2::ZERO))
+            {
+                self.context_menu_pos = None;
+                self.context_menu_connection = None;
+            }
         }
     }
 
@@ -942,6 +1573,181 @@ impl ModuleCanvas {
                     });
             });
         });
+    }
+
+    fn draw_presets_popup(&mut self, ui: &mut Ui, canvas_rect: Rect, module: &mut MapFlowModule) {
+        // Presets popup in top-center
+        let popup_width = 280.0;
+        let popup_height = 220.0;
+        let popup_rect = Rect::from_min_size(
+            Pos2::new(
+                canvas_rect.center().x - popup_width / 2.0,
+                canvas_rect.min.y + 50.0,
+            ),
+            Vec2::new(popup_width, popup_height),
+        );
+
+        // Draw popup background
+        let painter = ui.painter();
+        painter.rect_filled(
+            popup_rect,
+            8.0,
+            Color32::from_rgba_unmultiplied(30, 35, 45, 245),
+        );
+        painter.rect_stroke(
+            popup_rect,
+            8.0,
+            Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
+        );
+
+        // Popup content
+        let inner_rect = popup_rect.shrink(12.0);
+        ui.allocate_ui_at_rect(inner_rect, |ui| {
+            ui.vertical(|ui| {
+                ui.heading("📋 Presets / Templates");
+                ui.add_space(8.0);
+
+                egui::ScrollArea::vertical()
+                    .max_height(150.0)
+                    .show(ui, |ui| {
+                        let presets = self.presets.clone();
+                        for preset in &presets {
+                            ui.horizontal(|ui| {
+                                if ui.button(&preset.name).clicked() {
+                                    // Clear current and load preset
+                                    module.parts.clear();
+                                    module.connections.clear();
+
+                                    // Add parts from preset
+                                    let mut part_ids = Vec::new();
+                                    let mut next_id =
+                                        module.parts.iter().map(|p| p.id).max().unwrap_or(0) + 1;
+                                    for (part_type, position, size) in &preset.parts {
+                                        let id = next_id;
+                                        next_id += 1;
+
+                                        let (inputs, outputs) =
+                                            Self::get_sockets_for_part_type(part_type);
+
+                                        module.parts.push(mapmap_core::module::ModulePart {
+                                            id,
+                                            part_type: part_type.clone(),
+                                            position: *position,
+                                            size: *size,
+                                            inputs,
+                                            outputs,
+                                        });
+                                        part_ids.push(id);
+                                    }
+
+                                    // Add connections
+                                    for (from_idx, from_socket, to_idx, to_socket) in
+                                        &preset.connections
+                                    {
+                                        if *from_idx < part_ids.len() && *to_idx < part_ids.len() {
+                                            module.connections.push(
+                                                mapmap_core::module::ModuleConnection {
+                                                    from_part: part_ids[*from_idx],
+                                                    from_socket: *from_socket,
+                                                    to_part: part_ids[*to_idx],
+                                                    to_socket: *to_socket,
+                                                },
+                                            );
+                                        }
+                                    }
+
+                                    self.show_presets = false;
+                                }
+                                ui.label(format!("({} nodes)", preset.parts.len()));
+                            });
+                        }
+                    });
+
+                ui.add_space(8.0);
+                if ui.button("Close").clicked() {
+                    self.show_presets = false;
+                }
+            });
+        });
+    }
+
+    /// Get default sockets for a part type
+    fn get_sockets_for_part_type(
+        part_type: &mapmap_core::module::ModulePartType,
+    ) -> (
+        Vec<mapmap_core::module::ModuleSocket>,
+        Vec<mapmap_core::module::ModuleSocket>,
+    ) {
+        use mapmap_core::module::{ModulePartType, ModuleSocket, ModuleSocketType};
+
+        match part_type {
+            ModulePartType::Trigger(_) => (
+                vec![],
+                vec![ModuleSocket {
+                    name: "Trigger Out".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+            ),
+            ModulePartType::Source(_) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::Mask(_) => (
+                vec![
+                    ModuleSocket {
+                        name: "Media In".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Mask In".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                ],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::Modulizer(_) => (
+                vec![
+                    ModuleSocket {
+                        name: "Media In".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Trigger In".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::LayerAssignment(_) => (
+                vec![ModuleSocket {
+                    name: "Media In".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+                vec![ModuleSocket {
+                    name: "Layer Out".to_string(),
+                    socket_type: ModuleSocketType::Layer,
+                }],
+            ),
+            ModulePartType::Output(_) => (
+                vec![ModuleSocket {
+                    name: "Layer In".to_string(),
+                    socket_type: ModuleSocketType::Layer,
+                }],
+                vec![],
+            ),
+        }
     }
 
     fn draw_mini_map(&self, painter: &egui::Painter, canvas_rect: Rect, module: &MapFlowModule) {
@@ -1777,5 +2583,152 @@ impl ModuleCanvas {
                 pos.0 += node_width + 20.0;
             }
         }
+    }
+
+    /// Create default presets/templates
+    fn default_presets() -> Vec<ModulePreset> {
+        use mapmap_core::module::*;
+
+        vec![
+            ModulePreset {
+                name: "Simple Media Chain".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (250.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (450.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Source
+                ],
+            },
+            ModulePreset {
+                name: "Effect Chain".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (250.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
+                        (450.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Source
+                    (1, 0, 2, 0), // Source -> Effect
+                ],
+            },
+            ModulePreset {
+                name: "Audio Reactive".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::AudioFFT {
+                            band: AudioBand::Bass,
+                            threshold: 0.5,
+                        }),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (250.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
+                        (450.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (850.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Audio -> Source
+                    (1, 0, 2, 0), // Source -> Effect
+                    (2, 0, 3, 0), // Effect -> Layer
+                ],
+            },
+            ModulePreset {
+                name: "Masked Media".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (250.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)),
+                        (450.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Source
+                    (1, 0, 2, 0), // Source -> Mask
+                ],
+            },
+        ]
     }
 }

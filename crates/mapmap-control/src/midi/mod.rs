@@ -5,9 +5,15 @@ mod assignment_table;
 #[cfg(feature = "midi")]
 mod clock;
 #[cfg(feature = "midi")]
+mod controller_element;
+#[cfg(feature = "midi")]
+mod ecler_nuo4;
+#[cfg(feature = "midi")]
 mod input;
 #[cfg(feature = "midi")]
 mod mapping;
+#[cfg(feature = "midi")]
+mod midi_learn;
 #[cfg(feature = "midi")]
 mod output;
 #[cfg(feature = "midi")]
@@ -18,9 +24,15 @@ pub use assignment_table::*;
 #[cfg(feature = "midi")]
 pub use clock::*;
 #[cfg(feature = "midi")]
+pub use controller_element::*;
+#[cfg(feature = "midi")]
+pub use ecler_nuo4::*;
+#[cfg(feature = "midi")]
 pub use input::*;
 #[cfg(feature = "midi")]
 pub use mapping::*;
+#[cfg(feature = "midi")]
+pub use midi_learn::*;
 #[cfg(feature = "midi")]
 pub use output::*;
 #[cfg(feature = "midi")]

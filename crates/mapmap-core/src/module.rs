@@ -104,6 +104,7 @@ impl MapFlowModule {
             id,
             part_type: module_part_type,
             position,
+            size: None,
             inputs,
             outputs,
         };
@@ -163,6 +164,9 @@ pub struct ModulePart {
     pub id: ModulePartId,
     pub part_type: ModulePartType,
     pub position: (f32, f32),
+    /// Custom size (width, height). If None, uses default size.
+    #[serde(default)]
+    pub size: Option<(f32, f32)>,
     pub inputs: Vec<ModuleSocket>,
     pub outputs: Vec<ModuleSocket>,
 }
