@@ -4,7 +4,7 @@
 //! with live state visualization and MIDI Learn functionality.
 
 #[cfg(feature = "midi")]
-use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Vec2};
+use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
@@ -232,8 +232,10 @@ impl ControllerOverlayPanel {
                     self.learn_manager.update();
 
                     // Draw controller overlay
-                    if let Some(elements) = &self.elements {
-                        self.draw_controller(ui, elements);
+                    if self.elements.is_some() {
+                        // We need to clone elements to avoid borrow checker issues with self.draw_controller
+                        let elements = self.elements.clone().unwrap();
+                        self.draw_controller(ui, &elements);
                     } else {
                         ui.label("Kein Controller geladen");
                         if ui.button("Ecler NUO 4 laden").clicked() {
