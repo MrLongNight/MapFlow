@@ -10,7 +10,7 @@ use anyhow::Result;
 use egui_wgpu::Renderer;
 use egui_winit::State;
 #[cfg(feature = "midi")]
-use mapmap_control::midi::{MidiInputHandler, MidiMessage};
+use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::{shortcuts::Action, ControlManager};
 use mapmap_core::{
     audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer},
@@ -294,7 +294,7 @@ impl App {
             #[cfg(feature = "midi")]
             midi_handler: {
                 match MidiInputHandler::new() {
-                    Ok(mut handler) => {
+                    Ok(handler) => {
                         info!("MIDI initialized");
                         if let Ok(ports) = MidiInputHandler::list_ports() {
                             info!("Available MIDI ports: {:?}", ports);

@@ -152,9 +152,10 @@ mod tests {
 
     #[test]
     fn test_parse_level() {
-        let mut config = LogConfig::default();
-
-        config.level = "debug".to_string();
+        let mut config = LogConfig {
+            level: "debug".to_string(),
+            ..Default::default()
+        };
         assert_eq!(config.parse_level(), Level::DEBUG);
 
         config.level = "WARN".to_string();
