@@ -50,9 +50,9 @@ impl Widget for AudioMeter {
 fn draw_retro_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
     let painter = ui.painter();
 
-    // Background - Warm off-white
-    painter.rect_filled(rect, 4.0, Color32::from_rgb(235, 230, 220));
-    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_rgb(50, 50, 50)));
+    // Professional dark background
+    painter.rect_filled(rect, 4.0, Color32::from_rgb(0x16, 0x21, 0x3E)); // Dark Navy/Blue
+    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_gray(0x40)));
 
     // Calculate geometry to fit within the box while maximizing arc radius
     // We place the pivot below the widget to create a flatter, wider arc (classic VU look)
@@ -107,7 +107,7 @@ fn draw_retro_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
     for (_val, angle, label) in ticks.iter() {
         let p1 = angle_to_pos(*angle, radius * 0.6);
         let p2 = angle_to_pos(*angle, radius * 0.7);
-        painter.line_segment([p1, p2], Stroke::new(1.5, Color32::BLACK));
+        painter.line_segment([p1, p2], Stroke::new(1.5, Color32::from_gray(0xA0)));
 
         // Draw labels slightly below ticks
         if rect.height() > 30.0 {
@@ -117,7 +117,7 @@ fn draw_retro_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
                 egui::Align2::CENTER_CENTER,
                 label,
                 egui::FontId::proportional(10.0),
-                Color32::BLACK,
+                Color32::from_gray(0xA0),
             );
         }
     }

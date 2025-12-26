@@ -91,6 +91,28 @@ impl ModuleSidebar {
         let (rect, response) = ui.allocate_exact_size(item_size, Sense::click());
 
         if ui.is_rect_visible(rect) {
+            let is_hovered = response.hovered();
+            let is_active = response.is_pointer_button_down_on();
+
+            let visuals = ui.style().visuals.clone();
+            let bg_fill = if is_active {
+                visuals.widgets.active.bg_fill
+            } else if is_hovered {
+                visuals.widgets.hovered.bg_fill
+            } else {
+                Color32::from_gray(40)
+            };
+
+            let stroke = if is_active {
+                visuals.widgets.active.bg_stroke
+            } else if is_hovered {
+                visuals.widgets.hovered.bg_stroke
+            } else {
+                egui::Stroke::new(1.0, Color32::from_gray(60))
+            };
+
+            ui.painter().rect(rect.expand(-1.0), 4.0, bg_fill, stroke);
+
             let color = Color32::from_rgba_premultiplied(
                 (module.color[0] * 255.0) as u8,
                 (module.color[1] * 255.0) as u8,
@@ -99,16 +121,20 @@ impl ModuleSidebar {
             );
 
             let icon_rect = Rect::from_min_size(rect.min, Vec2::new(rect.height(), rect.height()));
-            ui.painter().rect_filled(icon_rect.expand(-4.0), 4.0, color);
+            ui.painter()
+                .rect_filled(icon_rect.expand(-4.0), 4.0, color);
 
             let label_rect =
                 Rect::from_min_max(Pos2::new(icon_rect.max.x + 5.0, rect.min.y), rect.max);
+            let text_color = visuals
+                .override_text_color
+                .unwrap_or(visuals.widgets.inactive.fg_stroke.color);
             ui.painter().text(
                 label_rect.left_center(),
                 egui::Align2::LEFT_CENTER,
                 &module.name,
                 egui::FontId::proportional(14.0),
-                Color32::WHITE,
+                text_color,
             );
         }
 
