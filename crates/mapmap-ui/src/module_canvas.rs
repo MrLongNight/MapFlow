@@ -1,5 +1,5 @@
 use crate::i18n::LocaleManager;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2, TextureHandle};
+use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
     MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
@@ -139,16 +139,22 @@ impl Default for ModuleCanvas {
 
 impl ModuleCanvas {
     fn ensure_icons_loaded(&mut self, ctx: &egui::Context) {
-        if !self.plug_icons.is_empty() { return; }
-        
+        if !self.plug_icons.is_empty() {
+            return;
+        }
+
         let paths = [
             "resources/stecker_icons",
             "../resources/stecker_icons",
-            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\stecker_icons"
+            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\stecker_icons",
         ];
-        
+
         let files = [
-            "audio-jack.svg", "audio-jack_2.svg", "plug.svg", "power-plug.svg", "usb-cable.svg"
+            "audio-jack.svg",
+            "audio-jack_2.svg",
+            "plug.svg",
+            "power-plug.svg",
+            "usb-cable.svg",
         ];
 
         for path_str in paths {
@@ -160,7 +166,9 @@ impl ModuleCanvas {
                         self.plug_icons.insert(file.to_string(), texture);
                     }
                 }
-                if !self.plug_icons.is_empty() { break; }
+                if !self.plug_icons.is_empty() {
+                    break;
+                }
             }
         }
     }
@@ -220,10 +228,16 @@ impl ModuleCanvas {
             // The actual module update will happen in the show() method
             // For now, we log it and clear learn mode
             match message {
-                mapmap_control::midi::MidiMessage::ControlChange { channel, controller, .. } => {
+                mapmap_control::midi::MidiMessage::ControlChange {
+                    channel,
+                    controller,
+                    ..
+                } => {
                     tracing::info!(
                         "MIDI Learn: Part {:?} assigned to CC {} on channel {}",
-                        part_id, controller, channel
+                        part_id,
+                        controller,
+                        channel
                     );
                     // Store learned values - will be applied in UI
                     self.learned_midi = Some((part_id, channel, controller, false));
@@ -232,7 +246,9 @@ impl ModuleCanvas {
                 mapmap_control::midi::MidiMessage::NoteOn { channel, note, .. } => {
                     tracing::info!(
                         "MIDI Learn: Part {:?} assigned to Note {} on channel {}",
-                        part_id, note, channel
+                        part_id,
+                        note,
+                        channel
                     );
                     // Store learned values - will be applied in UI
                     self.learned_midi = Some((part_id, channel, note, true));
@@ -280,10 +296,8 @@ impl ModuleCanvas {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
                 let pos = Self::find_free_position(&module.parts, (300.0, 100.0));
-                module.add_part_with_type(
-                    mapmap_core::module::ModulePartType::Mask(mask_type),
-                    pos,
-                );
+                module
+                    .add_part_with_type(mapmap_core::module::ModulePartType::Mask(mask_type), pos);
             }
         }
     }
@@ -319,10 +333,8 @@ impl ModuleCanvas {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
                 let pos = Self::find_free_position(&module.parts, (450.0, 100.0));
-                module.add_part_with_type(
-                    mapmap_core::module::ModulePartType::Mesh(mesh_type),
-                    pos,
-                );
+                module
+                    .add_part_with_type(mapmap_core::module::ModulePartType::Mesh(mesh_type), pos);
             }
         }
     }
@@ -346,9 +358,12 @@ impl ModuleCanvas {
             if let Some(module_id) = self.active_module_id {
                 if let Some(module) = manager.get_module_mut(module_id) {
                     if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                        if let mapmap_core::module::ModulePartType::Trigger(
-                            TriggerType::Midi { channel: ref mut ch, note: ref mut n, .. }
-                        ) = part.part_type {
+                        if let mapmap_core::module::ModulePartType::Trigger(TriggerType::Midi {
+                            channel: ref mut ch,
+                            note: ref mut n,
+                            ..
+                        }) = part.part_type
+                        {
                             *ch = channel;
                             *n = cc_or_note;
                             tracing::info!(
@@ -384,13 +399,19 @@ impl ModuleCanvas {
 
             ui.add_enabled_ui(has_module, |ui| {
                 // === SIGNAL FLOW ORDER: Trigger → Source → Mask → Modulator → Layer → Output ===
-                
+
                 // TRIGGER DROPDOWN
                 egui::menu::menu_button(ui, "⚡ Trigger", |ui| {
                     ui.set_min_width(180.0);
                     ui.label("Audio Analysis");
                     if ui.button("🎵 Audio FFT").clicked() {
-                        self.add_trigger_node(manager, TriggerType::AudioFFT { band: AudioBand::Bass, threshold: 0.5 });
+                        self.add_trigger_node(
+                            manager,
+                            TriggerType::AudioFFT {
+                                band: AudioBand::Bass,
+                                threshold: 0.5,
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("🥁 Beat Detection").clicked() {
@@ -400,25 +421,55 @@ impl ModuleCanvas {
                     ui.separator();
                     ui.label("Control");
                     if ui.button("🎹 MIDI").clicked() {
-                        self.add_trigger_node(manager, TriggerType::Midi { channel: 1, note: 60 });
+                        self.add_trigger_node(
+                            manager,
+                            TriggerType::Midi {
+                                channel: 1,
+                                note: 60,
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("📡 OSC").clicked() {
-                        self.add_trigger_node(manager, TriggerType::Osc { address: "/trigger".to_string() });
+                        self.add_trigger_node(
+                            manager,
+                            TriggerType::Osc {
+                                address: "/trigger".to_string(),
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("⌨️ Keyboard Shortcut").clicked() {
-                        self.add_trigger_node(manager, TriggerType::Shortcut { key_code: "Space".to_string(), modifiers: 0 });
+                        self.add_trigger_node(
+                            manager,
+                            TriggerType::Shortcut {
+                                key_code: "Space".to_string(),
+                                modifiers: 0,
+                            },
+                        );
                         ui.close_menu();
                     }
                     ui.separator();
                     ui.label("Time-based");
                     if ui.button("🎲 Random").clicked() {
-                        self.add_trigger_node(manager, TriggerType::Random { min_interval_ms: 500, max_interval_ms: 2000, probability: 0.8 });
+                        self.add_trigger_node(
+                            manager,
+                            TriggerType::Random {
+                                min_interval_ms: 500,
+                                max_interval_ms: 2000,
+                                probability: 0.8,
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("⏱️ Fixed Timer").clicked() {
-                        self.add_trigger_node(manager, TriggerType::Fixed { interval_ms: 1000, offset_ms: 0 });
+                        self.add_trigger_node(
+                            manager,
+                            TriggerType::Fixed {
+                                interval_ms: 1000,
+                                offset_ms: 0,
+                            },
+                        );
                         ui.close_menu();
                     }
                 });
@@ -427,11 +478,22 @@ impl ModuleCanvas {
                 egui::menu::menu_button(ui, "🎬 Source", |ui| {
                     ui.set_min_width(180.0);
                     if ui.button("📁 Media File").clicked() {
-                        self.add_source_node(manager, SourceType::MediaFile { path: String::new() });
+                        self.add_source_node(
+                            manager,
+                            SourceType::MediaFile {
+                                path: String::new(),
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("🎨 Shader").clicked() {
-                        self.add_source_node(manager, SourceType::Shader { name: "Default".to_string(), params: vec![] });
+                        self.add_source_node(
+                            manager,
+                            SourceType::Shader {
+                                name: "Default".to_string(),
+                                params: vec![],
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("📹 Live Input").clicked() {
@@ -466,11 +528,22 @@ impl ModuleCanvas {
                     }
                     ui.separator();
                     if ui.button("📁 File Mask").clicked() {
-                        self.add_mask_node(manager, MaskType::File { path: String::new() });
+                        self.add_mask_node(
+                            manager,
+                            MaskType::File {
+                                path: String::new(),
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("🌈 Gradient").clicked() {
-                        self.add_mask_node(manager, MaskType::Gradient { angle: 0.0, softness: 0.5 });
+                        self.add_mask_node(
+                            manager,
+                            MaskType::Gradient {
+                                angle: 0.0,
+                                softness: 0.5,
+                            },
+                        );
                         ui.close_menu();
                     }
                 });
@@ -479,48 +552,173 @@ impl ModuleCanvas {
                 egui::menu::menu_button(ui, "〰️ Modulator", |ui| {
                     ui.set_min_width(200.0);
                     ui.label("--- Basic ---");
-                    if ui.button("Blur").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Blur)); ui.close_menu(); }
-                    if ui.button("Sharpen").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Sharpen)); ui.close_menu(); }
-                    if ui.button("Invert").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Invert)); ui.close_menu(); }
+                    if ui.button("Blur").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Blur),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Sharpen").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Sharpen),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Invert").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Invert),
+                        );
+                        ui.close_menu();
+                    }
                     ui.separator();
                     ui.label("--- Color ---");
-                    if ui.button("Brightness").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Brightness)); ui.close_menu(); }
-                    if ui.button("Contrast").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Contrast)); ui.close_menu(); }
-                    if ui.button("Saturation").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Saturation)); ui.close_menu(); }
-                    if ui.button("Hue Shift").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::HueShift)); ui.close_menu(); }
+                    if ui.button("Brightness").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Brightness),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Contrast").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Contrast),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Saturation").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Saturation),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Hue Shift").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::HueShift),
+                        );
+                        ui.close_menu();
+                    }
                     ui.separator();
                     ui.label("--- Distort ---");
-                    if ui.button("Kaleidoscope").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Kaleidoscope)); ui.close_menu(); }
-                    if ui.button("Mirror").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Mirror)); ui.close_menu(); }
-                    if ui.button("Wave").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Wave)); ui.close_menu(); }
+                    if ui.button("Kaleidoscope").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Kaleidoscope),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Mirror").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Mirror),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Wave").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Wave),
+                        );
+                        ui.close_menu();
+                    }
                     ui.separator();
                     ui.label("--- Stylize ---");
-                    if ui.button("Glitch").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Glitch)); ui.close_menu(); }
-                    if ui.button("VHS").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::VHS)); ui.close_menu(); }
-                    if ui.button("Pixelate").clicked() { self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Pixelate)); ui.close_menu(); }
+                    if ui.button("Glitch").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Glitch),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("VHS").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::VHS),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Pixelate").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::Effect(ModuleEffectType::Pixelate),
+                        );
+                        ui.close_menu();
+                    }
                     ui.separator();
                     ui.label("--- Blend Modes ---");
-                    if ui.button("Add").clicked() { self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Add)); ui.close_menu(); }
-                    if ui.button("Multiply").clicked() { self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Multiply)); ui.close_menu(); }
-                    if ui.button("Screen").clicked() { self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Screen)); ui.close_menu(); }
+                    if ui.button("Add").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::BlendMode(BlendModeType::Add),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Multiply").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::BlendMode(BlendModeType::Multiply),
+                        );
+                        ui.close_menu();
+                    }
+                    if ui.button("Screen").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::BlendMode(BlendModeType::Screen),
+                        );
+                        ui.close_menu();
+                    }
                     ui.separator();
                     ui.label("--- Audio Reactive ---");
-                    if ui.button("🔊 Audio Reactive").clicked() { self.add_modulator_node(manager, ModulizerType::AudioReactive { source: "Bass".to_string() }); ui.close_menu(); }
+                    if ui.button("🔊 Audio Reactive").clicked() {
+                        self.add_modulator_node(
+                            manager,
+                            ModulizerType::AudioReactive {
+                                source: "Bass".to_string(),
+                            },
+                        );
+                        ui.close_menu();
+                    }
                 });
 
                 // LAYER DROPDOWN
                 egui::menu::menu_button(ui, "📑 Layer", |ui| {
                     ui.set_min_width(180.0);
                     if ui.button("🔲 Single Layer").clicked() {
-                        self.add_layer_node(manager, LayerAssignmentType::SingleLayer { id: 0, name: "Layer 1".to_string(), opacity: 1.0, blend_mode: None });
+                        self.add_layer_node(
+                            manager,
+                            LayerAssignmentType::SingleLayer {
+                                id: 0,
+                                name: "Layer 1".to_string(),
+                                opacity: 1.0,
+                                blend_mode: None,
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("📂 Layer Group").clicked() {
-                        self.add_layer_node(manager, LayerAssignmentType::Group { name: "Group 1".to_string(), opacity: 1.0, blend_mode: None });
+                        self.add_layer_node(
+                            manager,
+                            LayerAssignmentType::Group {
+                                name: "Group 1".to_string(),
+                                opacity: 1.0,
+                                blend_mode: None,
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("🎚️ All Layers (Master)").clicked() {
-                        self.add_layer_node(manager, LayerAssignmentType::AllLayers { opacity: 1.0, blend_mode: None });
+                        self.add_layer_node(
+                            manager,
+                            LayerAssignmentType::AllLayers {
+                                opacity: 1.0,
+                                blend_mode: None,
+                            },
+                        );
                         ui.close_menu();
                     }
                 });
@@ -530,9 +728,15 @@ impl ModuleCanvas {
                     ui.set_min_width(200.0);
                     ui.label("--- Basic Shapes ---");
                     if ui.button("⬜ Quad").clicked() {
-                        self.add_mesh_node(manager, MeshType::Quad { 
-                            tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) 
-                        });
+                        self.add_mesh_node(
+                            manager,
+                            MeshType::Quad {
+                                tl: (0.0, 0.0),
+                                tr: (1.0, 0.0),
+                                br: (1.0, 1.0),
+                                bl: (0.0, 1.0),
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("🔺 Triangle").clicked() {
@@ -540,7 +744,13 @@ impl ModuleCanvas {
                         ui.close_menu();
                     }
                     if ui.button("⭕ Circle/Arc").clicked() {
-                        self.add_mesh_node(manager, MeshType::Circle { segments: 32, arc_angle: 360.0 });
+                        self.add_mesh_node(
+                            manager,
+                            MeshType::Circle {
+                                segments: 32,
+                                arc_angle: 360.0,
+                            },
+                        );
                         ui.close_menu();
                     }
                     ui.separator();
@@ -554,22 +764,44 @@ impl ModuleCanvas {
                         ui.close_menu();
                     }
                     if ui.button("〰️ Bezier Surface").clicked() {
-                        self.add_mesh_node(manager, MeshType::BezierSurface { control_points: vec![] });
+                        self.add_mesh_node(
+                            manager,
+                            MeshType::BezierSurface {
+                                control_points: vec![],
+                            },
+                        );
                         ui.close_menu();
                     }
                     ui.separator();
                     ui.label("--- 3D Mapping ---");
                     if ui.button("🌐 Cylinder").clicked() {
-                        self.add_mesh_node(manager, MeshType::Cylinder { segments: 16, height: 1.0 });
+                        self.add_mesh_node(
+                            manager,
+                            MeshType::Cylinder {
+                                segments: 16,
+                                height: 1.0,
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("🌍 Sphere (Dome)").clicked() {
-                        self.add_mesh_node(manager, MeshType::Sphere { lat_segments: 8, lon_segments: 16 });
+                        self.add_mesh_node(
+                            manager,
+                            MeshType::Sphere {
+                                lat_segments: 8,
+                                lon_segments: 16,
+                            },
+                        );
                         ui.close_menu();
                     }
                     ui.separator();
                     if ui.button("📁 Custom Mesh...").clicked() {
-                        self.add_mesh_node(manager, MeshType::Custom { path: String::new() });
+                        self.add_mesh_node(
+                            manager,
+                            MeshType::Custom {
+                                path: String::new(),
+                            },
+                        );
                         ui.close_menu();
                     }
                 });
@@ -577,7 +809,13 @@ impl ModuleCanvas {
                 egui::menu::menu_button(ui, "📺 Output", |ui| {
                     ui.set_min_width(180.0);
                     if ui.button("📽️ Projector").clicked() {
-                        self.add_output_node(manager, OutputType::Projector { id: 0, name: "Projector 1".to_string() });
+                        self.add_output_node(
+                            manager,
+                            OutputType::Projector {
+                                id: 0,
+                                name: "Projector 1".to_string(),
+                            },
+                        );
                         ui.close_menu();
                     }
                     if ui.button("👁️ Preview Window").clicked() {
@@ -1470,17 +1708,18 @@ impl ModuleCanvas {
 
         // Store drag_started state before we check parts
         let drag_started_on_empty = response.drag_started() && self.dragging_part.is_none();
-        
+
         // Handle canvas pan (only when not dragging a part and not creating connection)
         // We also need middle mouse button for panning to avoid conflicts
         let middle_button = ui.input(|i| i.pointer.middle_down());
-        if response.dragged() && self.dragging_part.is_none() && self.creating_connection.is_none() {
+        if response.dragged() && self.dragging_part.is_none() && self.creating_connection.is_none()
+        {
             // Only pan with middle mouse or when not over a part
             if middle_button || self.panning_canvas {
                 self.pan_offset += response.drag_delta();
             }
         }
-        
+
         // Track if we started panning (for continuing the pan)
         if drag_started_on_empty && !middle_button {
             // Will be set to true if click was on empty canvas
@@ -1753,9 +1992,7 @@ impl ModuleCanvas {
                         if socket.position.distance(pos) < socket_radius * 1.5 {
                             // Validate connection: must be different parts, opposite directions
                             // Type check relaxed for now - allow any connection for testing
-                            if socket.part_id != from_part
-                                && socket.is_output != from_is_output
-                            {
+                            if socket.part_id != from_part && socket.is_output != from_is_output {
                                 // Create connection (from output to input)
                                 if from_is_output {
                                     module.add_connection(
@@ -1787,12 +2024,14 @@ impl ModuleCanvas {
         }
 
         // Draw wire preview while dragging (visual feedback)
-        if let Some((_, _, is_output, ref socket_type, start_pos)) = self.creating_connection.clone() {
+        if let Some((_, _, is_output, ref socket_type, start_pos)) =
+            self.creating_connection.clone()
+        {
             if let Some(mouse_pos) = pointer_pos {
                 // Draw bezier curve from start to mouse
-                let wire_color = Self::get_socket_color(&socket_type);
+                let wire_color = Self::get_socket_color(socket_type);
                 let control_offset = 50.0 * self.zoom;
-                
+
                 // Calculate control points for smooth curve
                 let (ctrl1, ctrl2) = if is_output {
                     // Dragging from output (right side) - curve goes right then to mouse
@@ -2088,16 +2327,16 @@ impl ModuleCanvas {
 
         // Apply resize operations
         for (part_id, delta) in resize_ops {
-             if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                 // Initialize size if None
-                 let current_size = part.size.unwrap_or_else(|| {
-                     let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                     (200.0, h)
-                 });
-                 let new_w = (current_size.0 + delta.x).max(100.0);
-                 let new_h = (current_size.1 + delta.y).max(50.0);
-                 part.size = Some((new_w, new_h));
-             }
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                // Initialize size if None
+                let current_size = part.size.unwrap_or_else(|| {
+                    let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                    (200.0, h)
+                });
+                let new_w = (current_size.0 + delta.x).max(100.0);
+                let new_h = (current_size.1 + delta.y).max(50.0);
+                part.size = Some((new_w, new_h));
+            }
         }
 
         // Draw connection being created with visual feedback
@@ -2883,7 +3122,7 @@ impl ModuleCanvas {
                         for b in BlendModeType::all() {
                             if ui
                                 .selectable_label(
-                                    blend_mode.as_ref().map_or(false, |current| *current == *b),
+                                    blend_mode.as_ref().is_some_and(|current| *current == *b),
                                     b.name(),
                                 )
                                 .clicked()
@@ -2982,7 +3221,7 @@ impl ModuleCanvas {
                 let socket_type = if let Some(socket) = from.outputs.get(conn.from_socket) {
                     &socket.socket_type
                 } else if let Some(socket) = to.inputs.get(conn.to_socket) {
-                     &socket.socket_type
+                    &socket.socket_type
                 } else {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
@@ -2991,18 +3230,19 @@ impl ModuleCanvas {
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
-                let from_local_y = title_height + socket_offset_y + conn.from_socket as f32 * socket_spacing + socket_spacing / 2.0;
-                let from_socket_world = Pos2::new(
-                    from.position.0 + node_width,
-                    from.position.1 + from_local_y,
-                );
-                
+                let from_local_y = title_height
+                    + socket_offset_y
+                    + conn.from_socket as f32 * socket_spacing
+                    + socket_spacing / 2.0;
+                let from_socket_world =
+                    Pos2::new(from.position.0 + node_width, from.position.1 + from_local_y);
+
                 // Input: Left side + center of socket height
-                let to_local_y = title_height + socket_offset_y + conn.to_socket as f32 * socket_spacing + socket_spacing / 2.0;
-                let to_socket_world = Pos2::new(
-                    to.position.0,
-                    to.position.1 + to_local_y,
-                );
+                let to_local_y = title_height
+                    + socket_offset_y
+                    + conn.to_socket as f32 * socket_spacing
+                    + socket_spacing / 2.0;
+                let to_socket_world = Pos2::new(to.position.0, to.position.1 + to_local_y);
 
                 // Convert to SCREEN positions
                 let start_pos = to_screen(from_socket_world);
@@ -3040,24 +3280,28 @@ impl ModuleCanvas {
                     // Cable
                     painter.line_segment([p1, p2], Stroke::new(2.5 * self.zoom, cable_color));
                 }
-                
+
                 // Draw Plugs on top of cable
                 if let Some(texture) = self.plug_icons.get(icon_name) {
                     // Source Plug at OUTPUT socket - pointing LEFT (into node)
-                    let start_rect = Rect::from_center_size(
-                        start_pos,
-                        Vec2::splat(plug_size)
-                    );
+                    let start_rect = Rect::from_center_size(start_pos, Vec2::splat(plug_size));
                     // Flip horizontally so plug points left (into node)
-                    painter.image(texture.id(), start_rect, Rect::from_min_max(Pos2::new(1.0, 0.0), Pos2::new(0.0, 1.0)), Color32::WHITE);
-                    
-                    // Target Plug at INPUT socket - pointing RIGHT (into node)
-                    let end_rect = Rect::from_center_size(
-                        end_pos,
-                        Vec2::splat(plug_size)
+                    painter.image(
+                        texture.id(),
+                        start_rect,
+                        Rect::from_min_max(Pos2::new(1.0, 0.0), Pos2::new(0.0, 1.0)),
+                        Color32::WHITE,
                     );
+
+                    // Target Plug at INPUT socket - pointing RIGHT (into node)
+                    let end_rect = Rect::from_center_size(end_pos, Vec2::splat(plug_size));
                     // Normal orientation (pointing right into node)
-                    painter.image(texture.id(), end_rect, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
+                    painter.image(
+                        texture.id(),
+                        end_rect,
+                        Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                        Color32::WHITE,
+                    );
                 } else {
                     // Fallback circles
                     painter.circle_filled(start_pos, 6.0 * self.zoom, cable_color);
@@ -3192,7 +3436,10 @@ impl ModuleCanvas {
     fn get_part_style(
         part_type: &mapmap_core::module::ModulePartType,
     ) -> (Color32, Color32, &'static str, &'static str) {
-        use mapmap_core::module::{ModulePartType, TriggerType, SourceType, MaskType, MaskShape, ModulizerType, EffectType, BlendModeType, LayerAssignmentType, OutputType};
+        use mapmap_core::module::{
+            BlendModeType, EffectType, LayerAssignmentType, MaskShape, MaskType, ModulePartType,
+            ModulizerType, OutputType, SourceType, TriggerType,
+        };
         match part_type {
             ModulePartType::Trigger(trigger) => {
                 let name = match trigger {
@@ -3204,16 +3451,26 @@ impl ModuleCanvas {
                     TriggerType::Random { .. } => "Random",
                     TriggerType::Fixed { .. } => "Fixed Timer",
                 };
-                (Color32::from_rgb(60, 50, 70), Color32::from_rgb(130, 80, 180), "⚡", name)
-            },
+                (
+                    Color32::from_rgb(60, 50, 70),
+                    Color32::from_rgb(130, 80, 180),
+                    "⚡",
+                    name,
+                )
+            }
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
                     SourceType::Shader { .. } => "Shader",
                     SourceType::LiveInput { .. } => "Live Input",
                 };
-                (Color32::from_rgb(50, 60, 70), Color32::from_rgb(80, 140, 180), "🎬", name)
-            },
+                (
+                    Color32::from_rgb(50, 60, 70),
+                    Color32::from_rgb(80, 140, 180),
+                    "🎬",
+                    name,
+                )
+            }
             ModulePartType::Mask(mask) => {
                 let name = match mask {
                     MaskType::File { .. } => "File Mask",
@@ -3226,8 +3483,13 @@ impl ModuleCanvas {
                     },
                     MaskType::Gradient { .. } => "Gradient",
                 };
-                (Color32::from_rgb(60, 55, 70), Color32::from_rgb(160, 100, 180), "🎭", name)
-            },
+                (
+                    Color32::from_rgb(60, 55, 70),
+                    Color32::from_rgb(160, 100, 180),
+                    "🎭",
+                    name,
+                )
+            }
             ModulePartType::Modulizer(mod_type) => {
                 let name = match mod_type {
                     ModulizerType::Effect(effect) => match effect {
@@ -3266,16 +3528,26 @@ impl ModuleCanvas {
                     },
                     ModulizerType::AudioReactive { .. } => "Audio Reactive",
                 };
-                (Color32::from_rgb(60, 60, 50), Color32::from_rgb(180, 140, 60), "〰️", name)
-            },
+                (
+                    Color32::from_rgb(60, 60, 50),
+                    Color32::from_rgb(180, 140, 60),
+                    "〰️",
+                    name,
+                )
+            }
             ModulePartType::LayerAssignment(layer) => {
                 let name = match layer {
                     LayerAssignmentType::SingleLayer { .. } => "Single Layer",
                     LayerAssignmentType::Group { .. } => "Layer Group",
                     LayerAssignmentType::AllLayers { .. } => "All Layers",
                 };
-                (Color32::from_rgb(50, 70, 60), Color32::from_rgb(80, 180, 120), "📑", name)
-            },
+                (
+                    Color32::from_rgb(50, 70, 60),
+                    Color32::from_rgb(80, 180, 120),
+                    "📑",
+                    name,
+                )
+            }
             ModulePartType::Mesh(mesh) => {
                 let name = match mesh {
                     MeshType::Quad { .. } => "Quad",
@@ -3288,15 +3560,25 @@ impl ModuleCanvas {
                     MeshType::Sphere { .. } => "Sphere",
                     MeshType::Custom { .. } => "Custom",
                 };
-                (Color32::from_rgb(55, 60, 70), Color32::from_rgb(100, 150, 200), "🔷", name)
-            },
+                (
+                    Color32::from_rgb(55, 60, 70),
+                    Color32::from_rgb(100, 150, 200),
+                    "🔷",
+                    name,
+                )
+            }
             ModulePartType::Output(output) => {
                 let name = match output {
                     OutputType::Projector { .. } => "Projector",
                     OutputType::Preview { .. } => "Preview",
                 };
-                (Color32::from_rgb(70, 50, 50), Color32::from_rgb(180, 80, 80), "📺", name)
-            },
+                (
+                    Color32::from_rgb(70, 50, 50),
+                    Color32::from_rgb(180, 80, 80),
+                    "📺",
+                    name,
+                )
+            }
         }
     }
 

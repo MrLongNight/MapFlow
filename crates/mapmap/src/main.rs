@@ -324,7 +324,14 @@ impl App {
             #[cfg(feature = "midi")]
             midi_ports: MidiInputHandler::list_ports().unwrap_or_default(),
             #[cfg(feature = "midi")]
-            selected_midi_port: if MidiInputHandler::list_ports().unwrap_or_default().is_empty() { None } else { Some(0) },
+            selected_midi_port: if MidiInputHandler::list_ports()
+                .unwrap_or_default()
+                .is_empty()
+            {
+                None
+            } else {
+                Some(0)
+            },
         };
 
         // Create initial dummy texture

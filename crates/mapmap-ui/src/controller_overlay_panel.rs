@@ -416,10 +416,8 @@ impl ControllerOverlayPanel {
                         }
 
                         // Cancel button
-                        if is_learning {
-                            if ui.button("❌ Abbrechen").clicked() {
-                                self.cancel_learn();
-                            }
+                        if is_learning && ui.button("❌ Abbrechen").clicked() {
+                            self.cancel_learn();
                         }
                     }
 
