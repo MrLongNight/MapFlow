@@ -6,6 +6,8 @@
 #[cfg(feature = "midi")]
 use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2};
 
+use crate::config::{MidiAssignment, MidiAssignmentTarget};
+
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
     ControllerElement, ControllerElements, ElementState, ElementStateManager, MidiLearnManager,
@@ -78,6 +80,9 @@ pub struct ControllerOverlayPanel {
 
     /// Filter for element list
     element_filter: ElementFilter,
+
+    /// Show assignment colors mode (highlights all elements by their assignment type)
+    show_assignment_colors: bool,
 }
 
 /// Filter for element list view
@@ -119,6 +124,7 @@ impl ControllerOverlayPanel {
             background_texture: None,
             show_element_list: false,
             element_filter: ElementFilter::All,
+            show_assignment_colors: false,
         }
     }
 
@@ -267,7 +273,13 @@ impl ControllerOverlayPanel {
     }
 
     /// Show the panel UI
-    pub fn show(&mut self, ctx: &egui::Context, visible: bool, midi_connected: bool) {
+    pub fn show(
+        &mut self,
+        ctx: &egui::Context,
+        visible: bool,
+        midi_connected: bool,
+        assignments: &[MidiAssignment],
+    ) {
         if !visible {
             return;
         }
@@ -323,6 +335,16 @@ impl ControllerOverlayPanel {
                         .clicked()
                     {
                         self.show_element_list = !self.show_element_list;
+                    }
+                    
+                    // Assignment colors toggle
+                    let assign_btn = if self.show_assignment_colors {
+                        egui::Button::new("🎨 Zuweisungen").fill(Color32::from_rgb(60, 80, 100))
+                    } else {
+                        egui::Button::new("🎨 Zuweisungen")
+                    };
+                    if ui.add(assign_btn).on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 MapFlow\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
+                        self.show_assignment_colors = !self.show_assignment_colors;
                     }
                 });
 
@@ -412,13 +434,13 @@ impl ControllerOverlayPanel {
                 if self.show_element_list {
                     self.show_element_list_view(ui);
                 } else {
-                    self.show_overlay_view(ui);
+                    self.show_overlay_view(ui, assignments);
                 }
             });
     }
 
     /// Show the visual overlay with mixer background
-    fn show_overlay_view(&mut self, ui: &mut Ui) {
+    fn show_overlay_view(&mut self, ui: &mut Ui, assignments: &[MidiAssignment]) {
         let panel_width = MAX_WIDTH * self.scale;
         let panel_height = MAX_HEIGHT * self.scale;
 
@@ -454,7 +476,7 @@ impl ControllerOverlayPanel {
         #[cfg(feature = "midi")]
         if let Some(elements) = self.elements.clone() {
             for element in &elements.elements {
-                self.draw_element_with_frame(&painter, rect, element, &response);
+                self.draw_element_with_frame(&painter, rect, element, &response, assignments);
             }
         }
     }
@@ -467,6 +489,7 @@ impl ControllerOverlayPanel {
         container: Rect,
         element: &ControllerElement,
         response: &Response,
+        assignments: &[MidiAssignment],
     ) {
         // Calculate element rect based on relative position
         let elem_rect = Rect::from_min_size(
@@ -507,6 +530,21 @@ impl ControllerOverlayPanel {
             Color32::WHITE
         } else {
             Color32::TRANSPARENT
+        };
+
+        // Override colors assignments view is active
+        let frame_color = if self.show_assignment_colors {
+            let assignment = assignments.iter().find(|a| a.element_id == element.id);
+            match assignment {
+                Some(a) => match &a.target {
+                    MidiAssignmentTarget::MapFlow(_) => Color32::from_rgb(0, 150, 255), // Blue
+                    MidiAssignmentTarget::StreamerBot(_) => Color32::from_rgb(180, 0, 255), // Purple
+                    MidiAssignmentTarget::Mixxx(_) => Color32::from_rgb(255, 128, 0), // Orange
+                },
+                None => Color32::GREEN, // Green for free elements
+            }
+        } else {
+            frame_color
         };
 
         // Draw frame

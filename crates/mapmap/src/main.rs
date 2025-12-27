@@ -853,7 +853,8 @@ impl App {
                     #[cfg(feature = "midi")]
                     {
                         let midi_connected = self.midi_handler.as_ref().map(|h| h.is_connected()).unwrap_or(false);
-                        self.ui_state.controller_overlay.show(ctx, self.ui_state.show_controller_overlay, midi_connected);
+                        let assignments = self.ui_state.user_config.midi_assignments.clone();
+                        self.ui_state.controller_overlay.show(ctx, self.ui_state.show_controller_overlay, midi_connected, &assignments);
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
