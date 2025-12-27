@@ -346,7 +346,7 @@
     - 🎨 **NEU: Zuweisungs-Modus**: Grün (Frei) / Blau / Lila / Orange (Belegt)
   - ✅ **Mouseover-Tooltip** pro Element:
     - Element-Name, MIDI-Typ, Channel, CC/Note, Wert
-    - ⬜ Aktuelle Zuweisung (MapFlow/Streamer.bot/Mixxx) anzeigen
+    - ✅ **Aktuelle Zuweisung** (MapFlow/Streamer.bot/Mixxx) anzeigen
   
   ### MIDI Learn Buttons
   - ✅ **MapFlow MIDI Learn** - Button im Panel
