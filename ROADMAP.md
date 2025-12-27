@@ -208,16 +208,19 @@
   - ✅ UI: OSC-Server-Status und Port-Konfiguration implementiert (mit `imgui`)
   - ✅ Default-OSC-Port: 8000 (konfigurierbar)
 
-- 🟡 **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`)
+- ✅ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`) - FULLY WIRED 2025-12-27
   - ✅ MIDI-Input (`midi/input.rs`)
   - ✅ MIDI-Output (`midi/output.rs`)
   - ✅ MIDI-Mapping (`midi/mapping.rs`) - Simplified HashMap implementation
-  - 🟡 MIDI-Learn Modul (`midi/midi_learn.rs`) - Code vorhanden, NICHT FUNKTIONAL
+  - ✅ MIDI-Learn Modul (`midi/midi_learn.rs`) - WIRED TO UI 2025-12-27
   - ✅ MIDI-Clock (`midi/clock.rs`)
   - ✅ MIDI-Profiles (`midi/profiles.rs`)
   - ✅ Ecler NUO 4 Profil (`midi/ecler_nuo4.rs`) - 89 Mappings
   - ✅ Feature-Flag: `midi` (optional)
-  - ⬜ MIDI-zu-Parameter-Routing verdrahten fehlt (low priority)
+  - ✅ Auto-Connect zu erstem verfügbaren Port - IMPLEMENTED 2025-12-27
+  - ✅ MIDI Port-Auswahl in Settings - IMPLEMENTED 2025-12-27
+  - ✅ MIDI-Learn im Module Canvas verdrahtet - IMPLEMENTED 2025-12-27
+  - ⬜ MIDI-zu-Parameter-Routing für Layer/Effects (low priority)
 
 - ✅ **WebSocket-System** (`mapmap-control/src/web/`) – NICHT NUTZEN
   - ✅ WebSocket-Server vorhanden (`web/websocket.rs`)
@@ -341,10 +344,11 @@
 - 🟡 **Panel-Redundanz**
   - ⬜ Node Inspector UND Properties Panel konsolidieren → NUR EIN Panel
 
-- 🟡 **MIDI-System Fehler** (Code vorhanden, NICHT FUNKTIONAL)
+- ✅ **MIDI-System Fehler** (FIXED 2025-12-27)
   - ✅ Feature-Flag von `cpal` auf `midi` korrigiert
-  - ⬜ MIDI-Learn UI funktioniert nicht (Code in `midi_learn.rs` nicht verdrahtet)
-  - ⬜ MIDI-Ports korrekt auflisten (manueller Test)
+  - ✅ MIDI-Learn Modul verdrahtet (`midi_learn.rs` → `module_canvas.rs`)
+  - ✅ MIDI-Ports auswählbar in Settings
+  - ✅ Auto-Connect zu erstem Port
 
 - 🟡 **Level Meter Redesign** (Code vorhanden, NICHT FUNKTIONAL)
   - ✅ STEREO für beide Varianten → StereoAudioMeter Widget (Code existiert)
