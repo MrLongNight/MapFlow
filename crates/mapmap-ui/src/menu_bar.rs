@@ -323,6 +323,27 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                     ui.separator();
 
+                    // === MIDI SECTION ===
+                    // MIDI Status indicator (passed via ui_state)
+                    #[cfg(feature = "midi")]
+                    {
+                        // Simple toggle button for controller overlay
+                        let overlay_btn = if ui_state.show_controller_overlay {
+                            egui::Button::new("🎛️").fill(egui::Color32::from_rgb(60, 80, 100))
+                        } else {
+                            egui::Button::new("🎛️")
+                        };
+                        if ui
+                            .add(overlay_btn)
+                            .on_hover_text("MIDI Controller Overlay ein/aus")
+                            .clicked()
+                        {
+                            ui_state.show_controller_overlay = !ui_state.show_controller_overlay;
+                        }
+                    }
+
+                    ui.separator();
+
                     // === AUDIO LEVEL METER (variable width, dB scale) ===
                     let audio_level = ui_state.current_audio_level;
                     let db = if audio_level > 0.0001 {

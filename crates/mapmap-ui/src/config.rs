@@ -25,6 +25,36 @@ impl fmt::Display for AudioMeterStyle {
     }
 }
 
+/// MIDI element assignment target
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MidiAssignmentTarget {
+    /// Assigned to MapFlow internal control
+    MapFlow(String), // Control target ID
+    /// Assigned to Streamer.bot function
+    StreamerBot(String), // Function name
+    /// Assigned to Mixxx function
+    Mixxx(String), // Function name
+}
+
+impl fmt::Display for MidiAssignmentTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MapFlow(id) => write!(f, "MapFlow: {}", id),
+            Self::StreamerBot(func) => write!(f, "Streamer.bot: {}", func),
+            Self::Mixxx(func) => write!(f, "Mixxx: {}", func),
+        }
+    }
+}
+
+/// A single MIDI element assignment
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MidiAssignment {
+    /// Element ID from the controller (e.g., "ch2_gain")
+    pub element_id: String,
+    /// Assignment target
+    pub target: MidiAssignmentTarget,
+}
+
 /// User configuration settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserConfig {
@@ -45,6 +75,9 @@ pub struct UserConfig {
     /// Audio meter style
     #[serde(default)]
     pub meter_style: AudioMeterStyle,
+    /// MIDI element assignments
+    #[serde(default)]
+    pub midi_assignments: Vec<MidiAssignment>,
 }
 
 impl Default for UserConfig {
@@ -56,6 +89,7 @@ impl Default for UserConfig {
             theme: ThemeConfig::default(),
             target_fps: Some(60.0),
             meter_style: AudioMeterStyle::default(),
+            midi_assignments: Vec::new(),
         }
     }
 }
@@ -117,6 +151,61 @@ impl UserConfig {
             tracing::error!("Failed to save config: {}", e);
         }
     }
+
+    /// Set or update a MIDI assignment
+    pub fn set_midi_assignment(&mut self, element_id: &str, target: MidiAssignmentTarget) {
+        // Remove existing assignment for this element
+        self.midi_assignments.retain(|a| a.element_id != element_id);
+        // Add new assignment
+        self.midi_assignments.push(MidiAssignment {
+            element_id: element_id.to_string(),
+            target,
+        });
+        if let Err(e) = self.save() {
+            tracing::error!("Failed to save config: {}", e);
+        }
+    }
+
+    /// Remove a MIDI assignment
+    pub fn remove_midi_assignment(&mut self, element_id: &str) {
+        self.midi_assignments.retain(|a| a.element_id != element_id);
+        if let Err(e) = self.save() {
+            tracing::error!("Failed to save config: {}", e);
+        }
+    }
+
+    /// Get assignment for an element
+    pub fn get_midi_assignment(&self, element_id: &str) -> Option<&MidiAssignment> {
+        self.midi_assignments
+            .iter()
+            .find(|a| a.element_id == element_id)
+    }
+
+    /// Get all assignments for a specific target type
+    pub fn get_assignments_by_type(
+        &self,
+    ) -> (
+        Vec<&MidiAssignment>,
+        Vec<&MidiAssignment>,
+        Vec<&MidiAssignment>,
+    ) {
+        let mapflow: Vec<_> = self
+            .midi_assignments
+            .iter()
+            .filter(|a| matches!(a.target, MidiAssignmentTarget::MapFlow(_)))
+            .collect();
+        let streamerbot: Vec<_> = self
+            .midi_assignments
+            .iter()
+            .filter(|a| matches!(a.target, MidiAssignmentTarget::StreamerBot(_)))
+            .collect();
+        let mixxx: Vec<_> = self
+            .midi_assignments
+            .iter()
+            .filter(|a| matches!(a.target, MidiAssignmentTarget::Mixxx(_)))
+            .collect();
+        (mapflow, streamerbot, mixxx)
+    }
 }
 
 #[cfg(test)]
@@ -139,6 +228,7 @@ mod tests {
             theme: ThemeConfig::default(),
             target_fps: Some(60.0),
             meter_style: AudioMeterStyle::Digital,
+            midi_assignments: Vec::new(),
         };
 
         let json = serde_json::to_string(&config).unwrap();
