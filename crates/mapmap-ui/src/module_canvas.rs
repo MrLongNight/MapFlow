@@ -1522,7 +1522,7 @@ impl ModuleCanvas {
                                                         ui.label("⬜ Quad Mesh");
                                                         ui.separator();
                                                         ui.label("Corner Mapping:");
-                                                        
+
                                                         let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
                                                             ui.horizontal(|ui| {
                                                                 ui.label(name);
@@ -1530,29 +1530,29 @@ impl ModuleCanvas {
                                                                 ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).clamp_range(0.0..=1.0).prefix("Y: "));
                                                             });
                                                         };
-                                                        
+
                                                         coord_ui("Top Left:", tl);
                                                         coord_ui("Top Right:", tr);
                                                         coord_ui("Bottom Right:", br);
                                                         coord_ui("Bottom Left:", bl);
-                                                        
+
                                                         ui.separator();
                                                         ui.label("Visual Editor:");
-                                                        
+
                                                         let (response, painter) = ui.allocate_painter(Vec2::new(240.0, 180.0), Sense::click_and_drag());
                                                         let rect = response.rect;
-                                                        
+
                                                         // Draw background
                                                         painter.rect_filled(rect, 0.0, Color32::from_gray(30));
                                                         painter.rect_stroke(rect, 0.0, Stroke::new(1.0, Color32::GRAY));
-                                                        
+
                                                         let to_screen = |norm: (f32, f32)| -> Pos2 {
                                                             Pos2::new(
                                                                 rect.min.x + norm.0 * rect.width(),
                                                                 rect.min.y + norm.1 * rect.height()
                                                             )
                                                         };
-                                                        
+
                                                         let from_screen = |pos: Pos2| -> (f32, f32) {
                                                             (
                                                                 ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0),
@@ -1565,38 +1565,38 @@ impl ModuleCanvas {
                                                         let p_tr = to_screen(*tr);
                                                         let p_br = to_screen(*br);
                                                         let p_bl = to_screen(*bl);
-                                                        
+
                                                         painter.add(egui::Shape::convex_polygon(
                                                             vec![p_tl, p_tr, p_br, p_bl],
                                                             Color32::from_rgba_unmultiplied(100, 150, 255, 50),
                                                             Stroke::new(1.0, Color32::LIGHT_BLUE),
                                                         ));
-                                                        
+
                                                         // Handles
                                                         let draw_handle = |coord: &mut (f32, f32), name: &str| {
                                                             let pos = to_screen(*coord);
                                                             let handle_radius = 6.0;
                                                             let handle_rect = Rect::from_center_size(pos, Vec2::splat(handle_radius * 2.0));
-                                                            
+
                                                             // Interaction
                                                             let handle_id = response.id.with(name);
                                                             let handle_response = ui.interact(handle_rect, handle_id, Sense::drag());
-                                                            
+
                                                             if handle_response.dragged() {
                                                                 if let Some(mouse_pos) = ui.input(|i| i.pointer.interact_pos()) {
                                                                     *coord = from_screen(mouse_pos);
                                                                 }
                                                             }
-                                                            
+
                                                             let color = if handle_response.hovered() || handle_response.dragged() {
                                                                 Color32::WHITE
                                                             } else {
                                                                 Color32::LIGHT_BLUE
                                                             };
-                                                            
+
                                                             painter.circle_filled(pos, handle_radius, color);
                                                         };
-                                                        
+
                                                         draw_handle(tl, "tl");
                                                         draw_handle(tr, "tr");
                                                         draw_handle(br, "br");

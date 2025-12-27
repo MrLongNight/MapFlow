@@ -973,7 +973,7 @@ impl App {
                                         .default_open(false)
                                         .show(ui, |ui| {
                                             let analysis = self.audio_analyzer.get_latest_analysis();
-                                            
+
                                             // Stereo Audio Level Meter
                                             let db_left = if analysis.rms_volume > 0.0 {
                                                 20.0 * analysis.rms_volume.log10()
@@ -981,15 +981,15 @@ impl App {
                                                 -60.0
                                             };
                                             let db_right = db_left; // TODO: Add actual stereo separation
-                                            
+
                                             ui.add(StereoAudioMeter::new(
                                                 self.ui_state.user_config.meter_style,
                                                 db_left,
                                                 db_right,
                                             ).desired_size(egui::Vec2::new(100.0, 150.0)));
-                                            
+
                                             ui.separator();
-                                            
+
                                             if let Some(action) = self.ui_state.audio_panel.ui(
                                                 ui,
                                                 &self.ui_state.i18n,
@@ -1167,7 +1167,7 @@ impl App {
                                     .default_open(false)
                                     .show(ui, |ui| {
                                         let log_config = &mut self.state.settings.log_config;
-                                        
+
                                         ui.horizontal(|ui| {
                                             ui.label("Log Level:");
                                             let levels = ["trace", "debug", "info", "warn", "error"];
@@ -1241,7 +1241,7 @@ impl App {
                                                 .and_then(|i| self.midi_ports.get(i))
                                                 .cloned()
                                                 .unwrap_or_else(|| "None".to_string());
-                                            
+
                                             egui::ComboBox::from_id_source("midi_port_select")
                                                 .selected_text(&current_port)
                                                 .show_ui(ui, |ui| {
