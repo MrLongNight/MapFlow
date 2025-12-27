@@ -362,7 +362,7 @@
     - Nur Streamer.bot-Zuweisungen
     - Nur Mixxx-Zuweisungen
     - Freie Elemente (ohne Zuweisung)
-  - ⬜ **Bearbeiten** - Zuweisung ändern/löschen pro Element (UI)
+  - ✅ **Bearbeiten** - Zuweisung löschen via 🗑 Button
   - ✅ **Persistierung** - MidiAssignment in UserConfig (config.json)
 
 - 🟡 **WGPU Rendering Fixes**
