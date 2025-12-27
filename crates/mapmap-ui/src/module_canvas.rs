@@ -64,6 +64,8 @@ pub struct ModuleCanvas {
     panning_canvas: bool,
     /// Cached textures for plug icons
     plug_icons: std::collections::HashMap<String, egui::TextureHandle>,
+    /// Learned MIDI mapping: (part_id, channel, cc_or_note, is_note)
+    learned_midi: Option<(ModulePartId, u8, u8, bool)>,
 }
 
 pub type PresetPart = (
@@ -130,6 +132,7 @@ impl Default for ModuleCanvas {
             midi_learn_part_id: None,
             panning_canvas: false,
             plug_icons: std::collections::HashMap::new(),
+            learned_midi: None,
         }
     }
 }
@@ -206,6 +209,45 @@ impl ModuleCanvas {
     pub fn active_module_id(&self) -> Option<u64> {
         self.active_module_id
     }
+
+    /// Process incoming MIDI message for MIDI Learn
+    #[cfg(feature = "midi")]
+    pub fn process_midi_message(&mut self, message: mapmap_control::midi::MidiMessage) {
+        // Check if we're in learn mode for any part
+        if let Some(part_id) = self.midi_learn_part_id {
+            // We received a MIDI message while in learn mode
+            // Store the learned values in a pending result
+            // The actual module update will happen in the show() method
+            // For now, we log it and clear learn mode
+            match message {
+                mapmap_control::midi::MidiMessage::ControlChange { channel, controller, .. } => {
+                    tracing::info!(
+                        "MIDI Learn: Part {:?} assigned to CC {} on channel {}",
+                        part_id, controller, channel
+                    );
+                    // Store learned values - will be applied in UI
+                    self.learned_midi = Some((part_id, channel, controller, false));
+                    self.midi_learn_part_id = None;
+                }
+                mapmap_control::midi::MidiMessage::NoteOn { channel, note, .. } => {
+                    tracing::info!(
+                        "MIDI Learn: Part {:?} assigned to Note {} on channel {}",
+                        part_id, note, channel
+                    );
+                    // Store learned values - will be applied in UI
+                    self.learned_midi = Some((part_id, channel, note, true));
+                    self.midi_learn_part_id = None;
+                }
+                _ => {
+                    // Ignore other message types during learn
+                }
+            }
+        }
+    }
+
+    /// Process incoming MIDI message (no-op without midi feature)
+    #[cfg(not(feature = "midi"))]
+    pub fn process_midi_message(&mut self, _message: ()) {}
 
     /// Add a Trigger node with specified type
     fn add_trigger_node(&mut self, manager: &mut ModuleManager, trigger_type: TriggerType) {
@@ -299,6 +341,28 @@ impl ModuleCanvas {
     }
 
     pub fn show(&mut self, ui: &mut Ui, manager: &mut ModuleManager, locale: &LocaleManager) {
+        // === APPLY LEARNED MIDI VALUES ===
+        if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
+            if let Some(module_id) = self.active_module_id {
+                if let Some(module) = manager.get_module_mut(module_id) {
+                    if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                        if let mapmap_core::module::ModulePartType::Trigger(
+                            TriggerType::Midi { channel: ref mut ch, note: ref mut n, .. }
+                        ) = part.part_type {
+                            *ch = channel;
+                            *n = cc_or_note;
+                            tracing::info!(
+                                "Applied MIDI Learn: Channel={}, {}={}",
+                                channel,
+                                if is_note { "Note" } else { "CC" },
+                                cc_or_note
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         // === CANVAS TOOLBAR ===
         ui.horizontal(|ui| {
             ui.add_space(4.0);

@@ -105,6 +105,12 @@ struct App {
     /// MIDI Input Handler
     #[cfg(feature = "midi")]
     midi_handler: Option<MidiInputHandler>,
+    /// Available MIDI ports
+    #[cfg(feature = "midi")]
+    midi_ports: Vec<String>,
+    /// Selected MIDI port index
+    #[cfg(feature = "midi")]
+    selected_midi_port: Option<usize>,
 }
 
 impl App {
@@ -294,12 +300,18 @@ impl App {
             #[cfg(feature = "midi")]
             midi_handler: {
                 match MidiInputHandler::new() {
-                    Ok(handler) => {
+                    Ok(mut handler) => {
                         info!("MIDI initialized");
                         if let Ok(ports) = MidiInputHandler::list_ports() {
                             info!("Available MIDI ports: {:?}", ports);
-                            // Auto-connect/Reconnect logic could go here
-                            // For now just log them
+                            // Auto-connect to first port if available
+                            if !ports.is_empty() {
+                                if let Err(e) = handler.connect(0) {
+                                    error!("Failed to auto-connect MIDI: {}", e);
+                                } else {
+                                    info!("Auto-connected to MIDI port: {}", ports[0]);
+                                }
+                            }
                         }
                         Some(handler)
                     }
@@ -309,6 +321,10 @@ impl App {
                     }
                 }
             },
+            #[cfg(feature = "midi")]
+            midi_ports: MidiInputHandler::list_ports().unwrap_or_default(),
+            #[cfg(feature = "midi")]
+            selected_midi_port: if MidiInputHandler::list_ports().unwrap_or_default().is_empty() { None } else { Some(0) },
         };
 
         // Create initial dummy texture
@@ -438,6 +454,8 @@ impl App {
                     while let Some(msg) = handler.poll_message() {
                         // Pass to UI Overlay
                         self.ui_state.controller_overlay.process_midi(msg);
+                        // Pass to Module Canvas for MIDI Learn
+                        self.ui_state.module_canvas.process_midi_message(msg);
                     }
                 }
 
@@ -1187,6 +1205,67 @@ impl App {
                                                 self.state.dirty = true;
                                             }
                                         });
+                                    });
+
+                                ui.separator();
+
+                                // MIDI Settings
+                                #[cfg(feature = "midi")]
+                                egui::CollapsingHeader::new(format!("🎹 {}", "MIDI"))
+                                    .default_open(false)
+                                    .show(ui, |ui| {
+                                        // Connection status
+                                        let is_connected = self.midi_handler.as_ref().map(|h| h.is_connected()).unwrap_or(false);
+                                        ui.horizontal(|ui| {
+                                            ui.label("Status:");
+                                            if is_connected {
+                                                ui.colored_label(egui::Color32::GREEN, "🟢 Connected");
+                                            } else {
+                                                ui.colored_label(egui::Color32::RED, "🔴 Disconnected");
+                                            }
+                                        });
+
+                                        // Port selection
+                                        ui.horizontal(|ui| {
+                                            ui.label("MIDI Port:");
+                                            let current_port = self.selected_midi_port
+                                                .and_then(|i| self.midi_ports.get(i))
+                                                .cloned()
+                                                .unwrap_or_else(|| "None".to_string());
+                                            
+                                            egui::ComboBox::from_id_source("midi_port_select")
+                                                .selected_text(&current_port)
+                                                .show_ui(ui, |ui| {
+                                                    for (i, port) in self.midi_ports.iter().enumerate() {
+                                                        if ui.selectable_label(self.selected_midi_port == Some(i), port).clicked() {
+                                                            self.selected_midi_port = Some(i);
+                                                            // Connect to the selected port
+                                                            if let Some(handler) = &mut self.midi_handler {
+                                                                handler.disconnect();
+                                                                match handler.connect(i) {
+                                                                    Ok(()) => {
+                                                                        info!("Connected to MIDI port: {}", port);
+                                                                    }
+                                                                    Err(e) => {
+                                                                        error!("Failed to connect to MIDI port: {}", e);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                });
+                                        });
+
+                                        // Refresh ports button
+                                        if ui.button("🔄 Refresh Ports").clicked() {
+                                            if let Ok(ports) = MidiInputHandler::list_ports() {
+                                                self.midi_ports = ports;
+                                                info!("Refreshed MIDI ports: {:?}", self.midi_ports);
+                                            }
+                                        }
+
+                                        // Show available ports count
+                                        ui.label(format!("{} port(s) available", self.midi_ports.len()));
                                     });
 
                                 ui.separator();
