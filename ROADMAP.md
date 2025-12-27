@@ -351,7 +351,7 @@
   - ✅ **MapFlow MIDI Learn** - Button im Panel
   - ✅ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
   - ✅ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
-  - ⬜ Buttons AUCH in Toolbar (globale Toolbar)
+  - ✅ **Toolbar Toggle** - 🎛️ Button zum Ein/Ausblenden des Overlays
   
   ### Zuweisungs-Editor
   - ✅ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
@@ -361,8 +361,8 @@
     - Nur Streamer.bot-Zuweisungen
     - Nur Mixxx-Zuweisungen
     - Freie Elemente (ohne Zuweisung)
-  - ⬜ **Bearbeiten** - Zuweisung ändern/löschen pro Element
-  - ⬜ **Persistierung** - Zuweisungen in AppSettings speichern
+  - ⬜ **Bearbeiten** - Zuweisung ändern/löschen pro Element (UI)
+  - ✅ **Persistierung** - MidiAssignment in UserConfig (config.json)
 
 - 🟡 **WGPU Rendering Fixes**
   - ⬜ R32Float Validation Error in OscillatorRenderer
