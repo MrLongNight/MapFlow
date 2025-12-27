@@ -208,11 +208,11 @@
   - ✅ UI: OSC-Server-Status und Port-Konfiguration implementiert (mit `imgui`)
   - ✅ Default-OSC-Port: 8000 (konfigurierbar)
 
-- ✅ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`)
+- 🟡 **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`)
   - ✅ MIDI-Input (`midi/input.rs`)
   - ✅ MIDI-Output (`midi/output.rs`)
   - ✅ MIDI-Mapping (`midi/mapping.rs`) - Simplified HashMap implementation
-  - ✅ MIDI-Learn Modul (`midi/midi_learn.rs`) - IMPLEMENTED 2025-12-25
+  - 🟡 MIDI-Learn Modul (`midi/midi_learn.rs`) - Code vorhanden, NICHT FUNKTIONAL
   - ✅ MIDI-Clock (`midi/clock.rs`)
   - ✅ MIDI-Profiles (`midi/profiles.rs`)
   - ✅ Ecler NUO 4 Profil (`midi/ecler_nuo4.rs`) - 89 Mappings
@@ -341,16 +341,16 @@
 - 🟡 **Panel-Redundanz**
   - ⬜ Node Inspector UND Properties Panel konsolidieren → NUR EIN Panel
 
-- ✅ **MIDI-System Fehler** (FIXED 2025-12-26)
+- 🟡 **MIDI-System Fehler** (Code vorhanden, NICHT FUNKTIONAL)
   - ✅ Feature-Flag von `cpal` auf `midi` korrigiert
-  - ✅ MIDI-Learn Modul implementiert (`midi_learn.rs`)
+  - ⬜ MIDI-Learn UI funktioniert nicht (Code in `midi_learn.rs` nicht verdrahtet)
   - ⬜ MIDI-Ports korrekt auflisten (manueller Test)
 
-- ✅ **Level Meter Redesign** (COMPLETED 2025-12-27)
-  - ✅ STEREO für beide Varianten → StereoAudioMeter Widget
-  - ✅ Einbaurahmen mit 4 Phillips-Schrauben
-  - ✅ Beschriftete dB-Skala
-  - ✅ In UI integrieren (Audio Section, Left Sidebar) - COMPLETED 2025-12-27
+- 🟡 **Level Meter Redesign** (Code vorhanden, NICHT FUNKTIONAL)
+  - ✅ STEREO für beide Varianten → StereoAudioMeter Widget (Code existiert)
+  - ✅ Einbaurahmen mit 4 Phillips-Schrauben (Code existiert)
+  - ✅ Beschriftete dB-Skala (Code existiert)
+  - ⬜ In UI integriert aber NICHT FUNKTIONAL - zeigt keine Werte an
 
 ### 🟢 MODULE-CANVAS PANELS (Implementiert 2025-12-26)
 
