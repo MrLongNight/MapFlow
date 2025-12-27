@@ -850,8 +850,10 @@ impl App {
                     self.ui_state.current_audio_level = audio_analysis.rms_volume;
 
                     // MIDI Controller Overlay
-                    if self.ui_state.show_controller_overlay {
-                        self.ui_state.controller_overlay.show(ctx);
+                    #[cfg(feature = "midi")]
+                    {
+                        let midi_connected = self.midi_handler.as_ref().map(|h| h.is_connected()).unwrap_or(false);
+                        self.ui_state.controller_overlay.show(ctx, self.ui_state.show_controller_overlay, midi_connected);
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
