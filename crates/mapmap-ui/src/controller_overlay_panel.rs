@@ -582,7 +582,20 @@ impl ControllerOverlayPanel {
                 if let Some(state) = state {
                     ui.label(format!("Wert: {:.2}", state.value));
                 }
-                // TODO: Show assignment info
+                
+                // Show assignment info
+                let assignment = assignments.iter().find(|a| a.element_id == element.id);
+                if let Some(assign) = assignment {
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label("Zuweisung:");
+                        ui.colored_label(Color32::YELLOW, assign.target.to_string());
+                    });
+                    ui.label(egui::RichText::new("(Klick für Details in Liste)").italics().size(10.0));
+                } else {
+                    ui.separator();
+                    ui.label(egui::RichText::new("Nicht zugewiesen").italics().weak());
+                }
             });
         }
     }
