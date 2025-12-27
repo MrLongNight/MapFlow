@@ -1,9 +1,9 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.5  
-> **Stand:** 2025-12-23 11:45  
+> **Version:** 1.6  
+> **Stand:** 2025-12-27 19:00  
 > **Zielgruppe:** @jules und Entwickler-Team  
-> **Projekt-Version:** 0.1.0
+> **Projekt-Version:** 0.2.0
 
 ---
 
@@ -212,9 +212,10 @@
   - ✅ MIDI-Input (`midi/input.rs`)
   - ✅ MIDI-Output (`midi/output.rs`)
   - ✅ MIDI-Mapping (`midi/mapping.rs`) - Simplified HashMap implementation
-  - ❌ MIDI-Learn removed (Legacy cleanup)
+  - ✅ MIDI-Learn Modul (`midi/midi_learn.rs`) - IMPLEMENTED 2025-12-25
   - ✅ MIDI-Clock (`midi/clock.rs`)
   - ✅ MIDI-Profiles (`midi/profiles.rs`)
+  - ✅ Ecler NUO 4 Profil (`midi/ecler_nuo4.rs`) - 89 Mappings
   - ✅ Feature-Flag: `midi` (optional)
   - ⬜ MIDI-zu-Parameter-Routing verdrahten fehlt (low priority)
 
@@ -246,9 +247,9 @@
 ### UI (ImGui / egui)
 
 - ✅ **UI-Framework-Status**
-  - ✅ ImGui-Integration (`mapmap-ui` via `imgui`, `imgui-wgpu`, `imgui-winit-support`)
-  - ✅ egui-Integration vorbereitet (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
-  - 🟡 **Phase 6: Migration von ImGui zu egui im Gange (Hybrid-Betrieb)**
+  - ❌ ImGui entfernt (Phase 6 Complete - 2025-12-23)
+  - ✅ egui-Integration (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
+  - ✅ **Phase 6: Migration von ImGui zu egui ABGESCHLOSSEN**
 
 - ✅ **UI-Module (Migriert zu egui)** (`mapmap-ui/src/`)
   - ✅ Dashboard (`dashboard.rs`) – Hauptansicht
@@ -310,7 +311,7 @@
   - ⬜ Target Selector (Dropdown mit ID-Auflösung)
   - ⬜ ControlSource zu ControlTarget Routing
 
-- 🟡 **Logging & Debug**
+- ✅ **Logging & Debug** (COMPLETED 2025-12-27)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
   - ✅ LogConfig Struct mit Settings
   - ✅ Settings-UI für Logging (Log-Level, Pfad, Max-Files) - COMPLETED 2025-12-27
@@ -342,10 +343,10 @@
 
 - ✅ **MIDI-System Fehler** (FIXED 2025-12-26)
   - ✅ Feature-Flag von `cpal` auf `midi` korrigiert
-  - ⬜ MIDI-Ports korrekt auflisten (testen)
-  - ⬜ MIDI Learn Funktion testen
+  - ✅ MIDI-Learn Modul implementiert (`midi_learn.rs`)
+  - ⬜ MIDI-Ports korrekt auflisten (manueller Test)
 
-- 🟡 **Level Meter Redesign**
+- ✅ **Level Meter Redesign** (COMPLETED 2025-12-27)
   - ✅ STEREO für beide Varianten → StereoAudioMeter Widget
   - ✅ Einbaurahmen mit 4 Phillips-Schrauben
   - ✅ Beschriftete dB-Skala
