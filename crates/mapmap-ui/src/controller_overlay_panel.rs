@@ -336,7 +336,7 @@ impl ControllerOverlayPanel {
                     {
                         self.show_element_list = !self.show_element_list;
                     }
-                    
+
                     // Assignment colors toggle
                     let assign_btn = if self.show_assignment_colors {
                         egui::Button::new("🎨 Zuweisungen").fill(Color32::from_rgb(60, 80, 100))
@@ -582,7 +582,7 @@ impl ControllerOverlayPanel {
                 if let Some(state) = state {
                     ui.label(format!("Wert: {:.2}", state.value));
                 }
-                
+
                 // Show assignment info
                 let assignment = assignments.iter().find(|a| a.element_id == element.id);
                 if let Some(assign) = assignment {
@@ -591,7 +591,11 @@ impl ControllerOverlayPanel {
                         ui.label("Zuweisung:");
                         ui.colored_label(Color32::YELLOW, assign.target.to_string());
                     });
-                    ui.label(egui::RichText::new("(Klick für Details in Liste)").italics().size(10.0));
+                    ui.label(
+                        egui::RichText::new("(Klick für Details in Liste)")
+                            .italics()
+                            .size(10.0),
+                    );
                 } else {
                     ui.separator();
                     ui.label(egui::RichText::new("Nicht zugewiesen").italics().weak());
@@ -663,7 +667,7 @@ impl ControllerOverlayPanel {
                         for element in &elements.elements {
                             // Determine assignment status
                             let assignment = user_config.get_midi_assignment(&element.id);
-                            
+
                             // Apply filter
                             let show = match self.element_filter {
                                 ElementFilter::All => true,
@@ -685,7 +689,7 @@ impl ControllerOverlayPanel {
                             } else {
                                 ui.label("-");
                             }
-                            
+
                             // Show assignment and delete button
                             if let Some(assign) = assignment {
                                 ui.horizontal(|ui| {
