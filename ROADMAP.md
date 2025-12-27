@@ -329,32 +329,33 @@
   - ✅ Overlay UI Panel Grundgerüst (`controller_overlay_panel.rs`)
   - ✅ Hintergrundbild (`resources/controllers/ecler_nuo4/background.jpg`)
   
-  ### Overlay UI Features (TODO)
-  - ⬜ **Hintergrundbild anzeigen** - Mixer-Foto als Background
+  ### Overlay UI Features
+  - ✅ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px)
+  - ✅ **Skalierbares Panel** - Zoom 30%-100% via Slider
   - ⬜ **PNG-Assets für Elemente** - Knobs, Fader, Buttons (vom User bereitgestellt)
   - ⬜ **Exakte Platzierung** - Koordinaten aus `elements.json` auf Foto mappen
   - ⬜ **Animation** - Knobs rotieren (0-270°), Fader bewegen sich
   
-  ### Interaktive Features (TODO)
-  - ⬜ **Rahmen um MIDI-Elemente** mit Farbzuständen:
+  ### Interaktive Features
+  - ✅ **Rahmen um MIDI-Elemente** mit Farbzuständen:
     - Kein Rahmen / Grau = Inaktiv
     - 🟡 Gelb pulsierend = MIDI Learn aktiv
     - 🟢 Grün = Wert ändert sich
     - ⚪ Weiß = Hover
     - 🔵 Blau = Ausgewählt
-  - ⬜ **Mouseover-Tooltip** pro Element:
+  - ✅ **Mouseover-Tooltip** pro Element:
     - Element-Name, MIDI-Typ, Channel, CC/Note, Wert
-    - Aktuelle Zuweisung (MapFlow/Streamer.bot/Mixxx)
+    - ⬜ Aktuelle Zuweisung (MapFlow/Streamer.bot/Mixxx) anzeigen
   
-  ### MIDI Learn Buttons (TODO)
-  - ⬜ **MapFlow MIDI Learn** - Zuweisung zu MapFlow-Parametern
-  - ⬜ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
-  - ⬜ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
-  - ⬜ Buttons in MIDI Panel UND in Toolbar
+  ### MIDI Learn Buttons
+  - ✅ **MapFlow MIDI Learn** - Button im Panel
+  - ✅ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
+  - ✅ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
+  - ⬜ Buttons AUCH in Toolbar (globale Toolbar)
   
-  ### Zuweisungs-Editor (TODO)
-  - ⬜ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
-  - ⬜ **Filter-Ansichten**:
+  ### Zuweisungs-Editor
+  - ✅ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
+  - ✅ **Filter-Ansichten**:
     - Alle Zuweisungen
     - Nur MapFlow-Zuweisungen
     - Nur Streamer.bot-Zuweisungen
