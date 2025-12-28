@@ -16,10 +16,7 @@ use mapmap_control::midi::{
 use mapmap_control::target::ControlTarget;
 
 fn get_mock_targets() -> Vec<ControlTarget> {
-    let mut targets = vec![
-        ControlTarget::MasterOpacity,
-        ControlTarget::MasterBlackout,
-    ];
+    let mut targets = vec![ControlTarget::MasterOpacity, ControlTarget::MasterBlackout];
     for i in 0..4 {
         targets.push(ControlTarget::LayerOpacity(i));
         targets.push(ControlTarget::LayerPosition(i));
@@ -725,23 +722,26 @@ impl ControllerOverlayPanel {
                                     if ui.selectable_label(assignment.is_none(), "Frei (Löschen)").clicked() {
                                         element_to_remove = Some(element.id.clone());
                                     }
-                                    
+
                                     ui.separator();
                                     ui.label(egui::RichText::new("MapFlow Funktionen").strong());
-                                    
+
                                     for target in get_mock_targets() {
-                                        let is_selected = assignment.map_or(false, |a| {
-                                            matches!(&a.target, MidiAssignmentTarget::MapFlow(s) if *s == target.to_id_string())
+                                        let is_selected = assignment.is_some_and(|a| {
+                                            matches!(
+                                                &a.target,
+                                                MidiAssignmentTarget::MapFlow(s) if *s == target.to_id_string()
+                                            )
                                         });
-                                        
+
                                         if ui.selectable_label(is_selected, target.name()).clicked() {
                                             new_assignment = Some((element.id.clone(), MidiAssignmentTarget::MapFlow(target.to_id_string())));
                                         }
                                     }
-                                    
+
                                     // Could add manual entry or other types here
                                 });
-                            
+
                             ui.end_row();
                         }
                     }

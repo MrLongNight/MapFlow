@@ -26,6 +26,15 @@ pub enum AudioPanelAction {
     ConfigChanged(AudioConfig),
 }
 
+/// Context data required for rendering the AudioPanel.
+pub struct AudioPanelContext<'a> {
+    pub locale: &'a LocaleManager,
+    pub analysis: Option<&'a AudioAnalysis>,
+    pub current_config: &'a AudioConfig,
+    pub audio_devices: &'a [String],
+    pub selected_audio_device: &'a mut Option<String>,
+}
+
 /// Audio visualization panel widget
 pub struct AudioPanel {
     /// Peak levels for each of the 7 frequency bands
@@ -54,16 +63,17 @@ impl Default for AudioPanel {
 
 impl AudioPanel {
     /// Renders the audio panel UI and returns actions.
-    pub fn ui(
-        &mut self,
-        ui: &mut Ui,
-        locale: &LocaleManager,
-        analysis: Option<&AudioAnalysis>,
-        current_config: &AudioConfig,
-        audio_devices: &[String],
-        selected_audio_device: &mut Option<String>,
-    ) -> Option<AudioPanelAction> {
+    pub fn ui(&mut self, ui: &mut Ui, ctx: AudioPanelContext) -> Option<AudioPanelAction> {
         let mut action = None;
+
+        // Deconstruct context for easier access
+        let AudioPanelContext {
+            locale,
+            analysis,
+            current_config,
+            audio_devices,
+            selected_audio_device,
+        } = ctx;
 
         // Initialize local config if needed
         if self.local_config.is_none() {
@@ -72,7 +82,10 @@ impl AudioPanel {
         // Sync local config if external config changed significantly (e.g. preset load)
         // For simplicity, we trust local config while editing, assuming single user.
 
-        let mut config = self.local_config.clone().unwrap_or(current_config.clone());
+        let mut config = self
+            .local_config
+            .clone()
+            .unwrap_or_else(|| current_config.clone());
         let mut config_changed = false;
 
         ui.heading(locale.t("audio-panel-title"));
