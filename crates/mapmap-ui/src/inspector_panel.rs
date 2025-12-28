@@ -38,6 +38,7 @@ pub enum InspectorContext<'a> {
     Layer {
         layer: &'a Layer,
         transform: &'a Transform,
+        index: usize,
     },
     /// An output is selected
     Output(&'a OutputConfig),
@@ -51,6 +52,11 @@ impl InspectorPanel {
         context: InspectorContext<'_>,
         i18n: &LocaleManager,
         icon_manager: Option<&IconManager>,
+        // New params for interactivity & MIDI Learn
+        is_learning: bool,
+        last_active_element: Option<&String>,
+        last_active_time: Option<std::time::Instant>,
+        global_actions: &mut Vec<crate::UIAction>,
     ) -> Option<InspectorAction> {
         if !self.visible {
             return None;
@@ -80,9 +86,23 @@ impl InspectorPanel {
                     InspectorContext::None => {
                         self.show_no_selection(ui, i18n);
                     }
-                    InspectorContext::Layer { layer, transform } => {
-                        action =
-                            self.show_layer_inspector(ui, layer, transform, i18n, icon_manager);
+                    InspectorContext::Layer {
+                        layer,
+                        transform,
+                        index,
+                    } => {
+                        action = self.show_layer_inspector(
+                            ui,
+                            layer,
+                            transform,
+                            index,
+                            i18n,
+                            icon_manager,
+                            is_learning,
+                            last_active_element,
+                            last_active_time,
+                            global_actions,
+                        );
                     }
                     InspectorContext::Output(output) => {
                         self.show_output_inspector(ui, output, i18n);
@@ -117,10 +137,15 @@ impl InspectorPanel {
         ui: &mut Ui,
         layer: &Layer,
         transform: &Transform,
+        index: usize,
         _i18n: &LocaleManager,
         _icon_manager: Option<&IconManager>,
+        is_learning: bool,
+        last_active_element: Option<&String>,
+        last_active_time: Option<std::time::Instant>,
+        global_actions: &mut Vec<crate::UIAction>,
     ) -> Option<InspectorAction> {
-        let action = None;
+        let mut action = None;
 
         // Layer header with icon
         ui.horizontal(|ui| {
@@ -164,7 +189,24 @@ impl InspectorPanel {
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Opacity:");
-                    ui.label(format!("{:.0}%", layer.opacity * 100.0));
+
+                    let mut opacity = layer.opacity;
+                    let response = ui.add(egui::Slider::new(&mut opacity, 0.0..=1.0));
+                    if response.changed() {
+                        action = Some(InspectorAction::UpdateOpacity(layer.id, opacity));
+                    }
+
+                    // MIDI Learn
+                    use mapmap_control::target::ControlTarget;
+                    crate::AppUI::midi_learn_helper(
+                        ui,
+                        &response,
+                        ControlTarget::LayerOpacity(index as u32),
+                        is_learning,
+                        last_active_element,
+                        last_active_time,
+                        global_actions,
+                    );
                 });
 
                 ui.horizontal(|ui| {

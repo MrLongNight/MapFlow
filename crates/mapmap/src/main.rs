@@ -1057,7 +1057,9 @@ impl App {
                     if self.ui_state.show_inspector {
                         let inspector_context = if let Some(layer_id) = self.ui_state.selected_layer_id {
                             if let Some(layer) = self.state.layer_manager.get_layer(layer_id) {
-                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform }
+                                // Find index for mapping
+                                let index = self.state.layer_manager.layers().iter().position(|l| l.id == layer_id).unwrap_or(0);
+                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform, index }
                             } else {
                                 mapmap_ui::InspectorContext::None
                             }
@@ -1071,12 +1073,46 @@ impl App {
                             mapmap_ui::InspectorContext::None
                         };
 
-                        self.ui_state.inspector_panel.show(
+
+
+                        // Extract MIDI Learn State
+                        let (is_learning, last_elem, last_time) = (
+                            self.ui_state.is_midi_learn_mode,
+                             #[cfg(feature = "midi")]
+                             self.ui_state.controller_overlay.last_active_element.clone(),
+                             #[cfg(not(feature = "midi"))]
+                             None::<String>,
+                             #[cfg(feature = "midi")]
+                             self.ui_state.controller_overlay.last_active_time,
+                             #[cfg(not(feature = "midi"))]
+                             None,
+                        );
+
+                        if let Some(action) = self.ui_state.inspector_panel.show(
                             ctx,
                             inspector_context,
                             &self.ui_state.i18n,
                             self.ui_state.icon_manager.as_ref(),
-                        );
+                            is_learning,
+                            last_elem.as_ref(),
+                            last_time,
+                            &mut self.ui_state.actions
+                        ) {
+                            match action {
+                                mapmap_ui::InspectorAction::UpdateOpacity(id, val) => {
+                                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                                        layer.opacity = val;
+                                        self.state.dirty = true;
+                                    }
+                                }
+                                mapmap_ui::InspectorAction::UpdateTransform(id, transform) => {
+                                     if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                                        layer.transform = transform;
+                                        self.state.dirty = true;
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // === 5. CENTRAL PANEL: Module Canvas ===
@@ -1373,6 +1409,29 @@ impl App {
                                 .push(mapmap_ui::UIAction::ApplyResizeMode(selected_id, mode));
                         }
                     }
+                }
+            }
+
+            // Handle Global UI Actions
+            for action in self.ui_state.take_actions() {
+                match action {
+                    mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) => {
+                        #[cfg(feature = "midi")]
+                        {
+                            use mapmap_ui::config::MidiAssignmentTarget;
+                            self.ui_state.user_config.set_midi_assignment(
+                                &element_id,
+                                MidiAssignmentTarget::MapFlow(target_id.clone()),
+                            );
+                            tracing::info!(
+                                "MIDI Assignment set via Global Learn: {} -> {}",
+                                element_id,
+                                target_id
+                            );
+                        }
+                    }
+                    // TODO: Handle Play, Pause, etc.
+                    _ => {}
                 }
             }
 

@@ -58,7 +58,12 @@ pub struct ControllerOverlayPanel {
     learn_manager: MidiLearnManager,
 
     /// Current MIDI learn target type
-    learn_target: Option<MidiLearnTarget>,
+    pub learn_target: Option<MidiLearnTarget>,
+
+    /// Last active element from MIDI input (for global learn Way 1)
+    pub last_active_element: Option<String>,
+    pub last_active_time: Option<std::time::Instant>,
+
 
     /// Input field for Streamer.bot function
     streamerbot_function: String,
@@ -128,6 +133,8 @@ impl ControllerOverlayPanel {
             #[cfg(feature = "midi")]
             learn_manager: MidiLearnManager::new(),
             learn_target: None,
+            last_active_element: None,
+            last_active_time: None,
             streamerbot_function: String::new(),
             mixxx_function: String::new(),
             show_labels: true,
@@ -201,6 +208,10 @@ impl ControllerOverlayPanel {
             for element in &elements.elements {
                 if let Some(midi_config) = &element.midi {
                     if Self::message_matches_config(&message, midi_config) {
+                        // Track activity for global learn
+                        self.last_active_element = Some(element.id.clone());
+                        self.last_active_time = Some(std::time::Instant::now());
+
                         match message {
                             MidiMessage::ControlChange { value, .. } => {
                                 self.state_manager.update_cc(&element.id, value);
