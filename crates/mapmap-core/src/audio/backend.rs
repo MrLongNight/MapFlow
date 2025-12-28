@@ -259,11 +259,36 @@ pub mod cpal_backend {
 
         pub fn list_devices() -> Result<Option<Vec<String>>, AudioError> {
             let host = cpal::default_host();
-            let devices = host
-                .input_devices()
-                .map_err(|e| AudioError::NoDevicesFound(e.to_string()))?;
-            let device_names: Vec<String> = devices.filter_map(|d| d.name().ok()).collect();
-            Ok(Some(device_names))
+
+            // Log available hosts for debugging
+            eprintln!("Audio: Available hosts: {:?}", cpal::available_hosts());
+            eprintln!("Audio: Using host: {:?}", host.id());
+
+            // List all input devices with their configs
+            match host.input_devices() {
+                Ok(devices) => {
+                    let mut device_names = Vec::new();
+                    for device in devices {
+                        if let Ok(name) = device.name() {
+                            // Try to get default config for debugging
+                            if let Ok(config) = device.default_input_config() {
+                                eprintln!(
+                                    "Audio Input: '{}' - format={:?}, rate={}, channels={}",
+                                    name,
+                                    config.sample_format(),
+                                    config.sample_rate().0,
+                                    config.channels()
+                                );
+                            } else {
+                                eprintln!("Audio Input: '{}' - no config available", name);
+                            }
+                            device_names.push(name);
+                        }
+                    }
+                    Ok(Some(device_names))
+                }
+                Err(e) => Err(AudioError::NoDevicesFound(e.to_string())),
+            }
         }
     }
 

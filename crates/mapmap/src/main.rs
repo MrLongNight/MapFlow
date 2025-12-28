@@ -1043,6 +1043,8 @@ impl App {
                                                 match action {
                                                     mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
                                                         info!("Audio device changed to: {}", device);
+                                                        // Reset analyzer buffers to clear stale data
+                                                        self.audio_analyzer.reset();
                                                         if let Some(backend) = &mut self.audio_backend {
                                                             backend.stop();
                                                         }

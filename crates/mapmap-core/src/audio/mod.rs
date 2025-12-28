@@ -214,6 +214,21 @@ impl AudioAnalyzer {
         self.config = config;
     }
 
+    /// Reset all buffers and state - call when switching audio devices
+    pub fn reset(&mut self) {
+        self.input_buffer.clear();
+        self.fft_buffer.fill(Complex::new(0.0, 0.0));
+        self.magnitude_buffer.fill(0.0);
+        self.previous_magnitudes.fill(0.0);
+        self.beat_history.clear();
+        self.energy_history.clear();
+        self.last_beat_time = 0.0;
+        self.beat_intervals.clear();
+        self.last_analysis = AudioAnalysis::default();
+        // Drain any pending analysis messages
+        while self.analysis_receiver.try_recv().is_ok() {}
+    }
+
     /// Process audio samples
     pub fn process_samples(&mut self, samples: &[f32], timestamp: f64) -> AudioAnalysis {
         self.current_time = timestamp;
