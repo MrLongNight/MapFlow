@@ -1,7 +1,7 @@
 //! Axum HTTP server
 
 #[cfg(feature = "http-api")]
-use axum::http::{header, Method};
+use axum::http::{header, HeaderValue, Method};
 
 #[cfg(feature = "http-api")]
 use tower_http::cors::{Any, CorsLayer};
@@ -28,12 +28,18 @@ pub struct AppState {
 }
 
 /// Web server configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct WebServerConfig {
     pub host: String,
     pub port: u16,
     pub enable_cors: bool,
+    #[serde(default = "default_allowed_origins")]
+    pub allowed_origins: Vec<String>,
     pub auth: AuthConfig,
+}
+
+fn default_allowed_origins() -> Vec<String> {
+    vec!["*".to_string()]
 }
 
 impl Default for WebServerConfig {
@@ -42,6 +48,7 @@ impl Default for WebServerConfig {
             host: "0.0.0.0".to_string(),
             port: 8080,
             enable_cors: true,
+            allowed_origins: default_allowed_origins(),
             auth: AuthConfig::new(),
         }
     }
@@ -65,6 +72,12 @@ impl WebServerConfig {
     /// Set CORS enabled/disabled
     pub fn with_cors(mut self, enable: bool) -> Self {
         self.enable_cors = enable;
+        self
+    }
+
+    /// Set allowed origins for CORS
+    pub fn with_allowed_origins(mut self, origins: Vec<String>) -> Self {
+        self.allowed_origins = origins;
         self
     }
 
@@ -111,12 +124,30 @@ impl WebServer {
 
         // Add CORS if enabled
         let app = if self.config.enable_cors {
-            let cors = CorsLayer::new()
-                .allow_origin(Any)
+            let cors_layer = CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
                 .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
 
-            app.layer(cors)
+            // If allowed_origins contains "*" or is empty (default permissive), allow Any
+            if self.config.allowed_origins.contains(&"*".to_string())
+                || self.config.allowed_origins.is_empty()
+            {
+                // Must be applied in separate branch to handle different concrete types
+                app.layer(cors_layer.allow_origin(Any))
+            } else {
+                let origins: Result<Vec<HeaderValue>> = self
+                    .config
+                    .allowed_origins
+                    .iter()
+                    .map(|o| {
+                        o.parse::<HeaderValue>().map_err(|e| {
+                            ControlError::HttpError(format!("Invalid origin header: {}", e))
+                        })
+                    })
+                    .collect();
+
+                app.layer(cors_layer.allow_origin(origins?))
+            }
         } else {
             app
         };
@@ -166,11 +197,22 @@ mod tests {
     fn test_web_server_config() {
         let config = WebServerConfig::new(8080)
             .with_host("127.0.0.1".to_string())
-            .with_cors(false);
+            .with_cors(false)
+            .with_allowed_origins(vec!["http://localhost:3000".to_string()]);
 
         assert_eq!(config.host, "127.0.0.1");
         assert_eq!(config.port, 8080);
         assert!(!config.enable_cors);
+        assert_eq!(
+            config.allowed_origins,
+            vec!["http://localhost:3000".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_web_server_default_origins() {
+        let config = WebServerConfig::default();
+        assert!(config.allowed_origins.contains(&"*".to_string()));
     }
 
     #[tokio::test]

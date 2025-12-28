@@ -10,11 +10,13 @@ use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
-    ControllerElement, ControllerElements, ElementState, ElementStateManager, MidiLearnManager,
-    MidiMessage,
+    ControllerElement, ControllerElements, ElementState, ElementStateManager, ElementType,
+    MidiConfig, MidiLearnManager, MidiMessage,
 };
 use mapmap_control::target::ControlTarget;
+use std::collections::{HashMap, HashSet};
 
+#[allow(dead_code)]
 fn get_mock_targets() -> Vec<ControlTarget> {
     let mut targets = vec![ControlTarget::MasterOpacity, ControlTarget::MasterBlackout];
     for i in 0..4 {
@@ -55,7 +57,11 @@ pub struct ControllerOverlayPanel {
     learn_manager: MidiLearnManager,
 
     /// Current MIDI learn target type
-    learn_target: Option<MidiLearnTarget>,
+    pub learn_target: Option<MidiLearnTarget>,
+
+    /// Last active element from MIDI input (for global learn Way 1)
+    pub last_active_element: Option<String>,
+    pub last_active_time: Option<std::time::Instant>,
 
     /// Input field for Streamer.bot function
     streamerbot_function: String,
@@ -96,6 +102,15 @@ pub struct ControllerOverlayPanel {
 
     /// Show assignment colors mode (highlights all elements by their assignment type)
     show_assignment_colors: bool,
+
+    /// Edit mode for moving elements
+    pub is_edit_mode: bool,
+
+    /// Clipboard for element size (width, height)
+    clipboard_size: Option<[f32; 2]>,
+
+    /// Loaded assets
+    assets: HashMap<String, TextureHandle>,
 }
 
 /// Filter for element list view
@@ -125,6 +140,8 @@ impl ControllerOverlayPanel {
             #[cfg(feature = "midi")]
             learn_manager: MidiLearnManager::new(),
             learn_target: None,
+            last_active_element: None,
+            last_active_time: None,
             streamerbot_function: String::new(),
             mixxx_function: String::new(),
             show_labels: true,
@@ -138,40 +155,129 @@ impl ControllerOverlayPanel {
             show_element_list: false,
             element_filter: ElementFilter::All,
             show_assignment_colors: false,
+            is_edit_mode: false,
+            clipboard_size: None,
+            assets: HashMap::new(),
         }
     }
 
-    /// Load background image
-    fn ensure_background_loaded(&mut self, ctx: &egui::Context) {
-        if self.background_texture.is_some() {
-            return;
+    /// Load resources (background and assets)
+    fn ensure_resources_loaded(&mut self, ctx: &egui::Context) {
+        // Load Background
+        if self.background_texture.is_none() {
+            let bg_paths = [
+                "resources/controllers/ecler_nuo4/background.png",
+                "resources/controllers/ecler_nuo4/background.jpg",
+                "../resources/controllers/ecler_nuo4/background.png",
+                "../resources/controllers/ecler_nuo4/background.jpg",
+                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.png",
+                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.jpg",
+            ];
+            if let Some(tex) = self.load_texture_from_candidates(ctx, &bg_paths, "mixer_background")
+            {
+                self.background_texture = Some(tex);
+                tracing::info!("Loaded mixer background");
+            }
         }
 
-        let paths = [
-            "resources/controllers/ecler_nuo4/background.jpg",
-            "../resources/controllers/ecler_nuo4/background.jpg",
-            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.jpg",
-        ];
+        // Load Assets
+        #[cfg(feature = "midi")]
+        if let Some(elements) = &self.elements {
+            let mut needed = HashSet::new();
+            for el in &elements.elements {
+                if let Some(asset) = &el.asset {
+                    needed.insert(asset.clone());
+                }
+            }
 
+            for asset_name in needed {
+                if !self.assets.contains_key(&asset_name) {
+                    let paths = [
+                        format!("resources/controllers/ecler_nuo4/{}", asset_name),
+                        format!("../resources/controllers/ecler_nuo4/{}", asset_name),
+                        format!(
+                            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\{}",
+                            asset_name
+                        ),
+                    ];
+                    if let Some(tex) = self.load_texture_from_candidates(ctx, &paths, &asset_name) {
+                        self.assets.insert(asset_name, tex);
+                    }
+                }
+            }
+        }
+    }
+
+    fn load_texture_from_candidates<S: AsRef<str>>(
+        &self,
+        ctx: &egui::Context,
+        paths: &[S],
+        name: &str,
+    ) -> Option<TextureHandle> {
         for path_str in paths {
-            let path = std::path::Path::new(path_str);
+            let path = std::path::Path::new(path_str.as_ref());
             if path.exists() {
                 if let Ok(image_data) = std::fs::read(path) {
                     if let Ok(img) = image::load_from_memory(&image_data) {
                         let rgba = img.to_rgba8();
                         let size = [rgba.width() as usize, rgba.height() as usize];
                         let pixels = rgba.into_raw();
-
                         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
-
-                        self.background_texture = Some(ctx.load_texture(
-                            "mixer_background",
+                        return Some(ctx.load_texture(
+                            name,
                             color_image,
                             egui::TextureOptions::LINEAR,
                         ));
-                        tracing::info!("Loaded mixer background from {}", path_str);
-                        break;
                     }
+                }
+            }
+        }
+        None
+    }
+
+    /// Helper to draw asset for an element
+    #[cfg(feature = "midi")]
+    fn draw_asset(
+        painter: &egui::Painter,
+        assets: &HashMap<String, TextureHandle>,
+        scale: f32,
+        elem_rect: Rect,
+        element: &ControllerElement,
+        value: f32,
+    ) {
+        if let Some(asset_name) = &element.asset {
+            if let Some(texture) = assets.get(asset_name) {
+                match element.element_type {
+                    ElementType::Fader => {
+                        let asset_size = texture.size_vec2() * scale;
+                        let travel = elem_rect.height() - asset_size.y;
+                        // Avoid negative travel
+                        let travel = travel.max(0.0);
+                        let y = elem_rect.max.y - asset_size.y - (value * travel);
+
+                        let cap_rect = Rect::from_min_size(
+                            Pos2::new(elem_rect.center().x - asset_size.x * 0.5, y),
+                            asset_size,
+                        );
+
+                        painter.image(
+                            texture.id(),
+                            cap_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    }
+                    ElementType::Knob | ElementType::Encoder => {
+                        let asset_size = texture.size_vec2() * scale;
+                        let knob_rect = Rect::from_center_size(elem_rect.center(), asset_size);
+                        painter.image(
+                            texture.id(),
+                            knob_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    }
+                    _ => {}
                 }
             }
         }
@@ -180,9 +286,124 @@ impl ControllerOverlayPanel {
     /// Load controller elements from JSON
     #[cfg(feature = "midi")]
     pub fn load_elements(&mut self, json: &str) -> Result<(), serde_json::Error> {
-        let elements = ControllerElements::from_json(json)?;
+        let mut elements = ControllerElements::from_json(json)?;
+        if elements.controller == "Ecler NUO 4" {
+            self.expand_nuo4_elements(&mut elements);
+        }
         self.elements = Some(elements);
         Ok(())
+    }
+
+    #[cfg(feature = "midi")]
+    fn expand_nuo4_elements(&self, elements: &mut ControllerElements) {
+        let target_ids = [
+            "encoder_1",
+            "encoder_2",
+            "encoder_3",
+            "encoder_4",
+            "push_enc_1",
+            "push_enc_2",
+            "push_enc_3",
+            "push_enc_4",
+            "switch_1",
+            "switch_2",
+            "switch_3",
+            "switch_4",
+        ];
+
+        let mut new_list = Vec::new();
+        let mut variants = Vec::new();
+
+        for el in &elements.elements {
+            if target_ids.contains(&el.id.as_str()) {
+                let base_id = el.id.clone();
+                let base_label = el.label.clone();
+
+                let is_encoder = base_id.starts_with("encoder");
+                let is_switch = base_id.starts_with("switch");
+                // Get index (1-4)
+                let num_char = base_id.chars().last().unwrap();
+                let index = num_char.to_digit(10).unwrap() as u8 - 1;
+
+                struct Variant {
+                    suffix: &'static str,
+                    label: &'static str,
+                    enc_cc_base: u8,
+                    push_note_base: u8,
+                }
+                let variant_defs = [
+                    Variant {
+                        suffix: "a1",
+                        label: "A/L1",
+                        enc_cc_base: 20,
+                        push_note_base: 0,
+                    },
+                    Variant {
+                        suffix: "b1",
+                        label: "B/L1",
+                        enc_cc_base: 24,
+                        push_note_base: 8,
+                    },
+                    Variant {
+                        suffix: "a2",
+                        label: "A/L2",
+                        enc_cc_base: 28,
+                        push_note_base: 16,
+                    },
+                    Variant {
+                        suffix: "b2",
+                        label: "B/L2",
+                        enc_cc_base: 102,
+                        push_note_base: 24,
+                    },
+                    Variant {
+                        suffix: "a3",
+                        label: "A/L3",
+                        enc_cc_base: 106,
+                        push_note_base: 32,
+                    },
+                    Variant {
+                        suffix: "b3",
+                        label: "B/L3",
+                        enc_cc_base: 110,
+                        push_note_base: 40,
+                    },
+                ];
+
+                for v in variant_defs {
+                    let mut var_el = el.clone();
+                    var_el.id = format!("{}_{}", base_id, v.suffix);
+                    var_el.label = format!("{} ({})", base_label, v.label);
+
+                    let ch = 15;
+                    let note_offset = if is_switch { 4 } else { 0 };
+
+                    if let Some(midi) = &mut var_el.midi {
+                        match midi {
+                            MidiConfig::CcRelative { .. } | MidiConfig::Cc { .. } => {
+                                if is_encoder {
+                                    *midi = MidiConfig::CcRelative {
+                                        channel: ch,
+                                        controller: v.enc_cc_base + index,
+                                    };
+                                }
+                            }
+                            MidiConfig::Note { .. } => {
+                                // Push or Switch
+                                let note = v.push_note_base + index + note_offset;
+                                *midi = MidiConfig::Note { channel: ch, note };
+                            }
+                        }
+                    }
+                    variants.push(var_el);
+                }
+            } else {
+                new_list.push(el.clone());
+            }
+        }
+
+        new_list.append(&mut variants);
+        elements.elements = new_list;
     }
 
     /// Process incoming MIDI message
@@ -198,6 +419,10 @@ impl ControllerOverlayPanel {
             for element in &elements.elements {
                 if let Some(midi_config) = &element.midi {
                     if Self::message_matches_config(&message, midi_config) {
+                        // Track activity for global learn
+                        self.last_active_element = Some(element.id.clone());
+                        self.last_active_time = Some(std::time::Instant::now());
+
                         match message {
                             MidiMessage::ControlChange { value, .. } => {
                                 self.state_manager.update_cc(&element.id, value);
@@ -297,17 +522,16 @@ impl ControllerOverlayPanel {
             return;
         }
 
-        // Ensure background is loaded
-        self.ensure_background_loaded(ctx);
-
-        // Calculate window size based on scale
-        let window_width = MAX_WIDTH * self.scale;
-        let window_height = MAX_HEIGHT * self.scale;
+        // Ensure resources are loaded
+        self.ensure_resources_loaded(ctx);
 
         egui::Window::new("🎛️ Ecler NUO 4 Controller")
-            .resizable(false) // Use slider for scaling instead
+            .resizable(true)
+            .auto_sized()
             .collapsible(true)
-            .default_size([window_width + 20.0, window_height + 120.0])
+            .min_width(400.0)
+            .min_height(300.0)
+            .max_width(2500.0)
             .show(ctx, |ui| {
                 // === TOOLBAR ===
                 ui.horizontal(|ui| {
@@ -358,6 +582,25 @@ impl ControllerOverlayPanel {
                     };
                     if ui.add(assign_btn).on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 MapFlow\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
                         self.show_assignment_colors = !self.show_assignment_colors;
+                    }
+
+                    ui.separator();
+
+                    let edit_btn = if self.is_edit_mode {
+                        egui::Button::new("✏️ Edit").fill(Color32::YELLOW)
+                    } else {
+                        egui::Button::new("✏️ Edit")
+                    };
+                    if ui.add(edit_btn).on_hover_text("Verschiebemodus aktivieren (Elemente am Overlay verschieben)").clicked() {
+                        self.is_edit_mode = !self.is_edit_mode;
+                        // Auto-save when exiting edit mode
+                        if !self.is_edit_mode {
+                            self.save_elements();
+                        }
+                    }
+
+                    if self.is_edit_mode && ui.button("💾").on_hover_text("Positionen speichern").clicked() {
+                        self.save_elements();
                     }
                 });
 
@@ -445,15 +688,26 @@ impl ControllerOverlayPanel {
                 if self.show_element_list {
                     self.show_element_list_view(ui, user_config);
                 } else {
-                    self.show_overlay_view(ui, &user_config.midi_assignments);
+                    egui::ScrollArea::both()
+                        .auto_shrink([true, true])
+                        .show(ui, |ui| {
+                            self.show_overlay_view(ui, &user_config.midi_assignments);
+                        });
                 }
             });
     }
 
     /// Show the visual overlay with mixer background
     fn show_overlay_view(&mut self, ui: &mut Ui, assignments: &[MidiAssignment]) {
-        let panel_width = MAX_WIDTH * self.scale;
-        let panel_height = MAX_HEIGHT * self.scale;
+        let (base_w, base_h) = if let Some(tex) = &self.background_texture {
+            let size = tex.size();
+            (size[0] as f32, size[1] as f32)
+        } else {
+            (MAX_WIDTH, MAX_HEIGHT)
+        };
+
+        let panel_width = base_w * self.scale;
+        let panel_height = base_h * self.scale;
 
         // Allocate space for the overlay
         let (response, painter) = ui.allocate_painter(
@@ -485,7 +739,213 @@ impl ControllerOverlayPanel {
 
         // Draw elements with frames
         #[cfg(feature = "midi")]
-        if let Some(elements) = self.elements.clone() {
+        if self.is_edit_mode {
+            // Local state to avoid borrow conflicts
+            let mut next_selection = self.selected_element.clone();
+            let mut next_clipboard = self.clipboard_size;
+
+            if let Some(elements) = &mut self.elements {
+                for element in &mut elements.elements {
+                    let elem_rect = Rect::from_min_size(
+                        Pos2::new(
+                            rect.min.x + element.position.x * rect.width(),
+                            rect.min.y + element.position.y * rect.height(),
+                        ),
+                        Vec2::new(
+                            element.position.width * rect.width(),
+                            element.position.height * rect.height(),
+                        ),
+                    );
+
+                    // Resize Handle Rect (Bottom-Right)
+                    let handle_size = 10.0;
+                    let handle_rect = Rect::from_min_size(
+                        elem_rect.max - Vec2::splat(handle_size),
+                        Vec2::splat(handle_size),
+                    );
+
+                    // Interactions
+                    let id = ui.make_persistent_id(&element.id);
+                    let handle_id = id.with("resize");
+
+                    // Define Move interaction (click_and_drag for selection)
+                    let move_interact = ui.interact(elem_rect, id, Sense::click_and_drag());
+                    // Define Handle interaction
+                    let handle_interact = ui.interact(handle_rect, handle_id, Sense::drag());
+
+                    // Handle Selection
+                    if move_interact.clicked() || move_interact.dragged() {
+                        next_selection = Some(element.id.clone());
+                    }
+
+                    let is_selected = next_selection.as_ref() == Some(&element.id);
+                    let mut anim_handle_dragged = false;
+
+                    // Animation Handles (Fader only)
+                    if is_selected && element.element_type == ElementType::Fader {
+                        let mut range = element.animation_range.unwrap_or([0.0, 1.0]);
+                        let mut changed = false;
+
+                        let h = elem_rect.height();
+                        let y_top = elem_rect.min.y + range[0] * h;
+                        let y_bot = elem_rect.min.y + range[1] * h;
+
+                        // Handles
+                        let h_top_rect = Rect::from_center_size(
+                            Pos2::new(elem_rect.center().x, y_top),
+                            Vec2::new(elem_rect.width(), 8.0),
+                        );
+                        let h_bot_rect = Rect::from_center_size(
+                            Pos2::new(elem_rect.center().x, y_bot),
+                            Vec2::new(elem_rect.width(), 8.0),
+                        );
+
+                        let h_top_res = ui.interact(h_top_rect, id.with("h_top"), Sense::drag());
+                        let h_bot_res = ui.interact(h_bot_rect, id.with("h_bot"), Sense::drag());
+
+                        if h_top_res.dragged() {
+                            range[0] += h_top_res.drag_delta().y / h;
+                            changed = true;
+                            anim_handle_dragged = true;
+                        }
+                        if h_bot_res.dragged() {
+                            range[1] += h_bot_res.drag_delta().y / h;
+                            changed = true;
+                            anim_handle_dragged = true;
+                        }
+
+                        if changed {
+                            element.animation_range = Some(range);
+                        }
+
+                        // Draw Handles
+                        painter.line_segment(
+                            [
+                                Pos2::new(elem_rect.min.x, y_top),
+                                Pos2::new(elem_rect.max.x, y_top),
+                            ],
+                            Stroke::new(1.0, Color32::RED),
+                        );
+                        painter.line_segment(
+                            [
+                                Pos2::new(elem_rect.min.x, y_bot),
+                                Pos2::new(elem_rect.max.x, y_bot),
+                            ],
+                            Stroke::new(1.0, Color32::RED),
+                        );
+
+                        painter.text(
+                            Pos2::new(elem_rect.max.x + 2.0, y_top),
+                            egui::Align2::LEFT_CENTER,
+                            "Top",
+                            egui::FontId::proportional(12.0),
+                            Color32::RED,
+                        );
+                        painter.text(
+                            Pos2::new(elem_rect.max.x + 2.0, y_bot),
+                            egui::Align2::LEFT_CENTER,
+                            "Bot",
+                            egui::FontId::proportional(12.0),
+                            Color32::RED,
+                        );
+                    }
+
+                    // Logic
+                    if handle_interact.dragged() {
+                        let delta = handle_interact.drag_delta();
+                        if rect.width() > 0.0 && rect.height() > 0.0 {
+                            element.position.width += delta.x / rect.width();
+                            element.position.height += delta.y / rect.height();
+                            element.position.width = element.position.width.max(0.01);
+                            element.position.height = element.position.height.max(0.01);
+                        }
+                    } else if anim_handle_dragged {
+                        // Consumed by animation handles
+                    } else if move_interact.dragged() {
+                        let delta = move_interact.drag_delta();
+                        if rect.width() > 0.0 && rect.height() > 0.0 {
+                            element.position.x += delta.x / rect.width();
+                            element.position.y += delta.y / rect.height();
+                        }
+                    }
+
+                    // Keyboard Actions (only if selected)
+                    let is_selected = next_selection.as_ref() == Some(&element.id);
+                    if is_selected {
+                        let mut delta_key = Vec2::ZERO;
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                            delta_key.x -= 1.0;
+                        }
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                            delta_key.x += 1.0;
+                        }
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
+                            delta_key.y -= 1.0;
+                        }
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
+                            delta_key.y += 1.0;
+                        }
+
+                        if delta_key != Vec2::ZERO && rect.width() > 0.0 && rect.height() > 0.0 {
+                            element.position.x += delta_key.x / rect.width();
+                            element.position.y += delta_key.y / rect.height();
+                        }
+
+                        // Copy / Paste Size (Ctrl+C / Ctrl+V)
+                        if ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::C)) {
+                            next_clipboard =
+                                Some([element.position.width, element.position.height]);
+                        }
+                        if ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::V)) {
+                            if let Some(size) = next_clipboard {
+                                element.position.width = size[0];
+                                element.position.height = size[1];
+                            }
+                        }
+                    }
+
+                    // Draw Asset (in background of frame)
+                    let current_val = self
+                        .state_manager
+                        .get(&element.id)
+                        .map(|s| s.value as f32 / 127.0)
+                        .unwrap_or(0.0);
+                    Self::draw_asset(
+                        &painter,
+                        &self.assets,
+                        self.scale,
+                        elem_rect,
+                        element,
+                        current_val,
+                    );
+
+                    // Draw edit frame
+                    let base_color = if is_selected {
+                        Color32::from_rgb(255, 0, 255)
+                    } else {
+                        Color32::YELLOW
+                    }; // Magenta for selected
+                    let stroke = Stroke::new(if is_selected { 2.0 } else { 1.0 }, base_color);
+
+                    match element.element_type {
+                        ElementType::Knob | ElementType::Encoder => {
+                            let radius = elem_rect.width().min(elem_rect.height()) / 2.0;
+                            painter.circle_stroke(elem_rect.center(), radius, stroke);
+                        }
+                        _ => {
+                            painter.rect_stroke(elem_rect, 0.0, stroke);
+                        }
+                    }
+
+                    // Draw resize handle
+                    painter.rect_filled(handle_rect, 2.0, Color32::from_rgb(0, 255, 255));
+                }
+            }
+
+            // Apply state updates
+            self.selected_element = next_selection;
+            self.clipboard_size = next_clipboard;
+        } else if let Some(elements) = self.elements.clone() {
             for element in &elements.elements {
                 self.draw_element_with_frame(&painter, rect, element, &response, assignments);
             }
@@ -516,6 +976,11 @@ impl ControllerOverlayPanel {
 
         // Check states
         let state = self.state_manager.get(&element.id);
+
+        // Draw Asset
+        let val = state.map(|s| s.value as f32 / 127.0).unwrap_or(0.0);
+        Self::draw_asset(painter, &self.assets, self.scale, elem_rect, element, val);
+
         let is_hovered = response
             .hover_pos()
             .map(|pos| elem_rect.contains(pos))
@@ -561,7 +1026,16 @@ impl ControllerOverlayPanel {
         // Draw frame
         if frame_color != Color32::TRANSPARENT {
             let stroke_width = if is_learning { 3.0 } else { 2.0 };
-            painter.rect_stroke(elem_rect, 4.0, Stroke::new(stroke_width, frame_color));
+            let stroke = Stroke::new(stroke_width, frame_color);
+            match element.element_type {
+                ElementType::Knob | ElementType::Encoder => {
+                    let radius = elem_rect.width().min(elem_rect.height()) / 2.0;
+                    painter.circle_stroke(elem_rect.center(), radius, stroke);
+                }
+                _ => {
+                    painter.rect_stroke(elem_rect, 4.0, stroke);
+                }
+            }
         }
 
         // Update hovered element for tooltip
@@ -617,6 +1091,36 @@ impl ControllerOverlayPanel {
         }
     }
 
+    /// Save elements to disk
+    fn save_elements(&self) {
+        #[cfg(feature = "midi")]
+        if let Some(elements) = &self.elements {
+            let paths = [
+                "resources/controllers/ecler_nuo4/elements.json",
+                "../resources/controllers/ecler_nuo4/elements.json",
+                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
+            ];
+
+            for path_str in paths {
+                let path = std::path::Path::new(path_str);
+                if path.exists() {
+                    match serde_json::to_string_pretty(elements) {
+                        Ok(json) => {
+                            if let Err(e) = std::fs::write(path, json) {
+                                tracing::error!("Failed to save elements to {:?}: {}", path, e);
+                            } else {
+                                tracing::info!("Saved elements to {:?}", path);
+                            }
+                        }
+                        Err(e) => tracing::error!("Failed to serialize elements: {}", e),
+                    }
+                    return;
+                }
+            }
+            tracing::error!("Could not find elements.json to save to.");
+        }
+    }
+
     /// Show the element list view
     fn show_element_list_view(&mut self, ui: &mut Ui, user_config: &mut UserConfig) {
         // Filter buttons
@@ -661,7 +1165,6 @@ impl ControllerOverlayPanel {
 
         // Element table
         let mut element_to_remove = None;
-        let mut new_assignment = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             egui::Grid::new("element_list")
@@ -703,23 +1206,12 @@ impl ControllerOverlayPanel {
                             } else {
                                 ui.label("-");
                             }
-                            // Assignment Dropdown
-                            let display_name = if let Some(assign) = assignment {
-                                match &assign.target {
-                                    MidiAssignmentTarget::MapFlow(s) => {
-                                        ControlTarget::from_id_string(s).map(|t| t.name()).unwrap_or_else(|| s.clone())
-                                    }
-                                    other => other.to_string(),
-                                }
-                            } else {
-                                "Frei".to_string()
-                            };
 
-                            egui::ComboBox::from_id_source(&element.id)
-                                .selected_text(display_name)
-                                .width(200.0)
-                                .show_ui(ui, |ui| {
-                                    if ui.selectable_label(assignment.is_none(), "Frei (Löschen)").clicked() {
+                            // Show assignment and delete button
+                            if let Some(assign) = assignment {
+                                ui.horizontal(|ui| {
+                                    ui.label(assign.target.to_string());
+                                    if ui.small_button("🗑").on_hover_text("Zuweisung löschen").clicked() {
                                         element_to_remove = Some(element.id.clone());
                                     }
 
@@ -742,24 +1234,26 @@ impl ControllerOverlayPanel {
                                     // Could add manual entry or other types here
                                 });
 
+                                });
+                            } else {
+                                ui.label("-");
+                            }
                             ui.end_row();
                         }
                     }
                 });
         });
 
-        // Handle deletion/update request outside of borrow loop
+        // Handle deletion request outside of borrow loop
         if let Some(id) = element_to_remove {
             user_config.remove_midi_assignment(&id);
-        }
-        if let Some((id, target)) = new_assignment {
-            user_config.set_midi_assignment(&id, target);
         }
     }
 }
 
 /// Get current time in seconds for animations
 fn ui_time_seconds() -> f64 {
+    // Ref: #118 Force rebuild
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()

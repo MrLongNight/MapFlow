@@ -292,6 +292,8 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             if ui_state.show_toolbar {
                 ui.horizontal(|ui| {
                     ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
+                    // Center vertically in the horizontal layout
+                    ui.style_mut().spacing.item_spacing.y = 0.0;
 
                     let icon_size = 32.0;
 
@@ -340,11 +342,26 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         {
                             ui_state.show_controller_overlay = !ui_state.show_controller_overlay;
                         }
+
+                        ui.separator();
+
+                        let learn_btn = if ui_state.is_midi_learn_mode {
+                            egui::Button::new("🧠 Learn").fill(egui::Color32::YELLOW)
+                        } else {
+                            egui::Button::new("🧠 Learn")
+                        };
+                        if ui
+                            .add(learn_btn)
+                            .on_hover_text("Global MIDI Learn Mode aktivieren")
+                            .clicked()
+                        {
+                            ui_state.is_midi_learn_mode = !ui_state.is_midi_learn_mode;
+                        }
                     }
 
                     ui.separator();
 
-                    // === AUDIO LEVEL METER (variable width, dB scale) ===
+                    // === AUDIO LEVEL METER (Stereo) ===
                     let audio_level = ui_state.current_audio_level;
                     let db = if audio_level > 0.0001 {
                         20.0 * audio_level.log10()
@@ -352,23 +369,21 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         -60.0
                     };
 
-                    // Choose width based on style
-                    let meter_width = match ui_state.user_config.meter_style {
-                        crate::config::AudioMeterStyle::Retro => 160.0,
-                        crate::config::AudioMeterStyle::Digital => 180.0,
-                    };
-
-                    // Allow slightly more height for Retro look if needed
-                    let meter_height = match ui_state.user_config.meter_style {
-                        crate::config::AudioMeterStyle::Retro => 40.0,
-                        crate::config::AudioMeterStyle::Digital => 24.0,
-                    };
+                    // In a future update, we will get stereo levels from the backend.
+                    // For now, duplicate the mono signal to both channels.
+                    let left_db = db;
+                    let right_db = db;
 
                     ui.label("🔊");
-                    ui.add(
-                        AudioMeter::new(ui_state.user_config.meter_style, db)
-                            .desired_size(egui::vec2(meter_width, meter_height)),
-                    );
+
+                    // AudioMeter will try to fill vertical space (clamped).
+                    // We don't need to specify size manually anymore, the widget has defaults and layout logic.
+                    // But we can override width if needed. The widget defaults to 300/360 depending on style.
+                    ui.add(AudioMeter::new(
+                        ui_state.user_config.meter_style,
+                        left_db,
+                        right_db,
+                    ));
 
                     // === SPACER - push performance to right ===
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

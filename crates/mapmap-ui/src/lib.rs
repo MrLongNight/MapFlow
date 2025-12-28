@@ -36,7 +36,6 @@ pub mod oscillator_panel;
 pub mod output_panel;
 pub mod paint_panel;
 pub mod shortcut_panel;
-pub mod stereo_audio_meter;
 pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;
@@ -106,6 +105,7 @@ pub enum UIAction {
     RemoveMapping(u64),
     ToggleMappingVisibility(u64, bool),
     SelectMapping(u64),
+    SetMidiAssignment(String, String), // element_id, target_id
 
     // Paint actions
     AddPaint,
@@ -235,9 +235,10 @@ pub struct AppUI {
     pub gpu_usage: f32,
     /// RAM usage in MB
     pub ram_usage_mb: f32,
-    /// Controller Overlay Panel (MIDI visualization)
     pub controller_overlay: ControllerOverlayPanel,
     pub show_controller_overlay: bool,
+    /// Global flag for "Hover" MIDI Learn Mode (Way 1)
+    pub is_midi_learn_mode: bool,
 }
 
 impl Default for AppUI {
@@ -311,6 +312,7 @@ impl Default for AppUI {
             ram_usage_mb: 0.0,
             controller_overlay: ControllerOverlayPanel::new(),
             show_controller_overlay: false,
+            is_midi_learn_mode: false,
         }
     }
 }
@@ -490,6 +492,11 @@ impl AppUI {
         egui::Window::new(self.i18n.t("panel-master"))
             .default_size([360.0, 300.0])
             .show(ctx, |ui| {
+                // Determine learning state (capture values to avoid borrow conflict)
+                let is_learning = self.is_midi_learn_mode;
+                let last_active_element = self.controller_overlay.last_active_element.clone();
+                let last_active_time = self.controller_overlay.last_active_time;
+
                 ui.heading(self.i18n.t("header-master"));
                 ui.separator();
 
@@ -500,11 +507,19 @@ impl AppUI {
                 ui.label(&composition.name);
                 ui.separator();
 
-                // Master Opacity
                 let old_master_opacity = composition.master_opacity;
-                ui.add(
+                let response = ui.add(
                     egui::Slider::new(&mut composition.master_opacity, 0.0..=1.0)
                         .text(self.i18n.t("label-master-opacity")),
+                );
+                Self::midi_learn_helper(
+                    ui,
+                    &response,
+                    mapmap_control::target::ControlTarget::MasterOpacity,
+                    is_learning,
+                    last_active_element.as_ref(),
+                    last_active_time,
+                    &mut self.actions,
                 );
                 if (composition.master_opacity - old_master_opacity).abs() > 0.001 {
                     self.actions
@@ -540,5 +555,57 @@ impl AppUI {
                 ui.label(self.i18n.t("text-mult-opacity"));
                 ui.label(self.i18n.t("text-mult-speed"));
             });
+    }
+
+    /// Helper for Global MIDI Learn (Way 1)
+    /// Call this after adding a widget to enable hover-based learning
+    pub fn midi_learn_helper(
+        ui: &mut egui::Ui,
+        response: &egui::Response,
+        target: ControlTarget,
+        is_learning: bool,
+        last_active_element: Option<&String>,
+        last_active_time: Option<std::time::Instant>,
+        actions: &mut Vec<UIAction>,
+    ) {
+        if !is_learning {
+            return;
+        }
+
+        if response.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Crosshair);
+            let rect = response.rect;
+
+            // Visual indicator (Pulse yellow)
+            let time = ui.input(|i| i.time);
+            let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
+            let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
+            ui.painter()
+                .rect_stroke(rect.expand(2.0), 4.0, egui::Stroke::new(2.0, color));
+
+            // Check for recent MIDI activity (last 0.5s)
+            if let Some(last_time) = last_active_time {
+                if last_time.elapsed().as_secs_f32() < 0.2 {
+                    // Short window to avoid accidental assignment
+                    if let Some(element_id) = last_active_element {
+                        // Action!
+                        actions.push(UIAction::SetMidiAssignment(
+                            element_id.clone(),
+                            target.to_id_string(),
+                        ));
+
+                        // Feedback: Flash Green
+                        ui.painter().rect_filled(
+                            rect.expand(2.0),
+                            4.0,
+                            egui::Color32::GREEN.linear_multiply(0.5),
+                        );
+
+                        // Log
+                        tracing::info!("Global Learn Request: {} -> {}", element_id, target.name());
+                    }
+                }
+            }
+        }
     }
 }

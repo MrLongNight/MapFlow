@@ -346,7 +346,7 @@ pub struct ModuleSocket {
     pub socket_type: ModuleSocketType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ModuleSocketType {
     Trigger,
     Media,
