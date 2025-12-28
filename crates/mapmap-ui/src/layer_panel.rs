@@ -138,9 +138,12 @@ impl LayerPanel {
                                                 crate::icons::AppIcon::EyeSlash
                                             };
                                             if let Some(img) = mgr.image(icon, 16.0) {
+                                                let btn = egui::ImageButton::new(img);
                                                 if ui
-                                                    .add(egui::ImageButton::new(img))
-                                                    .on_hover_text(i18n.t("tooltip-toggle-visibility"))
+                                                    .add(btn)
+                                                    .on_hover_text(
+                                                        i18n.t("tooltip-toggle-visibility"),
+                                                    )
                                                     .clicked()
                                                 {
                                                     layer.visible = !layer.visible;
@@ -160,13 +163,14 @@ impl LayerPanel {
                                             Layout::right_to_left(Align::Center),
                                             |ui| {
                                                 // Opacity Slider
-                                                ui.add(
+                                                let slider =
                                                     Slider::new(&mut layer.opacity, 0.0..=1.0)
                                                         .show_value(false)
                                                         .min_decimals(2)
-                                                        .max_decimals(2),
-                                                )
-                                                .on_hover_text(i18n.t("tooltip-layer-opacity"));
+                                                        .max_decimals(2);
+                                                ui.add(slider).on_hover_text(
+                                                    i18n.t("tooltip-layer-opacity"),
+                                                );
 
                                                 // Blend Mode
                                                 egui::ComboBox::from_id_source(format!(
