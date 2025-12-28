@@ -102,13 +102,14 @@
 
 ### Audio (Plattformspezifische Backends, Analyzer/Mapping)
 
-- ✅ **Audio-Analyse** (`mapmap-core/src/audio.rs`)
-  - ✅ FFT-Analyse mit RustFFT
-  - ✅ 7 Frequenzbänder (SubBass, Bass, LowMid, Mid, HighMid, Presence, Brilliance)
-  - ✅ RMS-Volume-Analyse
-  - ✅ Peak-Detektion
-  - ✅ Beat-Detection-Grundlagen
-  - ✅ AudioAnalyzer mit konfigurierbarem FFT-Window
+- ❌ **Audio-Analyse** (`mapmap-core/src/audio.rs`) – **DEFEKT, MIGRATION GEPLANT**
+  - ❌ FFT-Analyse mit RustFFT – NICHT FUNKTIONAL
+  - ❌ 7 Frequenzbänder – NICHT FUNKTIONAL
+  - ❌ RMS-Volume-Analyse – NICHT FUNKTIONAL
+  - ❌ Peak-Detektion – NICHT FUNKTIONAL
+  - ❌ Beat-Detection – NICHT FUNKTIONAL
+  - 🔄 **MIGRATION:** Ersetzen durch `audio-processor-analysis` Crate
+  - 📄 **Plan:** [`.agent/plans/AUDIO_ANALYSIS_MIGRATION.md`](.agent/plans/AUDIO_ANALYSIS_MIGRATION.md)
 
 - ✅ **Audio-Reactive-System** (`mapmap-core/src/audio_reactive.rs`)
   - ✅ AudioReactiveController für Parameter-Mapping
@@ -122,6 +123,7 @@
   - ✅ Linux: ALSA/PulseAudio-Backend über CPAL integriert
   - ⬜ macOS: CoreAudio-Backend (optional, ungetestet)
   - ✅ Audio-Input-Device-Auswahl in UI (Dashboard)
+  - ✅ Audio-Device-Persistenz in UserConfig (COMPLETED 2025-12-29)
   - ✅ Audio-Stream in Media-Pipeline verdrahtet (COMPLETED 2025-12-23)
   - ✅ Latenz-Kompensation implementiert (COMPLETED 2025-12-23)
 
@@ -394,7 +396,8 @@
   - ✅ STEREO für beide Varianten → StereoAudioMeter Widget (Code existiert)
   - ✅ Einbaurahmen mit 4 Phillips-Schrauben (Code existiert)
   - ✅ Beschriftete dB-Skala (Code existiert)
-  - ⬜ In UI integriert aber NICHT FUNKTIONAL - zeigt keine Werte an
+  - ❌ In UI integriert aber NICHT FUNKTIONAL - Audio-Analyse defekt
+  - 📄 **Fix:** Abhängig von Audio-Migration (siehe `AUDIO_ANALYSIS_MIGRATION.md`)
 
 ### 🟢 MODULE-CANVAS PANELS (Implementiert 2025-12-26)
 
