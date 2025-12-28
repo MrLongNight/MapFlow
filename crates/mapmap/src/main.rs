@@ -1719,10 +1719,14 @@ impl App {
     }
 }
 
+mod logging_setup;
+
 /// The main entry point for the application.
 fn main() -> Result<()> {
-    // Initialize logging
-    tracing_subscriber::fmt::init();
+    // Initialize logging with default configuration
+    // This creates a log file in logs/ and outputs to console
+    let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
+    
     info!("Starting MapFlow...");
 
     // Create the event loop
