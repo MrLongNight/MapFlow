@@ -211,17 +211,8 @@ impl App {
         };
         ui_state.audio_devices = audio_devices.clone();
 
-        let mut audio_config = state.audio_config.clone();
-
-        let mut audio_backend = match CpalBackend::new(None, &audio_config) {
-            Ok((backend, actual_sample_rate)) => {
-                info!(
-                    "Audio backend initialized with sample rate: {}",
-                    actual_sample_rate
-                );
-                audio_config.sample_rate = actual_sample_rate;
-                Some(backend)
-            }
+        let mut audio_backend = match CpalBackend::new(None) {
+            Ok(backend) => Some(backend),
             Err(e) => {
                 error!("Failed to initialize audio backend: {}", e);
                 None
@@ -236,7 +227,7 @@ impl App {
         }
 
         // Initialize Audio Analyzer
-        let audio_analyzer = AudioAnalyzer::new(audio_config);
+        let audio_analyzer = AudioAnalyzer::new(state.audio_config.clone());
 
         // Start MCP Server in a separate thread
         let (mcp_sender, mcp_receiver) = unbounded();
@@ -374,18 +365,6 @@ impl App {
         app.create_dummy_texture(width, height, format);
 
         Ok(app)
-    }
-
-    /// Processes audio samples and updates the analysis.
-    fn process_audio(&mut self) {
-        if let Some(backend) = &mut self.audio_backend {
-            let samples = backend.get_samples();
-            if !samples.is_empty() {
-                let timestamp = self.start_time.elapsed().as_secs_f64();
-                let analysis = self.audio_analyzer.process_samples(&samples, timestamp);
-                self.ui_state.dashboard.set_audio_analysis(analysis);
-            }
-        }
     }
 
     /// Creates or recreates the dummy texture for effect input.
@@ -526,6 +505,25 @@ impl App {
                         info!("Autosave successful");
                         self.last_autosave = std::time::Instant::now();
                         // Note: We don't clear dirty flag on autosave, only on explicit save
+                    }
+                }
+
+                // Process audio
+                if let Some(backend) = &mut self.audio_backend {
+                    let samples = backend.get_samples();
+                    if !samples.is_empty() {
+                        let timestamp = self.start_time.elapsed().as_secs_f64();
+                        let analysis = self.audio_analyzer.process_samples(&samples, timestamp);
+                        // Log periodically (every ~5 seconds based on timestamp)
+                        if (timestamp as i64) % 5 == 0 {
+                            tracing::debug!(
+                                "Audio: {} samples, RMS={:.3}, Peak={:.3}",
+                                samples.len(),
+                                analysis.rms_volume,
+                                analysis.peak_volume
+                            );
+                        }
+                        self.ui_state.dashboard.set_audio_analysis(analysis);
                     }
                 }
 
@@ -798,11 +796,6 @@ impl App {
 
     /// Renders a single frame for a given output.
     fn render(&mut self, output_id: OutputId) -> Result<()> {
-        // Process audio every frame, but only on the main window's render call
-        if output_id == 0 {
-            self.process_audio();
-        }
-
         let now = std::time::Instant::now();
         let delta_time = now.duration_since(self.last_update).as_secs_f32();
         self.last_update = now;
@@ -1039,16 +1032,8 @@ impl App {
                                                             backend.stop();
                                                         }
                                                         self.audio_backend = None;
-
-                                                        let mut audio_config = self.state.audio_config.clone();
-                                                        match CpalBackend::new(
-                                                            Some(device.clone()),
-                                                            &audio_config,
-                                                        ) {
-                                                            Ok((mut backend, sample_rate)) => {
-                                                                audio_config.sample_rate = sample_rate;
-                                                                self.audio_analyzer
-                                                                    .update_config(audio_config);
+                                                        match CpalBackend::new(Some(device.clone())) {
+                                                            Ok(mut backend) => {
                                                                 if let Err(e) = backend.start() {
                                                                     error!("Failed to start audio backend: {}", e);
                                                                 } else {
@@ -1736,22 +1721,4 @@ fn main() -> Result<()> {
     app.run(event_loop);
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    #[ignore] // This test cannot run in a headless environment.
-    fn test_audio_analysis_loop() {
-        let event_loop = EventLoop::new().unwrap();
-        let mut app = pollster::block_on(App::new(&event_loop)).unwrap();
-
-        // Simulate a few frames
-        for _ in 0..10 {
-            app.process_audio();
-            std::thread::sleep(std::time::Duration::from_millis(16));
-        }
-    }
 }
