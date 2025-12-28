@@ -78,6 +78,9 @@ pub struct UserConfig {
     /// MIDI element assignments
     #[serde(default)]
     pub midi_assignments: Vec<MidiAssignment>,
+    /// Selected audio input device name
+    #[serde(default)]
+    pub selected_audio_device: Option<String>,
 }
 
 impl Default for UserConfig {
@@ -90,6 +93,7 @@ impl Default for UserConfig {
             target_fps: Some(60.0),
             meter_style: AudioMeterStyle::default(),
             midi_assignments: Vec::new(),
+            selected_audio_device: None,
         }
     }
 }
@@ -169,6 +173,14 @@ impl UserConfig {
     /// Remove a MIDI assignment
     pub fn remove_midi_assignment(&mut self, element_id: &str) {
         self.midi_assignments.retain(|a| a.element_id != element_id);
+        if let Err(e) = self.save() {
+            tracing::error!("Failed to save config: {}", e);
+        }
+    }
+
+    /// Set and save the selected audio device
+    pub fn set_audio_device(&mut self, device: Option<String>) {
+        self.selected_audio_device = device;
         if let Err(e) = self.save() {
             tracing::error!("Failed to save config: {}", e);
         }

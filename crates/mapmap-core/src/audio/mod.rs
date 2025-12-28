@@ -40,8 +40,8 @@ impl Default for AudioConfig {
             fft_size: 1024,
             overlap: 0.5,
             smoothing: 0.8,
-            gain: 100.0,       // Amplify weak input signals
-            noise_gate: 0.005, // Filter out amplified noise floor
+            gain: 1.0,          // Default: no amplification (1.0 = unity gain)
+            noise_gate: 0.0001, // Very low threshold - only filter true silence
         }
     }
 }

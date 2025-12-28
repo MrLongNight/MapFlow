@@ -211,7 +211,25 @@ impl App {
         };
         ui_state.audio_devices = audio_devices.clone();
 
-        let mut audio_backend = match CpalBackend::new(None) {
+        // Load saved audio device from user config
+        let saved_device = ui_state.user_config.selected_audio_device.clone();
+        let device_to_use = if let Some(ref dev) = saved_device {
+            // Check if saved device still exists
+            if audio_devices.contains(dev) {
+                info!("Restoring saved audio device: {}", dev);
+                Some(dev.clone())
+            } else {
+                info!("Saved audio device '{}' no longer available, using default", dev);
+                None
+            }
+        } else {
+            None
+        };
+        
+        // Set the selected device in UI state
+        ui_state.selected_audio_device = device_to_use.clone();
+
+        let mut audio_backend = match CpalBackend::new(device_to_use) {
             Ok(backend) => Some(backend),
             Err(e) => {
                 error!("Failed to initialize audio backend: {}", e);
@@ -1043,6 +1061,8 @@ impl App {
                                                 match action {
                                                     mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
                                                         info!("Audio device changed to: {}", device);
+                                                        // Save to user config for next startup
+                                                        self.ui_state.user_config.set_audio_device(Some(device.clone()));
                                                         // Reset analyzer buffers to clear stale data
                                                         self.audio_analyzer.reset();
                                                         if let Some(backend) = &mut self.audio_backend {

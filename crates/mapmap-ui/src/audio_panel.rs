@@ -103,9 +103,9 @@ impl AudioPanel {
         ui.collapsing(locale.t("audio-panel-settings"), |ui| {
             if ui
                 .add(
-                    egui::Slider::new(&mut config.gain, 0.0..=5.0)
+                    egui::Slider::new(&mut config.gain, 0.1..=10.0)
                         .text("Gain")
-                        .logarithmic(false),
+                        .logarithmic(true),
                 )
                 .changed()
             {
