@@ -10,17 +10,14 @@ use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
-    ControllerElement, ControllerElements, ElementState, ElementStateManager, MidiLearnManager,
-    MidiMessage, MidiConfig, ElementType,
+    ControllerElement, ControllerElements, ElementState, ElementStateManager, ElementType,
+    MidiConfig, MidiLearnManager, MidiMessage,
 };
-use std::collections::{HashMap, HashSet};
 use mapmap_control::target::ControlTarget;
+use std::collections::{HashMap, HashSet};
 
 fn get_mock_targets() -> Vec<ControlTarget> {
-    let mut targets = vec![
-        ControlTarget::MasterOpacity,
-        ControlTarget::MasterBlackout,
-    ];
+    let mut targets = vec![ControlTarget::MasterOpacity, ControlTarget::MasterBlackout];
     for i in 0..4 {
         targets.push(ControlTarget::LayerOpacity(i));
         targets.push(ControlTarget::LayerPosition(i));
@@ -64,7 +61,6 @@ pub struct ControllerOverlayPanel {
     /// Last active element from MIDI input (for global learn Way 1)
     pub last_active_element: Option<String>,
     pub last_active_time: Option<std::time::Instant>,
-
 
     /// Input field for Streamer.bot function
     streamerbot_function: String,
@@ -176,7 +172,8 @@ impl ControllerOverlayPanel {
                 r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.png",
                 r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.jpg",
             ];
-            if let Some(tex) = self.load_texture_from_candidates(ctx, &bg_paths, "mixer_background") {
+            if let Some(tex) = self.load_texture_from_candidates(ctx, &bg_paths, "mixer_background")
+            {
                 self.background_texture = Some(tex);
                 tracing::info!("Loaded mixer background");
             }
@@ -197,7 +194,10 @@ impl ControllerOverlayPanel {
                     let paths = [
                         format!("resources/controllers/ecler_nuo4/{}", asset_name),
                         format!("../resources/controllers/ecler_nuo4/{}", asset_name),
-                        format!(r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\{}", asset_name),
+                        format!(
+                            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\{}",
+                            asset_name
+                        ),
                     ];
                     if let Some(tex) = self.load_texture_from_candidates(ctx, &paths, &asset_name) {
                         self.assets.insert(asset_name, tex);
@@ -207,20 +207,29 @@ impl ControllerOverlayPanel {
         }
     }
 
-    fn load_texture_from_candidates<S: AsRef<str>>(&self, ctx: &egui::Context, paths: &[S], name: &str) -> Option<TextureHandle> {
+    fn load_texture_from_candidates<S: AsRef<str>>(
+        &self,
+        ctx: &egui::Context,
+        paths: &[S],
+        name: &str,
+    ) -> Option<TextureHandle> {
         for path_str in paths {
             let path = std::path::Path::new(path_str.as_ref());
-             if path.exists() {
-                 if let Ok(image_data) = std::fs::read(path) {
+            if path.exists() {
+                if let Ok(image_data) = std::fs::read(path) {
                     if let Ok(img) = image::load_from_memory(&image_data) {
                         let rgba = img.to_rgba8();
                         let size = [rgba.width() as usize, rgba.height() as usize];
                         let pixels = rgba.into_raw();
                         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
-                        return Some(ctx.load_texture(name, color_image, egui::TextureOptions::LINEAR));
+                        return Some(ctx.load_texture(
+                            name,
+                            color_image,
+                            egui::TextureOptions::LINEAR,
+                        ));
                     }
-                 }
-             }
+                }
+            }
         }
         None
     }
@@ -233,7 +242,7 @@ impl ControllerOverlayPanel {
         scale: f32,
         elem_rect: Rect,
         element: &ControllerElement,
-        value: f32
+        value: f32,
     ) {
         if let Some(asset_name) = &element.asset {
             if let Some(texture) = assets.get(asset_name) {
@@ -244,18 +253,28 @@ impl ControllerOverlayPanel {
                         // Avoid negative travel
                         let travel = travel.max(0.0);
                         let y = elem_rect.max.y - asset_size.y - (value * travel);
-                        
+
                         let cap_rect = Rect::from_min_size(
                             Pos2::new(elem_rect.center().x - asset_size.x * 0.5, y),
-                            asset_size
+                            asset_size,
                         );
-                        
-                        painter.image(texture.id(), cap_rect, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
+
+                        painter.image(
+                            texture.id(),
+                            cap_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
                     }
                     ElementType::Knob | ElementType::Encoder => {
-                         let asset_size = texture.size_vec2() * scale;
-                         let knob_rect = Rect::from_center_size(elem_rect.center(), asset_size);
-                         painter.image(texture.id(), knob_rect, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
+                        let asset_size = texture.size_vec2() * scale;
+                        let knob_rect = Rect::from_center_size(elem_rect.center(), asset_size);
+                        painter.image(
+                            texture.id(),
+                            knob_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
                     }
                     _ => {}
                 }
@@ -276,9 +295,20 @@ impl ControllerOverlayPanel {
 
     #[cfg(feature = "midi")]
     fn expand_nuo4_elements(&self, elements: &mut ControllerElements) {
-        let target_ids = ["encoder_1", "encoder_2", "encoder_3", "encoder_4", 
-                          "push_enc_1", "push_enc_2", "push_enc_3", "push_enc_4",
-                          "switch_1", "switch_2", "switch_3", "switch_4"];
+        let target_ids = [
+            "encoder_1",
+            "encoder_2",
+            "encoder_3",
+            "encoder_4",
+            "push_enc_1",
+            "push_enc_2",
+            "push_enc_3",
+            "push_enc_4",
+            "switch_1",
+            "switch_2",
+            "switch_3",
+            "switch_4",
+        ];
 
         let mut new_list = Vec::new();
         let mut variants = Vec::new();
@@ -287,50 +317,82 @@ impl ControllerOverlayPanel {
             if target_ids.contains(&el.id.as_str()) {
                 let base_id = el.id.clone();
                 let base_label = el.label.clone();
-                
+
                 let is_encoder = base_id.starts_with("encoder");
                 let is_switch = base_id.starts_with("switch");
                 // Get index (1-4)
                 let num_char = base_id.chars().last().unwrap();
                 let index = num_char.to_digit(10).unwrap() as u8 - 1;
 
-                struct Variant { suffix: &'static str, label: &'static str, enc_cc_base: u8, push_note_base: u8 }
+                struct Variant {
+                    suffix: &'static str,
+                    label: &'static str,
+                    enc_cc_base: u8,
+                    push_note_base: u8,
+                }
                 let variant_defs = [
-                    Variant { suffix: "a1", label: "A/L1", enc_cc_base: 20, push_note_base: 0 },
-                    Variant { suffix: "b1", label: "B/L1", enc_cc_base: 24, push_note_base: 8 },
-                    Variant { suffix: "a2", label: "A/L2", enc_cc_base: 28, push_note_base: 16 },
-                    Variant { suffix: "b2", label: "B/L2", enc_cc_base: 102, push_note_base: 24 },
-                    Variant { suffix: "a3", label: "A/L3", enc_cc_base: 106, push_note_base: 32 },
-                    Variant { suffix: "b3", label: "B/L3", enc_cc_base: 110, push_note_base: 40 },
+                    Variant {
+                        suffix: "a1",
+                        label: "A/L1",
+                        enc_cc_base: 20,
+                        push_note_base: 0,
+                    },
+                    Variant {
+                        suffix: "b1",
+                        label: "B/L1",
+                        enc_cc_base: 24,
+                        push_note_base: 8,
+                    },
+                    Variant {
+                        suffix: "a2",
+                        label: "A/L2",
+                        enc_cc_base: 28,
+                        push_note_base: 16,
+                    },
+                    Variant {
+                        suffix: "b2",
+                        label: "B/L2",
+                        enc_cc_base: 102,
+                        push_note_base: 24,
+                    },
+                    Variant {
+                        suffix: "a3",
+                        label: "A/L3",
+                        enc_cc_base: 106,
+                        push_note_base: 32,
+                    },
+                    Variant {
+                        suffix: "b3",
+                        label: "B/L3",
+                        enc_cc_base: 110,
+                        push_note_base: 40,
+                    },
                 ];
-                
+
                 for v in variant_defs {
                     let mut var_el = el.clone();
                     var_el.id = format!("{}_{}", base_id, v.suffix);
                     var_el.label = format!("{} ({})", base_label, v.label);
-                    
+
                     let ch = 15;
                     let note_offset = if is_switch { 4 } else { 0 };
 
                     if let Some(midi) = &mut var_el.midi {
-                         match midi {
-                             MidiConfig::CcRelative { .. } | MidiConfig::Cc { .. } => {
-                                 if is_encoder {
-                                     *midi = MidiConfig::CcRelative { 
-                                         channel: ch, 
-                                         controller: v.enc_cc_base + index 
-                                     };
-                                 }
-                             }
-                             MidiConfig::Note { .. } => {
-                                 // Push or Switch
-                                 let note = v.push_note_base + index + note_offset;
-                                 *midi = MidiConfig::Note {
-                                     channel: ch,
-                                     note
-                                 };
-                             }
-                         }
+                        match midi {
+                            MidiConfig::CcRelative { .. } | MidiConfig::Cc { .. } => {
+                                if is_encoder {
+                                    *midi = MidiConfig::CcRelative {
+                                        channel: ch,
+                                        controller: v.enc_cc_base + index,
+                                    };
+                                }
+                            }
+                            MidiConfig::Note { .. } => {
+                                // Push or Switch
+                                let note = v.push_note_base + index + note_offset;
+                                *midi = MidiConfig::Note { channel: ch, note };
+                            }
+                        }
                     }
                     variants.push(var_el);
                 }
@@ -338,7 +400,7 @@ impl ControllerOverlayPanel {
                 new_list.push(el.clone());
             }
         }
-        
+
         new_list.append(&mut variants);
         elements.elements = new_list;
     }
@@ -704,7 +766,7 @@ impl ControllerOverlayPanel {
                     // Interactions
                     let id = ui.make_persistent_id(&element.id);
                     let handle_id = id.with("resize");
-                    
+
                     // Define Move interaction (click_and_drag for selection)
                     let move_interact = ui.interact(elem_rect, id, Sense::click_and_drag());
                     // Define Handle interaction
@@ -714,7 +776,7 @@ impl ControllerOverlayPanel {
                     if move_interact.clicked() || move_interact.dragged() {
                         next_selection = Some(element.id.clone());
                     }
-                    
+
                     let is_selected = next_selection.as_ref() == Some(&element.id);
                     let mut anim_handle_dragged = false;
 
@@ -722,18 +784,24 @@ impl ControllerOverlayPanel {
                     if is_selected && element.element_type == ElementType::Fader {
                         let mut range = element.animation_range.unwrap_or([0.0, 1.0]);
                         let mut changed = false;
-                        
+
                         let h = elem_rect.height();
                         let y_top = elem_rect.min.y + range[0] * h;
                         let y_bot = elem_rect.min.y + range[1] * h;
-                        
+
                         // Handles
-                        let h_top_rect = Rect::from_center_size(Pos2::new(elem_rect.center().x, y_top), Vec2::new(elem_rect.width(), 8.0));
-                        let h_bot_rect = Rect::from_center_size(Pos2::new(elem_rect.center().x, y_bot), Vec2::new(elem_rect.width(), 8.0));
-                        
+                        let h_top_rect = Rect::from_center_size(
+                            Pos2::new(elem_rect.center().x, y_top),
+                            Vec2::new(elem_rect.width(), 8.0),
+                        );
+                        let h_bot_rect = Rect::from_center_size(
+                            Pos2::new(elem_rect.center().x, y_bot),
+                            Vec2::new(elem_rect.width(), 8.0),
+                        );
+
                         let h_top_res = ui.interact(h_top_rect, id.with("h_top"), Sense::drag());
                         let h_bot_res = ui.interact(h_bot_rect, id.with("h_bot"), Sense::drag());
-                        
+
                         if h_top_res.dragged() {
                             range[0] += h_top_res.drag_delta().y / h;
                             changed = true;
@@ -748,13 +816,37 @@ impl ControllerOverlayPanel {
                         if changed {
                             element.animation_range = Some(range);
                         }
-                        
+
                         // Draw Handles
-                        painter.line_segment([Pos2::new(elem_rect.min.x, y_top), Pos2::new(elem_rect.max.x, y_top)], Stroke::new(1.0, Color32::RED));
-                        painter.line_segment([Pos2::new(elem_rect.min.x, y_bot), Pos2::new(elem_rect.max.x, y_bot)], Stroke::new(1.0, Color32::RED));
-                        
-                        painter.text(Pos2::new(elem_rect.max.x + 2.0, y_top), egui::Align2::LEFT_CENTER, "Top", egui::FontId::proportional(12.0), Color32::RED);
-                        painter.text(Pos2::new(elem_rect.max.x + 2.0, y_bot), egui::Align2::LEFT_CENTER, "Bot", egui::FontId::proportional(12.0), Color32::RED);
+                        painter.line_segment(
+                            [
+                                Pos2::new(elem_rect.min.x, y_top),
+                                Pos2::new(elem_rect.max.x, y_top),
+                            ],
+                            Stroke::new(1.0, Color32::RED),
+                        );
+                        painter.line_segment(
+                            [
+                                Pos2::new(elem_rect.min.x, y_bot),
+                                Pos2::new(elem_rect.max.x, y_bot),
+                            ],
+                            Stroke::new(1.0, Color32::RED),
+                        );
+
+                        painter.text(
+                            Pos2::new(elem_rect.max.x + 2.0, y_top),
+                            egui::Align2::LEFT_CENTER,
+                            "Top",
+                            egui::FontId::proportional(12.0),
+                            Color32::RED,
+                        );
+                        painter.text(
+                            Pos2::new(elem_rect.max.x + 2.0, y_bot),
+                            egui::Align2::LEFT_CENTER,
+                            "Bot",
+                            egui::FontId::proportional(12.0),
+                            Color32::RED,
+                        );
                     }
 
                     // Logic
@@ -780,11 +872,19 @@ impl ControllerOverlayPanel {
                     let is_selected = next_selection.as_ref() == Some(&element.id);
                     if is_selected {
                         let mut delta_key = Vec2::ZERO;
-                        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) { delta_key.x -= 1.0; }
-                        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) { delta_key.x += 1.0; }
-                        if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) { delta_key.y -= 1.0; }
-                        if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) { delta_key.y += 1.0; }
-                        
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                            delta_key.x -= 1.0;
+                        }
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                            delta_key.x += 1.0;
+                        }
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
+                            delta_key.y -= 1.0;
+                        }
+                        if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
+                            delta_key.y += 1.0;
+                        }
+
                         if delta_key != Vec2::ZERO && rect.width() > 0.0 && rect.height() > 0.0 {
                             element.position.x += delta_key.x / rect.width();
                             element.position.y += delta_key.y / rect.height();
@@ -792,7 +892,8 @@ impl ControllerOverlayPanel {
 
                         // Copy / Paste Size (Ctrl+C / Ctrl+V)
                         if ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::C)) {
-                            next_clipboard = Some([element.position.width, element.position.height]);
+                            next_clipboard =
+                                Some([element.position.width, element.position.height]);
                         }
                         if ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::V)) {
                             if let Some(size) = next_clipboard {
@@ -803,13 +904,28 @@ impl ControllerOverlayPanel {
                     }
 
                     // Draw Asset (in background of frame)
-                    let current_val = self.state_manager.get(&element.id).map(|s| s.value as f32 / 127.0).unwrap_or(0.0);
-                    Self::draw_asset(&painter, &self.assets, self.scale, elem_rect, element, current_val);
+                    let current_val = self
+                        .state_manager
+                        .get(&element.id)
+                        .map(|s| s.value as f32 / 127.0)
+                        .unwrap_or(0.0);
+                    Self::draw_asset(
+                        &painter,
+                        &self.assets,
+                        self.scale,
+                        elem_rect,
+                        element,
+                        current_val,
+                    );
 
                     // Draw edit frame
-                    let base_color = if is_selected { Color32::from_rgb(255, 0, 255) } else { Color32::YELLOW }; // Magenta for selected
+                    let base_color = if is_selected {
+                        Color32::from_rgb(255, 0, 255)
+                    } else {
+                        Color32::YELLOW
+                    }; // Magenta for selected
                     let stroke = Stroke::new(if is_selected { 2.0 } else { 1.0 }, base_color);
-                    
+
                     match element.element_type {
                         ElementType::Knob | ElementType::Encoder => {
                             let radius = elem_rect.width().min(elem_rect.height()) / 2.0;
@@ -819,16 +935,15 @@ impl ControllerOverlayPanel {
                             painter.rect_stroke(elem_rect, 0.0, stroke);
                         }
                     }
-                    
+
                     // Draw resize handle
                     painter.rect_filled(handle_rect, 2.0, Color32::from_rgb(0, 255, 255));
                 }
             }
-            
+
             // Apply state updates
             self.selected_element = next_selection;
             self.clipboard_size = next_clipboard;
-
         } else {
             if let Some(elements) = self.elements.clone() {
                 for element in &elements.elements {
@@ -862,7 +977,7 @@ impl ControllerOverlayPanel {
 
         // Check states
         let state = self.state_manager.get(&element.id);
-        
+
         // Draw Asset
         let val = state.map(|s| s.value as f32 / 127.0).unwrap_or(0.0);
         Self::draw_asset(painter, &self.assets, self.scale, elem_rect, element, val);
@@ -1051,7 +1166,6 @@ impl ControllerOverlayPanel {
 
         // Element table
         let mut element_to_remove = None;
-        let mut new_assignment = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             egui::Grid::new("element_list")
@@ -1093,60 +1207,34 @@ impl ControllerOverlayPanel {
                             } else {
                                 ui.label("-");
                             }
-                            // Assignment Dropdown
-                            let display_name = if let Some(assign) = assignment {
-                                match &assign.target {
-                                    MidiAssignmentTarget::MapFlow(s) => {
-                                        ControlTarget::from_id_string(s).map(|t| t.name()).unwrap_or_else(|| s.clone())
-                                    }
-                                    other => other.to_string(),
-                                }
-                            } else {
-                                "Frei".to_string()
-                            };
 
-                            egui::ComboBox::from_id_source(&element.id)
-                                .selected_text(display_name)
-                                .width(200.0)
-                                .show_ui(ui, |ui| {
-                                    if ui.selectable_label(assignment.is_none(), "Frei (Löschen)").clicked() {
+                            // Show assignment and delete button
+                            if let Some(assign) = assignment {
+                                ui.horizontal(|ui| {
+                                    ui.label(assign.target.to_string());
+                                    if ui.small_button("🗑").on_hover_text("Zuweisung löschen").clicked() {
                                         element_to_remove = Some(element.id.clone());
                                     }
-                                    
-                                    ui.separator();
-                                    ui.label(egui::RichText::new("MapFlow Funktionen").strong());
-                                    
-                                    for target in get_mock_targets() {
-                                        let is_selected = assignment.map_or(false, |a| {
-                                            matches!(&a.target, MidiAssignmentTarget::MapFlow(s) if *s == target.to_id_string())
-                                        });
-                                        
-                                        if ui.selectable_label(is_selected, target.name()).clicked() {
-                                            new_assignment = Some((element.id.clone(), MidiAssignmentTarget::MapFlow(target.to_id_string())));
-                                        }
-                                    }
-                                    
-                                    // Could add manual entry or other types here
                                 });
-                            
+                            } else {
+                                ui.label("-");
+                            }
                             ui.end_row();
                         }
                     }
                 });
         });
 
-        // Handle deletion/update request outside of borrow loop
+        // Handle deletion request outside of borrow loop
         if let Some(id) = element_to_remove {
             user_config.remove_midi_assignment(&id);
-        }
-        if let Some((id, target)) = new_assignment {
-            user_config.set_midi_assignment(&id, target);
         }
     }
 }
 
 /// Get current time in seconds for animations
 fn ui_time_seconds() -> f64 {
+    // Ref: #118 Force rebuild
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()

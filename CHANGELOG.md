@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- 2025-12-27: perf(core): optimize LayerManager::visible_layers to use Iterator (#121)
+- 2025-12-28: ⚡ Bolt: Optimize ModuleSocketType to be Copy and remove redundant clones (#127)
+- 2025-12-28: 🛡️ Sentinel: [HIGH] Fix overly permissive CORS configuration (#126)
+- 2025-12-28: Performance Optimierungen - perf(core): avoid allocation in visible_layers and fix formatting (#122)
+- 2025-12-26: Remove trailing whitespace in controller_overlay_panel.rs (#118)
 - 2025-12-26: Fix PR check issues (#117)
 - 2025-12-26: resources/controllers/ecler_nuo4/elements.json hinzugefügt, um CI-Build-Fehler aus PR #117 zu beheben
 - 2025-12-26: Trailing whitespace in module_canvas.rs entfernt, CI-Fix für PR #117
