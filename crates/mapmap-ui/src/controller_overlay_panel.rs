@@ -13,22 +13,6 @@ use mapmap_control::midi::{
     ControllerElement, ControllerElements, ElementState, ElementStateManager, MidiLearnManager,
     MidiMessage,
 };
-use mapmap_control::target::ControlTarget;
-
-fn get_mock_targets() -> Vec<ControlTarget> {
-    let mut targets = vec![
-        ControlTarget::MasterOpacity,
-        ControlTarget::MasterBlackout,
-    ];
-    for i in 0..4 {
-        targets.push(ControlTarget::LayerOpacity(i));
-        targets.push(ControlTarget::LayerPosition(i));
-        targets.push(ControlTarget::LayerScale(i));
-        targets.push(ControlTarget::LayerRotation(i));
-        targets.push(ControlTarget::LayerVisibility(i));
-    }
-    targets
-}
 
 /// Maximum size of the overlay (matches mixer photo resolution)
 const MAX_WIDTH: f32 = 841.0;
@@ -664,7 +648,6 @@ impl ControllerOverlayPanel {
 
         // Element table
         let mut element_to_remove = None;
-        let mut new_assignment = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             egui::Grid::new("element_list")
@@ -706,60 +689,34 @@ impl ControllerOverlayPanel {
                             } else {
                                 ui.label("-");
                             }
-                            // Assignment Dropdown
-                            let display_name = if let Some(assign) = assignment {
-                                match &assign.target {
-                                    MidiAssignmentTarget::MapFlow(s) => {
-                                        ControlTarget::from_id_string(s).map(|t| t.name()).unwrap_or_else(|| s.clone())
-                                    }
-                                    other => other.to_string(),
-                                }
-                            } else {
-                                "Frei".to_string()
-                            };
 
-                            egui::ComboBox::from_id_source(&element.id)
-                                .selected_text(display_name)
-                                .width(200.0)
-                                .show_ui(ui, |ui| {
-                                    if ui.selectable_label(assignment.is_none(), "Frei (Löschen)").clicked() {
+                            // Show assignment and delete button
+                            if let Some(assign) = assignment {
+                                ui.horizontal(|ui| {
+                                    ui.label(assign.target.to_string());
+                                    if ui.small_button("🗑").on_hover_text("Zuweisung löschen").clicked() {
                                         element_to_remove = Some(element.id.clone());
                                     }
-                                    
-                                    ui.separator();
-                                    ui.label(egui::RichText::new("MapFlow Funktionen").strong());
-                                    
-                                    for target in get_mock_targets() {
-                                        let is_selected = assignment.map_or(false, |a| {
-                                            matches!(&a.target, MidiAssignmentTarget::MapFlow(s) if *s == target.to_id_string())
-                                        });
-                                        
-                                        if ui.selectable_label(is_selected, target.name()).clicked() {
-                                            new_assignment = Some((element.id.clone(), MidiAssignmentTarget::MapFlow(target.to_id_string())));
-                                        }
-                                    }
-                                    
-                                    // Could add manual entry or other types here
                                 });
-                            
+                            } else {
+                                ui.label("-");
+                            }
                             ui.end_row();
                         }
                     }
                 });
         });
 
-        // Handle deletion/update request outside of borrow loop
+        // Handle deletion request outside of borrow loop
         if let Some(id) = element_to_remove {
             user_config.remove_midi_assignment(&id);
-        }
-        if let Some((id, target)) = new_assignment {
-            user_config.set_midi_assignment(&id, target);
         }
     }
 }
 
 /// Get current time in seconds for animations
 fn ui_time_seconds() -> f64 {
+    // Ref: #118 Force rebuild
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()

@@ -1,0 +1,38 @@
+﻿cargo :
+Checking
+mapmap-mcp v0.2.0 (
+C:\Users\Vinyl\Desk
+top\VJMapper\VjMapp
+er\crates\mapmap-mc
+p)
+In Zeile:1
+Zeichen:1
++ cargo check
+--package mapmap
+2>&1 | Out-File
+-FilePath
+build_errors.t ...
++ ~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+    + CategoryInfo
+             : No
+  tSpecified: (
+    Checking ma
+...tes\mapmap-
+mcp):String) [
+], RemoteExcep
+tion
+    + FullyQualifi
+   edErrorId : Na
+  tiveCommandErr
+ or
+
+    Checking
+mapmap v0.2.0 (C:\U
+sers\Vinyl\Desktop\
+VJMapper\VjMapper\c
+rates\mapmap)
+    Finished `dev`
+profile [optimized
++ debuginfo]
+target(s) in 1.61s
