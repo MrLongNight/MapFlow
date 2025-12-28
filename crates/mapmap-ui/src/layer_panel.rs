@@ -168,23 +168,25 @@ impl LayerPanel {
                                                         .show_value(false)
                                                         .min_decimals(2)
                                                         .max_decimals(2);
-                                                ui.add(slider).on_hover_text(
-                                                    i18n.t("tooltip-layer-opacity"),
-                                                );
+                                                ui.add(slider)
+                                                    .on_hover_text(i18n.t("tooltip-layer-opacity"));
 
                                                 // Blend Mode
-                                                egui::ComboBox::from_id_source(format!("blend_{}", layer.id))
-                                                    .selected_text(format!("{:?}", layer.blend_mode))
-                                                    .width(80.0)
-                                                    .show_ui(ui, |ui| {
-                                                        for mode in BlendMode::all() {
-                                                            ui.selectable_value(
-                                                                &mut layer.blend_mode,
-                                                                *mode,
-                                                                format!("{:?}", mode),
-                                                            );
-                                                        }
-                                                    });
+                                                egui::ComboBox::from_id_source(format!(
+                                                    "blend_{}",
+                                                    layer.id
+                                                ))
+                                                .selected_text(format!("{:?}", layer.blend_mode))
+                                                .width(80.0)
+                                                .show_ui(ui, |ui| {
+                                                    for mode in BlendMode::all() {
+                                                        ui.selectable_value(
+                                                            &mut layer.blend_mode,
+                                                            *mode,
+                                                            format!("{:?}", mode),
+                                                        );
+                                                    }
+                                                });
 
                                                 // Solo Button
                                                 if let Some(mgr) = icon_manager {
