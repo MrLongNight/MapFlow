@@ -16,6 +16,7 @@ use mapmap_control::midi::{
 use mapmap_control::target::ControlTarget;
 use std::collections::{HashMap, HashSet};
 
+#[allow(dead_code)]
 fn get_mock_targets() -> Vec<ControlTarget> {
     let mut targets = vec![ControlTarget::MasterOpacity, ControlTarget::MasterBlackout];
     for i in 0..4 {
