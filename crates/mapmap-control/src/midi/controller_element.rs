@@ -85,6 +85,9 @@ pub struct ControllerElement {
     /// Asset/image file for this element type
     #[serde(default)]
     pub asset: Option<String>,
+    /// Animation range [top, bottom] normalized (0.0-1.0) relative to element height
+    #[serde(default)]
+    pub animation_range: Option<[f32; 2]>,
 }
 
 /// Runtime state of an element
