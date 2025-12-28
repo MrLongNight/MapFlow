@@ -281,6 +281,7 @@ mod tests {
                 layout_aware: false,
                 ab_aware: false,
                 asset: None,
+                animation_range: None,
             }],
         };
 
