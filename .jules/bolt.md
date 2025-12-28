@@ -1,2 +1,0 @@
-- **2025-12-12**: `imgui-wgpu` rendering loop optimization. Added `#[inline]` to `render_draw_list` and `draw_progress_bar` to reduce function call overhead in hot paths.
-- **2025-12-12**: Refactored `mapmap` main loop to use `WgpuBackend` and removed legacy rendering code, reducing allocation overhead and binary size.

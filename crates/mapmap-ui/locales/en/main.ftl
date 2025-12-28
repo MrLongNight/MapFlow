@@ -395,3 +395,10 @@ panel-module-canvas = Module Canvas
 menu-rename = Rename
 menu-duplicate = Duplicate
 menu-delete = Delete
+
+# Settings
+settings-project = Project Settings
+settings-frame-rate = Frame Rate
+settings-app = App Settings
+settings-language = Language
+settings-logging = Logging

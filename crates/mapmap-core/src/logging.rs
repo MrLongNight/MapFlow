@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use tracing::Level;
 
 /// Logging configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LogConfig {
     /// Log level: "trace", "debug", "info", "warn", "error"
     #[serde(default = "default_log_level")]

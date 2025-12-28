@@ -1,50 +1,50 @@
-﻿cargo :     
-Checking 
-mapmap-core v0.2.0 
+﻿cargo :
+Checking
+mapmap-core v0.2.0
 (C:\Users\Vinyl\Des
 ktop\VJMapper\VjMap
 per\crates\mapmap-c
 ore)
-In Zeile:1 
+In Zeile:1
 Zeichen:1
-+ cargo check 
---package 
-mapmap-ui 2>&1 | 
-Out-File -FilePath 
++ cargo check
+--package
+mapmap-ui 2>&1 |
+Out-File -FilePath
 build_check ...
 + ~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo 
-             : No  
-  tSpecified: (    
-    Checking ma    
-...es\mapmap-c    
-ore):String) [    
-], RemoteExcep    
+    + CategoryInfo
+             : No
+  tSpecified: (
+    Checking ma
+...es\mapmap-c
+ore):String) [
+], RemoteExcep
 tion
-    + FullyQualifi 
-   edErrorId : Na  
-  tiveCommandErr   
+    + FullyQualifi
+   edErrorId : Na
+  tiveCommandErr
  or
- 
-    Checking 
-mapmap-control 
+
+    Checking
+mapmap-control
 v0.2.0 (C:\Users\Vi
 nyl\Desktop\VJMappe
 r\VjMapper\crates\m
 apmap-control)
-    Checking 
-mapmap-render 
+    Checking
+mapmap-render
 v0.2.0 (C:\Users\Vi
 nyl\Desktop\VJMappe
 r\VjMapper\crates\m
 apmap-render)
-    Checking 
+    Checking
 mapmap-ui v0.2.0 (C
 :\Users\Vinyl\Deskt
 op\VJMapper\VjMappe
 r\crates\mapmap-ui)
-    Finished `dev` 
-profile [optimized 
-+ debuginfo] 
+    Finished `dev`
+profile [optimized
++ debuginfo]
 target(s) in 13.23s

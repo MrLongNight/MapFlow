@@ -26,7 +26,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, stereo_audio_meter::StereoAudioMeter, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -105,6 +105,12 @@ struct App {
     /// MIDI Input Handler
     #[cfg(feature = "midi")]
     midi_handler: Option<MidiInputHandler>,
+    /// Available MIDI ports
+    #[cfg(feature = "midi")]
+    midi_ports: Vec<String>,
+    /// Selected MIDI port index
+    #[cfg(feature = "midi")]
+    selected_midi_port: Option<usize>,
 }
 
 impl App {
@@ -294,12 +300,18 @@ impl App {
             #[cfg(feature = "midi")]
             midi_handler: {
                 match MidiInputHandler::new() {
-                    Ok(handler) => {
+                    Ok(mut handler) => {
                         info!("MIDI initialized");
                         if let Ok(ports) = MidiInputHandler::list_ports() {
                             info!("Available MIDI ports: {:?}", ports);
-                            // Auto-connect/Reconnect logic could go here
-                            // For now just log them
+                            // Auto-connect to first port if available
+                            if !ports.is_empty() {
+                                if let Err(e) = handler.connect(0) {
+                                    error!("Failed to auto-connect MIDI: {}", e);
+                                } else {
+                                    info!("Auto-connected to MIDI port: {}", ports[0]);
+                                }
+                            }
                         }
                         Some(handler)
                     }
@@ -308,6 +320,17 @@ impl App {
                         None
                     }
                 }
+            },
+            #[cfg(feature = "midi")]
+            midi_ports: MidiInputHandler::list_ports().unwrap_or_default(),
+            #[cfg(feature = "midi")]
+            selected_midi_port: if MidiInputHandler::list_ports()
+                .unwrap_or_default()
+                .is_empty()
+            {
+                None
+            } else {
+                Some(0)
             },
         };
 
@@ -438,6 +461,8 @@ impl App {
                     while let Some(msg) = handler.poll_message() {
                         // Pass to UI Overlay
                         self.ui_state.controller_overlay.process_midi(msg);
+                        // Pass to Module Canvas for MIDI Learn
+                        self.ui_state.module_canvas.process_midi_message(msg);
                     }
                 }
 
@@ -832,8 +857,10 @@ impl App {
                     self.ui_state.current_audio_level = audio_analysis.rms_volume;
 
                     // MIDI Controller Overlay
-                    if self.ui_state.show_controller_overlay {
-                        self.ui_state.controller_overlay.show(ctx);
+                    #[cfg(feature = "midi")]
+                    {
+                        let midi_connected = self.midi_handler.as_ref().map(|h| h.is_connected()).unwrap_or(false);
+                        self.ui_state.controller_overlay.show(ctx, self.ui_state.show_controller_overlay, midi_connected, &mut self.ui_state.user_config);
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
@@ -946,6 +973,23 @@ impl App {
                                         .default_open(false)
                                         .show(ui, |ui| {
                                             let analysis = self.audio_analyzer.get_latest_analysis();
+
+                                            // Stereo Audio Level Meter
+                                            let db_left = if analysis.rms_volume > 0.0 {
+                                                20.0 * analysis.rms_volume.log10()
+                                            } else {
+                                                -60.0
+                                            };
+                                            let db_right = db_left; // TODO: Add actual stereo separation
+
+                                            ui.add(StereoAudioMeter::new(
+                                                self.ui_state.user_config.meter_style,
+                                                db_left,
+                                                db_right,
+                                            ).desired_size(egui::Vec2::new(100.0, 150.0)));
+
+                                            ui.separator();
+
                                             if let Some(action) = self.ui_state.audio_panel.ui(
                                                 ui,
                                                 &self.ui_state.i18n,
@@ -1114,6 +1158,123 @@ impl App {
                                                     }
                                                 });
                                         });
+                                    });
+
+                                ui.separator();
+
+                                // Logging Settings
+                                egui::CollapsingHeader::new(format!("📝 {}", self.ui_state.i18n.t("settings-logging")))
+                                    .default_open(false)
+                                    .show(ui, |ui| {
+                                        let log_config = &mut self.state.settings.log_config;
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Log Level:");
+                                            let levels = ["trace", "debug", "info", "warn", "error"];
+                                            egui::ComboBox::from_id_source("log_level_select")
+                                                .selected_text(&log_config.level)
+                                                .show_ui(ui, |ui| {
+                                                    for level in levels {
+                                                        if ui.selectable_label(log_config.level == level, level).clicked() {
+                                                            log_config.level = level.to_string();
+                                                            self.state.dirty = true;
+                                                        }
+                                                    }
+                                                });
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Log Path:");
+                                            let path_str = log_config.log_path.to_string_lossy().to_string();
+                                            let mut path_edit = path_str.clone();
+                                            if ui.text_edit_singleline(&mut path_edit).changed() {
+                                                log_config.log_path = std::path::PathBuf::from(path_edit);
+                                                self.state.dirty = true;
+                                            }
+                                            if ui.button("📂").clicked() {
+                                                if let Some(folder) = rfd::FileDialog::new().pick_folder() {
+                                                    log_config.log_path = folder;
+                                                    self.state.dirty = true;
+                                                }
+                                            }
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Max Log Files:");
+                                            if ui.add(egui::DragValue::new(&mut log_config.max_files).speed(1).clamp_range(1..=100)).changed() {
+                                                self.state.dirty = true;
+                                            }
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            if ui.checkbox(&mut log_config.console_output, "Console Output").changed() {
+                                                self.state.dirty = true;
+                                            }
+                                            if ui.checkbox(&mut log_config.file_output, "File Output").changed() {
+                                                self.state.dirty = true;
+                                            }
+                                        });
+                                    });
+
+                                ui.separator();
+
+                                // MIDI Settings
+                                #[cfg(feature = "midi")]
+                                egui::CollapsingHeader::new(format!("🎹 {}", "MIDI"))
+                                    .default_open(false)
+                                    .show(ui, |ui| {
+                                        // Connection status
+                                        let is_connected = self.midi_handler.as_ref().map(|h| h.is_connected()).unwrap_or(false);
+                                        ui.horizontal(|ui| {
+                                            ui.label("Status:");
+                                            if is_connected {
+                                                ui.colored_label(egui::Color32::GREEN, "🟢 Connected");
+                                            } else {
+                                                ui.colored_label(egui::Color32::RED, "🔴 Disconnected");
+                                            }
+                                        });
+
+                                        // Port selection
+                                        ui.horizontal(|ui| {
+                                            ui.label("MIDI Port:");
+                                            let current_port = self.selected_midi_port
+                                                .and_then(|i| self.midi_ports.get(i))
+                                                .cloned()
+                                                .unwrap_or_else(|| "None".to_string());
+
+                                            egui::ComboBox::from_id_source("midi_port_select")
+                                                .selected_text(&current_port)
+                                                .show_ui(ui, |ui| {
+                                                    for (i, port) in self.midi_ports.iter().enumerate() {
+                                                        if ui.selectable_label(self.selected_midi_port == Some(i), port).clicked() {
+                                                            self.selected_midi_port = Some(i);
+                                                            // Connect to the selected port
+                                                            if let Some(handler) = &mut self.midi_handler {
+                                                                handler.disconnect();
+                                                                match handler.connect(i) {
+                                                                    Ok(()) => {
+                                                                        info!("Connected to MIDI port: {}", port);
+                                                                    }
+                                                                    Err(e) => {
+                                                                        error!("Failed to connect to MIDI port: {}", e);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                });
+                                        });
+
+                                        // Refresh ports button
+                                        if ui.button("🔄 Refresh Ports").clicked() {
+                                            if let Ok(ports) = MidiInputHandler::list_ports() {
+                                                self.midi_ports = ports;
+                                                info!("Refreshed MIDI ports: {:?}", self.midi_ports);
+                                            }
+                                        }
+
+                                        // Show available ports count
+                                        ui.label(format!("{} port(s) available", self.midi_ports.len()));
                                     });
 
                                 ui.separator();

@@ -485,21 +485,20 @@ impl LayerManager {
     }
 
     /// Get all visible layers in render order
-    pub fn visible_layers(&self) -> Vec<&Layer> {
+    ///
+    /// ⚡ Bolt: Returns an iterator to avoid allocation per frame.
+    pub fn visible_layers(&self) -> impl Iterator<Item = &Layer> {
         // Check if any layer is solo'd
         let has_solo = self.layers.iter().any(|l| l.solo);
 
-        self.layers
-            .iter()
-            .filter(|layer| {
-                if has_solo {
-                    // Only render solo layers when any layer is solo'd
-                    layer.solo && layer.should_render()
-                } else {
-                    layer.should_render()
-                }
-            })
-            .collect()
+        self.layers.iter().filter(move |layer| {
+            if has_solo {
+                // Only render solo layers when any layer is solo'd
+                layer.solo && layer.should_render()
+            } else {
+                layer.should_render()
+            }
+        })
     }
 
     /// Move layer up in stack (higher z-order)
@@ -706,16 +705,16 @@ mod tests {
         manager.get_layer_mut(id3).unwrap().paint_id = Some(102);
 
         // All visible
-        assert_eq!(manager.visible_layers().len(), 3);
+        assert_eq!(manager.visible_layers().count(), 3);
 
         // Hide one layer
         manager.get_layer_mut(id2).unwrap().visible = false;
-        assert_eq!(manager.visible_layers().len(), 2);
+        assert_eq!(manager.visible_layers().count(), 2);
 
         // Solo one layer
         manager.get_layer_mut(id1).unwrap().solo = true;
-        assert_eq!(manager.visible_layers().len(), 1);
-        assert_eq!(manager.visible_layers()[0].id, id1);
+        assert_eq!(manager.visible_layers().count(), 1);
+        assert_eq!(manager.visible_layers().next().unwrap().id, id1);
     }
 
     #[test]

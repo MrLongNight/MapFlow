@@ -411,3 +411,10 @@ panel-module-canvas = Modul-Editor
 menu-rename = Umbenennen
 menu-duplicate = Duplizieren
 menu-delete = Löschen
+
+# Settings
+settings-project = Projekteinstellungen
+settings-frame-rate = Bildrate
+settings-app = App-Einstellungen
+settings-language = Sprache
+settings-logging = Protokollierung

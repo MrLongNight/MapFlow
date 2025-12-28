@@ -4,13 +4,28 @@
 //! with live state visualization and MIDI Learn functionality.
 
 #[cfg(feature = "midi")]
-use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
+use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2};
+
+use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
-    ControllerElement, ControllerElements, ElementState, ElementStateManager, ElementType,
-    MidiLearnManager, MidiMessage,
+    ControllerElement, ControllerElements, ElementState, ElementStateManager, MidiLearnManager,
+    MidiMessage,
 };
+
+/// Maximum size of the overlay (matches mixer photo resolution)
+const MAX_WIDTH: f32 = 841.0;
+const MAX_HEIGHT: f32 = 1024.0;
+const MIN_SCALE: f32 = 0.3;
+
+/// MIDI Learn target type
+#[derive(Debug, Clone, PartialEq)]
+pub enum MidiLearnTarget {
+    MapFlow,
+    StreamerBot(String), // Function name
+    Mixxx(String),       // Function name
+}
 
 /// Controller Overlay Panel for visualizing MIDI controller state
 pub struct ControllerOverlayPanel {
@@ -26,6 +41,15 @@ pub struct ControllerOverlayPanel {
     #[cfg(feature = "midi")]
     learn_manager: MidiLearnManager,
 
+    /// Current MIDI learn target type
+    learn_target: Option<MidiLearnTarget>,
+
+    /// Input field for Streamer.bot function
+    streamerbot_function: String,
+
+    /// Input field for Mixxx function
+    mixxx_function: String,
+
     /// Show element labels
     show_labels: bool,
 
@@ -37,11 +61,39 @@ pub struct ControllerOverlayPanel {
     show_midi_info: bool,
 
     /// Selected element for editing
-    #[allow(dead_code)]
     selected_element: Option<String>,
 
+    /// Hovered element
+    hovered_element: Option<String>,
+
     /// Panel is expanded
-    is_expanded: bool,
+    pub is_expanded: bool,
+
+    /// Current scale factor (0.3 - 1.0)
+    scale: f32,
+
+    /// Background texture
+    background_texture: Option<TextureHandle>,
+
+    /// Show element list view
+    show_element_list: bool,
+
+    /// Filter for element list
+    element_filter: ElementFilter,
+
+    /// Show assignment colors mode (highlights all elements by their assignment type)
+    show_assignment_colors: bool,
+}
+
+/// Filter for element list view
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum ElementFilter {
+    #[default]
+    All,
+    MapFlow,
+    StreamerBot,
+    Mixxx,
+    Unassigned,
 }
 
 impl Default for ControllerOverlayPanel {
@@ -59,11 +111,56 @@ impl ControllerOverlayPanel {
             state_manager: ElementStateManager::new(),
             #[cfg(feature = "midi")]
             learn_manager: MidiLearnManager::new(),
+            learn_target: None,
+            streamerbot_function: String::new(),
+            mixxx_function: String::new(),
             show_labels: true,
             show_values: true,
             show_midi_info: true,
             selected_element: None,
-            is_expanded: false,
+            hovered_element: None,
+            is_expanded: true,
+            scale: 0.6, // Start at 60% size
+            background_texture: None,
+            show_element_list: false,
+            element_filter: ElementFilter::All,
+            show_assignment_colors: false,
+        }
+    }
+
+    /// Load background image
+    fn ensure_background_loaded(&mut self, ctx: &egui::Context) {
+        if self.background_texture.is_some() {
+            return;
+        }
+
+        let paths = [
+            "resources/controllers/ecler_nuo4/background.jpg",
+            "../resources/controllers/ecler_nuo4/background.jpg",
+            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.jpg",
+        ];
+
+        for path_str in paths {
+            let path = std::path::Path::new(path_str);
+            if path.exists() {
+                if let Ok(image_data) = std::fs::read(path) {
+                    if let Ok(img) = image::load_from_memory(&image_data) {
+                        let rgba = img.to_rgba8();
+                        let size = [rgba.width() as usize, rgba.height() as usize];
+                        let pixels = rgba.into_raw();
+
+                        let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+
+                        self.background_texture = Some(ctx.load_texture(
+                            "mixer_background",
+                            color_image,
+                            egui::TextureOptions::LINEAR,
+                        ));
+                        tracing::info!("Loaded mixer background from {}", path_str);
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -157,327 +254,471 @@ impl ControllerOverlayPanel {
 
     /// Start MIDI learn for an element
     #[cfg(feature = "midi")]
-    pub fn start_learn(&mut self, element_id: &str) {
+    pub fn start_learn(&mut self, element_id: &str, target: MidiLearnTarget) {
+        self.learn_target = Some(target);
         self.learn_manager.start_learning(element_id);
     }
 
     /// Cancel MIDI learn
     #[cfg(feature = "midi")]
     pub fn cancel_learn(&mut self) {
+        self.learn_target = None;
         self.learn_manager.cancel();
     }
 
-    /// Show the panel UI
-    /// Show the panel UI
-    pub fn show(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Controller Overlay")
-            .open(&mut true) // Controlled by parent boolean usually, but we can just show it if called
-            .resizable(true)
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading("🎛️ Controller Overlay");
+    /// Check if currently learning
+    #[cfg(feature = "midi")]
+    pub fn is_learning(&self) -> bool {
+        self.learn_manager.is_learning()
+    }
 
-                    if ui
-                        .button(if self.is_expanded { "⏷" } else { "⏵" })
-                        .clicked()
-                    {
-                        self.is_expanded = !self.is_expanded;
+    /// Show the panel UI
+    pub fn show(
+        &mut self,
+        ctx: &egui::Context,
+        visible: bool,
+        midi_connected: bool,
+        user_config: &mut UserConfig,
+    ) {
+        if !visible {
+            return;
+        }
+
+        // Ensure background is loaded
+        self.ensure_background_loaded(ctx);
+
+        // Calculate window size based on scale
+        let window_width = MAX_WIDTH * self.scale;
+        let window_height = MAX_HEIGHT * self.scale;
+
+        egui::Window::new("🎛️ Ecler NUO 4 Controller")
+            .resizable(false) // Use slider for scaling instead
+            .collapsible(true)
+            .default_size([window_width + 20.0, window_height + 120.0])
+            .show(ctx, |ui| {
+                // === TOOLBAR ===
+                ui.horizontal(|ui| {
+                    // MIDI Connection Status
+                    if midi_connected {
+                        ui.colored_label(Color32::GREEN, "🟢 MIDI");
+                    } else {
+                        ui.colored_label(Color32::RED, "🔴 MIDI");
                     }
 
                     ui.separator();
 
+                    // Scale slider
+                    ui.label("Zoom:");
+                    if ui
+                        .add(egui::Slider::new(&mut self.scale, MIN_SCALE..=1.0).show_value(false))
+                        .changed()
+                    {
+                        // Scale changed
+                    }
+                    ui.label(format!("{}%", (self.scale * 100.0) as i32));
+
+                    ui.separator();
+
+                    // Toggle buttons
                     ui.checkbox(&mut self.show_labels, "Labels");
                     ui.checkbox(&mut self.show_values, "Values");
-                });
 
-                if !self.is_expanded {
-                    return;
-                }
+                    ui.separator();
+
+                    // Element list toggle
+                    if ui
+                        .button(if self.show_element_list {
+                            "🎛️ Overlay"
+                        } else {
+                            "📋 Liste"
+                        })
+                        .clicked()
+                    {
+                        self.show_element_list = !self.show_element_list;
+                    }
+
+                    // Assignment colors toggle
+                    let assign_btn = if self.show_assignment_colors {
+                        egui::Button::new("🎨 Zuweisungen").fill(Color32::from_rgb(60, 80, 100))
+                    } else {
+                        egui::Button::new("🎨 Zuweisungen")
+                    };
+                    if ui.add(assign_btn).on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 MapFlow\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
+                        self.show_assignment_colors = !self.show_assignment_colors;
+                    }
+                });
 
                 ui.separator();
 
-                #[cfg(feature = "midi")]
-                {
-                    // Show learn mode status
-                    if self.learn_manager.is_learning() {
-                        ui.horizontal(|ui| {
-                            ui.colored_label(Color32::YELLOW, "⏳ MIDI Learn aktiv");
-                            if let Some(remaining) = self.learn_manager.state().remaining_time() {
-                                ui.label(format!("({:.0}s)", remaining.as_secs_f32()));
-                            }
-                            if ui.button("Abbrechen").clicked() {
-                                self.learn_manager.cancel();
-                            }
-                        });
+                // === MIDI LEARN BUTTONS ===
+                ui.horizontal(|ui| {
+                    ui.label("MIDI Learn:");
+
+                    #[cfg(feature = "midi")]
+                    {
+                        let is_learning = self.is_learning();
+
+                        // MapFlow Learn
+                        let mapflow_btn = if is_learning
+                            && matches!(self.learn_target, Some(MidiLearnTarget::MapFlow))
+                        {
+                            ui.add(egui::Button::new("⏳ MapFlow...").fill(Color32::YELLOW))
+                        } else {
+                            ui.button("🎯 MapFlow")
+                        };
+                        if mapflow_btn.clicked() && !is_learning {
+                            self.learn_target = Some(MidiLearnTarget::MapFlow);
+                            // Will start learn when element is clicked
+                        }
+
                         ui.separator();
-                    }
 
-                    // Check for detected mapping
-                    if self.learn_manager.has_detection() {
-                        ui.horizontal(|ui| {
-                            ui.colored_label(Color32::GREEN, "✓ MIDI erkannt!");
-                            if let Some(key) = self.learn_manager.state().get_detected_key() {
-                                ui.label(format!("{:?}", key));
-                            }
-                            if ui.button("Übernehmen").clicked() {
-                                if let Some((_element_id, _key)) = self.learn_manager.accept() {
-                                    // TODO: Store the mapping
-                                }
-                            }
-                        });
+                        // Streamer.bot Learn with input
+                        ui.label("Streamer.bot:");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.streamerbot_function)
+                                .desired_width(100.0)
+                                .hint_text("Funktion"),
+                        );
+                        let sb_btn = if is_learning
+                            && matches!(self.learn_target, Some(MidiLearnTarget::StreamerBot(_)))
+                        {
+                            ui.add(egui::Button::new("⏳...").fill(Color32::YELLOW))
+                        } else {
+                            ui.button("🎯")
+                        };
+                        if sb_btn.clicked() && !is_learning && !self.streamerbot_function.is_empty()
+                        {
+                            self.learn_target = Some(MidiLearnTarget::StreamerBot(
+                                self.streamerbot_function.clone(),
+                            ));
+                        }
+
                         ui.separator();
-                    }
 
-                    // Update learn manager
-                    self.learn_manager.update();
+                        // Mixxx Learn with input
+                        ui.label("Mixxx:");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.mixxx_function)
+                                .desired_width(100.0)
+                                .hint_text("Funktion"),
+                        );
+                        let mx_btn = if is_learning
+                            && matches!(self.learn_target, Some(MidiLearnTarget::Mixxx(_)))
+                        {
+                            ui.add(egui::Button::new("⏳...").fill(Color32::YELLOW))
+                        } else {
+                            ui.button("🎯")
+                        };
+                        if mx_btn.clicked() && !is_learning && !self.mixxx_function.is_empty() {
+                            self.learn_target =
+                                Some(MidiLearnTarget::Mixxx(self.mixxx_function.clone()));
+                        }
 
-                    // Draw controller overlay
-                    if let Some(elements) = self.elements.clone() {
-                        self.draw_controller(ui, &elements);
-                    } else {
-                        ui.label("Kein Controller geladen");
-                        if ui.button("Ecler NUO 4 laden").clicked() {
-                            // Load default Ecler NUO 4 elements
-                            let json = include_str!(
-                                "../../../resources/controllers/ecler_nuo4/elements.json"
-                            );
-                            if let Err(e) = self.load_elements(json) {
-                                tracing::error!("Failed to load elements: {}", e);
-                            }
+                        // Cancel button
+                        if is_learning && ui.button("❌ Abbrechen").clicked() {
+                            self.cancel_learn();
                         }
                     }
-                }
 
-                #[cfg(not(feature = "midi"))]
-                {
-                    ui.label("MIDI-Feature ist nicht aktiviert");
+                    #[cfg(not(feature = "midi"))]
+                    {
+                        ui.label("(MIDI deaktiviert)");
+                    }
+                });
+
+                ui.separator();
+
+                if self.show_element_list {
+                    self.show_element_list_view(ui, user_config);
+                } else {
+                    self.show_overlay_view(ui, &user_config.midi_assignments);
                 }
             });
     }
 
-    /// Draw the controller visualization
-    #[cfg(feature = "midi")]
-    fn draw_controller(&mut self, ui: &mut Ui, elements: &ControllerElements) {
-        let available_size = ui.available_size();
-        let panel_size = Vec2::new(available_size.x.min(600.0), available_size.y.min(400.0));
+    /// Show the visual overlay with mixer background
+    fn show_overlay_view(&mut self, ui: &mut Ui, assignments: &[MidiAssignment]) {
+        let panel_width = MAX_WIDTH * self.scale;
+        let panel_height = MAX_HEIGHT * self.scale;
 
-        let (response, painter) = ui.allocate_painter(panel_size, Sense::click());
+        // Allocate space for the overlay
+        let (response, painter) = ui.allocate_painter(
+            Vec2::new(panel_width, panel_height),
+            Sense::click_and_drag(),
+        );
+
         let rect = response.rect;
 
-        // Background
-        painter.rect_filled(rect, 8.0, Color32::from_rgb(30, 30, 35));
-        painter.rect_stroke(rect, 8.0, Stroke::new(1.0, Color32::from_rgb(60, 60, 70)));
-
-        // Draw each element
-        for element in &elements.elements {
-            let state = self.state_manager.get(&element.id);
-            self.draw_element(&painter, rect, element, state, &response);
-        }
-
-        // Draw section labels
-        let sections = elements.sections();
-        for (i, section) in sections.iter().enumerate() {
-            let y = rect.min.y + 15.0 + (i as f32 * 12.0);
-            painter.text(
-                Pos2::new(rect.min.x + 5.0, y),
-                egui::Align2::LEFT_TOP,
-                *section,
-                egui::FontId::proportional(10.0),
-                Color32::from_rgb(100, 100, 110),
-            );
-        }
-    }
-
-    /// Draw a single element
-    #[cfg(feature = "midi")]
-    fn draw_element(
-        &self,
-        painter: &egui::Painter,
-        container: Rect,
-        element: &ControllerElement,
-        state: Option<&ElementState>,
-        _response: &Response,
-    ) {
-        let pos = element.position;
-        let elem_rect = Rect::from_min_size(
-            Pos2::new(
-                container.min.x + pos.x * container.width(),
-                container.min.y + pos.y * container.height(),
-            ),
-            Vec2::new(
-                pos.width * container.width(),
-                pos.height * container.height(),
-            ),
-        );
-
-        let normalized = state.map(|s| s.normalized).unwrap_or(0.0);
-        let active = state.map(|s| s.active).unwrap_or(false);
-
-        match element.element_type {
-            ElementType::Knob | ElementType::Encoder => {
-                self.draw_knob(painter, elem_rect, normalized, &element.label);
-            }
-            ElementType::Fader => {
-                self.draw_fader(painter, elem_rect, normalized, &element.label);
-            }
-            ElementType::Crossfader => {
-                self.draw_crossfader(painter, elem_rect, normalized, &element.label);
-            }
-            ElementType::Button => {
-                self.draw_button(painter, elem_rect, active, &element.label);
-            }
-            ElementType::Toggle => {
-                self.draw_toggle(painter, elem_rect, active, &element.label);
-            }
-        }
-    }
-
-    #[cfg(feature = "midi")]
-    fn draw_knob(&self, painter: &egui::Painter, rect: Rect, value: f32, label: &str) {
-        let center = rect.center();
-        let radius = rect.width().min(rect.height()) / 2.0 * 0.8;
-
-        // Knob body
-        painter.circle_filled(center, radius, Color32::from_rgb(50, 50, 55));
-        painter.circle_stroke(
-            center,
-            radius,
-            Stroke::new(2.0, Color32::from_rgb(80, 80, 90)),
-        );
-
-        // Indicator line
-        let angle = std::f32::consts::PI * 0.75 + value * std::f32::consts::PI * 1.5;
-        let indicator_end = Pos2::new(
-            center.x + angle.cos() * radius * 0.7,
-            center.y + angle.sin() * radius * 0.7,
-        );
-        painter.line_segment(
-            [center, indicator_end],
-            Stroke::new(2.0, Color32::from_rgb(200, 100, 50)),
-        );
-
-        // Label
-        if self.show_labels {
-            painter.text(
-                Pos2::new(center.x, rect.max.y + 2.0),
-                egui::Align2::CENTER_TOP,
-                label,
-                egui::FontId::proportional(8.0),
-                Color32::from_rgb(150, 150, 160),
-            );
-        }
-
-        // Value
-        if self.show_values {
-            painter.text(
-                center,
-                egui::Align2::CENTER_CENTER,
-                format!("{:.0}", value * 127.0),
-                egui::FontId::proportional(9.0),
+        // Draw background image
+        if let Some(texture) = &self.background_texture {
+            painter.image(
+                texture.id(),
+                rect,
+                Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
                 Color32::WHITE,
             );
-        }
-    }
-
-    #[cfg(feature = "midi")]
-    fn draw_fader(&self, painter: &egui::Painter, rect: Rect, value: f32, label: &str) {
-        // Track
-        let track_rect = Rect::from_center_size(
-            rect.center(),
-            Vec2::new(rect.width() * 0.3, rect.height() * 0.9),
-        );
-        painter.rect_filled(track_rect, 2.0, Color32::from_rgb(40, 40, 45));
-
-        // Fader position
-        let fader_y = track_rect.max.y - value * track_rect.height();
-        let fader_rect = Rect::from_center_size(
-            Pos2::new(rect.center().x, fader_y),
-            Vec2::new(rect.width() * 0.8, 8.0),
-        );
-        painter.rect_filled(fader_rect, 2.0, Color32::from_rgb(200, 100, 50));
-
-        // Label
-        if self.show_labels {
-            painter.text(
-                Pos2::new(rect.center().x, rect.max.y + 2.0),
-                egui::Align2::CENTER_TOP,
-                label,
-                egui::FontId::proportional(8.0),
-                Color32::from_rgb(150, 150, 160),
-            );
-        }
-    }
-
-    #[cfg(feature = "midi")]
-    fn draw_crossfader(&self, painter: &egui::Painter, rect: Rect, value: f32, label: &str) {
-        // Track
-        let track_rect = Rect::from_center_size(
-            rect.center(),
-            Vec2::new(rect.width() * 0.9, rect.height() * 0.3),
-        );
-        painter.rect_filled(track_rect, 2.0, Color32::from_rgb(40, 40, 45));
-
-        // Fader position
-        let fader_x = track_rect.min.x + value * track_rect.width();
-        let fader_rect = Rect::from_center_size(
-            Pos2::new(fader_x, rect.center().y),
-            Vec2::new(12.0, rect.height() * 0.7),
-        );
-        painter.rect_filled(fader_rect, 2.0, Color32::from_rgb(200, 100, 50));
-
-        // Label
-        if self.show_labels {
-            painter.text(
-                Pos2::new(rect.center().x, rect.min.y - 2.0),
-                egui::Align2::CENTER_BOTTOM,
-                label,
-                egui::FontId::proportional(8.0),
-                Color32::from_rgb(150, 150, 160),
-            );
-        }
-    }
-
-    #[cfg(feature = "midi")]
-    fn draw_button(&self, painter: &egui::Painter, rect: Rect, active: bool, label: &str) {
-        let color = if active {
-            Color32::from_rgb(80, 200, 100)
         } else {
-            Color32::from_rgb(50, 50, 55)
-        };
-
-        painter.rect_filled(rect, 3.0, color);
-        painter.rect_stroke(rect, 3.0, Stroke::new(1.0, Color32::from_rgb(80, 80, 90)));
-
-        if self.show_labels {
+            // Fallback: dark background
+            painter.rect_filled(rect, 0.0, Color32::from_rgb(30, 30, 35));
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
-                label,
-                egui::FontId::proportional(7.0),
+                "Hintergrundbild wird geladen...",
+                egui::FontId::default(),
                 Color32::WHITE,
             );
         }
-    }
 
-    #[cfg(feature = "midi")]
-    fn draw_toggle(&self, painter: &egui::Painter, rect: Rect, active: bool, label: &str) {
-        let color = if active {
-            Color32::from_rgb(200, 150, 50)
-        } else {
-            Color32::from_rgb(50, 50, 55)
-        };
-
-        painter.rect_filled(rect, 2.0, color);
-        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgb(80, 80, 90)));
-
-        if self.show_labels {
-            painter.text(
-                Pos2::new(rect.center().x, rect.max.y + 2.0),
-                egui::Align2::CENTER_TOP,
-                label,
-                egui::FontId::proportional(6.0),
-                Color32::from_rgb(150, 150, 160),
-            );
+        // Draw elements with frames
+        #[cfg(feature = "midi")]
+        if let Some(elements) = self.elements.clone() {
+            for element in &elements.elements {
+                self.draw_element_with_frame(&painter, rect, element, &response, assignments);
+            }
         }
     }
+
+    /// Draw a single element with colored frame
+    #[cfg(feature = "midi")]
+    fn draw_element_with_frame(
+        &mut self,
+        painter: &egui::Painter,
+        container: Rect,
+        element: &ControllerElement,
+        response: &Response,
+        assignments: &[MidiAssignment],
+    ) {
+        // Calculate element rect based on relative position
+        let elem_rect = Rect::from_min_size(
+            Pos2::new(
+                container.min.x + element.position.x * container.width(),
+                container.min.y + element.position.y * container.height(),
+            ),
+            Vec2::new(
+                element.position.width * container.width(),
+                element.position.height * container.height(),
+            ),
+        );
+
+        // Check states
+        let state = self.state_manager.get(&element.id);
+        let is_hovered = response
+            .hover_pos()
+            .map(|pos| elem_rect.contains(pos))
+            .unwrap_or(false);
+        let is_selected = self.selected_element.as_ref() == Some(&element.id);
+        let is_learning = self.learn_manager.is_learning()
+            && self.learn_manager.state().target_element() == Some(element.id.as_str());
+        // Check if element was recently updated (within last 200ms)
+        let is_active = state
+            .map(|s: &ElementState| s.last_update.elapsed().as_millis() < 200)
+            .unwrap_or(false);
+
+        // Determine frame color based on state
+        let frame_color = if is_learning {
+            // Pulsing yellow for learn mode
+            let t = (ui_time_seconds() * 3.0).sin() * 0.5 + 0.5;
+            Color32::from_rgba_unmultiplied(255, 220, 0, (128.0 + 127.0 * t as f32) as u8)
+        } else if is_active {
+            Color32::GREEN
+        } else if is_selected {
+            Color32::from_rgb(100, 149, 237) // Cornflower blue
+        } else if is_hovered {
+            Color32::WHITE
+        } else {
+            Color32::TRANSPARENT
+        };
+
+        // Override colors assignments view is active
+        let frame_color = if self.show_assignment_colors {
+            let assignment = assignments.iter().find(|a| a.element_id == element.id);
+            match assignment {
+                Some(a) => match &a.target {
+                    MidiAssignmentTarget::MapFlow(_) => Color32::from_rgb(0, 150, 255), // Blue
+                    MidiAssignmentTarget::StreamerBot(_) => Color32::from_rgb(180, 0, 255), // Purple
+                    MidiAssignmentTarget::Mixxx(_) => Color32::from_rgb(255, 128, 0), // Orange
+                },
+                None => Color32::GREEN, // Green for free elements
+            }
+        } else {
+            frame_color
+        };
+
+        // Draw frame
+        if frame_color != Color32::TRANSPARENT {
+            let stroke_width = if is_learning { 3.0 } else { 2.0 };
+            painter.rect_stroke(elem_rect, 4.0, Stroke::new(stroke_width, frame_color));
+        }
+
+        // Update hovered element for tooltip
+        if is_hovered {
+            self.hovered_element = Some(element.id.clone());
+        }
+
+        // Handle click for MIDI learn
+        if response.clicked() && is_hovered {
+            if let Some(target) = &self.learn_target {
+                self.learn_manager.start_learning(&element.id);
+                tracing::info!(
+                    "Started MIDI learn for {} with target {:?}",
+                    element.id,
+                    target
+                );
+            } else {
+                self.selected_element = Some(element.id.clone());
+            }
+        }
+
+        // Show tooltip on hover
+        if is_hovered {
+            egui::show_tooltip_at_pointer(painter.ctx(), egui::Id::new(&element.id), |ui| {
+                ui.strong(&element.label);
+                ui.label(format!("ID: {}", element.id));
+                ui.label(format!("Typ: {:?}", element.element_type));
+                if let Some(midi) = &element.midi {
+                    ui.label(format!("MIDI: {:?}", midi));
+                }
+                if let Some(state) = state {
+                    ui.label(format!("Wert: {:.2}", state.value));
+                }
+
+                // Show assignment info
+                let assignment = assignments.iter().find(|a| a.element_id == element.id);
+                if let Some(assign) = assignment {
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label("Zuweisung:");
+                        ui.colored_label(Color32::YELLOW, assign.target.to_string());
+                    });
+                    ui.label(
+                        egui::RichText::new("(Klick für Details in Liste)")
+                            .italics()
+                            .size(10.0),
+                    );
+                } else {
+                    ui.separator();
+                    ui.label(egui::RichText::new("Nicht zugewiesen").italics().weak());
+                }
+            });
+        }
+    }
+
+    /// Show the element list view
+    fn show_element_list_view(&mut self, ui: &mut Ui, user_config: &mut UserConfig) {
+        // Filter buttons
+        ui.horizontal(|ui| {
+            ui.label("Filter:");
+            if ui
+                .selectable_label(self.element_filter == ElementFilter::All, "Alle")
+                .clicked()
+            {
+                self.element_filter = ElementFilter::All;
+            }
+            if ui
+                .selectable_label(self.element_filter == ElementFilter::MapFlow, "MapFlow")
+                .clicked()
+            {
+                self.element_filter = ElementFilter::MapFlow;
+            }
+            if ui
+                .selectable_label(
+                    self.element_filter == ElementFilter::StreamerBot,
+                    "Streamer.bot",
+                )
+                .clicked()
+            {
+                self.element_filter = ElementFilter::StreamerBot;
+            }
+            if ui
+                .selectable_label(self.element_filter == ElementFilter::Mixxx, "Mixxx")
+                .clicked()
+            {
+                self.element_filter = ElementFilter::Mixxx;
+            }
+            if ui
+                .selectable_label(self.element_filter == ElementFilter::Unassigned, "Frei")
+                .clicked()
+            {
+                self.element_filter = ElementFilter::Unassigned;
+            }
+        });
+
+        ui.separator();
+
+        // Element table
+        let mut element_to_remove = None;
+
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            egui::Grid::new("element_list")
+                .num_columns(5)
+                .striped(true)
+                .show(ui, |ui| {
+                    // Header
+                    ui.strong("ID");
+                    ui.strong("Name");
+                    ui.strong("Typ");
+                    ui.strong("MIDI");
+                    ui.strong("Zuweisung / Aktion");
+                    ui.end_row();
+
+                    #[cfg(feature = "midi")]
+                    if let Some(elements) = &self.elements {
+                        for element in &elements.elements {
+                            // Determine assignment status
+                            let assignment = user_config.get_midi_assignment(&element.id);
+
+                            // Apply filter
+                            let show = match self.element_filter {
+                                ElementFilter::All => true,
+                                ElementFilter::MapFlow => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::MapFlow(_))),
+                                ElementFilter::StreamerBot => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::StreamerBot(_))),
+                                ElementFilter::Mixxx => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::Mixxx(_))),
+                                ElementFilter::Unassigned => assignment.is_none(),
+                            };
+
+                            if !show {
+                                continue;
+                            }
+
+                            ui.label(&element.id);
+                            ui.label(&element.label);
+                            ui.label(format!("{:?}", element.element_type));
+                            if let Some(midi) = &element.midi {
+                                ui.label(format!("{:?}", midi));
+                            } else {
+                                ui.label("-");
+                            }
+
+                            // Show assignment and delete button
+                            if let Some(assign) = assignment {
+                                ui.horizontal(|ui| {
+                                    ui.label(assign.target.to_string());
+                                    if ui.small_button("🗑").on_hover_text("Zuweisung löschen").clicked() {
+                                        element_to_remove = Some(element.id.clone());
+                                    }
+                                });
+                            } else {
+                                ui.label("-");
+                            }
+                            ui.end_row();
+                        }
+                    }
+                });
+        });
+
+        // Handle deletion request outside of borrow loop
+        if let Some(id) = element_to_remove {
+            user_config.remove_midi_assignment(&id);
+        }
+    }
+}
+
+/// Get current time in seconds for animations
+fn ui_time_seconds() -> f64 {
+    // Ref: #118 Force rebuild
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs_f64()
 }

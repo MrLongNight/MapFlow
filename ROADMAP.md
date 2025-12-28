@@ -1,9 +1,9 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.5  
-> **Stand:** 2025-12-23 11:45  
+> **Version:** 1.6
+> **Stand:** 2025-12-27 19:00
 > **Zielgruppe:** @jules und Entwickler-Team  
-> **Projekt-Version:** 0.1.0
+> **Projekt-Version:** 0.2.0
 
 ---
 
@@ -208,15 +208,19 @@
   - ✅ UI: OSC-Server-Status und Port-Konfiguration implementiert (mit `imgui`)
   - ✅ Default-OSC-Port: 8000 (konfigurierbar)
 
-- ✅ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`)
+- ✅ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`) - FULLY WIRED 2025-12-27
   - ✅ MIDI-Input (`midi/input.rs`)
   - ✅ MIDI-Output (`midi/output.rs`)
   - ✅ MIDI-Mapping (`midi/mapping.rs`) - Simplified HashMap implementation
-  - ❌ MIDI-Learn removed (Legacy cleanup)
+  - ✅ MIDI-Learn Modul (`midi/midi_learn.rs`) - WIRED TO UI 2025-12-27
   - ✅ MIDI-Clock (`midi/clock.rs`)
   - ✅ MIDI-Profiles (`midi/profiles.rs`)
+  - ✅ Ecler NUO 4 Profil (`midi/ecler_nuo4.rs`) - 89 Mappings
   - ✅ Feature-Flag: `midi` (optional)
-  - ⬜ MIDI-zu-Parameter-Routing verdrahten fehlt (low priority)
+  - ✅ Auto-Connect zu erstem verfügbaren Port - IMPLEMENTED 2025-12-27
+  - ✅ MIDI Port-Auswahl in Settings - IMPLEMENTED 2025-12-27
+  - ✅ MIDI-Learn im Module Canvas verdrahtet - IMPLEMENTED 2025-12-27
+  - ⬜ MIDI-zu-Parameter-Routing für Layer/Effects (low priority)
 
 - ✅ **WebSocket-System** (`mapmap-control/src/web/`) – NICHT NUTZEN
   - ✅ WebSocket-Server vorhanden (`web/websocket.rs`)
@@ -246,9 +250,9 @@
 ### UI (ImGui / egui)
 
 - ✅ **UI-Framework-Status**
-  - ✅ ImGui-Integration (`mapmap-ui` via `imgui`, `imgui-wgpu`, `imgui-winit-support`)
-  - ✅ egui-Integration vorbereitet (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
-  - 🟡 **Phase 6: Migration von ImGui zu egui im Gange (Hybrid-Betrieb)**
+  - ❌ ImGui entfernt (Phase 6 Complete - 2025-12-23)
+  - ✅ egui-Integration (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
+  - ✅ **Phase 6: Migration von ImGui zu egui ABGESCHLOSSEN**
 
 - ✅ **UI-Module (Migriert zu egui)** (`mapmap-ui/src/`)
   - ✅ Dashboard (`dashboard.rs`) – Hauptansicht
@@ -300,7 +304,7 @@
   - ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
   - ⬜ MIDI/OSC Device Selectors
   - ⬜ Mesh Editor für Layer
-  - ⬜ File Picker für Source/Mask
+  - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
 - 🟡 **Assignment System**
@@ -310,18 +314,56 @@
   - ⬜ Target Selector (Dropdown mit ID-Auflösung)
   - ⬜ ControlSource zu ControlTarget Routing
 
-- 🟡 **Logging & Debug**
+- ✅ **Logging & Debug** (COMPLETED 2025-12-27)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
   - ✅ LogConfig Struct mit Settings
-  - ⬜ Settings-UI für Logging (Log-Level, Pfad, Max-Files)
+  - ✅ Settings-UI für Logging (Log-Level, Pfad, Max-Files) - COMPLETED 2025-12-27
   - ⬜ Audio-Device Debug validieren (manueller Test)
 
-- ✅ **Ecler NUO 4 MIDI Integration** (COMPLETED 2025-12-25)
-  - ✅ Controller-Profil (89 MIDI-Mappings)
-  - ✅ Element-Datenstruktur (30 Elemente)
-  - ✅ MIDI-Learn Modul
-  - ✅ Overlay UI Panel
-  - ✅ Zuweisungstabelle
+- 🟡 **Ecler NUO 4 Controller Overlay Redesign** (IN PROGRESS 2025-12-27)
+
+  ### Grundlagen (implementiert)
+  - ✅ Controller-Profil (89 MIDI-Mappings in `ecler_nuo4.rs`)
+  - ✅ Element-Datenstruktur (30 Elemente in `elements.json`)
+  - ✅ MIDI-Learn Modul (`midi_learn.rs`)
+  - ✅ Overlay UI Panel Grundgerüst (`controller_overlay_panel.rs`)
+  - ✅ Hintergrundbild (`resources/controllers/ecler_nuo4/background.jpg`)
+
+  ### Overlay UI Features
+  - ✅ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px)
+  - ✅ **Skalierbares Panel** - Zoom 30%-100% via Slider
+  - ⬜ **PNG-Assets für Elemente** - Knobs, Fader, Buttons (vom User bereitgestellt)
+  - ⬜ **Exakte Platzierung** - Koordinaten aus `elements.json` auf Foto mappen
+  - ⬜ **Animation** - Knobs rotieren (0-270°), Fader bewegen sich
+
+  ### Interaktive Features
+  - ✅ **Rahmen um MIDI-Elemente** mit Farbzuständen:
+    - Kein Rahmen / Grau = Inaktiv
+    - 🟡 Gelb pulsierend = MIDI Learn aktiv
+    - 🟢 Grün = Wert ändert sich
+    - ⚪ Weiß = Hover
+    - 🔵 Blau = Ausgewählt
+    - 🎨 **NEU: Zuweisungs-Modus**: Grün (Frei) / Blau / Lila / Orange (Belegt)
+  - ✅ **Mouseover-Tooltip** pro Element:
+    - Element-Name, MIDI-Typ, Channel, CC/Note, Wert
+    - ✅ **Aktuelle Zuweisung** (MapFlow/Streamer.bot/Mixxx) anzeigen
+
+  ### MIDI Learn Buttons
+  - ✅ **MapFlow MIDI Learn** - Button im Panel
+  - ✅ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
+  - ✅ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
+  - ✅ **Toolbar Toggle** - 🎛️ Button zum Ein/Ausblenden des Overlays
+
+  ### Zuweisungs-Editor
+  - ✅ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
+  - ✅ **Filter-Ansichten**:
+    - Alle Zuweisungen
+    - Nur MapFlow-Zuweisungen
+    - Nur Streamer.bot-Zuweisungen
+    - Nur Mixxx-Zuweisungen
+    - Freie Elemente (ohne Zuweisung)
+  - ✅ **Bearbeiten** - Zuweisung löschen via 🗑 Button
+  - ✅ **Persistierung** - MidiAssignment in UserConfig (config.json)
 
 - 🟡 **WGPU Rendering Fixes**
   - ⬜ R32Float Validation Error in OscillatorRenderer
@@ -340,16 +382,17 @@
 - 🟡 **Panel-Redundanz**
   - ⬜ Node Inspector UND Properties Panel konsolidieren → NUR EIN Panel
 
-- ✅ **MIDI-System Fehler** (FIXED 2025-12-26)
+- ✅ **MIDI-System Fehler** (FIXED 2025-12-27)
   - ✅ Feature-Flag von `cpal` auf `midi` korrigiert
-  - ⬜ MIDI-Ports korrekt auflisten (testen)
-  - ⬜ MIDI Learn Funktion testen
+  - ✅ MIDI-Learn Modul verdrahtet (`midi_learn.rs` → `module_canvas.rs`)
+  - ✅ MIDI-Ports auswählbar in Settings
+  - ✅ Auto-Connect zu erstem Port
 
-- 🟡 **Level Meter Redesign**
-  - ✅ STEREO für beide Varianten → StereoAudioMeter Widget
-  - ✅ Einbaurahmen mit 4 Phillips-Schrauben
-  - ✅ Beschriftete dB-Skala
-  - ⬜ In UI integrieren (mittig, volle Höhe)
+- 🟡 **Level Meter Redesign** (Code vorhanden, NICHT FUNKTIONAL)
+  - ✅ STEREO für beide Varianten → StereoAudioMeter Widget (Code existiert)
+  - ✅ Einbaurahmen mit 4 Phillips-Schrauben (Code existiert)
+  - ✅ Beschriftete dB-Skala (Code existiert)
+  - ⬜ In UI integriert aber NICHT FUNKTIONAL - zeigt keine Werte an
 
 ### 🟢 MODULE-CANVAS PANELS (Implementiert 2025-12-26)
 
