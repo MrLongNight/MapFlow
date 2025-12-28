@@ -757,20 +757,33 @@ impl ControllerOverlayPanel {
                         ),
                     );
 
-                    // Resize Handle Rect (Bottom-Right)
+                    // Visual Rect (for asset and highlights)
+                    let vis_pos = element.visual_position.unwrap_or(element.position);
+                    let vis_rect = Rect::from_min_size(
+                        Pos2::new(
+                            rect.min.x + vis_pos.x * rect.width(),
+                            rect.min.y + vis_pos.y * rect.height(),
+                        ),
+                        Vec2::new(vis_pos.width * rect.width(), vis_pos.height * rect.height()),
+                    );
+
+                    // Resize Handles
                     let handle_size = 10.0;
                     let handle_rect = Rect::from_min_size(
                         elem_rect.max - Vec2::splat(handle_size),
+                        Vec2::splat(handle_size),
+                    );
+                    let vis_handle_rect = Rect::from_min_size(
+                        vis_rect.max - Vec2::splat(handle_size),
                         Vec2::splat(handle_size),
                     );
 
                     // Interactions
                     let id = ui.make_persistent_id(&element.id);
                     let handle_id = id.with("resize");
+                    let vis_handle_id = id.with("vis_resize");
 
-                    // Define Move interaction (click_and_drag for selection)
                     let move_interact = ui.interact(elem_rect, id, Sense::click_and_drag());
-                    // Define Handle interaction
                     let handle_interact = ui.interact(handle_rect, handle_id, Sense::drag());
 
                     // Handle Selection
@@ -779,25 +792,43 @@ impl ControllerOverlayPanel {
                     }
 
                     let is_selected = next_selection.as_ref() == Some(&element.id);
+
+                    // Visual Handle Interaction (Only if selected)
+                    let mut vis_handle_dragged = false;
+                    if is_selected {
+                        let hv_res = ui.interact(vis_handle_rect, vis_handle_id, Sense::drag());
+                        if hv_res.dragged() {
+                            let delta = hv_res.drag_delta();
+                            if rect.width() > 0.0 && rect.height() > 0.0 {
+                                let mut pos = element.visual_position.unwrap_or(element.position);
+                                pos.width += delta.x / rect.width();
+                                pos.height += delta.y / rect.height();
+                                pos.width = pos.width.max(0.01);
+                                pos.height = pos.height.max(0.01);
+                                element.visual_position = Some(pos);
+                            }
+                            vis_handle_dragged = true;
+                        }
+                    }
+
                     let mut anim_handle_dragged = false;
 
-                    // Animation Handles (Fader only)
+                    // Animation Handles (Fader only) - Uses VIS RECT
                     if is_selected && element.element_type == ElementType::Fader {
                         let mut range = element.animation_range.unwrap_or([0.0, 1.0]);
                         let mut changed = false;
 
-                        let h = elem_rect.height();
-                        let y_top = elem_rect.min.y + range[0] * h;
-                        let y_bot = elem_rect.min.y + range[1] * h;
+                        let h = vis_rect.height();
+                        let y_top = vis_rect.min.y + range[0] * h;
+                        let y_bot = vis_rect.min.y + range[1] * h;
 
-                        // Handles
                         let h_top_rect = Rect::from_center_size(
-                            Pos2::new(elem_rect.center().x, y_top),
-                            Vec2::new(elem_rect.width(), 8.0),
+                            Pos2::new(vis_rect.center().x, y_top),
+                            Vec2::new(vis_rect.width(), 8.0),
                         );
                         let h_bot_rect = Rect::from_center_size(
-                            Pos2::new(elem_rect.center().x, y_bot),
-                            Vec2::new(elem_rect.width(), 8.0),
+                            Pos2::new(vis_rect.center().x, y_bot),
+                            Vec2::new(vis_rect.width(), 8.0),
                         );
 
                         let h_top_res = ui.interact(h_top_rect, id.with("h_top"), Sense::drag());
@@ -818,31 +849,30 @@ impl ControllerOverlayPanel {
                             element.animation_range = Some(range);
                         }
 
-                        // Draw Handles
+                        // Draw Handles (Red)
                         painter.line_segment(
                             [
-                                Pos2::new(elem_rect.min.x, y_top),
-                                Pos2::new(elem_rect.max.x, y_top),
+                                Pos2::new(vis_rect.min.x, y_top),
+                                Pos2::new(vis_rect.max.x, y_top),
                             ],
                             Stroke::new(1.0, Color32::RED),
                         );
                         painter.line_segment(
                             [
-                                Pos2::new(elem_rect.min.x, y_bot),
-                                Pos2::new(elem_rect.max.x, y_bot),
+                                Pos2::new(vis_rect.min.x, y_bot),
+                                Pos2::new(vis_rect.max.x, y_bot),
                             ],
                             Stroke::new(1.0, Color32::RED),
                         );
-
                         painter.text(
-                            Pos2::new(elem_rect.max.x + 2.0, y_top),
+                            Pos2::new(vis_rect.max.x + 2.0, y_top),
                             egui::Align2::LEFT_CENTER,
                             "Top",
                             egui::FontId::proportional(12.0),
                             Color32::RED,
                         );
                         painter.text(
-                            Pos2::new(elem_rect.max.x + 2.0, y_bot),
+                            Pos2::new(vis_rect.max.x + 2.0, y_bot),
                             egui::Align2::LEFT_CENTER,
                             "Bot",
                             egui::FontId::proportional(12.0),
@@ -850,7 +880,7 @@ impl ControllerOverlayPanel {
                         );
                     }
 
-                    // Logic
+                    // Move/Resize Logic
                     if handle_interact.dragged() {
                         let delta = handle_interact.drag_delta();
                         if rect.width() > 0.0 && rect.height() > 0.0 {
@@ -859,18 +889,24 @@ impl ControllerOverlayPanel {
                             element.position.width = element.position.width.max(0.01);
                             element.position.height = element.position.height.max(0.01);
                         }
-                    } else if anim_handle_dragged {
-                        // Consumed by animation handles
+                    } else if vis_handle_dragged || anim_handle_dragged {
+                        // Consumed
                     } else if move_interact.dragged() {
                         let delta = move_interact.drag_delta();
                         if rect.width() > 0.0 && rect.height() > 0.0 {
-                            element.position.x += delta.x / rect.width();
-                            element.position.y += delta.y / rect.height();
+                            if ui.input(|i| i.modifiers.shift) && is_selected {
+                                let mut pos = element.visual_position.unwrap_or(element.position);
+                                pos.x += delta.x / rect.width();
+                                pos.y += delta.y / rect.height();
+                                element.visual_position = Some(pos);
+                            } else {
+                                element.position.x += delta.x / rect.width();
+                                element.position.y += delta.y / rect.height();
+                            }
                         }
                     }
 
-                    // Keyboard Actions (only if selected)
-                    let is_selected = next_selection.as_ref() == Some(&element.id);
+                    // Keyboard Actions
                     if is_selected {
                         let mut delta_key = Vec2::ZERO;
                         if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
@@ -887,11 +923,17 @@ impl ControllerOverlayPanel {
                         }
 
                         if delta_key != Vec2::ZERO && rect.width() > 0.0 && rect.height() > 0.0 {
-                            element.position.x += delta_key.x / rect.width();
-                            element.position.y += delta_key.y / rect.height();
+                            if ui.input(|i| i.modifiers.shift) {
+                                let mut pos = element.visual_position.unwrap_or(element.position);
+                                pos.x += delta_key.x / rect.width();
+                                pos.y += delta_key.y / rect.height();
+                                element.visual_position = Some(pos);
+                            } else {
+                                element.position.x += delta_key.x / rect.width();
+                                element.position.y += delta_key.y / rect.height();
+                            }
                         }
 
-                        // Copy / Paste Size (Ctrl+C / Ctrl+V)
                         if ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::C)) {
                             next_clipboard =
                                 Some([element.position.width, element.position.height]);
@@ -904,7 +946,7 @@ impl ControllerOverlayPanel {
                         }
                     }
 
-                    // Draw Asset (in background of frame)
+                    // Draw Asset (Using VIS_RECT)
                     let current_val = self
                         .state_manager
                         .get(&element.id)
@@ -914,19 +956,18 @@ impl ControllerOverlayPanel {
                         &painter,
                         &self.assets,
                         self.scale,
-                        elem_rect,
+                        vis_rect,
                         element,
                         current_val,
                     );
 
-                    // Draw edit frame
+                    // Draw Touch Frame (Yellow/Magenta)
                     let base_color = if is_selected {
                         Color32::from_rgb(255, 0, 255)
                     } else {
                         Color32::YELLOW
-                    }; // Magenta for selected
+                    };
                     let stroke = Stroke::new(if is_selected { 2.0 } else { 1.0 }, base_color);
-
                     match element.element_type {
                         ElementType::Knob | ElementType::Encoder => {
                             let radius = elem_rect.width().min(elem_rect.height()) / 2.0;
@@ -937,8 +978,33 @@ impl ControllerOverlayPanel {
                         }
                     }
 
-                    // Draw resize handle
-                    painter.rect_filled(handle_rect, 2.0, Color32::from_rgb(0, 255, 255));
+                    // Draw Visual Frame (Cyan)
+                    if element.visual_position.is_some()
+                        || (is_selected && ui.input(|i| i.modifiers.shift))
+                    {
+                        let c_stroke = Stroke::new(1.0, Color32::from_rgb(0, 255, 255));
+                        match element.element_type {
+                            ElementType::Knob | ElementType::Encoder => {
+                                painter.circle_stroke(
+                                    vis_rect.center(),
+                                    vis_rect.width().min(vis_rect.height()) / 2.0,
+                                    c_stroke,
+                                );
+                            }
+                            _ => {
+                                painter.rect_stroke(vis_rect, 0.0, c_stroke);
+                            }
+                        }
+                        if is_selected {
+                            painter.rect_filled(
+                                vis_handle_rect,
+                                2.0,
+                                Color32::from_rgb(0, 255, 255),
+                            );
+                        }
+                    }
+
+                    painter.rect_filled(handle_rect, 2.0, base_color);
                 }
             }
 
@@ -974,12 +1040,25 @@ impl ControllerOverlayPanel {
             ),
         );
 
+        // Calculate visual rect based on visual_position (or fallback to position)
+        let vis_pos = element.visual_position.unwrap_or(element.position);
+        let vis_rect = Rect::from_min_size(
+            Pos2::new(
+                container.min.x + vis_pos.x * container.width(),
+                container.min.y + vis_pos.y * container.height(),
+            ),
+            Vec2::new(
+                vis_pos.width * container.width(),
+                vis_pos.height * container.height(),
+            ),
+        );
+
         // Check states
         let state = self.state_manager.get(&element.id);
 
-        // Draw Asset
+        // Draw Asset using Visual Rect
         let val = state.map(|s| s.value as f32 / 127.0).unwrap_or(0.0);
-        Self::draw_asset(painter, &self.assets, self.scale, elem_rect, element, val);
+        Self::draw_asset(painter, &self.assets, self.scale, vis_rect, element, val);
 
         let is_hovered = response
             .hover_pos()
@@ -996,7 +1075,7 @@ impl ControllerOverlayPanel {
         // Determine frame color based on state
         let frame_color = if is_learning {
             // Pulsing yellow for learn mode
-            let t = (ui_time_seconds() * 3.0).sin() * 0.5 + 0.5;
+            let t = (response.ctx.input(|i| i.time) * 3.0).sin() * 0.5 + 0.5;
             Color32::from_rgba_unmultiplied(255, 220, 0, (128.0 + 127.0 * t as f32) as u8)
         } else if is_active {
             Color32::GREEN
@@ -1023,17 +1102,17 @@ impl ControllerOverlayPanel {
             frame_color
         };
 
-        // Draw frame
+        // Draw frame using Visual Rect
         if frame_color != Color32::TRANSPARENT {
             let stroke_width = if is_learning { 3.0 } else { 2.0 };
             let stroke = Stroke::new(stroke_width, frame_color);
             match element.element_type {
                 ElementType::Knob | ElementType::Encoder => {
-                    let radius = elem_rect.width().min(elem_rect.height()) / 2.0;
-                    painter.circle_stroke(elem_rect.center(), radius, stroke);
+                    let radius = vis_rect.width().min(vis_rect.height()) / 2.0;
+                    painter.circle_stroke(vis_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4.0, stroke);
+                    painter.rect_stroke(vis_rect, 4.0, stroke);
                 }
             }
         }
