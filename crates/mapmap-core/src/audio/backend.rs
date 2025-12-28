@@ -155,6 +155,19 @@ pub mod cpal_backend {
                         None,
                     )
                 }
+                cpal::SampleFormat::U8 => {
+                    let tx = sample_tx.clone();
+                    device.build_input_stream(
+                        &stream_config.into(),
+                        move |data: &[u8], _: &cpal::InputCallbackInfo| {
+                            let samples: Vec<f32> =
+                                data.iter().map(|&s| (s as f32 / 127.5) - 1.0).collect();
+                            let _ = tx.send(samples);
+                        },
+                        err_fn,
+                        None,
+                    )
+                }
                 cpal::SampleFormat::I16 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
