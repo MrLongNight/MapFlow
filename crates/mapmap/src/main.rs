@@ -522,7 +522,7 @@ impl App {
                             if current_sec != LAST_LOG_SEC {
                                 LAST_LOG_SEC = current_sec;
                                 tracing::info!(
-                                    "Audio: {} samples/frame, RMS={:.3}, Peak={:.3}, Bands={:?}",
+                                    "Audio: {} samples, RMS={:.6}, Peak={:.6}, Bands={:?}",
                                     samples.len(),
                                     analysis.rms_volume,
                                     analysis.peak_volume,

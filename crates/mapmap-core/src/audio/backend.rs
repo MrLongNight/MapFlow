@@ -133,9 +133,32 @@ pub mod cpal_backend {
             let stream = match config.sample_format() {
                 cpal::SampleFormat::F32 => {
                     let tx = sample_tx.clone();
+                    use std::sync::atomic::{AtomicU64, Ordering};
+                    static CALLBACK_COUNT: AtomicU64 = AtomicU64::new(0);
+                    static LAST_LOG: AtomicU64 = AtomicU64::new(0);
+
                     device.build_input_stream(
                         &config.into(),
                         move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                            // Debug: Log raw sample stats periodically
+                            let count = CALLBACK_COUNT.fetch_add(1, Ordering::Relaxed);
+                            if count % 100 == 0 {
+                                let now = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_secs();
+                                let last = LAST_LOG.load(Ordering::Relaxed);
+                                if now != last {
+                                    LAST_LOG.store(now, Ordering::Relaxed);
+                                    let min = data.iter().copied().fold(f32::INFINITY, f32::min);
+                                    let max = data.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+                                    let non_zero = data.iter().filter(|&&s| s != 0.0).count();
+                                    eprintln!(
+                                        "Audio Callback: {} samples, min={:.6}, max={:.6}, non_zero={}",
+                                        data.len(), min, max, non_zero
+                                    );
+                                }
+                            }
                             let _ = tx.send(data.to_vec());
                         },
                         err_fn,
