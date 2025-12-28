@@ -402,3 +402,5 @@ settings-frame-rate = Frame Rate
 settings-app = App Settings
 settings-language = Language
 settings-logging = Logging
+tooltip-toggle-visibility = Toggle Visibility
+tooltip-layer-opacity = Layer Opacity
