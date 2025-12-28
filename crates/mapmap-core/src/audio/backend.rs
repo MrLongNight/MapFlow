@@ -30,7 +30,6 @@ pub trait AudioBackend {
 #[cfg(feature = "audio")]
 pub mod cpal_backend {
     use super::{AudioBackend, AudioError};
-    use crate::audio::AudioConfig;
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use crossbeam_channel::{unbounded, Receiver, Sender};
 
@@ -49,16 +48,13 @@ pub mod cpal_backend {
 
     impl CpalBackend {
         /// Create a new CPAL backend with the specified device.
-        /// Returns the backend and the actual sample rate used.
-        pub fn new(
-            device_name: Option<String>,
-            config: &AudioConfig,
-        ) -> Result<(Self, u32), AudioError> {
+        /// Uses a timeout to prevent the app from freezing if a device doesn't respond.
+        pub fn new(device_name: Option<String>) -> Result<Self, AudioError> {
             let (sample_tx, sample_rx) = unbounded();
             let (command_tx, command_rx) = unbounded::<Command>();
 
             // Build stream directly in main thread (cpal::Stream is not Send)
-            let (stream, actual_sample_rate) = Self::build_stream(device_name, sample_tx, config)?;
+            let stream = Self::build_stream(device_name, sample_tx)?;
 
             // Spawn command processing thread
             std::thread::Builder::new()
@@ -69,22 +65,18 @@ pub mod cpal_backend {
                 })
                 .ok();
 
-            Ok((
-                Self {
-                    sample_receiver: sample_rx,
-                    command_sender: command_tx,
-                    stream,
-                },
-                actual_sample_rate,
-            ))
+            Ok(Self {
+                sample_receiver: sample_rx,
+                command_sender: command_tx,
+                stream,
+            })
         }
 
         /// Build the audio stream (must be called from main thread)
         fn build_stream(
             device_name: Option<String>,
             sample_tx: Sender<Vec<f32>>,
-            config: &AudioConfig,
-        ) -> Result<(cpal::Stream, u32), AudioError> {
+        ) -> Result<cpal::Stream, AudioError> {
             let host = cpal::default_host();
 
             // Get device
@@ -114,40 +106,25 @@ pub mod cpal_backend {
                 }
             };
 
-            // Find a supported config with the desired sample rate
-            let desired_rate = cpal::SampleRate(config.sample_rate);
-            let supported_configs = match device.supported_input_configs() {
-                Ok(mut configs) => configs
-                    .find(|c| {
-                        c.min_sample_rate() <= desired_rate && desired_rate <= c.max_sample_rate()
-                    })
-                    .map(|c| c.with_sample_rate(desired_rate)),
-                Err(_) => None,
+            // Get config
+            let config = match device.default_input_config() {
+                Ok(cfg) => cfg,
+                Err(e) => {
+                    return Err(AudioError::StreamBuildError(format!(
+                        "Failed to get device config: {}",
+                        e
+                    )));
+                }
             };
 
-            // Fallback to default config if desired rate is not supported
-            let stream_config = match supported_configs {
-                Some(cfg) => cfg,
-                None => match device.default_input_config() {
-                    Ok(cfg) => cfg,
-                    Err(e) => {
-                        return Err(AudioError::StreamBuildError(format!(
-                            "No supported or default config found: {}",
-                            e
-                        )));
-                    }
-                },
-            };
-
-            let actual_sample_rate = stream_config.sample_rate().0;
             let err_fn = |err| eprintln!("Audio stream error: {}", err);
 
             // Build stream
-            let stream = match stream_config.sample_format() {
+            let stream = match config.sample_format() {
                 cpal::SampleFormat::F32 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
-                        &stream_config.into(),
+                        &config.into(),
                         move |data: &[f32], _: &cpal::InputCallbackInfo| {
                             let _ = tx.send(data.to_vec());
                         },
@@ -158,7 +135,7 @@ pub mod cpal_backend {
                 cpal::SampleFormat::I16 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
-                        &stream_config.into(),
+                        &config.into(),
                         move |data: &[i16], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> =
                                 data.iter().map(|&s| s as f32 / i16::MAX as f32).collect();
@@ -171,7 +148,7 @@ pub mod cpal_backend {
                 cpal::SampleFormat::U16 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
-                        &stream_config.into(),
+                        &config.into(),
                         move |data: &[u16], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> = data
                                 .iter()
@@ -241,7 +218,7 @@ pub mod cpal_backend {
                             e
                         )));
                     }
-                    Ok((stream, actual_sample_rate))
+                    Ok(stream)
                 }
                 Err(e) => Err(AudioError::StreamBuildError(e.to_string())),
             }
