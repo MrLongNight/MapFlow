@@ -243,7 +243,12 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
     }
 
     // Needle
-    let clamped_db = db.clamp(-40.0, 6.0);
+    // If db is very negative (or NEG_INFINITY), show needle at minimum position
+    let clamped_db = if db.is_finite() {
+        db.clamp(-40.0, 6.0)
+    } else {
+        -40.0
+    };
     // Linear approximation for visualization
     let needle_angle = if clamped_db < -20.0 {
         start_angle - 5.0
@@ -355,7 +360,8 @@ fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
         let t = i as f32 / (segment_count as f32 - 1.0);
         let threshold_db = min_db + t * (max_db - min_db);
 
-        let active = db >= threshold_db;
+        // If db is very negative (or NEG_INFINITY), show no active segments
+        let active = db.is_finite() && db >= threshold_db;
 
         let color = if threshold_db >= 0.0 {
             Color32::from_rgb(255, 50, 50)

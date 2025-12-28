@@ -1006,15 +1006,16 @@ impl App {
                                     egui::CollapsingHeader::new("🔊 Audio")
                                         .default_open(false)
                                         .show(ui, |ui| {
+                                            // Get analysis (always available, defaults to zero)
                                             let analysis = self.audio_analyzer.get_latest_analysis();
-
-                                            // Stereo Audio Level Meter
-                                            let db_left = if analysis.rms_volume > 0.0 {
-                                                20.0 * analysis.rms_volume.log10()
+                                            
+                                            // Only show real values if audio backend is active and signal is above noise floor
+                                            let (db_left, db_right) = if self.audio_backend.is_some() && analysis.rms_volume > 0.001 {
+                                                let db = 20.0 * analysis.rms_volume.log10();
+                                                (db, db)
                                             } else {
-                                                -60.0
+                                                (f32::NEG_INFINITY, f32::NEG_INFINITY)
                                             };
-                                            let db_right = db_left; // TODO: Add actual stereo separation
 
                                             ui.add(AudioMeter::new(
                                                 self.ui_state.user_config.meter_style,
@@ -1024,10 +1025,17 @@ impl App {
 
                                             ui.separator();
 
+                                            // Pass analysis to audio panel (or None if backend is inactive)
+                                            let analysis_ref = if self.audio_backend.is_some() {
+                                                Some(&analysis)
+                                            } else {
+                                                None
+                                            };
+                                            
                                             if let Some(action) = self.ui_state.audio_panel.ui(
                                                 ui,
                                                 &self.ui_state.i18n,
-                                                Some(&analysis),
+                                                analysis_ref,
                                                 &self.state.audio_config,
                                                 &self.audio_devices,
                                                 &mut self.ui_state.selected_audio_device,
