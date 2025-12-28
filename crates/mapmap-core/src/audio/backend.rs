@@ -163,7 +163,7 @@ pub mod cpal_backend {
                 cpal::SampleFormat::U8 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
-                        &stream_config.into(),
+                        &config.into(),
                         move |data: &[u8], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> = data
                                 .iter()
@@ -178,7 +178,7 @@ pub mod cpal_backend {
                 cpal::SampleFormat::I8 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
-                        &stream_config.into(),
+                        &config.into(),
                         move |data: &[i8], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> =
                                 data.iter().map(|&s| s as f32 / i8::MAX as f32).collect();
@@ -191,7 +191,7 @@ pub mod cpal_backend {
                 cpal::SampleFormat::I32 => {
                     let tx = sample_tx.clone();
                     device.build_input_stream(
-                        &stream_config.into(),
+                        &config.into(),
                         move |data: &[i32], _: &cpal::InputCallbackInfo| {
                             let samples: Vec<f32> =
                                 data.iter().map(|&s| s as f32 / i32::MAX as f32).collect();
