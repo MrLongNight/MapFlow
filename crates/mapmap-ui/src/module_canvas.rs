@@ -1784,7 +1784,7 @@ impl ModuleCanvas {
 
         // Delete: Delete selected parts
         if ui.input(|i| i.key_pressed(egui::Key::Delete)) && !self.selected_parts.is_empty() {
-            for &part_id in &self.selected_parts {
+            for part_id in self.selected_parts.clone() {
                 module
                     .connections
                     .retain(|c| c.from_part != part_id && c.to_part != part_id);
@@ -1936,7 +1936,7 @@ impl ModuleCanvas {
                         part_id: part.id,
                         socket_idx: i,
                         is_output: false,
-                        socket_type: socket.socket_type,
+                        socket_type: socket.socket_type.clone(),
                         position: Pos2::new(rect.min.x, socket_y),
                     });
                 }
@@ -1948,7 +1948,7 @@ impl ModuleCanvas {
                         part_id: part.id,
                         socket_idx: i,
                         is_output: true,
-                        socket_type: socket.socket_type,
+                        socket_type: socket.socket_type.clone(),
                         position: Pos2::new(rect.max.x, socket_y),
                     });
                 }
@@ -1975,7 +1975,7 @@ impl ModuleCanvas {
                             socket.part_id,
                             socket.socket_idx,
                             socket.is_output,
-                            socket.socket_type,
+                            socket.socket_type.clone(),
                             socket.position,
                         ));
                         break;
@@ -1986,7 +1986,7 @@ impl ModuleCanvas {
             // Complete connection on release over compatible socket
             if primary_released && self.creating_connection.is_some() {
                 if let Some((from_part, from_socket, from_is_output, ref _from_type, _)) =
-                    self.creating_connection
+                    self.creating_connection.clone()
                 {
                     for socket in &all_sockets {
                         if socket.position.distance(pos) < socket_radius * 1.5 {
@@ -2024,7 +2024,9 @@ impl ModuleCanvas {
         }
 
         // Draw wire preview while dragging (visual feedback)
-        if let Some((_, _, is_output, ref socket_type, start_pos)) = self.creating_connection {
+        if let Some((_, _, is_output, ref socket_type, start_pos)) =
+            self.creating_connection.clone()
+        {
             if let Some(mouse_pos) = pointer_pos {
                 // Draw bezier curve from start to mouse
                 let wire_color = Self::get_socket_color(socket_type);
@@ -2339,7 +2341,7 @@ impl ModuleCanvas {
 
         // Draw connection being created with visual feedback
         if let Some((from_part_id, _from_socket_idx, from_is_output, ref from_type, start_pos)) =
-            self.creating_connection
+            self.creating_connection.clone()
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 // Check if hovering over a compatible socket

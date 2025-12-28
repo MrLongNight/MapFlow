@@ -26,7 +26,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{audio_meter::AudioMeter, menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, stereo_audio_meter::StereoAudioMeter, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -171,33 +171,6 @@ impl App {
         ];
 
         let mut ui_state = AppUI::default();
-
-        #[cfg(feature = "midi")]
-        {
-            let paths = [
-                "resources/controllers/ecler_nuo4/elements.json",
-                "../resources/controllers/ecler_nuo4/elements.json",
-                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
-            ];
-            for path_str in paths {
-                let path = std::path::Path::new(path_str);
-                if path.exists() {
-                    match std::fs::read_to_string(path) {
-                        Ok(json) => {
-                            if let Err(e) = ui_state.controller_overlay.load_elements(&json) {
-                                tracing::error!("Failed to parse elements.json: {}", e);
-                            } else {
-                                tracing::info!("Loaded controller elements from {:?}", path);
-                                break;
-                            }
-                        }
-                        Err(e) => {
-                            tracing::error!("Failed to read elements.json from {:?}: {}", path, e)
-                        }
-                    }
-                }
-            }
-        }
 
         let state = AppState::new("New Project");
 
@@ -1016,11 +989,11 @@ impl App {
                                             };
                                             let db_right = db_left; // TODO: Add actual stereo separation
 
-                                            ui.add(AudioMeter::new(
+                                            ui.add(StereoAudioMeter::new(
                                                 self.ui_state.user_config.meter_style,
                                                 db_left,
                                                 db_right,
-                                            ).width(100.0));
+                                            ).desired_size(egui::Vec2::new(100.0, 150.0)));
 
                                             ui.separator();
 
@@ -1100,9 +1073,7 @@ impl App {
                     if self.ui_state.show_inspector {
                         let inspector_context = if let Some(layer_id) = self.ui_state.selected_layer_id {
                             if let Some(layer) = self.state.layer_manager.get_layer(layer_id) {
-                                // Find index for mapping
-                                let index = self.state.layer_manager.layers().iter().position(|l| l.id == layer_id).unwrap_or(0);
-                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform, index }
+                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform }
                             } else {
                                 mapmap_ui::InspectorContext::None
                             }
@@ -1116,46 +1087,12 @@ impl App {
                             mapmap_ui::InspectorContext::None
                         };
 
-
-
-                        // Extract MIDI Learn State
-                        let (is_learning, last_elem, last_time) = (
-                            self.ui_state.is_midi_learn_mode,
-                             #[cfg(feature = "midi")]
-                             self.ui_state.controller_overlay.last_active_element.clone(),
-                             #[cfg(not(feature = "midi"))]
-                             None::<String>,
-                             #[cfg(feature = "midi")]
-                             self.ui_state.controller_overlay.last_active_time,
-                             #[cfg(not(feature = "midi"))]
-                             None,
-                        );
-
-                        if let Some(action) = self.ui_state.inspector_panel.show(
+                        self.ui_state.inspector_panel.show(
                             ctx,
                             inspector_context,
                             &self.ui_state.i18n,
                             self.ui_state.icon_manager.as_ref(),
-                            is_learning,
-                            last_elem.as_ref(),
-                            last_time,
-                            &mut self.ui_state.actions
-                        ) {
-                            match action {
-                                mapmap_ui::InspectorAction::UpdateOpacity(id, val) => {
-                                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
-                                        layer.opacity = val;
-                                        self.state.dirty = true;
-                                    }
-                                }
-                                mapmap_ui::InspectorAction::UpdateTransform(id, transform) => {
-                                     if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
-                                        layer.transform = transform;
-                                        self.state.dirty = true;
-                                    }
-                                }
-                            }
-                        }
+                        );
                     }
 
                     // === 5. CENTRAL PANEL: Module Canvas ===
@@ -1451,26 +1388,6 @@ impl App {
                                 .actions
                                 .push(mapmap_ui::UIAction::ApplyResizeMode(selected_id, mode));
                         }
-                    }
-                }
-            }
-
-            // Handle Global UI Actions
-            for action in self.ui_state.take_actions() {
-                // TODO: Handle Play, Pause, etc.
-                if let mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) = action {
-                    #[cfg(feature = "midi")]
-                    {
-                        use mapmap_ui::config::MidiAssignmentTarget;
-                        self.ui_state.user_config.set_midi_assignment(
-                            &element_id,
-                            MidiAssignmentTarget::MapFlow(target_id.clone()),
-                        );
-                        tracing::info!(
-                            "MIDI Assignment set via Global Learn: {} -> {}",
-                            element_id,
-                            target_id
-                        );
                     }
                 }
             }

@@ -364,7 +364,7 @@
     - Freie Elemente (ohne Zuweisung)
   - ✅ **Bearbeiten** - Zuweisung löschen via 🗑 Button
   - ✅ **Bearbeiten** - Zuweisung auswählen via Dropdown (Weg 2)
-  - ✅ **Global MIDI Learn** - Zuweisung per Mouse-Hover über UI-Elemente (Weg 1)
+  - ⬜ **Global MIDI Learn** - Zuweisung per Mouse-Hover über UI-Elemente (Weg 1)
   - ✅ **Persistierung** - MidiAssignment in UserConfig (config.json)
 
 - 🟡 **WGPU Rendering Fixes**

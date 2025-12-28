@@ -37,53 +37,6 @@ pub enum ControlTarget {
     Custom(String),
 }
 
-impl ControlTarget {
-    /// Returns a human-readable name for the target
-    pub fn name(&self) -> String {
-        match self {
-            ControlTarget::LayerOpacity(id) => format!("Layer {} Opacity", id),
-            ControlTarget::LayerPosition(id) => format!("Layer {} Position", id),
-            ControlTarget::LayerScale(id) => format!("Layer {} Scale", id),
-            ControlTarget::LayerRotation(id) => format!("Layer {} Rotation", id),
-            ControlTarget::LayerVisibility(id) => format!("Layer {} Visibility", id),
-            ControlTarget::PaintParameter(id, name) => format!("Paint {} {}", id, name),
-            ControlTarget::EffectParameter(id, name) => format!("Effect {} {}", id, name),
-            ControlTarget::PlaybackSpeed(Some(id)) => format!("Layer {} Speed", id),
-            ControlTarget::PlaybackSpeed(None) => "Global Speed".to_string(),
-            ControlTarget::PlaybackPosition => "Global Position".to_string(),
-            ControlTarget::OutputBrightness(id) => format!("Output {} Brightness", id),
-            ControlTarget::OutputEdgeBlend(id, _) => format!("Output {} Edge Blend", id),
-            ControlTarget::MasterOpacity => "Master Opacity".to_string(),
-            ControlTarget::MasterBlackout => "Master Blackout".to_string(),
-            ControlTarget::Custom(name) => name.clone(),
-        }
-    }
-
-    /// Returns a unique string identifier for the target (e.g., for serialization/maps)
-    pub fn to_id_string(&self) -> String {
-        // We can reuse the JSON serialization or a custom format
-        // For simplicity and stability, we use a custom format here
-        // that matches what might be used in mapping files or OSC addresses
-        match self {
-            ControlTarget::LayerOpacity(id) => format!("layer/{}/opacity", id),
-            ControlTarget::LayerPosition(id) => format!("layer/{}/position", id),
-            ControlTarget::LayerScale(id) => format!("layer/{}/scale", id),
-            ControlTarget::LayerRotation(id) => format!("layer/{}/rotation", id),
-            ControlTarget::LayerVisibility(id) => format!("layer/{}/visibility", id),
-            ControlTarget::PaintParameter(id, name) => format!("paint/{}/{}", id, name),
-            ControlTarget::EffectParameter(id, name) => format!("effect/{}/{}", id, name),
-            ControlTarget::PlaybackSpeed(Some(id)) => format!("layer/{}/speed", id),
-            ControlTarget::PlaybackSpeed(None) => "playback/speed".to_string(),
-            ControlTarget::PlaybackPosition => "playback/position".to_string(),
-            ControlTarget::OutputBrightness(id) => format!("output/{}/brightness", id),
-            ControlTarget::OutputEdgeBlend(id, edge) => format!("output/{}/blend/{:?}", id, edge),
-            ControlTarget::MasterOpacity => "master/opacity".to_string(),
-            ControlTarget::MasterBlackout => "master/blackout".to_string(),
-            ControlTarget::Custom(name) => format!("custom/{}", name),
-        }
-    }
-}
-
 /// Edge sides for edge blending
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EdgeSide {
@@ -91,6 +44,82 @@ pub enum EdgeSide {
     Right,
     Top,
     Bottom,
+}
+
+impl std::fmt::Display for ControlTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl ControlTarget {
+    /// Get a human-readable name for the UI
+    pub fn name(&self) -> String {
+        match self {
+            Self::LayerOpacity(id) => format!("Layer {} Deckkraft", id + 1),
+            Self::LayerPosition(id) => format!("Layer {} Position", id + 1),
+            Self::LayerScale(id) => format!("Layer {} Skalierung", id + 1),
+            Self::LayerRotation(id) => format!("Layer {} Rotation", id + 1),
+            Self::LayerVisibility(id) => format!("Layer {} Sichtbarkeit", id + 1),
+            Self::PaintParameter(id, name) => format!("Part {} Paint: {}", id + 1, name),
+            Self::EffectParameter(id, name) => format!("Part {} Effect: {}", id + 1, name),
+            Self::PlaybackSpeed(id) => {
+                if let Some(i) = id {
+                    format!("Part {} Speed", i + 1)
+                } else {
+                    "Global Speed".to_string()
+                }
+            }
+            Self::PlaybackPosition => "Global Position".to_string(),
+            Self::OutputBrightness(id) => format!("Output {} Brightness", id + 1),
+            Self::OutputEdgeBlend(id, side) => format!("Output {} Edge {:?}", id + 1, side),
+            Self::MasterOpacity => "Master Deckkraft".to_string(),
+            Self::MasterBlackout => "Master Blackout".to_string(),
+            Self::Custom(name) => name.clone(),
+        }
+    }
+
+    /// Convert to unique ID string for storage
+    pub fn to_id_string(&self) -> String {
+        match self {
+            Self::LayerOpacity(id) => format!("layer:{}:opacity", id),
+            Self::LayerPosition(id) => format!("layer:{}:pos", id),
+            Self::LayerScale(id) => format!("layer:{}:scale", id),
+            Self::LayerRotation(id) => format!("layer:{}:rot", id),
+            Self::LayerVisibility(id) => format!("layer:{}:vis", id),
+            Self::PaintParameter(id, name) => format!("paint:{}:{}", id, name),
+            Self::EffectParameter(id, name) => format!("effect:{}:{}", id, name),
+            Self::PlaybackSpeed(id) => {
+                if let Some(i) = id {
+                    format!("speed:{}", i)
+                } else {
+                    "speed:global".to_string()
+                }
+            }
+            Self::PlaybackPosition => "pos:global".to_string(),
+            Self::OutputBrightness(id) => format!("out:{}:bright", id),
+            Self::OutputEdgeBlend(id, side) => format!("out:{}:edge:{:?}", id, side),
+            Self::MasterOpacity => "master:opacity".to_string(),
+            Self::MasterBlackout => "master:blackout".to_string(),
+            Self::Custom(name) => format!("custom:{}", name),
+        }
+    }
+
+    /// Parse from ID string
+    pub fn from_id_string(s: &str) -> Option<Self> {
+        let parts: Vec<&str> = s.split(':').collect();
+        match parts.as_slice() {
+            ["layer", id, "opacity"] => id.parse().ok().map(Self::LayerOpacity),
+            ["layer", id, "pos"] => id.parse().ok().map(Self::LayerPosition),
+            ["layer", id, "scale"] => id.parse().ok().map(Self::LayerScale),
+            ["layer", id, "rot"] => id.parse().ok().map(Self::LayerRotation),
+            ["layer", id, "vis"] => id.parse().ok().map(Self::LayerVisibility),
+            ["master", "opacity"] => Some(Self::MasterOpacity),
+            ["master", "blackout"] => Some(Self::MasterBlackout),
+            // TODO: Add other parsers as needed
+            _ => None,
+        }
+    }
 }
 
 /// Control value types
