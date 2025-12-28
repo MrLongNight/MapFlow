@@ -172,6 +172,33 @@ impl App {
 
         let mut ui_state = AppUI::default();
 
+        #[cfg(feature = "midi")]
+        {
+            let paths = [
+                "resources/controllers/ecler_nuo4/elements.json",
+                "../resources/controllers/ecler_nuo4/elements.json",
+                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
+            ];
+            for path_str in paths {
+                let path = std::path::Path::new(path_str);
+                if path.exists() {
+                    match std::fs::read_to_string(path) {
+                        Ok(json) => {
+                            if let Err(e) = ui_state.controller_overlay.load_elements(&json) {
+                                tracing::error!("Failed to parse elements.json: {}", e);
+                            } else {
+                                tracing::info!("Loaded controller elements from {:?}", path);
+                                break;
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to read elements.json from {:?}: {}", path, e)
+                        }
+                    }
+                }
+            }
+        }
+
         let state = AppState::new("New Project");
 
         let audio_devices = match CpalBackend::list_devices() {

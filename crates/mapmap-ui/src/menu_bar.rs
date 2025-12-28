@@ -340,6 +340,21 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         {
                             ui_state.show_controller_overlay = !ui_state.show_controller_overlay;
                         }
+
+                        ui.separator();
+
+                        let learn_btn = if ui_state.is_midi_learn_mode {
+                            egui::Button::new("🧠 Learn").fill(egui::Color32::YELLOW)
+                        } else {
+                            egui::Button::new("🧠 Learn")
+                        };
+                        if ui
+                            .add(learn_btn)
+                            .on_hover_text("Global MIDI Learn Mode aktivieren")
+                            .clicked()
+                        {
+                            ui_state.is_midi_learn_mode = !ui_state.is_midi_learn_mode;
+                        }
                     }
 
                     ui.separator();
