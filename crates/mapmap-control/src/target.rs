@@ -37,6 +37,53 @@ pub enum ControlTarget {
     Custom(String),
 }
 
+impl ControlTarget {
+    /// Returns a human-readable name for the target
+    pub fn name(&self) -> String {
+        match self {
+            ControlTarget::LayerOpacity(id) => format!("Layer {} Opacity", id),
+            ControlTarget::LayerPosition(id) => format!("Layer {} Position", id),
+            ControlTarget::LayerScale(id) => format!("Layer {} Scale", id),
+            ControlTarget::LayerRotation(id) => format!("Layer {} Rotation", id),
+            ControlTarget::LayerVisibility(id) => format!("Layer {} Visibility", id),
+            ControlTarget::PaintParameter(id, name) => format!("Paint {} {}", id, name),
+            ControlTarget::EffectParameter(id, name) => format!("Effect {} {}", id, name),
+            ControlTarget::PlaybackSpeed(Some(id)) => format!("Layer {} Speed", id),
+            ControlTarget::PlaybackSpeed(None) => "Global Speed".to_string(),
+            ControlTarget::PlaybackPosition => "Global Position".to_string(),
+            ControlTarget::OutputBrightness(id) => format!("Output {} Brightness", id),
+            ControlTarget::OutputEdgeBlend(id, _) => format!("Output {} Edge Blend", id),
+            ControlTarget::MasterOpacity => "Master Opacity".to_string(),
+            ControlTarget::MasterBlackout => "Master Blackout".to_string(),
+            ControlTarget::Custom(name) => name.clone(),
+        }
+    }
+
+    /// Returns a unique string identifier for the target (e.g., for serialization/maps)
+    pub fn to_id_string(&self) -> String {
+        // We can reuse the JSON serialization or a custom format
+        // For simplicity and stability, we use a custom format here
+        // that matches what might be used in mapping files or OSC addresses
+        match self {
+            ControlTarget::LayerOpacity(id) => format!("layer/{}/opacity", id),
+            ControlTarget::LayerPosition(id) => format!("layer/{}/position", id),
+            ControlTarget::LayerScale(id) => format!("layer/{}/scale", id),
+            ControlTarget::LayerRotation(id) => format!("layer/{}/rotation", id),
+            ControlTarget::LayerVisibility(id) => format!("layer/{}/visibility", id),
+            ControlTarget::PaintParameter(id, name) => format!("paint/{}/{}", id, name),
+            ControlTarget::EffectParameter(id, name) => format!("effect/{}/{}", id, name),
+            ControlTarget::PlaybackSpeed(Some(id)) => format!("layer/{}/speed", id),
+            ControlTarget::PlaybackSpeed(None) => "playback/speed".to_string(),
+            ControlTarget::PlaybackPosition => "playback/position".to_string(),
+            ControlTarget::OutputBrightness(id) => format!("output/{}/brightness", id),
+            ControlTarget::OutputEdgeBlend(id, edge) => format!("output/{}/blend/{:?}", id, edge),
+            ControlTarget::MasterOpacity => "master/opacity".to_string(),
+            ControlTarget::MasterBlackout => "master/blackout".to_string(),
+            ControlTarget::Custom(name) => format!("custom/{}", name),
+        }
+    }
+}
+
 /// Edge sides for edge blending
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EdgeSide {

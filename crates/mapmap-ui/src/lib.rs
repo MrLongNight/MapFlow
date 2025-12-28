@@ -36,7 +36,6 @@ pub mod oscillator_panel;
 pub mod output_panel;
 pub mod paint_panel;
 pub mod shortcut_panel;
-pub mod stereo_audio_meter;
 pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;

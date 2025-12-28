@@ -26,7 +26,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{menu_bar, stereo_audio_meter::StereoAudioMeter, AppUI, EdgeBlendAction};
+use mapmap_ui::{audio_meter::AudioMeter, menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -1009,11 +1009,11 @@ impl App {
                                             };
                                             let db_right = db_left; // TODO: Add actual stereo separation
 
-                                            ui.add(StereoAudioMeter::new(
+                                            ui.add(AudioMeter::new(
                                                 self.ui_state.user_config.meter_style,
                                                 db_left,
                                                 db_right,
-                                            ).desired_size(egui::Vec2::new(100.0, 150.0)));
+                                            ).width(100.0));
 
                                             ui.separator();
 

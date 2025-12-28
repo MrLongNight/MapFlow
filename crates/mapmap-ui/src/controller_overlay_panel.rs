@@ -16,6 +16,7 @@ use mapmap_control::midi::{
 use mapmap_control::target::ControlTarget;
 use std::collections::{HashMap, HashSet};
 
+#[allow(dead_code)]
 fn get_mock_targets() -> Vec<ControlTarget> {
     let mut targets = vec![ControlTarget::MasterOpacity, ControlTarget::MasterBlackout];
     for i in 0..4 {
@@ -944,14 +945,12 @@ impl ControllerOverlayPanel {
             // Apply state updates
             self.selected_element = next_selection;
             self.clipboard_size = next_clipboard;
-        } else {
-            if let Some(elements) = self.elements.clone() {
+        } else if let Some(elements) = self.elements.clone() {
                 for element in &elements.elements {
                     self.draw_element_with_frame(&painter, rect, element, &response, assignments);
                 }
             }
         }
-    }
 
     /// Draw a single element with colored frame
     #[cfg(feature = "midi")]
