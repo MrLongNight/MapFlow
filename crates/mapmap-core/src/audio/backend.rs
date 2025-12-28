@@ -117,6 +117,16 @@ pub mod cpal_backend {
                 }
             };
 
+            // Log device info for debugging
+            let device_name_str = device.name().unwrap_or_else(|_| "Unknown".to_string());
+            eprintln!(
+                "Audio: Using device '{}', format={:?}, sample_rate={}, channels={}",
+                device_name_str,
+                config.sample_format(),
+                config.sample_rate().0,
+                config.channels()
+            );
+
             let err_fn = |err| eprintln!("Audio stream error: {}", err);
 
             // Build stream
