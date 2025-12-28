@@ -40,8 +40,8 @@ impl Default for AudioConfig {
             fft_size: 1024,
             overlap: 0.5,
             smoothing: 0.8,
-            gain: 1000.0,       // Extreme gain for very weak input signals
-            noise_gate: 0.0001, // Lowered from 0.01 to detect low-level inputs
+            gain: 100.0,       // Amplify weak input signals
+            noise_gate: 0.005, // Filter out amplified noise floor
         }
     }
 }
