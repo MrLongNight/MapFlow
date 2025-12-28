@@ -10,35 +10,60 @@ use egui::{Color32, Pos2, Rect, Sense, Stroke, Vec2, Widget};
 /// A widget that displays audio levels.
 pub struct AudioMeter {
     style: AudioMeterStyle,
-    level_db: f32,
-    size: Vec2,
+    level_db_left: f32,
+    level_db_right: f32,
+    width: f32,
 }
 
 impl AudioMeter {
     /// Create a new audio meter
-    pub fn new(style: AudioMeterStyle, level_db: f32) -> Self {
+    pub fn new(style: AudioMeterStyle, level_db_left: f32, level_db_right: f32) -> Self {
+        let width = match style {
+            AudioMeterStyle::Retro => 300.0,
+            AudioMeterStyle::Digital => 360.0,
+        };
         Self {
             style,
-            level_db,
-            size: Vec2::new(180.0, 40.0), // Default size, can be overridden by layout
+            level_db_left,
+            level_db_right,
+            width,
         }
     }
 
-    /// Set preferred size
-    pub fn desired_size(mut self, size: Vec2) -> Self {
-        self.size = size;
+    /// Set preferred width
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width;
         self
     }
 }
 
 impl Widget for AudioMeter {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let (rect, response) = ui.allocate_exact_size(self.size, Sense::hover());
+        // Expand vertically to fill available space, but clamp to reasonable limits
+        // to prevent layout explosions or zero-height issues.
+        // We use available_height() but clamp it because sometimes it can be infinite or 0.
+        let h = ui.available_height().clamp(40.0, 120.0);
+
+        let desired_size = Vec2::new(self.width, h);
+        let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
         if ui.is_rect_visible(rect) {
+            let painter = ui.painter();
+
+            // Draw rack frame
+            draw_rack_frame(painter, rect);
+
+            // Inner content rect (inset for frame)
+            let frame_width = 8.0;
+            let content_rect = rect.shrink(frame_width);
+
             match self.style {
-                AudioMeterStyle::Retro => draw_retro_meter(ui, rect, self.level_db),
-                AudioMeterStyle::Digital => draw_digital_meter(ui, rect, self.level_db),
+                AudioMeterStyle::Retro => {
+                    draw_retro_stereo(ui, content_rect, self.level_db_left, self.level_db_right)
+                }
+                AudioMeterStyle::Digital => {
+                    draw_digital_stereo(ui, content_rect, self.level_db_left, self.level_db_right)
+                }
             }
         }
 
@@ -46,163 +71,283 @@ impl Widget for AudioMeter {
     }
 }
 
-/// Draws an analog retro VU meter
-fn draw_retro_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
+/// Draws the mounting frame with 4 phillips screws
+fn draw_rack_frame(painter: &egui::Painter, rect: Rect) {
+    let frame_color = Color32::from_rgb(45, 45, 50);
+    let frame_highlight = Color32::from_rgb(65, 65, 70);
+    let frame_shadow = Color32::from_rgb(25, 25, 30);
+
+    // Main frame
+    painter.rect_filled(rect, 4.0, frame_color);
+
+    // Beveled edges (highlight top-left, shadow bottom-right)
+    painter.line_segment(
+        [rect.left_top(), Pos2::new(rect.right(), rect.top())],
+        Stroke::new(2.0, frame_highlight),
+    );
+    painter.line_segment(
+        [rect.left_top(), Pos2::new(rect.left(), rect.bottom())],
+        Stroke::new(2.0, frame_highlight),
+    );
+    painter.line_segment(
+        [rect.right_bottom(), Pos2::new(rect.right(), rect.top())],
+        Stroke::new(2.0, frame_shadow),
+    );
+    painter.line_segment(
+        [rect.right_bottom(), Pos2::new(rect.left(), rect.bottom())],
+        Stroke::new(2.0, frame_shadow),
+    );
+
+    // Draw 4 screws
+    let screw_offset = 10.0;
+    // Ensure we don't overlap if rect is too small
+    if rect.width() > 30.0 && rect.height() > 30.0 {
+        let screw_positions = [
+            Pos2::new(rect.min.x + screw_offset, rect.min.y + screw_offset),
+            Pos2::new(rect.max.x - screw_offset, rect.min.y + screw_offset),
+            Pos2::new(rect.min.x + screw_offset, rect.max.y - screw_offset),
+            Pos2::new(rect.max.x - screw_offset, rect.max.y - screw_offset),
+        ];
+
+        for pos in screw_positions {
+            draw_screw(painter, pos, 4.0);
+        }
+    }
+}
+
+/// Draws a realistic phillips head screw
+fn draw_screw(painter: &egui::Painter, center: Pos2, radius: f32) {
+    // Screw head
+    painter.circle_filled(center, radius, Color32::from_rgb(80, 80, 85));
+    painter.circle_stroke(
+        center,
+        radius,
+        Stroke::new(0.5, Color32::from_rgb(40, 40, 45)),
+    );
+
+    // Inner recess (darker)
+    painter.circle_filled(center, radius * 0.7, Color32::from_rgb(50, 50, 55));
+
+    // Phillips cross (+)
+    let cross_len = radius * 0.6;
+    let cross_color = Color32::from_rgb(30, 30, 35);
+
+    // Horizontal line
+    painter.line_segment(
+        [
+            Pos2::new(center.x - cross_len, center.y),
+            Pos2::new(center.x + cross_len, center.y),
+        ],
+        Stroke::new(1.0, cross_color),
+    );
+    // Vertical line
+    painter.line_segment(
+        [
+            Pos2::new(center.x, center.y - cross_len),
+            Pos2::new(center.x, center.y + cross_len),
+        ],
+        Stroke::new(1.0, cross_color),
+    );
+}
+
+/// Draws stereo analog VU meters with glass effect
+fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32) {
     let painter = ui.painter();
 
-    // Background - Dark Retro
-    painter.rect_filled(rect, 4.0, Color32::from_rgb(30, 30, 30));
-    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_rgb(80, 80, 80)));
+    // Dark background behind glass
+    painter.rect_filled(rect, 4.0, Color32::from_rgb(20, 20, 22));
 
-    // Calculate geometry to fit within the box while maximizing arc radius
-    // We place the pivot below the widget to create a flatter, wider arc (classic VU look)
-    // Constraint: center.y - radius >= rect.min.y (top of widget)
+    // Split into left and right meters
+    let meter_width = (rect.width() - 4.0) / 2.0;
+    let left_rect = Rect::from_min_size(rect.min, Vec2::new(meter_width, rect.height()));
+    let right_rect = Rect::from_min_size(
+        Pos2::new(rect.min.x + meter_width + 4.0, rect.min.y),
+        Vec2::new(meter_width, rect.height()),
+    );
 
-    let offset_down = rect.height() * 0.8;
-    let center = rect.center_bottom() + Vec2::new(0.0, offset_down);
-    // Radius fits from pivot to 4px below top edge
-    let radius = (center.y - rect.min.y) - 4.0;
+    // Draw each meter
+    draw_single_retro_meter(painter, left_rect, db_left, "L");
+    draw_single_retro_meter(painter, right_rect, db_right, "R");
 
-    // Draw Scale Arcs
-    // Visible angle range: -35 deg to +35 deg (narrower because arc is flatter/larger)
-    // Left: -20dB, Center: 0dB, Right: +3dB
+    // Glass overlay effect (covers entire area)
+    let glass_rect = rect.shrink(1.0);
 
-    // Helper to map angle to position
+    // Glass reflection gradient (top lighter)
+    painter.rect_filled(
+        Rect::from_min_size(
+            glass_rect.min,
+            Vec2::new(glass_rect.width(), glass_rect.height() * 0.4),
+        ),
+        4.0,
+        Color32::from_white_alpha(15),
+    );
+
+    // Glass edge highlight
+    painter.rect_stroke(
+        glass_rect,
+        4.0,
+        Stroke::new(1.0, Color32::from_white_alpha(30)),
+    );
+}
+
+fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: &str) {
+    // Meter face background
+    painter.rect_filled(rect, 2.0, Color32::from_rgb(230, 225, 210)); // Cream/vintage color
+
+    // Calculate geometry
+    // We want the pivot to be well below the rect
+    let pivot_offset = rect.height() * 0.8;
+    let center = rect.center_bottom() + Vec2::new(0.0, pivot_offset);
+    let radius = pivot_offset + rect.height() * 0.85;
+
+    // Scale arc
+    let start_angle = -35.0_f32;
+    let end_angle = 35.0_f32;
+    let zero_angle = 15.0_f32;
+
     let angle_to_pos = |angle_deg: f32, r: f32| -> Pos2 {
         let rad = (angle_deg - 90.0).to_radians();
         center + Vec2::new(rad.cos() * r, rad.sin() * r)
     };
 
-    let start_angle = -35.0;
-    let end_angle = 35.0;
-    let zero_angle = 20.0; // 0dB position
-
-    // Draw red zone background (0dB to +3dB)
-    // Simplified as a thick arc or polygon since egui doesn't have native arc filling yet easily
-    // We approximate with line segments
-    let red_zone_points: Vec<Pos2> = (0..=10)
+    // Red zone (0 to +3 dB)
+    let red_points: Vec<Pos2> = (0..=5)
         .map(|i| {
-            let t = i as f32 / 10.0;
+            let t = i as f32 / 5.0;
             let angle = zero_angle + t * (end_angle - zero_angle);
-            angle_to_pos(angle, radius * 0.7)
+            angle_to_pos(angle, radius * 0.65)
         })
         .collect();
 
-    if red_zone_points.len() >= 2 {
+    if red_points.len() >= 2 {
         painter.add(egui::Shape::line(
-            red_zone_points,
-            Stroke::new(6.0, Color32::from_rgba_premultiplied(255, 100, 100, 100)),
+            red_points,
+            Stroke::new(5.0, Color32::from_rgba_premultiplied(200, 60, 60, 100)),
         ));
     }
 
-    // Ticks
+    // Scale ticks
     let ticks = [
-        (-20.0, start_angle, "-20"),
-        (-10.0, -20.0, "-10"),
-        (-5.0, 0.0, "-5"),
-        (0.0, zero_angle, "0"),
-        (3.0, end_angle, "+3"),
+        (-20.0, start_angle),
+        (-10.0, -15.0),
+        (-5.0, 0.0),
+        (0.0, zero_angle),
+        (3.0, end_angle),
     ];
+    for (_val, angle) in ticks {
+        let p1 = angle_to_pos(angle, radius * 0.55);
+        let p2 = angle_to_pos(angle, radius * 0.65);
+        painter.line_segment([p1, p2], Stroke::new(1.5, Color32::from_gray(50)));
 
-    for (_val, angle, label) in ticks.iter() {
-        let p1 = angle_to_pos(*angle, radius * 0.6);
-        let p2 = angle_to_pos(*angle, radius * 0.7);
-        painter.line_segment([p1, p2], Stroke::new(1.5, Color32::from_gray(200)));
-
-        // Draw labels slightly below ticks
-        if rect.height() > 30.0 {
-            let text_pos = angle_to_pos(*angle, radius * 0.5);
-            painter.text(
-                text_pos,
-                egui::Align2::CENTER_CENTER,
-                label,
-                egui::FontId::proportional(10.0),
-                Color32::from_gray(200),
-            );
-        }
+        // Labels could be added here if space permits
     }
 
-    // Needle Logic
-    // Clamp db between -40 and +6
-    // Map -20..+3 to angles
-    // Simple interpolation
+    // Needle
     let clamped_db = db.clamp(-40.0, 6.0);
-
-    // Mapping:
-    // -20dB -> start_angle
-    // 0dB -> zero_angle
-    // +3dB -> end_angle
-    // We need a non-linear mapping ideally, but linear sections work for visual
+    // Linear approximation for visualization
     let needle_angle = if clamped_db < -20.0 {
-        start_angle - 5.0 // Resting position
+        start_angle - 5.0
     } else if clamped_db < 0.0 {
-        // Linear map -20 to 0 -> start to zero
-        start_angle + (clamped_db - -20.0) / 20.0 * (zero_angle - start_angle)
+        start_angle + (clamped_db + 20.0) / 20.0 * (zero_angle - start_angle)
     } else {
-        // Linear map 0 to 3 -> zero to end
-        zero_angle + (clamped_db - 0.0) / 3.0 * (end_angle - zero_angle)
+        zero_angle + clamped_db / 3.0 * (end_angle - zero_angle)
     };
 
-    let needle_len = radius * 0.9;
-    let tip = angle_to_pos(needle_angle, needle_len);
+    let needle_tip = angle_to_pos(needle_angle, radius * 0.7);
 
-    // Clip needle drawing to the rect (prevent pivot from showing if it's outside)
-    // We simulate clipping by ensuring we don't draw outside.
-    // Since we calculated radius to fit, the tip is safe.
-    // The start of the needle (center) might be outside.
-    // We intersect the needle line with the bottom edge if needed,
-    // but drawing a line from outside is handled fine by the GPU usually (clipped by window),
-    // but egui might not clip to widget rect automatically.
-    // To be safe and clean, let's start the needle from the bottom edge of the rect.
+    // Needle intersection with bottom edge (approximate for visual cleanliness)
+    let _needle_base = rect.center_bottom() - Vec2::new(0.0, 2.0);
 
-    let needle_dir = Vec2::new(
-        (needle_angle - 90.0).to_radians().cos(),
-        (needle_angle - 90.0).to_radians().sin(),
-    );
+    // We compute where the needle enters the visible area
+    let dir = (needle_tip - center).normalized();
+    // Intersection with rect.max.y
+    let t_base = (rect.max.y - 2.0 - center.y) / dir.y;
+    let visible_base = center + dir * t_base;
 
-    // Find intersection with bottom edge y = rect.max.y
-    // center.y + t * dir.y = rect.max.y  => t = (rect.max.y - center.y) / dir.y
-    // Since center is below rect.max.y, and dir.y is negative (pointing up), t should be positive.
-    let t_bottom = (rect.max.y - center.y) / needle_dir.y;
-    let start_pos = center + needle_dir * t_bottom.max(0.0);
-
-    // Draw Needle Shadow
+    // Draw needle
     painter.line_segment(
-        [start_pos + Vec2::new(2.0, 2.0), tip + Vec2::new(2.0, 2.0)],
-        Stroke::new(2.0, Color32::from_black_alpha(50)),
+        [visible_base, needle_tip],
+        Stroke::new(1.5, Color32::from_rgb(180, 40, 40)),
     );
 
-    // Draw Needle
+    // Shadow
     painter.line_segment(
-        [start_pos, tip],
-        Stroke::new(1.5, Color32::from_rgb(200, 20, 20)),
+        [
+            visible_base + Vec2::new(2.0, 2.0),
+            needle_tip + Vec2::new(2.0, 2.0),
+        ],
+        Stroke::new(2.0, Color32::from_black_alpha(40)),
     );
 
-    // Pivot cap (only if visible, which it isn't with this geometry, so we skip it)
-
-    // Glass reflection effect (top half lighter)
-    painter.rect_filled(
-        Rect::from_min_size(rect.min, Vec2::new(rect.width(), rect.height() * 0.4)),
-        4.0,
-        Color32::from_white_alpha(30),
+    // Channel label
+    painter.text(
+        Pos2::new(rect.center().x, rect.min.y + 10.0),
+        egui::Align2::CENTER_CENTER,
+        label,
+        egui::FontId::proportional(12.0),
+        Color32::from_gray(80),
     );
 }
 
-/// Draws a horizontal segmented digital LED meter
-fn draw_digital_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
+/// Draws stereo digital LED meter (Horizontal Bars)
+fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32) {
     let painter = ui.painter();
 
-    // Background
-    painter.rect_filled(rect, 2.0, Color32::BLACK);
+    // Dark background
+    painter.rect_filled(rect, 2.0, Color32::from_rgb(10, 10, 12));
 
-    let segment_count = 20;
-    let padding = 2.0;
-    let total_width = rect.width() - (padding * 2.0);
-    let segment_width = (total_width - (segment_count as f32 - 1.0)) / segment_count as f32;
-    let segment_height = rect.height() - (padding * 2.0);
+    // Layout:
+    // Top: L
+    // Middle: Scale
+    // Bottom: R
 
-    // dB range from -60 to +3
-    // Map index to dB
+    let total_h = rect.height();
+    let bar_h = (total_h * 0.35).min(15.0); // Max 15px height for bar
+    let scale_h = (total_h - 2.0 * bar_h).max(0.0);
+
+    let l_rect = Rect::from_min_size(
+        rect.min + Vec2::new(4.0, 2.0),
+        Vec2::new(rect.width() - 8.0, bar_h),
+    );
+    let scale_rect = Rect::from_min_size(
+        Pos2::new(rect.min.x + 4.0, l_rect.max.y),
+        Vec2::new(rect.width() - 8.0, scale_h),
+    );
+    let r_rect = Rect::from_min_size(
+        Pos2::new(rect.min.x + 4.0, scale_rect.max.y),
+        Vec2::new(rect.width() - 8.0, bar_h),
+    );
+
+    // Draw Bars
+    draw_horizontal_led_bar(painter, l_rect, db_left);
+    draw_horizontal_led_bar(painter, r_rect, db_right);
+
+    // Draw Scale
+    draw_horizontal_scale(painter, scale_rect);
+
+    // Labels overlay
+    painter.text(
+        l_rect.left_center() + Vec2::new(4.0, 0.0),
+        egui::Align2::LEFT_CENTER,
+        "L",
+        egui::FontId::proportional(10.0),
+        Color32::WHITE,
+    );
+    painter.text(
+        r_rect.left_center() + Vec2::new(4.0, 0.0),
+        egui::Align2::LEFT_CENTER,
+        "R",
+        egui::FontId::proportional(10.0),
+        Color32::WHITE,
+    );
+}
+
+fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
+    let segment_count = 40;
+    let _padding = 1.0;
+    let total_w = rect.width();
+    let seg_w = (total_w - (segment_count as f32 - 1.0)) / segment_count as f32;
+
     let min_db = -60.0;
     let max_db = 3.0;
 
@@ -212,34 +357,54 @@ fn draw_digital_meter(ui: &mut egui::Ui, rect: Rect, db: f32) {
 
         let active = db >= threshold_db;
 
-        // Color logic
-        let base_color = if threshold_db >= 0.0 {
-            Color32::from_rgb(255, 0, 0) // Red
-        } else if threshold_db >= -12.0 {
-            Color32::from_rgb(255, 200, 0) // Yellow
+        let color = if threshold_db >= 0.0 {
+            Color32::from_rgb(255, 50, 50)
+        } else if threshold_db >= -10.0 {
+            Color32::from_rgb(255, 200, 0)
         } else {
-            Color32::from_rgb(0, 255, 0) // Green
+            Color32::from_rgb(0, 255, 0)
         };
 
-        let color = if active {
-            base_color
+        let final_color = if active {
+            color
         } else {
-            // Dimmed/Off state
-            Color32::from_rgba_premultiplied(
-                base_color.r() / 5,
-                base_color.g() / 5,
-                base_color.b() / 5,
-                255,
-            )
+            Color32::from_rgba_premultiplied(color.r() / 6, color.g() / 6, color.b() / 6, 255)
         };
 
-        let x = rect.min.x + padding + (i as f32 * (segment_width + 1.0));
-        let y = rect.min.y + padding;
-
+        let x = rect.min.x + i as f32 * (seg_w + 1.0);
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(x, y), Vec2::new(segment_width, segment_height)),
+            Rect::from_min_size(Pos2::new(x, rect.min.y), Vec2::new(seg_w, rect.height())),
             1.0,
-            color,
+            final_color,
         );
+    }
+}
+
+fn draw_horizontal_scale(painter: &egui::Painter, rect: Rect) {
+    let min_db = -60.0;
+    let max_db = 3.0;
+
+    let db_to_x = |db: f32| -> f32 {
+        let t = (db - min_db) / (max_db - min_db);
+        rect.min.x + t * rect.width()
+    };
+
+    let tick_vals = [-40.0, -20.0, -10.0, -6.0, 0.0, 3.0];
+    for val in tick_vals {
+        let x = db_to_x(val);
+        painter.line_segment(
+            [Pos2::new(x, rect.min.y), Pos2::new(x, rect.max.y)],
+            Stroke::new(1.0, Color32::from_gray(60)),
+        );
+
+        if rect.height() > 8.0 && (val == -40.0 || val == -20.0 || val == 0.0) {
+            painter.text(
+                Pos2::new(x, rect.center().y),
+                egui::Align2::CENTER_CENTER,
+                format!("{:.0}", val),
+                egui::FontId::proportional(9.0),
+                Color32::from_gray(150),
+            );
+        }
     }
 }

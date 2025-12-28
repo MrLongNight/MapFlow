@@ -46,6 +46,7 @@ pub enum InspectorContext<'a> {
 
 impl InspectorPanel {
     /// Show the inspector panel as a right side panel
+    #[allow(clippy::too_many_arguments)]
     pub fn show(
         &mut self,
         ctx: &egui::Context,
@@ -132,6 +133,7 @@ impl InspectorPanel {
     }
 
     /// Show layer properties inspector
+    #[allow(clippy::too_many_arguments)]
     fn show_layer_inspector(
         &mut self,
         ui: &mut Ui,
