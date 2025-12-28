@@ -418,3 +418,5 @@ settings-frame-rate = Bildrate
 settings-app = App-Einstellungen
 settings-language = Sprache
 settings-logging = Protokollierung
+tooltip-toggle-visibility = Sichtbarkeit umschalten
+tooltip-layer-opacity = Ebenen-Deckkraft

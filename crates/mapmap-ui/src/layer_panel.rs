@@ -138,14 +138,19 @@ impl LayerPanel {
                                                 crate::icons::AppIcon::EyeSlash
                                             };
                                             if let Some(img) = mgr.image(icon, 16.0) {
-                                                if ui.add(egui::ImageButton::new(img)).clicked() {
+                                                if ui
+                                                    .add(egui::ImageButton::new(img))
+                                                    .on_hover_text(i18n.t("tooltip-toggle-visibility"))
+                                                    .clicked()
+                                                {
                                                     layer.visible = !layer.visible;
                                                 }
                                                 icon_processed = true;
                                             }
                                         }
                                         if !icon_processed {
-                                            ui.checkbox(&mut layer.visible, "");
+                                            ui.checkbox(&mut layer.visible, "")
+                                                .on_hover_text(i18n.t("tooltip-toggle-visibility"));
                                         }
 
                                         // Layer Name
@@ -160,7 +165,8 @@ impl LayerPanel {
                                                         .show_value(false)
                                                         .min_decimals(2)
                                                         .max_decimals(2),
-                                                );
+                                                )
+                                                .on_hover_text(i18n.t("tooltip-layer-opacity"));
 
                                                 // Blend Mode
                                                 egui::ComboBox::from_id_source(format!(
