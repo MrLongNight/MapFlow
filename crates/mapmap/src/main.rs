@@ -502,6 +502,32 @@ impl App {
                     }
                 }
 
+                // Process audio
+                if let Some(backend) = &mut self.audio_backend {
+                    let samples = backend.get_samples();
+                    if !samples.is_empty() {
+                        let timestamp = self.start_time.elapsed().as_secs_f64();
+                        let analysis = self.audio_analyzer.process_samples(&samples, timestamp);
+
+                        // Log every second for debugging
+                        static mut LAST_LOG_SEC: i64 = 0;
+                        let current_sec = timestamp as i64;
+                        unsafe {
+                            if current_sec != LAST_LOG_SEC {
+                                LAST_LOG_SEC = current_sec;
+                                tracing::info!(
+                                    "Audio: {} samples/frame, RMS={:.3}, Peak={:.3}, Bands={:?}",
+                                    samples.len(),
+                                    analysis.rms_volume,
+                                    analysis.peak_volume,
+                                    analysis.band_energies
+                                );
+                            }
+                        }
+                        self.ui_state.dashboard.set_audio_analysis(analysis);
+                    }
+                }
+
                 // Redraw all windows
                 for output_id in self
                     .window_manager
