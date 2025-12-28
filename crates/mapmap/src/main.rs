@@ -1441,24 +1441,21 @@ impl App {
 
             // Handle Global UI Actions
             for action in self.ui_state.take_actions() {
-                match action {
-                    mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) => {
-                        #[cfg(feature = "midi")]
-                        {
-                            use mapmap_ui::config::MidiAssignmentTarget;
-                            self.ui_state.user_config.set_midi_assignment(
-                                &element_id,
-                                MidiAssignmentTarget::MapFlow(target_id.clone()),
-                            );
-                            tracing::info!(
-                                "MIDI Assignment set via Global Learn: {} -> {}",
-                                element_id,
-                                target_id
-                            );
-                        }
+                // TODO: Handle Play, Pause, etc.
+                if let mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) = action {
+                    #[cfg(feature = "midi")]
+                    {
+                        use mapmap_ui::config::MidiAssignmentTarget;
+                        self.ui_state.user_config.set_midi_assignment(
+                            &element_id,
+                            MidiAssignmentTarget::MapFlow(target_id.clone()),
+                        );
+                        tracing::info!(
+                            "MIDI Assignment set via Global Learn: {} -> {}",
+                            element_id,
+                            target_id
+                        );
                     }
-                    // TODO: Handle Play, Pause, etc.
-                    _ => {}
                 }
             }
 
