@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-28: 🎨 Palette: Add tooltips to Layer Panel controls (#125)
 - 2025-12-28: feat(ui): implement stereo audio meter with Retro and Digital styles (#128)
 - 2025-12-28: ⚡ Bolt: Optimize ModuleSocketType to be Copy and remove redundant clones (#127)
 - 2025-12-28: 🛡️ Sentinel: [HIGH] Fix overly permissive CORS configuration (#126)
