@@ -3,6 +3,7 @@
 //! Phase 3: Audio-reactive Effects
 //! Provides FFT analysis, beat detection, and audio-reactive parameter mapping
 
+pub mod analyzer_v2;
 pub mod backend;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};

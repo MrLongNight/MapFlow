@@ -21,6 +21,12 @@ chrono = "0.4"
 tracing = { workspace = true }
 winit = { workspace = true, optional = true }
 
+# Audio Analysis (Phase 1 Migration)
+audio-processor-analysis = "2.4"
+audio-processor-traits = "4.3"
+num-traits = "0.2"
+num-complex = "0.4"
+
 
 [features]
 default = ["audio"]

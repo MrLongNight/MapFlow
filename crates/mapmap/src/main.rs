@@ -13,7 +13,7 @@ use egui_winit::State;
 use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::{shortcuts::Action, ControlManager};
 use mapmap_core::{
-    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, AudioAnalyzer},
+    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config}},
     AppState, OutputId,
 };
 
@@ -65,7 +65,7 @@ struct App {
     /// The audio backend.
     audio_backend: Option<CpalBackend>,
     /// The audio analyzer.
-    audio_analyzer: AudioAnalyzer,
+    audio_analyzer: AudioAnalyzerV2,
     /// List of available audio devices.
     audio_devices: Vec<String>,
     /// The egui context.
@@ -244,8 +244,13 @@ impl App {
             }
         }
 
-        // Initialize Audio Analyzer
-        let audio_analyzer = AudioAnalyzer::new(state.audio_config.clone());
+        // Initialize Audio Analyzer V2 (new implementation)
+        let audio_analyzer = AudioAnalyzerV2::new(AudioAnalyzerV2Config {
+            sample_rate: state.audio_config.sample_rate,
+            fft_size: state.audio_config.fft_size,
+            overlap: state.audio_config.overlap,
+            smoothing: state.audio_config.smoothing,
+        });
 
         // Start MCP Server in a separate thread
         let (mcp_sender, mcp_receiver) = unbounded();
@@ -531,7 +536,12 @@ impl App {
                     let samples = backend.get_samples();
                     if !samples.is_empty() {
                         let timestamp = self.start_time.elapsed().as_secs_f64();
-                        let analysis = self.audio_analyzer.process_samples(&samples, timestamp);
+                        
+                        // Process samples with new V2 analyzer
+                        self.audio_analyzer.process_samples(&samples, timestamp);
+                        
+                        // Get analysis results
+                        let analysis_v2 = self.audio_analyzer.get_latest_analysis();
 
                         // Log every second for debugging
                         static mut LAST_LOG_SEC: i64 = 0;
@@ -540,15 +550,38 @@ impl App {
                             if current_sec != LAST_LOG_SEC {
                                 LAST_LOG_SEC = current_sec;
                                 tracing::info!(
-                                    "Audio: {} samples, RMS={:.6}, Peak={:.6}, Bands={:?}",
+                                    "AudioV2: {} samples, RMS={:.4}, Peak={:.4}, Bands[0..3]={:?}",
                                     samples.len(),
-                                    analysis.rms_volume,
-                                    analysis.peak_volume,
-                                    analysis.band_energies
+                                    analysis_v2.rms_volume,
+                                    analysis_v2.peak_volume,
+                                    &analysis_v2.band_energies[..3]
                                 );
                             }
                         }
-                        self.ui_state.dashboard.set_audio_analysis(analysis);
+                        
+                        // Convert V2 analysis to legacy format for UI compatibility
+                        let legacy_analysis = mapmap_core::audio::AudioAnalysis {
+                            timestamp: analysis_v2.timestamp,
+                            fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
+                            band_energies: [
+                                analysis_v2.band_energies[0], // SubBass
+                                analysis_v2.band_energies[1], // Bass
+                                analysis_v2.band_energies[2], // LowMid
+                                analysis_v2.band_energies[3], // Mid
+                                analysis_v2.band_energies[4], // HighMid
+                                analysis_v2.band_energies[5], // UpperMid (Presence in V1)
+                                analysis_v2.band_energies[6], // Presence (Brilliance in V1)
+                            ],
+                            rms_volume: analysis_v2.rms_volume,
+                            peak_volume: analysis_v2.peak_volume,
+                            beat_detected: analysis_v2.beat_detected,
+                            beat_strength: analysis_v2.beat_strength,
+                            onset_detected: false, // Not implemented in V2 yet
+                            tempo_bpm: None, // Not implemented in V2 yet
+                            waveform: analysis_v2.waveform.clone(),
+                        };
+                        
+                        self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
                     }
                 }
 
@@ -1025,11 +1058,11 @@ impl App {
                                         .default_open(false)
                                         .show(ui, |ui| {
                                             // Get analysis (always available, defaults to zero)
-                                            let analysis = self.audio_analyzer.get_latest_analysis();
+                                            let analysis_v2 = self.audio_analyzer.get_latest_analysis();
                                             
                                             // Only show real values if audio backend is active and signal is above noise floor
-                                            let (db_left, db_right) = if self.audio_backend.is_some() && analysis.rms_volume > 0.001 {
-                                                let db = 20.0 * analysis.rms_volume.log10();
+                                            let (db_left, db_right) = if self.audio_backend.is_some() && analysis_v2.rms_volume > 0.001 {
+                                                let db = 20.0 * analysis_v2.rms_volume.log10();
                                                 (db, db)
                                             } else {
                                                 (f32::NEG_INFINITY, f32::NEG_INFINITY)
@@ -1043,9 +1076,28 @@ impl App {
 
                                             ui.separator();
 
-                                            // Pass analysis to audio panel (or None if backend is inactive)
-                                            let analysis_ref = if self.audio_backend.is_some() {
-                                                Some(&analysis)
+                                            // Convert V2 analysis to legacy format for audio panel
+                                            let legacy_analysis = if self.audio_backend.is_some() {
+                                                Some(mapmap_core::audio::AudioAnalysis {
+                                                    timestamp: analysis_v2.timestamp,
+                                                    fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
+                                                    band_energies: [
+                                                        analysis_v2.band_energies[0],
+                                                        analysis_v2.band_energies[1],
+                                                        analysis_v2.band_energies[2],
+                                                        analysis_v2.band_energies[3],
+                                                        analysis_v2.band_energies[4],
+                                                        analysis_v2.band_energies[5],
+                                                        analysis_v2.band_energies[6],
+                                                    ],
+                                                    rms_volume: analysis_v2.rms_volume,
+                                                    peak_volume: analysis_v2.peak_volume,
+                                                    beat_detected: analysis_v2.beat_detected,
+                                                    beat_strength: analysis_v2.beat_strength,
+                                                    onset_detected: false,
+                                                    tempo_bpm: None,
+                                                    waveform: analysis_v2.waveform.clone(),
+                                                })
                                             } else {
                                                 None
                                             };
@@ -1053,7 +1105,7 @@ impl App {
                                             if let Some(action) = self.ui_state.audio_panel.ui(
                                                 ui,
                                                 &self.ui_state.i18n,
-                                                analysis_ref,
+                                                legacy_analysis.as_ref(),
                                                 &self.state.audio_config,
                                                 &self.audio_devices,
                                                 &mut self.ui_state.selected_audio_device,
@@ -1084,7 +1136,12 @@ impl App {
                                                         }
                                                     }
                                                     mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
-                                                        self.audio_analyzer.update_config(cfg.clone());
+                                                        self.audio_analyzer.update_config(AudioAnalyzerV2Config {
+                                                            sample_rate: cfg.sample_rate,
+                                                            fft_size: cfg.fft_size,
+                                                            overlap: cfg.overlap,
+                                                            smoothing: cfg.smoothing,
+                                                        });
                                                         self.state.audio_config = cfg;
                                                     }
                                                 }
