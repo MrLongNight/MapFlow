@@ -44,7 +44,15 @@ impl AuthConfig {
         if !self.enabled {
             return true; // No auth required
         }
-        self.api_keys.contains(key)
+
+        // Use constant-time comparison to prevent timing attacks
+        let mut is_valid = false;
+        for stored_key in &self.api_keys {
+            if constant_time_eq(stored_key, key) {
+                is_valid = true;
+            }
+        }
+        is_valid
     }
 
     /// Check if authentication is enabled
@@ -92,6 +100,26 @@ fn parse_api_key_from_query(query: &str) -> Option<String> {
     None
 }
 
+/// Constant-time string comparison to mitigate timing attacks
+///
+/// Returns true if the two strings are identical.
+/// Note: This still leaks length information, but protects the content.
+fn constant_time_eq(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+
+    let a_bytes = a.as_bytes();
+    let b_bytes = b.as_bytes();
+    let mut result = 0u8;
+
+    for i in 0..a.len() {
+        result |= a_bytes[i] ^ b_bytes[i];
+    }
+
+    result == 0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,5 +162,16 @@ mod tests {
         let headers = http::HeaderMap::new();
         let key = extract_api_key(&headers, Some("foo=bar&api_key=test_key"));
         assert_eq!(key, Some("test_key".to_string()));
+    }
+
+    #[test]
+    fn test_constant_time_eq() {
+        assert!(constant_time_eq("secret", "secret"));
+        assert!(!constant_time_eq("secret", "secreT"));
+        assert!(!constant_time_eq("secret", "public"));
+        assert!(!constant_time_eq("secret", "secret1"));
+        assert!(!constant_time_eq("secret", "secre"));
+        assert!(!constant_time_eq("", "secret"));
+        assert!(constant_time_eq("", ""));
     }
 }
