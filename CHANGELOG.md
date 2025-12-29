@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - 2025-12-29: feat(ui): Unified "Add Node" menu with quick-search replacing 8 toolbar dropdowns
 - 2025-12-29: feat(ui): Added BPM display and playback controls to main toolbar (removed from sidebar)
+- 2025-12-29: fix(control): Stabilize MIDI clock BPM with sliding window average
+- 2025-12-29: fix(audio): Improve BPM stability with median filtering and outlier removal
+- 2025-12-29: fix(ui): Fix app settings window toggle logic and ID stability
+- 2025-12-29: 🛡️ Sentinel: Fix timing attack in API key validation (#132)
 - 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
 - 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)
 - 2025-12-29: feat(audio): Implement AudioAnalyzerV2 with working FFT analysis (replaces defective AudioAnalyzer)
