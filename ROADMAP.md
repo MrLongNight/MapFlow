@@ -307,6 +307,7 @@
   - ✅ Box Selection, Right-Click Context Menu, Presets Popup
   - ✅ Multi-select, Mini-map, Auto-layout, Search popup
   - ✅ Undo/Redo, Node Inspector Dropdowns
+  - ✅ "Add Node" Menu: Unified dropdown with search/filter (COMPLETED 2025-12-29)
   - ⬜ Resize Drag Interaction (Handle vorhanden, Drag-Logik fehlt)
   - ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
   - ⬜ MIDI/OSC Device Selectors

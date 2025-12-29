@@ -445,7 +445,7 @@ impl AudioAnalyzerV2 {
         }
 
         // Calculate intervals between consecutive beats
-        let intervals: Vec<f64> = self
+        let mut intervals: Vec<f64> = self
             .beat_timestamps
             .windows(2)
             .map(|w| w[1] - w[0])
@@ -455,28 +455,47 @@ impl AudioAnalyzerV2 {
             return None;
         }
 
-        // Calculate average interval
-        let avg_interval: f64 = intervals.iter().sum::<f64>() / intervals.len() as f64;
+        // Sort intervals to filtering outliers
+        intervals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
-        if avg_interval <= 0.0 {
+        // Remove outliers (keep middle 50% approx) if we have enough samples
+        let valid_intervals = if intervals.len() >= 4 {
+            let start = intervals.len() / 4;
+            let end = intervals.len() - start;
+            &intervals[start..end]
+        } else {
+            &intervals[..]
+        };
+
+        if valid_intervals.is_empty() {
+            return None;
+        }
+
+        // Calculate average interval of the clean set
+        let avg_interval: f64 = valid_intervals.iter().sum::<f64>() / valid_intervals.len() as f64;
+
+        if avg_interval <= 0.001 {
             return None;
         }
 
         // Convert to BPM: BPM = 60 / interval_in_seconds
-        let bpm = (60.0 / avg_interval) as f32;
+        let raw_bpm = (60.0 / avg_interval) as f32;
+        let mut bpm = raw_bpm;
 
-        // Clamp to reasonable DJ range (60-200 BPM)
-        if bpm >= 60.0 && bpm <= 200.0 {
-            Some(bpm)
-        } else if bpm > 200.0 && bpm <= 400.0 {
-            // Might be detecting half-beats, divide by 2
-            Some(bpm / 2.0)
-        } else if bpm >= 30.0 && bpm < 60.0 {
-            // Might be detecting double-beats, multiply by 2
-            Some(bpm * 2.0)
-        } else {
-            None
+        // Smart range clamping (70-180 BPM is standard VJ/DJ range)
+        // If outside, try to half or double to fit
+        if bpm > 185.0 {
+            while bpm > 185.0 {
+                bpm /= 2.0;
+            }
+        } else if bpm < 70.0 {
+            while bpm < 70.0 && bpm > 30.0 {
+                bpm *= 2.0;
+            }
         }
+
+        // Round to 1 decimal place to reduce visual jitter
+        Some((bpm * 10.0).round() / 10.0)
     }
 
     /// Get the latest analysis result
