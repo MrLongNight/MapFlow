@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-29: 🛡️ Sentinel: Fix timing attack in API key validation (#132)
 - 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
 - 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)
 - 2025-12-29: feat(audio): Implement AudioAnalyzerV2 with working FFT analysis (replaces defective AudioAnalyzer)
