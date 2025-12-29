@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
+- 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)
+- 2025-12-29: feat(audio): Implement AudioAnalyzerV2 with working FFT analysis (replaces defective AudioAnalyzer)
+- 2025-12-29: fix(config): Add missing selected_audio_device field to UserConfig test
 - 2025-12-28: 🎨 Palette: Add tooltips to Layer Panel controls (#125)
 - 2025-12-28: feat(ui): implement stereo audio meter with Retro and Digital styles (#128)
 - 2025-12-28: ⚡ Bolt: Optimize ModuleSocketType to be Copy and remove redundant clones (#127)
