@@ -1235,13 +1235,17 @@ impl App {
                     });
 
                     // === Settings Window (only modal allowed) ===
-                    if self.ui_state.show_settings {
-                        let mut close_settings = false;
+                    let mut show_settings = self.ui_state.show_settings;
+                    let mut explicit_close = false;
+
+                    if show_settings {
                         egui::Window::new(self.ui_state.i18n.t("menu-file-settings"))
+                            .id(egui::Id::new("app_settings_window"))
                             .collapsible(false)
                             .resizable(true)
                             .default_size([400.0, 300.0])
                             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                            .open(&mut show_settings)
                             .show(ctx, |ui| {
                                 // Project Settings
                                 egui::CollapsingHeader::new(format!("🎬 {}", self.ui_state.i18n.t("settings-project")))
@@ -1418,13 +1422,15 @@ impl App {
 
                                 ui.separator();
                                 if ui.button("✕ Schließen").clicked() {
-                                    close_settings = true;
+                                    explicit_close = true;
                                 }
                             });
-                        if close_settings {
-                            self.ui_state.show_settings = false;
-                        }
                     }
+
+                    if explicit_close {
+                        show_settings = false;
+                    }
+                    self.ui_state.show_settings = show_settings;
                 });
 
                 self.egui_state
