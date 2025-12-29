@@ -471,7 +471,8 @@ impl ModuleCanvas {
             let has_module = self.active_module_id.is_some();
 
             ui.add_enabled_ui(has_module, |ui| {
-                // === SIGNAL FLOW ORDER: Trigger → Source → Mask → Modulator → Layer → Output ===
+                // Node categories in signal flow order - collapse into menu on small screens
+                ui.label(egui::RichText::new("Add:").weak().small());
 
                 // TRIGGER DROPDOWN
                 egui::menu::menu_button(ui, "⚡ Trigger", |ui| {
