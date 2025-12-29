@@ -325,6 +325,53 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                     ui.separator();
 
+                    // === PLAYBACK CONTROLS ===
+                    ui.horizontal(|ui| {
+                        let btn_size = egui::vec2(28.0, 28.0);
+
+                        if ui
+                            .add_sized(btn_size, egui::Button::new("▶"))
+                            .on_hover_text("Play")
+                            .clicked()
+                        {
+                            actions.push(UIAction::Play);
+                        }
+                        if ui
+                            .add_sized(btn_size, egui::Button::new("⏸"))
+                            .on_hover_text("Pause")
+                            .clicked()
+                        {
+                            actions.push(UIAction::Pause);
+                        }
+                        if ui
+                            .add_sized(btn_size, egui::Button::new("⏹"))
+                            .on_hover_text("Stop")
+                            .clicked()
+                        {
+                            actions.push(UIAction::Stop);
+                        }
+                    });
+
+                    ui.separator();
+
+                    // === BPM DISPLAY ===
+                    let bpm = ui_state.current_bpm;
+                    let bpm_text = if let Some(tempo) = bpm {
+                        format!("{:.0} BPM", tempo)
+                    } else {
+                        "--- BPM".to_string()
+                    };
+
+                    ui.add(egui::Label::new(
+                        egui::RichText::new(bpm_text)
+                            .size(16.0)
+                            .color(egui::Color32::from_rgb(255, 200, 0))
+                            .strong(),
+                    ))
+                    .on_hover_text("Erkanntes Tempo (Beats per Minute)");
+
+                    ui.separator();
+
                     // === MIDI SECTION ===
                     // MIDI Status indicator (passed via ui_state)
                     #[cfg(feature = "midi")]

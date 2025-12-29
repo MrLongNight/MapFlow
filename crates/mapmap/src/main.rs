@@ -26,7 +26,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{audio_meter::AudioMeter, menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -592,6 +592,9 @@ impl App {
                             beat_strength: analysis_v2.beat_strength,
                             bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
                         });
+                        
+                        // Update BPM in toolbar
+                        self.ui_state.current_bpm = analysis_v2.tempo_bpm;
                     }
                 }
 
@@ -1002,23 +1005,7 @@ impl App {
                                 ui.separator();
 
                                 egui::ScrollArea::vertical().show(ui, |ui| {
-                                    // Dashboard Section
-                                    egui::CollapsingHeader::new("📊 Dashboard")
-                                        .default_open(true)
-                                        .show(ui, |ui| {
-                                            // Playback controls inline
-                                            ui.horizontal(|ui| {
-                                                if ui.button("▶").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Play);
-                                                }
-                                                if ui.button("⏸").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Pause);
-                                                }
-                                                if ui.button("⏹").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Stop);
-                                                }
-                                            });
-                                        });
+                                    // Note: Playback controls (Play/Pause/Stop) are now in the toolbar
 
                                     // Layers Section
                                     egui::CollapsingHeader::new("📑 Layers")
@@ -1063,28 +1050,13 @@ impl App {
                                             );
                                         });
 
-                                    // Audio Section
+                                    // Audio Section (Device selection, FFT visualization)
+                                    // Note: Level meter is in the toolbar
                                     egui::CollapsingHeader::new("🔊 Audio")
                                         .default_open(false)
                                         .show(ui, |ui| {
                                             // Get analysis (always available, defaults to zero)
                                             let analysis_v2 = self.audio_analyzer.get_latest_analysis();
-                                            
-                                            // Only show real values if audio backend is active and signal is above noise floor
-                                            let (db_left, db_right) = if self.audio_backend.is_some() && analysis_v2.rms_volume > 0.001 {
-                                                let db = 20.0 * analysis_v2.rms_volume.log10();
-                                                (db, db)
-                                            } else {
-                                                (f32::NEG_INFINITY, f32::NEG_INFINITY)
-                                            };
-
-                                            ui.add(AudioMeter::new(
-                                                self.ui_state.user_config.meter_style,
-                                                db_left,
-                                                db_right,
-                                            ).width(100.0));
-
-                                            ui.separator();
 
                                             // Convert V2 analysis to legacy format for audio panel
                                             let legacy_analysis = if self.audio_backend.is_some() {

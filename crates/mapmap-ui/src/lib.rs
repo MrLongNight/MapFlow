@@ -239,6 +239,8 @@ pub struct AppUI {
     pub show_controller_overlay: bool,
     /// Global flag for "Hover" MIDI Learn Mode (Way 1)
     pub is_midi_learn_mode: bool,
+    /// Current detected BPM (None if not detected yet)
+    pub current_bpm: Option<f32>,
 }
 
 impl Default for AppUI {
@@ -313,6 +315,7 @@ impl Default for AppUI {
             controller_overlay: ControllerOverlayPanel::new(),
             show_controller_overlay: false,
             is_midi_learn_mode: false,
+            current_bpm: None,
         }
     }
 }
