@@ -102,14 +102,19 @@
 
 ### Audio (Plattformspezifische Backends, Analyzer/Mapping)
 
-- ❌ **Audio-Analyse** (`mapmap-core/src/audio.rs`) – **DEFEKT, MIGRATION GEPLANT**
-  - ❌ FFT-Analyse mit RustFFT – NICHT FUNKTIONAL
-  - ❌ 7 Frequenzbänder – NICHT FUNKTIONAL
-  - ❌ RMS-Volume-Analyse – NICHT FUNKTIONAL
-  - ❌ Peak-Detektion – NICHT FUNKTIONAL
-  - ❌ Beat-Detection – NICHT FUNKTIONAL
-  - 🔄 **MIGRATION:** Ersetzen durch `audio-processor-analysis` Crate
-  - 📄 **Plan:** [`.agent/plans/AUDIO_ANALYSIS_MIGRATION.md`](.agent/plans/AUDIO_ANALYSIS_MIGRATION.md)
+- ✅ **Audio-Analyse** (`mapmap-core/src/audio/analyzer_v2.rs`) – **FUNKTIONAL (2025-12-29)**
+  - ✅ FFT-Analyse mit RustFFT – FUNKTIONAL
+  - ✅ 9 Frequenzbänder (SubBass, Bass, LowMid, Mid, HighMid, UpperMid, Presence, Brilliance, Air)
+  - ✅ RMS-Volume-Analyse – FUNKTIONAL
+  - ✅ Peak-Detektion – FUNKTIONAL
+  - ✅ Beat-Detection (einfach, bassbasiert) – FUNKTIONAL
+  - ✅ Ring-Buffer-Management für effiziente Verarbeitung
+  - ✅ Hann-Window-Funktion für bessere Frequenzauflösung
+  - ✅ Konfigurierbare FFT-Größe, Overlap und Smoothing
+  - ✅ **Module Canvas Integration:** Live-Trigger-Visualisierung
+    - ✅ VU-Meter auf AudioFFT-Trigger-Nodes
+    - ✅ Threshold-Linie angezeigt
+    - ✅ Glow-Effekt bei Trigger-Aktivierung
 
 - ✅ **Audio-Reactive-System** (`mapmap-core/src/audio_reactive.rs`)
   - ✅ AudioReactiveController für Parameter-Mapping
