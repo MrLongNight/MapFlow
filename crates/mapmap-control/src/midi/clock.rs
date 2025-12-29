@@ -1,6 +1,7 @@
 //! MIDI clock synchronization
 
 use super::MidiMessage;
+use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 use tracing::{debug, info};
 
@@ -19,6 +20,7 @@ pub struct MidiClock {
     last_clock_time: Option<Instant>,
     clock_count: u32,
     start_time: Option<Instant>,
+    tick_deltas: VecDeque<Duration>,
 }
 
 impl MidiClock {
@@ -32,6 +34,7 @@ impl MidiClock {
             last_clock_time: None,
             clock_count: 0,
             start_time: None,
+            tick_deltas: VecDeque::with_capacity(24),
         }
     }
 
@@ -44,6 +47,7 @@ impl MidiClock {
                 self.clock_count = 0;
                 self.start_time = Some(Instant::now());
                 self.last_clock_time = None;
+                self.tick_deltas.clear();
             }
             MidiMessage::Stop => {
                 info!("MIDI Clock: Stop");
@@ -51,6 +55,7 @@ impl MidiClock {
                 self.clock_count = 0;
                 self.start_time = None;
                 self.last_clock_time = None;
+                self.tick_deltas.clear();
             }
             MidiMessage::Continue => {
                 info!("MIDI Clock: Continue");
@@ -72,16 +77,35 @@ impl MidiClock {
         if let Some(last_time) = self.last_clock_time {
             let delta = now.duration_since(last_time);
 
-            // Calculate tempo from clock interval
-            // 24 ticks per beat, so interval between ticks is 1/24 of a beat
-            let beat_duration = delta.as_secs_f32() * Self::TICKS_PER_BEAT as f32;
-            let bpm = 60.0 / beat_duration;
+            // Filter outliers (e.g. system hiccups > 500ms)
+            if delta.as_millis() < 500 {
+                self.tick_deltas.push_back(delta);
+                // Keep history of exactly 1 beat (24 ticks) for averaging
+                if self.tick_deltas.len() > Self::TICKS_PER_BEAT as usize {
+                    self.tick_deltas.pop_front();
+                }
 
-            // Smooth tempo changes with exponential moving average
-            const SMOOTHING: f32 = 0.9;
-            self.tempo_bpm = self.tempo_bpm * SMOOTHING + bpm * (1.0 - SMOOTHING);
+                if !self.tick_deltas.is_empty() {
+                    // Calculate average tick duration over window
+                    let total_duration: Duration = self.tick_deltas.iter().sum();
+                    let avg_delta = total_duration / self.tick_deltas.len() as u32;
+                    let beat_duration = avg_delta.as_secs_f32() * Self::TICKS_PER_BEAT as f32;
 
-            debug!("MIDI Clock: BPM = {:.2}", self.tempo_bpm);
+                    if beat_duration > 0.001 {
+                        let bpm = 60.0 / beat_duration;
+
+                        // Apply smoothing to the AVERAGED bpm (less smoothing needed now)
+                        const SMOOTHING: f32 = 0.5;
+                        self.tempo_bpm = self.tempo_bpm * SMOOTHING + bpm * (1.0 - SMOOTHING);
+
+                        // Round display value to 1 decimal internally? No, keep float precision but log nicely
+                        // debug!("MIDI Clock: BPM = {:.2} (avg over {} ticks)", self.tempo_bpm, self.tick_deltas.len());
+                    }
+                }
+            } else {
+                // Gap too large, reset history
+                self.tick_deltas.clear();
+            }
         }
 
         self.last_clock_time = Some(now);
@@ -118,6 +142,7 @@ impl MidiClock {
         self.clock_count = 0;
         self.start_time = None;
         self.last_clock_time = None;
+        self.tick_deltas.clear();
     }
 }
 
