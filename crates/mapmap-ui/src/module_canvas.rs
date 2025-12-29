@@ -66,6 +66,25 @@ pub struct ModuleCanvas {
     plug_icons: std::collections::HashMap<String, egui::TextureHandle>,
     /// Learned MIDI mapping: (part_id, channel, cc_or_note, is_note)
     learned_midi: Option<(ModulePartId, u8, u8, bool)>,
+    /// Live audio trigger data from AudioAnalyzerV2
+    audio_trigger_data: AudioTriggerData,
+}
+
+/// Live audio data for trigger nodes
+#[derive(Debug, Clone, Default)]
+pub struct AudioTriggerData {
+    /// 9 frequency band energies [SubBass, Bass, LowMid, Mid, HighMid, UpperMid, Presence, Brilliance, Air]
+    pub band_energies: [f32; 9],
+    /// RMS volume (0.0 - 1.0)
+    pub rms_volume: f32,
+    /// Peak volume (0.0 - 1.0)
+    pub peak_volume: f32,
+    /// Beat detected this frame
+    pub beat_detected: bool,
+    /// Beat strength (0.0 - 1.0)
+    pub beat_strength: f32,
+    /// Estimated BPM (optional)
+    pub bpm: Option<f32>,
 }
 
 pub type PresetPart = (
@@ -133,6 +152,7 @@ impl Default for ModuleCanvas {
             panning_canvas: false,
             plug_icons: std::collections::HashMap::new(),
             learned_midi: None,
+            audio_trigger_data: AudioTriggerData::default(),
         }
     }
 }
@@ -216,6 +236,36 @@ impl ModuleCanvas {
     /// Get the active module ID
     pub fn active_module_id(&self) -> Option<u64> {
         self.active_module_id
+    }
+
+    /// Update live audio data for trigger nodes
+    pub fn set_audio_data(&mut self, data: AudioTriggerData) {
+        self.audio_trigger_data = data;
+    }
+
+    /// Get trigger value for a specific audio band
+    pub fn get_trigger_value(&self, band: &AudioBand) -> f32 {
+        match band {
+            AudioBand::SubBass => self.audio_trigger_data.band_energies[0],
+            AudioBand::Bass => self.audio_trigger_data.band_energies[1],
+            AudioBand::LowMid => self.audio_trigger_data.band_energies[2],
+            AudioBand::Mid => self.audio_trigger_data.band_energies[3],
+            AudioBand::HighMid => self.audio_trigger_data.band_energies[4],
+            AudioBand::Presence => self.audio_trigger_data.band_energies[5],
+            AudioBand::Brilliance => self.audio_trigger_data.band_energies[6],
+            AudioBand::Peak => self.audio_trigger_data.peak_volume,
+            AudioBand::BPM => self.audio_trigger_data.bpm.unwrap_or(0.0),
+        }
+    }
+
+    /// Get current RMS volume
+    pub fn get_rms_volume(&self) -> f32 {
+        self.audio_trigger_data.rms_volume
+    }
+
+    /// Get beat detection status
+    pub fn is_beat_detected(&self) -> bool {
+        self.audio_trigger_data.beat_detected
     }
 
     /// Process incoming MIDI message for MIDI Learn

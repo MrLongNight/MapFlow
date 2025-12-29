@@ -60,7 +60,7 @@ pub use layer_panel::{LayerPanel, LayerPanelAction};
 pub use mapping_panel::MappingPanel;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
-pub use module_canvas::ModuleCanvas;
+pub use module_canvas::{AudioTriggerData, ModuleCanvas};
 pub use module_sidebar::ModuleSidebar;
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;

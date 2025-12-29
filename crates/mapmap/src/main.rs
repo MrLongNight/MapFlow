@@ -582,6 +582,16 @@ impl App {
                         };
                         
                         self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
+                        
+                        // Update module canvas with audio trigger data
+                        self.ui_state.module_canvas.set_audio_data(mapmap_ui::AudioTriggerData {
+                            band_energies: analysis_v2.band_energies,
+                            rms_volume: analysis_v2.rms_volume,
+                            peak_volume: analysis_v2.peak_volume,
+                            beat_detected: analysis_v2.beat_detected,
+                            beat_strength: analysis_v2.beat_strength,
+                            bpm: None, // Not implemented yet
+                        });
                     }
                 }
 
