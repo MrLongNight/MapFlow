@@ -16,6 +16,7 @@ pub mod compositor;
 pub mod edge_blend_renderer;
 pub mod effect_chain_renderer;
 pub mod hot_reload;
+mod mesh_buffer_cache;
 pub mod mesh_renderer;
 pub mod oscillator_renderer;
 pub mod paint_texture_cache;
