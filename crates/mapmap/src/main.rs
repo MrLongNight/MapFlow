@@ -577,7 +577,7 @@ impl App {
                             beat_detected: analysis_v2.beat_detected,
                             beat_strength: analysis_v2.beat_strength,
                             onset_detected: false, // Not implemented in V2 yet
-                            tempo_bpm: None, // Not implemented in V2 yet
+                            tempo_bpm: analysis_v2.tempo_bpm, // Now from AudioAnalyzerV2!
                             waveform: analysis_v2.waveform.clone(),
                         };
                         
@@ -590,7 +590,7 @@ impl App {
                             peak_volume: analysis_v2.peak_volume,
                             beat_detected: analysis_v2.beat_detected,
                             beat_strength: analysis_v2.beat_strength,
-                            bpm: None, // Not implemented yet
+                            bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
                         });
                     }
                 }

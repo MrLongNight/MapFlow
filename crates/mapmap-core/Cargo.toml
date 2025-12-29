@@ -27,6 +27,9 @@ audio-processor-traits = "4.3"
 num-traits = "0.2"
 num-complex = "0.4"
 
+# Professional BPM/Key Detection
+stratum-dsp = "1.0"
+
 
 [features]
 default = ["audio"]

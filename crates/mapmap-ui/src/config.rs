@@ -241,6 +241,7 @@ mod tests {
             target_fps: Some(60.0),
             meter_style: AudioMeterStyle::Digital,
             midi_assignments: Vec::new(),
+            selected_audio_device: None,
         };
 
         let json = serde_json::to_string(&config).unwrap();

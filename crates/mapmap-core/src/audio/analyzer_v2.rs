@@ -28,6 +28,8 @@ pub struct AudioAnalysisV2 {
     pub beat_strength: f32,
     /// Current waveform samples
     pub waveform: Vec<f32>,
+    /// Estimated tempo in BPM (None if not enough data)
+    pub tempo_bpm: Option<f32>,
 }
 
 impl Default for AudioAnalysisV2 {
@@ -41,6 +43,7 @@ impl Default for AudioAnalysisV2 {
             beat_detected: false,
             beat_strength: 0.0,
             waveform: Vec::new(),
+            tempo_bpm: None,
         }
     }
 }
@@ -142,6 +145,19 @@ pub struct AudioAnalyzerV2 {
 
     /// Debug: FFT count
     fft_count: u64,
+
+    // === BPM Tracking ===
+    /// Timestamps of detected beats (for BPM calculation)
+    beat_timestamps: Vec<f64>,
+
+    /// Current estimated BPM
+    estimated_bpm: Option<f32>,
+
+    /// Time since last beat (for beat detection cooldown)
+    time_since_last_beat: f64,
+
+    /// Minimum time between beats (prevents double-triggers) - ~200ms = 300 BPM max
+    min_beat_interval: f64,
 }
 
 impl AudioAnalyzerV2 {
@@ -198,6 +214,11 @@ impl AudioAnalyzerV2 {
             latest_analysis: AudioAnalysisV2::default(),
             total_samples: 0,
             fft_count: 0,
+            // BPM Tracking
+            beat_timestamps: Vec::with_capacity(32),
+            estimated_bpm: None,
+            time_since_last_beat: 1.0, // Start ready for beat
+            min_beat_interval: 0.2,    // 300 BPM max
         }
     }
 
@@ -253,13 +274,8 @@ impl AudioAnalyzerV2 {
             }
         }
 
-        // 4. Beat detection
-        let beat_detected = self.detect_beat();
-        let beat_strength = if beat_detected {
-            self.smoothed_rms.min(1.0)
-        } else {
-            0.0
-        };
+        // 4. Beat detection with BPM tracking
+        let (beat_detected, beat_strength) = self.detect_beat(self.current_time);
 
         // 5. Create analysis result
         let analysis = AudioAnalysisV2 {
@@ -271,6 +287,7 @@ impl AudioAnalyzerV2 {
             beat_detected,
             beat_strength,
             waveform: self.waveform_buffer.clone(),
+            tempo_bpm: self.estimated_bpm,
         };
 
         // Store and send
@@ -364,7 +381,7 @@ impl AudioAnalyzerV2 {
     }
 
     /// Simple beat detection based on energy spike
-    fn detect_beat(&mut self) -> bool {
+    fn detect_beat(&mut self, timestamp: f64) -> (bool, f32) {
         // Use bass band (60-250Hz) for beat detection
         let bass_energy = self.smoothed_bands[1];
 
@@ -376,17 +393,90 @@ impl AudioAnalyzerV2 {
             self.energy_history.remove(0);
         }
 
+        // Update time since last beat
+        if !self.beat_timestamps.is_empty() {
+            self.time_since_last_beat = timestamp - self.beat_timestamps.last().unwrap_or(&0.0);
+        }
+
         // Need at least 16 samples for detection
         if self.energy_history.len() < 16 {
-            return false;
+            return (false, 0.0);
         }
 
         // Calculate average energy
         let avg_energy: f32 =
             self.energy_history.iter().sum::<f32>() / self.energy_history.len() as f32;
 
-        // Beat if current energy is 1.5x average and above minimum threshold
-        bass_energy > avg_energy * 1.5 && bass_energy > 0.01
+        // Calculate beat strength (how much above average)
+        let beat_strength = if avg_energy > 0.0 {
+            (bass_energy / avg_energy - 1.0).clamp(0.0, 2.0) / 2.0
+        } else {
+            0.0
+        };
+
+        // Beat if current energy is 1.5x average, above minimum threshold, and cooldown passed
+        let is_beat = bass_energy > avg_energy * 1.5
+            && bass_energy > 0.01
+            && self.time_since_last_beat >= self.min_beat_interval;
+
+        if is_beat {
+            // Record beat timestamp
+            self.beat_timestamps.push(timestamp);
+
+            // Keep only last 16 beats for BPM calculation
+            if self.beat_timestamps.len() > 16 {
+                self.beat_timestamps.remove(0);
+            }
+
+            // Calculate BPM from beat intervals
+            self.estimated_bpm = self.calculate_bpm();
+
+            // Reset cooldown timer
+            self.time_since_last_beat = 0.0;
+        }
+
+        (is_beat, beat_strength)
+    }
+
+    /// Calculate BPM from recent beat timestamps
+    fn calculate_bpm(&self) -> Option<f32> {
+        if self.beat_timestamps.len() < 4 {
+            return None; // Need at least 4 beats
+        }
+
+        // Calculate intervals between consecutive beats
+        let intervals: Vec<f64> = self
+            .beat_timestamps
+            .windows(2)
+            .map(|w| w[1] - w[0])
+            .collect();
+
+        if intervals.is_empty() {
+            return None;
+        }
+
+        // Calculate average interval
+        let avg_interval: f64 = intervals.iter().sum::<f64>() / intervals.len() as f64;
+
+        if avg_interval <= 0.0 {
+            return None;
+        }
+
+        // Convert to BPM: BPM = 60 / interval_in_seconds
+        let bpm = (60.0 / avg_interval) as f32;
+
+        // Clamp to reasonable DJ range (60-200 BPM)
+        if bpm >= 60.0 && bpm <= 200.0 {
+            Some(bpm)
+        } else if bpm > 200.0 && bpm <= 400.0 {
+            // Might be detecting half-beats, divide by 2
+            Some(bpm / 2.0)
+        } else if bpm >= 30.0 && bpm < 60.0 {
+            // Might be detecting double-beats, multiply by 2
+            Some(bpm * 2.0)
+        } else {
+            None
+        }
     }
 
     /// Get the latest analysis result
