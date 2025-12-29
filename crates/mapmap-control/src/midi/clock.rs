@@ -3,7 +3,7 @@
 use super::MidiMessage;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
-use tracing::{debug, info};
+use tracing::info;
 
 /// MIDI clock synchronization state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
