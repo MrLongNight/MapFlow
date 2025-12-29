@@ -268,6 +268,29 @@ impl ModuleCanvas {
         self.audio_trigger_data.beat_detected
     }
 
+    /// Get audio trigger state for a part type
+    /// Returns (is_audio_trigger, current_value, threshold, is_active)
+    fn get_audio_trigger_state(
+        &self,
+        part_type: &mapmap_core::module::ModulePartType,
+    ) -> (bool, f32, f32, bool) {
+        use mapmap_core::module::{ModulePartType, TriggerType};
+
+        match part_type {
+            ModulePartType::Trigger(TriggerType::AudioFFT { band, threshold }) => {
+                let value = self.get_trigger_value(band);
+                let is_active = value > *threshold;
+                (true, value, *threshold, is_active)
+            }
+            ModulePartType::Trigger(TriggerType::Beat) => {
+                let is_active = self.audio_trigger_data.beat_detected;
+                let value = self.audio_trigger_data.beat_strength;
+                (true, value, 0.5, is_active)
+            }
+            _ => (false, 0.0, 0.0, false),
+        }
+    }
+
     /// Process incoming MIDI message for MIDI Learn
     #[cfg(feature = "midi")]
     pub fn process_midi_message(&mut self, message: mapmap_control::midi::MidiMessage) {
@@ -3376,6 +3399,38 @@ impl ModuleCanvas {
         // Get part color and name based on type
         let (bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
 
+        // Check if this is an audio trigger and if it's active
+        let (is_audio_trigger, trigger_value, threshold, is_active) =
+            self.get_audio_trigger_state(&part.part_type);
+
+        // Draw glow effect if audio trigger is active
+        if is_active {
+            let glow_intensity = (trigger_value * 2.0).min(1.0);
+            let glow_color = Color32::from_rgba_unmultiplied(
+                255,
+                (200.0 * glow_intensity) as u8,
+                0,
+                (150.0 * glow_intensity) as u8,
+            );
+            for i in 1..=4 {
+                let expand = i as f32 * 3.0 * self.zoom;
+                let alpha = (40.0 / i as f32) as u8;
+                painter.rect_stroke(
+                    rect.expand(expand),
+                    (6.0 + expand) * self.zoom,
+                    Stroke::new(
+                        2.0,
+                        Color32::from_rgba_unmultiplied(
+                            glow_color.r(),
+                            glow_color.g(),
+                            glow_color.b(),
+                            alpha,
+                        ),
+                    ),
+                );
+            }
+        }
+
         // Draw background
         painter.rect_filled(rect, 6.0 * self.zoom, bg_color);
         painter.rect_stroke(
@@ -3434,6 +3489,58 @@ impl ModuleCanvas {
                 property_text,
                 egui::FontId::proportional(10.0 * self.zoom),
                 Color32::from_gray(160),
+            );
+        }
+
+        // Draw audio trigger VU meter and live value display
+        if is_audio_trigger {
+            let meter_y = property_y + 18.0 * self.zoom;
+            let meter_width = rect.width() - 20.0 * self.zoom;
+            let meter_height = 12.0 * self.zoom;
+            let meter_x = rect.min.x + 10.0 * self.zoom;
+
+            // Background bar
+            let meter_bg = Rect::from_min_size(
+                Pos2::new(meter_x, meter_y),
+                Vec2::new(meter_width, meter_height),
+            );
+            painter.rect_filled(meter_bg, 3.0, Color32::from_gray(30));
+
+            // Value bar
+            let value_width = (trigger_value.clamp(0.0, 1.0) * meter_width).max(1.0);
+            let value_bar = Rect::from_min_size(
+                Pos2::new(meter_x, meter_y),
+                Vec2::new(value_width, meter_height),
+            );
+            let bar_color = if is_active {
+                Color32::from_rgb(255, 180, 0) // Orange/Yellow when active
+            } else {
+                Color32::from_rgb(0, 200, 100) // Green when inactive
+            };
+            painter.rect_filled(value_bar, 3.0, bar_color);
+
+            // Threshold line
+            let threshold_x = meter_x + threshold * meter_width;
+            painter.line_segment(
+                [
+                    Pos2::new(threshold_x, meter_y - 2.0),
+                    Pos2::new(threshold_x, meter_y + meter_height + 2.0),
+                ],
+                Stroke::new(2.0, Color32::RED),
+            );
+
+            // Value text
+            let value_text = format!("{:.2}", trigger_value);
+            painter.text(
+                Pos2::new(rect.center().x, meter_y + meter_height + 6.0 * self.zoom),
+                egui::Align2::CENTER_TOP,
+                value_text,
+                egui::FontId::proportional(9.0 * self.zoom),
+                if is_active {
+                    Color32::from_rgb(255, 200, 0)
+                } else {
+                    Color32::from_gray(140)
+                },
             );
         }
 
