@@ -50,17 +50,42 @@ impl WindowManager {
     ///
     /// This is the primary window for the application, where the UI is displayed.
     /// It is assigned a reserved `OutputId` of `0`.
+    #[allow(dead_code)] // Used for tests and as simple API wrapper
     pub fn create_main_window<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
         backend: &WgpuBackend,
     ) -> Result<OutputId> {
-        let window = Arc::new(
-            WindowBuilder::new()
-                .with_title("MapFlow - Main Control")
-                .with_inner_size(winit::dpi::PhysicalSize::new(1920, 1080))
-                .build(event_loop)?,
-        );
+        // Use default size
+        self.create_main_window_with_geometry(event_loop, backend, None, None, None, None, false)
+    }
+
+    /// Creates the main control window with optional saved geometry.
+    pub fn create_main_window_with_geometry<T>(
+        &mut self,
+        event_loop: &EventLoopWindowTarget<T>,
+        backend: &WgpuBackend,
+        width: Option<u32>,
+        height: Option<u32>,
+        x: Option<i32>,
+        y: Option<i32>,
+        maximized: bool,
+    ) -> Result<OutputId> {
+        let default_width = width.unwrap_or(1920);
+        let default_height = height.unwrap_or(1080);
+
+        let mut window_builder = WindowBuilder::new()
+            .with_title("MapFlow - Main Control")
+            .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height))
+            .with_maximized(maximized);
+
+        // Set position if provided
+        if let (Some(pos_x), Some(pos_y)) = (x, y) {
+            window_builder =
+                window_builder.with_position(winit::dpi::PhysicalPosition::new(pos_x, pos_y));
+        }
+
+        let window = Arc::new(window_builder.build(event_loop)?);
 
         let window_id = window.id();
         let output_id: OutputId = 0; // Reserved ID for the main window
@@ -69,8 +94,8 @@ impl WindowManager {
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8Unorm,
-            width: 1920,
-            height: 1080,
+            width: default_width,
+            height: default_height,
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
             view_formats: vec![],

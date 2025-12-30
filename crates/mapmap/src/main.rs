@@ -135,8 +135,19 @@ impl App {
 
         let mut window_manager = WindowManager::new();
 
-        // Create main window
-        let main_window_id = window_manager.create_main_window(event_loop, &backend)?;
+        // Load user config to get saved window geometry
+        let saved_config = mapmap_ui::config::UserConfig::load();
+
+        // Create main window with saved geometry
+        let main_window_id = window_manager.create_main_window_with_geometry(
+            event_loop,
+            &backend,
+            saved_config.window_width,
+            saved_config.window_height,
+            saved_config.window_x,
+            saved_config.window_y,
+            saved_config.window_maximized,
+        )?;
 
         let (width, height, format, main_window_for_egui) = {
             let main_window_context = window_manager.get(main_window_id).unwrap();
@@ -431,6 +442,49 @@ impl App {
             // Check if exit was requested
             if self.exit_requested {
                 info!("Exiting application...");
+
+                // Save window geometry and settings before exit
+                if let Some(main_window) = self.window_manager.get(0) {
+                    let window = &main_window.window;
+
+                    // Get window size
+                    let size = window.inner_size();
+                    self.ui_state.user_config.window_width = Some(size.width);
+                    self.ui_state.user_config.window_height = Some(size.height);
+
+                    // Get window position
+                    if let Ok(pos) = window.outer_position() {
+                        self.ui_state.user_config.window_x = Some(pos.x);
+                        self.ui_state.user_config.window_y = Some(pos.y);
+                    }
+
+                    // Check if maximized
+                    self.ui_state.user_config.window_maximized = window.is_maximized();
+                }
+
+                // Save panel visibility states
+                self.ui_state.user_config.show_left_sidebar = self.ui_state.show_left_sidebar;
+                self.ui_state.user_config.show_inspector = self.ui_state.show_inspector;
+                self.ui_state.user_config.show_timeline = self.ui_state.show_timeline;
+                self.ui_state.user_config.show_media_browser = self.ui_state.show_media_browser;
+                self.ui_state.user_config.show_module_canvas = self.ui_state.show_module_canvas;
+                self.ui_state.user_config.show_controller_overlay =
+                    self.ui_state.show_controller_overlay;
+
+                // Save audio device selection
+                self.ui_state.user_config.selected_audio_device =
+                    self.ui_state.selected_audio_device.clone();
+
+                // Save target FPS
+                self.ui_state.user_config.target_fps = Some(self.ui_state.target_fps);
+
+                // Save the config
+                if let Err(e) = self.ui_state.user_config.save() {
+                    error!("Failed to save user config on exit: {}", e);
+                } else {
+                    info!("User settings saved successfully");
+                }
+
                 elwt.exit();
                 return;
             }
