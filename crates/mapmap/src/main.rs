@@ -1205,68 +1205,8 @@ impl App {
                             });
                     }
 
-                    // === 4. RIGHT PANEL: Inspector ===
-                    if self.ui_state.show_inspector {
-                        let inspector_context = if let Some(layer_id) = self.ui_state.selected_layer_id {
-                            if let Some(layer) = self.state.layer_manager.get_layer(layer_id) {
-                                // Find index for mapping
-                                let index = self.state.layer_manager.layers().iter().position(|l| l.id == layer_id).unwrap_or(0);
-                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform, index }
-                            } else {
-                                mapmap_ui::InspectorContext::None
-                            }
-                        } else if let Some(output_id) = self.ui_state.selected_output_id {
-                            if let Some(output) = self.state.output_manager.get_output(output_id) {
-                                mapmap_ui::InspectorContext::Output(output)
-                            } else {
-                                mapmap_ui::InspectorContext::None
-                            }
-                        } else {
-                            mapmap_ui::InspectorContext::None
-                        };
 
-
-
-                        // Extract MIDI Learn State
-                        let is_learning = self.ui_state.is_midi_learn_mode;
-
-                        #[cfg(feature = "midi")]
-                        let last_elem = self.ui_state.controller_overlay.last_active_element.clone();
-                        #[cfg(not(feature = "midi"))]
-                        let last_elem: Option<String> = None;
-
-                        #[cfg(feature = "midi")]
-                        let last_time = self.ui_state.controller_overlay.last_active_time;
-                        #[cfg(not(feature = "midi"))]
-                        let last_time: Option<std::time::Instant> = None;
-
-                        if let Some(action) = self.ui_state.inspector_panel.show(
-                            ctx,
-                            inspector_context,
-                            &self.ui_state.i18n,
-                            self.ui_state.icon_manager.as_ref(),
-                            is_learning,
-                            last_elem.as_ref(),
-                            last_time,
-                            &mut self.ui_state.actions
-                        ) {
-                            match action {
-                                mapmap_ui::InspectorAction::UpdateOpacity(id, val) => {
-                                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
-                                        layer.opacity = val;
-                                        self.state.dirty = true;
-                                    }
-                                }
-                                mapmap_ui::InspectorAction::UpdateTransform(id, transform) => {
-                                     if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
-                                        layer.transform = transform;
-                                        self.state.dirty = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
+                    // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
