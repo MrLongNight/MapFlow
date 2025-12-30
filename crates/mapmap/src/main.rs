@@ -527,12 +527,21 @@ impl App {
                 if self.state.dirty
                     && self.last_autosave.elapsed() >= std::time::Duration::from_secs(300)
                 {
-                    let autosave_path = PathBuf::from(".MapFlowAutoSave");
+                    // Use data directory for autosave
+                    let autosave_path = dirs::data_local_dir()
+                        .unwrap_or_else(|| PathBuf::from("."))
+                        .join("MapFlow")
+                        .join("autosave.mflow");
+
+                    // Ensure directory exists
+                    if let Some(parent) = autosave_path.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
 
                     if let Err(e) = save_project(&self.state, &autosave_path) {
                         error!("Autosave failed: {}", e);
                     } else {
-                        info!("Autosave successful");
+                        info!("Autosave successful to {:?}", autosave_path);
                         self.last_autosave = std::time::Instant::now();
                         // Note: We don't clear dirty flag on autosave, only on explicit save
                     }

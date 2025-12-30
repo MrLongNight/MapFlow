@@ -2782,6 +2782,7 @@ dependencies = [
  "cpal",
  "criterion",
  "crossbeam-channel",
+ "dirs",
  "egui",
  "egui-wgpu",
  "egui-winit",
