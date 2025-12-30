@@ -1077,30 +1077,7 @@ impl App {
                                 ui.separator();
 
                                 egui::ScrollArea::vertical().show(ui, |ui| {
-                                    // Note: Playback controls (Play/Pause/Stop) are now in the toolbar
-
-                                    // Layers Section
-                                    egui::CollapsingHeader::new("📑 Layers")
-                                        .default_open(true)
-                                        .show(ui, |ui| {
-                                            // Simple layer list
-                                            ui.horizontal(|ui| {
-                                                if ui.button("+ Add").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::AddLayer);
-                                                }
-                                            });
-                                            let layers: Vec<_> = self.state.layer_manager.layers().iter()
-                                                .map(|l| (l.id, l.name.clone()))
-                                                .collect();
-
-                                            for (id, name) in layers {
-                                                let selected = self.ui_state.selected_layer_id == Some(id);
-                                                if ui.selectable_label(selected, &name).clicked() {
-                                                    self.ui_state.selected_layer_id = Some(id);
-                                                }
-                                            }
-                                        });
-
+                                    // NOTE: Layers section removed per user request - use Module Canvas instead
 
                                     // Master Controls Section
                                     egui::CollapsingHeader::new("🎚️ Master")
