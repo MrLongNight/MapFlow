@@ -378,9 +378,9 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     {
                         // Simple toggle button for controller overlay
                         let overlay_btn = if ui_state.show_controller_overlay {
-                            egui::Button::new("🎛️").fill(egui::Color32::from_rgb(60, 80, 100))
+                            egui::Button::new("🎚️").fill(egui::Color32::from_rgb(60, 80, 100))
                         } else {
-                            egui::Button::new("🎛️")
+                            egui::Button::new("🎚️")
                         };
                         if ui
                             .add(overlay_btn)
