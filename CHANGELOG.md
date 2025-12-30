@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-30: feat(ui): Add proper Fader SVG icon for MIDI controller button (replaces broken emoji)
+- 2025-12-30: feat(ui): Remove Layers section and Inspector Panel from sidebar (use Module Canvas)
+- 2025-12-30: feat(config): Complete settings persistence (window size/position, panel visibility)
+- 2025-12-30: fix(config): Load all user settings at startup (audio device, target FPS, panel states)
+- 2025-12-30: fix(autosave): Use proper .mflow extension and store in user data directory
 - 2025-12-29: feat(ui): Unified "Add Node" menu with quick-search replacing 8 toolbar dropdowns
 - 2025-12-29: feat(ui): Added BPM display and playback controls to main toolbar (removed from sidebar)
 - 2025-12-29: fix(control): Stabilize MIDI clock BPM with sliding window average

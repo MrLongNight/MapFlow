@@ -1,8 +1,8 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.6  
-> **Stand:** 2025-12-27 19:00  
-> **Zielgruppe:** @jules und Entwickler-Team  
+> **Version:** 1.7
+> **Stand:** 2025-12-30 01:00
+> **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
 ---
@@ -290,8 +290,17 @@
   - 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
   - ✅ Zone-Based Layout (Left MediaBrowser, Right Inspector, Bottom Timeline) - COMPLETED 2025-12-24
   - ✅ Performance Overlay (Top-Right, Real FPS) - COMPLETED 2025-12-24
-  - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - COMPLETED 2025-12-24
+  - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - REMOVED 2025-12-30 (use Module Canvas)
+  - ✅ Layers Section removed from sidebar - COMPLETED 2025-12-30 (use Module Canvas)
+  - ✅ Icon System: Fader SVG Icon added - COMPLETED 2025-12-30
   - ⬜ Icon System (Streamline Ultimate) - Partial
+
+- ✅ **Settings Persistence (COMPLETED 2025-12-30)**
+  - ✅ Window size/position saved and restored
+  - ✅ Panel visibility states saved and restored
+  - ✅ Audio device selection saved and restored
+  - ✅ Target FPS saved and restored
+  - ✅ Autosave with proper .mflow extension in user data directory
 
 - 🟡 **Internationalisierung (i18n) – NEU**
   - ✅ Sprachauswahl UI (Deutsch / Englisch)
