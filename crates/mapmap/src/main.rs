@@ -1252,12 +1252,12 @@ impl App {
 
                         // Extract MIDI Learn State
                         let is_learning = self.ui_state.is_midi_learn_mode;
-                        
+
                         #[cfg(feature = "midi")]
                         let last_elem = self.ui_state.controller_overlay.last_active_element.clone();
                         #[cfg(not(feature = "midi"))]
                         let last_elem: Option<String> = None;
-                        
+
                         #[cfg(feature = "midi")]
                         let last_time = self.ui_state.controller_overlay.last_active_time;
                         #[cfg(not(feature = "midi"))]

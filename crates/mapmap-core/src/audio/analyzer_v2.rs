@@ -16,7 +16,7 @@ pub struct AudioAnalysisV2 {
     pub timestamp: f64,
     /// RMS volume (0.0 - 1.0)
     pub rms_volume: f32,
-    /// Peak volume (0.0 - 1.0)  
+    /// Peak volume (0.0 - 1.0)
     pub peak_volume: f32,
     /// FFT magnitude spectrum (half of FFT size)
     pub fft_magnitudes: Vec<f32>,
@@ -128,7 +128,7 @@ pub struct AudioAnalyzerV2 {
     /// Current timestamp
     current_time: f64,
 
-    /// Waveform buffer  
+    /// Waveform buffer
     waveform_buffer: Vec<f32>,
 
     /// Analysis sender channel

@@ -474,7 +474,7 @@ impl ModuleCanvas {
                 // === UNIFIED "ADD NODE" MENU with Search ===
                 egui::menu::menu_button(ui, "➕ Add Node", |ui| {
                     ui.set_min_width(240.0);
-                    
+
                     // Search bar at top
                     ui.horizontal(|ui| {
                         ui.label("🔍");
@@ -482,10 +482,10 @@ impl ModuleCanvas {
                     });
                     ui.add_space(4.0);
                     ui.separator();
-                    
+
                     let filter = self.search_filter.to_lowercase();
                     let show_all = filter.is_empty();
-                    
+
                     // === TRIGGER SUBMENU ===
                     if show_all || "trigger audio fft beat midi osc keyboard shortcut random timer".contains(&filter) {
                         ui.menu_button("⚡ Trigger", |ui| {
@@ -530,7 +530,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === SOURCE SUBMENU ===
                     if show_all || "source media file video image shader live input camera".contains(&filter) {
                         ui.menu_button("📹 Source", |ui| {
@@ -552,7 +552,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === MASK SUBMENU ===
                     if show_all || "mask shape rectangle circle triangle star ellipse file gradient".contains(&filter) {
                         ui.menu_button("🎭 Mask", |ui| {
@@ -595,7 +595,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === EFFECT SUBMENU ===
                     if show_all || "effect blur sharpen invert brightness contrast saturation hue glitch vhs pixelate kaleidoscope mirror wave".contains(&filter) {
                         ui.menu_button("✨ Effect", |ui| {
@@ -671,7 +671,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === BLEND MODE SUBMENU ===
                     if show_all || "blend add multiply screen overlay".contains(&filter) {
                         ui.menu_button("🎨 Blend", |ui| {
@@ -698,7 +698,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === LAYER SUBMENU ===
                     if show_all || "layer single group all master".contains(&filter) {
                         ui.menu_button("📑 Layer", |ui| {
@@ -720,7 +720,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === MESH SUBMENU ===
                     if show_all || "mesh quad triangle circle grid bezier cylinder sphere".contains(&filter) {
                         ui.menu_button("🔷 Mesh", |ui| {
@@ -775,7 +775,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === OUTPUT SUBMENU ===
                     if show_all || "output projector preview".contains(&filter) {
                         ui.menu_button("📺 Output", |ui| {
@@ -792,7 +792,7 @@ impl ModuleCanvas {
                             }
                         });
                     }
-                    
+
                     // === AUDIO REACTIVE ===
                     if show_all || "audio reactive".contains(&filter) {
                         ui.separator();
