@@ -4299,6 +4299,124 @@ impl ModuleCanvas {
                     (2, 0, 3, 0), // Mask -> Output (NEW - was missing!)
                 ],
             },
+            // NDI Source Preset
+            ModulePreset {
+                name: "NDI Source".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::NdiInput { source_name: None }),
+                        (350.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> NDI Source
+                    (1, 0, 2, 0), // NDI Source -> Output
+                ],
+            },
+            // NDI Output Preset
+            ModulePreset {
+                name: "NDI Output".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (350.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::NdiOutput {
+                            name: "MapFlow NDI".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Source
+                    (1, 0, 2, 0), // Source -> NDI Output
+                ],
+            },
+            // Spout Source (Windows only)
+            #[cfg(target_os = "windows")]
+            ModulePreset {
+                name: "Spout Source".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::SpoutInput {
+                            sender_name: String::new(),
+                        }),
+                        (350.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Spout Source
+                    (1, 0, 2, 0), // Spout Source -> Output
+                ],
+            },
+            // Spout Output (Windows only)
+            #[cfg(target_os = "windows")]
+            ModulePreset {
+                name: "Spout Output".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (350.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Spout {
+                            name: "MapFlow Spout".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Source
+                    (1, 0, 2, 0), // Source -> Spout Output
+                ],
+            },
         ]
     }
 }
