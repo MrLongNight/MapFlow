@@ -2853,6 +2853,7 @@ dependencies = [
  "chrono",
  "cpal",
  "crossbeam-channel",
+ "dirs",
  "glam",
  "hound",
  "num-complex",

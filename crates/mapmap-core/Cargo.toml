@@ -18,6 +18,7 @@ hound = { workspace = true }
 crossbeam-channel = { workspace = true }
 parking_lot = { workspace = true }
 chrono = "0.4"
+dirs = "5.0"
 tracing = { workspace = true }
 winit = { workspace = true, optional = true }
 

@@ -33,6 +33,7 @@ pub mod logging;
 pub mod lut;
 pub mod module;
 pub mod oscillator;
+pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
 
@@ -64,6 +65,9 @@ pub use output::{
     OutputManager,
 };
 pub use paint::{Paint, PaintId, PaintManager, PaintType};
+pub use recent_effect_configs::{
+    EffectConfig, EffectParamValue, RecentConfigQueue, RecentEffectConfigs, MAX_RECENT_CONFIGS,
+};
 pub use shader_graph::{
     DataType, GraphId, InputSocket, NodeId, NodeType, OutputSocket, ParameterValue, ShaderGraph,
     ShaderNode,
