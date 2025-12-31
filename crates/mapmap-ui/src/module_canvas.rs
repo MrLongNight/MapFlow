@@ -300,7 +300,7 @@ impl ModuleCanvas {
                                                         .text("Offset (ms)"),
                                                 );
                                             }
-                                            TriggerType::Midi { channel, note } => {
+                                            TriggerType::Midi { device, channel, note } => {
                                                 ui.label("🎹 MIDI Trigger");
 
                                                 // Available MIDI ports dropdown
@@ -318,11 +318,16 @@ impl ModuleCanvas {
                                                                     "midi_device",
                                                                 )
                                                                 .selected_text(
-                                                                    ports.first().cloned().unwrap_or_default(),
+                                                                    if device.is_empty() { "Any/Default".to_string() } else { device.clone() }
                                                                 )
                                                                 .show_ui(ui, |ui| {
+                                                                     if ui.selectable_label(device.is_empty(), "Any/Default").clicked() {
+                                                                         *device = String::new();
+                                                                     }
                                                                     for port in &ports {
-                                                                        let _ = ui.selectable_label(false, port);
+                                                                        if ui.selectable_label(device == port, port).clicked() {
+                                                                            *device = port.clone();
+                                                                        }
                                                                     }
                                                                 });
                                                             }
@@ -1268,6 +1273,7 @@ impl ModuleCanvas {
                         self.add_trigger_node(
                             manager,
                             TriggerType::Midi {
+                                device: String::new(),
                                 channel: 1,
                                 note: 60,
                             },
@@ -3849,7 +3855,7 @@ impl ModuleCanvas {
                 TriggerType::AudioFFT { band, .. } => format!("🔊 Audio: {:?}", band),
                 TriggerType::Random { .. } => "🎲 Random".to_string(),
                 TriggerType::Fixed { interval_ms, .. } => format!("⏱️ {}ms", interval_ms),
-                TriggerType::Midi { channel, note } => format!("🎹 Ch{} N{}", channel, note),
+                TriggerType::Midi { channel, note, .. } => format!("🎹 Ch{} N{}", channel, note),
                 TriggerType::Osc { address } => format!("📡 {}", address),
                 TriggerType::Shortcut { key_code, .. } => format!("⌨️ {}", key_code),
                 TriggerType::Beat => "🥁 Beat".to_string(),
