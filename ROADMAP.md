@@ -172,14 +172,15 @@
 - ⬜ **Codec-Support**
   - ✅ H.264, H.265, VP8, VP9 über FFmpeg
   - ⬜ ProRes noch nicht getestet/optimiert
-  - 🟡 **HAP-Codec (IN PROGRESS 2025-12-31)**
+  - ✅ **HAP-Codec (COMPLETED 2025-12-31)**
     - ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
     - ✅ Snappy Dekompression für HAP-Frames
     - ✅ BC1/BC3 Textur-Upload (`mapmap-render/src/compressed_texture.rs`)
     - ✅ YCoCg→RGB Shader (`shaders/ycocg_to_rgb.wgsl`)
     - ✅ HAP Video Player (`mapmap-media/src/hap_player.rs`)
-    - ⬜ FFmpeg Container-Parsing aktivieren (Feature-Flag)
-    - ⬜ UI Integration (Media Browser HAP-Erkennung)
+    - ✅ Auto-Erkennung bei .mov-Dateien in `open_path()`
+    - ✅ MediaBrowser: Hap MediaType mit ⚡ Icon
+    - ⬜ Runtime-Test mit echtem HAP-Video (benötigt FFmpeg)
   - ⬜ DXV-Codec fehlt
 
 ### Effects / PostFX
