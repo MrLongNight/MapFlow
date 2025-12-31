@@ -4,8 +4,9 @@
 //! - Still images: PNG, JPEG, TIFF via `image` crate
 //! - Animated GIF: Frame-by-frame playback with timing
 
-use crate::{DecodedFrame, MediaError, PixelFormat, Result, VideoDecoder};
+use crate::{MediaError, Result, VideoDecoder};
 use image::{AnimationDecoder, DynamicImage};
+use mapmap_io::{VideoFrame, PixelFormat};
 use std::path::Path;
 use std::time::Duration;
 use tracing::info;
@@ -79,7 +80,7 @@ impl StillImageDecoder {
 }
 
 impl VideoDecoder for StillImageDecoder {
-    fn next_frame(&mut self) -> Result<DecodedFrame> {
+    fn next_frame(&mut self) -> Result<VideoFrame> {
         // Still images can be read repeatedly
         // For proper "video" behavior, we only return the frame once
         // and then return EndOfStream to match video semantics
@@ -89,13 +90,16 @@ impl VideoDecoder for StillImageDecoder {
 
         self.has_been_read = true;
 
-        Ok(DecodedFrame {
-            data: self.frame_data.clone(),
-            format: PixelFormat::RGBA8,
-            width: self.width,
-            height: self.height,
-            pts: Duration::ZERO,
-        })
+        Ok(VideoFrame::new(
+            self.frame_data.clone(),
+            mapmap_io::VideoFormat {
+                width: self.width,
+                height: self.height,
+                pixel_format: PixelFormat::RGBA8,
+                frame_rate: 1.0,
+            },
+            Duration::ZERO,
+        ))
     }
 
     fn seek(&mut self, _timestamp: Duration) -> Result<()> {
@@ -224,7 +228,7 @@ impl GifDecoder {
 }
 
 impl VideoDecoder for GifDecoder {
-    fn next_frame(&mut self) -> Result<DecodedFrame> {
+    fn next_frame(&mut self) -> Result<VideoFrame> {
         if self.current_time >= self.total_duration {
             return Err(MediaError::EndOfStream);
         }
@@ -237,13 +241,16 @@ impl VideoDecoder for GifDecoder {
         self.current_time += delay;
         self.current_frame = (self.current_frame + 1) % self.frames.len();
 
-        Ok(DecodedFrame {
-            data: frame_data,
-            format: PixelFormat::RGBA8,
-            width: self.width,
-            height: self.height,
+        Ok(VideoFrame::new(
+            frame_data,
+            mapmap_io::VideoFormat {
+                width: self.width,
+                height: self.height,
+                pixel_format: PixelFormat::RGBA8,
+                frame_rate: self.fps as f32,
+            },
             pts,
-        })
+        ))
     }
 
     fn seek(&mut self, timestamp: Duration) -> Result<()> {

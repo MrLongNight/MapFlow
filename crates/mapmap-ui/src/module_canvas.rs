@@ -573,6 +573,19 @@ impl ModuleCanvas {
                         self.add_source_node(manager, SourceType::LiveInput { device_id: 0 });
                         ui.close_menu();
                     }
+                    #[cfg(target_os = "windows")]
+                    {
+                        ui.separator();
+                        if ui.button("Spout Input").clicked() {
+                            self.add_source_node(
+                                manager,
+                                SourceType::SpoutInput {
+                                    sender_name: String::new(),
+                                },
+                            );
+                            ui.close_menu();
+                        }
+                    }
                 });
 
                 // MASK DROPDOWN
@@ -894,6 +907,19 @@ impl ModuleCanvas {
                     if ui.button("👁️ Preview Window").clicked() {
                         self.add_output_node(manager, OutputType::Preview { window_id: 0 });
                         ui.close_menu();
+                    }
+                    #[cfg(target_os = "windows")]
+                    {
+                        ui.separator();
+                        if ui.button("Spout Output").clicked() {
+                            self.add_output_node(
+                                manager,
+                                OutputType::Spout {
+                                    name: "MapFlow".to_string(),
+                                },
+                            );
+                            ui.close_menu();
+                        }
                     }
                 });
             });
@@ -1329,6 +1355,29 @@ impl ModuleCanvas {
                                                                 .text("Device ID"),
                                                         );
                                                     }
+                    #[cfg(target_os = "windows")]
+                    SourceType::SpoutInput { sender_name } => {
+                        ui.label("Spout Input");
+                        ui.horizontal(|ui| {
+                            ui.label("Sender:");
+                            let senders = match mapmap_io::spout::SpoutReceiver::list_senders() {
+                                Ok(senders) => senders,
+                                Err(e) => {
+                                    tracing::error!("Failed to list Spout senders: {}", e);
+                                    vec![]
+                                }
+                            };
+                            let selected = sender_name.clone();
+                            egui::ComboBox::from_id_source("spout_sender")
+                                .selected_text(if selected.is_empty() { "None" } else { &selected })
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(sender_name, String::new(), "None");
+                                    for sender in senders {
+                                        ui.selectable_value(sender_name, sender.name.clone(), sender.name);
+                                    }
+                                });
+                        });
+                    }
                                                 }
                                             }
                                             ModulePartType::Mask(mask) => {
@@ -1731,6 +1780,14 @@ impl ModuleCanvas {
                                                     OutputType::Preview { window_id: _ } => {
                                                         ui.label("👁️ Preview Window");
                                                     }
+                    #[cfg(target_os = "windows")]
+                    OutputType::Spout { name } => {
+                        ui.label("Spout Output");
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(name);
+                        });
+                    }
                                                 }
                                             }
                                         }
@@ -3618,6 +3675,8 @@ impl ModuleCanvas {
                     SourceType::MediaFile { .. } => "Media File",
                     SourceType::Shader { .. } => "Shader",
                     SourceType::LiveInput { .. } => "Live Input",
+                    #[cfg(target_os = "windows")]
+                    SourceType::SpoutInput { .. } => "Spout Input",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -3726,6 +3785,8 @@ impl ModuleCanvas {
                 let name = match output {
                     OutputType::Projector { .. } => "Projector",
                     OutputType::Preview { .. } => "Preview",
+                    #[cfg(target_os = "windows")]
+                    OutputType::Spout { .. } => "Spout Output",
                 };
                 (
                     Color32::from_rgb(70, 50, 50),
@@ -3772,6 +3833,14 @@ impl ModuleCanvas {
                 }
                 SourceType::Shader { name, .. } => format!("🎨 {}", name),
                 SourceType::LiveInput { device_id } => format!("📹 Device {}", device_id),
+                #[cfg(target_os = "windows")]
+                SourceType::SpoutInput { sender_name } => {
+                    if sender_name.is_empty() {
+                        "Spout: None".to_string()
+                    } else {
+                        format!("Spout: {}", sender_name)
+                    }
+                }
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
@@ -3820,6 +3889,8 @@ impl ModuleCanvas {
             ModulePartType::Output(output_type) => match output_type {
                 OutputType::Projector { name, .. } => format!("📺 {}", name),
                 OutputType::Preview { window_id } => format!("👁 Preview {}", window_id),
+                #[cfg(target_os = "windows")]
+                OutputType::Spout { name } => format!("Spout: {}", name),
             },
         }
     }

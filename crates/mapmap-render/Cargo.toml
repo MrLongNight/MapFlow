@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 mapmap-core = { path = "../mapmap-core" }
-wgpu = { workspace = true }
+wgpu = { workspace = true, features = ["hal"] }
 winit = { workspace = true }
 pollster = { workspace = true }
 bytemuck = { workspace = true }

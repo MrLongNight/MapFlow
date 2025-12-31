@@ -22,6 +22,8 @@ pub mod paint_texture_cache;
 pub mod preset;
 pub mod quad;
 pub mod shader;
+#[cfg(target_os = "windows")]
+pub mod spout;
 pub mod texture;
 
 pub use backend::{RenderBackend, WgpuBackend};

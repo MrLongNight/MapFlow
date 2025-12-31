@@ -36,6 +36,15 @@ impl FormatConverter {
     ///
     /// Returns an error if the conversion is not supported or fails.
     pub fn convert(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            FrameData::Gpu(_) => {
+                return Err(IoError::UnsupportedPixelFormat(
+                    "Cannot convert a GPU frame on the CPU.".to_string(),
+                ))
+            }
+        };
+
         // If formats match, just clone the frame
         if frame.format.pixel_format == target_format.pixel_format
             && frame.format.width == target_format.width
@@ -72,9 +81,13 @@ impl FormatConverter {
 
     /// Converts RGBA to BGRA by swapping R and B channels.
     fn rgba_to_bgra(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
-        let mut output = Vec::with_capacity(frame.data.len());
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to-string())),
+        };
+        let mut output = Vec::with_capacity(data.len());
 
-        for pixel in frame.data.chunks_exact(4) {
+        for pixel in data.chunks_exact(4) {
             output.push(pixel[2]); // B
             output.push(pixel[1]); // G
             output.push(pixel[0]); // R
@@ -97,10 +110,14 @@ impl FormatConverter {
 
     /// Converts RGB to RGBA by adding an alpha channel.
     fn rgb_to_rgba(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to_string())),
+        };
         let pixel_count = (frame.format.width * frame.format.height) as usize;
         let mut output = Vec::with_capacity(pixel_count * 4);
 
-        for pixel in frame.data.chunks_exact(3) {
+        for pixel in data.chunks_exact(3) {
             output.push(pixel[0]); // R
             output.push(pixel[1]); // G
             output.push(pixel[2]); // B
@@ -117,10 +134,14 @@ impl FormatConverter {
 
     /// Converts RGBA to RGB by dropping the alpha channel.
     fn rgba_to_rgb(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to_string())),
+        };
         let pixel_count = (frame.format.width * frame.format.height) as usize;
         let mut output = Vec::with_capacity(pixel_count * 3);
 
-        for pixel in frame.data.chunks_exact(4) {
+        for pixel in data.chunks_exact(4) {
             output.push(pixel[0]); // R
             output.push(pixel[1]); // G
             output.push(pixel[2]); // B
@@ -143,20 +164,24 @@ impl FormatConverter {
         frame: &VideoFrame,
         target_format: &VideoFormat,
     ) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to_string())),
+        };
         let width = frame.format.width as usize;
         let height = frame.format.height as usize;
         let y_size = width * height;
         let uv_size = y_size / 4;
 
-        if frame.data.len() < y_size + 2 * uv_size {
+        if data.len() < y_size + 2 * uv_size {
             return Err(IoError::InvalidFrameData(
                 "Insufficient data for YUV420P frame".to_string(),
             ));
         }
 
-        let y_plane = &frame.data[0..y_size];
-        let u_plane = &frame.data[y_size..y_size + uv_size];
-        let v_plane = &frame.data[y_size + uv_size..y_size + 2 * uv_size];
+        let y_plane = &data[0..y_size];
+        let u_plane = &data[y_size..y_size + uv_size];
+        let v_plane = &data[y_size + uv_size..y_size + 2 * uv_size];
 
         let mut output = vec![0u8; width * height * 4];
 
@@ -196,20 +221,24 @@ impl FormatConverter {
         frame: &VideoFrame,
         target_format: &VideoFormat,
     ) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to_string())),
+        };
         let width = frame.format.width as usize;
         let height = frame.format.height as usize;
         let y_size = width * height;
         let uv_size = y_size / 2;
 
-        if frame.data.len() < y_size + 2 * uv_size {
+        if data.len() < y_size + 2 * uv_size {
             return Err(IoError::InvalidFrameData(
                 "Insufficient data for YUV422P frame".to_string(),
             ));
         }
 
-        let y_plane = &frame.data[0..y_size];
-        let u_plane = &frame.data[y_size..y_size + uv_size];
-        let v_plane = &frame.data[y_size + uv_size..y_size + 2 * uv_size];
+        let y_plane = &data[0..y_size];
+        let u_plane = &data[y_size..y_size + uv_size];
+        let v_plane = &data[y_size + uv_size..y_size + 2 * uv_size];
 
         let mut output = vec![0u8; width * height * 4];
 
@@ -244,11 +273,15 @@ impl FormatConverter {
     ///
     /// UYVY is a packed YUV 4:2:2 format.
     fn uyvy_to_rgba(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to_string())),
+        };
         let width = frame.format.width as usize;
         let height = frame.format.height as usize;
         let expected_size = width * height * 2;
 
-        if frame.data.len() < expected_size {
+        if data.len() < expected_size {
             return Err(IoError::InvalidFrameData(
                 "Insufficient data for UYVY frame".to_string(),
             ));
@@ -262,10 +295,10 @@ impl FormatConverter {
                 let out_idx1 = (y * width + x * 2) * 4;
                 let out_idx2 = out_idx1 + 4;
 
-                let u = frame.data[in_idx] as i32 - 128;
-                let y1 = frame.data[in_idx + 1] as i32;
-                let v = frame.data[in_idx + 2] as i32 - 128;
-                let y2 = frame.data[in_idx + 3] as i32;
+                let u = data[in_idx] as i32 - 128;
+                let y1 = data[in_idx + 1] as i32;
+                let v = data[in_idx + 2] as i32 - 128;
+                let y2 = data[in_idx + 3] as i32;
 
                 let (r1, g1, b1) = yuv_to_rgb(y1, u, v);
                 let (r2, g2, b2) = yuv_to_rgb(y2, u, v);
@@ -295,19 +328,23 @@ impl FormatConverter {
     /// NV12 is a semi-planar format with full resolution Y plane and
     /// quarter resolution interleaved UV plane.
     fn nv12_to_rgba(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
+        let data = match &frame.data {
+            FrameData::Cpu(data) => data,
+            _ => return Err(IoError::InvalidFrameData("Expected CPU frame data".to_string())),
+        };
         let width = frame.format.width as usize;
         let height = frame.format.height as usize;
         let y_size = width * height;
         let uv_size = y_size / 2;
 
-        if frame.data.len() < y_size + uv_size {
+        if data.len() < y_size + uv_size {
             return Err(IoError::InvalidFrameData(
                 "Insufficient data for NV12 frame".to_string(),
             ));
         }
 
-        let y_plane = &frame.data[0..y_size];
-        let uv_plane = &frame.data[y_size..y_size + uv_size];
+        let y_plane = &data[0..y_size];
+        let uv_plane = &data[y_size..y_size + uv_size];
 
         let mut output = vec![0u8; width * height * 4];
 
@@ -384,10 +421,14 @@ mod tests {
         let converted = converter.convert(&frame, &target_format).unwrap();
 
         // After conversion, R and B should be swapped
-        assert_eq!(converted.data[0], 0); // B (was R)
-        assert_eq!(converted.data[1], 0); // G
-        assert_eq!(converted.data[2], 255); // R (was B)
-        assert_eq!(converted.data[3], 255); // A
+        if let FrameData::Cpu(data) = converted.data {
+            assert_eq!(data[0], 0); // B (was R)
+            assert_eq!(data[1], 0); // G
+            assert_eq!(data[2], 255); // R (was B)
+            assert_eq!(data[3], 255); // A
+        } else {
+            panic!("Expected CPU frame data");
+        }
     }
 
     #[test]
@@ -400,7 +441,11 @@ mod tests {
         let frame = VideoFrame::new(data, format, Duration::ZERO);
         let converted = converter.convert(&frame, &target_format).unwrap();
 
-        assert_eq!(converted.data, vec![128, 64, 32, 255]); // RGBA with alpha added
+        if let FrameData::Cpu(data) = converted.data {
+            assert_eq!(data, vec![128, 64, 32, 255]); // RGBA with alpha added
+        } else {
+            panic!("Expected CPU frame data");
+        }
     }
 
     #[test]
@@ -413,7 +458,11 @@ mod tests {
         let frame = VideoFrame::new(data, format, Duration::ZERO);
         let converted = converter.convert(&frame, &target_format).unwrap();
 
-        assert_eq!(converted.data, vec![128, 64, 32]); // RGB with alpha dropped
+        if let FrameData::Cpu(data) = converted.data {
+            assert_eq!(data, vec![128, 64, 32]); // RGB with alpha dropped
+        } else {
+            panic!("Expected CPU frame data");
+        }
     }
 
     #[test]
@@ -425,7 +474,11 @@ mod tests {
         let frame = VideoFrame::new(data.clone(), format.clone(), Duration::ZERO);
         let converted = converter.convert(&frame, &format).unwrap();
 
-        assert_eq!(converted.data, data);
+        if let FrameData::Cpu(converted_data) = converted.data {
+            assert_eq!(converted_data, data);
+        } else {
+            panic!("Expected CPU frame data");
+        }
     }
 
     #[test]

@@ -15,40 +15,7 @@ pub enum PixelFormat {
     YUV420P,
 }
 
-/// A decoded video frame
-#[derive(Clone)]
-pub struct DecodedFrame {
-    pub data: Vec<u8>,
-    pub format: PixelFormat,
-    pub width: u32,
-    pub height: u32,
-    pub pts: Duration,
-}
-
-impl DecodedFrame {
-    /// Get the size of the frame data in bytes
-    pub fn size_bytes(&self) -> usize {
-        self.data.len()
-    }
-
-    /// Convert to RGBA8 format (with YUV420P conversion)
-    pub fn to_rgba(&self) -> Vec<u8> {
-        match self.format {
-            PixelFormat::RGBA8 => self.data.clone(),
-            PixelFormat::BGRA8 => {
-                // Convert BGRA to RGBA
-                self.data
-                    .chunks_exact(4)
-                    .flat_map(|pixel| [pixel[2], pixel[1], pixel[0], pixel[3]])
-                    .collect()
-            }
-            PixelFormat::YUV420P => {
-                // Simple YUV420P to RGBA conversion (BT.601)
-                yuv420p_to_rgba(&self.data, self.width, self.height)
-            }
-        }
-    }
-}
+use mapmap_io::VideoFrame;
 
 /// Convert YUV420P to RGBA using BT.601 color space
 fn yuv420p_to_rgba(yuv_data: &[u8], width: u32, height: u32) -> Vec<u8> {
@@ -91,7 +58,7 @@ fn yuv420p_to_rgba(yuv_data: &[u8], width: u32, height: u32) -> Vec<u8> {
 /// is not thread-safe. Decoders should be used on a single thread or wrapped
 /// in appropriate synchronization primitives.
 pub trait VideoDecoder {
-    fn next_frame(&mut self) -> Result<DecodedFrame>;
+    fn next_frame(&mut self) -> Result<VideoFrame>;
     fn seek(&mut self, timestamp: Duration) -> Result<()>;
     fn duration(&self) -> Duration;
     fn resolution(&self) -> (u32, u32);
@@ -257,7 +224,7 @@ mod ffmpeg_impl {
     }
 
     impl super::VideoDecoder for RealFFmpegDecoder {
-        fn next_frame(&mut self) -> Result<DecodedFrame> {
+        fn next_frame(&mut self) -> Result<VideoFrame> {
             for (stream, packet) in self.input_ctx.packets() {
                 if stream.index() != self.video_stream_idx {
                     continue;
@@ -280,13 +247,16 @@ mod ffmpeg_impl {
                         decoded.timestamp().unwrap_or(0) as f64 * f64::from(self.time_base),
                     );
 
-                    return Ok(DecodedFrame {
-                        data: rgb_frame.data(0).to_vec(),
-                        format: PixelFormat::RGBA8,
-                        width: self.width,
-                        height: self.height,
+                    return Ok(VideoFrame::new(
+                        rgb_frame.data(0).to_vec(),
+                        mapmap_io::VideoFormat {
+                            width: self.width,
+                            height: self.height,
+                            pixel_format: mapmap_io::PixelFormat::RGBA8,
+                            frame_rate: self.fps as f32,
+                        },
                         pts,
-                    });
+                    ));
                 }
             }
 
@@ -353,7 +323,7 @@ impl TestPatternDecoder {
     }
 
     /// Generate a test pattern frame
-    fn generate_test_frame(&self) -> DecodedFrame {
+    fn generate_test_frame(&self) -> VideoFrame {
         let size = (self.width * self.height * 4) as usize;
         let mut data = vec![0u8; size];
 
@@ -370,18 +340,21 @@ impl TestPatternDecoder {
             }
         }
 
-        DecodedFrame {
+        VideoFrame::new(
             data,
-            format: PixelFormat::RGBA8,
-            width: self.width,
-            height: self.height,
-            pts: self.current_time,
-        }
+            mapmap_io::VideoFormat {
+                width: self.width,
+                height: self.height,
+                pixel_format: mapmap_io::PixelFormat::RGBA8,
+                frame_rate: self.fps as f32,
+            },
+            self.current_time,
+        )
     }
 }
 
 impl VideoDecoder for TestPatternDecoder {
-    fn next_frame(&mut self) -> Result<DecodedFrame> {
+    fn next_frame(&mut self) -> Result<VideoFrame> {
         if self.current_time >= self.duration {
             return Err(MediaError::EndOfStream);
         }
@@ -544,47 +517,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_decoded_frame_size() {
-        let frame = DecodedFrame {
-            data: vec![0; 1920 * 1080 * 4],
-            format: PixelFormat::RGBA8,
-            width: 1920,
-            height: 1080,
-            pts: Duration::ZERO,
-        };
-
-        assert_eq!(frame.size_bytes(), 1920 * 1080 * 4);
-    }
-
-    #[test]
-    fn test_pixel_format_conversion_rgba() {
-        let frame = DecodedFrame {
-            data: vec![255, 0, 0, 255],
-            format: PixelFormat::RGBA8,
-            width: 1,
-            height: 1,
-            pts: Duration::ZERO,
-        };
-
-        let rgba = frame.to_rgba();
-        assert_eq!(rgba, vec![255, 0, 0, 255]);
-    }
-
-    #[test]
-    fn test_pixel_format_conversion_bgra() {
-        let frame = DecodedFrame {
-            data: vec![0, 0, 255, 255], // Blue in BGRA
-            format: PixelFormat::BGRA8,
-            width: 1,
-            height: 1,
-            pts: Duration::ZERO,
-        };
-
-        let rgba = frame.to_rgba();
-        assert_eq!(rgba, vec![255, 0, 0, 255]); // Red in RGBA
-    }
-
-    #[test]
     fn test_test_pattern_decoder() {
         let mut decoder = TestPatternDecoder::new(640, 480, Duration::from_secs(10), 30.0);
 
@@ -593,9 +525,9 @@ mod tests {
         assert_eq!(decoder.duration(), Duration::from_secs(10));
 
         let frame = decoder.next_frame().unwrap();
-        assert_eq!(frame.width, 640);
-        assert_eq!(frame.height, 480);
-        assert_eq!(frame.format, PixelFormat::RGBA8);
+        assert_eq!(frame.format.width, 640);
+        assert_eq!(frame.format.height, 480);
+        assert_eq!(frame.format.pixel_format, mapmap_io::PixelFormat::RGBA8);
     }
 
     #[test]

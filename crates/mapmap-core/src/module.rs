@@ -429,6 +429,10 @@ pub enum SourceType {
     LiveInput {
         device_id: u32,
     },
+    #[cfg(target_os = "windows")]
+    SpoutInput {
+        sender_name: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -646,6 +650,8 @@ pub enum LayerAssignmentType {
 pub enum OutputType {
     Projector { id: u64, name: String },
     Preview { window_id: u32 },
+    #[cfg(target_os = "windows")]
+    Spout { name: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

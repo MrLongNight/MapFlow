@@ -4,7 +4,8 @@
 //! and video frame structures used throughout the I/O system.
 
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
+use wgpu::Texture;
 
 /// Pixel format enumeration.
 ///
@@ -241,10 +242,25 @@ impl FrameMetadata {
 ///
 /// Represents a complete video frame with pixel data, format information,
 /// timestamp, and metadata.
+#[derive(Debug)]
+pub enum FrameData {
+    Cpu(Vec<u8>),
+    Gpu(Arc<Texture>),
+}
+
+impl Clone for FrameData {
+    fn clone(&self) -> Self {
+        match self {
+            FrameData::Cpu(data) => FrameData::Cpu(data.clone()),
+            FrameData::Gpu(texture) => FrameData::Gpu(Arc::clone(texture)),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct VideoFrame {
     /// Raw pixel data
-    pub data: Vec<u8>,
+    pub data: FrameData,
     /// Video format
     pub format: VideoFormat,
     /// Timestamp (time since source started)
@@ -254,17 +270,17 @@ pub struct VideoFrame {
 }
 
 impl VideoFrame {
-    /// Creates a new video frame.
+    /// Creates a new video frame from a CPU buffer.
     pub fn new(data: Vec<u8>, format: VideoFormat, timestamp: Duration) -> Self {
         Self {
-            data,
+            data: FrameData::Cpu(data),
             format,
             timestamp,
             metadata: FrameMetadata::default(),
         }
     }
 
-    /// Creates a new video frame with metadata.
+    /// Creates a new video frame with metadata from a CPU buffer.
     pub fn with_metadata(
         data: Vec<u8>,
         format: VideoFormat,
@@ -272,7 +288,7 @@ impl VideoFrame {
         metadata: FrameMetadata,
     ) -> Self {
         Self {
-            data,
+            data: FrameData::Cpu(data),
             format,
             timestamp,
             metadata,
@@ -283,7 +299,7 @@ impl VideoFrame {
     pub fn empty(format: VideoFormat) -> Self {
         let size = format.buffer_size();
         Self {
-            data: vec![0; size],
+            data: FrameData::Cpu(vec![0; size]),
             format,
             timestamp: Duration::ZERO,
             metadata: FrameMetadata::default(),
@@ -292,17 +308,23 @@ impl VideoFrame {
 
     /// Validates that the frame data size matches the format.
     pub fn validate(&self) -> Result<(), crate::error::IoError> {
-        let expected = self.format.buffer_size();
-        let actual = self.data.len();
-        if expected != actual {
-            return Err(crate::error::IoError::FrameSizeMismatch { expected, actual });
+        if let FrameData::Cpu(data) = &self.data {
+            let expected = self.format.buffer_size();
+            let actual = data.len();
+            if expected != actual {
+                return Err(crate::error::IoError::FrameSizeMismatch { expected, actual });
+            }
         }
         Ok(())
     }
 
-    /// Returns the frame size in bytes.
-    pub fn size(&self) -> usize {
-        self.data.len()
+    /// Returns the frame size in bytes if it's a CPU frame.
+    pub fn size(&self) -> Option<usize> {
+        if let FrameData::Cpu(data) = &self.data {
+            Some(data.len())
+        } else {
+            None
+        }
     }
 
     /// Returns true if the frame data is valid.
@@ -411,7 +433,7 @@ mod tests {
     fn test_video_frame_empty() {
         let format = VideoFormat::hd_1080p60_rgba();
         let frame = VideoFrame::empty(format.clone());
-        assert_eq!(frame.size(), format.buffer_size());
+        assert_eq!(frame.size(), Some(format.buffer_size()));
         assert!(frame.is_valid());
     }
 }
