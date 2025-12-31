@@ -39,7 +39,9 @@ impl AssignmentPanel {
                     // This part is for testing and will be replaced by actual UI actions.
                     // Note: We can't mutate assignment_manager here directly as it's immutable.
                     // Actions would need to be sent back to the main app loop.
-                    tracing::info!("'Add Dummy Assignment' clicked. An action would be dispatched here.");
+                    tracing::info!(
+                        "'Add Dummy Assignment' clicked. An action would be dispatched here."
+                    );
                 }
             });
     }

@@ -131,6 +131,7 @@ impl WebServer {
                 state.clone(),
                 auth_middleware,
             ))
+            .layer(middleware::from_fn(security_headers)) // Apply security headers
             .with_state(state);
 
         // Add CORS if enabled
@@ -228,9 +229,40 @@ async fn auth_middleware(
     Ok(next.run(req).await)
 }
 
+/// Security headers middleware
+#[cfg(feature = "http-api")]
+async fn security_headers(req: Request, next: Next) -> Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+
+    // Prevent MIME sniffing
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+
+    // Prevent clickjacking
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+
+    // Legacy XSS protection (for defense in depth)
+    headers.insert(
+        header::X_XSS_PROTECTION,
+        HeaderValue::from_static("1; mode=block"),
+    );
+
+    // Referrer Policy
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+
+    response
+}
+
 #[cfg(all(test, feature = "http-api"))]
 mod tests {
     use super::*;
+    use axum::extract::Request;
 
     #[test]
     fn test_web_server_config() {
@@ -259,5 +291,44 @@ mod tests {
         let config = WebServerConfig::new(18080);
         let _server = WebServer::new(config);
         // Server created successfully
+    }
+
+    #[tokio::test]
+    async fn test_security_headers() {
+        use axum::body::Body;
+        use tower::Service; // for call
+
+        // Setup a simple app with the middleware
+        let mut app = axum::Router::new()
+            .route("/", axum::routing::get(|| async { "Hello" }))
+            .layer(middleware::from_fn(security_headers));
+
+        let response = app
+            .call(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        let headers = response.headers();
+
+        assert_eq!(
+            headers
+                .get("X-Content-Type-Options")
+                .and_then(|h| h.to_str().ok()),
+            Some("nosniff")
+        );
+        assert_eq!(
+            headers.get("X-Frame-Options").and_then(|h| h.to_str().ok()),
+            Some("DENY")
+        );
+        assert_eq!(
+            headers
+                .get("X-XSS-Protection")
+                .and_then(|h| h.to_str().ok()),
+            Some("1; mode=block")
+        );
+        assert_eq!(
+            headers.get("Referrer-Policy").and_then(|h| h.to_str().ok()),
+            Some("no-referrer")
+        );
     }
 }

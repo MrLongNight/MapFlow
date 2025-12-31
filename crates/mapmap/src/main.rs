@@ -119,7 +119,8 @@ struct App {
     selected_midi_port: Option<usize>,
     /// NDI Receivers for module sources
     #[cfg(feature = "ndi")]
-    ndi_receivers: std::collections::HashMap<mapmap_core::module::ModulePartId, mapmap_io::ndi::NdiReceiver>,
+    ndi_receivers:
+        std::collections::HashMap<mapmap_core::module::ModulePartId, mapmap_io::ndi::NdiReceiver>,
 
     /// Shader Graph Manager (Runtime)
     #[allow(dead_code)]
@@ -809,7 +810,10 @@ impl App {
                         info!("Creating new NdiReceiver for part {}", part_id);
                         mapmap_io::ndi::NdiReceiver::new().expect("Failed to create NDI receiver")
                     });
-                    info!("Connecting part {} to NDI source '{}'", part_id, source.name);
+                    info!(
+                        "Connecting part {} to NDI source '{}'",
+                        part_id, source.name
+                    );
                     if let Err(e) = receiver.connect(&source) {
                         error!("Failed to connect to NDI source: {}", e);
                     }
@@ -1110,14 +1114,14 @@ impl App {
                                     UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
-                                
+
                                 let id = self.state.effect_chain.add_effect(render_type);
                                 if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
                                     for (k, v) in &params {
                                         effect.set_param(k, *v);
                                     }
                                 }
-                                
+
                                 self.recent_effect_configs.add_float_config(&format!("{:?}", ui_type), params);
                             }
                             EffectChainAction::AddEffect(ui_type) => {
@@ -1184,7 +1188,7 @@ impl App {
                                     });
                                 });
                                 ui.separator();
-                                
+
                                 if let Some(action) = self.ui_state.timeline_panel.ui(ui, &mut self.state.effect_animator) {
                                      use mapmap_ui::timeline_v2::TimelineAction;
                                      match action {
