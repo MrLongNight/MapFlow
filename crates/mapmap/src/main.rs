@@ -1030,14 +1030,10 @@ impl App {
                                                     self.ui_state.actions.push(mapmap_ui::UIAction::AddLayer);
                                                 }
                                             });
-                                            let layers: Vec<_> = self.state.layer_manager.layers().iter()
-                                                .map(|l| (l.id, l.name.clone()))
-                                                .collect();
-
-                                            for (id, name) in layers {
-                                                let selected = self.ui_state.selected_layer_id == Some(id);
-                                                if ui.selectable_label(selected, &name).clicked() {
-                                                    self.ui_state.selected_layer_id = Some(id);
+                                            for layer in self.state.layer_manager.layers() {
+                                                let selected = self.ui_state.selected_layer_id == Some(layer.id);
+                                                if ui.selectable_label(selected, &layer.name).clicked() {
+                                                    self.ui_state.selected_layer_id = Some(layer.id);
                                                 }
                                             }
                                         });
@@ -1647,13 +1643,10 @@ impl App {
                 // Render all visible mappings for this layer
                 // Check if layer has associated paint_id and find mappings
                 if let Some(paint_id) = layer.paint_id {
-                    let mappings_for_layer: Vec<_> = self
-                        .state
-                        .mapping_manager
-                        .mappings_for_paint(paint_id)
-                        .into_iter()
-                        .filter(|m| m.visible && m.opacity > 0.0)
-                        .collect();
+                    let mappings_list = self.state.mapping_manager.mappings_for_paint(paint_id);
+                    let mappings_for_layer = mappings_list
+                        .iter()
+                        .filter(|m| m.visible && m.opacity > 0.0);
 
                     for mapping in mappings_for_layer {
                         // Get GPU buffers for this mapping's mesh (cached)
