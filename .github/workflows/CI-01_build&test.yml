@@ -117,6 +117,13 @@ jobs:
           libswresample-dev \
           ffmpeg \
           libasound2-dev
+
+        # Install NDI SDK
+        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
+        sudo ./Install_NDI_SDK_v5_Linux.sh
+        export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
+
         bash scripts/install-ffmpeg-dev.sh
         # Verify installations
         pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
@@ -176,13 +183,16 @@ jobs:
     - name: Rust Cache
       uses: swatinem/rust-cache@v2
 
-    - name: Build (Release, no FFmpeg)
+    - name: Install NDI SDK (Windows)
+      run: choco install ndi-sdk -y --version=5.5.3
+
+    - name: Build (Release, with NDI)
       env:
         RUST_BACKTRACE: full
       run: |
-        cargo build --release --verbose --no-default-features --features audio
+        cargo build --release --verbose --no-default-features --features "audio ndi"
 
-    - name: Run tests (Release, no FFmpeg)
+    - name: Run tests (Release, with NDI)
       if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full

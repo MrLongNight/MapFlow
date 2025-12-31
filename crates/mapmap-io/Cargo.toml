@@ -9,9 +9,11 @@ repository.workspace = true
 
 [dependencies]
 # Core dependencies
+wgpu = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
+once_cell = { workspace = true }
 serde_json = { workspace = true }
 ron = { workspace = true }
 chrono = { workspace = true }
@@ -26,6 +28,7 @@ tokio = { workspace = true, optional = true }
 
 # Media encoding/decoding
 ffmpeg-next = { workspace = true, optional = true }
+grafton-ndi = { version = "0.2.4", optional = true }
 
 # Platform-specific dependencies
 [target.'cfg(windows)'.dependencies]
@@ -34,6 +37,7 @@ windows = { version = "0.52", features = [
     "Win32_Graphics_Dxgi",
     "Win32_System_Com",
 ], optional = true }
+rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = { version = "0.25", optional = true }
@@ -46,19 +50,27 @@ cc = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = "3.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = []
 # Individual features
-ndi = []  # NDI support (requires NDI SDK)
-decklink = []  # DeckLink SDI support (requires DeckLink SDK)
-spout = ["windows"]  # Spout texture sharing (Windows only)
-syphon = ["cocoa", "core-foundation", "objc"]  # Syphon texture sharing (macOS only)
-stream = ["ffmpeg-next", "tokio"]  # RTMP/SRT streaming
-virtual-camera = []  # Virtual camera output
+ndi = ["dep:grafton-ndi", "dep:tokio"] # NDI support (requires NDI SDK)
+decklink = [] # DeckLink SDI support (requires DeckLink SDK)
+spout = [
+    "dep:windows",
+    "dep:rusty-spout",
+] # Spout texture sharing (Windows only)
+syphon = [
+    "cocoa",
+    "core-foundation",
+    "objc",
+] # Syphon texture sharing (macOS only)
+stream = ["ffmpeg-next", "dep:tokio"] # RTMP/SRT streaming
+virtual-camera = [] # Virtual camera output
 
 # Platform-specific features
-texture-sharing = []  # Enable on platforms that support it
+texture-sharing = [] # Enable on platforms that support it
 
 # Convenience features
 all-io = ["ndi", "decklink", "spout", "syphon", "stream", "virtual-camera"]

@@ -1,6 +1,7 @@
 //! Image sequence decoder (directory of numbered frames)
 
-use crate::{DecodedFrame, MediaError, PixelFormat, Result, VideoDecoder};
+use crate::{MediaError, Result, VideoDecoder};
+use mapmap_io::VideoFrame;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tracing::info;
@@ -140,7 +141,7 @@ impl ImageSequenceDecoder {
 }
 
 impl VideoDecoder for ImageSequenceDecoder {
-    fn next_frame(&mut self) -> Result<DecodedFrame> {
+    fn next_frame(&mut self) -> Result<VideoFrame> {
         if self.current_frame >= self.frames.len() {
             return Err(MediaError::EndOfStream);
         }
@@ -152,13 +153,16 @@ impl VideoDecoder for ImageSequenceDecoder {
         self.current_frame += 1;
         self.current_time += Duration::from_secs_f64(1.0 / self.fps);
 
-        Ok(DecodedFrame {
-            data: frame_data,
-            format: PixelFormat::RGBA8,
-            width: self.width,
-            height: self.height,
+        Ok(VideoFrame::new(
+            frame_data,
+            mapmap_io::VideoFormat {
+                width: self.width,
+                height: self.height,
+                pixel_format: mapmap_io::PixelFormat::RGBA8,
+                frame_rate: self.fps as f32,
+            },
             pts,
-        })
+        ))
     }
 
     fn seek(&mut self, timestamp: Duration) -> Result<()> {

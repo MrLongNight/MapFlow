@@ -24,15 +24,18 @@ pub mod paint;
 
 // Phase 3: Effects Pipeline
 pub mod animation;
+pub mod assignment;
 pub mod audio;
 pub mod audio_media_pipeline;
 pub mod audio_reactive;
 pub mod codegen;
+pub mod effect_animation;
 pub mod effects;
 pub mod logging;
 pub mod lut;
 pub mod module;
 pub mod oscillator;
+pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
 
@@ -40,6 +43,7 @@ pub use animation::{
     AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,
     TimePoint,
 };
+pub use assignment::{Assignment, AssignmentManager, ControlSource, ControlTarget};
 pub use audio::{
     AudioAnalysis, AudioAnalyzer, AudioConfig, AudioMappingType, AudioReactiveMapping, AudioSource,
     FrequencyBand,
@@ -50,6 +54,9 @@ pub use audio_reactive::{
     AudioReactivePreset,
 };
 pub use codegen::{CodegenError, WGSLCodegen};
+pub use effect_animation::{
+    EffectAnimationId, EffectParameterAnimator, EffectParameterBinding, EffectParameterUpdate,
+};
 pub use effects::{Effect, EffectChain, EffectType};
 pub use logging::LogConfig;
 pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
@@ -64,6 +71,9 @@ pub use output::{
     OutputManager,
 };
 pub use paint::{Paint, PaintId, PaintManager, PaintType};
+pub use recent_effect_configs::{
+    EffectConfig, EffectParamValue, RecentConfigQueue, RecentEffectConfigs, MAX_RECENT_CONFIGS,
+};
 pub use shader_graph::{
     DataType, GraphId, InputSocket, NodeId, NodeType, OutputSocket, ParameterValue, ShaderGraph,
     ShaderNode,

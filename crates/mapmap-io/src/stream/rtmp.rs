@@ -157,7 +157,9 @@ impl VideoSink for RtmpStreamer {
         }
 
         // Validate frame
-        frame.validate()?;
+        if let FrameData::Cpu(_) = &frame.data {
+            frame.validate()?;
+        }
 
         // Encode frame
         let _packet = self.encoder.encode(frame)?;

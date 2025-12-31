@@ -12,12 +12,14 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 glam = { workspace = true }
+uuid = { version = "1.8.0", features = ["v4", "serde"] }
 cpal = { workspace = true, optional = true }
 rustfft = { workspace = true }
 hound = { workspace = true }
 crossbeam-channel = { workspace = true }
 parking_lot = { workspace = true }
 chrono = "0.4"
+dirs = "5.0"
 tracing = { workspace = true }
 winit = { workspace = true, optional = true }
 

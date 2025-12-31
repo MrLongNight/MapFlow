@@ -3,8 +3,9 @@
 //! This module implements a fault-tolerant state machine for video/audio playback.
 //! It replaces legacy implementations with a clean, command-driven architecture.
 
-use crate::{DecodedFrame, VideoDecoder};
+use crate::VideoDecoder;
 use crossbeam_channel::{unbounded, Receiver, Sender};
+use mapmap_io::VideoFrame;
 use std::time::Duration;
 use thiserror::Error;
 use tracing::{error, info, warn};
@@ -68,7 +69,7 @@ pub struct VideoPlayer {
     current_time: Duration,
     playback_speed: f32,
     loop_mode: LoopMode,
-    last_frame: Option<DecodedFrame>,
+    last_frame: Option<VideoFrame>,
 
     // Command and Status channels
     command_sender: Sender<PlaybackCommand>,
@@ -113,7 +114,7 @@ impl VideoPlayer {
     }
 
     /// Update the player (call every frame)
-    pub fn update(&mut self, dt: Duration) -> Option<DecodedFrame> {
+    pub fn update(&mut self, dt: Duration) -> Option<VideoFrame> {
         self.process_commands();
 
         // If not playing, return last frame or None
@@ -299,7 +300,7 @@ impl VideoPlayer {
 mod tests {
     use super::*;
     use crate::decoder::TestPatternDecoder;
-    use crate::{MediaError, PixelFormat};
+    use crate::MediaError;
 
     // A mock decoder that can be configured to fail.
     #[derive(Clone)]
@@ -338,17 +339,16 @@ mod tests {
             }
         }
 
-        fn next_frame(&mut self) -> Result<DecodedFrame, MediaError> {
+        fn next_frame(&mut self) -> Result<VideoFrame, MediaError> {
             if self.fail_next_frame {
                 Err(MediaError::DecoderError("Decode failed".to_string()))
             } else {
-                Ok(DecodedFrame {
-                    pts: Duration::ZERO,
-                    data: vec![],
-                    width: 0,
-                    height: 0,
-                    format: PixelFormat::RGBA8,
-                })
+                Ok(VideoFrame::empty(mapmap_io::VideoFormat {
+                    width: 1920,
+                    height: 1080,
+                    pixel_format: mapmap_io::PixelFormat::RGBA8,
+                    frame_rate: 30.0,
+                }))
             }
         }
 

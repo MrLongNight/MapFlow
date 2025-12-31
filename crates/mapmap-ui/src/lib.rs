@@ -11,6 +11,7 @@
 
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
+pub mod assignment_panel;
 pub mod audio_meter;
 pub mod audio_panel;
 pub mod config;
@@ -35,7 +36,7 @@ pub mod osc_panel;
 pub mod oscillator_panel;
 pub mod output_panel;
 pub mod paint_panel;
-pub mod shortcut_panel;
+pub mod shortcut_editor;
 pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;
@@ -46,6 +47,7 @@ pub use i18n::LocaleManager;
 
 // Phase 6 exports
 pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
+pub use assignment_panel::AssignmentPanel;
 pub use audio_panel::AudioPanel;
 pub use config::UserConfig;
 pub use cue_panel::CuePanel;
@@ -57,6 +59,8 @@ pub use effect_chain_panel::{
 
 pub use inspector_panel::{InspectorAction, InspectorContext, InspectorPanel};
 pub use layer_panel::{LayerPanel, LayerPanelAction};
+#[cfg(feature = "ndi")]
+use mapmap_io::ndi::Source as NdiSource;
 pub use mapping_panel::MappingPanel;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
@@ -65,7 +69,7 @@ pub use module_sidebar::ModuleSidebar;
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;
 pub use paint_panel::PaintPanel;
-pub use shortcut_panel::{ShortcutAction, ShortcutPanel};
+pub use shortcut_editor::ShortcutEditor;
 pub use theme::{Theme, ThemeConfig};
 pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
@@ -156,6 +160,22 @@ pub enum UIAction {
     OpenDocs,
     OpenAbout,
     OpenLicense,
+
+    // Module actions
+    #[cfg(feature = "ndi")]
+    ConnectNdiSource {
+        part_id: mapmap_core::module::ModulePartId,
+        source: NdiSource,
+    },
+
+    // Cue actions (Phase 7)
+    AddCue,
+    RemoveCue(u32),
+    UpdateCue(Box<mapmap_control::cue::Cue>),
+    GoCue(u32),
+    NextCue,
+    PrevCue,
+    StopCue,
 }
 
 use mapmap_control::ControlTarget;
@@ -188,6 +208,8 @@ pub struct AppUI {
     pub show_audio: bool,
     pub audio_panel: AudioPanel,
     pub show_cue_panel: bool,
+    pub assignment_panel: AssignmentPanel,
+    pub show_assignment_panel: bool,
     pub playback_speed: f32,
     pub loop_mode: mapmap_media::LoopMode,
     // Phase 1: Transform editing state
@@ -204,7 +226,7 @@ pub struct AppUI {
     pub timeline_panel: timeline_v2::TimelineV2,
     pub node_editor_panel: node_editor::NodeEditor,
     pub transform_panel: TransformPanel,
-    pub shortcut_panel: ShortcutPanel,
+    pub shortcut_editor: ShortcutEditor,
     pub icon_manager: Option<icons::IconManager>,
     pub icon_demo_panel: icon_demo_panel::IconDemoPanel,
     pub user_config: config::UserConfig,
@@ -245,6 +267,22 @@ pub struct AppUI {
 
 impl Default for AppUI {
     fn default() -> Self {
+        // Load user config once at initialization
+        let user_config = config::UserConfig::load();
+
+        // Extract values before moving user_config into struct
+        let saved_audio_device = user_config.selected_audio_device.clone();
+        let saved_recent_files = user_config.recent_files.clone();
+        let saved_language = user_config.language.clone();
+        let saved_target_fps = user_config.target_fps.unwrap_or(60.0);
+        // Panel visibility settings
+        let saved_show_left_sidebar = user_config.show_left_sidebar;
+        let saved_show_inspector = user_config.show_inspector;
+        let saved_show_timeline = user_config.show_timeline;
+        let saved_show_media_browser = user_config.show_media_browser;
+        let saved_show_module_canvas = user_config.show_module_canvas;
+        let saved_show_controller_overlay = user_config.show_controller_overlay;
+
         Self {
             menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
@@ -268,52 +306,49 @@ impl Default for AppUI {
             show_audio: false, // Hide by default - use Dashboard toggle
             audio_panel: AudioPanel::default(),
             show_cue_panel: false, // Hide by default
+            assignment_panel: AssignmentPanel::default(),
+            show_assignment_panel: false, // Hide by default
             playback_speed: 1.0,
             loop_mode: mapmap_media::LoopMode::Loop,
             selected_layer_id: None,
             selected_output_id: None,
             audio_devices: vec!["None".to_string()],
-            selected_audio_device: None,
-            recent_files: {
-                let config = config::UserConfig::load();
-                config.recent_files.clone()
-            },
+            // Load selected audio device from user config
+            selected_audio_device: saved_audio_device,
+            recent_files: saved_recent_files,
             actions: Vec::new(),
-            i18n: {
-                let config = config::UserConfig::load();
-                LocaleManager::new(&config.language)
-            },
+            i18n: LocaleManager::new(&saved_language),
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
             timeline_panel: timeline_v2::TimelineV2::default(),
-            show_timeline: true,      // Essential panel
-            show_shader_graph: false, // Advanced - hide by default
+            show_timeline: saved_show_timeline, // Load from config
+            show_shader_graph: false,           // Advanced - hide by default
             node_editor_panel: node_editor::NodeEditor::default(),
             transform_panel: TransformPanel::default(),
-            shortcut_panel: ShortcutPanel::new(),
+            shortcut_editor: ShortcutEditor::new(),
             show_toolbar: true,
             icon_manager: None, // Will be initialized with egui context
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
-            user_config: config::UserConfig::load(),
+            user_config,
             show_settings: false,
-            show_media_browser: true, // Essential panel
+            show_media_browser: saved_show_media_browser, // Load from config
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
             inspector_panel: InspectorPanel::default(),
-            show_inspector: true, // Essential panel
+            show_inspector: saved_show_inspector, // Load from config
             module_sidebar: ModuleSidebar::default(),
             show_module_sidebar: true, // Show when Module Canvas is active
             module_canvas: ModuleCanvas::default(),
-            show_module_canvas: false,
-            show_left_sidebar: true, // Essential panel - collapsible
+            show_module_canvas: saved_show_module_canvas, // Load from config
+            show_left_sidebar: saved_show_left_sidebar,   // Load from config
             current_audio_level: 0.0,
             current_fps: 60.0,
             current_frame_time_ms: 16.67,
-            target_fps: 60.0,
+            target_fps: saved_target_fps,
             cpu_usage: 0.0,
             gpu_usage: 0.0,
             ram_usage_mb: 0.0,
             controller_overlay: ControllerOverlayPanel::new(),
-            show_controller_overlay: false,
+            show_controller_overlay: saved_show_controller_overlay, // Load from config
             is_midi_learn_mode: false,
             current_bpm: None,
         }
