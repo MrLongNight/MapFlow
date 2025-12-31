@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-31: Feat: Implement UI Panel for Shortcut Editor (#141)
 - 2025-12-31: ⚡ Bolt: Remove unnecessary allocations in render/UI hot paths (#144)
 - 2025-12-31: merge: Resolve NDI/Spout conflicts with Unified Node Menu (#131, #137, #139)
 - 2025-12-31: feat(ui): Unified "Add Node" menu with search and NDI/Spout integration
