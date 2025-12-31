@@ -209,6 +209,17 @@ impl RecentEffectConfigs {
         }
     }
 
+    /// Add a config using only float parameters (for UI compatibility)
+    pub fn add_float_config(&mut self, effect_type: &str, params: HashMap<String, f32>) {
+        let mut converted = HashMap::new();
+        for (k, v) in params {
+            converted.insert(k, EffectParamValue::Float(v));
+        }
+        // Need a dummy config or generate one
+        let config = EffectConfig::new(converted);
+        self.add_config(effect_type, config);
+    }
+
     /// Get recent configs for an effect type
     pub fn get_configs(&self, effect_type: &str) -> Option<&RecentConfigQueue> {
         self.configs.get(effect_type)
@@ -217,6 +228,15 @@ impl RecentEffectConfigs {
     /// Get the most recent config for an effect type
     pub fn get_most_recent(&self, effect_type: &str) -> Option<&EffectConfig> {
         self.configs.get(effect_type)?.most_recent()
+    }
+
+    /// Get all recent configs for an effect type
+    pub fn get_recent(&self, effect_type: &str) -> Vec<EffectConfig> {
+        if let Some(queue) = self.configs.get(effect_type) {
+            queue.get_all().iter().cloned().collect()
+        } else {
+            Vec::new()
+        }
     }
 
     /// Apply a recent config by index
@@ -258,6 +278,15 @@ impl RecentEffectConfigs {
         std::fs::write(path, content)?;
         info!("Saved recent effect configs to {:?}", path);
         Ok(())
+    }
+
+    /// Save to the persisted path if set
+    pub fn save(&self) -> std::io::Result<()> {
+        if let Some(path) = &self.config_path {
+            self.save_to_path(path)
+        } else {
+            Ok(())
+        }
     }
 
     /// Get the default config path (in user data directory)

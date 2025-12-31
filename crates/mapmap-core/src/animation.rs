@@ -23,7 +23,7 @@ pub enum InterpolationMode {
 }
 
 /// Animatable value types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AnimValue {
     Float(f32),
     Vec2([f32; 2]),
@@ -75,7 +75,7 @@ impl AnimValue {
 }
 
 /// Keyframe - a value at a specific time
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Keyframe {
     pub time: TimePoint,
     pub value: AnimValue,
@@ -121,7 +121,7 @@ impl Keyframe {
 }
 
 /// Animation track - series of keyframes for a single property
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AnimationTrack {
     pub name: String,
     pub keyframes: BTreeMap<u64, Keyframe>, // Key is time in microseconds for ordering
@@ -219,7 +219,7 @@ impl AnimationTrack {
 }
 
 /// Animation clip - collection of tracks
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AnimationClip {
     pub name: String,
     pub tracks: Vec<AnimationTrack>,
@@ -283,7 +283,7 @@ impl AnimationClip {
 }
 
 /// Animation player state
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AnimationPlayer {
     pub clip: AnimationClip,
     pub current_time: TimePoint,

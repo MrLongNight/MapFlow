@@ -115,6 +115,11 @@ struct App {
     /// Selected MIDI port index
     #[cfg(feature = "midi")]
     selected_midi_port: Option<usize>,
+
+    /// Shader Graph Manager (Runtime)
+    shader_graph_manager: mapmap_render::ShaderGraphManager,
+    /// Recent Effect Configurations (User Prefs)
+    recent_effect_configs: mapmap_core::RecentEffectConfigs,
 }
 
 impl App {
@@ -400,6 +405,13 @@ impl App {
             } else {
                 Some(0)
             },
+            shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
+            recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
+                dirs::data_dir()
+                    .unwrap_or(std::path::PathBuf::from("."))
+                    .join("MapFlow")
+                    .join("recent_effect_configs.json"),
+            ),
         };
 
         // Create initial dummy texture
@@ -483,6 +495,10 @@ impl App {
                     error!("Failed to save user config on exit: {}", e);
                 } else {
                     info!("User settings saved successfully");
+                }
+
+                if let Err(e) = self.recent_effect_configs.save() {
+                    error!("Failed to save recent configs: {}", e);
                 }
 
                 elwt.exit();
@@ -669,6 +685,14 @@ impl App {
                         self.ui_state.current_bpm = analysis_v2.tempo_bpm;
                     }
                 }
+
+                // Update Effect Automation
+                let now = std::time::Instant::now();
+                let delta_time = now.duration_since(self.last_update).as_secs_f64();
+                self.last_update = now;
+
+                let _param_updates = self.state.effect_animator.update(delta_time);
+                // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
 
                 // Redraw all windows
                 for output_id in self
@@ -1037,6 +1061,91 @@ impl App {
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
+                    // === Effect Chain Panel ===
+                    self.ui_state.effect_chain_panel.ui(
+                        ctx,
+                        &self.ui_state.i18n,
+                        self.ui_state.icon_manager.as_ref(),
+                        Some(&mut self.recent_effect_configs),
+                    );
+
+                    // Handle Effect Chain Actions
+                    for action in self.ui_state.effect_chain_panel.take_actions() {
+                        use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectType};
+                        use mapmap_render::EffectType as RenderEffectType;
+
+                        match action {
+                            EffectChainAction::AddEffectWithParams(ui_type, params) => {
+                                let render_type = match ui_type {
+                                    UIEffectType::Blur => RenderEffectType::Blur,
+                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
+                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
+                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
+                                    UIEffectType::Glow => RenderEffectType::Glow,
+                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
+                                    UIEffectType::Invert => RenderEffectType::Invert,
+                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
+                                    UIEffectType::Vignette => RenderEffectType::Vignette,
+                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Custom => RenderEffectType::Custom,
+                                };
+                                
+                                let _id = self.effect_chain_renderer.add_effect(render_type);
+                                if let Some(effect) = self.effect_chain_renderer.effects_mut().last_mut() {
+                                    for (k, v) in &params {
+                                        effect.set_param(k, *v);
+                                    }
+                                }
+                                
+                                self.recent_effect_configs.add_float_config(&format!("{:?}", ui_type), params);
+                            }
+                            EffectChainAction::AddEffect(ui_type) => {
+                                let render_type = match ui_type {
+                                    UIEffectType::Blur => RenderEffectType::Blur,
+                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
+                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
+                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
+                                    UIEffectType::Glow => RenderEffectType::Glow,
+                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
+                                    UIEffectType::Invert => RenderEffectType::Invert,
+                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
+                                    UIEffectType::Vignette => RenderEffectType::Vignette,
+                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Custom => RenderEffectType::Custom,
+                                };
+                                self.effect_chain_renderer.add_effect(render_type);
+                            }
+                            EffectChainAction::ClearAll => {
+                                self.effect_chain_renderer.clear();
+                            }
+                            EffectChainAction::RemoveEffect(id) => {
+                                self.effect_chain_renderer.remove_effect(id);
+                            }
+                            EffectChainAction::MoveUp(id) => {
+                                self.effect_chain_renderer.move_up(id);
+                            }
+                            EffectChainAction::MoveDown(id) => {
+                                self.effect_chain_renderer.move_down(id);
+                            }
+                            EffectChainAction::ToggleEnabled(id) => {
+                                if let Some(effect) = self.effect_chain_renderer.get_effect_mut(id) {
+                                    effect.enabled = !effect.enabled;
+                                }
+                            }
+                            EffectChainAction::SetIntensity(id, val) => {
+                                if let Some(effect) = self.effect_chain_renderer.get_effect_mut(id) {
+                                    effect.intensity = val;
+                                }
+                            }
+                            EffectChainAction::SetParameter(id, name, val) => {
+                                if let Some(effect) = self.effect_chain_renderer.get_effect_mut(id) {
+                                    effect.set_param(&name, val);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+
                     // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
                     if self.ui_state.show_timeline {
                         egui::TopBottomPanel::bottom("timeline_panel")
@@ -1054,7 +1163,16 @@ impl App {
                                     });
                                 });
                                 ui.separator();
-                                let _ = self.ui_state.timeline_panel.ui(ui);
+                                
+                                if let Some(action) = self.ui_state.timeline_panel.ui(ui, &mut self.state.effect_animator) {
+                                     use mapmap_ui::timeline_v2::TimelineAction;
+                                     match action {
+                                         TimelineAction::Play => self.state.effect_animator.play(),
+                                         TimelineAction::Pause => self.state.effect_animator.pause(),
+                                         TimelineAction::Stop => self.state.effect_animator.stop(),
+                                         TimelineAction::Seek(t) => self.state.effect_animator.seek(t as f64),
+                                     }
+                                }
                             });
                     }
 

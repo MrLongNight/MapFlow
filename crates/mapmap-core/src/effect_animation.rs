@@ -13,7 +13,7 @@ use tracing::debug;
 pub type EffectAnimationId = u64;
 
 /// Binding between an effect parameter and an animation track
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EffectParameterBinding {
     /// ID of this binding
     pub id: EffectAnimationId,
@@ -30,7 +30,7 @@ pub struct EffectParameterBinding {
 }
 
 /// Effect Parameter Animator - manages effect parameter automation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EffectParameterAnimator {
     /// Current animation clip
     clip: AnimationClip,

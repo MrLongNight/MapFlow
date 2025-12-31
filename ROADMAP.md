@@ -215,7 +215,11 @@
     - ✅ Duplikat-Erkennung (gleiche Configs werden nicht doppelt gespeichert)
     - ✅ Auto-generierte beschreibende Namen aus Parametern
     - ✅ JSON-Persistenz in User-Data-Verzeichnis
-  - ⬜ Effect-Parameter-Automation via Timeline fehlt
+  - ✅ **Effect-Parameter-Automation via Timeline** (`effect_animation.rs`)
+    - ✅ EffectParameterAnimator verbindet Animation-System mit Effekten
+    - ✅ Keyframe-Animation für beliebige Parameter (Float, Vec3, Color, etc.)
+    - ✅ Binding-System (`EffectParameterBinding`) für Parameter-zu-Track Mapping
+    - ✅ Playback-Controls (Play, Pause, Seek, Speed, Loop)
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
 
