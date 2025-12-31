@@ -6,7 +6,7 @@
 
 use crate::{MediaError, Result, VideoDecoder};
 use image::{AnimationDecoder, DynamicImage};
-use mapmap_io::{VideoFrame, PixelFormat};
+use mapmap_io::{PixelFormat, VideoFrame};
 use std::path::Path;
 use std::time::Duration;
 use tracing::info;

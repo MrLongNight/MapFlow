@@ -12,8 +12,14 @@ pub enum ControlSource {
 /// Represents a potential target for a control signal.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ControlTarget {
-    LayerOpacity { layer_id: u64 },
-    EffectParamF32 { layer_id: u64, effect_id: Uuid, param_name: String },
+    LayerOpacity {
+        layer_id: u64,
+    },
+    EffectParamF32 {
+        layer_id: u64,
+        effect_id: Uuid,
+        param_name: String,
+    },
     // Add other target types here...
 }
 

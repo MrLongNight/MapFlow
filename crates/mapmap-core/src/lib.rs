@@ -34,12 +34,12 @@ pub mod effects;
 pub mod logging;
 pub mod lut;
 pub mod module;
+pub mod module_eval;
 pub mod oscillator;
 pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
 pub mod trigger_system;
-pub mod module_eval;
 
 pub use animation::{
     AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,

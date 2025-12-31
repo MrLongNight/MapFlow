@@ -93,7 +93,6 @@ pub struct ModuleCanvas {
     editing_part_id: Option<ModulePartId>,
 }
 
-
 pub type PresetPart = (
     mapmap_core::module::ModulePartType,
     (f32, f32),
@@ -1051,7 +1050,6 @@ impl ModuleCanvas {
     pub fn get_audio_trigger_data(&self) -> Option<&AudioTriggerData> {
         Some(&self.audio_trigger_data)
     }
-
 
     /// Get the live value of a specific output socket on a part.
     /// This is used to draw live data visualizations on the nodes.

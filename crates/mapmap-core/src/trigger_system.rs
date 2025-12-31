@@ -23,7 +23,9 @@ impl TriggerSystem {
 
         for module in module_manager.modules() {
             for part in &module.parts {
-                if let ModulePartType::Trigger(TriggerType::AudioFFT { threshold }) = &part.part_type {
+                if let ModulePartType::Trigger(TriggerType::AudioFFT { threshold }) =
+                    &part.part_type
+                {
                     // Check each of the 9 frequency bands
                     for i in 0..9 {
                         if audio_data.band_energies[i] > *threshold {
