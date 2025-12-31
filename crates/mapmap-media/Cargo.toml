@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+mapmap-io = { path = "../mapmap-io" }
 # FFmpeg is optional - we have a test pattern fallback
 ffmpeg-next = { workspace = true, optional = true }
 crossbeam-channel = { workspace = true }

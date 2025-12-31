@@ -9,7 +9,8 @@ repository.workspace = true
 
 [dependencies]
 mapmap-core = { path = "../mapmap-core" }
-wgpu = { workspace = true }
+wgpu = { workspace = true, features = ["hal"] }
+wgpu-hal = "0.19"
 winit = { workspace = true }
 pollster = { workspace = true }
 bytemuck = { workspace = true }
@@ -29,4 +30,3 @@ futures-channel = "0.3.30"
 criterion = { workspace = true }
 pollster = { workspace = true }
 tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
-

@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 # Core dependencies
+wgpu = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
@@ -36,6 +37,7 @@ windows = { version = "0.52", features = [
     "Win32_Graphics_Dxgi",
     "Win32_System_Com",
 ], optional = true }
+rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = { version = "0.25", optional = true }
@@ -54,7 +56,7 @@ default = []
 # Individual features
 ndi = ["dep:grafton-ndi", "dep:tokio"]  # NDI support (requires NDI SDK)
 decklink = []  # DeckLink SDI support (requires DeckLink SDK)
-spout = ["windows"]  # Spout texture sharing (Windows only)
+spout = ["dep:windows", "dep:rusty-spout"]  # Spout texture sharing (Windows only)
 syphon = ["cocoa", "core-foundation", "objc"]  # Syphon texture sharing (macOS only)
 stream = ["ffmpeg-next", "dep:tokio"]  # RTMP/SRT streaming
 virtual-camera = []  # Virtual camera output

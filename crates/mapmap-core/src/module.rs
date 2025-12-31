@@ -446,6 +446,10 @@ pub enum SourceType {
         /// If None, the first available source will be used.
         source_name: Option<String>,
     },
+    #[cfg(target_os = "windows")]
+    SpoutInput {
+        sender_name: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -661,11 +665,20 @@ pub enum LayerAssignmentType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OutputType {
-    Projector { id: u64, name: String },
-    Preview { window_id: u32 },
+    Projector {
+        id: u64,
+        name: String,
+    },
+    Preview {
+        window_id: u32,
+    },
     /// NDI network video output
     NdiOutput {
         /// The broadcast name of this NDI source.
+        name: String,
+    },
+    #[cfg(target_os = "windows")]
+    Spout {
         name: String,
     },
 }

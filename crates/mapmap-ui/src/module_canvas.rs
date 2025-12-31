@@ -475,6 +475,14 @@ impl ModuleCanvas {
                                             SourceType::NdiInput { .. } => {
                                                 ui.label("📡 NDI Input (Feature Disabled)");
                                             }
+                                            #[cfg(target_os = "windows")]
+                                            SourceType::SpoutInput { sender_name } => {
+                                                ui.label("🚰 Spout Input");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Sender:");
+                                                    ui.text_edit_singleline(sender_name);
+                                                });
+                                            }
                                         }
                                     }
                                     ModulePartType::Mask(mask) => {
@@ -985,6 +993,14 @@ impl ModuleCanvas {
                                             #[cfg(not(feature = "ndi"))]
                                             OutputType::NdiOutput { .. } => {
                                                 ui.label("📡 NDI Output (Feature Disabled)");
+                                            }
+                                            #[cfg(target_os = "windows")]
+                                            OutputType::Spout { name } => {
+                                                ui.label("🚰 Spout Output");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Stream Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
                                             }
                                         }
                                     }
@@ -2952,6 +2968,8 @@ impl ModuleCanvas {
                     SourceType::NdiInput { .. } => "NDI Input",
                     #[cfg(not(feature = "ndi"))]
                     SourceType::NdiInput { .. } => "NDI Input (Disabled)",
+                    #[cfg(target_os = "windows")]
+                    SourceType::SpoutInput { .. } => "Spout Input",
                 };
                 egui::ComboBox::from_id_source("source_type")
                     .selected_text(current)
@@ -2997,6 +3015,18 @@ impl ModuleCanvas {
                             .clicked()
                         {
                             *source_type = SourceType::NdiInput { source_name: None };
+                        }
+                        #[cfg(target_os = "windows")]
+                        if ui
+                            .selectable_label(
+                                matches!(source_type, SourceType::SpoutInput { .. }),
+                                "Spout Input",
+                            )
+                            .clicked()
+                        {
+                            *source_type = SourceType::SpoutInput {
+                                sender_name: "".to_string(),
+                            };
                         }
                     });
 
@@ -3285,6 +3315,8 @@ impl ModuleCanvas {
                     OutputType::NdiOutput { .. } => "NDI Output",
                     #[cfg(not(feature = "ndi"))]
                     OutputType::NdiOutput { .. } => "NDI Output (Disabled)",
+                    #[cfg(target_os = "windows")]
+                    OutputType::Spout { .. } => "Spout Output",
                 };
                 egui::ComboBox::from_id_source("output_type")
                     .selected_text(current)
@@ -3319,6 +3351,18 @@ impl ModuleCanvas {
                             .clicked()
                         {
                             *output_type = OutputType::NdiOutput {
+                                name: "MapFlow Output".to_string(),
+                            };
+                        }
+                        #[cfg(target_os = "windows")]
+                        if ui
+                            .selectable_label(
+                                matches!(output_type, OutputType::Spout { .. }),
+                                "Spout Output",
+                            )
+                            .clicked()
+                        {
+                            *output_type = OutputType::Spout {
                                 name: "MapFlow Output".to_string(),
                             };
                         }
@@ -3704,6 +3748,8 @@ impl ModuleCanvas {
                     SourceType::Shader { .. } => "Shader",
                     SourceType::LiveInput { .. } => "Live Input",
                     SourceType::NdiInput { .. } => "NDI Input",
+                    #[cfg(target_os = "windows")]
+                    SourceType::SpoutInput { .. } => "Spout Input",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -3813,6 +3859,8 @@ impl ModuleCanvas {
                     OutputType::Projector { .. } => "Projector",
                     OutputType::Preview { .. } => "Preview",
                     OutputType::NdiOutput { .. } => "NDI Output",
+                    #[cfg(target_os = "windows")]
+                    OutputType::Spout { .. } => "Spout Output",
                 };
                 (
                     Color32::from_rgb(70, 50, 50),
@@ -3862,6 +3910,8 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name } => {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
+                #[cfg(target_os = "windows")]
+                SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
@@ -3911,6 +3961,8 @@ impl ModuleCanvas {
                 OutputType::Projector { name, .. } => format!("📺 {}", name),
                 OutputType::Preview { window_id } => format!("👁 Preview {}", window_id),
                 OutputType::NdiOutput { name } => format!("📡 {}", name),
+                #[cfg(target_os = "windows")]
+                OutputType::Spout { name } => format!("🚰 {}", name),
             },
         }
     }

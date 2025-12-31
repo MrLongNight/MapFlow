@@ -23,9 +23,7 @@ pub mod sequence;
 // This provides zero overhead and clean separation. See pipeline.rs for implementation details.
 // pub mod pipeline;
 
-pub use decoder::{
-    DecodedFrame, FFmpegDecoder, HwAccelType, PixelFormat, TestPatternDecoder, VideoDecoder,
-};
+pub use decoder::{FFmpegDecoder, HwAccelType, PixelFormat, TestPatternDecoder, VideoDecoder};
 #[cfg(feature = "hap")]
 pub use hap_decoder::{decode_hap_frame, HapError, HapFrame, HapTextureType};
 #[cfg(feature = "hap")]

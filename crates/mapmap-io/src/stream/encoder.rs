@@ -147,6 +147,12 @@ impl VideoEncoder {
     ///
     /// An encoded video packet ready for streaming.
     pub fn encode(&mut self, frame: &VideoFrame) -> Result<EncodedPacket> {
+        if let FrameData::Gpu(_) = &frame.data {
+            return Err(IoError::UnsupportedPixelFormat(
+                "Cannot encode a GPU frame on the CPU.".to_string(),
+            ));
+        }
+
         // Validate frame format matches encoder format
         if frame.format.pixel_format != self.format.pixel_format {
             return Err(IoError::ConversionError(format!(
