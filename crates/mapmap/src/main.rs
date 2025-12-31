@@ -556,7 +556,7 @@ impl App {
                         unsafe {
                             if current_sec != LAST_LOG_SEC {
                                 LAST_LOG_SEC = current_sec;
-                                tracing::info!(
+                                tracing::debug!(
                                     "AudioV2: {} samples, RMS={:.4}, Peak={:.4}, Bands[0..3]={:?}",
                                     samples.len(),
                                     analysis_v2.rms_volume,
@@ -1795,7 +1795,9 @@ fn main() -> Result<()> {
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
 
-    info!("Starting MapFlow...");
+    info!("==========================================");
+    info!("===      MapFlow Session Started       ===");
+    info!("==========================================");
 
     // Create the event loop
     let event_loop = EventLoop::new()?;
@@ -1804,7 +1806,12 @@ fn main() -> Result<()> {
     let app = pollster::block_on(App::new(&event_loop))?;
 
     // Run the app
+    info!("--- Entering Main Event Loop ---");
     app.run(event_loop);
+
+    info!("==========================================");
+    info!("===       MapFlow Session Ended        ===");
+    info!("==========================================");
 
     Ok(())
 }

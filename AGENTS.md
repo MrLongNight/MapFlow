@@ -36,6 +36,23 @@ This file provides context and instructions for AI agents working on the MapFlow
 5.  **Documentation:** Keep `README.md` and `docs/` updated. Refer to the project as **MapFlow**, but acknowledge the legacy **MapMap** (C++/Qt) project where appropriate.
 6.  **Versioning:** Strictly adhere to `wgpu` 0.19 and `winit` 0.29. Do not update dependencies without explicit instruction.
 
+## 📜 Logging Standards
+
+*   **Structure:** Log files must use a consistent, human-readable format.
+    *   **Lifecycle Banners:** Use distinct headers for major lifecycle events:
+        *   `=== MapFlow Session Started ===`
+        *   `--- Entering Main Event Loop ---`
+        *   `=== MapFlow Session Ended ===`
+*   **Log Levels:**
+    *   `ERROR`: Critical failures that stop a feature or the app (e.g., Panic, I/O failure).
+    *   `WARN`: Non-critical issues or recoverable errors (e.g., Config missing, Audio device not found).
+    *   `INFO`: High-level state changes (e.g., Project loaded, Layer added, Device changed).
+    *   `DEBUG`: Detailed logic flow (e.g., "Processing event X", "Calculation result Y").
+    *   `TRACE`: High-frequency data (e.g., Per-frame render stats, Audio analysis results).
+*   **Noise Control:**
+    *   **Strict Rule:** Never log per-frame or high-frequency (sub-second) events at `INFO` level. These must be `DEBUG` or `TRACE`.
+    *   Verify loops (like `Event::AboutToWait` or render loops) do not contain `info!` calls.
+
 ## 📦 Packaging & Release
 
 *   **Windows:** WiX Toolset. Binary output: `MapFlow.exe`.
