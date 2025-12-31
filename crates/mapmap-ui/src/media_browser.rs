@@ -32,13 +32,17 @@ pub enum MediaType {
     Image,
     ImageSequence,
     Audio,
+    /// HAP video (GPU-accelerated codec)
+    Hap,
     Unknown,
 }
 
 impl MediaType {
     pub fn from_extension(ext: &str) -> Self {
         match ext.to_lowercase().as_str() {
-            "mp4" | "mov" | "avi" | "mpeg" | "mpg" | "mkv" | "webm" => Self::Video,
+            "mp4" | "avi" | "mpeg" | "mpg" | "mkv" | "webm" => Self::Video,
+            // MOV can be HAP or regular video - we'll detect at open time
+            "mov" => Self::Video, // Could be HAP, will be detected when opened
             "png" | "jpg" | "jpeg" | "tiff" | "tif" | "bmp" | "dds" => Self::Image,
             "gif" => Self::ImageSequence,
             "wav" | "mp3" | "aac" | "flac" | "ogg" => Self::Audio,
@@ -52,6 +56,7 @@ impl MediaType {
             Self::Image => "🖼",
             Self::ImageSequence => "🎞",
             Self::Audio => "🎵",
+            Self::Hap => "⚡", // Lightning for GPU-accelerated
             Self::Unknown => "📄",
         }
     }
@@ -62,6 +67,7 @@ impl MediaType {
             Self::Image => Some(AppIcon::ImageFile),
             Self::ImageSequence => Some(AppIcon::VideoFile),
             Self::Audio => Some(AppIcon::AudioFile),
+            Self::Hap => Some(AppIcon::VideoPlayer), // Use VideoPlayer for HAP
             Self::Unknown => None,
         }
     }
@@ -212,6 +218,7 @@ impl MediaBrowser {
                                 | MediaType::Image
                                 | MediaType::ImageSequence
                                 | MediaType::Audio
+                                | MediaType::Hap
                         ) {
                             let thumbnail = self.get_or_generate_thumbnail(&path);
 

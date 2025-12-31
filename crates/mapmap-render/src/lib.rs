@@ -13,6 +13,7 @@ use thiserror::Error;
 pub mod backend;
 pub mod color_calibration_renderer;
 pub mod compositor;
+pub mod compressed_texture;
 pub mod edge_blend_renderer;
 pub mod effect_chain_renderer;
 pub mod hot_reload;
@@ -23,11 +24,16 @@ pub mod paint_texture_cache;
 pub mod preset;
 pub mod quad;
 pub mod shader;
+pub mod shader_graph_integration;
 pub mod texture;
 
 pub use backend::{RenderBackend, WgpuBackend};
 pub use color_calibration_renderer::ColorCalibrationRenderer;
 pub use compositor::Compositor;
+pub use compressed_texture::{
+    check_bc_support, create_compressed_texture, upload_compressed_texture,
+    CompressedTextureHandle, DxtFormat,
+};
 pub use edge_blend_renderer::EdgeBlendRenderer;
 pub use effect_chain_renderer::{EffectChainRenderer, EffectParams};
 pub use hot_reload::{HotReloadIntegration, ShaderChangeEvent, ShaderHotReload, ShaderStatus};
@@ -37,6 +43,7 @@ pub use oscillator_renderer::OscillatorRenderer;
 pub use preset::{EffectPreset, PresetLibrary, PresetMetadata};
 pub use quad::QuadRenderer;
 pub use shader::{ShaderHandle, ShaderSource};
+pub use shader_graph_integration::{CompiledShaderGraph, ShaderGraphManager, ShaderGraphRendering};
 pub use texture::{TextureDescriptor, TextureHandle, TexturePool};
 
 /// Rendering errors

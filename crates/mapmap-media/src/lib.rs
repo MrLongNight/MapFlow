@@ -10,6 +10,10 @@ use std::path::Path;
 use thiserror::Error;
 
 pub mod decoder;
+#[cfg(feature = "hap")]
+pub mod hap_decoder;
+#[cfg(feature = "hap")]
+pub mod hap_player;
 pub mod image_decoder;
 pub mod player;
 pub mod sequence;
@@ -22,6 +26,10 @@ pub mod sequence;
 pub use decoder::{
     DecodedFrame, FFmpegDecoder, HwAccelType, PixelFormat, TestPatternDecoder, VideoDecoder,
 };
+#[cfg(feature = "hap")]
+pub use hap_decoder::{decode_hap_frame, HapError, HapFrame, HapTextureType};
+#[cfg(feature = "hap")]
+pub use hap_player::{is_hap_file, HapVideoDecoder};
 pub use image_decoder::{GifDecoder, StillImageDecoder};
 pub use player::{
     LoopMode, PlaybackCommand, PlaybackState, PlaybackStatus, PlayerError, VideoPlayer,
@@ -57,6 +65,7 @@ pub type Result<T> = std::result::Result<T, MediaError>;
 /// - If path is a directory, it's treated as an image sequence.
 /// - If path has a GIF extension, `GifDecoder` is used.
 /// - If path has a still image extension, `StillImageDecoder` is used.
+/// - If HAP feature is enabled and file might be HAP, try HAP decoder first.
 /// - Otherwise, it's assumed to be a video file and opened with `FFmpegDecoder`.
 pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
     let path = path.as_ref();
@@ -78,6 +87,21 @@ pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
         "gif" => Box::new(GifDecoder::open(path)?),
         "png" | "jpg" | "jpeg" | "tif" | "tiff" | "bmp" | "webp" => {
             Box::new(StillImageDecoder::open(path)?)
+        }
+        // HAP videos are typically in MOV containers
+        #[cfg(feature = "hap")]
+        "mov" => {
+            // Try HAP first, fall back to FFmpeg if it fails
+            match HapVideoDecoder::open(path) {
+                Ok(hap_decoder) => {
+                    tracing::info!("Opened as HAP video: {:?}", path);
+                    Box::new(hap_decoder)
+                }
+                Err(_) => {
+                    tracing::debug!("Not a HAP file, falling back to FFmpeg: {:?}", path);
+                    Box::new(FFmpegDecoder::open(path)?)
+                }
+            }
         }
         _ => {
             // Default to FFmpeg for video files

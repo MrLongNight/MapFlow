@@ -16,7 +16,7 @@ pub struct AudioAnalysisV2 {
     pub timestamp: f64,
     /// RMS volume (0.0 - 1.0)
     pub rms_volume: f32,
-    /// Peak volume (0.0 - 1.0)  
+    /// Peak volume (0.0 - 1.0)
     pub peak_volume: f32,
     /// FFT magnitude spectrum (half of FFT size)
     pub fft_magnitudes: Vec<f32>,
@@ -128,7 +128,7 @@ pub struct AudioAnalyzerV2 {
     /// Current timestamp
     current_time: f64,
 
-    /// Waveform buffer  
+    /// Waveform buffer
     waveform_buffer: Vec<f32>,
 
     /// Analysis sender channel
@@ -445,7 +445,7 @@ impl AudioAnalyzerV2 {
         }
 
         // Calculate intervals between consecutive beats
-        let intervals: Vec<f64> = self
+        let mut intervals: Vec<f64> = self
             .beat_timestamps
             .windows(2)
             .map(|w| w[1] - w[0])
@@ -455,10 +455,26 @@ impl AudioAnalyzerV2 {
             return None;
         }
 
-        // Calculate average interval
-        let avg_interval: f64 = intervals.iter().sum::<f64>() / intervals.len() as f64;
+        // Sort intervals to filtering outliers
+        intervals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
-        if avg_interval <= 0.0 {
+        // Remove outliers (keep middle 50% approx) if we have enough samples
+        let valid_intervals = if intervals.len() >= 4 {
+            let start = intervals.len() / 4;
+            let end = intervals.len() - start;
+            &intervals[start..end]
+        } else {
+            &intervals[..]
+        };
+
+        if valid_intervals.is_empty() {
+            return None;
+        }
+
+        // Calculate average interval of the clean set
+        let avg_interval: f64 = valid_intervals.iter().sum::<f64>() / valid_intervals.len() as f64;
+
+        if avg_interval <= 0.001 {
             return None;
         }
 
@@ -466,17 +482,20 @@ impl AudioAnalyzerV2 {
         let bpm = (60.0 / avg_interval) as f32;
 
         // Clamp to reasonable DJ range (60-200 BPM)
-        if (60.0..=200.0).contains(&bpm) {
-            Some(bpm)
+        let bpm = if (60.0..=200.0).contains(&bpm) {
+            bpm
         } else if (200.0..=400.0).contains(&bpm) {
             // Might be detecting half-beats, divide by 2
-            Some(bpm / 2.0)
+            bpm / 2.0
         } else if (30.0..60.0).contains(&bpm) {
             // Might be detecting double-beats, multiply by 2
-            Some(bpm * 2.0)
+            bpm * 2.0
         } else {
-            None
-        }
+            return None;
+        };
+
+        // Round to 1 decimal place to reduce visual jitter
+        Some((bpm * 10.0).round() / 10.0)
     }
 
     /// Get the latest analysis result

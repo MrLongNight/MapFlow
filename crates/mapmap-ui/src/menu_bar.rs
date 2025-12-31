@@ -376,26 +376,39 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     // MIDI Status indicator (passed via ui_state)
                     #[cfg(feature = "midi")]
                     {
-                        // Simple toggle button for controller overlay
-                        let overlay_btn = if ui_state.show_controller_overlay {
-                            egui::Button::new("🎛️").fill(egui::Color32::from_rgb(60, 80, 100))
+                        // Simple toggle button for controller overlay with icon
+                        let fader_clicked = if let Some(mgr) = &ui_state.icon_manager {
+                            if let Some(img) = mgr.image(AppIcon::Fader, 32.0) {
+                                let btn = if ui_state.show_controller_overlay {
+                                    egui::ImageButton::new(img).frame(true)
+                                } else {
+                                    egui::ImageButton::new(img).frame(false)
+                                };
+                                ui.add(btn)
+                                    .on_hover_text("MIDI Controller Overlay ein/aus")
+                                    .clicked()
+                            } else {
+                                ui.button("MIDI")
+                                    .on_hover_text("MIDI Controller Overlay ein/aus")
+                                    .clicked()
+                            }
                         } else {
-                            egui::Button::new("🎛️")
+                            ui.button("MIDI")
+                                .on_hover_text("MIDI Controller Overlay ein/aus")
+                                .clicked()
                         };
-                        if ui
-                            .add(overlay_btn)
-                            .on_hover_text("MIDI Controller Overlay ein/aus")
-                            .clicked()
-                        {
+
+                        if fader_clicked {
                             ui_state.show_controller_overlay = !ui_state.show_controller_overlay;
                         }
 
                         ui.separator();
 
+                        // Learn button with proper icon or text fallback
                         let learn_btn = if ui_state.is_midi_learn_mode {
-                            egui::Button::new("🧠 Learn").fill(egui::Color32::YELLOW)
+                            egui::Button::new("Learn").fill(egui::Color32::YELLOW)
                         } else {
-                            egui::Button::new("🧠 Learn")
+                            egui::Button::new("Learn")
                         };
                         if ui
                             .add(learn_btn)

@@ -81,6 +81,47 @@ pub struct UserConfig {
     /// Selected audio input device name
     #[serde(default)]
     pub selected_audio_device: Option<String>,
+
+    // === Window Geometry ===
+    /// Window width in pixels
+    #[serde(default)]
+    pub window_width: Option<u32>,
+    /// Window height in pixels
+    #[serde(default)]
+    pub window_height: Option<u32>,
+    /// Window X position
+    #[serde(default)]
+    pub window_x: Option<i32>,
+    /// Window Y position
+    #[serde(default)]
+    pub window_y: Option<i32>,
+    /// Whether the window was maximized
+    #[serde(default)]
+    pub window_maximized: bool,
+
+    // === Panel Visibility ===
+    /// Show left sidebar
+    #[serde(default = "default_true")]
+    pub show_left_sidebar: bool,
+    /// Show inspector panel
+    #[serde(default = "default_true")]
+    pub show_inspector: bool,
+    /// Show timeline
+    #[serde(default = "default_true")]
+    pub show_timeline: bool,
+    /// Show media browser
+    #[serde(default = "default_true")]
+    pub show_media_browser: bool,
+    /// Show module canvas
+    #[serde(default)]
+    pub show_module_canvas: bool,
+    /// Show controller overlay
+    #[serde(default)]
+    pub show_controller_overlay: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for UserConfig {
@@ -94,6 +135,19 @@ impl Default for UserConfig {
             meter_style: AudioMeterStyle::default(),
             midi_assignments: Vec::new(),
             selected_audio_device: None,
+            // Window geometry - None means use default
+            window_width: None,
+            window_height: None,
+            window_x: None,
+            window_y: None,
+            window_maximized: false,
+            // Panel visibility defaults
+            show_left_sidebar: true,
+            show_inspector: true,
+            show_timeline: true,
+            show_media_browser: true,
+            show_module_canvas: false,
+            show_controller_overlay: false,
         }
     }
 }
@@ -242,6 +296,17 @@ mod tests {
             meter_style: AudioMeterStyle::Digital,
             midi_assignments: Vec::new(),
             selected_audio_device: None,
+            window_width: Some(1920),
+            window_height: Some(1080),
+            window_x: Some(100),
+            window_y: Some(50),
+            window_maximized: false,
+            show_left_sidebar: true,
+            show_inspector: true,
+            show_timeline: true,
+            show_media_browser: true,
+            show_module_canvas: false,
+            show_controller_overlay: false,
         };
 
         let json = serde_json::to_string(&config).unwrap();
