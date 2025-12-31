@@ -242,10 +242,7 @@ async fn security_headers(req: Request, next: Next) -> Response {
     );
 
     // Prevent clickjacking
-    headers.insert(
-        header::X_FRAME_OPTIONS,
-        HeaderValue::from_static("DENY"),
-    );
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
 
     // Legacy XSS protection (for defense in depth)
     headers.insert(
@@ -314,7 +311,9 @@ mod tests {
         let headers = response.headers();
 
         assert_eq!(
-            headers.get("X-Content-Type-Options").and_then(|h| h.to_str().ok()),
+            headers
+                .get("X-Content-Type-Options")
+                .and_then(|h| h.to_str().ok()),
             Some("nosniff")
         );
         assert_eq!(
@@ -322,7 +321,9 @@ mod tests {
             Some("DENY")
         );
         assert_eq!(
-            headers.get("X-XSS-Protection").and_then(|h| h.to_str().ok()),
+            headers
+                .get("X-XSS-Protection")
+                .and_then(|h| h.to_str().ok()),
             Some("1; mode=block")
         );
         assert_eq!(
