@@ -2067,8 +2067,10 @@ impl ModuleCanvas {
             .iter()
             .map(|part| {
                 let part_screen_pos = to_screen(Pos2::new(part.position.0, part.position.1));
-                let part_height = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                let part_size = Vec2::new(200.0, part_height);
+                let default_height =
+                    80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                let (w, h) = part.size.unwrap_or((200.0, default_height));
+                let part_size = Vec2::new(w, h);
                 let rect = Rect::from_min_size(part_screen_pos, part_size * self.zoom);
 
                 // Calculate socket positions
@@ -2338,23 +2340,23 @@ impl ModuleCanvas {
                         if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
                             let new_x = part.position.0 + delta.x;
                             let new_y = part.position.1 + delta.y;
-                            let part_height =
+                            let default_height =
                                 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                            let new_rect = Rect::from_min_size(
-                                Pos2::new(new_x, new_y),
-                                Vec2::new(200.0, part_height),
-                            );
+                            let (w, h) = part.size.unwrap_or((200.0, default_height));
+                            let new_rect =
+                                Rect::from_min_size(Pos2::new(new_x, new_y), Vec2::new(w, h));
 
                             // Check collision with other parts
                             let has_collision = module.parts.iter().any(|other| {
                                 if other.id == *part_id {
                                     return false;
                                 }
-                                let other_height = 80.0
+                                let other_default_h = 80.0
                                     + (other.inputs.len().max(other.outputs.len()) as f32) * 20.0;
+                                let (ow, oh) = other.size.unwrap_or((200.0, other_default_h));
                                 let other_rect = Rect::from_min_size(
                                     Pos2::new(other.position.0, other.position.1),
-                                    Vec2::new(200.0, other_height),
+                                    Vec2::new(ow, oh),
                                 );
                                 new_rect.intersects(other_rect)
                             });
@@ -2389,6 +2391,51 @@ impl ModuleCanvas {
             );
             if delete_response.clicked() {
                 delete_part_id = Some(*part_id);
+            }
+
+            // check for resize interaction (bottom-right)
+            let resize_rect = Rect::from_min_size(
+                Pos2::new(rect.max.x - 15.0 * self.zoom, rect.max.y - 15.0 * self.zoom),
+                Vec2::splat(15.0 * self.zoom),
+            );
+            let resize_response = ui.interact(
+                resize_rect,
+                egui::Id::new((*part_id, "resize")),
+                Sense::drag(),
+            );
+
+            if resize_response.drag_started() {
+                let current_size = if let Some(p) = module.parts.iter().find(|p| p.id == *part_id) {
+                    // Calculate default height again to ensure we have a valid start size
+                    let default_h = 80.0 + (p.inputs.len().max(p.outputs.len()) as f32) * 20.0;
+                    p.size.unwrap_or((200.0, default_h))
+                } else {
+                    (200.0, 100.0)
+                };
+                self.resizing_part = Some((*part_id, current_size));
+            }
+
+            if resize_response.dragged() {
+                if let Some((r_id, _)) = self.resizing_part {
+                    // only resize if this is the part we started resizing
+                    if r_id == *part_id {
+                        let delta = resize_response.drag_delta() / self.zoom;
+                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                            let default_h =
+                                80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                            let (current_w, current_h) = part.size.unwrap_or((200.0, default_h));
+
+                            let new_w = (current_w + delta.x).max(150.0);
+                            let new_h = (current_h + delta.y).max(default_h); // Don't shrink below content
+
+                            part.size = Some((new_w, new_h));
+                        }
+                    }
+                }
+            }
+
+            if resize_response.drag_stopped() {
+                self.resizing_part = None;
             }
         }
 
