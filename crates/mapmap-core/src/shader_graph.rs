@@ -41,7 +41,7 @@ impl DataType {
 }
 
 /// Input socket on a shader graph node
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InputSocket {
     pub name: String,
     pub data_type: DataType,
@@ -50,7 +50,7 @@ pub struct InputSocket {
 }
 
 /// Output socket on a shader graph node
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OutputSocket {
     pub name: String,
     pub data_type: DataType,
@@ -204,7 +204,7 @@ impl NodeType {
 }
 
 /// Parameter value for animatable properties
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ParameterValue {
     Float(f32),
     Vec2([f32; 2]),
@@ -214,7 +214,7 @@ pub enum ParameterValue {
 }
 
 /// Shader graph node
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ShaderNode {
     pub id: NodeId,
     pub node_type: NodeType,
@@ -352,7 +352,7 @@ impl ShaderNode {
 }
 
 /// Shader graph - collection of connected nodes
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ShaderGraph {
     pub id: GraphId,
     pub name: String,

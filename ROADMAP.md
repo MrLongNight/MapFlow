@@ -1,8 +1,8 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.6  
-> **Stand:** 2025-12-27 19:00  
-> **Zielgruppe:** @jules und Entwickler-Team  
+> **Version:** 1.7
+> **Stand:** 2025-12-30 01:00
+> **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
 ---
@@ -172,7 +172,15 @@
 - ⬜ **Codec-Support**
   - ✅ H.264, H.265, VP8, VP9 über FFmpeg
   - ⬜ ProRes noch nicht getestet/optimiert
-  - ⬜ HAP-Codec fehlt (GPU-native Compression)
+  - ✅ **HAP-Codec (COMPLETED 2025-12-31)**
+    - ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
+    - ✅ Snappy Dekompression für HAP-Frames
+    - ✅ BC1/BC3 Textur-Upload (`mapmap-render/src/compressed_texture.rs`)
+    - ✅ YCoCg→RGB Shader (`shaders/ycocg_to_rgb.wgsl`)
+    - ✅ HAP Video Player (`mapmap-media/src/hap_player.rs`)
+    - ✅ Auto-Erkennung bei .mov-Dateien in `open_path()`
+    - ✅ MediaBrowser: Hap MediaType mit ⚡ Icon
+    - ⬜ Runtime-Test mit echtem HAP-Video (benötigt FFmpeg)
   - ⬜ DXV-Codec fehlt
 
 ### Effects / PostFX
@@ -192,11 +200,26 @@
   - ✅ Node-Connections und Graph-Traversal
   - ✅ WGSL-Codegen (`mapmap-core/src/codegen.rs`)
 
-- ⬜ **Effect-Chain-Integration**
-  - ⬜ Shader-Graph in Render-Pipeline integrieren fehlt
-  - ⬜ Custom-Shader-Hot-Reload fehlt
-  - ⬜ Effect-Preset-System fehlt
-  - ⬜ Effect-Parameter-Automation via Timeline fehlt
+- ✅ **Effect-Chain-Integration (COMPLETED 2025-12-31)**
+  - ✅ Shader-Graph in Render-Pipeline integriert (`shader_graph_integration.rs`)
+    - ✅ ShaderGraphManager für Graph-Verwaltung
+    - ✅ WGSLCodegen → GPU Pipeline Kompilierung
+    - ✅ ShaderGraphRendering Trait für Rendering
+  - ✅ **Custom-Shader-Hot-Reload** (`hot_reload.rs`)
+    - ✅ File-Watcher für .wgsl Dateien
+    - ✅ Debouncing (100ms)
+    - ✅ Fallback zu letztem funktionierenden Shader
+    - ✅ HotReloadIntegration für EffectChainRenderer
+  - ✅ **Recent Effect Configs (GIMP-Style)** (`recent_effect_configs.rs`)
+    - ✅ Speichert automatisch letzte 5 Configs pro Effekt-Typ
+    - ✅ Duplikat-Erkennung (gleiche Configs werden nicht doppelt gespeichert)
+    - ✅ Auto-generierte beschreibende Namen aus Parametern
+    - ✅ JSON-Persistenz in User-Data-Verzeichnis
+  - ✅ **Effect-Parameter-Automation via Timeline** (`effect_animation.rs`)
+    - ✅ EffectParameterAnimator verbindet Animation-System mit Effekten
+    - ✅ Keyframe-Animation für beliebige Parameter (Float, Vec3, Color, etc.)
+    - ✅ Binding-System (`EffectParameterBinding`) für Parameter-zu-Track Mapping
+    - ✅ Playback-Controls (Play, Pause, Seek, Speed, Loop)
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
 
@@ -290,8 +313,17 @@
   - 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
   - ✅ Zone-Based Layout (Left MediaBrowser, Right Inspector, Bottom Timeline) - COMPLETED 2025-12-24
   - ✅ Performance Overlay (Top-Right, Real FPS) - COMPLETED 2025-12-24
-  - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - COMPLETED 2025-12-24
+  - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - REMOVED 2025-12-30 (use Module Canvas)
+  - ✅ Layers Section removed from sidebar - COMPLETED 2025-12-30 (use Module Canvas)
+  - ✅ Icon System: Fader SVG Icon added - COMPLETED 2025-12-30
   - ⬜ Icon System (Streamline Ultimate) - Partial
+
+- ✅ **Settings Persistence (COMPLETED 2025-12-30)**
+  - ✅ Window size/position saved and restored
+  - ✅ Panel visibility states saved and restored
+  - ✅ Audio device selection saved and restored
+  - ✅ Target FPS saved and restored
+  - ✅ Autosave with proper .mflow extension in user data directory
 
 - 🟡 **Internationalisierung (i18n) – NEU**
   - ✅ Sprachauswahl UI (Deutsch / Englisch)
@@ -307,6 +339,7 @@
   - ✅ Box Selection, Right-Click Context Menu, Presets Popup
   - ✅ Multi-select, Mini-map, Auto-layout, Search popup
   - ✅ Undo/Redo, Node Inspector Dropdowns
+  - ✅ "Add Node" Menu: Unified dropdown with search/filter (COMPLETED 2025-12-29)
   - ⬜ Resize Drag Interaction (Handle vorhanden, Drag-Logik fehlt)
   - ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
   - ⬜ MIDI/OSC Device Selectors

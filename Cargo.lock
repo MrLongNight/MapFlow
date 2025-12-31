@@ -2815,6 +2815,7 @@ dependencies = [
  "cpal",
  "criterion",
  "crossbeam-channel",
+ "dirs",
  "egui",
  "egui-wgpu",
  "egui-winit",
@@ -2885,6 +2886,7 @@ dependencies = [
  "chrono",
  "cpal",
  "crossbeam-channel",
+ "dirs",
  "glam",
  "hound",
  "num-complex",
@@ -2924,6 +2926,7 @@ dependencies = [
  "image",
  "mapmap-core",
  "objc",
+ "once_cell",
  "ron",
  "serde",
  "serde_json",
@@ -2962,6 +2965,7 @@ dependencies = [
  "ffmpeg-next",
  "image",
  "parking_lot",
+ "snap",
  "thiserror 1.0.69",
  "tracing",
  "walkdir",
@@ -4674,6 +4678,12 @@ checksum = "dd538fb6910ac1099850255cf94a94df6551fbdd602454387d0adb2d1ca6dead"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "snap"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 
 [[package]]
 name = "socket2"
