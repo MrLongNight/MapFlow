@@ -1,7 +1,7 @@
 //! Cue System UI Panel
 use std::time::Duration;
 
-use egui::{self, ComboBox, RichText, ScrollArea, Slider};
+use egui::{self, Button, ComboBox, ImageButton, RichText, ScrollArea, Slider, Ui};
 use mapmap_control::{
     cue::{triggers::*, Cue, CueList},
     ControlManager,
@@ -12,19 +12,6 @@ use crate::{
     icons::{AppIcon, IconManager},
     UIAction,
 };
-
-// This will be moved to lib.rs's UIAction enum later
-// to integrate properly with the main application action loop.
-#[derive(Debug, Clone)]
-pub enum CueAction {
-    Add,
-    Remove(u32),
-    Go(u32),
-    Next,
-    Prev,
-    Jump(u32),
-    UpdateCue(Box<Cue>),
-}
 
 #[derive(Default)]
 pub struct CuePanel {
@@ -45,7 +32,7 @@ impl CuePanel {
     pub fn show(
         &mut self,
         ctx: &egui::Context,
-        control_manager: &mut ControlManager,
+        control_manager: &ControlManager,
         i18n: &LocaleManager,
         actions: &mut Vec<UIAction>,
         icon_manager: Option<&IconManager>,
@@ -59,13 +46,7 @@ impl CuePanel {
             .open(&mut open)
             .default_size([300.0, 500.0])
             .show(ctx, |ui| {
-                self.render_ui(
-                    ui,
-                    control_manager.cue_list_mut(),
-                    i18n,
-                    actions,
-                    icon_manager,
-                );
+                self.render_ui(ui, &control_manager.cue_list, i18n, actions, icon_manager);
             });
         self.visible = open;
     }
@@ -73,35 +54,58 @@ impl CuePanel {
     fn render_ui(
         &mut self,
         ui: &mut egui::Ui,
-        cue_list: &mut CueList,
+        cue_list: &CueList,
         i18n: &LocaleManager,
-        _actions: &mut Vec<UIAction>,
+        actions: &mut Vec<UIAction>,
         icon_manager: Option<&IconManager>,
     ) {
         // --- Top Control Bar ---
         ui.horizontal(|ui| {
-            if let Some(mgr) = icon_manager {
-                if let Some(img) = mgr.image(AppIcon::ButtonPlay, 24.0) {
-                    if ui
-                        .add(egui::ImageButton::new(img))
-                        .on_hover_text(i18n.t("btn-go"))
-                        .clicked()
-                    {
-                        // TODO: Fire CueAction::Next
-                    }
-                }
+            // --- Next Button ---
+            let next_enabled = cue_list.next_cue().is_some();
+            if self.icon_button(
+                ui,
+                icon_manager,
+                AppIcon::ButtonPlay,
+                "btn-go", // "Go" often implies "Next" in cue systems
+                i18n,
+                next_enabled,
+            ) {
+                actions.push(UIAction::NextCue);
             }
 
-            if let Some(mgr) = icon_manager {
-                if let Some(img) = mgr.image(AppIcon::ArrowLeft, 24.0) {
-                    if ui
-                        .add(egui::ImageButton::new(img))
-                        .on_hover_text(i18n.t("btn-back"))
-                        .clicked()
-                    {
-                        // TODO: Fire CueAction::Prev
-                    }
-                }
+            // --- Prev Button ---
+            let prev_enabled = if let Some(current_id) = cue_list.current_cue() {
+                cue_list
+                    .cues()
+                    .iter()
+                    .position(|c| c.id == current_id)
+                    .is_some_and(|idx| idx > 0)
+            } else {
+                false
+            };
+            if self.icon_button(
+                ui,
+                icon_manager,
+                AppIcon::ArrowLeft,
+                "btn-back",
+                i18n,
+                prev_enabled,
+            ) {
+                actions.push(UIAction::PrevCue);
+            }
+
+            // --- Stop Button ---
+            let stop_enabled = cue_list.current_cue().is_some();
+            if self.icon_button(
+                ui,
+                icon_manager,
+                AppIcon::ButtonStop,
+                "btn-stop",
+                i18n,
+                stop_enabled,
+            ) {
+                actions.push(UIAction::StopCue);
             }
 
             ui.separator();
@@ -110,8 +114,7 @@ impl CuePanel {
             ui.text_edit_singleline(&mut self.jump_target_id);
             if ui.button(i18n.t("btn-jump")).clicked() {
                 if let Ok(id) = self.jump_target_id.parse::<u32>() {
-                    // TODO: Fire CueAction::Jump(id)
-                    println!("Jump to {}", id);
+                    actions.push(UIAction::GoCue(id));
                 }
             }
         });
@@ -121,6 +124,7 @@ impl CuePanel {
         // --- Cue List ---
         ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
             let current_cue_id = cue_list.current_cue();
+            let next_cue_id = cue_list.next_cue();
             let cues_to_render: Vec<_> = cue_list.cues().to_vec();
 
             if cues_to_render.is_empty() {
@@ -128,14 +132,19 @@ impl CuePanel {
             } else {
                 for cue in cues_to_render {
                     let is_current = current_cue_id == Some(cue.id);
+                    let is_next = next_cue_id == Some(cue.id);
                     let is_selected = self.selected_cue_id == Some(cue.id);
 
                     let label_text = format!("{} - {}", cue.id, cue.name);
-                    let label = if is_current {
-                        RichText::new(label_text).color(ui.visuals().selection.bg_fill)
-                    } else {
-                        RichText::new(label_text)
-                    };
+                    let mut label = RichText::new(label_text);
+
+                    if is_current {
+                        label = label.color(ui.visuals().selection.stroke.color).strong();
+                    }
+                    if is_next {
+                        label = label.color(egui::Color32::from_rgb(255, 165, 0));
+                        // Orange for next
+                    }
 
                     if ui.selectable_label(is_selected, label).clicked() {
                         self.selected_cue_id = Some(cue.id);
@@ -148,23 +157,13 @@ impl CuePanel {
 
         // --- Cue Editor ---
         if let Some(selected_id) = self.selected_cue_id {
-            // We clone the cue to edit it without holding a mutable borrow on the cue_list,
-            // which would prevent us from using cue_list for other things inside the editor.
-            if let Some(cue_to_edit) = cue_list
-                .cues()
-                .iter()
-                .find(|c| c.id == selected_id)
-                .cloned()
-            {
+            if let Some(cue_to_edit) = cue_list.get_cue(selected_id).cloned() {
                 ui.group(|ui| {
                     ui.heading(i18n.t("header-cue-editor"));
 
                     let mut updated_cue = cue_to_edit;
                     if self.render_cue_editor(ui, &mut updated_cue, i18n) {
-                        // If changed, find the original cue in the list and update it.
-                        if let Some(original_cue) = cue_list.get_cue_mut(selected_id) {
-                            *original_cue = updated_cue;
-                        }
+                        actions.push(UIAction::UpdateCue(Box::new(updated_cue)));
                     }
                 });
             } else {
@@ -177,33 +176,23 @@ impl CuePanel {
 
         // --- Management Buttons ---
         ui.horizontal(|ui| {
-            if let Some(mgr) = icon_manager {
-                if let Some(img) = mgr.image(AppIcon::Add, 16.0) {
-                    if ui
-                        .add(egui::ImageButton::new(img))
-                        .on_hover_text(i18n.t("btn-add-cue"))
-                        .clicked()
-                    {
-                        let new_id = cue_list.cues().iter().map(|c| c.id).max().unwrap_or(0) + 1;
-                        let new_cue = Cue::new(new_id, format!("New Cue {}", new_id));
-                        cue_list.add_cue(new_cue);
-                        self.selected_cue_id = Some(new_id);
-                    }
-                }
+            if self.icon_button(ui, icon_manager, AppIcon::Add, "btn-add-cue", i18n, true) {
+                actions.push(UIAction::AddCue);
             }
 
-            if let Some(selected_id) = self.selected_cue_id {
-                if let Some(mgr) = icon_manager {
-                    if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
-                        if ui
-                            .add(egui::ImageButton::new(img))
-                            .on_hover_text(i18n.t("btn-remove-cue"))
-                            .clicked()
-                        {
-                            cue_list.remove_cue(selected_id);
-                            self.selected_cue_id = None;
-                        }
-                    }
+            if self.selected_cue_id.is_some()
+                && self.icon_button(
+                    ui,
+                    icon_manager,
+                    AppIcon::Remove,
+                    "btn-remove-cue",
+                    i18n,
+                    true,
+                )
+            {
+                if let Some(id) = self.selected_cue_id {
+                    actions.push(UIAction::RemoveCue(id));
+                    self.selected_cue_id = None;
                 }
             }
         });
@@ -297,5 +286,29 @@ impl CuePanel {
         }
 
         changed
+    }
+
+    /// Helper to render a consistent icon button.
+    fn icon_button(
+        &self,
+        ui: &mut Ui,
+        icon_manager: Option<&IconManager>,
+        icon: AppIcon,
+        tooltip_key: &str,
+        i18n: &LocaleManager,
+        enabled: bool,
+    ) -> bool {
+        if let Some(mgr) = icon_manager {
+            if let Some(img) = mgr.image(icon, 24.0) {
+                let button = ImageButton::new(img);
+                return ui
+                    .add_enabled(enabled, button)
+                    .on_hover_text(i18n.t(tooltip_key))
+                    .clicked();
+            }
+        }
+        // Fallback to text button if icons are not available
+        ui.add_enabled(enabled, Button::new(i18n.t(tooltip_key)))
+            .clicked()
     }
 }
