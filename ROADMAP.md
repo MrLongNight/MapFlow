@@ -176,8 +176,9 @@
     - ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
     - ✅ Snappy Dekompression für HAP-Frames
     - ✅ BC1/BC3 Textur-Upload (`mapmap-render/src/compressed_texture.rs`)
-    - ⬜ FFmpeg Container-Parsing für HAP-Frames
-    - ⬜ YCoCg→RGB Shader für HAP Q
+    - ✅ YCoCg→RGB Shader (`shaders/ycocg_to_rgb.wgsl`)
+    - ✅ HAP Video Player (`mapmap-media/src/hap_player.rs`)
+    - ⬜ FFmpeg Container-Parsing aktivieren (Feature-Flag)
     - ⬜ UI Integration (Media Browser HAP-Erkennung)
   - ⬜ DXV-Codec fehlt
 
