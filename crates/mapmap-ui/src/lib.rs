@@ -35,7 +35,7 @@ pub mod osc_panel;
 pub mod oscillator_panel;
 pub mod output_panel;
 pub mod paint_panel;
-pub mod shortcut_panel;
+pub mod shortcut_editor;
 pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;
@@ -65,7 +65,7 @@ pub use module_sidebar::ModuleSidebar;
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;
 pub use paint_panel::PaintPanel;
-pub use shortcut_panel::{ShortcutAction, ShortcutPanel};
+pub use shortcut_editor::ShortcutEditor;
 pub use theme::{Theme, ThemeConfig};
 pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
@@ -204,7 +204,7 @@ pub struct AppUI {
     pub timeline_panel: timeline_v2::TimelineV2,
     pub node_editor_panel: node_editor::NodeEditor,
     pub transform_panel: TransformPanel,
-    pub shortcut_panel: ShortcutPanel,
+    pub shortcut_editor: ShortcutEditor,
     pub icon_manager: Option<icons::IconManager>,
     pub icon_demo_panel: icon_demo_panel::IconDemoPanel,
     pub user_config: config::UserConfig,
@@ -290,7 +290,7 @@ impl Default for AppUI {
             show_shader_graph: false, // Advanced - hide by default
             node_editor_panel: node_editor::NodeEditor::default(),
             transform_panel: TransformPanel::default(),
-            shortcut_panel: ShortcutPanel::new(),
+            shortcut_editor: ShortcutEditor::new(),
             show_toolbar: true,
             icon_manager: None, // Will be initialized with egui context
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
