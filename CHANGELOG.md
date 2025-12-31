@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-31: refactor: optimize logging structure and levels (#138)
 - 2025-12-31: Knoteneigenschaften als Popup-Dialog implementieren (#136)
 - 2025-12-31: ⚡ Bolt: Implement Vertex Buffer Caching (#133)
 - 2025-12-31: 🛡️ Sentinel: [CRITICAL] Fix missing API authentication enforcement (#134)
