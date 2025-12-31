@@ -127,7 +127,10 @@ impl WebServer {
         // Build router with state
         let app = build_router()
             .route("/ws", axum::routing::get(ws_handler))
-            .layer(middleware::from_fn_with_state(state.clone(), auth_middleware))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                auth_middleware,
+            ))
             .with_state(state);
 
         // Add CORS if enabled
