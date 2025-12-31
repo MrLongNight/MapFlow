@@ -200,8 +200,11 @@
   - ✅ Node-Connections und Graph-Traversal
   - ✅ WGSL-Codegen (`mapmap-core/src/codegen.rs`)
 
-- ⬜ **Effect-Chain-Integration**
-  - ⬜ Shader-Graph in Render-Pipeline integrieren fehlt
+- 🟡 **Effect-Chain-Integration (IN PROGRESS 2025-12-31)**
+  - ✅ Shader-Graph in Render-Pipeline integriert (`shader_graph_integration.rs`)
+    - ✅ ShaderGraphManager für Graph-Verwaltung
+    - ✅ WGSLCodegen → GPU Pipeline Kompilierung
+    - ✅ ShaderGraphRendering Trait für Rendering
   - ⬜ Custom-Shader-Hot-Reload fehlt
   - ⬜ Effect-Preset-System fehlt
   - ⬜ Effect-Parameter-Automation via Timeline fehlt
