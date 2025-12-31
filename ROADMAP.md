@@ -172,7 +172,13 @@
 - ⬜ **Codec-Support**
   - ✅ H.264, H.265, VP8, VP9 über FFmpeg
   - ⬜ ProRes noch nicht getestet/optimiert
-  - ⬜ HAP-Codec fehlt (GPU-native Compression)
+  - 🟡 **HAP-Codec (IN PROGRESS 2025-12-31)**
+    - ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
+    - ✅ Snappy Dekompression für HAP-Frames
+    - ✅ BC1/BC3 Textur-Upload (`mapmap-render/src/compressed_texture.rs`)
+    - ⬜ FFmpeg Container-Parsing für HAP-Frames
+    - ⬜ YCoCg→RGB Shader für HAP Q
+    - ⬜ UI Integration (Media Browser HAP-Erkennung)
   - ⬜ DXV-Codec fehlt
 
 ### Effects / PostFX
