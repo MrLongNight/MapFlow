@@ -198,13 +198,72 @@ impl MapFlowModule {
         let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let (inputs, outputs) = match &part_type {
-            ModulePartType::Trigger(_) => (
-                vec![], // No inputs - triggers are sources
-                vec![ModuleSocket {
-                    name: "Trigger Out".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
-            ),
+            ModulePartType::Trigger(trigger_type) => {
+                let outputs = match trigger_type {
+                    TriggerType::AudioFFT { .. } => vec![
+                        // 9 Frequency Band Outputs
+                        ModuleSocket {
+                            name: "SubBass Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "Bass Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "LowMid Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "Mid Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "HighMid Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "UpperMid Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "Presence Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "Brilliance Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "Air Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        // Volume Outputs
+                        ModuleSocket {
+                            name: "RMS Volume".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "Peak Volume".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        // Beat Detection
+                        ModuleSocket {
+                            name: "Beat Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                        ModuleSocket {
+                            name: "BPM Out".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                    ],
+                    _ => vec![ModuleSocket {
+                        name: "Trigger Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    }],
+                };
+                (vec![], outputs) // No inputs - triggers are sources
+            }
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
