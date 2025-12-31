@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-31: 🛡️ Sentinel: [HIGH] Add HTTP Security Headers (Defense in Depth) (#143)
 - 2025-12-31: merge: PR #139 - Spout Integration (Core + UI + IO)
 - 2025-12-31: merge: PR #140 - Assignment System Foundation (AssignmentManager)
 - 2025-12-31: fix: Resolve all compiler warnings (unused variables, missing docs, ndi feature)
