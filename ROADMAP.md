@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.7
-> **Stand:** 2025-12-30 01:00
+> **Version:** 1.8
+> **Stand:** 2025-12-31 19:30
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -173,7 +173,6 @@
 - ⬜ **Codec-Support**
   - ✅ H.264, H.265, VP8, VP9 über FFmpeg
   - ⬜ ProRes noch nicht getestet/optimiert
-<<<<<<< HEAD
   - ✅ **HAP-Codec (COMPLETED 2025-12-31)**
     - ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
     - ✅ Snappy Dekompression für HAP-Frames
@@ -183,9 +182,6 @@
     - ✅ Auto-Erkennung bei .mov-Dateien in `open_path()`
     - ✅ MediaBrowser: Hap MediaType mit ⚡ Icon
     - ⬜ Runtime-Test mit echtem HAP-Video (benötigt FFmpeg)
-=======
-  - ✅ HAP-Codec fehlt (GPU-native Compression)
->>>>>>> main
   - ⬜ DXV-Codec fehlt
 
 ### Effects / PostFX
@@ -205,7 +201,6 @@
   - ✅ Node-Connections und Graph-Traversal
   - ✅ WGSL-Codegen (`mapmap-core/src/codegen.rs`)
 
-<<<<<<< HEAD
 - ✅ **Effect-Chain-Integration (COMPLETED 2025-12-31)**
   - ✅ Shader-Graph in Render-Pipeline integriert (`shader_graph_integration.rs`)
     - ✅ ShaderGraphManager für Graph-Verwaltung
@@ -226,13 +221,6 @@
     - ✅ Keyframe-Animation für beliebige Parameter (Float, Vec3, Color, etc.)
     - ✅ Binding-System (`EffectParameterBinding`) für Parameter-zu-Track Mapping
     - ✅ Playback-Controls (Play, Pause, Seek, Speed, Loop)
-=======
-- ⬜ **Effect-Chain-Integration**
-  - ✅ Shader-Graph in Render-Pipeline integrieren fehlt
-  - ✅ Custom-Shader-Hot-Reload fehlt
-  - ✅ Effect-Preset-System fehlt
-  - ✅ Effect-Parameter-Automation via Timeline fehlt
->>>>>>> main
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
 
@@ -360,12 +348,24 @@
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
-- 🟡 **Assignment System** (**NEXT PRIORITY**)
-  - ⬜ `AssignmentManager` implementieren
-  - ⬜ `AssignmentPanel` UI erstellen
+- 🟡 **Assignment System** (PR #140 MERGED 2025-12-31)
+  - ✅ `AssignmentManager` implementieren (COMPLETED 2025-12-31)
+  - ✅ `AssignmentPanel` UI erstellen (COMPLETED 2025-12-31)
   - ⬜ Source Selector (Dropdown)
   - ⬜ Target Selector (Dropdown mit ID-Auflösung)
   - ⬜ ControlSource zu ControlTarget Routing
+
+- 🟡 **NDI/Spout Video I/O** (mapmap-io)
+  - ✅ **NDI Support** (`mapmap-io/src/ndi/`)
+    - ✅ NdiReceiver für NDI-Source-Empfang
+    - ✅ NdiSender für NDI-Output
+    - ✅ Source Discovery (async)
+    - ✅ Feature-Flag: `ndi`
+  - 🟡 **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
+    - ✅ SourceType::SpoutInput im Core
+    - ✅ OutputType::Spout im Core
+    - ✅ UI-Integration in Module Canvas
+    - ⬜ wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt Update)
 
 - ✅ **Logging & Debug** (COMPLETED 2025-12-27)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
