@@ -200,12 +200,16 @@
   - ✅ Node-Connections und Graph-Traversal
   - ✅ WGSL-Codegen (`mapmap-core/src/codegen.rs`)
 
-- 🟡 **Effect-Chain-Integration (IN PROGRESS 2025-12-31)**
+- ✅ **Effect-Chain-Integration (COMPLETED 2025-12-31)**
   - ✅ Shader-Graph in Render-Pipeline integriert (`shader_graph_integration.rs`)
     - ✅ ShaderGraphManager für Graph-Verwaltung
     - ✅ WGSLCodegen → GPU Pipeline Kompilierung
     - ✅ ShaderGraphRendering Trait für Rendering
-  - ⬜ Custom-Shader-Hot-Reload fehlt
+  - ✅ **Custom-Shader-Hot-Reload** (`hot_reload.rs`)
+    - ✅ File-Watcher für .wgsl Dateien
+    - ✅ Debouncing (100ms)
+    - ✅ Fallback zu letztem funktionierenden Shader
+    - ✅ HotReloadIntegration für EffectChainRenderer
   - ✅ **Recent Effect Configs (GIMP-Style)** (`recent_effect_configs.rs`)
     - ✅ Speichert automatisch letzte 5 Configs pro Effekt-Typ
     - ✅ Duplikat-Erkennung (gleiche Configs werden nicht doppelt gespeichert)
