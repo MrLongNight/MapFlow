@@ -1370,6 +1370,17 @@ impl ModuleCanvas {
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
+                            #[cfg(target_os = "windows")]
+                            if (show_all || "spout".contains(&filter)) && ui.button("🚰 Spout Input").clicked() {
+                                self.add_source_node(
+                                    manager,
+                                    SourceType::SpoutInput {
+                                        sender_name: "".to_string(),
+                                    },
+                                );
+                                self.search_filter.clear();
+                                ui.close_menu();
+                            }
                         });
                     }
 
@@ -1398,6 +1409,28 @@ impl ModuleCanvas {
                                     manager,
                                     SourceType::NdiInput {
                                         source_name: None,
+                                    },
+                                );
+                                self.search_filter.clear();
+                                ui.close_menu();
+                            }
+                            #[cfg(feature = "ndi")]
+                            if (show_all || "ndi".contains(&filter)) && ui.button("📡 NDI Output").clicked() {
+                                self.add_output_node(
+                                    manager,
+                                    OutputType::NdiOutput {
+                                        name: "MapFlow".to_string(),
+                                    },
+                                );
+                                self.search_filter.clear();
+                                ui.close_menu();
+                            }
+                            #[cfg(target_os = "windows")]
+                            if (show_all || "spout".contains(&filter)) && ui.button("🚰 Spout Output").clicked() {
+                                self.add_output_node(
+                                    manager,
+                                    OutputType::Spout {
+                                        name: "MapFlow".to_string(),
                                     },
                                 );
                                 self.search_filter.clear();
@@ -1654,16 +1687,6 @@ impl ModuleCanvas {
                             self.search_filter.clear();
                             ui.close_menu();
                         }
-                    }
-                    #[cfg(feature = "ndi")]
-                    if ui.button("📡 NDI Output").clicked() {
-                        self.add_output_node(
-                            manager,
-                            OutputType::NdiOutput {
-                                name: "MapFlow".to_string(),
-                            },
-                        );
-                        ui.close_menu();
                     }
                 });
             });
@@ -4222,6 +4245,57 @@ impl ModuleCanvas {
                 connections: vec![
                     (0, 0, 1, 0), // Trigger -> Source
                     (1, 0, 2, 0), // Source -> Mask
+                ],
+            },
+            ModulePreset {
+                name: "NDI Streaming".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::NdiOutput {
+                            name: "MapFlow Stream".to_string(),
+                        }),
+                        (300.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Source -> NDI Out
+                ],
+            },
+            #[cfg(target_os = "windows")]
+            ModulePreset {
+                name: "Spout Bridge".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Source(SourceType::SpoutInput {
+                            sender_name: "Resolume".to_string(),
+                        }),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
+                        (300.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Spout {
+                            name: "MapFlow Processed".to_string(),
+                        }),
+                        (550.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Spout In -> Effect
+                    (1, 0, 2, 0), // Effect -> Spout Out
                 ],
             },
         ]
