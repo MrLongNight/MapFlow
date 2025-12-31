@@ -18,6 +18,7 @@ pub enum PixelFormat {
 use mapmap_io::VideoFrame;
 
 /// Convert YUV420P to RGBA using BT.601 color space
+#[allow(dead_code)]
 fn yuv420p_to_rgba(yuv_data: &[u8], width: u32, height: u32) -> Vec<u8> {
     let size = (width * height) as usize;
     let y_plane = &yuv_data[0..size];

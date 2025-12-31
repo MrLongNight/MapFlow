@@ -300,7 +300,7 @@ impl VideoPlayer {
 mod tests {
     use super::*;
     use crate::decoder::TestPatternDecoder;
-    use crate::{MediaError, PixelFormat};
+    use crate::MediaError;
 
     // A mock decoder that can be configured to fail.
     #[derive(Clone)]

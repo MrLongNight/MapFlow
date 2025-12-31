@@ -148,6 +148,11 @@ impl VideoFormat {
         Self::new(3840, 2160, PixelFormat::RGBA8, 60.0)
     }
 
+    /// Creates a standard 480p30 SD RGBA format.
+    pub fn sd_480p30_rgba() -> Self {
+        Self::new(720, 480, PixelFormat::RGBA8, 30.0)
+    }
+
     /// Returns the total number of pixels.
     pub fn pixel_count(&self) -> usize {
         (self.width * self.height) as usize
@@ -244,7 +249,9 @@ impl FrameMetadata {
 /// timestamp, and metadata.
 #[derive(Debug)]
 pub enum FrameData {
+    /// CPU-side pixel data stored in a byte vector.
     Cpu(Vec<u8>),
+    /// GPU-side texture data stored as a shared reference.
     Gpu(Arc<Texture>),
 }
 
@@ -257,6 +264,7 @@ impl Clone for FrameData {
     }
 }
 
+/// A complete video frame with data, format, timestamp, and metadata.
 #[derive(Debug, Clone)]
 pub struct VideoFrame {
     /// Raw pixel data

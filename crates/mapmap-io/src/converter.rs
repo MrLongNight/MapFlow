@@ -36,7 +36,7 @@ impl FormatConverter {
     ///
     /// Returns an error if the conversion is not supported or fails.
     pub fn convert(&self, frame: &VideoFrame, target_format: &VideoFormat) -> Result<VideoFrame> {
-        let data = match &frame.data {
+        let _data = match &frame.data {
             FrameData::Cpu(data) => data,
             FrameData::Gpu(_) => {
                 return Err(IoError::UnsupportedPixelFormat(

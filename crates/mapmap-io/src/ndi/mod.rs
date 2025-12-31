@@ -11,17 +11,17 @@ use crate::sink::VideoSink;
 use crate::source::VideoSource;
 
 #[cfg(feature = "ndi")]
+use once_cell::sync::Lazy;
+#[cfg(feature = "ndi")]
 use std::sync::{Arc, Mutex};
 #[cfg(feature = "ndi")]
 use std::time::Duration;
 #[cfg(feature = "ndi")]
 use tokio::runtime::Runtime;
 #[cfg(feature = "ndi")]
-use tokio::sync::{watch, oneshot};
+use tokio::sync::{oneshot, watch};
 #[cfg(feature = "ndi")]
 use tracing::{error, info, warn};
-#[cfg(feature = "ndi")]
-use once_cell::sync::Lazy;
 
 #[cfg(feature = "ndi")]
 static NDI_RUNTIME: Lazy<Runtime> = Lazy::new(|| {
@@ -75,10 +75,12 @@ impl NdiReceiver {
         NDI_RUNTIME.spawn(async move {
             info!("Starting NDI source discovery for 2000ms");
             let result = async {
-                let finder = grafton_ndi::Finder::new(false, None, None).await.map_err(|e| {
-                    error!("Failed to create NDI finder: {}", e);
-                    IoError::NdiError(format!("Failed to create NDI finder: {}", e))
-                })?;
+                let finder = grafton_ndi::Finder::new(false, None, None)
+                    .await
+                    .map_err(|e| {
+                        error!("Failed to create NDI finder: {}", e);
+                        IoError::NdiError(format!("Failed to create NDI finder: {}", e))
+                    })?;
 
                 tokio::time::sleep(Duration::from_millis(2000)).await;
 
@@ -88,7 +90,8 @@ impl NdiReceiver {
                 })?;
                 info!("Found {} NDI sources", sources.len());
                 Ok(sources)
-            }.await;
+            }
+            .await;
 
             match result {
                 Ok(sources) => {
@@ -105,10 +108,12 @@ impl NdiReceiver {
     /// Discovers available NDI sources on the network asynchronously.
     pub async fn discover_sources(timeout_ms: u32) -> Result<Vec<Source>> {
         info!("Starting NDI source discovery for {}ms", timeout_ms);
-        let finder = grafton_ndi::Finder::new(false, None, None).await.map_err(|e| {
-            error!("Failed to create NDI finder: {}", e);
-            IoError::NdiError(format!("Failed to create NDI finder: {}", e))
-        })?;
+        let finder = grafton_ndi::Finder::new(false, None, None)
+            .await
+            .map_err(|e| {
+                error!("Failed to create NDI finder: {}", e);
+                IoError::NdiError(format!("Failed to create NDI finder: {}", e))
+            })?;
 
         tokio::time::sleep(Duration::from_millis(timeout_ms as u64)).await;
 
@@ -130,7 +135,10 @@ impl NdiReceiver {
             .build();
 
         let receiver = NDI_RUNTIME.block_on(recv_builder).map_err(|e| {
-            error!("Failed to create NDI receiver for source {}: {}", source.name, e);
+            error!(
+                "Failed to create NDI receiver for source {}: {}",
+                source.name, e
+            );
             IoError::NdiError(format!("Failed to create NDI receiver: {}", e))
         })?;
 
@@ -206,20 +214,25 @@ impl VideoSource for NdiReceiver {
     }
 
     fn receive_frame(&mut self) -> Result<VideoFrame> {
-        let frame_rx = self.frame_rx.as_mut().ok_or(IoError::NdiError("Not connected to a source".to_string()))?;
+        let frame_rx = self
+            .frame_rx
+            .as_mut()
+            .ok_or(IoError::NdiError("Not connected to a source".to_string()))?;
 
         // Check if there is a new frame
         if frame_rx.has_changed().unwrap_or(false) {
-             let received = frame_rx.borrow_and_update();
-             if let Some(frame_arc) = received.as_ref() {
+            let received = frame_rx.borrow_and_update();
+            if let Some(frame_arc) = received.as_ref() {
                 let frame = (*frame_arc).clone();
                 // Update format if it has changed
-                if self.format.width != frame.format.width || self.format.height != frame.format.height {
+                if self.format.width != frame.format.width
+                    || self.format.height != frame.format.height
+                {
                     self.format = frame.format.clone();
                 }
                 self.frame_count += 1;
                 return Ok(frame);
-             }
+            }
         }
 
         Err(IoError::NoFrameAvailable)
@@ -255,9 +268,7 @@ impl NdiSender {
             IoError::NdiError(format!("Failed to initialize NDI: {}", e))
         })?;
 
-        let send_builder = grafton_ndi::SendBuilder::new()
-            .name(name.clone())
-            .build();
+        let send_builder = grafton_ndi::SendBuilder::new().name(name.clone()).build();
 
         let sender = NDI_RUNTIME.block_on(send_builder).map_err(|e| {
             error!("Failed to create NDI sender: {}", e);
@@ -342,7 +353,9 @@ impl VideoSink for NdiSender {
             }
             Err(mpsc::error::TrySendError::Closed(_)) => {
                 error!("NDI sender task has panicked or closed.");
-                Err(IoError::NdiSenderFailed("Sender task has closed".to_string()))
+                Err(IoError::NdiSenderFailed(
+                    "Sender task has closed".to_string(),
+                ))
             }
         }
     }
@@ -357,29 +370,40 @@ impl VideoSink for NdiSender {
 }
 
 // Stub types when NDI feature is disabled
+/// Stub NDI receiver when NDI feature is not enabled.
 #[cfg(not(feature = "ndi"))]
 pub struct NdiReceiver;
 #[cfg(not(feature = "ndi"))]
 impl NdiReceiver {
+    /// Creates a new NDI receiver stub (always returns error).
     pub fn new() -> crate::error::Result<Self> {
         Err(crate::error::IoError::feature_not_enabled("NDI", "ndi"))
     }
+    /// Discovers NDI sources stub (always returns error).
     pub async fn discover_sources(_timeout_ms: u32) -> crate::error::Result<Vec<Source>> {
         Err(crate::error::IoError::feature_not_enabled("NDI", "ndi"))
     }
 }
+/// Stub NDI sender when NDI feature is not enabled.
 #[cfg(not(feature = "ndi"))]
 pub struct NdiSender;
 #[cfg(not(feature = "ndi"))]
 impl NdiSender {
-    pub fn new(_name: impl Into<String>, _format: crate::format::VideoFormat) -> crate::error::Result<Self> {
+    /// Creates a new NDI sender stub (always returns error).
+    pub fn new(
+        _name: impl Into<String>,
+        _format: crate::format::VideoFormat,
+    ) -> crate::error::Result<Self> {
         Err(crate::error::IoError::feature_not_enabled("NDI", "ndi"))
     }
 }
+/// Stub NDI source information when NDI feature is not enabled.
 #[cfg(not(feature = "ndi"))]
 #[derive(Debug, Clone)]
 pub struct Source {
+    /// Name of the NDI source.
     pub name: String,
+    /// URL of the NDI source.
     pub url: String,
 }
 
@@ -398,7 +422,10 @@ mod tests {
             let result = NdiReceiver::new();
             if let Err(e) = &result {
                 // It's acceptable for this to fail if the NDI libs aren't found
-                println!("NDI Receiver creation failed (as expected in some envs): {:?}", e);
+                println!(
+                    "NDI Receiver creation failed (as expected in some envs): {:?}",
+                    e
+                );
             }
         } else {
             let result = NdiReceiver::new();
@@ -411,8 +438,11 @@ mod tests {
         if cfg!(feature = "ndi") {
             let format = crate::format::VideoFormat::sd_480p30_rgba();
             let result = NdiSender::new("Test Sender", format);
-             if let Err(e) = &result {
-                println!("NDI Sender creation failed (as expected in some envs): {:?}", e);
+            if let Err(e) = &result {
+                println!(
+                    "NDI Sender creation failed (as expected in some envs): {:?}",
+                    e
+                );
             }
         } else {
             let format = crate::format::VideoFormat::sd_480p30_rgba();
@@ -424,8 +454,8 @@ mod tests {
     #[tokio::test]
     async fn test_ndi_discover_sources() {
         if cfg!(feature = "ndi") {
-             let result = NdiReceiver::discover_sources(500).await;
-             if let Err(e) = &result {
+            let result = NdiReceiver::discover_sources(500).await;
+            if let Err(e) = &result {
                 println!("NDI discovery failed (as expected in some envs): {:?}", e);
             }
         } else {

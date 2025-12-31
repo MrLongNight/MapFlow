@@ -1266,7 +1266,7 @@ impl ModuleCanvas {
         ui: &mut Ui,
         manager: &mut ModuleManager,
         locale: &LocaleManager,
-        actions: &mut Vec<crate::UIAction>,
+        _actions: &mut Vec<crate::UIAction>,
     ) {
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {

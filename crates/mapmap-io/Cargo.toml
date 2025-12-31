@@ -50,19 +50,27 @@ cc = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = "3.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = []
 # Individual features
-ndi = ["dep:grafton-ndi", "dep:tokio"]  # NDI support (requires NDI SDK)
-decklink = []  # DeckLink SDI support (requires DeckLink SDK)
-spout = ["dep:windows", "dep:rusty-spout"]  # Spout texture sharing (Windows only)
-syphon = ["cocoa", "core-foundation", "objc"]  # Syphon texture sharing (macOS only)
-stream = ["ffmpeg-next", "dep:tokio"]  # RTMP/SRT streaming
-virtual-camera = []  # Virtual camera output
+ndi = ["dep:grafton-ndi", "dep:tokio"] # NDI support (requires NDI SDK)
+decklink = [] # DeckLink SDI support (requires DeckLink SDK)
+spout = [
+    "dep:windows",
+    "dep:rusty-spout",
+] # Spout texture sharing (Windows only)
+syphon = [
+    "cocoa",
+    "core-foundation",
+    "objc",
+] # Syphon texture sharing (macOS only)
+stream = ["ffmpeg-next", "dep:tokio"] # RTMP/SRT streaming
+virtual-camera = [] # Virtual camera output
 
 # Platform-specific features
-texture-sharing = []  # Enable on platforms that support it
+texture-sharing = [] # Enable on platforms that support it
 
 # Convenience features
 all-io = ["ndi", "decklink", "spout", "syphon", "stream", "virtual-camera"]
