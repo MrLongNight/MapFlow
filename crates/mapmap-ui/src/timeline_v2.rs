@@ -3,9 +3,8 @@
 //! Multi-track timeline with keyframe animation, using mapmap_core::animation types.
 
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
-use mapmap_core::animation::{
-    AnimValue, AnimationClip, EffectParameterAnimator, InterpolationMode, Keyframe,
-};
+use mapmap_core::animation::AnimValue;
+use mapmap_core::effect_animation::EffectParameterAnimator;
 use serde::{Deserialize, Serialize};
 
 /// Timeline editor view state (data is in AnimationClip)
