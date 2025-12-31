@@ -19,7 +19,7 @@ pub struct GpuVertex {
 }
 
 impl GpuVertex {
-    fn from_mesh_vertex(vertex: &MeshVertex) -> Self {
+    pub fn from_mesh_vertex(vertex: &MeshVertex) -> Self {
         Self {
             position: [vertex.position.x, vertex.position.y, 0.0],
             tex_coords: [vertex.tex_coords.x, vertex.tex_coords.y],

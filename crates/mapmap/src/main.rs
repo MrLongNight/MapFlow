@@ -27,8 +27,8 @@ use mapmap_mcp::{McpAction, McpServer};
 use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
 use mapmap_render::{
-    Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
-    WgpuBackend,
+    Compositor, EffectChainRenderer, MeshBufferCache, MeshRenderer, OscillatorRenderer,
+    QuadRenderer, TexturePool, WgpuBackend,
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
@@ -58,6 +58,8 @@ struct App {
     effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
     mesh_renderer: MeshRenderer,
+    /// Cache for mesh GPU buffers
+    mesh_buffer_cache: MeshBufferCache,
     /// Quad renderer for passthrough.
     quad_renderer: QuadRenderer,
     /// Final composite texture before output processing.
@@ -115,18 +117,15 @@ struct App {
     /// Selected MIDI port index
     #[cfg(feature = "midi")]
     selected_midi_port: Option<usize>,
-<<<<<<< HEAD
     /// NDI Receivers for module sources
     #[cfg(feature = "ndi")]
     ndi_receivers: std::collections::HashMap<mapmap_core::module::ModulePartId, mapmap_io::ndi::NdiReceiver>,
-=======
 
     /// Shader Graph Manager (Runtime)
     #[allow(dead_code)]
     shader_graph_manager: mapmap_render::ShaderGraphManager,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
->>>>>>> feature/node-menu-overhaul
 }
 
 impl App {
@@ -143,6 +142,7 @@ impl App {
             backend.surface_format(),
         )?;
         let mesh_renderer = MeshRenderer::new(backend.device.clone(), backend.surface_format())?;
+        let mesh_buffer_cache = MeshBufferCache::new();
         let quad_renderer = QuadRenderer::new(&backend.device, backend.surface_format())?;
 
         let mut window_manager = WindowManager::new();
@@ -353,6 +353,7 @@ impl App {
             compositor,
             effect_chain_renderer,
             mesh_renderer,
+            mesh_buffer_cache,
             quad_renderer,
             composite_texture,
             layer_ping_pong,
@@ -412,10 +413,8 @@ impl App {
             } else {
                 Some(0)
             },
-<<<<<<< HEAD
             #[cfg(feature = "ndi")]
             ndi_receivers: std::collections::HashMap::new(),
-=======
             shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
             recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
                 dirs::data_dir()
@@ -423,7 +422,6 @@ impl App {
                     .join("MapFlow")
                     .join("recent_effect_configs.json"),
             ),
->>>>>>> feature/node-menu-overhaul
         };
 
         // Create initial dummy texture
@@ -647,7 +645,7 @@ impl App {
                         unsafe {
                             if current_sec != LAST_LOG_SEC {
                                 LAST_LOG_SEC = current_sec;
-                                tracing::info!(
+                                tracing::debug!(
                                     "AudioV2: {} samples, RMS={:.4}, Peak={:.4}, Bands[0..3]={:?}",
                                     samples.len(),
                                     analysis_v2.rms_volume,
@@ -1771,19 +1769,16 @@ impl App {
                 // Render all visible mappings for this layer
                 // Check if layer has associated paint_id and find mappings
                 if let Some(paint_id) = layer.paint_id {
-                    let mappings_for_layer: Vec<_> = self
-                        .state
-                        .mapping_manager
-                        .mappings_for_paint(paint_id)
-                        .into_iter()
-                        .filter(|m| m.visible && m.opacity > 0.0)
-                        .collect();
+                    let mappings_list = self.state.mapping_manager.mappings_for_paint(paint_id);
+                    let mappings_for_layer = mappings_list
+                        .iter()
+                        .filter(|m| m.visible && m.opacity > 0.0);
 
                     for mapping in mappings_for_layer {
-                        // Create GPU buffers for this mapping's mesh
-                        let (vertex_buffer, index_buffer) =
-                            self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
-                        let index_count = mapping.mesh.indices.len() as u32;
+                        // Get GPU buffers for this mapping's mesh (cached)
+                        let (vertex_buffer, index_buffer, index_count) = self
+                            .mesh_buffer_cache
+                            .get_buffers(&self.backend.device, mapping.id, &mapping.mesh);
 
                         // Create transform matrix for this mapping
                         let transform = glam::Mat4::IDENTITY; // TODO: Apply layer transform
@@ -1819,8 +1814,8 @@ impl App {
 
                             self.mesh_renderer.draw(
                                 &mut render_pass,
-                                &vertex_buffer,
-                                &index_buffer,
+                                vertex_buffer,
+                                index_buffer,
                                 index_count,
                                 &uniform_bind_group,
                                 &texture_bind_group,
@@ -1914,7 +1909,9 @@ fn main() -> Result<()> {
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
 
-    info!("Starting MapFlow...");
+    info!("==========================================");
+    info!("===      MapFlow Session Started       ===");
+    info!("==========================================");
 
     // Create the event loop
     let event_loop = EventLoop::new()?;
@@ -1923,7 +1920,12 @@ fn main() -> Result<()> {
     let app = pollster::block_on(App::new(&event_loop))?;
 
     // Run the app
+    info!("--- Entering Main Event Loop ---");
     app.run(event_loop);
+
+    info!("==========================================");
+    info!("===       MapFlow Session Ended        ===");
+    info!("==========================================");
 
     Ok(())
 }

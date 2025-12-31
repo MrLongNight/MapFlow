@@ -28,7 +28,6 @@ impl MapFlowModule {
                 }),
                 vec![], // No inputs - triggers are sources
                 vec![
-                    // FFT Band Outputs
                     ModuleSocket {
                         name: "SubBass Out".to_string(),
                         socket_type: ModuleSocketType::Trigger,
@@ -50,11 +49,19 @@ impl MapFlowModule {
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
+                        name: "UpperMid Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
                         name: "Presence Out".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
                         name: "Brilliance Out".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Air Out".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     // Volume Outputs
@@ -391,7 +398,11 @@ pub enum TriggerType {
     /// Fixed time-based trigger
     Fixed { interval_ms: u32, offset_ms: u32 },
     /// MIDI note/CC trigger
-    Midi { channel: u8, note: u8 },
+    Midi {
+        device: String,
+        channel: u8,
+        note: u8,
+    },
     /// OSC message trigger
     Osc { address: String },
     /// Keyboard shortcut trigger
