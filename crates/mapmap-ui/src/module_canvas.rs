@@ -4165,7 +4165,7 @@ impl ModuleCanvas {
                         ModulePartType::Source(SourceType::MediaFile {
                             path: String::new(),
                         }),
-                        (250.0, 100.0),
+                        (350.0, 100.0), // Increased from 250 to 350
                         None,
                     ),
                     (
@@ -4173,12 +4173,13 @@ impl ModuleCanvas {
                             id: 0,
                             name: "Projector 1".to_string(),
                         }),
-                        (450.0, 100.0),
+                        (650.0, 100.0), // Increased from 450 to 650
                         None,
                     ),
                 ],
                 connections: vec![
                     (0, 0, 1, 0), // Trigger -> Source
+                    (1, 0, 2, 0), // Source -> Output (NEW - was missing!)
                 ],
             },
             ModulePreset {
@@ -4193,12 +4194,12 @@ impl ModuleCanvas {
                         ModulePartType::Source(SourceType::MediaFile {
                             path: String::new(),
                         }),
-                        (250.0, 100.0),
+                        (350.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
                         ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
-                        (450.0, 100.0),
+                        (650.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
@@ -4206,13 +4207,14 @@ impl ModuleCanvas {
                             id: 0,
                             name: "Projector 1".to_string(),
                         }),
-                        (650.0, 100.0),
+                        (950.0, 100.0), // Increased spacing
                         None,
                     ),
                 ],
                 connections: vec![
                     (0, 0, 1, 0), // Trigger -> Source
                     (1, 0, 2, 0), // Source -> Effect
+                    (2, 0, 3, 0), // Effect -> Output (NEW - was missing!)
                 ],
             },
             ModulePreset {
@@ -4230,12 +4232,12 @@ impl ModuleCanvas {
                         ModulePartType::Source(SourceType::MediaFile {
                             path: String::new(),
                         }),
-                        (250.0, 100.0),
+                        (350.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
                         ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
-                        (450.0, 100.0),
+                        (650.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
@@ -4243,7 +4245,7 @@ impl ModuleCanvas {
                             opacity: 1.0,
                             blend_mode: None,
                         }),
-                        (650.0, 100.0),
+                        (950.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
@@ -4251,7 +4253,7 @@ impl ModuleCanvas {
                             id: 0,
                             name: "Projector 1".to_string(),
                         }),
-                        (850.0, 100.0),
+                        (1250.0, 100.0), // Increased spacing
                         None,
                     ),
                 ],
@@ -4259,6 +4261,7 @@ impl ModuleCanvas {
                     (0, 0, 1, 0), // Audio -> Source
                     (1, 0, 2, 0), // Source -> Effect
                     (2, 0, 3, 0), // Effect -> Layer
+                    (3, 0, 4, 0), // Layer -> Output (NEW - was missing!)
                 ],
             },
             ModulePreset {
@@ -4273,12 +4276,12 @@ impl ModuleCanvas {
                         ModulePartType::Source(SourceType::MediaFile {
                             path: String::new(),
                         }),
-                        (250.0, 100.0),
+                        (350.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
                         ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)),
-                        (450.0, 100.0),
+                        (650.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
@@ -4286,13 +4289,14 @@ impl ModuleCanvas {
                             id: 0,
                             name: "Projector 1".to_string(),
                         }),
-                        (650.0, 100.0),
+                        (950.0, 100.0), // Increased spacing
                         None,
                     ),
                 ],
                 connections: vec![
                     (0, 0, 1, 0), // Trigger -> Source
                     (1, 0, 2, 0), // Source -> Mask
+                    (2, 0, 3, 0), // Mask -> Output (NEW - was missing!)
                 ],
             },
         ]
