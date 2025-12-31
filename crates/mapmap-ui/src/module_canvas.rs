@@ -2297,6 +2297,13 @@ impl ModuleCanvas {
                 self.editing_part_id = Some(*part_id);
             }
 
+            // Handle right-click to open context menu
+            if part_response.secondary_clicked() {
+                self.context_menu_part = Some(*part_id);
+                self.context_menu_pos =
+                    Some(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()));
+            }
+
             // Handle click for selection
             if part_response.clicked() && self.creating_connection.is_none() {
                 if shift_held {
@@ -2535,6 +2542,55 @@ impl ModuleCanvas {
         // Draw presets popup if visible
         if self.show_presets {
             self.draw_presets_popup(ui, canvas_rect, module);
+        }
+
+        // Draw context menu for parts
+        if let (Some(part_id), Some(pos)) = (self.context_menu_part, self.context_menu_pos) {
+            let menu_width = 150.0;
+            let menu_height = 80.0;
+            let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
+
+            // Draw menu background
+            let painter = ui.painter();
+            painter.rect_filled(
+                menu_rect,
+                4.0,
+                Color32::from_rgba_unmultiplied(40, 40, 50, 250),
+            );
+            painter.rect_stroke(
+                menu_rect,
+                4.0,
+                Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
+            );
+
+            // Menu items
+            let inner_rect = menu_rect.shrink(4.0);
+            ui.allocate_ui_at_rect(inner_rect, |ui| {
+                ui.vertical(|ui| {
+                    if ui.button("⚙ Open Properties").clicked() {
+                        self.editing_part_id = Some(part_id);
+                        self.context_menu_part = None;
+                        self.context_menu_pos = None;
+                    }
+                    if ui.button("🗑 Delete").clicked() {
+                        // Remove connections and part
+                        module
+                            .connections
+                            .retain(|c| c.from_part != part_id && c.to_part != part_id);
+                        module.parts.retain(|p| p.id != part_id);
+                        self.context_menu_part = None;
+                        self.context_menu_pos = None;
+                    }
+                });
+            });
+
+            // Close menu on click outside
+            if ui.input(|i| i.pointer.any_click())
+                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+            {
+                self.context_menu_part = None;
+                self.context_menu_pos = None;
+            }
         }
     }
 
