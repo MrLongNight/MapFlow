@@ -107,7 +107,9 @@ impl Mesh {
     /// Create an ellipse mesh (approximated by N segments)
     pub fn ellipse(center: Vec2, radius_x: f32, radius_y: f32, segments: u32) -> Self {
         let segments = segments.max(3);
-        let mut vertices = vec![MeshVertex::new(center, Vec2::new(0.5, 0.5))]; // Center vertex
+        // Pre-allocate to avoid reallocations: Center + N segments
+        let mut vertices = Vec::with_capacity((segments + 1) as usize);
+        vertices.push(MeshVertex::new(center, Vec2::new(0.5, 0.5))); // Center vertex
 
         // Create vertices around the ellipse
         for i in 0..segments {
@@ -120,8 +122,8 @@ impl Mesh {
             vertices.push(MeshVertex::new(Vec2::new(x, y), Vec2::new(u, v)));
         }
 
-        // Create triangle fan indices
-        let mut indices = Vec::new();
+        // Create triangle fan indices: N triangles * 3 indices
+        let mut indices = Vec::with_capacity((segments * 3) as usize);
         for i in 1..segments {
             indices.push(0); // Center
             indices.push(i as u16);
@@ -222,8 +224,14 @@ impl Mesh {
         let rows = rows.max(1);
         let cols = cols.max(1);
 
-        let mut vertices = Vec::new();
-        let mut indices = Vec::new();
+        // Pre-allocate to avoid reallocations
+        // Vertices: (rows + 1) * (cols + 1)
+        let vertex_count = (rows + 1) * (cols + 1);
+        let mut vertices = Vec::with_capacity(vertex_count as usize);
+
+        // Indices: rows * cols * 6 (2 triangles per cell * 3 indices)
+        let index_count = rows * cols * 6;
+        let mut indices = Vec::with_capacity(index_count as usize);
 
         // Create grid vertices
         for row in 0..=rows {
