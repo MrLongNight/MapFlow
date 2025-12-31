@@ -28,6 +28,7 @@ pub mod audio;
 pub mod audio_media_pipeline;
 pub mod audio_reactive;
 pub mod codegen;
+pub mod effect_animation;
 pub mod effects;
 pub mod logging;
 pub mod lut;
@@ -51,6 +52,9 @@ pub use audio_reactive::{
     AudioReactivePreset,
 };
 pub use codegen::{CodegenError, WGSLCodegen};
+pub use effect_animation::{
+    EffectAnimationId, EffectParameterAnimator, EffectParameterBinding, EffectParameterUpdate,
+};
 pub use effects::{Effect, EffectChain, EffectType};
 pub use logging::LogConfig;
 pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
