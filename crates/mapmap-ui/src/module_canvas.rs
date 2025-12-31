@@ -174,6 +174,7 @@ impl ModuleCanvas {
 
         let files = [
             "audio-jack.svg",
+            "audio-jack_1.svg",
             "audio-jack_2.svg",
             "plug.svg",
             "power-plug.svg",
@@ -3390,21 +3391,11 @@ impl ModuleCanvas {
                 let start_pos = to_screen(from_socket_world);
                 let end_pos = to_screen(to_socket_world);
 
-                // Draw Plugs - plugs should point INTO the nodes
-                let plug_size = 20.0 * self.zoom;
-
-                let icon_name = match socket_type {
-                    mapmap_core::module::ModuleSocketType::Trigger => "audio-jack.svg",
-                    mapmap_core::module::ModuleSocketType::Media => "plug.svg",
-                    mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
-                    mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
-                    mapmap_core::module::ModuleSocketType::Output => "power-plug.svg",
-                };
-
-                // Draw Cable (Bezier) FIRST so plugs are on top
+                // Draw Cable (Bezier) FIRST
                 let cable_start = start_pos;
                 let cable_end = end_pos;
 
+                // Adjust control point offset based on distance
                 let control_offset = (cable_end.x - cable_start.x).abs() * 0.4;
                 let control_offset = control_offset.max(40.0 * self.zoom);
 
@@ -3424,10 +3415,28 @@ impl ModuleCanvas {
                 }
 
                 // Draw Plugs on top of cable
+                // Calculate tangents for rotation (though currently horizontal, this supports future curve changes)
+                // Tangent at t=0 (Start): P1 - P0 = (ctrl1 - start_pos) -> (dx, 0)
+                // Tangent at t=1 (End): P3 - P2 = (end_pos - ctrl2) -> (dx, 0)
+                // Default rotation is 0 for horizontal.
+
+                // Icon selection and sizing
+                let (icon_name, scale_factor) = match socket_type {
+                    mapmap_core::module::ModuleSocketType::Trigger => ("audio-jack_1.svg", 2.2), // Larger for audio jack
+                    mapmap_core::module::ModuleSocketType::Media => ("plug.svg", 1.0),
+                    mapmap_core::module::ModuleSocketType::Effect => ("usb-cable.svg", 1.0),
+                    mapmap_core::module::ModuleSocketType::Layer => ("power-plug.svg", 1.0),
+                    mapmap_core::module::ModuleSocketType::Output => ("power-plug.svg", 1.0),
+                };
+
+                let plug_size = 20.0 * self.zoom * scale_factor;
+
                 if let Some(texture) = self.plug_icons.get(icon_name) {
-                    // Source Plug at OUTPUT socket - pointing LEFT (into node)
+                    // Source Plug at OUTPUT socket
+                    // Pointing LEFT into node.
+                    // image is typically drawn pointing RIGHT. Flip UV X.
+                    // Rotation: 0 unless angled connection logic changes.
                     let start_rect = Rect::from_center_size(start_pos, Vec2::splat(plug_size));
-                    // Flip horizontally so plug points left (into node)
                     painter.image(
                         texture.id(),
                         start_rect,
@@ -3435,9 +3444,10 @@ impl ModuleCanvas {
                         Color32::WHITE,
                     );
 
-                    // Target Plug at INPUT socket - pointing RIGHT (into node)
+                    // Target Plug at INPUT socket
+                    // Pointing RIGHT into node.
+                    // UV normal.
                     let end_rect = Rect::from_center_size(end_pos, Vec2::splat(plug_size));
-                    // Normal orientation (pointing right into node)
                     painter.image(
                         texture.id(),
                         end_rect,
@@ -3445,12 +3455,25 @@ impl ModuleCanvas {
                         Color32::WHITE,
                     );
                 } else {
-                    // Fallback circles
-                    painter.circle_filled(start_pos, 6.0 * self.zoom, cable_color);
-                    painter.circle_filled(end_pos, 6.0 * self.zoom, cable_color);
+                    // Fallback using new socket look if icon missing
+                    Self::draw_socket(painter, start_pos, 6.0 * self.zoom, cable_color);
+                    Self::draw_socket(painter, end_pos, 6.0 * self.zoom, cable_color);
                 }
             }
         }
+    }
+
+    /// Helper to draw a realistic socket (Buchse)
+    fn draw_socket(painter: &egui::Painter, center: Pos2, radius: f32, color: Color32) {
+        // Metallic outer ring
+        painter.circle_filled(center, radius, Color32::from_gray(180));
+        painter.circle_stroke(center, radius, Stroke::new(1.0, Color32::from_gray(60)));
+
+        // Inner dark hole
+        painter.circle_filled(center, radius * 0.7, Color32::from_rgb(20, 20, 20));
+
+        // Inner contact point (signal color)
+        painter.circle_filled(center, radius * 0.35, color);
     }
 
     fn bezier_point(p0: Pos2, p1: Pos2, p2: Pos2, p3: Pos2, t: f32) -> Pos2 {
@@ -3624,8 +3647,7 @@ impl ModuleCanvas {
 
             // Socket circle
             let socket_color = Self::get_socket_color(&socket.socket_type);
-            painter.circle_filled(socket_pos, socket_radius, socket_color);
-            painter.circle_stroke(socket_pos, socket_radius, Stroke::new(1.5, Color32::WHITE));
+            Self::draw_socket(painter, socket_pos, socket_radius, socket_color);
 
             // Socket label
             painter.text(
@@ -3645,8 +3667,7 @@ impl ModuleCanvas {
 
             // Socket circle
             let socket_color = Self::get_socket_color(&socket.socket_type);
-            painter.circle_filled(socket_pos, socket_radius, socket_color);
-            painter.circle_stroke(socket_pos, socket_radius, Stroke::new(1.5, Color32::WHITE));
+            Self::draw_socket(painter, socket_pos, socket_radius, socket_color);
 
             // Socket label
             painter.text(

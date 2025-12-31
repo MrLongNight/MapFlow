@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-31: merge: Resolve NDI/Spout conflicts with Unified Node Menu (#131, #137, #139)
+- 2025-12-31: feat(ui): Unified "Add Node" menu with search and NDI/Spout integration
 - 2025-12-31: refactor: optimize logging structure and levels (#138)
 - 2025-12-31: Knoteneigenschaften als Popup-Dialog implementieren (#136)
 - 2025-12-31: ⚡ Bolt: Implement Vertex Buffer Caching (#133)
