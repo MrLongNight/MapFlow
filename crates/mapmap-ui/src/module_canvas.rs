@@ -299,7 +299,7 @@ impl ModuleCanvas {
                                                         .text("Offset (ms)"),
                                                 );
                                             }
-                                            TriggerType::Midi { channel, note } => {
+                                            TriggerType::Midi { channel, note, device: _ } => {
                                                 ui.label("🎹 MIDI Trigger");
 
                                                 // Available MIDI ports dropdown
@@ -1272,7 +1272,7 @@ impl ModuleCanvas {
                             }
                             if show_all { ui.separator(); ui.label(egui::RichText::new("Control").weak()); }
                             if (show_all || "midi".contains(&filter)) && ui.button("🎹 MIDI").clicked() {
-                                self.add_trigger_node(manager, TriggerType::Midi { channel: 1, note: 60 });
+                                self.add_trigger_node(manager, TriggerType::Midi { channel: 1, note: 60, device: String::new() });
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -3734,7 +3734,7 @@ impl ModuleCanvas {
                 TriggerType::AudioFFT { band, .. } => format!("🔊 Audio: {:?}", band),
                 TriggerType::Random { .. } => "🎲 Random".to_string(),
                 TriggerType::Fixed { interval_ms, .. } => format!("⏱️ {}ms", interval_ms),
-                TriggerType::Midi { channel, note } => format!("🎹 Ch{} N{}", channel, note),
+                TriggerType::Midi { channel, note, .. } => format!("🎹 Ch{} N{}", channel, note),
                 TriggerType::Osc { address } => format!("📡 {}", address),
                 TriggerType::Shortcut { key_code, .. } => format!("⌨️ {}", key_code),
                 TriggerType::Beat => "🥁 Beat".to_string(),
@@ -3987,80 +3987,6 @@ impl ModuleCanvas {
                             threshold: 0.5,
                         }),
                         (50.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
-                        (250.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
-                        (450.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
-                            opacity: 1.0,
-                            blend_mode: None,
-                        }),
-                        (650.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::Output(OutputType::Projector {
-                            id: 0,
-                            name: "Projector 1".to_string(),
-                        }),
-                        (850.0, 100.0),
-                        None,
-                    ),
-                ],
-                connections: vec![
-                    (0, 0, 1, 0), // Audio -> Source
-                    (1, 0, 2, 0), // Source -> Effect
-                    (2, 0, 3, 0), // Effect -> Layer
-                ],
-            },
-            ModulePreset {
-                name: "Masked Media".to_string(),
-                parts: vec![
-                    (
-                        ModulePartType::Trigger(TriggerType::Beat),
-                        (50.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
-                        (250.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)),
-                        (450.0, 100.0),
-                        None,
-                    ),
-                    (
-                        ModulePartType::Output(OutputType::Projector {
-                            id: 0,
-                            name: "Projector 1".to_string(),
-                        }),
-                        (650.0, 100.0),
-                        None,
-                    ),
-                ],
-                connections: vec![
-                    (0, 0, 1, 0), // Trigger -> Source
-                    (1, 0, 2, 0), // Source -> Mask
-                ],
-            },
-        ]
-    }
-}
                         None,
                     ),
                     (

@@ -482,17 +482,17 @@ impl AudioAnalyzerV2 {
         let bpm = (60.0 / avg_interval) as f32;
 
         // Clamp to reasonable DJ range (60-200 BPM)
-        if (60.0..=200.0).contains(&bpm) {
-            Some(bpm)
+        let bpm = if (60.0..=200.0).contains(&bpm) {
+            bpm
         } else if (200.0..=400.0).contains(&bpm) {
             // Might be detecting half-beats, divide by 2
-            Some(bpm / 2.0)
+            bpm / 2.0
         } else if (30.0..60.0).contains(&bpm) {
             // Might be detecting double-beats, multiply by 2
-            Some(bpm * 2.0)
+            bpm * 2.0
         } else {
-            None
-        }
+            return None;
+        };
 
         // Round to 1 decimal place to reduce visual jitter
         Some((bpm * 10.0).round() / 10.0)
