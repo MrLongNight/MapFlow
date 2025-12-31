@@ -22,46 +22,43 @@ impl MapFlowModule {
 
         let (module_part_type, inputs, outputs) = match part_type {
             PartType::Trigger => (
-                ModulePartType::Trigger(TriggerType::AudioFFT {
-                    band: AudioBand::Bass,
-                    threshold: 0.5,
-                }),
+                ModulePartType::Trigger(TriggerType::AudioFFT { threshold: 0.5 }),
                 vec![], // No inputs - triggers are sources
                 vec![
                     ModuleSocket {
-                        name: "SubBass Out".to_string(),
+                        name: "SubBass".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "Bass Out".to_string(),
+                        name: "Bass".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "LowMid Out".to_string(),
+                        name: "LowMid".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "Mid Out".to_string(),
+                        name: "Mid".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "HighMid Out".to_string(),
+                        name: "HighMid".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "UpperMid Out".to_string(),
+                        name: "UpperMid".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "Presence Out".to_string(),
+                        name: "Presence".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "Brilliance Out".to_string(),
+                        name: "Brilliance".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     ModuleSocket {
-                        name: "Air Out".to_string(),
+                        name: "Air".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     },
                     // Volume Outputs
@@ -388,7 +385,7 @@ pub enum PartType {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TriggerType {
     /// Audio FFT analysis with frequency band outputs
-    AudioFFT { band: AudioBand, threshold: f32 },
+    AudioFFT { threshold: f32 },
     /// Random trigger with configurable interval and probability
     Random {
         min_interval_ms: u32,
@@ -422,10 +419,12 @@ pub enum AudioBand {
     LowMid,     // 250-500Hz
     Mid,        // 500-2kHz
     HighMid,    // 2-4kHz
-    Presence,   // 4-6kHz
-    Brilliance, // 6-20kHz
-    Peak,       // Peak detection
-    BPM,        // Beat per minute
+    UpperMid,   // 4-6kHz
+    Presence,   // 6-8kHz
+    Brilliance, // 8-12kHz
+    Air,        // 12-20kHz
+    Peak,       // For peak volume triggers
+    BPM,        // For BPM/Beat triggers
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

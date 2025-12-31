@@ -18,6 +18,8 @@ use mapmap_core::{
         backend::cpal_backend::CpalBackend,
         backend::AudioBackend,
     },
+    module_eval::ModuleEvaluator,
+    trigger_system::TriggerSystem,
     AppState, OutputId,
 };
 
@@ -30,7 +32,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshBufferCache, MeshRenderer, OscillatorRenderer,
     QuadRenderer, TexturePool, WgpuBackend,
 };
-use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction, AudioTriggerData};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -126,6 +128,10 @@ struct App {
     shader_graph_manager: mapmap_render::ShaderGraphManager,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
+    /// The trigger processing system.
+    trigger_system: TriggerSystem,
+    /// The module graph evaluator.
+    module_evaluator: ModuleEvaluator,
 }
 
 impl App {
@@ -422,6 +428,8 @@ impl App {
                     .join("MapFlow")
                     .join("recent_effect_configs.json"),
             ),
+            trigger_system: TriggerSystem::new(),
+            module_evaluator: ModuleEvaluator::new(),
         };
 
         // Create initial dummy texture
@@ -693,6 +701,27 @@ impl App {
 
                         // Update BPM in toolbar
                         self.ui_state.current_bpm = analysis_v2.tempo_bpm;
+                    }
+                }
+
+                // Update trigger system
+                if let Some(audio_data) =
+                    self.ui_state.module_canvas.get_audio_trigger_data()
+                {
+                    self.trigger_system
+                        .update(&self.state.module_manager, audio_data);
+                }
+
+                // Evaluate module graph
+                if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id() {
+                    if let Some(module) = self.state.module_manager.get_module(active_module_id) {
+                        let actions = self.module_evaluator.evaluate(
+                            module,
+                            self.trigger_system.get_active_triggers(),
+                        );
+                        for action in actions {
+                            info!("ModuleAction generated: {:?}", action);
+                        }
                     }
                 }
 
