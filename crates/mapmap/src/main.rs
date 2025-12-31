@@ -13,7 +13,11 @@ use egui_winit::State;
 use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::{shortcuts::Action, ControlManager};
 use mapmap_core::{
-    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config}},
+    audio::{
+        analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config},
+        backend::cpal_backend::CpalBackend,
+        backend::AudioBackend,
+    },
     AppState, OutputId,
 };
 
@@ -222,13 +226,16 @@ impl App {
                 info!("Restoring saved audio device: {}", dev);
                 Some(dev.clone())
             } else {
-                info!("Saved audio device '{}' no longer available, using default", dev);
+                info!(
+                    "Saved audio device '{}' no longer available, using default",
+                    dev
+                );
                 None
             }
         } else {
             None
         };
-        
+
         // Set the selected device in UI state
         ui_state.selected_audio_device = device_to_use.clone();
 
@@ -540,10 +547,10 @@ impl App {
                     let samples = backend.get_samples();
                     if !samples.is_empty() {
                         let timestamp = self.start_time.elapsed().as_secs_f64();
-                        
+
                         // Process samples with new V2 analyzer
                         self.audio_analyzer.process_samples(&samples, timestamp);
-                        
+
                         // Get analysis results
                         let analysis_v2 = self.audio_analyzer.get_latest_analysis();
 
@@ -562,7 +569,7 @@ impl App {
                                 );
                             }
                         }
-                        
+
                         // Convert V2 analysis to legacy format for UI compatibility
                         let legacy_analysis = mapmap_core::audio::AudioAnalysis {
                             timestamp: analysis_v2.timestamp,
@@ -584,19 +591,21 @@ impl App {
                             tempo_bpm: analysis_v2.tempo_bpm, // Now from AudioAnalyzerV2!
                             waveform: analysis_v2.waveform.clone(),
                         };
-                        
+
                         self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
-                        
+
                         // Update module canvas with audio trigger data
-                        self.ui_state.module_canvas.set_audio_data(mapmap_ui::AudioTriggerData {
-                            band_energies: analysis_v2.band_energies,
-                            rms_volume: analysis_v2.rms_volume,
-                            peak_volume: analysis_v2.peak_volume,
-                            beat_detected: analysis_v2.beat_detected,
-                            beat_strength: analysis_v2.beat_strength,
-                            bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
-                        });
-                        
+                        self.ui_state
+                            .module_canvas
+                            .set_audio_data(mapmap_ui::AudioTriggerData {
+                                band_energies: analysis_v2.band_energies,
+                                rms_volume: analysis_v2.rms_volume,
+                                peak_volume: analysis_v2.peak_volume,
+                                beat_detected: analysis_v2.beat_detected,
+                                beat_strength: analysis_v2.beat_strength,
+                                bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
+                            });
+
                         // Update BPM in toolbar
                         self.ui_state.current_bpm = analysis_v2.tempo_bpm;
                     }
@@ -1087,7 +1096,7 @@ impl App {
                                             } else {
                                                 None
                                             };
-                                            
+
                                             if let Some(action) = self.ui_state.audio_panel.ui(
                                                 ui,
                                                 &self.ui_state.i18n,
@@ -1686,8 +1695,8 @@ impl App {
 
                             self.mesh_renderer.draw(
                                 &mut render_pass,
-                                &vertex_buffer,
-                                &index_buffer,
+                                vertex_buffer,
+                                index_buffer,
                                 index_count,
                                 &uniform_bind_group,
                                 &texture_bind_group,
@@ -1789,7 +1798,7 @@ fn main() -> Result<()> {
     // Initialize logging with default configuration
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
-    
+
     info!("Starting MapFlow...");
 
     // Create the event loop

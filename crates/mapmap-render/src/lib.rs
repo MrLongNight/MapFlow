@@ -31,6 +31,7 @@ pub use compositor::Compositor;
 pub use edge_blend_renderer::EdgeBlendRenderer;
 pub use effect_chain_renderer::{EffectChainRenderer, EffectParams};
 pub use hot_reload::{HotReloadIntegration, ShaderChangeEvent, ShaderHotReload, ShaderStatus};
+pub use mesh_buffer_cache::MeshBufferCache;
 pub use mesh_renderer::MeshRenderer;
 pub use oscillator_renderer::OscillatorRenderer;
 pub use preset::{EffectPreset, PresetLibrary, PresetMetadata};

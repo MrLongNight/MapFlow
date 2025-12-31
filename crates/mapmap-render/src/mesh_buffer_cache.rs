@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 
 /// Cached GPU buffers for a mesh
+#[derive(Debug)]
+#[allow(dead_code)] // Used by App, false positive in render lib check
 pub struct CachedMeshBuffers {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
@@ -18,12 +20,14 @@ pub struct CachedMeshBuffers {
 }
 
 /// Manages GPU buffers for meshes to avoid per-frame allocation
+#[allow(dead_code)] // Used by App
 pub struct MeshBufferCache {
     cache: HashMap<MappingId, CachedMeshBuffers>,
 }
 
 impl MeshBufferCache {
     /// Create a new mesh buffer cache
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
@@ -31,6 +35,7 @@ impl MeshBufferCache {
     }
 
     /// Get buffers for a mapping, creating or updating them if necessary
+    #[allow(dead_code)]
     pub fn get_buffers(
         &mut self,
         device: &wgpu::Device,
@@ -97,11 +102,13 @@ impl MeshBufferCache {
     }
 
     /// Remove a mapping from the cache
+    #[allow(dead_code)]
     pub fn remove(&mut self, mapping_id: MappingId) {
         self.cache.remove(&mapping_id);
     }
 
     /// Clear the cache
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.cache.clear();
     }
