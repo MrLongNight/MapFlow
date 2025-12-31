@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-01: feat(presets): Add NDI Source, NDI Output, Spout Source, Spout Output presets
+- 2026-01-01: feat(presets): Increase node spacing (200→300px) and add missing output connections
+- 2026-01-01: feat(ui): Add category to node titles (e.g., "🎬 Source: Media File")
+- 2026-01-01: feat(ui): Add right-click context menu for nodes with Properties and Delete options
+- 2026-01-01: feat(jules): Add 4 specialized agent roles (Guardian, Scribe, Tracker, Archivist)
 - 2025-12-31: 🛡️ Sentinel: [HIGH] Add HTTP Security Headers (Defense in Depth) (#143)
 - 2025-12-31: merge: PR #139 - Spout Integration (Core + UI + IO)
 - 2025-12-31: merge: PR #140 - Assignment System Foundation (AssignmentManager)
