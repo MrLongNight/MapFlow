@@ -399,10 +399,10 @@ impl EffectChainPanel {
                                             for config in configs {
                                                 if ui.button(format!("{}", config.name)).on_hover_text(format!("{:?}", config.params)).clicked() {
                                                      self.chain.add_effect(*effect_type);
-                                                     
+
                                                      let id = self.chain.effects.last().unwrap().id;
                                                      let effect = self.chain.get_effect_mut(id).unwrap();
-                                                     
+
                                                      let mut f32_params = std::collections::HashMap::new();
                                                      for (k, v) in &config.params {
                                                          if let mapmap_core::recent_effect_configs::EffectParamValue::Float(f) = v {
@@ -410,7 +410,7 @@ impl EffectChainPanel {
                                                              f32_params.insert(k.clone(), *f);
                                                          }
                                                      }
-                                                     
+
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
                                                      ui.close_menu();
                                                      self.show_add_menu = false;

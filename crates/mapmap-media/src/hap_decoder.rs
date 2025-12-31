@@ -142,7 +142,10 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
         }
         0xB0 => {
             // Snappy compression
-            debug!("HAP frame: Snappy compressed, {} bytes", compressed_data.len());
+            debug!(
+                "HAP frame: Snappy compressed, {} bytes",
+                compressed_data.len()
+            );
             decompress_snappy(compressed_data)?
         }
         0xC0 => {
