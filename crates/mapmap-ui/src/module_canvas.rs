@@ -1,10 +1,18 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
+use crate::i18n::LocaleManager;
+use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
     MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
     ModulizerType, OutputType, SourceType, TriggerType,
 };
+#[cfg(feature = "ndi")]
+use mapmap_io::ndi::Source as NdiSource;
+#[cfg(feature = "ndi")]
+use tokio::runtime::Runtime;
+#[cfg(feature = "ndi")]
+use std::sync::{mpsc, Arc};
 
 /// Information about a socket position for hit detection
 #[derive(Clone)]
@@ -68,6 +76,17 @@ pub struct ModuleCanvas {
     learned_midi: Option<(ModulePartId, u8, u8, bool)>,
     /// Live audio trigger data from AudioAnalyzerV2
     audio_trigger_data: AudioTriggerData,
+    /// Discovered NDI sources
+    #[cfg(feature = "ndi")]
+    ndi_sources: Vec<NdiSource>,
+    /// Whether NDI source discovery is running
+    #[cfg(feature = "ndi")]
+    ndi_discovery_running: bool,
+    /// Channel to receive discovered NDI sources from the async task
+    #[cfg(feature = "ndi")]
+    ndi_source_receiver: mpsc::Receiver<Vec<NdiSource>>,
+    #[cfg(feature = "ndi")]
+    ndi_source_sender: mpsc::Sender<Vec<NdiSource>>,
 }
 
 /// Live audio data for trigger nodes
@@ -127,6 +146,9 @@ pub enum CanvasAction {
 
 impl Default for ModuleCanvas {
     fn default() -> Self {
+        #[cfg(feature = "ndi")]
+        let (sender, receiver) = mpsc::channel();
+
         Self {
             active_module_id: None,
             pan_offset: Vec2::ZERO,
@@ -153,6 +175,14 @@ impl Default for ModuleCanvas {
             plug_icons: std::collections::HashMap::new(),
             learned_midi: None,
             audio_trigger_data: AudioTriggerData::default(),
+            #[cfg(feature = "ndi")]
+            ndi_sources: Vec::new(),
+            #[cfg(feature = "ndi")]
+            ndi_discovery_running: false,
+            #[cfg(feature = "ndi")]
+            ndi_source_receiver: receiver,
+            #[cfg(feature = "ndi")]
+            ndi_source_sender: sender,
         }
     }
 }
@@ -425,7 +455,7 @@ impl ModuleCanvas {
         }
     }
 
-    pub fn show(&mut self, ui: &mut Ui, manager: &mut ModuleManager, locale: &LocaleManager) {
+    pub fn show(&mut self, ui: &mut Ui, manager: &mut ModuleManager, locale: &LocaleManager, actions: &mut Vec<crate::UIAction>) {
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
             if let Some(module_id) = self.active_module_id {
@@ -571,6 +601,16 @@ impl ModuleCanvas {
                     }
                     if ui.button("📹 Live Input").clicked() {
                         self.add_source_node(manager, SourceType::LiveInput { device_id: 0 });
+                        ui.close_menu();
+                    }
+                    #[cfg(feature = "ndi")]
+                    if ui.button("📡 NDI Input").clicked() {
+                        self.add_source_node(
+                            manager,
+                            SourceType::NdiInput {
+                                source_name: None,
+                            },
+                        );
                         ui.close_menu();
                     }
                 });
@@ -893,6 +933,16 @@ impl ModuleCanvas {
                     }
                     if ui.button("👁️ Preview Window").clicked() {
                         self.add_output_node(manager, OutputType::Preview { window_id: 0 });
+                        ui.close_menu();
+                    }
+                    #[cfg(feature = "ndi")]
+                    if ui.button("📡 NDI Output").clicked() {
+                        self.add_output_node(
+                            manager,
+                            OutputType::NdiOutput {
+                                name: "MapFlow".to_string(),
+                            },
+                        );
                         ui.close_menu();
                     }
                 });
@@ -1329,6 +1379,51 @@ impl ModuleCanvas {
                                                                 .text("Device ID"),
                                                         );
                                                     }
+                                                    SourceType::NdiInput { source_name } => {
+                                                        ui.label("📡 NDI Input");
+                                                        ui.separator();
+
+                                                        #[cfg(feature = "ndi")]
+                                                        {
+                                                            // Check for discovery results
+                                                            if let Ok(sources) = self.ndi_source_receiver.try_recv() {
+                                                                self.ndi_sources = sources;
+                                                                self.ndi_discovery_running = false;
+                                                            }
+
+                                                            let refresh_text = if self.ndi_discovery_running {
+                                                                "🔄 Discovering..."
+                                                            } else {
+                                                                "🔄 Refresh List"
+                                                            };
+
+                                                            if ui.add_enabled(!self.ndi_discovery_running, egui::Button::new(refresh_text)).clicked() {
+                                                                self.ndi_discovery_running = true;
+                                                                let sender = self.ndi_source_sender.clone();
+                                                                mapmap_io::ndi::NdiReceiver::discover_sources_async(sender);
+                                                            }
+
+                                                            let selected_text = source_name.as_deref().unwrap_or("Select a source...");
+
+                                                            egui::ComboBox::from_id_source("ndi_source_selector")
+                                                                .selected_text(selected_text)
+                                                                .show_ui(ui, |ui| {
+                                                                    for source in &self.ndi_sources {
+                                                                        if ui.selectable_label(source_name.as_deref() == Some(&source.name), &source.name).clicked() {
+                                                                            *source_name = Some(source.name.clone());
+                                                                            actions.push(crate::UIAction::ConnectNdiSource {
+                                                                                part_id: part_id,
+                                                                                source: source.clone(),
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        #[cfg(not(feature = "ndi"))]
+                                                        {
+                                                            ui.label("NDI feature is not enabled.");
+                                                        }
+                                                    }
                                                 }
                                             }
                                             ModulePartType::Mask(mask) => {
@@ -1730,6 +1825,15 @@ impl ModuleCanvas {
                                                     }
                                                     OutputType::Preview { window_id: _ } => {
                                                         ui.label("👁️ Preview Window");
+                                                    }
+                                                    OutputType::NdiOutput { name } => {
+                                                        ui.label("📡 NDI Output");
+                                                        ui.separator();
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Broadcast Name:");
+                                                            ui.text_edit_singleline(name);
+                                                        });
+                                                        ui.label("Other NDI devices will see this name.");
                                                     }
                                                 }
                                             }
@@ -3618,6 +3722,7 @@ impl ModuleCanvas {
                     SourceType::MediaFile { .. } => "Media File",
                     SourceType::Shader { .. } => "Shader",
                     SourceType::LiveInput { .. } => "Live Input",
+                    SourceType::NdiInput { .. } => "NDI Input",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -3726,6 +3831,7 @@ impl ModuleCanvas {
                 let name = match output {
                     OutputType::Projector { .. } => "Projector",
                     OutputType::Preview { .. } => "Preview",
+                    OutputType::NdiOutput { .. } => "NDI Output",
                 };
                 (
                     Color32::from_rgb(70, 50, 50),
@@ -3772,6 +3878,9 @@ impl ModuleCanvas {
                 }
                 SourceType::Shader { name, .. } => format!("🎨 {}", name),
                 SourceType::LiveInput { device_id } => format!("📹 Device {}", device_id),
+                SourceType::NdiInput { source_name } => {
+                    format!("📡 {}", source_name.as_deref().unwrap_or("None"))
+                }
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
@@ -3820,6 +3929,7 @@ impl ModuleCanvas {
             ModulePartType::Output(output_type) => match output_type {
                 OutputType::Projector { name, .. } => format!("📺 {}", name),
                 OutputType::Preview { window_id } => format!("👁 Preview {}", window_id),
+                OutputType::NdiOutput { name } => format!("📡 {}", name),
             },
         }
     }

@@ -111,6 +111,9 @@ struct App {
     /// Selected MIDI port index
     #[cfg(feature = "midi")]
     selected_midi_port: Option<usize>,
+    /// NDI Receivers for module sources
+    #[cfg(feature = "ndi")]
+    ndi_receivers: std::collections::HashMap<mapmap_core::module::ModulePartId, mapmap_io::ndi::NdiReceiver>,
 }
 
 impl App {
@@ -382,6 +385,8 @@ impl App {
             } else {
                 Some(0)
             },
+            #[cfg(feature = "ndi")]
+            ndi_receivers: std::collections::HashMap::new(),
         };
 
         // Create initial dummy texture
@@ -693,6 +698,17 @@ impl App {
                 }
                 mapmap_ui::UIAction::ToggleControllerOverlay => {
                     self.ui_state.show_controller_overlay = !self.ui_state.show_controller_overlay;
+                }
+                #[cfg(feature = "ndi")]
+                mapmap_ui::UIAction::ConnectNdiSource { part_id, source } => {
+                    let receiver = self.ndi_receivers.entry(part_id).or_insert_with(|| {
+                        info!("Creating new NdiReceiver for part {}", part_id);
+                        mapmap_io::ndi::NdiReceiver::new().expect("Failed to create NDI receiver")
+                    });
+                    info!("Connecting part {} to NDI source '{}'", part_id, source.name);
+                    if let Err(e) = receiver.connect(&source) {
+                        error!("Failed to connect to NDI source: {}", e);
+                    }
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
                 _ => {}
@@ -1253,6 +1269,7 @@ impl App {
                                 ui,
                                 &mut self.state.module_manager,
                                 &self.ui_state.i18n,
+                                &mut self.ui_state.actions,
                             );
                         } else {
                             // Placeholder for normal canvas/viewport

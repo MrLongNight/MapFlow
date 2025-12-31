@@ -429,6 +429,12 @@ pub enum SourceType {
     LiveInput {
         device_id: u32,
     },
+    /// NDI network video source
+    NdiInput {
+        /// The name of the NDI source to connect to.
+        /// If None, the first available source will be used.
+        source_name: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -646,6 +652,11 @@ pub enum LayerAssignmentType {
 pub enum OutputType {
     Projector { id: u64, name: String },
     Preview { window_id: u32 },
+    /// NDI network video output
+    NdiOutput {
+        /// The broadcast name of this NDI source.
+        name: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

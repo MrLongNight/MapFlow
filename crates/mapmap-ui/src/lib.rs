@@ -69,6 +69,9 @@ pub use shortcut_panel::{ShortcutAction, ShortcutPanel};
 pub use theme::{Theme, ThemeConfig};
 pub use transform_panel::{TransformAction, TransformPanel};
 pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
+#[cfg(feature = "ndi")]
+use mapmap_io::ndi::Source as NdiSource;
+
 
 /// UI actions that can be triggered by the user interface
 #[derive(Debug, Clone)]
@@ -156,6 +159,13 @@ pub enum UIAction {
     OpenDocs,
     OpenAbout,
     OpenLicense,
+
+    // Module actions
+    #[cfg(feature = "ndi")]
+    ConnectNdiSource {
+        part_id: mapmap_core::module::ModulePartId,
+        source: NdiSource,
+    },
 }
 
 use mapmap_control::ControlTarget;

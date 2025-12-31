@@ -12,6 +12,7 @@ repository.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
+once_cell = { workspace = true }
 serde_json = { workspace = true }
 ron = { workspace = true }
 chrono = { workspace = true }
@@ -26,6 +27,7 @@ tokio = { workspace = true, optional = true }
 
 # Media encoding/decoding
 ffmpeg-next = { workspace = true, optional = true }
+grafton-ndi = { version = "0.2.4", optional = true }
 
 # Platform-specific dependencies
 [target.'cfg(windows)'.dependencies]
@@ -50,11 +52,11 @@ tempfile = "3.8"
 [features]
 default = []
 # Individual features
-ndi = []  # NDI support (requires NDI SDK)
+ndi = ["dep:grafton-ndi", "dep:tokio"]  # NDI support (requires NDI SDK)
 decklink = []  # DeckLink SDI support (requires DeckLink SDK)
 spout = ["windows"]  # Spout texture sharing (Windows only)
 syphon = ["cocoa", "core-foundation", "objc"]  # Syphon texture sharing (macOS only)
-stream = ["ffmpeg-next", "tokio"]  # RTMP/SRT streaming
+stream = ["ffmpeg-next", "dep:tokio"]  # RTMP/SRT streaming
 virtual-camera = []  # Virtual camera output
 
 # Platform-specific features
