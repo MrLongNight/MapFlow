@@ -102,12 +102,13 @@
 
 ### Audio (Plattformspezifische Backends, Analyzer/Mapping)
 
-- ✅ **Audio-Analyse** (`mapmap-core/src/audio/analyzer_v2.rs`) – **FUNKTIONAL (2025-12-29)**
-  - ✅ FFT-Analyse mit RustFFT – FUNKTIONAL
+- ✅ **Audio-Analyse** (`mapmap-core/src/audio/analyzer_v2.rs`) – **COMPLETED (2025-12-29)**
+  - ✅ Implementiert als `AudioAnalyzerV2` (ersetzt V1)
+  - ✅ FFT-Analyse mit RustFFT
   - ✅ 9 Frequenzbänder (SubBass, Bass, LowMid, Mid, HighMid, UpperMid, Presence, Brilliance, Air)
-  - ✅ RMS-Volume-Analyse – FUNKTIONAL
-  - ✅ Peak-Detektion – FUNKTIONAL
-  - ✅ Beat-Detection (einfach, bassbasiert) – FUNKTIONAL
+  - ✅ RMS-Volume-Analyse
+  - ✅ Peak-Detektion
+  - ✅ Beat-Detection (einfach, bassbasiert)
   - ✅ Ring-Buffer-Management für effiziente Verarbeitung
   - ✅ Hann-Window-Funktion für bessere Frequenzauflösung
   - ✅ Konfigurierbare FFT-Größe, Overlap und Smoothing
@@ -172,6 +173,7 @@
 - ⬜ **Codec-Support**
   - ✅ H.264, H.265, VP8, VP9 über FFmpeg
   - ⬜ ProRes noch nicht getestet/optimiert
+<<<<<<< HEAD
   - ✅ **HAP-Codec (COMPLETED 2025-12-31)**
     - ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
     - ✅ Snappy Dekompression für HAP-Frames
@@ -181,6 +183,9 @@
     - ✅ Auto-Erkennung bei .mov-Dateien in `open_path()`
     - ✅ MediaBrowser: Hap MediaType mit ⚡ Icon
     - ⬜ Runtime-Test mit echtem HAP-Video (benötigt FFmpeg)
+=======
+  - ✅ HAP-Codec fehlt (GPU-native Compression)
+>>>>>>> main
   - ⬜ DXV-Codec fehlt
 
 ### Effects / PostFX
@@ -200,6 +205,7 @@
   - ✅ Node-Connections und Graph-Traversal
   - ✅ WGSL-Codegen (`mapmap-core/src/codegen.rs`)
 
+<<<<<<< HEAD
 - ✅ **Effect-Chain-Integration (COMPLETED 2025-12-31)**
   - ✅ Shader-Graph in Render-Pipeline integriert (`shader_graph_integration.rs`)
     - ✅ ShaderGraphManager für Graph-Verwaltung
@@ -220,6 +226,13 @@
     - ✅ Keyframe-Animation für beliebige Parameter (Float, Vec3, Color, etc.)
     - ✅ Binding-System (`EffectParameterBinding`) für Parameter-zu-Track Mapping
     - ✅ Playback-Controls (Play, Pause, Seek, Speed, Loop)
+=======
+- ⬜ **Effect-Chain-Integration**
+  - ✅ Shader-Graph in Render-Pipeline integrieren fehlt
+  - ✅ Custom-Shader-Hot-Reload fehlt
+  - ✅ Effect-Preset-System fehlt
+  - ✅ Effect-Parameter-Automation via Timeline fehlt
+>>>>>>> main
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
 
@@ -238,7 +251,7 @@
   - ✅ UI: OSC-Server-Status und Port-Konfiguration implementiert (mit `imgui`)
   - ✅ Default-OSC-Port: 8000 (konfigurierbar)
 
-- ✅ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`) - FULLY WIRED 2025-12-27
+- ⬜ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`) - FULLY WIRED 2025-12-27
   - ✅ MIDI-Input (`midi/input.rs`)
   - ✅ MIDI-Output (`midi/output.rs`)
   - ✅ MIDI-Mapping (`midi/mapping.rs`) - Simplified HashMap implementation
@@ -255,23 +268,23 @@
 - ✅ **WebSocket-System** (`mapmap-control/src/web/`) – NICHT NUTZEN
   - ✅ WebSocket-Server vorhanden (`web/websocket.rs`)
   - ✅ Web-API-Routes (`web/routes.rs`, `web/handlers.rs`)
-  - ⬜ **Entscheidung: WebSocket NICHT als Control-Pfad nutzen, OSC priorisieren**
+  - ✅ **Entscheidung: WebSocket NICHT als Control-Pfad nutzen, OSC priorisieren**
 
-- ✅ **DMX-System** (`mapmap-control/src/dmx/`) – FUTURE
+- ⬜ **DMX-System** (`mapmap-control/src/dmx/`) – FUTURE
   - ✅ Art-Net (`dmx/artnet.rs`)
   - ✅ sACN (`dmx/sacn.rs`)
   - ✅ DMX-Channel-Mapping (`dmx/channels.rs`)
   - ✅ DMX-Fixtures (`dmx/fixtures.rs`)
   - ⬜ Nicht sofort erforderlich, für Phase 4+
 
-- ✅ **Cue-System** (`mapmap-control/src/cue/`)
+- ⬜ **Cue-System** (`mapmap-control/src/cue/`)
   - ✅ Cue-Struktur (`cue/cue.rs`)
   - ✅ CueList (`cue/cue_list.rs`)
   - ✅ Crossfade (`cue/crossfade.rs`)
   - ✅ Triggers (`cue/triggers.rs`)
   - ⬜ Cue-System in UI integrieren fehlt
 
-- ✅ **Shortcuts** (`mapmap-control/src/shortcuts/`)
+- ⬜ **Shortcuts** (`mapmap-control/src/shortcuts/`)
   - ✅ Keyboard-Shortcuts (`shortcuts/shortcuts.rs`)
   - ✅ Bindings (`shortcuts/bindings.rs`)
   - ✅ Macros (`shortcuts/macros.rs`)
@@ -347,7 +360,7 @@
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
-- 🟡 **Assignment System**
+- 🟡 **Assignment System** (**NEXT PRIORITY**)
   - ⬜ `AssignmentManager` implementieren
   - ⬜ `AssignmentPanel` UI erstellen
   - ⬜ Source Selector (Dropdown)
@@ -601,7 +614,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 #### Installer-Anpassungen
 
 - ⬜ **Windows Installer (WiX)**
-  - ⬜ Feature-Auswahl: "Full", "Player Only", "Legacy Player"
+  - ⬜ Feature-Auswahl: "Full" (Alle Master Komponenten ), "Player Only", "Legacy Player"
   - ⬜ Separate Shortcuts für Editor und Player-Modi
   - ⬜ NDI Runtime Dependency-Check
 

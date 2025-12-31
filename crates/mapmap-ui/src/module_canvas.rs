@@ -4061,3 +4061,77 @@ impl ModuleCanvas {
         ]
     }
 }
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (250.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
+                        (450.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+                            opacity: 1.0,
+                            blend_mode: None,
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (850.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Audio -> Source
+                    (1, 0, 2, 0), // Source -> Effect
+                    (2, 0, 3, 0), // Effect -> Layer
+                ],
+            },
+            ModulePreset {
+                name: "Masked Media".to_string(),
+                parts: vec![
+                    (
+                        ModulePartType::Trigger(TriggerType::Beat),
+                        (50.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Source(SourceType::MediaFile {
+                            path: String::new(),
+                        }),
+                        (250.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)),
+                        (450.0, 100.0),
+                        None,
+                    ),
+                    (
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 0,
+                            name: "Projector 1".to_string(),
+                        }),
+                        (650.0, 100.0),
+                        None,
+                    ),
+                ],
+                connections: vec![
+                    (0, 0, 1, 0), // Trigger -> Source
+                    (1, 0, 2, 0), // Source -> Mask
+                ],
+            },
+        ]
+    }
+}

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-31: merge: Resolve NDI/Spout conflicts with Unified Node Menu (#131, #137, #139)
+- 2025-12-31: feat(ui): Unified "Add Node" menu with search and NDI/Spout integration
 - 2025-12-30: feat(ui): Add proper Fader SVG icon for MIDI controller button (replaces broken emoji)
 - 2025-12-30: feat(ui): Remove Layers section and Inspector Panel from sidebar (use Module Canvas)
 - 2025-12-30: feat(config): Complete settings persistence (window size/position, panel visibility)
