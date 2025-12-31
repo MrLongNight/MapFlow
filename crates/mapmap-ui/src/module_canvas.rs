@@ -2280,6 +2280,13 @@ impl ModuleCanvas {
                 self.editing_part_id = Some(*part_id);
             }
 
+            // Handle right-click to open context menu
+            if part_response.secondary_clicked() {
+                self.context_menu_part = Some(*part_id);
+                self.context_menu_pos =
+                    Some(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()));
+            }
+
             // Handle click for selection
             if part_response.clicked() && self.creating_connection.is_none() {
                 if shift_held {
@@ -2518,6 +2525,55 @@ impl ModuleCanvas {
         // Draw presets popup if visible
         if self.show_presets {
             self.draw_presets_popup(ui, canvas_rect, module);
+        }
+
+        // Draw context menu for parts
+        if let (Some(part_id), Some(pos)) = (self.context_menu_part, self.context_menu_pos) {
+            let menu_width = 150.0;
+            let menu_height = 80.0;
+            let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
+
+            // Draw menu background
+            let painter = ui.painter();
+            painter.rect_filled(
+                menu_rect,
+                4.0,
+                Color32::from_rgba_unmultiplied(40, 40, 50, 250),
+            );
+            painter.rect_stroke(
+                menu_rect,
+                4.0,
+                Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
+            );
+
+            // Menu items
+            let inner_rect = menu_rect.shrink(4.0);
+            ui.allocate_ui_at_rect(inner_rect, |ui| {
+                ui.vertical(|ui| {
+                    if ui.button("⚙ Open Properties").clicked() {
+                        self.editing_part_id = Some(part_id);
+                        self.context_menu_part = None;
+                        self.context_menu_pos = None;
+                    }
+                    if ui.button("🗑 Delete").clicked() {
+                        // Remove connections and part
+                        module
+                            .connections
+                            .retain(|c| c.from_part != part_id && c.to_part != part_id);
+                        module.parts.retain(|p| p.id != part_id);
+                        self.context_menu_part = None;
+                        self.context_menu_pos = None;
+                    }
+                });
+            });
+
+            // Close menu on click outside
+            if ui.input(|i| i.pointer.any_click())
+                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+            {
+                self.context_menu_part = None;
+                self.context_menu_pos = None;
+            }
         }
     }
 
@@ -3510,6 +3566,7 @@ impl ModuleCanvas {
     fn draw_part_with_delete(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
         // Get part color and name based on type
         let (bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
+        let category = Self::get_part_category(&part.part_type);
 
         // Check if this is an audio trigger and if it's active
         let (is_audio_trigger, trigger_value, threshold, is_active) =
@@ -3565,8 +3622,8 @@ impl ModuleCanvas {
             title_color,
         );
 
-        // Title text with icon (offset slightly left to make room for × button)
-        let title_text = format!("{} {}", icon, name);
+        // Title text with icon and category
+        let title_text = format!("{} {}: {}", icon, category, name);
         painter.text(
             Pos2::new(
                 title_rect.center().x - 8.0 * self.zoom,
@@ -3875,6 +3932,20 @@ impl ModuleCanvas {
         }
     }
 
+    /// Returns the category name for a module part type
+    fn get_part_category(part_type: &mapmap_core::module::ModulePartType) -> &'static str {
+        use mapmap_core::module::ModulePartType;
+        match part_type {
+            ModulePartType::Trigger(_) => "Trigger",
+            ModulePartType::Source(_) => "Source",
+            ModulePartType::Mask(_) => "Mask",
+            ModulePartType::Modulizer(_) => "Modulator",
+            ModulePartType::LayerAssignment(_) => "Layer",
+            ModulePartType::Mesh(_) => "Mesh",
+            ModulePartType::Output(_) => "Output",
+        }
+    }
+
     fn get_socket_color(socket_type: &mapmap_core::module::ModuleSocketType) -> Color32 {
         use mapmap_core::module::ModuleSocketType;
         match socket_type {
@@ -4010,11 +4081,11 @@ impl ModuleCanvas {
             columns[col].push(i);
         }
 
-        // Layout parameters
+        // Layout parameters - increased spacing for better visibility
         let node_width = 200.0;
         let node_height = 120.0;
-        let h_spacing = 50.0;
-        let v_spacing = 30.0;
+        let h_spacing = 100.0; // Increased from 50
+        let v_spacing = 60.0; // Increased from 30
         let start_x = 50.0;
         let start_y = 50.0;
 
