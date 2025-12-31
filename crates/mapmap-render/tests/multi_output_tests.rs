@@ -278,6 +278,7 @@ fn create_fullscreen_quad_mesh() -> Mesh {
         vertices,
         indices,
         mesh_type: MeshType::Quad,
+        revision: 0,
     }
 }
 

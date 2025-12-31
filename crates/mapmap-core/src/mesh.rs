@@ -51,6 +51,9 @@ pub struct Mesh {
     pub vertices: Vec<MeshVertex>,
     /// Triangle indices (3 per triangle)
     pub indices: Vec<u16>,
+    /// Revision counter for detecting changes (not serialized)
+    #[serde(skip)]
+    pub revision: u64,
 }
 
 impl Mesh {
@@ -72,6 +75,7 @@ impl Mesh {
             mesh_type: MeshType::Quad,
             vertices,
             indices,
+            revision: 0,
         }
     }
 
@@ -101,13 +105,16 @@ impl Mesh {
             mesh_type: MeshType::Triangle,
             vertices,
             indices,
+            revision: 0,
         }
     }
 
     /// Create an ellipse mesh (approximated by N segments)
     pub fn ellipse(center: Vec2, radius_x: f32, radius_y: f32, segments: u32) -> Self {
         let segments = segments.max(3);
-        let mut vertices = vec![MeshVertex::new(center, Vec2::new(0.5, 0.5))]; // Center vertex
+        // Pre-allocate to avoid reallocations: Center + N segments
+        let mut vertices = Vec::with_capacity((segments + 1) as usize);
+        vertices.push(MeshVertex::new(center, Vec2::new(0.5, 0.5))); // Center vertex
 
         // Create vertices around the ellipse
         for i in 0..segments {
@@ -120,8 +127,8 @@ impl Mesh {
             vertices.push(MeshVertex::new(Vec2::new(x, y), Vec2::new(u, v)));
         }
 
-        // Create triangle fan indices
-        let mut indices = Vec::new();
+        // Create triangle fan indices: N triangles * 3 indices
+        let mut indices = Vec::with_capacity((segments * 3) as usize);
         for i in 1..segments {
             indices.push(0); // Center
             indices.push(i as u16);
@@ -136,11 +143,13 @@ impl Mesh {
             mesh_type: MeshType::Ellipse,
             vertices,
             indices,
+            revision: 0,
         }
     }
 
     /// Get mutable vertex by index
     pub fn get_vertex_mut(&mut self, index: usize) -> Option<&mut MeshVertex> {
+        self.revision += 1;
         self.vertices.get_mut(index)
     }
 
@@ -164,6 +173,10 @@ impl Mesh {
         for vertex in &mut self.vertices {
             vertex.selected = selected;
         }
+        // Selection change doesn't change geometry, so no revision increment needed?
+        // Actually, strictly speaking geometry is the same. But if we render selection, we might need update.
+        // For now, let's assume selection is rendered separately or doesn't affect the main mesh buffer (which is just pos + uv).
+        // GpuVertex only has position and tex_coords. So selection state changes don't need buffer update.
     }
 
     /// Get selected vertices
@@ -178,10 +191,15 @@ impl Mesh {
 
     /// Translate selected vertices
     pub fn translate_selected(&mut self, delta: Vec2) {
+        let mut changed = false;
         for vertex in &mut self.vertices {
             if vertex.selected {
                 vertex.position += delta;
+                changed = true;
             }
+        }
+        if changed {
+            self.revision += 1;
         }
     }
 
@@ -214,6 +232,7 @@ impl Mesh {
         for i in 0..4 {
             self.vertices[i].position = corners[i];
         }
+        self.revision += 1;
     }
 
     /// Create a subdivided grid mesh for smooth warping
@@ -222,8 +241,14 @@ impl Mesh {
         let rows = rows.max(1);
         let cols = cols.max(1);
 
-        let mut vertices = Vec::new();
-        let mut indices = Vec::new();
+        // Pre-allocate to avoid reallocations
+        // Vertices: (rows + 1) * (cols + 1)
+        let vertex_count = (rows + 1) * (cols + 1);
+        let mut vertices = Vec::with_capacity(vertex_count as usize);
+
+        // Indices: rows * cols * 6 (2 triangles per cell * 3 indices)
+        let index_count = rows * cols * 6;
+        let mut indices = Vec::with_capacity(index_count as usize);
 
         // Create grid vertices
         for row in 0..=rows {
@@ -258,6 +283,7 @@ impl Mesh {
             mesh_type: MeshType::Custom,
             vertices,
             indices,
+            revision: 0,
         }
     }
 }
@@ -331,6 +357,7 @@ impl BezierPatch {
             // Evaluate Bezier surface at this point
             vertex.position = self.evaluate(u, v);
         }
+        mesh.revision += 1;
     }
 
     /// Set corner control points (for keystone correction)

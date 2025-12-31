@@ -1,7 +1,14 @@
 //! Axum HTTP server
 
 #[cfg(feature = "http-api")]
-use axum::http::{header, HeaderValue, Method};
+use axum::http::{header, HeaderValue, Method, StatusCode};
+
+#[cfg(feature = "http-api")]
+use axum::{
+    extract::{Request, State},
+    middleware::{self, Next},
+    response::Response,
+};
 
 #[cfg(feature = "http-api")]
 use tower_http::cors::{Any, CorsLayer};
@@ -120,6 +127,10 @@ impl WebServer {
         // Build router with state
         let app = build_router()
             .route("/ws", axum::routing::get(ws_handler))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                auth_middleware,
+            ))
             .with_state(state);
 
         // Add CORS if enabled
@@ -187,6 +198,34 @@ impl WebServer {
             "HTTP API feature not enabled".to_string(),
         ))
     }
+}
+
+/// Authentication middleware
+#[cfg(feature = "http-api")]
+async fn auth_middleware(
+    State(state): State<AppState>,
+    req: Request,
+    next: Next,
+) -> core::result::Result<Response, StatusCode> {
+    let auth_config = state.auth.read().await;
+
+    if auth_config.is_enabled() {
+        let headers = req.headers();
+        let query = req.uri().query();
+
+        // Extract and validate API key
+        let api_key = super::auth::extract_api_key(headers, query);
+        let is_valid = match api_key {
+            Some(key) => auth_config.validate(&key),
+            None => false,
+        };
+
+        if !is_valid {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    }
+
+    Ok(next.run(req).await)
 }
 
 #[cfg(all(test, feature = "http-api"))]

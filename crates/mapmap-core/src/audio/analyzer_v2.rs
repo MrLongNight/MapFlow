@@ -479,19 +479,19 @@ impl AudioAnalyzerV2 {
         }
 
         // Convert to BPM: BPM = 60 / interval_in_seconds
-        let raw_bpm = (60.0 / avg_interval) as f32;
-        let mut bpm = raw_bpm;
+        let bpm = (60.0 / avg_interval) as f32;
 
-        // Smart range clamping (70-180 BPM is standard VJ/DJ range)
-        // If outside, try to half or double to fit
-        if bpm > 185.0 {
-            while bpm > 185.0 {
-                bpm /= 2.0;
-            }
-        } else if bpm < 70.0 {
-            while bpm < 70.0 && bpm > 30.0 {
-                bpm *= 2.0;
-            }
+        // Clamp to reasonable DJ range (60-200 BPM)
+        if (60.0..=200.0).contains(&bpm) {
+            Some(bpm)
+        } else if (200.0..=400.0).contains(&bpm) {
+            // Might be detecting half-beats, divide by 2
+            Some(bpm / 2.0)
+        } else if (30.0..60.0).contains(&bpm) {
+            // Might be detecting double-beats, multiply by 2
+            Some(bpm * 2.0)
+        } else {
+            None
         }
 
         // Round to 1 decimal place to reduce visual jitter

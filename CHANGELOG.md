@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-29: fix(control): Stabilize MIDI clock BPM with sliding window average
 - 2025-12-29: fix(audio): Improve BPM stability with median filtering and outlier removal
 - 2025-12-29: fix(ui): Fix app settings window toggle logic and ID stability
+- 2025-12-31: refactor: optimize logging structure and levels (#138)
+- 2025-12-31: Knoteneigenschaften als Popup-Dialog implementieren (#136)
+- 2025-12-31: ⚡ Bolt: Implement Vertex Buffer Caching (#133)
+- 2025-12-31: 🛡️ Sentinel: [CRITICAL] Fix missing API authentication enforcement (#134)
+- 2025-12-31: ⚡ Bolt: optimize mesh vector allocations (#135)
 - 2025-12-29: 🛡️ Sentinel: Fix timing attack in API key validation (#132)
 - 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
 - 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)
