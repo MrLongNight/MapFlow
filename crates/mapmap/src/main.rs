@@ -117,6 +117,7 @@ struct App {
     selected_midi_port: Option<usize>,
 
     /// Shader Graph Manager (Runtime)
+    #[allow(dead_code)]
     shader_graph_manager: mapmap_render::ShaderGraphManager,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
