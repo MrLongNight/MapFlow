@@ -13,7 +13,11 @@ use egui_winit::State;
 use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::{shortcuts::Action, ControlManager};
 use mapmap_core::{
-    audio::{backend::cpal_backend::CpalBackend, backend::AudioBackend, analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config}},
+    audio::{
+        analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config},
+        backend::cpal_backend::CpalBackend,
+        backend::AudioBackend,
+    },
     AppState, OutputId,
 };
 
@@ -26,7 +30,7 @@ use mapmap_render::{
     Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
     WgpuBackend,
 };
-use mapmap_ui::{audio_meter::AudioMeter, menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use std::thread;
@@ -111,6 +115,12 @@ struct App {
     /// Selected MIDI port index
     #[cfg(feature = "midi")]
     selected_midi_port: Option<usize>,
+
+    /// Shader Graph Manager (Runtime)
+    #[allow(dead_code)]
+    shader_graph_manager: mapmap_render::ShaderGraphManager,
+    /// Recent Effect Configurations (User Prefs)
+    recent_effect_configs: mapmap_core::RecentEffectConfigs,
 }
 
 impl App {
@@ -131,8 +141,19 @@ impl App {
 
         let mut window_manager = WindowManager::new();
 
-        // Create main window
-        let main_window_id = window_manager.create_main_window(event_loop, &backend)?;
+        // Load user config to get saved window geometry
+        let saved_config = mapmap_ui::config::UserConfig::load();
+
+        // Create main window with saved geometry
+        let main_window_id = window_manager.create_main_window_with_geometry(
+            event_loop,
+            &backend,
+            saved_config.window_width,
+            saved_config.window_height,
+            saved_config.window_x,
+            saved_config.window_y,
+            saved_config.window_maximized,
+        )?;
 
         let (width, height, format, main_window_for_egui) = {
             let main_window_context = window_manager.get(main_window_id).unwrap();
@@ -219,13 +240,16 @@ impl App {
                 info!("Restoring saved audio device: {}", dev);
                 Some(dev.clone())
             } else {
-                info!("Saved audio device '{}' no longer available, using default", dev);
+                info!(
+                    "Saved audio device '{}' no longer available, using default",
+                    dev
+                );
                 None
             }
         } else {
             None
         };
-        
+
         // Set the selected device in UI state
         ui_state.selected_audio_device = device_to_use.clone();
 
@@ -382,6 +406,13 @@ impl App {
             } else {
                 Some(0)
             },
+            shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
+            recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
+                dirs::data_dir()
+                    .unwrap_or(std::path::PathBuf::from("."))
+                    .join("MapFlow")
+                    .join("recent_effect_configs.json"),
+            ),
         };
 
         // Create initial dummy texture
@@ -424,6 +455,53 @@ impl App {
             // Check if exit was requested
             if self.exit_requested {
                 info!("Exiting application...");
+
+                // Save window geometry and settings before exit
+                if let Some(main_window) = self.window_manager.get(0) {
+                    let window = &main_window.window;
+
+                    // Get window size
+                    let size = window.inner_size();
+                    self.ui_state.user_config.window_width = Some(size.width);
+                    self.ui_state.user_config.window_height = Some(size.height);
+
+                    // Get window position
+                    if let Ok(pos) = window.outer_position() {
+                        self.ui_state.user_config.window_x = Some(pos.x);
+                        self.ui_state.user_config.window_y = Some(pos.y);
+                    }
+
+                    // Check if maximized
+                    self.ui_state.user_config.window_maximized = window.is_maximized();
+                }
+
+                // Save panel visibility states
+                self.ui_state.user_config.show_left_sidebar = self.ui_state.show_left_sidebar;
+                self.ui_state.user_config.show_inspector = self.ui_state.show_inspector;
+                self.ui_state.user_config.show_timeline = self.ui_state.show_timeline;
+                self.ui_state.user_config.show_media_browser = self.ui_state.show_media_browser;
+                self.ui_state.user_config.show_module_canvas = self.ui_state.show_module_canvas;
+                self.ui_state.user_config.show_controller_overlay =
+                    self.ui_state.show_controller_overlay;
+
+                // Save audio device selection
+                self.ui_state.user_config.selected_audio_device =
+                    self.ui_state.selected_audio_device.clone();
+
+                // Save target FPS
+                self.ui_state.user_config.target_fps = Some(self.ui_state.target_fps);
+
+                // Save the config
+                if let Err(e) = self.ui_state.user_config.save() {
+                    error!("Failed to save user config on exit: {}", e);
+                } else {
+                    info!("User settings saved successfully");
+                }
+
+                if let Err(e) = self.recent_effect_configs.save() {
+                    error!("Failed to save recent configs: {}", e);
+                }
+
                 elwt.exit();
                 return;
             }
@@ -520,12 +598,21 @@ impl App {
                 if self.state.dirty
                     && self.last_autosave.elapsed() >= std::time::Duration::from_secs(300)
                 {
-                    let autosave_path = PathBuf::from(".MapFlowAutoSave");
+                    // Use data directory for autosave
+                    let autosave_path = dirs::data_local_dir()
+                        .unwrap_or_else(|| PathBuf::from("."))
+                        .join("MapFlow")
+                        .join("autosave.mflow");
+
+                    // Ensure directory exists
+                    if let Some(parent) = autosave_path.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
 
                     if let Err(e) = save_project(&self.state, &autosave_path) {
                         error!("Autosave failed: {}", e);
                     } else {
-                        info!("Autosave successful");
+                        info!("Autosave successful to {:?}", autosave_path);
                         self.last_autosave = std::time::Instant::now();
                         // Note: We don't clear dirty flag on autosave, only on explicit save
                     }
@@ -536,10 +623,10 @@ impl App {
                     let samples = backend.get_samples();
                     if !samples.is_empty() {
                         let timestamp = self.start_time.elapsed().as_secs_f64();
-                        
+
                         // Process samples with new V2 analyzer
                         self.audio_analyzer.process_samples(&samples, timestamp);
-                        
+
                         // Get analysis results
                         let analysis_v2 = self.audio_analyzer.get_latest_analysis();
 
@@ -558,7 +645,7 @@ impl App {
                                 );
                             }
                         }
-                        
+
                         // Convert V2 analysis to legacy format for UI compatibility
                         let legacy_analysis = mapmap_core::audio::AudioAnalysis {
                             timestamp: analysis_v2.timestamp,
@@ -580,20 +667,33 @@ impl App {
                             tempo_bpm: analysis_v2.tempo_bpm, // Now from AudioAnalyzerV2!
                             waveform: analysis_v2.waveform.clone(),
                         };
-                        
+
                         self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
-                        
+
                         // Update module canvas with audio trigger data
-                        self.ui_state.module_canvas.set_audio_data(mapmap_ui::AudioTriggerData {
-                            band_energies: analysis_v2.band_energies,
-                            rms_volume: analysis_v2.rms_volume,
-                            peak_volume: analysis_v2.peak_volume,
-                            beat_detected: analysis_v2.beat_detected,
-                            beat_strength: analysis_v2.beat_strength,
-                            bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
-                        });
+                        self.ui_state
+                            .module_canvas
+                            .set_audio_data(mapmap_ui::AudioTriggerData {
+                                band_energies: analysis_v2.band_energies,
+                                rms_volume: analysis_v2.rms_volume,
+                                peak_volume: analysis_v2.peak_volume,
+                                beat_detected: analysis_v2.beat_detected,
+                                beat_strength: analysis_v2.beat_strength,
+                                bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
+                            });
+
+                        // Update BPM in toolbar
+                        self.ui_state.current_bpm = analysis_v2.tempo_bpm;
                     }
                 }
+
+                // Update Effect Automation
+                let now = std::time::Instant::now();
+                let delta_time = now.duration_since(self.last_update).as_secs_f64();
+                self.last_update = now;
+
+                let _param_updates = self.state.effect_animator.update(delta_time);
+                // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
 
                 // Redraw all windows
                 for output_id in self
@@ -962,6 +1062,91 @@ impl App {
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
+                    // === Effect Chain Panel ===
+                    self.ui_state.effect_chain_panel.ui(
+                        ctx,
+                        &self.ui_state.i18n,
+                        self.ui_state.icon_manager.as_ref(),
+                        Some(&mut self.recent_effect_configs),
+                    );
+
+                    // Handle Effect Chain Actions
+                    for action in self.ui_state.effect_chain_panel.take_actions() {
+                        use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectType};
+                        use mapmap_core::EffectType as RenderEffectType;
+
+                        match action {
+                            EffectChainAction::AddEffectWithParams(ui_type, params) => {
+                                let render_type = match ui_type {
+                                    UIEffectType::Blur => RenderEffectType::Blur,
+                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
+                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
+                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
+                                    UIEffectType::Glow => RenderEffectType::Glow,
+                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
+                                    UIEffectType::Invert => RenderEffectType::Invert,
+                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
+                                    UIEffectType::Vignette => RenderEffectType::Vignette,
+                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Custom => RenderEffectType::Custom,
+                                };
+                                
+                                let id = self.state.effect_chain.add_effect(render_type);
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    for (k, v) in &params {
+                                        effect.set_param(k, *v);
+                                    }
+                                }
+                                
+                                self.recent_effect_configs.add_float_config(&format!("{:?}", ui_type), params);
+                            }
+                            EffectChainAction::AddEffect(ui_type) => {
+                                let render_type = match ui_type {
+                                    UIEffectType::Blur => RenderEffectType::Blur,
+                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
+                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
+                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
+                                    UIEffectType::Glow => RenderEffectType::Glow,
+                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
+                                    UIEffectType::Invert => RenderEffectType::Invert,
+                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
+                                    UIEffectType::Vignette => RenderEffectType::Vignette,
+                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Custom => RenderEffectType::Custom,
+                                };
+                                self.state.effect_chain.add_effect(render_type);
+                            }
+                            EffectChainAction::ClearAll => {
+                                self.state.effect_chain.effects.clear();
+                            }
+                            EffectChainAction::RemoveEffect(id) => {
+                                self.state.effect_chain.remove_effect(id);
+                            }
+                            EffectChainAction::MoveUp(id) => {
+                                self.state.effect_chain.move_up(id);
+                            }
+                            EffectChainAction::MoveDown(id) => {
+                                self.state.effect_chain.move_down(id);
+                            }
+                            EffectChainAction::ToggleEnabled(id) => {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    effect.enabled = !effect.enabled;
+                                }
+                            }
+                            EffectChainAction::SetIntensity(id, val) => {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    effect.intensity = val;
+                                }
+                            }
+                            EffectChainAction::SetParameter(id, name, val) => {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    effect.set_param(&name, val);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+
                     // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
                     if self.ui_state.show_timeline {
                         egui::TopBottomPanel::bottom("timeline_panel")
@@ -979,7 +1164,16 @@ impl App {
                                     });
                                 });
                                 ui.separator();
-                                let _ = self.ui_state.timeline_panel.ui(ui);
+                                
+                                if let Some(action) = self.ui_state.timeline_panel.ui(ui, &mut self.state.effect_animator) {
+                                     use mapmap_ui::timeline_v2::TimelineAction;
+                                     match action {
+                                         TimelineAction::Play => self.state.effect_animator.play(),
+                                         TimelineAction::Pause => self.state.effect_animator.pause(),
+                                         TimelineAction::Stop => self.state.effect_animator.stop(),
+                                         TimelineAction::Seek(t) => self.state.effect_animator.seek(t as f64),
+                                     }
+                                }
                             });
                     }
 
@@ -1002,46 +1196,7 @@ impl App {
                                 ui.separator();
 
                                 egui::ScrollArea::vertical().show(ui, |ui| {
-                                    // Dashboard Section
-                                    egui::CollapsingHeader::new("📊 Dashboard")
-                                        .default_open(true)
-                                        .show(ui, |ui| {
-                                            // Playback controls inline
-                                            ui.horizontal(|ui| {
-                                                if ui.button("▶").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Play);
-                                                }
-                                                if ui.button("⏸").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Pause);
-                                                }
-                                                if ui.button("⏹").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::Stop);
-                                                }
-                                            });
-                                        });
-
-                                    // Layers Section
-                                    egui::CollapsingHeader::new("📑 Layers")
-                                        .default_open(true)
-                                        .show(ui, |ui| {
-                                            // Simple layer list
-                                            ui.horizontal(|ui| {
-                                                if ui.button("+ Add").clicked() {
-                                                    self.ui_state.actions.push(mapmap_ui::UIAction::AddLayer);
-                                                }
-                                            });
-                                            let layers: Vec<_> = self.state.layer_manager.layers().iter()
-                                                .map(|l| (l.id, l.name.clone()))
-                                                .collect();
-
-                                            for (id, name) in layers {
-                                                let selected = self.ui_state.selected_layer_id == Some(id);
-                                                if ui.selectable_label(selected, &name).clicked() {
-                                                    self.ui_state.selected_layer_id = Some(id);
-                                                }
-                                            }
-                                        });
-
+                                    // NOTE: Layers section removed per user request - use Module Canvas instead
 
                                     // Master Controls Section
                                     egui::CollapsingHeader::new("🎚️ Master")
@@ -1063,28 +1218,13 @@ impl App {
                                             );
                                         });
 
-                                    // Audio Section
+                                    // Audio Section (Device selection, FFT visualization)
+                                    // Note: Level meter is in the toolbar
                                     egui::CollapsingHeader::new("🔊 Audio")
                                         .default_open(false)
                                         .show(ui, |ui| {
                                             // Get analysis (always available, defaults to zero)
                                             let analysis_v2 = self.audio_analyzer.get_latest_analysis();
-                                            
-                                            // Only show real values if audio backend is active and signal is above noise floor
-                                            let (db_left, db_right) = if self.audio_backend.is_some() && analysis_v2.rms_volume > 0.001 {
-                                                let db = 20.0 * analysis_v2.rms_volume.log10();
-                                                (db, db)
-                                            } else {
-                                                (f32::NEG_INFINITY, f32::NEG_INFINITY)
-                                            };
-
-                                            ui.add(AudioMeter::new(
-                                                self.ui_state.user_config.meter_style,
-                                                db_left,
-                                                db_right,
-                                            ).width(100.0));
-
-                                            ui.separator();
 
                                             // Convert V2 analysis to legacy format for audio panel
                                             let legacy_analysis = if self.audio_backend.is_some() {
@@ -1111,7 +1251,7 @@ impl App {
                                             } else {
                                                 None
                                             };
-                                            
+
                                             if let Some(action) = self.ui_state.audio_panel.ui(
                                                 ui,
                                                 &self.ui_state.i18n,
@@ -1184,68 +1324,8 @@ impl App {
                             });
                     }
 
-                    // === 4. RIGHT PANEL: Inspector ===
-                    if self.ui_state.show_inspector {
-                        let inspector_context = if let Some(layer_id) = self.ui_state.selected_layer_id {
-                            if let Some(layer) = self.state.layer_manager.get_layer(layer_id) {
-                                // Find index for mapping
-                                let index = self.state.layer_manager.layers().iter().position(|l| l.id == layer_id).unwrap_or(0);
-                                mapmap_ui::InspectorContext::Layer { layer, transform: &layer.transform, index }
-                            } else {
-                                mapmap_ui::InspectorContext::None
-                            }
-                        } else if let Some(output_id) = self.ui_state.selected_output_id {
-                            if let Some(output) = self.state.output_manager.get_output(output_id) {
-                                mapmap_ui::InspectorContext::Output(output)
-                            } else {
-                                mapmap_ui::InspectorContext::None
-                            }
-                        } else {
-                            mapmap_ui::InspectorContext::None
-                        };
 
-
-
-                        // Extract MIDI Learn State
-                        let (is_learning, last_elem, last_time) = (
-                            self.ui_state.is_midi_learn_mode,
-                             #[cfg(feature = "midi")]
-                             self.ui_state.controller_overlay.last_active_element.clone(),
-                             #[cfg(not(feature = "midi"))]
-                             None::<String>,
-                             #[cfg(feature = "midi")]
-                             self.ui_state.controller_overlay.last_active_time,
-                             #[cfg(not(feature = "midi"))]
-                             None,
-                        );
-
-                        if let Some(action) = self.ui_state.inspector_panel.show(
-                            ctx,
-                            inspector_context,
-                            &self.ui_state.i18n,
-                            self.ui_state.icon_manager.as_ref(),
-                            is_learning,
-                            last_elem.as_ref(),
-                            last_time,
-                            &mut self.ui_state.actions
-                        ) {
-                            match action {
-                                mapmap_ui::InspectorAction::UpdateOpacity(id, val) => {
-                                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
-                                        layer.opacity = val;
-                                        self.state.dirty = true;
-                                    }
-                                }
-                                mapmap_ui::InspectorAction::UpdateTransform(id, transform) => {
-                                     if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
-                                        layer.transform = transform;
-                                        self.state.dirty = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
+                    // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
@@ -1263,13 +1343,17 @@ impl App {
                     });
 
                     // === Settings Window (only modal allowed) ===
-                    if self.ui_state.show_settings {
-                        let mut close_settings = false;
+                    let mut show_settings = self.ui_state.show_settings;
+                    let mut explicit_close = false;
+
+                    if show_settings {
                         egui::Window::new(self.ui_state.i18n.t("menu-file-settings"))
+                            .id(egui::Id::new("app_settings_window"))
                             .collapsible(false)
                             .resizable(true)
                             .default_size([400.0, 300.0])
                             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                            .open(&mut show_settings)
                             .show(ctx, |ui| {
                                 // Project Settings
                                 egui::CollapsingHeader::new(format!("🎬 {}", self.ui_state.i18n.t("settings-project")))
@@ -1446,13 +1530,15 @@ impl App {
 
                                 ui.separator();
                                 if ui.button("✕ Schließen").clicked() {
-                                    close_settings = true;
+                                    explicit_close = true;
                                 }
                             });
-                        if close_settings {
-                            self.ui_state.show_settings = false;
-                        }
                     }
+
+                    if explicit_close {
+                        show_settings = false;
+                    }
+                    self.ui_state.show_settings = show_settings;
                 });
 
                 self.egui_state
@@ -1777,26 +1863,17 @@ impl App {
             // TODO: Apply output transforms (edge blend, color calibration) here
 
             // Final copy to the screen
+            // Apply Effect Chain (replaces final blit)
             let final_texture_view = &layer_pp_views[current_target_idx];
-            let bind_group = self
-                .quad_renderer
-                .create_bind_group(&self.backend.device, final_texture_view);
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Final Blit to Screen"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            });
-
-            self.quad_renderer.draw(&mut rpass, &bind_group);
+            self.effect_chain_renderer.apply_chain(
+                &mut encoder,
+                final_texture_view,
+                &view,
+                &self.state.effect_chain,
+                self.start_time.elapsed().as_secs_f32(),
+                window_context.surface_config.width,
+                window_context.surface_config.height,
+            );
         }
 
         self.backend.queue.submit(Some(encoder.finish()));
@@ -1813,7 +1890,7 @@ fn main() -> Result<()> {
     // Initialize logging with default configuration
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
-    
+
     info!("Starting MapFlow...");
 
     // Create the event loop

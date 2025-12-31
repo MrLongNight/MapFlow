@@ -239,10 +239,28 @@ pub struct AppUI {
     pub show_controller_overlay: bool,
     /// Global flag for "Hover" MIDI Learn Mode (Way 1)
     pub is_midi_learn_mode: bool,
+    /// Current detected BPM (None if not detected yet)
+    pub current_bpm: Option<f32>,
 }
 
 impl Default for AppUI {
     fn default() -> Self {
+        // Load user config once at initialization
+        let user_config = config::UserConfig::load();
+
+        // Extract values before moving user_config into struct
+        let saved_audio_device = user_config.selected_audio_device.clone();
+        let saved_recent_files = user_config.recent_files.clone();
+        let saved_language = user_config.language.clone();
+        let saved_target_fps = user_config.target_fps.unwrap_or(60.0);
+        // Panel visibility settings
+        let saved_show_left_sidebar = user_config.show_left_sidebar;
+        let saved_show_inspector = user_config.show_inspector;
+        let saved_show_timeline = user_config.show_timeline;
+        let saved_show_media_browser = user_config.show_media_browser;
+        let saved_show_module_canvas = user_config.show_module_canvas;
+        let saved_show_controller_overlay = user_config.show_controller_overlay;
+
         Self {
             menu_bar: menu_bar::MenuBar::default(),
             dashboard: Dashboard::default(),
@@ -271,48 +289,44 @@ impl Default for AppUI {
             selected_layer_id: None,
             selected_output_id: None,
             audio_devices: vec!["None".to_string()],
-            selected_audio_device: None,
-            recent_files: {
-                let config = config::UserConfig::load();
-                config.recent_files.clone()
-            },
+            // Load selected audio device from user config
+            selected_audio_device: saved_audio_device,
+            recent_files: saved_recent_files,
             actions: Vec::new(),
-            i18n: {
-                let config = config::UserConfig::load();
-                LocaleManager::new(&config.language)
-            },
+            i18n: LocaleManager::new(&saved_language),
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
             timeline_panel: timeline_v2::TimelineV2::default(),
-            show_timeline: true,      // Essential panel
-            show_shader_graph: false, // Advanced - hide by default
+            show_timeline: saved_show_timeline, // Load from config
+            show_shader_graph: false,           // Advanced - hide by default
             node_editor_panel: node_editor::NodeEditor::default(),
             transform_panel: TransformPanel::default(),
             shortcut_panel: ShortcutPanel::new(),
             show_toolbar: true,
             icon_manager: None, // Will be initialized with egui context
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
-            user_config: config::UserConfig::load(),
+            user_config,
             show_settings: false,
-            show_media_browser: true, // Essential panel
+            show_media_browser: saved_show_media_browser, // Load from config
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
             inspector_panel: InspectorPanel::default(),
-            show_inspector: true, // Essential panel
+            show_inspector: saved_show_inspector, // Load from config
             module_sidebar: ModuleSidebar::default(),
             show_module_sidebar: true, // Show when Module Canvas is active
             module_canvas: ModuleCanvas::default(),
-            show_module_canvas: false,
-            show_left_sidebar: true, // Essential panel - collapsible
+            show_module_canvas: saved_show_module_canvas, // Load from config
+            show_left_sidebar: saved_show_left_sidebar,   // Load from config
             current_audio_level: 0.0,
             current_fps: 60.0,
             current_frame_time_ms: 16.67,
-            target_fps: 60.0,
+            target_fps: saved_target_fps,
             cpu_usage: 0.0,
             gpu_usage: 0.0,
             ram_usage_mb: 0.0,
             controller_overlay: ControllerOverlayPanel::new(),
-            show_controller_overlay: false,
+            show_controller_overlay: saved_show_controller_overlay, // Load from config
             is_midi_learn_mode: false,
+            current_bpm: None,
         }
     }
 }

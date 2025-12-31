@@ -32,6 +32,18 @@ pub struct AppState {
     #[serde(default)]
     pub module_manager: ModuleManager,
 
+    /// Effect automation
+    #[serde(default)]
+    pub effect_animator: crate::EffectParameterAnimator,
+
+    /// Custom shader graphs
+    #[serde(default)]
+    pub shader_graphs: std::collections::HashMap<crate::GraphId, crate::ShaderGraph>,
+
+    /// Effect chain
+    #[serde(default)]
+    pub effect_chain: crate::effects::EffectChain,
+
     /// Audio configuration
     pub audio_config: AudioConfig,
 
@@ -57,6 +69,9 @@ impl Default for AppState {
             layer_manager: LayerManager::new(),
             output_manager: OutputManager::new((1920, 1080)),
             module_manager: ModuleManager::default(),
+            effect_animator: crate::EffectParameterAnimator::default(),
+            shader_graphs: std::collections::HashMap::new(),
+            effect_chain: crate::effects::EffectChain::new(),
             audio_config: AudioConfig::default(),
             oscillator_config: OscillatorConfig::default(),
             settings: AppSettings::default(),

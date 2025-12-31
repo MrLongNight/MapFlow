@@ -45,6 +45,7 @@ pub enum AppIcon {
     ButtonPlay,
     Transition,
     MenuFile,
+    Fader,
 }
 
 impl AppIcon {
@@ -87,6 +88,7 @@ impl AppIcon {
             Self::ButtonPlay => "ultimate_video_player.svg",
             Self::Transition => "ultimate_arrow_right.svg",
             Self::MenuFile => "ultimate_floppy_disk.svg",
+            Self::Fader => "ultimate_fader.svg",
         }
     }
 
@@ -127,6 +129,7 @@ impl AppIcon {
             Self::ButtonPlay,
             Self::Transition,
             Self::MenuFile,
+            Self::Fader,
         ]
     }
 }

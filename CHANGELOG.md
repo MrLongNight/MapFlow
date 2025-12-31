@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2025-12-30: feat(ui): Add proper Fader SVG icon for MIDI controller button (replaces broken emoji)
+- 2025-12-30: feat(ui): Remove Layers section and Inspector Panel from sidebar (use Module Canvas)
+- 2025-12-30: feat(config): Complete settings persistence (window size/position, panel visibility)
+- 2025-12-30: fix(config): Load all user settings at startup (audio device, target FPS, panel states)
+- 2025-12-30: fix(autosave): Use proper .mflow extension and store in user data directory
+- 2025-12-29: feat(ui): Unified "Add Node" menu with quick-search replacing 8 toolbar dropdowns
+- 2025-12-29: feat(ui): Added BPM display and playback controls to main toolbar (removed from sidebar)
+- 2025-12-29: fix(control): Stabilize MIDI clock BPM with sliding window average
+- 2025-12-29: fix(audio): Improve BPM stability with median filtering and outlier removal
+- 2025-12-29: fix(ui): Fix app settings window toggle logic and ID stability
+- 2025-12-29: 🛡️ Sentinel: Fix timing attack in API key validation (#132)
+- 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
+- 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)
+- 2025-12-29: feat(audio): Implement AudioAnalyzerV2 with working FFT analysis (replaces defective AudioAnalyzer)
+- 2025-12-29: fix(config): Add missing selected_audio_device field to UserConfig test
 - 2025-12-28: 🎨 Palette: Add tooltips to Layer Panel controls (#125)
 - 2025-12-28: feat(ui): implement stereo audio meter with Retro and Digital styles (#128)
 - 2025-12-28: ⚡ Bolt: Optimize ModuleSocketType to be Copy and remove redundant clones (#127)

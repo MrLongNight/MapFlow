@@ -210,6 +210,8 @@ impl UIEffectChain {
 pub enum EffectChainAction {
     /// Add a new effect of the given type
     AddEffect(EffectType),
+    /// Add a new effect with specific parameters
+    AddEffectWithParams(EffectType, std::collections::HashMap<String, f32>),
     /// Remove an effect by ID
     RemoveEffect(u64),
     /// Move effect up in chain
@@ -302,6 +304,7 @@ impl EffectChainPanel {
         ctx: &egui::Context,
         locale: &LocaleManager,
         icon_manager: Option<&IconManager>,
+        mut recent_configs: Option<&mut mapmap_core::RecentEffectConfigs>,
     ) {
         if !self.visible {
             return;
@@ -311,7 +314,7 @@ impl EffectChainPanel {
             .default_size([320.0, 500.0])
             .resizable(true)
             .show(ctx, |ui| {
-                self.render_toolbar(ui, locale, icon_manager);
+                self.render_toolbar(ui, locale, icon_manager, &mut recent_configs);
                 ui.separator();
                 self.render_effect_list(ui, locale, icon_manager);
                 ui.separator();
@@ -329,6 +332,7 @@ impl EffectChainPanel {
         ui: &mut Ui,
         locale: &LocaleManager,
         icon_manager: Option<&IconManager>,
+        recent_configs: &mut Option<&mut mapmap_core::RecentEffectConfigs>,
     ) {
         ui.horizontal(|ui| {
             // Add effect button
@@ -374,12 +378,47 @@ impl EffectChainPanel {
                         let label = effect_type.display_name(locale);
                         if let Some(mgr) = icon_manager {
                             if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
-                                if ui.add(egui::Button::image_and_text(img, label)).clicked() {
+                                let btn = ui.add(egui::Button::image_and_text(img, label));
+                                if btn.clicked() {
                                     self.chain.add_effect(*effect_type);
                                     self.actions
                                         .push(EffectChainAction::AddEffect(*effect_type));
                                     self.show_add_menu = false;
                                 }
+
+                                // Show context menu for recent configs on right click
+                                btn.context_menu(|ui| {
+                                    ui.label("Recent Configurations:");
+                                    if let Some(recent) = recent_configs {
+                                        let type_name = format!("{:?}", effect_type);
+                                        let configs = recent.get_recent(&type_name);
+
+                                        if configs.is_empty() {
+                                            ui.label("No recent configs");
+                                        } else {
+                                            for config in configs {
+                                                if ui.button(format!("{}", config.name)).on_hover_text(format!("{:?}", config.params)).clicked() {
+                                                     self.chain.add_effect(*effect_type);
+                                                     
+                                                     let id = self.chain.effects.last().unwrap().id;
+                                                     let effect = self.chain.get_effect_mut(id).unwrap();
+                                                     
+                                                     let mut f32_params = std::collections::HashMap::new();
+                                                     for (k, v) in &config.params {
+                                                         if let mapmap_core::recent_effect_configs::EffectParamValue::Float(f) = v {
+                                                             effect.set_param(k, *f);
+                                                             f32_params.insert(k.clone(), *f);
+                                                         }
+                                                     }
+                                                     
+                                                     self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
+                                                     ui.close_menu();
+                                                     self.show_add_menu = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
                             }
                         }
                     }
