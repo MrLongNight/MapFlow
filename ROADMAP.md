@@ -206,7 +206,11 @@
     - ✅ WGSLCodegen → GPU Pipeline Kompilierung
     - ✅ ShaderGraphRendering Trait für Rendering
   - ⬜ Custom-Shader-Hot-Reload fehlt
-  - ⬜ Effect-Preset-System fehlt
+  - ✅ **Recent Effect Configs (GIMP-Style)** (`recent_effect_configs.rs`)
+    - ✅ Speichert automatisch letzte 5 Configs pro Effekt-Typ
+    - ✅ Duplikat-Erkennung (gleiche Configs werden nicht doppelt gespeichert)
+    - ✅ Auto-generierte beschreibende Namen aus Parametern
+    - ✅ JSON-Persistenz in User-Data-Verzeichnis
   - ⬜ Effect-Parameter-Automation via Timeline fehlt
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
