@@ -24,6 +24,7 @@ pub mod paint;
 
 // Phase 3: Effects Pipeline
 pub mod animation;
+pub mod assignment;
 pub mod audio;
 pub mod audio_media_pipeline;
 pub mod audio_reactive;
@@ -42,6 +43,7 @@ pub use animation::{
     AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,
     TimePoint,
 };
+pub use assignment::{Assignment, AssignmentManager, ControlSource, ControlTarget};
 pub use audio::{
     AudioAnalysis, AudioAnalyzer, AudioConfig, AudioMappingType, AudioReactiveMapping, AudioSource,
     FrequencyBand,
