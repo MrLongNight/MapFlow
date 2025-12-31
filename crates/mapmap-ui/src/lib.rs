@@ -263,6 +263,8 @@ pub struct AppUI {
     pub is_midi_learn_mode: bool,
     /// Current detected BPM (None if not detected yet)
     pub current_bpm: Option<f32>,
+    /// Available monitor topology
+    pub monitor_topology: mapmap_core::monitor::MonitorTopology,
 }
 
 impl Default for AppUI {
@@ -351,6 +353,10 @@ impl Default for AppUI {
             show_controller_overlay: saved_show_controller_overlay, // Load from config
             is_midi_learn_mode: false,
             current_bpm: None,
+            monitor_topology: mapmap_core::monitor::MonitorTopology {
+                monitors: Vec::new(),
+                total_bounds: (0, 0, 0, 0),
+            },
         }
     }
 }

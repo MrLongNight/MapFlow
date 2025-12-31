@@ -134,6 +134,14 @@ pub struct OutputConfig {
     pub edge_blend: EdgeBlendConfig,
     pub color_calibration: ColorCalibration,
     pub fullscreen: bool,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub monitor_name: Option<String>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl OutputConfig {
@@ -152,6 +160,8 @@ impl OutputConfig {
             edge_blend: EdgeBlendConfig::default(),
             color_calibration: ColorCalibration::default(),
             fullscreen: false,
+            enabled: true,
+            monitor_name: None,
         }
     }
 }

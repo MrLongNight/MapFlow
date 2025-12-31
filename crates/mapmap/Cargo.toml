@@ -8,7 +8,7 @@ repository = "https://github.com/MrLongNight/MapFlow"
 description = "MapFlow - Professional Projection Mapping Software"
 
 [dependencies]
-mapmap-core = { path = "../mapmap-core" }
+mapmap-core = { path = "../mapmap-core", features = ["winit"] }
 mapmap-render = { path = "../mapmap-render" }
 mapmap-media = { path = "../mapmap-media" }
 mapmap-ui = { path = "../mapmap-ui" }

@@ -244,6 +244,10 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         actions.push(UIAction::ToggleFullscreen);
                         ui.close_menu();
                     }
+                    ui.checkbox(
+                        &mut ui_state.show_outputs,
+                        ui_state.i18n.t("panel-outputs"),
+                    );
                     if menu_item(
                         ui,
                         ui_state.i18n.t("view-reset-layout"),

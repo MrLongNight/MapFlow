@@ -627,6 +627,16 @@ impl App {
                     }
                 }
 
+                // Sync Output Windows
+                if let Err(e) = self.window_manager.sync_windows(
+                    elwt,
+                    &self.backend,
+                    &self.state.output_manager,
+                    &self.ui_state.monitor_topology,
+                ) {
+                    error!("Failed to sync output windows: {}", e);
+                }
+
                 // Process audio
                 if let Some(backend) = &mut self.audio_backend {
                     let samples = backend.get_samples();
@@ -1081,6 +1091,19 @@ impl App {
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
+
+                    // Output Panel (Phase 2)
+                    self.ui_state.output_panel.visible = self.ui_state.show_outputs;
+                    self.ui_state.output_panel.show(
+                        ctx,
+                        &mut self.state.output_manager,
+                        &mut self.ui_state.selected_output_id,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                        self.ui_state.icon_manager.as_ref(),
+                        &self.ui_state.monitor_topology,
+                    );
+                    self.ui_state.show_outputs = self.ui_state.output_panel.visible;
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
@@ -1917,7 +1940,11 @@ fn main() -> Result<()> {
     let event_loop = EventLoop::new()?;
 
     // Create the app
-    let app = pollster::block_on(App::new(&event_loop))?;
+        let mut app = pollster::block_on(App::new(&event_loop))?;
+
+        // Detect monitors (requires event loop)
+        app.ui_state.monitor_topology = mapmap_core::monitor::detect_monitors_winit(&event_loop);
+        info!("Detected {} monitors", app.ui_state.monitor_topology.monitor_count());
 
     // Run the app
     info!("--- Entering Main Event Loop ---");

@@ -18,6 +18,7 @@ impl OutputPanel {
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
         icon_manager: Option<&IconManager>,
+        monitor_topology: &mapmap_core::monitor::MonitorTopology,
     ) {
         if !self.visible {
             return;
@@ -68,6 +69,13 @@ impl OutputPanel {
                                     *selected_output_id = Some(output.id);
                                 }
 
+                                // Status indicator
+                                if output.enabled {
+                                    ui.colored_label(Color32::GREEN, "●");
+                                } else {
+                                    ui.colored_label(Color32::RED, "○");
+                                }
+
                                 ui.label(format!(
                                     "{}x{}",
                                     output.resolution.0, output.resolution.1
@@ -100,14 +108,39 @@ impl OutputPanel {
 
                 // Edit selected output
                 if let Some(output_id) = *selected_output_id {
-                    let output_opt = output_manager.outputs().iter().find(|o| o.id == output_id);
-                    if let Some(output) = output_opt {
+                    // Use get_output_mut to allow editing
+                    if let Some(output) = output_manager.get_output_mut(output_id) {
                         ui.group(|ui| {
                             ui.heading(i18n.t("header-selected-output"));
 
                             ui.horizontal(|ui| {
                                 ui.label(format!("{}:", i18n.t("label-name")));
                                 ui.label(&output.name); // Editable later?
+                            });
+
+                            ui.checkbox(&mut output.enabled, i18n.t("label-enabled"));
+                            ui.checkbox(&mut output.fullscreen, i18n.t("label-fullscreen"));
+
+                            ui.horizontal(|ui| {
+                                ui.label(format!("{}:", i18n.t("label-monitor")));
+
+                                let current_monitor = output.monitor_name.clone().unwrap_or_else(|| i18n.t("label-none"));
+
+                                egui::ComboBox::from_id_source("monitor_select")
+                                    .selected_text(&current_monitor)
+                                    .show_ui(ui, |ui| {
+                                        if ui.selectable_label(output.monitor_name.is_none(), i18n.t("label-none")).clicked() {
+                                            output.monitor_name = None;
+                                        }
+
+                                        for monitor in &monitor_topology.monitors {
+                                            if ui.selectable_label(output.monitor_name.as_ref() == Some(&monitor.name), &monitor.name).clicked() {
+                                                output.monitor_name = Some(monitor.name.clone());
+                                                // Auto-set resolution to monitor resolution if set
+                                                output.resolution = monitor.size;
+                                            }
+                                        }
+                                    });
                             });
 
                             ui.label(format!(

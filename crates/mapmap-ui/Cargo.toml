@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-mapmap-core = { path = "../mapmap-core" }
+mapmap-core = { path = "../mapmap-core", features = ["winit"] }
 mapmap-media = { path = "../mapmap-media" }
 mapmap-render = { path = "../mapmap-render" }
 mapmap-control = { path = "../mapmap-control", features = ["osc", "midi"] }
