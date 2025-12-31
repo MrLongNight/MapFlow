@@ -468,7 +468,7 @@ impl AudioAnalyzerV2 {
         // Clamp to reasonable DJ range (60-200 BPM)
         if (60.0..=200.0).contains(&bpm) {
             Some(bpm)
-        } else if bpm > 200.0 && bpm <= 400.0 {
+        } else if (200.0..=400.0).contains(&bpm) {
             // Might be detecting half-beats, divide by 2
             Some(bpm / 2.0)
         } else if (30.0..60.0).contains(&bpm) {

@@ -27,8 +27,8 @@ use mapmap_mcp::{McpAction, McpServer};
 use crossbeam_channel::{unbounded, Receiver};
 use mapmap_io::{load_project, save_project};
 use mapmap_render::{
-    Compositor, EffectChainRenderer, MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool,
-    WgpuBackend,
+    Compositor, EffectChainRenderer, MeshBufferCache, MeshRenderer, OscillatorRenderer,
+    QuadRenderer, TexturePool, WgpuBackend,
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
@@ -58,6 +58,8 @@ struct App {
     effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
     mesh_renderer: MeshRenderer,
+    /// Cache for mesh GPU buffers
+    mesh_buffer_cache: MeshBufferCache,
     /// Quad renderer for passthrough.
     quad_renderer: QuadRenderer,
     /// Final composite texture before output processing.
@@ -131,6 +133,7 @@ impl App {
             backend.surface_format(),
         )?;
         let mesh_renderer = MeshRenderer::new(backend.device.clone(), backend.surface_format())?;
+        let mesh_buffer_cache = MeshBufferCache::new();
         let quad_renderer = QuadRenderer::new(&backend.device, backend.surface_format())?;
 
         let mut window_manager = WindowManager::new();
@@ -330,6 +333,7 @@ impl App {
             compositor,
             effect_chain_renderer,
             mesh_renderer,
+            mesh_buffer_cache,
             quad_renderer,
             composite_texture,
             layer_ping_pong,
@@ -1652,10 +1656,10 @@ impl App {
                         .collect();
 
                     for mapping in mappings_for_layer {
-                        // Create GPU buffers for this mapping's mesh
-                        let (vertex_buffer, index_buffer) =
-                            self.mesh_renderer.create_mesh_buffers(&mapping.mesh);
-                        let index_count = mapping.mesh.indices.len() as u32;
+                        // Get GPU buffers for this mapping's mesh (cached)
+                        let (vertex_buffer, index_buffer, index_count) = self
+                            .mesh_buffer_cache
+                            .get_buffers(&self.backend.device, mapping.id, &mapping.mesh);
 
                         // Create transform matrix for this mapping
                         let transform = glam::Mat4::IDENTITY; // TODO: Apply layer transform
@@ -1691,8 +1695,8 @@ impl App {
 
                             self.mesh_renderer.draw(
                                 &mut render_pass,
-                                &vertex_buffer,
-                                &index_buffer,
+                                vertex_buffer,
+                                index_buffer,
                                 index_count,
                                 &uniform_bind_group,
                                 &texture_bind_group,
