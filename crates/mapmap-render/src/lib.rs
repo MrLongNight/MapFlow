@@ -23,6 +23,7 @@ pub mod paint_texture_cache;
 pub mod preset;
 pub mod quad;
 pub mod shader;
+pub mod shader_graph_integration;
 pub mod texture;
 
 pub use backend::{RenderBackend, WgpuBackend};
@@ -40,6 +41,7 @@ pub use oscillator_renderer::OscillatorRenderer;
 pub use preset::{EffectPreset, PresetLibrary, PresetMetadata};
 pub use quad::QuadRenderer;
 pub use shader::{ShaderHandle, ShaderSource};
+pub use shader_graph_integration::{CompiledShaderGraph, ShaderGraphManager, ShaderGraphRendering};
 pub use texture::{TextureDescriptor, TextureHandle, TexturePool};
 
 /// Rendering errors
