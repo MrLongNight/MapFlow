@@ -1072,7 +1072,7 @@ impl App {
                     // Handle Effect Chain Actions
                     for action in self.ui_state.effect_chain_panel.take_actions() {
                         use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectType};
-                        use mapmap_render::EffectType as RenderEffectType;
+                        use mapmap_core::EffectType as RenderEffectType;
 
                         match action {
                             EffectChainAction::AddEffectWithParams(ui_type, params) => {
@@ -1090,8 +1090,8 @@ impl App {
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
                                 
-                                let _id = self.effect_chain_renderer.add_effect(render_type);
-                                if let Some(effect) = self.effect_chain_renderer.effects_mut().last_mut() {
+                                let id = self.state.effect_chain.add_effect(render_type);
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
                                     for (k, v) in &params {
                                         effect.set_param(k, *v);
                                     }
@@ -1113,32 +1113,32 @@ impl App {
                                     UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
-                                self.effect_chain_renderer.add_effect(render_type);
+                                self.state.effect_chain.add_effect(render_type);
                             }
                             EffectChainAction::ClearAll => {
-                                self.effect_chain_renderer.clear();
+                                self.state.effect_chain.effects.clear();
                             }
                             EffectChainAction::RemoveEffect(id) => {
-                                self.effect_chain_renderer.remove_effect(id);
+                                self.state.effect_chain.remove_effect(id);
                             }
                             EffectChainAction::MoveUp(id) => {
-                                self.effect_chain_renderer.move_up(id);
+                                self.state.effect_chain.move_up(id);
                             }
                             EffectChainAction::MoveDown(id) => {
-                                self.effect_chain_renderer.move_down(id);
+                                self.state.effect_chain.move_down(id);
                             }
                             EffectChainAction::ToggleEnabled(id) => {
-                                if let Some(effect) = self.effect_chain_renderer.get_effect_mut(id) {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
                                     effect.enabled = !effect.enabled;
                                 }
                             }
                             EffectChainAction::SetIntensity(id, val) => {
-                                if let Some(effect) = self.effect_chain_renderer.get_effect_mut(id) {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
                                     effect.intensity = val;
                                 }
                             }
                             EffectChainAction::SetParameter(id, name, val) => {
-                                if let Some(effect) = self.effect_chain_renderer.get_effect_mut(id) {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
                                     effect.set_param(&name, val);
                                 }
                             }
@@ -1862,26 +1862,17 @@ impl App {
             // TODO: Apply output transforms (edge blend, color calibration) here
 
             // Final copy to the screen
+            // Apply Effect Chain (replaces final blit)
             let final_texture_view = &layer_pp_views[current_target_idx];
-            let bind_group = self
-                .quad_renderer
-                .create_bind_group(&self.backend.device, final_texture_view);
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Final Blit to Screen"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            });
-
-            self.quad_renderer.draw(&mut rpass, &bind_group);
+            self.effect_chain_renderer.apply_chain(
+                &mut encoder,
+                final_texture_view,
+                &view,
+                &self.state.effect_chain,
+                self.start_time.elapsed().as_secs_f32(),
+                window_context.surface_config.width,
+                window_context.surface_config.height,
+            );
         }
 
         self.backend.queue.submit(Some(encoder.finish()));
