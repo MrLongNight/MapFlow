@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.8
-> **Stand:** 2025-12-31 19:30
+> **Version:** 1.9
+> **Stand:** 2026-01-01 06:30
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -361,11 +361,11 @@
     - ✅ NdiSender für NDI-Output
     - ✅ Source Discovery (async)
     - ✅ Feature-Flag: `ndi`
-  - 🟡 **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
+  - ✅ **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - COMPLETED 2026-01-01
     - ✅ SourceType::SpoutInput im Core
     - ✅ OutputType::Spout im Core
     - ✅ UI-Integration in Module Canvas
-    - ⬜ wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt Update)
+    - ✅ wgpu 0.19 HAL-Integration (via `rusty_spout`)
 
 - ✅ **Logging & Debug** (COMPLETED 2025-12-28)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
@@ -703,6 +703,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ `scripts/check-ffmpeg-env.sh` – FFmpeg-Check
   - ✅ `scripts/install-ffmpeg-dev.sh` – FFmpeg-Install-Script
   - ✅ `rust-toolchain.toml` – Rust-Version 1.75
+  - ✅ **Agent Roles** (`.jules/roles/`) – Specialized personas for AI agents (Guardian, Scribe, Tracker, Archivist)
 
 ---
 
