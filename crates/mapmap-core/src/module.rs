@@ -64,7 +64,10 @@ impl MapFlowModule {
                 }],
             ),
             PartType::Modulator => (
-                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
+                ModulePartType::Modulizer(ModulizerType::Effect {
+                    effect_type: EffectType::Blur,
+                    params: HashMap::new(),
+                }),
                 vec![
                     ModuleSocket {
                         name: "Media In".to_string(),
@@ -648,9 +651,15 @@ pub enum ResourceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulizerType {
-    Effect(EffectType),
+    Effect {
+        effect_type: EffectType,
+        #[serde(default)]
+        params: HashMap<String, f32>,
+    },
     BlendMode(BlendModeType),
-    AudioReactive { source: String },
+    AudioReactive {
+        source: String,
+    },
 }
 
 /// Available visual effects
@@ -684,6 +693,7 @@ pub enum EffectType {
     ChromaticAberration,
     VHS,
     FilmGrain,
+    Vignette,
 }
 
 impl EffectType {
@@ -713,6 +723,7 @@ impl EffectType {
             EffectType::ChromaticAberration,
             EffectType::VHS,
             EffectType::FilmGrain,
+            EffectType::Vignette,
         ]
     }
 
@@ -742,6 +753,7 @@ impl EffectType {
             EffectType::ChromaticAberration => "Chromatic Aberration",
             EffectType::VHS => "VHS",
             EffectType::FilmGrain => "Film Grain",
+            EffectType::Vignette => "Vignette",
         }
     }
 }

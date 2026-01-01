@@ -1977,7 +1977,7 @@ impl App {
                          let mut chain = mapmap_core::EffectChain::new();
                          
                          for modulizer in &op.effects {
-                             if let mapmap_core::module::ModulizerType::Effect(mod_effect) = modulizer {
+                             if let mapmap_core::module::ModulizerType::Effect { effect_type: mod_effect, params } = modulizer {
                                  let core_effect = match mod_effect {
                                      mapmap_core::module::EffectType::Blur => Some(mapmap_core::effects::EffectType::Blur),
                                      mapmap_core::module::EffectType::Invert => Some(mapmap_core::effects::EffectType::Invert),
@@ -1988,23 +1988,16 @@ impl App {
                                      mapmap_core::module::EffectType::ChromaticAberration => Some(mapmap_core::effects::EffectType::ChromaticAberration),
                                      mapmap_core::module::EffectType::EdgeDetect => Some(mapmap_core::effects::EffectType::EdgeDetect),
                                      mapmap_core::module::EffectType::FilmGrain => Some(mapmap_core::effects::EffectType::FilmGrain),
+                                     mapmap_core::module::EffectType::Vignette => Some(mapmap_core::effects::EffectType::Vignette),
                                      _ => None
                                  };
                                  
                                  if let Some(et) = core_effect {
-                                     let _id = chain.add_effect(et);
-                                     // TODO: Map parameters from mod_effect (which currently has none??)
-                                     // Actually ModulizerType::Effect(EffectType) implies Enum variant with no fields?
-                                     // module::EffectType is just an enum of names.
-                                     // Parameters are storing in... where?
-                                     // RenderOp has `effects: Vec<ModulizerType>`.
-                                     // Where are the parameters?
-                                     // Module has parts. Part has `EffectType`.
-                                     // If `EffectType` is just enum, where is "Radius", "Intensity"?
-                                     // Ah, mapmap_core::module::MapFlowModule::parts... 
-                                     // Maybe `module::EffectType` is just the TYPE, parameters are missing?
-                                     // If parameters are missing in the data model, we can't apply them!
-                                     // We will use defaults for now.
+                                     let effect_id = chain.add_effect(et);
+                                     // Copy parameters from module effect to render effect
+                                     if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                         effect.parameters = params.clone();
+                                     }
                                  }
                              }
                          }
