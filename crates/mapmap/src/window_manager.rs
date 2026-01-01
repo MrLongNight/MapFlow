@@ -259,7 +259,6 @@ impl WindowManager {
     }
 
     /// Returns an iterator over all `WindowContext`s.
-    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
     pub fn iter(&self) -> impl Iterator<Item = &WindowContext> {
         self.windows.values()
     }
