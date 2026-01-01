@@ -561,7 +561,9 @@ impl App {
 
                 match event {
                     WindowEvent::CloseRequested => {
-                        elwt.exit();
+                        if output_id == 0 {
+                            elwt.exit();
+                        }
                     }
                     WindowEvent::Resized(size) => {
                         let new_size =
@@ -1130,8 +1132,26 @@ impl App {
         for (output_id, assignment) in output_assignments {
             target_output_ids.insert(*output_id);
 
-            // Only create window if it doesn't exist yet
-            if self.window_manager.get(*output_id).is_some() {
+            // If window already exists, update its state (runtime updates)
+            if let Some(window_context) = self.window_manager.get(*output_id) {
+                match &assignment.output_type {
+                    OutputType::Projector {
+                        fullscreen,
+                        hide_cursor,
+                        ..
+                    } => {
+                        let is_fullscreen = window_context.window.fullscreen().is_some();
+                        if is_fullscreen != *fullscreen {
+                            window_context.window.set_fullscreen(if *fullscreen {
+                                Some(winit::window::Fullscreen::Borderless(None))
+                            } else {
+                                None
+                            });
+                        }
+                        window_context.window.set_cursor_visible(!*hide_cursor);
+                    }
+                    _ => {}
+                }
                 continue;
             }
 
