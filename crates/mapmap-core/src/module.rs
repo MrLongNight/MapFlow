@@ -80,26 +80,14 @@ impl MapFlowModule {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            PartType::Mesh => (
-                ModulePartType::Mesh(MeshType::Quad {
-                    tl: (0.0, 0.0),
-                    tr: (1.0, 0.0),
-                    br: (1.0, 1.0),
-                    bl: (0.0, 1.0),
-                }),
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Mesh Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
+
             PartType::Layer => (
-                ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+                ModulePartType::Layer(LayerType::Single {
+                    id: 1,
+                    name: "Layer 1".to_string(),
                     opacity: 1.0,
                     blend_mode: None,
+                    mesh: default_mesh_quad(),
                 }),
                 vec![ModuleSocket {
                     name: "Media In".to_string(),
@@ -348,8 +336,7 @@ pub enum ModulePartType {
     Source(SourceType),
     Mask(MaskType),
     Modulizer(ModulizerType),
-    Mesh(MeshType),
-    LayerAssignment(LayerAssignmentType),
+    Layer(LayerType),
     Output(OutputType),
 }
 
@@ -360,7 +347,6 @@ pub enum PartType {
     Source,
     Mask,
     Modulator,
-    Mesh,
     Layer,
     Output,
 }
@@ -738,20 +724,33 @@ impl BlendModeType {
     }
 }
 
+fn default_mesh_quad() -> MeshType {
+    MeshType::Quad {
+        tl: (0.0, 0.0),
+        tr: (1.0, 0.0),
+        br: (1.0, 1.0),
+        bl: (0.0, 1.0),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum LayerAssignmentType {
-    SingleLayer {
+pub enum LayerType {
+    Single {
         id: u64,
         name: String,
         opacity: f32,
         blend_mode: Option<BlendModeType>,
+        #[serde(default = "default_mesh_quad")]
+        mesh: MeshType,
     },
     Group {
         name: String,
         opacity: f32,
         blend_mode: Option<BlendModeType>,
+        #[serde(default = "default_mesh_quad")]
+        mesh: MeshType,
     },
-    AllLayers {
+    All {
         opacity: f32,
         blend_mode: Option<BlendModeType>,
     },
