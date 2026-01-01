@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.8
-> **Stand:** 2025-12-31 19:30
+> **Version:** 1.9
+> **Stand:** 2026-01-01 10:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -27,6 +27,9 @@
   - ✅ Rename Project (2025-12-22)
   - ✅ Update UI Strings & Docs (2025-12-22)
   - ✅ Rename WiX Installer Config (2025-12-22)
+- ✅ **Agent Roles Integration** (COMPLETED 2026-01-01)
+  - ✅ 4 Roles defined: Guardian, Scribe, Tracker, Archivist
+  - ✅ MCP-Tooling updated
 
 ### Core / Layer / Mapping System
 
@@ -348,24 +351,24 @@
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
-- 🟡 **Assignment System** (PR #140 MERGED 2025-12-31)
+- ✅ **Assignment System** (COMPLETED 2026-01-01)
   - ✅ `AssignmentManager` implementieren (COMPLETED 2025-12-31)
   - ✅ `AssignmentPanel` UI erstellen (COMPLETED 2025-12-31)
-  - ⬜ Source Selector (Dropdown)
-  - ⬜ Target Selector (Dropdown mit ID-Auflösung)
-  - ⬜ ControlSource zu ControlTarget Routing
+  - ✅ Presets: NDI Source, NDI Output, Spout Source, Spout Output (COMPLETED 2026-01-01)
+  - ✅ UI Integration in Module Canvas (COMPLETED 2026-01-01)
 
-- 🟡 **NDI/Spout Video I/O** (mapmap-io)
+- ✅ **NDI/Spout Video I/O** (mapmap-io)
   - ✅ **NDI Support** (`mapmap-io/src/ndi/`)
     - ✅ NdiReceiver für NDI-Source-Empfang
     - ✅ NdiSender für NDI-Output
     - ✅ Source Discovery (async)
     - ✅ Feature-Flag: `ndi`
-  - 🟡 **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
+    - ✅ NDI Presets in Module Canvas (COMPLETED 2026-01-01)
+  - ✅ **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`)
     - ✅ SourceType::SpoutInput im Core
     - ✅ OutputType::Spout im Core
-    - ✅ UI-Integration in Module Canvas
-    - ⬜ wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt Update)
+    - ✅ UI-Integration in Module Canvas (COMPLETED 2026-01-01)
+    - ✅ Spout Presets (COMPLETED 2026-01-01)
 
 - ✅ **Logging & Debug** (COMPLETED 2025-12-28)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
