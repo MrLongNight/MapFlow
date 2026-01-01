@@ -1,9 +1,9 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
-    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
-    MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
-    ModulizerType, OutputType, SourceType, TriggerType,
+    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType,
+    LayerAssignmentType, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager, ModulePart,
+    ModulePartId, ModuleSocketType, ModulizerType, OutputType, SourceType, TriggerType,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::Source as NdiSource;
@@ -294,14 +294,14 @@ impl ModuleCanvas {
                                                     egui::Slider::new(threshold, 0.0..=1.0)
                                                         .text("Threshold"),
                                                 );
-                                                
+
                                                 ui.separator();
                                                 ui.label("📤 Output Configuration:");
                                                 ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
                                                 ui.checkbox(&mut output_config.bpm_output, "⏱️ BPM");
                                                 ui.checkbox(&mut output_config.volume_outputs, "📊 Volume (RMS, Peak)");
                                                 ui.checkbox(&mut output_config.frequency_bands, "🎵 Frequency Bands (9)");
-                                                
+
                                                 // Note: Changing output config requires regenerating sockets
                                                 // This will be handled when the part is saved/reloaded
                                             }
@@ -1123,7 +1123,9 @@ impl ModuleCanvas {
         use mapmap_core::module::{ModulePartType, TriggerType};
 
         match part_type {
-            ModulePartType::Trigger(TriggerType::AudioFFT { band, threshold, .. }) => {
+            ModulePartType::Trigger(TriggerType::AudioFFT {
+                band, threshold, ..
+            }) => {
                 let value = self.get_trigger_value(band);
                 let is_active = value > *threshold;
                 (true, value, *threshold, is_active)
@@ -2995,7 +2997,8 @@ impl ModuleCanvas {
                             *trigger_type = TriggerType::AudioFFT {
                                 band: mapmap_core::module::AudioBand::Bass,
                                 threshold: 0.5,
-                                output_config: mapmap_core::module::AudioTriggerOutputConfig::default(),
+                                output_config:
+                                    mapmap_core::module::AudioTriggerOutputConfig::default(),
                             };
                         }
                         if ui

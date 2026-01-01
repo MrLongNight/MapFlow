@@ -61,6 +61,7 @@ impl WindowManager {
     }
 
     /// Creates the main control window with optional saved geometry.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_main_window_with_geometry<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,

@@ -284,21 +284,20 @@ impl MapFlowModule {
     /// This is called when AudioTriggerOutputConfig changes
     pub fn update_part_outputs(&mut self, part_id: ModulePartId) {
         if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
-            match &part.part_type {
-                ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) => {
-                    // Remove connections to outputs that no longer exist
-                    let new_output_count = output_config.generate_outputs().len();
-                    self.connections.retain(|c| {
-                        if c.from_part == part_id {
-                            c.from_socket < new_output_count
-                        } else {
-                            true
-                        }
-                    });
-                    // Regenerate outputs
-                    part.outputs = output_config.generate_outputs();
-                }
-                _ => {} // Other part types don't need dynamic output regeneration
+            if let ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) =
+                &part.part_type
+            {
+                // Remove connections to outputs that no longer exist
+                let new_output_count = output_config.generate_outputs().len();
+                self.connections.retain(|c| {
+                    if c.from_part == part_id {
+                        c.from_socket < new_output_count
+                    } else {
+                        true
+                    }
+                });
+                // Regenerate outputs
+                part.outputs = output_config.generate_outputs();
             }
         }
     }

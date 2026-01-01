@@ -397,7 +397,7 @@ impl EffectChainPanel {
                                             ui.label("No recent configs");
                                         } else {
                                             for config in configs {
-                                                if ui.button(format!("{}", config.name)).on_hover_text(format!("{:?}", config.params)).clicked() {
+                                                if ui.button(config.name.to_string()).on_hover_text(format!("{:?}", config.params)).clicked() {
                                                      self.chain.add_effect(*effect_type);
 
                                                      let id = self.chain.effects.last().unwrap().id;
