@@ -161,7 +161,7 @@ impl WindowManager {
 
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: backend.surface_format(),
             width: output_config.resolution.0,
             height: output_config.resolution.1,
             present_mode: wgpu::PresentMode::Fifo, // VSync for synchronized output
@@ -268,7 +268,7 @@ impl WindowManager {
 
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: backend.surface_format(),
             width: default_width,
             height: default_height,
             present_mode: wgpu::PresentMode::Fifo, // VSync for synchronized output

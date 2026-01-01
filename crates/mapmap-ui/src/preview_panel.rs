@@ -111,7 +111,7 @@ impl PreviewPanel {
                         .max(80.0);
                     let thumbnail_height = thumbnail_width * 9.0 / 16.0; // 16:9 aspect ratio
                     
-                    ui.horizontal(|ui| {
+                    ui.horizontal_wrapped(|ui| {
                         for output in visible_outputs {
                             let is_selected = self.selected_output == Some(output.id);
                             

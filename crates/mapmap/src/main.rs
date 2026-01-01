@@ -1568,12 +1568,13 @@ impl App {
 
                     // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
                     // === PREVIEW PANEL (Bottom, collapsible) ===
+                    // === PREVIEW PANEL (Left Sidebar, independent) ===
                     if self.ui_state.show_preview_panel {
-                        egui::TopBottomPanel::bottom("preview_panel")
+                        egui::SidePanel::left("preview_sidebar")
                             .resizable(true)
-                            .min_height(40.0)
-                            .max_height(250.0)
-                            .default_height(self.ui_state.preview_panel.current_height())
+                            .default_width(220.0)
+                            .min_width(150.0)
+                            .max_width(400.0)
                             .show(ctx, |ui| {
                                 // Update preview panel with output info from module graph
                                 let output_infos: Vec<mapmap_ui::OutputPreviewInfo> = self

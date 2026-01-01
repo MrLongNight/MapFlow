@@ -348,6 +348,25 @@
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
+- 🟡 **Advanced Layer Triggering & Linking** (PLANNED)
+  - [ ] **Audio Trigger Node Enhancements**
+    - [ ] Implement `inverted output` boolean flag for each trigger signal output.
+  - [ ] **Universal Link System** (Layers, Masks, Effects, Blends)
+    - [ ] Add `Link Mode` property to Node inspector (Off, Master, Slave).
+    - [ ] **Master Mode**:
+      - Exposes `Master Link Output` connector.
+      - Sends active/visibility state.
+    - [ ] **Slave Mode**:
+      - Exposes `Slave Link Input` connector.
+      - Reacts to linked Master state.
+    - [ ] **Link Logic**:
+      - Enforce connection rules: Master Link Output only connects to Slave Link Input.
+      - Connectors only visible/active when Link Mode is enabled.
+      - Slave Property: `Link Behavior` (Same as Master / Inverted).
+  - [ ] **Trigger Input for Nodes**
+    - [ ] Add optional `Trigger Input` pin to Layer, Group, Mask, Effect, Blend nodes.
+    - [ ] Logic: Input Signal controls visibility/activity (Active if Signal > 0.5).
+
 - 🟡 **Assignment System** (PR #140 MERGED 2025-12-31)
   - ✅ `AssignmentManager` implementieren (COMPLETED 2025-12-31)
   - ✅ `AssignmentPanel` UI erstellen (COMPLETED 2025-12-31)
