@@ -16,7 +16,7 @@ Implementiere tatsächliche Window-Ausgabe für Projector Output Nodes aus dem M
   - [x] Get Source Texture aus Texture Pool
   - [x] Apply Effects (Pre-computed in module graph)
   - [x] Render zu Output Window Surface (Direct Quad Render)
-- [ ] Preview Panel Integration
+- [x] Preview Panel Integration
 - [ ] Separate Preview Window Support
 
 ### 3. Event Loop Integration
@@ -64,9 +64,9 @@ Implementiere tatsächliche Window-Ausgabe für Projector Output Nodes aus dem M
    - Blit to window surface
 
 ### `window_manager.rs`
-- [ ] Add method: `create_projector_window` for Module Outputs
-- [ ] Monitor/Screen selection logic
-- [ ] Cursor hiding implementation
+- [x] Add method: `create_projector_window` for Module Outputs
+- [x] Monitor/Screen selection logic
+- [x] Cursor hiding implementation
 
 ## 📊 Datenfluss
 
