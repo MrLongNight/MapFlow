@@ -183,37 +183,15 @@ jobs:
     - name: Rust Cache
       uses: swatinem/rust-cache@v2
 
-    - name: Install NDI SDK (Windows)
-      shell: pwsh
-      run: |
-        # Download NDI SDK
-        $NDI_URL = "https://downloads.ndi.tv/SDK/NDI_SDK/NDI%205%20SDK.exe"
-        $NDI_INSTALLER = "$env:TEMP\NDI_SDK_Installer.exe"
-        
-        Write-Host "Downloading NDI SDK..."
-        Invoke-WebRequest -Uri $NDI_URL -OutFile $NDI_INSTALLER -UseBasicParsing
-        
-        Write-Host "Installing NDI SDK..."
-        # Install silently to default location
-        Start-Process -FilePath $NDI_INSTALLER -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
-        
-        # Set NDI_SDK_DIR environment variable
-        $NDI_DIR = "C:\Program Files\NDI\NDI 5 SDK"
-        if (Test-Path $NDI_DIR) {
-            Write-Host "✓ NDI SDK installed successfully at: $NDI_DIR"
-            echo "NDI_SDK_DIR=$NDI_DIR" >> $env:GITHUB_ENV
-        } else {
-            Write-Host "✗ NDI SDK installation failed or path not found"
-            exit 1
-        }
-
-    - name: Build (Release, with NDI)
+    # NOTE: NDI SDK requires registration and cannot be automated in CI
+    # Building without NDI feature for Windows CI builds
+    - name: Build (Release, Windows - without NDI)
       env:
         RUST_BACKTRACE: full
       run: |
-        cargo build --release --verbose --no-default-features --features "audio ndi"
+        cargo build --release --verbose --no-default-features --features "audio"
 
-    - name: Run tests (Release, with NDI)
+    - name: Run tests (Release, without NDI)
       if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
