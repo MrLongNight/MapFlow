@@ -190,6 +190,113 @@ impl WindowManager {
         Ok(())
     }
 
+    /// Creates a new projector window from a Module OutputType::Projector.
+    ///
+    /// If a window for the given `output_id` already exists, this function does nothing.
+    pub fn create_projector_window<T>(
+        &mut self,
+        event_loop: &EventLoopWindowTarget<T>,
+        backend: &WgpuBackend,
+        output_id: OutputId,
+        name: &str,
+        fullscreen: bool,
+        hide_cursor: bool,
+        target_screen: u8,
+    ) -> Result<()> {
+        // Skip if window already exists
+        if self.windows.contains_key(&output_id) {
+            return Ok(());
+        }
+
+        info!(
+            "Creating projector window '{}' (ID: {}, Screen: {})",
+            name, output_id, target_screen
+        );
+
+        // Get all available monitors
+        let monitors: Vec<_> = event_loop.available_monitors().collect();
+
+        // Select target monitor (default to primary if target_screen is out of range)
+        let target_monitor = if (target_screen as usize) < monitors.len() {
+            Some(monitors[target_screen as usize].clone())
+        } else if let Some(primary) = event_loop.primary_monitor() {
+            info!(
+                "Target screen {} not found, using primary monitor",
+                target_screen
+            );
+            Some(primary)
+        } else {
+            None
+        };
+
+        // Default resolution: 1920x1080 or monitor native resolution
+        let (default_width, default_height) = if let Some(ref monitor) = target_monitor {
+            if let Some(mode) = monitor.video_modes().next() {
+                let size = mode.size();
+                (size.width, size.height)
+            } else {
+                (1920, 1080)
+            }
+        } else {
+            (1920, 1080)
+        };
+
+        let mut window_builder = WindowBuilder::new()
+            .with_title(format!("MapFlow - {}", name))
+            .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height));
+
+        // Set fullscreen if requested
+        if fullscreen {
+            if let Some(monitor) = target_monitor.clone() {
+                window_builder =
+                    window_builder.with_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+            } else {
+                window_builder = window_builder.with_fullscreen(Some(Fullscreen::Borderless(None)));
+            }
+        }
+
+        // Build the window
+        let window = Arc::new(window_builder.build(event_loop)?);
+
+        // Hide cursor if requested
+        window.set_cursor_visible(!hide_cursor);
+
+        let window_id_winit = window.id();
+
+        // Create surface for this output window
+        let surface = backend.create_surface(window.clone())?;
+
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            width: default_width,
+            height: default_height,
+            present_mode: wgpu::PresentMode::Fifo, // VSync for synchronized output
+            alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+
+        surface.configure(&backend.device, &surface_config);
+
+        let window_context = WindowContext {
+            window,
+            surface,
+            surface_config,
+            output_id,
+        };
+
+        self.windows.insert(output_id, window_context);
+        self.window_id_map.insert(window_id_winit, output_id);
+
+        info!(
+            "Created projector window '{}' at {}x{}",
+            name, default_width, default_height
+        );
+
+        Ok(())
+    }
+
     /// Synchronizes the active windows with the `OutputManager`'s configuration.
     ///
     /// This function will create windows for new outputs and remove windows for outputs

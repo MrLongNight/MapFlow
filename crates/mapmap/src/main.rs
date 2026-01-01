@@ -755,11 +755,16 @@ impl App {
 
                         // 2. Handle Output Assignments
                         self.output_assignments.clear();
-                        for (output_id, assignment) in result.output_assignments {
+                        for (output_id, assignment) in &result.output_assignments {
                             if let Some(source_id) = assignment.source_part_id {
                                 let tex_name = format!("part_{}", source_id);
-                                self.output_assignments.insert(output_id, tex_name);
+                                self.output_assignments.insert(*output_id, tex_name);
                             }
+                        }
+
+                        // 3. Sync output windows with evaluation result
+                        if let Err(e) = self.sync_output_windows(elwt, &result.output_assignments) {
+                            error!("Failed to sync output windows: {}", e);
                         }
                     }
                 }
@@ -1106,6 +1111,76 @@ impl App {
             }
             Err(e) => error!("Failed to load project: {}", e),
         }
+    }
+
+    /// Synchronizes output windows with the current module evaluation result.
+    ///
+    /// Creates windows for new output assignments and removes windows that are no longer needed.
+    fn sync_output_windows<T>(
+        &mut self,
+        event_loop: &winit::event_loop::EventLoopWindowTarget<T>,
+        output_assignments: &std::collections::HashMap<u64, mapmap_core::module_eval::TextureAssignment>,
+    ) -> Result<()> {
+        use mapmap_core::module::OutputType;
+
+        // Track which output IDs should have windows
+        let mut target_output_ids: std::collections::HashSet<u64> = std::collections::HashSet::new();
+
+        // Create windows for all output assignments
+        for (output_id, assignment) in output_assignments {
+            target_output_ids.insert(*output_id);
+
+            // Only create window if it doesn't exist yet
+            if self.window_manager.get(*output_id).is_some() {
+                continue;
+            }
+
+            // Create window based on output type
+            match &assignment.output_type {
+                OutputType::Projector {
+                    name,
+                    fullscreen,
+                    hide_cursor,
+                    target_screen,
+                    ..
+                } => {
+                    self.window_manager.create_projector_window(
+                        event_loop,
+                        &self.backend,
+                        *output_id,
+                        name,
+                        *fullscreen,
+                        *hide_cursor,
+                        *target_screen,
+                    )?;
+                }
+                OutputType::NdiOutput { .. } => {
+                    // NDI outputs don't need windows
+                    // TODO: Implement NDI sender
+                }
+                #[cfg(target_os = "windows")]
+                OutputType::Spout { .. } => {
+                    // Spout outputs don't need windows
+                    // TODO: Implement Spout sender
+                }
+            }
+        }
+
+        // Remove windows that are no longer needed
+        let mut windows_to_remove = Vec::new();
+        for window_id in self.window_manager.window_ids() {
+            // Don't remove main window (ID 0)
+            if *window_id != 0 && !target_output_ids.contains(window_id) {
+                windows_to_remove.push(*window_id);
+            }
+        }
+
+        for output_id in windows_to_remove {
+            self.window_manager.remove_window(output_id);
+            info!("Removed output window for output ID {}", output_id);
+        }
+
+        Ok(())
     }
 
     /// Renders a single frame for a given output.
@@ -1903,16 +1978,30 @@ impl App {
                 if self.texture_pool.has_texture(tex_name) {
                     let source_view = self.texture_pool.get_view(tex_name);
 
-                    // Render directly to output using empty effect chain (pass-through)
-                    self.effect_chain_renderer.apply_chain(
-                        &mut encoder,
-                        &source_view,
-                        &view,
-                        &mapmap_core::EffectChain::default(),
-                        0.0,
-                        window_context.surface_config.width,
-                        window_context.surface_config.height,
-                    );
+                    // Create bind group before render pass to satisfy lifetimes
+                    let bind_group = self
+                        .quad_renderer
+                        .create_bind_group(&self.backend.device, &source_view);
+
+                    // Render directly to output using QuadRenderer for efficiency
+                    {
+                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Direct Output Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: &view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: None,
+                            occlusion_query_set: None,
+                            timestamp_writes: None,
+                        });
+
+                        self.quad_renderer.draw(&mut render_pass, &bind_group);
+                    }
 
                     self.backend.queue.submit(Some(encoder.finish()));
                     surface_texture.present();
