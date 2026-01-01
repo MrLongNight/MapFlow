@@ -1,7 +1,7 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
-    AudioBand, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
+    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
     MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
     ModulizerType, OutputType, SourceType, TriggerType,
 };
@@ -265,7 +265,7 @@ impl ModuleCanvas {
                                                 ui.label("🥁 Beat Sync");
                                                 ui.label("Triggers on BPM beat.");
                                             }
-                                            TriggerType::AudioFFT { band, threshold } => {
+                                            TriggerType::AudioFFT { band, threshold, output_config } => {
                                                 ui.label("🔊 Audio FFT");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Band:");
@@ -294,6 +294,16 @@ impl ModuleCanvas {
                                                     egui::Slider::new(threshold, 0.0..=1.0)
                                                         .text("Threshold"),
                                                 );
+                                                
+                                                ui.separator();
+                                                ui.label("📤 Output Configuration:");
+                                                ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
+                                                ui.checkbox(&mut output_config.bpm_output, "⏱️ BPM");
+                                                ui.checkbox(&mut output_config.volume_outputs, "📊 Volume (RMS, Peak)");
+                                                ui.checkbox(&mut output_config.frequency_bands, "🎵 Frequency Bands (9)");
+                                                
+                                                // Note: Changing output config requires regenerating sockets
+                                                // This will be handled when the part is saved/reloaded
                                             }
                                             TriggerType::Random {
                                                 min_interval_ms,
@@ -1113,7 +1123,7 @@ impl ModuleCanvas {
         use mapmap_core::module::{ModulePartType, TriggerType};
 
         match part_type {
-            ModulePartType::Trigger(TriggerType::AudioFFT { band, threshold }) => {
+            ModulePartType::Trigger(TriggerType::AudioFFT { band, threshold, .. }) => {
                 let value = self.get_trigger_value(band);
                 let is_active = value > *threshold;
                 (true, value, *threshold, is_active)
@@ -1334,7 +1344,7 @@ impl ModuleCanvas {
                             ui.set_min_width(180.0);
                             if show_all { ui.label(egui::RichText::new("Audio Analysis").weak()); }
                             if (show_all || "audio fft".contains(&filter)) && ui.button("🎵 Audio FFT").clicked() {
-                                self.add_trigger_node(manager, TriggerType::AudioFFT { band: AudioBand::Bass, threshold: 0.5 });
+                                self.add_trigger_node(manager, TriggerType::AudioFFT { band: AudioBand::Bass, threshold: 0.5, output_config: AudioTriggerOutputConfig::default() });
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -2985,6 +2995,7 @@ impl ModuleCanvas {
                             *trigger_type = TriggerType::AudioFFT {
                                 band: mapmap_core::module::AudioBand::Bass,
                                 threshold: 0.5,
+                                output_config: mapmap_core::module::AudioTriggerOutputConfig::default(),
                             };
                         }
                         if ui
@@ -4224,6 +4235,7 @@ impl ModuleCanvas {
                         ModulePartType::Trigger(TriggerType::AudioFFT {
                             band: AudioBand::Bass,
                             threshold: 0.5,
+                            output_config: AudioTriggerOutputConfig::default(),
                         }),
                         (50.0, 100.0),
                         None,

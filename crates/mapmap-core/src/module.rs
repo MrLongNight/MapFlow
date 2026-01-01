@@ -21,69 +21,18 @@ impl MapFlowModule {
         let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let (module_part_type, inputs, outputs) = match part_type {
-            PartType::Trigger => (
-                ModulePartType::Trigger(TriggerType::AudioFFT {
-                    band: AudioBand::Bass,
-                    threshold: 0.5,
-                }),
-                vec![], // No inputs - triggers are sources
-                vec![
-                    ModuleSocket {
-                        name: "SubBass Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "Bass Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "LowMid Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "Mid Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "HighMid Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "UpperMid Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "Presence Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "Brilliance Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "Air Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    // Volume Outputs
-                    ModuleSocket {
-                        name: "RMS Volume".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "Peak Volume".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    // Beat Detection
-                    ModuleSocket {
-                        name: "Beat Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                    ModuleSocket {
-                        name: "BPM Out".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                ],
-            ),
+            PartType::Trigger => {
+                let output_config = AudioTriggerOutputConfig::default();
+                (
+                    ModulePartType::Trigger(TriggerType::AudioFFT {
+                        band: AudioBand::Bass,
+                        threshold: 0.5,
+                        output_config: output_config.clone(),
+                    }),
+                    vec![], // No inputs - triggers are sources
+                    output_config.generate_outputs(),
+                )
+            }
             PartType::Source => (
                 ModulePartType::Source(SourceType::MediaFile {
                     path: String::new(),
@@ -200,63 +149,7 @@ impl MapFlowModule {
         let (inputs, outputs) = match &part_type {
             ModulePartType::Trigger(trigger_type) => {
                 let outputs = match trigger_type {
-                    TriggerType::AudioFFT { .. } => vec![
-                        // 9 Frequency Band Outputs
-                        ModuleSocket {
-                            name: "SubBass Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "Bass Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "LowMid Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "Mid Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "HighMid Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "UpperMid Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "Presence Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "Brilliance Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "Air Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        // Volume Outputs
-                        ModuleSocket {
-                            name: "RMS Volume".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "Peak Volume".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        // Beat Detection
-                        ModuleSocket {
-                            name: "Beat Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                        ModuleSocket {
-                            name: "BPM Out".to_string(),
-                            socket_type: ModuleSocketType::Trigger,
-                        },
-                    ],
+                    TriggerType::AudioFFT { output_config, .. } => output_config.generate_outputs(),
                     _ => vec![ModuleSocket {
                         name: "Trigger Out".to_string(),
                         socket_type: ModuleSocketType::Trigger,
@@ -386,6 +279,29 @@ impl MapFlowModule {
                 && c.to_socket == to_socket)
         });
     }
+
+    /// Regenerate outputs for a part based on its current configuration
+    /// This is called when AudioTriggerOutputConfig changes
+    pub fn update_part_outputs(&mut self, part_id: ModulePartId) {
+        if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
+            match &part.part_type {
+                ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) => {
+                    // Remove connections to outputs that no longer exist
+                    let new_output_count = output_config.generate_outputs().len();
+                    self.connections.retain(|c| {
+                        if c.from_part == part_id {
+                            c.from_socket < new_output_count
+                        } else {
+                            true
+                        }
+                    });
+                    // Regenerate outputs
+                    part.outputs = output_config.generate_outputs();
+                }
+                _ => {} // Other part types don't need dynamic output regeneration
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -446,8 +362,13 @@ pub enum PartType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TriggerType {
-    /// Audio FFT analysis with frequency band outputs
-    AudioFFT { band: AudioBand, threshold: f32 },
+    /// Audio FFT analysis with configurable outputs
+    AudioFFT {
+        band: AudioBand,
+        threshold: f32,
+        /// Which outputs are enabled
+        output_config: AudioTriggerOutputConfig,
+    },
     /// Random trigger with configurable interval and probability
     Random {
         min_interval_ms: u32,
@@ -485,6 +406,115 @@ pub enum AudioBand {
     Brilliance, // 6-20kHz
     Peak,       // Peak detection
     BPM,        // Beat per minute
+}
+
+/// Configuration for which outputs are enabled on an AudioFFT trigger
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AudioTriggerOutputConfig {
+    /// Enable individual frequency band outputs (9 outputs)
+    pub frequency_bands: bool,
+    /// Enable volume outputs (RMS, Peak)
+    pub volume_outputs: bool,
+    /// Enable beat detection output
+    pub beat_output: bool,
+    /// Enable BPM output
+    pub bpm_output: bool,
+}
+
+impl Default for AudioTriggerOutputConfig {
+    fn default() -> Self {
+        Self {
+            frequency_bands: false, // Off by default
+            volume_outputs: false,  // Off by default
+            beat_output: true,      // ON by default - main use case
+            bpm_output: false,      // Off by default
+        }
+    }
+}
+
+impl AudioTriggerOutputConfig {
+    /// Generate output sockets based on this configuration
+    pub fn generate_outputs(&self) -> Vec<ModuleSocket> {
+        let mut outputs = Vec::new();
+
+        // Frequency band outputs (9 bands)
+        if self.frequency_bands {
+            outputs.push(ModuleSocket {
+                name: "SubBass Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "Bass Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "LowMid Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "Mid Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "HighMid Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "UpperMid Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "Presence Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "Brilliance Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "Air Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+        }
+
+        // Volume outputs
+        if self.volume_outputs {
+            outputs.push(ModuleSocket {
+                name: "RMS Volume".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "Peak Volume".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+        }
+
+        // Beat output
+        if self.beat_output {
+            outputs.push(ModuleSocket {
+                name: "Beat Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+        }
+
+        // BPM output
+        if self.bpm_output {
+            outputs.push(ModuleSocket {
+                name: "BPM Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+        }
+
+        // Fallback: if nothing is enabled, add at least beat output
+        if outputs.is_empty() {
+            outputs.push(ModuleSocket {
+                name: "Beat Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+        }
+
+        outputs
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
