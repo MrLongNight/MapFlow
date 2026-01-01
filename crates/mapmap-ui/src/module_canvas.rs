@@ -2,7 +2,7 @@ use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType, MapFlowModule,
-    MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
+    MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModulePartType, ModuleSocketType,
     ModulizerType, OutputType, SourceType, TriggerType,
 };
 #[cfg(feature = "ndi")]
@@ -744,7 +744,7 @@ impl ModuleCanvas {
                                         ui.label("📋 Layer:");
                                         
                                         // Helper to render mesh UI
-                                        let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
+                                        let render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
                                             ui.separator();
                                             ui.label("Mesh Configuration:");
                                             
@@ -810,7 +810,7 @@ impl ModuleCanvas {
                                                         Stroke::new(1.0, Color32::LIGHT_BLUE),
                                                     ));
 
-                                                    let mut handle = |coord: &mut (f32, f32), name: &str| {
+                                                    let handle = |coord: &mut (f32, f32), name: &str| {
                                                         let pos = to_screen(*coord);
                                                         let id = response.id.with(name);
                                                         let h_rect = Rect::from_center_size(pos, Vec2::splat(12.0));
@@ -850,13 +850,13 @@ impl ModuleCanvas {
 
                                                 render_mesh_ui(ui, mesh, *id);
                                             }
-                                            LayerType::Group { name, opacity, blend_mode, mesh } => {
+                                            LayerType::Group { name, opacity, mesh, .. } => {
                                                 ui.label("📂 Group");
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
                                                 render_mesh_ui(ui, mesh, 9999); // Dummy ID
                                             }
-                                            LayerType::All { opacity, blend_mode } => {
+                                            LayerType::All { opacity, .. } => {
                                                 ui.label("🎚️ Master");
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
                                             }
@@ -1155,42 +1155,11 @@ impl ModuleCanvas {
         }
     }
 
-    /// Add a Layer node with specified type
-    fn add_layer_node(&mut self, manager: &mut ModuleManager, layer_type: LayerAssignmentType) {
-        if let Some(id) = self.active_module_id {
-            if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (500.0, 100.0));
-                module.add_part_with_type(
-                    mapmap_core::module::ModulePartType::LayerAssignment(layer_type),
-                    pos,
-                );
-            }
-        }
-    }
 
-    /// Add a Mesh node with specified type
-    fn add_mesh_node(&mut self, manager: &mut ModuleManager, mesh_type: MeshType) {
-        if let Some(id) = self.active_module_id {
-            if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (450.0, 100.0));
-                module
-                    .add_part_with_type(mapmap_core::module::ModulePartType::Mesh(mesh_type), pos);
-            }
-        }
-    }
 
-    /// Add an Output node with specified type
-    fn add_output_node(&mut self, manager: &mut ModuleManager, output_type: OutputType) {
-        if let Some(id) = self.active_module_id {
-            if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (600.0, 100.0));
-                module.add_part_with_type(
-                    mapmap_core::module::ModulePartType::Output(output_type),
-                    pos,
-                );
-            }
-        }
-    }
+
+
+
 
     pub fn show(
         &mut self,
@@ -1488,17 +1457,29 @@ impl ModuleCanvas {
                         ui.menu_button("📑 Layer", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "single".contains(&filter)) && ui.button("🔲 Single Layer").clicked() {
-                                self.add_layer_node(manager, LayerAssignmentType::SingleLayer { id: 0, name: "Layer 1".to_string(), opacity: 1.0, blend_mode: None });
+                                let layer_id = 0;
+                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Single { 
+                                    id: layer_id, 
+                                    name: "Layer 1".to_string(), 
+                                    opacity: 1.0, 
+                                    blend_mode: None,
+                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
+                                }));
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
                             if (show_all || "group".contains(&filter)) && ui.button("📂 Layer Group").clicked() {
-                                self.add_layer_node(manager, LayerAssignmentType::Group { name: "Group 1".to_string(), opacity: 1.0, blend_mode: None });
+                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Group { 
+                                    name: "Group 1".to_string(), 
+                                    opacity: 1.0, 
+                                    blend_mode: None,
+                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) } 
+                                }));
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
                             if (show_all || "all master".contains(&filter)) && ui.button("🎚️ All Layers").clicked() {
-                                self.add_module_node(module, ModulePartType::Layer(LayerType::All { opacity: 1.0, blend_mode: None }));
+                                self.add_module_node(manager, ModulePartType::Layer(LayerType::All { opacity: 1.0, blend_mode: None }));
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -1511,9 +1492,9 @@ impl ModuleCanvas {
                             ui.set_min_width(180.0);
                             
                             // Helper for adding mesh layers within the closure
-                            let mut add_mesh_layer = |name: &str, mesh: MeshType| {
-                                let layer_id = (module.parts.len() + 1) as u64;
-                                self.add_module_node(module, ModulePartType::Layer(LayerType::Single {
+                            let mut add_mesh_layer = |ui: &mut Ui, name: &str, mesh: MeshType| {
+                                let layer_id = 0;
+                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Single {
                                     id: layer_id,
                                     name: name.to_string(),
                                     opacity: 1.0,
@@ -1526,33 +1507,33 @@ impl ModuleCanvas {
 
                             if show_all { ui.label(egui::RichText::new("Basic").weak()); }
                             if (show_all || "quad".contains(&filter)) && ui.button("⬜ Quad").clicked() {
-                                add_mesh_layer("Quad Layer", MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) });
+                                add_mesh_layer(ui, "Quad Layer", MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) });
                             }
                             if (show_all || "triangle".contains(&filter)) && ui.button("🔺 Triangle").clicked() {
-                                add_mesh_layer("Triangle Layer", MeshType::TriMesh);
+                                add_mesh_layer(ui, "Triangle Layer", MeshType::TriMesh);
                             }
                             if (show_all || "circle arc".contains(&filter)) && ui.button("⭕ Circle/Arc").clicked() {
-                                add_mesh_layer("Circle Layer", MeshType::Circle { segments: 32, arc_angle: 360.0 });
+                                add_mesh_layer(ui, "Circle Layer", MeshType::Circle { segments: 32, arc_angle: 360.0 });
                             }
                             if show_all { ui.separator(); ui.label(egui::RichText::new("Subdivided").weak()); }
                             if (show_all || "grid".contains(&filter)) && ui.button("▦ Grid (4x4)").clicked() {
-                                add_mesh_layer("Grid 4x4", MeshType::Grid { rows: 4, cols: 4 });
+                                add_mesh_layer(ui, "Grid 4x4", MeshType::Grid { rows: 4, cols: 4 });
                             }
                             if (show_all || "grid".contains(&filter)) && ui.button("▦ Grid (8x8)").clicked() {
-                                add_mesh_layer("Grid 8x8", MeshType::Grid { rows: 8, cols: 8 });
+                                add_mesh_layer(ui, "Grid 8x8", MeshType::Grid { rows: 8, cols: 8 });
                             }
                             if (show_all || "bezier".contains(&filter)) && ui.button("〰️ Bezier Surface").clicked() {
-                                add_mesh_layer("Bezier Layer", MeshType::BezierSurface { control_points: vec![] });
+                                add_mesh_layer(ui, "Bezier Layer", MeshType::BezierSurface { control_points: vec![] });
                             }
                             if show_all { ui.separator(); ui.label(egui::RichText::new("3D").weak()); }
                             if (show_all || "cylinder".contains(&filter)) && ui.button("🌐 Cylinder").clicked() {
-                                add_mesh_layer("Cylinder Layer", MeshType::Cylinder { segments: 16, height: 1.0 });
+                                add_mesh_layer(ui, "Cylinder Layer", MeshType::Cylinder { segments: 16, height: 1.0 });
                             }
                             if (show_all || "sphere dome".contains(&filter)) && ui.button("🌍 Sphere").clicked() {
-                                add_mesh_layer("Sphere Layer", MeshType::Sphere { lat_segments: 8, lon_segments: 16 });
+                                add_mesh_layer(ui, "Sphere Layer", MeshType::Sphere { lat_segments: 8, lon_segments: 16 });
                             }
                             if (show_all || "custom mesh".contains(&filter)) && ui.button("📁 Custom...").clicked() {
-                                add_mesh_layer("Custom Mesh", MeshType::Custom { path: String::new() });
+                                add_mesh_layer(ui, "Custom Mesh", MeshType::Custom { path: String::new() });
                             }
                         });
                     }
@@ -1562,7 +1543,7 @@ impl ModuleCanvas {
                         ui.menu_button("📺 Output", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "projector".contains(&filter)) && ui.button("📽️ Projector").clicked() {
-                                self.add_module_node(module, ModulePartType::Output(OutputType::Projector {
+                                self.add_module_node(manager, ModulePartType::Output(OutputType::Projector {
                                     id: 1,
                                     name: "Projector 1".to_string(),
                                     fullscreen: false,
@@ -1581,14 +1562,14 @@ impl ModuleCanvas {
                     if show_all || "audio reactive".contains(&filter) {
                         ui.separator();
                         if ui.button("🔊 Audio Reactive").clicked() {
-                            self.add_module_node(module, ModulePartType::Modulizer(ModulizerType::AudioReactive { source: "Bass".to_string() }));
+                            self.add_module_node(manager, ModulePartType::Modulizer(ModulizerType::AudioReactive { source: "Bass".to_string() }));
                             self.search_filter.clear();
                             ui.close_menu();
                         }
                     }
                     #[cfg(feature = "ndi")]
                     if ui.button("📡 NDI Output").clicked() {
-                        self.add_module_node(module, ModulePartType::Output(OutputType::NdiOutput {
+                        self.add_module_node(manager, ModulePartType::Output(OutputType::NdiOutput {
                             name: "MapFlow".to_string(),
                         }));
                         ui.close_menu();
@@ -2864,7 +2845,7 @@ impl ModuleCanvas {
     #[allow(dead_code)]
     fn render_node_inspector(ui: &mut Ui, part: &mut mapmap_core::module::ModulePart) {
         use mapmap_core::module::{
-            BlendModeType, EffectType, LayerAssignmentType, MaskShape, MaskType, ModulePartType,
+            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType,
             ModulizerType, OutputType, SourceType, TriggerType,
         };
 
@@ -3192,7 +3173,7 @@ impl ModuleCanvas {
                                 name: "Layer 1".to_string(),
                                 opacity: 1.0,
                                 blend_mode: None,
-                                mesh: mapmap_core::module::MeshType::default_quad(),
+                                mesh: mapmap_core::module::MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) },
                             };
                         }
                         if ui.selectable_label(matches!(layer_type, LayerType::Group { .. }), "Group").clicked() {
@@ -3200,7 +3181,7 @@ impl ModuleCanvas {
                                 name: "Group 1".to_string(),
                                 opacity: 1.0,
                                 blend_mode: None,
-                                mesh: mapmap_core::module::MeshType::default_quad(),
+                                mesh: mapmap_core::module::MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) },
                             };
                         }
                         if ui.selectable_label(matches!(layer_type, LayerType::All { .. }), "All Layers").clicked() {
@@ -3656,7 +3637,7 @@ impl ModuleCanvas {
         part_type: &mapmap_core::module::ModulePartType,
     ) -> (Color32, Color32, &'static str, &'static str) {
         use mapmap_core::module::{
-            BlendModeType, EffectType, LayerAssignmentType, MaskShape, MaskType, ModulePartType,
+            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType,
             ModulizerType, OutputType, SourceType, TriggerType,
         };
         match part_type {
@@ -3982,21 +3963,25 @@ impl ModuleCanvas {
         }
     }
 
-    fn add_module_node(&self, module: &mut mapmap_core::module::MapFlowModule, part_type: mapmap_core::module::ModulePartType) {
-        use mapmap_core::module::ModulePart;
-        
-        let pos = Self::find_free_position(&module.parts, (self.pan_offset.x.abs() + 200.0, self.pan_offset.y.abs() + 200.0));
-        let (inputs, outputs) = Self::get_sockets_for_part_type(&part_type);
-        let id = module.parts.iter().map(|p| p.id).max().unwrap_or(0) + 1;
-        
-        module.parts.push(ModulePart {
-            id,
-            part_type,
-            position: pos,
-            size: None,
-            inputs,
-            outputs,
-        });
+    fn add_module_node(&self, manager: &mut ModuleManager, part_type: mapmap_core::module::ModulePartType) {
+        if let Some(id) = self.active_module_id {
+            if let Some(module) = manager.get_module_mut(id) {
+                use mapmap_core::module::ModulePart;
+                
+                let pos = Self::find_free_position(&module.parts, (self.pan_offset.x.abs() + 200.0, self.pan_offset.y.abs() + 200.0));
+                let (inputs, outputs) = Self::get_sockets_for_part_type(&part_type);
+                let id = module.parts.iter().map(|p| p.id).max().unwrap_or(0) + 1;
+                
+                module.parts.push(ModulePart {
+                    id,
+                    part_type,
+                    position: pos,
+                    size: None,
+                    inputs,
+                    outputs,
+                });
+            }
+        }
     }
 
     /// Create default presets/templates

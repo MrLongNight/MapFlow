@@ -192,23 +192,13 @@ impl MapFlowModule {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            ModulePartType::Mesh(_) => (
+            ModulePartType::Layer(_) => (
                 vec![ModuleSocket {
-                    name: "Media In".to_string(),
+                    name: "Input".to_string(),
                     socket_type: ModuleSocketType::Media,
                 }],
                 vec![ModuleSocket {
-                    name: "Mesh Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
-            ModulePartType::LayerAssignment(_) => (
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Layer Out".to_string(),
+                    name: "Output".to_string(),
                     socket_type: ModuleSocketType::Layer,
                 }],
             ),
@@ -577,6 +567,76 @@ pub enum MeshType {
     },
     /// Custom mesh from file
     Custom { path: String },
+}
+
+impl MeshType {
+    fn compute_revision_hash(&self) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
+        match self {
+            MeshType::Quad { tl, tr, br, bl } => {
+                0u8.hash(&mut hasher); // Variant ID
+                tl.0.to_bits().hash(&mut hasher);
+                tl.1.to_bits().hash(&mut hasher);
+                tr.0.to_bits().hash(&mut hasher);
+                tr.1.to_bits().hash(&mut hasher);
+                br.0.to_bits().hash(&mut hasher);
+                br.1.to_bits().hash(&mut hasher);
+                bl.0.to_bits().hash(&mut hasher);
+                bl.1.to_bits().hash(&mut hasher);
+            }
+            MeshType::Grid { rows, cols } => {
+                1u8.hash(&mut hasher);
+                rows.hash(&mut hasher);
+                cols.hash(&mut hasher);
+            }
+            MeshType::TriMesh => {
+                2u8.hash(&mut hasher);
+            }
+            MeshType::Circle {
+                segments,
+                arc_angle,
+            } => {
+                3u8.hash(&mut hasher);
+                segments.hash(&mut hasher);
+                arc_angle.to_bits().hash(&mut hasher);
+            }
+            _ => {
+                255u8.hash(&mut hasher);
+            }
+        }
+        hasher.finish()
+    }
+
+    pub fn to_mesh(&self) -> crate::mesh::Mesh {
+        use crate::mesh::Mesh;
+        use glam::Vec2;
+
+        let mut mesh = match self {
+            MeshType::Quad { tl, tr, br, bl } => {
+                let mut mesh = Mesh::quad();
+                let corners = [
+                    Vec2::new(tl.0, tl.1),
+                    Vec2::new(tr.0, tr.1),
+                    Vec2::new(br.0, br.1),
+                    Vec2::new(bl.0, bl.1),
+                ];
+                mesh.apply_keystone(corners);
+                mesh
+            }
+            MeshType::Grid { rows, cols } => Mesh::create_grid(*rows, *cols),
+            MeshType::TriMesh => Mesh::triangle(),
+            MeshType::Circle { segments, .. } => {
+                Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
+            }
+            _ => Mesh::quad(),
+        };
+
+        // Ensure revision tracks content changes (for Render Cache)
+        mesh.revision = self.compute_revision_hash();
+        mesh
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
