@@ -34,6 +34,7 @@ pub mod effects;
 pub mod logging;
 pub mod lut;
 pub mod module;
+pub mod module_eval;
 pub mod oscillator;
 pub mod recent_effect_configs;
 pub mod shader_graph;
@@ -62,6 +63,7 @@ pub use logging::LogConfig;
 pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
 pub use mapping::{Mapping, MappingId, MappingManager};
 pub use mesh::{keystone, BezierPatch, Mesh, MeshType, MeshVertex, VertexId};
+pub use module_eval::{ModuleEvalResult, ModuleEvaluator, SourceCommand, TextureAssignment};
 pub use monitor::{MonitorInfo, MonitorTopology};
 pub use oscillator::{
     ColorMode, CoordinateMode, OscillatorConfig, PhaseInitMode, RingParams, SimulationResolution,

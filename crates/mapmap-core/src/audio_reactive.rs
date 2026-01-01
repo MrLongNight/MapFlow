@@ -10,6 +10,16 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Audio-reactive parameter controller
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AudioTriggerData {
+    pub band_energies: [f32; 9],
+    pub rms_volume: f32,
+    pub peak_volume: f32,
+    pub beat_detected: bool,
+    pub beat_strength: f32,
+    pub bpm: Option<f32>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioReactiveController {
     /// Parameter mappings (parameter_path -> mapping)

@@ -25,7 +25,7 @@ struct SocketInfo {
 #[allow(dead_code)]
 pub struct ModuleCanvas {
     /// The ID of the currently active/edited module
-    active_module_id: Option<u64>,
+    pub active_module_id: Option<u64>,
     /// Canvas pan offset
     pan_offset: Vec2,
     /// Canvas zoom level

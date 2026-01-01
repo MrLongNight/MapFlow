@@ -18,20 +18,23 @@ use mapmap_core::{
         backend::cpal_backend::CpalBackend,
         backend::AudioBackend,
     },
-    AppState, OutputId,
+    AppState, ModuleEvaluator, OutputId,
 };
 
 use mapmap_mcp::{McpAction, McpServer};
 // Define McpAction locally or import if we move it to core later -> Removed local definition
 
 use crossbeam_channel::{unbounded, Receiver};
+use mapmap_core::module::ModulePartId;
 use mapmap_io::{load_project, save_project};
+use mapmap_media::player::{PlaybackCommand, VideoPlayer};
 use mapmap_render::{
     Compositor, EffectChainRenderer, MeshBufferCache, MeshRenderer, OscillatorRenderer,
     QuadRenderer, TexturePool, WgpuBackend,
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::thread;
 use tracing::{error, info};
@@ -98,6 +101,10 @@ struct App {
     dummy_texture: Option<wgpu::Texture>,
     /// A view of the dummy texture.
     dummy_view: Option<wgpu::TextureView>,
+    /// Module evaluator
+    module_evaluator: ModuleEvaluator,
+    /// Active media players for source nodes (PartID -> Player)
+    media_players: HashMap<ModulePartId, VideoPlayer>,
     /// FPS calculation: accumulated frame times
     fps_samples: Vec<f32>,
     /// Current calculated FPS
@@ -125,6 +132,8 @@ struct App {
     /// Shader Graph Manager (Runtime)
     #[allow(dead_code)]
     shader_graph_manager: mapmap_render::ShaderGraphManager,
+    /// Output assignments (OutputID -> Texture Name)
+    output_assignments: std::collections::HashMap<u64, String>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
 }
@@ -374,6 +383,8 @@ impl App {
             oscillator_renderer,
             dummy_texture: None,
             dummy_view: None,
+            module_evaluator: ModuleEvaluator::new(),
+            media_players: HashMap::new(),
             fps_samples: Vec::with_capacity(60),
             current_fps: 60.0,
             current_frame_time_ms: 16.6,
@@ -416,6 +427,7 @@ impl App {
             },
             #[cfg(feature = "ndi")]
             ndi_receivers: std::collections::HashMap::new(),
+            output_assignments: HashMap::new(),
             shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
             recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
                 dirs::data_dir()
@@ -629,73 +641,183 @@ impl App {
                 }
 
                 // Process audio
+                // Process audio
+                let timestamp = self.start_time.elapsed().as_secs_f64();
+                let mut samples_len = 0;
+
                 if let Some(backend) = &mut self.audio_backend {
                     let samples = backend.get_samples();
+                    samples_len = samples.len();
                     if !samples.is_empty() {
-                        let timestamp = self.start_time.elapsed().as_secs_f64();
-
-                        // Process samples with new V2 analyzer
                         self.audio_analyzer.process_samples(&samples, timestamp);
+                    }
+                }
 
-                        // Get analysis results
-                        let analysis_v2 = self.audio_analyzer.get_latest_analysis();
+                // Get analysis results
+                let analysis_v2 = self.audio_analyzer.get_latest_analysis();
 
-                        // Log every second for debugging
-                        static mut LAST_LOG_SEC: i64 = 0;
-                        let current_sec = timestamp as i64;
-                        unsafe {
-                            if current_sec != LAST_LOG_SEC {
-                                LAST_LOG_SEC = current_sec;
-                                tracing::debug!(
-                                    "AudioV2: {} samples, RMS={:.4}, Peak={:.4}, Bands[0..3]={:?}",
-                                    samples.len(),
-                                    analysis_v2.rms_volume,
-                                    analysis_v2.peak_volume,
-                                    &analysis_v2.band_energies[..3]
-                                );
+                // --- MODULE EVALUATION ---
+                self.module_evaluator.update_audio(&analysis_v2);
+
+                if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
+                    if let Some(module) = self.state.module_manager.get_module(active_module_id) {
+                        let result = self.module_evaluator.evaluate(module);
+
+                        // 1. Handle Source Commands
+                        for (part_id, cmd) in result.source_commands {
+                            match cmd {
+                                mapmap_core::SourceCommand::PlayMedia {
+                                    path,
+                                    trigger_value,
+                                } => {
+                                    if path.is_empty() {
+                                        continue;
+                                    }
+
+                                    // Check if player exists or needs creation
+                                    let player_exists = self.media_players.contains_key(&part_id);
+
+                                    if !player_exists {
+                                        match mapmap_media::open_path(&path) {
+                                            Ok(player) => {
+                                                self.media_players.insert(part_id, player);
+                                            }
+                                            Err(e) => {
+                                                // Log error only once per failure to avoid spam?
+                                                // For now just error
+                                                error!("Failed to load media '{}': {}", path, e);
+                                                continue;
+                                            }
+                                        }
+                                    }
+
+                                    if let Some(player) = self.media_players.get_mut(&part_id) {
+                                        // Trigger update
+                                        if trigger_value > 0.1 {
+                                            let _ =
+                                                player.command_sender().send(PlaybackCommand::Play);
+                                        }
+
+                                        // Update player with fixed DT for now (should use real DT)
+                                        if let Some(frame) =
+                                            player.update(std::time::Duration::from_millis(16))
+                                        {
+                                            // Upload to texture pool
+                                            if let mapmap_io::format::FrameData::Cpu(data) =
+                                                &frame.data
+                                            {
+                                                let tex_name = format!("part_{}", part_id);
+                                                self.texture_pool.upload_data(
+                                                    &self.backend.queue,
+                                                    &tex_name,
+                                                    data,
+                                                    frame.format.width,
+                                                    frame.format.height,
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                                mapmap_core::SourceCommand::NdiInput {
+                                    source_name: _source_name,
+                                    trigger_value: _trigger_value,
+                                } => {
+                                    #[cfg(feature = "ndi")]
+                                    {
+                                        if let Some(src_name) = source_name {
+                                            let receiver = self.ndi_receivers.entry(part_id).or_insert_with(|| {
+                                                info!("Creating NDI receiver for part {} source {}", part_id, src_name);
+                                                 mapmap_io::ndi::NdiReceiver::new().expect("Failed to create NDI receiver")
+                                            });
+
+                                            if let Ok(Some(frame)) = receiver
+                                                .receive(std::time::Duration::from_millis(0))
+                                            {
+                                                if let mapmap_io::format::FrameData::Cpu(data) =
+                                                    &frame.data
+                                                {
+                                                    let tex_name = format!("part_{}", part_id);
+                                                    self.texture_pool.upload_data(
+                                                        &self.backend.queue,
+                                                        &tex_name,
+                                                        data,
+                                                        frame.format.width,
+                                                        frame.format.height,
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => {}
                             }
                         }
 
-                        // Convert V2 analysis to legacy format for UI compatibility
-                        let legacy_analysis = mapmap_core::audio::AudioAnalysis {
-                            timestamp: analysis_v2.timestamp,
-                            fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
-                            band_energies: [
-                                analysis_v2.band_energies[0], // SubBass
-                                analysis_v2.band_energies[1], // Bass
-                                analysis_v2.band_energies[2], // LowMid
-                                analysis_v2.band_energies[3], // Mid
-                                analysis_v2.band_energies[4], // HighMid
-                                analysis_v2.band_energies[5], // UpperMid (Presence in V1)
-                                analysis_v2.band_energies[6], // Presence (Brilliance in V1)
-                            ],
-                            rms_volume: analysis_v2.rms_volume,
-                            peak_volume: analysis_v2.peak_volume,
-                            beat_detected: analysis_v2.beat_detected,
-                            beat_strength: analysis_v2.beat_strength,
-                            onset_detected: false, // Not implemented in V2 yet
-                            tempo_bpm: analysis_v2.tempo_bpm, // Now from AudioAnalyzerV2!
-                            waveform: analysis_v2.waveform.clone(),
-                        };
-
-                        self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
-
-                        // Update module canvas with audio trigger data
-                        self.ui_state
-                            .module_canvas
-                            .set_audio_data(mapmap_ui::AudioTriggerData {
-                                band_energies: analysis_v2.band_energies,
-                                rms_volume: analysis_v2.rms_volume,
-                                peak_volume: analysis_v2.peak_volume,
-                                beat_detected: analysis_v2.beat_detected,
-                                beat_strength: analysis_v2.beat_strength,
-                                bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
-                            });
-
-                        // Update BPM in toolbar
-                        self.ui_state.current_bpm = analysis_v2.tempo_bpm;
+                        // 2. Handle Output Assignments
+                        self.output_assignments.clear();
+                        for (output_id, assignment) in result.output_assignments {
+                            if let Some(source_id) = assignment.source_part_id {
+                                let tex_name = format!("part_{}", source_id);
+                                self.output_assignments.insert(output_id, tex_name);
+                            }
+                        }
                     }
                 }
+
+                // Log every second for debugging
+                static mut LAST_LOG_SEC: i64 = 0;
+                let current_sec = timestamp as i64;
+                unsafe {
+                    if current_sec != LAST_LOG_SEC {
+                        LAST_LOG_SEC = current_sec;
+                        tracing::debug!(
+                            "AudioV2: {} samples, RMS={:.4}, Peak={:.4}, Bands[0..3]={:?}",
+                            samples_len,
+                            analysis_v2.rms_volume,
+                            analysis_v2.peak_volume,
+                            &analysis_v2.band_energies[..3]
+                        );
+                    }
+                }
+
+                // Convert V2 analysis to legacy format for UI compatibility
+                let legacy_analysis = mapmap_core::audio::AudioAnalysis {
+                    timestamp: analysis_v2.timestamp,
+                    fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
+                    band_energies: [
+                        analysis_v2.band_energies[0], // SubBass
+                        analysis_v2.band_energies[1], // Bass
+                        analysis_v2.band_energies[2], // LowMid
+                        analysis_v2.band_energies[3], // Mid
+                        analysis_v2.band_energies[4], // HighMid
+                        analysis_v2.band_energies[5], // UpperMid (Presence in V1)
+                        analysis_v2.band_energies[6], // Presence (Brilliance in V1)
+                    ],
+                    rms_volume: analysis_v2.rms_volume,
+                    peak_volume: analysis_v2.peak_volume,
+                    beat_detected: analysis_v2.beat_detected,
+                    beat_strength: analysis_v2.beat_strength,
+                    onset_detected: false, // Not implemented in V2 yet
+                    tempo_bpm: analysis_v2.tempo_bpm, // Now from AudioAnalyzerV2!
+                    waveform: analysis_v2.waveform.clone(),
+                };
+
+                self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
+
+                // Update module canvas with audio trigger data
+                self.ui_state
+                    .module_canvas
+                    .set_audio_data(mapmap_ui::AudioTriggerData {
+                        band_energies: analysis_v2.band_energies,
+                        rms_volume: analysis_v2.rms_volume,
+                        peak_volume: analysis_v2.peak_volume,
+                        beat_detected: analysis_v2.beat_detected,
+                        beat_strength: analysis_v2.beat_strength,
+                        bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
+                    });
+
+                // Update BPM in toolbar
+                self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update Effect Automation
                 let now = std::time::Instant::now();
@@ -1696,6 +1818,28 @@ impl App {
 
             // Post-render logic for egui actions
         } else {
+            // Check for direct output assignment from Module Graph
+            if let Some(tex_name) = self.output_assignments.get(&output_id) {
+                if self.texture_pool.has_texture(tex_name) {
+                    let source_view = self.texture_pool.get_view(tex_name);
+
+                    // Render directly to output using empty effect chain (pass-through)
+                    self.effect_chain_renderer.apply_chain(
+                        &mut encoder,
+                        &source_view,
+                        &view,
+                        &mapmap_core::EffectChain::default(),
+                        0.0,
+                        window_context.surface_config.width,
+                        window_context.surface_config.height,
+                    );
+
+                    self.backend.queue.submit(Some(encoder.finish()));
+                    surface_texture.present();
+                    return Ok(());
+                }
+            }
+
             // Ensure textures are the correct size
             self.texture_pool.resize_if_needed(
                 &self.composite_texture,

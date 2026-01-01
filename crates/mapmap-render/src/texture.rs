@@ -123,6 +123,11 @@ impl TexturePool {
             .create_view()
     }
 
+    /// Check if a texture exists in the pool.
+    pub fn has_texture(&self, name: &str) -> bool {
+        self.textures.read().contains_key(name)
+    }
+
     /// Resize a texture if its dimensions have changed.
     pub fn resize_if_needed(&self, name: &str, new_width: u32, new_height: u32) {
         let mut textures = self.textures.write();
@@ -151,6 +156,62 @@ impl TexturePool {
                 self.views.write().insert(name.to_string(), new_view);
             }
         }
+    }
+
+    /// Upload data to a texture.
+    pub fn upload_data(
+        &self,
+        queue: &wgpu::Queue,
+        name: &str,
+        data: &[u8],
+        width: u32,
+        height: u32,
+    ) {
+        // Ensure texture exists and is correct size
+        self.resize_if_needed(name, width, height);
+
+        // If it didn't exist, create it (resize_if_needed only resizes existing)
+        // Wait, resize_if_needed only checks if exists?
+        // Let's modify logic: ensure texture exists.
+
+        let textures = self.textures.write();
+        let handle = if let Some(handle) = textures.get(name) {
+            handle.clone()
+        } else {
+            // Create new
+            drop(textures); // Drop lock before calling self.create
+                            // We need format. Default to Rgba8UnormSrgb?
+                            // Video frames are usually RGBA.
+            let _ = self.create(
+                name,
+                width,
+                height,
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            );
+            return self.upload_data(queue, name, data, width, height); // Recurse once
+        };
+
+        // Write data
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &handle.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            data,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            wgpu::Extent3d {
+                width: handle.width,
+                height: handle.height,
+                depth_or_array_layers: 1,
+            },
+        );
     }
 
     /// Release a texture, making it available for reuse or deallocation.
