@@ -112,8 +112,13 @@ impl MapFlowModule {
             ),
             PartType::Output => (
                 ModulePartType::Output(OutputType::Projector {
-                    id: 0,
+                    id: 1,
                     name: "Projector 1".to_string(),
+                    fullscreen: false,
+                    hide_cursor: true,
+                    target_screen: 0,
+                    show_in_preview_panel: true,
+                    extra_preview_window: false,
                 }),
                 vec![ModuleSocket {
                     name: "Layer In".to_string(),
@@ -754,12 +759,27 @@ pub enum LayerAssignmentType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OutputType {
+    /// Projector/Beamer output window
     Projector {
+        /// Output ID (1-8)
         id: u64,
+        /// Display name
         name: String,
-    },
-    Preview {
-        window_id: u32,
+        /// Enable fullscreen mode
+        #[serde(default)]
+        fullscreen: bool,
+        /// Hide mouse cursor on this output
+        #[serde(default)]
+        hide_cursor: bool,
+        /// Target screen/monitor index (0 = primary, 1 = secondary, etc.)
+        #[serde(default)]
+        target_screen: u8,
+        /// Show preview in the main UI preview panel
+        #[serde(default = "default_true")]
+        show_in_preview_panel: bool,
+        /// Open a separate preview window for this output
+        #[serde(default)]
+        extra_preview_window: bool,
     },
     /// NDI network video output
     NdiOutput {
@@ -767,9 +787,11 @@ pub enum OutputType {
         name: String,
     },
     #[cfg(target_os = "windows")]
-    Spout {
-        name: String,
-    },
+    Spout { name: String },
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

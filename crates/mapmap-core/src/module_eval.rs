@@ -122,7 +122,6 @@ impl ModuleEvaluator {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 let output_id = match output_type {
                     OutputType::Projector { id, .. } => *id,
-                    OutputType::Preview { window_id } => *window_id as u64,
                     OutputType::NdiOutput { .. } => part.id,
                     #[cfg(target_os = "windows")]
                     OutputType::Spout { .. } => part.id,

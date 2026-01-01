@@ -36,6 +36,7 @@ pub mod osc_panel;
 pub mod oscillator_panel;
 pub mod output_panel;
 pub mod paint_panel;
+pub mod preview_panel;
 pub mod shortcut_editor;
 pub mod theme;
 pub mod timeline_v2;
@@ -69,6 +70,7 @@ pub use module_sidebar::ModuleSidebar;
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;
 pub use paint_panel::PaintPanel;
+pub use preview_panel::{OutputPreviewInfo, PreviewPanel};
 pub use shortcut_editor::ShortcutEditor;
 pub use theme::{Theme, ThemeConfig};
 pub use transform_panel::{TransformAction, TransformPanel};
@@ -263,6 +265,10 @@ pub struct AppUI {
     pub is_midi_learn_mode: bool,
     /// Current detected BPM (None if not detected yet)
     pub current_bpm: Option<f32>,
+    /// Preview panel for output thumbnails
+    pub preview_panel: PreviewPanel,
+    /// Show preview panel
+    pub show_preview_panel: bool,
 }
 
 impl Default for AppUI {
@@ -351,6 +357,8 @@ impl Default for AppUI {
             show_controller_overlay: saved_show_controller_overlay, // Load from config
             is_midi_learn_mode: false,
             current_bpm: None,
+            preview_panel: PreviewPanel::default(),
+            show_preview_panel: true, // Show by default
         }
     }
 }

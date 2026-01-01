@@ -1472,9 +1472,58 @@ impl App {
 
 
                     // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
+                    // === PREVIEW PANEL (Bottom, collapsible) ===
+                    if self.ui_state.show_preview_panel {
+                        egui::TopBottomPanel::bottom("preview_panel")
+                            .resizable(true)
+                            .min_height(40.0)
+                            .max_height(250.0)
+                            .default_height(self.ui_state.preview_panel.current_height())
+                            .show(ctx, |ui| {
+                                // Update preview panel with output info from module graph
+                                let output_infos: Vec<mapmap_ui::OutputPreviewInfo> = self
+                                    .state
+                                    .module_manager
+                                    .modules()
+                                    .iter()
+                                    .flat_map(|module| {
+                                        module.parts.iter().filter_map(|part| {
+                                            if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+                                                match output_type {
+                                                    mapmap_core::module::OutputType::Projector { ref id, ref name, ref show_in_preview_panel, .. } => {
+                                                        Some(mapmap_ui::OutputPreviewInfo {
+                                                            id: *id,
+                                                            name: name.clone(),
+                                                            show_in_panel: *show_in_preview_panel,
+                                                            texture_name: self.output_assignments.get(id).cloned(),
+                                                        })
+                                                    }
+                                                    _ => None,
+                                                }
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                    })
+                                    .collect();
+                                
+                                self.ui_state.preview_panel.update_outputs(output_infos);
+                                self.ui_state.preview_panel.show(ui);
+                            });
+                    }
+
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
+                            // Update available outputs for the ModuleCanvas dropdown
+                            self.ui_state.module_canvas.available_outputs = self
+                                .state
+                                .output_manager
+                                .outputs()
+                                .iter()
+                                .map(|o| (o.id, o.name.clone()))
+                                .collect();
+                            
                             self.ui_state.module_canvas.show(
                                 ui,
                                 &mut self.state.module_manager,
@@ -1556,6 +1605,37 @@ impl App {
                                                     }
                                                 });
                                         });
+                                    });
+
+                                ui.separator();
+
+                                // Output/Projector Settings
+                                egui::CollapsingHeader::new(format!("📽️ {}", self.ui_state.i18n.t("settings-outputs")))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label("Number of Outputs (Projectors):");
+                                            let mut output_count = self.state.settings.output_count;
+                                            if ui.add(egui::DragValue::new(&mut output_count).clamp_range(1..=8)).changed() {
+                                                self.state.settings.output_count = output_count;
+                                                self.state.dirty = true;
+                                            }
+                                        });
+                                        
+                                        ui.label("💡 Each output can be assigned to a different screen/projector");
+                                        
+                                        // List current outputs if any
+                                        let output_count = self.state.output_manager.outputs().len();
+                                        if output_count > 0 {
+                                            ui.add_space(8.0);
+                                            ui.label(format!("Currently configured: {} outputs", output_count));
+                                            for output in self.state.output_manager.outputs() {
+                                                ui.label(format!("  • {} (ID: {})", output.name, output.id));
+                                            }
+                                        } else {
+                                            ui.add_space(8.0);
+                                            ui.label("⚠️ No outputs configured yet. Add an Output node in the Module Canvas.");
+                                        }
                                     });
 
                                 ui.separator();
@@ -1884,6 +1964,10 @@ impl App {
                 });
             }
 
+            // Start the frame for the compositor (reset cache)
+            self.compositor.begin_frame();
+            self.mesh_renderer.begin_frame();
+
             // Main layer composition loop
             for layer in self.state.layer_manager.visible_layers() {
                 // Render layer content (render mappings via mesh renderer)
@@ -1930,12 +2014,11 @@ impl App {
 
                         // Create transform matrix for this mapping
                         let transform = glam::Mat4::IDENTITY; // TODO: Apply layer transform
-                        let uniform_buffer = self
-                            .mesh_renderer
-                            .create_uniform_buffer(transform, mapping.opacity);
-                        let uniform_bind_group = self
-                            .mesh_renderer
-                            .create_uniform_bind_group(&uniform_buffer);
+                        let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
+                            &self.backend.queue,
+                            transform,
+                            mapping.opacity,
+                        );
 
                         // Use dummy texture for now (TODO: Get paint's actual texture)
                         let texture_view = self.dummy_view.as_ref().unwrap();
@@ -1991,10 +2074,11 @@ impl App {
                 let bind_group = self
                     .compositor
                     .create_bind_group(current_base_view, &composite_view);
-                let uniform_buffer = self
-                    .compositor
-                    .create_uniform_buffer(layer.blend_mode, layer.opacity);
-                let uniform_bind_group = self.compositor.create_uniform_bind_group(&uniform_buffer);
+                let uniform_bind_group = self.compositor.get_uniform_bind_group(
+                    &self.backend.queue,
+                    layer.blend_mode,
+                    layer.opacity,
+                );
 
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

@@ -110,6 +110,13 @@ pub struct AppSettings {
     /// Logging configuration
     #[serde(default)]
     pub log_config: LogConfig,
+    /// Number of output windows (projectors/beamers)
+    #[serde(default = "default_output_count")]
+    pub output_count: u8,
+}
+
+fn default_output_count() -> u8 {
+    1
 }
 
 impl Default for AppSettings {
@@ -120,6 +127,7 @@ impl Default for AppSettings {
             ui_scale: 1.0,
             language: "en".to_string(),
             log_config: LogConfig::default(),
+            output_count: 1,
         }
     }
 }

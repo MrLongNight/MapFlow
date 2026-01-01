@@ -19,6 +19,11 @@ struct CompositeParams {
     _padding: [f32; 2],
 }
 
+struct CachedUniform {
+    buffer: wgpu::Buffer,
+    bind_group: Arc<wgpu::BindGroup>,
+}
+
 /// Compositor for blending layers
 pub struct Compositor {
     pipeline: wgpu::RenderPipeline,
@@ -26,6 +31,10 @@ pub struct Compositor {
     uniform_bind_group_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     device: Arc<wgpu::Device>,
+
+    // Caching
+    uniform_cache: Vec<CachedUniform>,
+    current_cache_index: usize,
 }
 
 impl Compositor {
@@ -166,6 +175,8 @@ impl Compositor {
             uniform_bind_group_layout,
             sampler,
             device,
+            uniform_cache: Vec::new(),
+            current_cache_index: 0,
         })
     }
 
@@ -215,16 +226,65 @@ impl Compositor {
             })
     }
 
-    /// Create a uniform bind group
-    pub fn create_uniform_bind_group(&self, buffer: &wgpu::Buffer) -> wgpu::BindGroup {
-        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Compositor Uniform Bind Group"),
-            layout: &self.uniform_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffer.as_entire_binding(),
-            }],
-        })
+    /// Reset cache index at start of frame
+    pub fn begin_frame(&mut self) {
+        self.current_cache_index = 0;
+    }
+
+    /// Get a uniform bind group with updated parameters, reusing cached resources
+    pub fn get_uniform_bind_group(
+        &mut self,
+        queue: &wgpu::Queue,
+        blend_mode: BlendMode,
+        opacity: f32,
+    ) -> Arc<wgpu::BindGroup> {
+        // Expand cache if needed
+        if self.current_cache_index >= self.uniform_cache.len() {
+            let params = CompositeParams {
+                blend_mode: blend_mode_to_u32(blend_mode),
+                opacity,
+                _padding: [0.0; 2],
+            };
+
+            let buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Compositor Uniform Buffer"),
+                    contents: bytemuck::cast_slice(&[params]),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                });
+
+            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Compositor Uniform Bind Group"),
+                layout: &self.uniform_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
+            });
+
+            self.uniform_cache.push(CachedUniform {
+                buffer,
+                bind_group: Arc::new(bind_group),
+            });
+        }
+
+        // Update current buffer
+        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let params = CompositeParams {
+            blend_mode: blend_mode_to_u32(blend_mode),
+            opacity,
+            _padding: [0.0; 2],
+        };
+
+        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[params]));
+
+        let bind_group = self.uniform_cache[self.current_cache_index]
+            .bind_group
+            .clone();
+        self.current_cache_index += 1;
+
+        bind_group
     }
 
     /// Composite two textures with a specific blend mode

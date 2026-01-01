@@ -82,6 +82,8 @@ pub struct ModuleCanvas {
     /// Pending NDI connection (part_id, source)
     #[cfg(feature = "ndi")]
     pending_ndi_connect: Option<(ModulePartId, NdiSource)>,
+    /// Available outputs (id, name) for output node selection
+    pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
     editing_part_id: Option<ModulePartId>,
 }
@@ -175,6 +177,7 @@ impl Default for ModuleCanvas {
             ndi_discovery_rx: None,
             #[cfg(feature = "ndi")]
             pending_ndi_connect: None,
+            available_outputs: Vec::new(),
             editing_part_id: None,
         }
     }
@@ -1030,16 +1033,53 @@ impl ModuleCanvas {
                                     ModulePartType::Output(output) => {
                                         ui.label("Output:");
                                         match output {
-                                            OutputType::Projector { id, name } => {
-                                                ui.label("📽️ Projector");
-                                                ui.add(egui::Slider::new(id, 0..=8).text("ID"));
+                                            OutputType::Projector {
+                                                id,
+                                                name,
+                                                fullscreen,
+                                                hide_cursor,
+                                                target_screen,
+                                                show_in_preview_panel,
+                                                extra_preview_window,
+                                            } => {
+                                                ui.label("📽️ Projector Output");
+                                                
+                                                // Output ID selection
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Output #:");
+                                                    ui.add(egui::DragValue::new(id).clamp_range(1..=8));
+                                                });
+                                                
                                                 ui.horizontal(|ui| {
                                                     ui.label("Name:");
                                                     ui.text_edit_singleline(name);
                                                 });
-                                            }
-                                            OutputType::Preview { window_id: _ } => {
-                                                ui.label("👁️ Preview Window");
+                                                
+                                                ui.separator();
+                                                ui.label("🖥️ Window Settings:");
+                                                
+                                                // Target screen selection
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Target Screen:");
+                                                    egui::ComboBox::from_id_source("target_screen_select")
+                                                        .selected_text(format!("Monitor {}", target_screen))
+                                                        .show_ui(ui, |ui| {
+                                                            for i in 0..=3u8 {
+                                                                let label = if i == 0 { "Primary".to_string() } else { format!("Monitor {}", i) };
+                                                                if ui.selectable_label(*target_screen == i, &label).clicked() {
+                                                                    *target_screen = i;
+                                                                }
+                                                            }
+                                                        });
+                                                });
+                                                
+                                                ui.checkbox(fullscreen, "🖼️ Fullscreen");
+                                                ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
+                                                
+                                                ui.separator();
+                                                ui.label("👁️ Preview:");
+                                                ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
+                                                ui.checkbox(extra_preview_window, "Extra Preview Window");
                                             }
                                             #[cfg(feature = "ndi")]
                                             OutputType::NdiOutput { name } => {
@@ -1693,12 +1733,15 @@ impl ModuleCanvas {
                         ui.menu_button("📺 Output", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "projector".contains(&filter)) && ui.button("📽️ Projector").clicked() {
-                                self.add_output_node(manager, OutputType::Projector { id: 0, name: "Projector 1".to_string() });
-                                self.search_filter.clear();
-                                ui.close_menu();
-                            }
-                            if (show_all || "preview".contains(&filter)) && ui.button("👁️ Preview Window").clicked() {
-                                self.add_output_node(manager, OutputType::Preview { window_id: 0 });
+                                self.add_output_node(manager, OutputType::Projector {
+                                    id: 1,
+                                    name: "Projector 1".to_string(),
+                                    fullscreen: false,
+                                    hide_cursor: true,
+                                    target_screen: 0,
+                                    show_in_preview_panel: true,
+                                    extra_preview_window: false,
+                                });
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -3426,7 +3469,6 @@ impl ModuleCanvas {
                 ui.label("Output Type:");
                 let current = match output_type {
                     OutputType::Projector { .. } => "Projector",
-                    OutputType::Preview { .. } => "Preview",
                     #[cfg(feature = "ndi")]
                     OutputType::NdiOutput { .. } => "NDI Output",
                     #[cfg(not(feature = "ndi"))]
@@ -3445,19 +3487,16 @@ impl ModuleCanvas {
                             .clicked()
                         {
                             *output_type = OutputType::Projector {
-                                id: 0,
+                                id: 1,
                                 name: "Projector 1".to_string(),
+                                fullscreen: false,
+                                hide_cursor: true,
+                                target_screen: 0,
+                                show_in_preview_panel: true,
+                                extra_preview_window: false,
                             };
                         }
-                        if ui
-                            .selectable_label(
-                                matches!(output_type, OutputType::Preview { .. }),
-                                "Preview",
-                            )
-                            .clicked()
-                        {
-                            *output_type = OutputType::Preview { window_id: 0 };
-                        }
+
                         #[cfg(feature = "ndi")]
                         if ui
                             .selectable_label(
@@ -3974,7 +4013,6 @@ impl ModuleCanvas {
             ModulePartType::Output(output) => {
                 let name = match output {
                     OutputType::Projector { .. } => "Projector",
-                    OutputType::Preview { .. } => "Preview",
                     OutputType::NdiOutput { .. } => "NDI Output",
                     #[cfg(target_os = "windows")]
                     OutputType::Spout { .. } => "Spout Output",
@@ -4090,7 +4128,6 @@ impl ModuleCanvas {
             }
             ModulePartType::Output(output_type) => match output_type {
                 OutputType::Projector { name, .. } => format!("📺 {}", name),
-                OutputType::Preview { window_id } => format!("👁 Preview {}", window_id),
                 OutputType::NdiOutput { name } => format!("📡 {}", name),
                 #[cfg(target_os = "windows")]
                 OutputType::Spout { name } => format!("🚰 {}", name),
@@ -4230,8 +4267,13 @@ impl ModuleCanvas {
                     ),
                     (
                         ModulePartType::Output(OutputType::Projector {
-                            id: 0,
+                            id: 1,
                             name: "Projector 1".to_string(),
+                            fullscreen: false,
+                            hide_cursor: true,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
                         }),
                         (650.0, 100.0), // Increased from 450 to 650
                         None,
@@ -4264,8 +4306,13 @@ impl ModuleCanvas {
                     ),
                     (
                         ModulePartType::Output(OutputType::Projector {
-                            id: 0,
+                            id: 1,
                             name: "Projector 1".to_string(),
+                            fullscreen: false,
+                            hide_cursor: true,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -4311,8 +4358,13 @@ impl ModuleCanvas {
                     ),
                     (
                         ModulePartType::Output(OutputType::Projector {
-                            id: 0,
+                            id: 1,
                             name: "Projector 1".to_string(),
+                            fullscreen: false,
+                            hide_cursor: true,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
                         }),
                         (1250.0, 100.0), // Increased spacing
                         None,
@@ -4347,8 +4399,13 @@ impl ModuleCanvas {
                     ),
                     (
                         ModulePartType::Output(OutputType::Projector {
-                            id: 0,
+                            id: 1,
                             name: "Projector 1".to_string(),
+                            fullscreen: false,
+                            hide_cursor: true,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -4376,8 +4433,13 @@ impl ModuleCanvas {
                     ),
                     (
                         ModulePartType::Output(OutputType::Projector {
-                            id: 0,
+                            id: 1,
                             name: "Projector 1".to_string(),
+                            fullscreen: false,
+                            hide_cursor: true,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
                         }),
                         (650.0, 100.0),
                         None,
@@ -4436,8 +4498,13 @@ impl ModuleCanvas {
                     ),
                     (
                         ModulePartType::Output(OutputType::Projector {
-                            id: 0,
+                            id: 1,
                             name: "Projector 1".to_string(),
+                            fullscreen: false,
+                            hide_cursor: true,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
                         }),
                         (650.0, 100.0),
                         None,

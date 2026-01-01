@@ -17,6 +17,7 @@ fn create_sample_app_state() -> AppState {
         ui_scale: 1.2,
         language: "de".to_string(),
         log_config: Default::default(),
+        output_count: 1,
     };
     // TODO: Add more complex data to the managers once their structures are more stable.
     app_state
