@@ -76,14 +76,12 @@ pub struct ModuleCanvas {
     /// Discovered NDI sources
     #[cfg(feature = "ndi")]
     ndi_sources: Vec<NdiSource>,
-    /// Whether NDI source discovery is running
+    /// Channel to receive discovered NDI sources from async task
     #[cfg(feature = "ndi")]
-    ndi_discovery_running: bool,
-    /// Channel to receive discovered NDI sources from the async task
+    ndi_discovery_rx: Option<mpsc::Receiver<Vec<NdiSource>>>,
+    /// Pending NDI connection (part_id, source)
     #[cfg(feature = "ndi")]
-    ndi_source_receiver: mpsc::Receiver<Vec<NdiSource>>,
-    #[cfg(feature = "ndi")]
-    ndi_source_sender: mpsc::Sender<Vec<NdiSource>>,
+    pending_ndi_connect: Option<(ModulePartId, NdiSource)>,
     /// ID of the part being edited in a popup
     editing_part_id: Option<ModulePartId>,
 }
@@ -145,9 +143,6 @@ pub enum CanvasAction {
 
 impl Default for ModuleCanvas {
     fn default() -> Self {
-        #[cfg(feature = "ndi")]
-        let (sender, receiver) = mpsc::channel();
-
         Self {
             active_module_id: None,
             pan_offset: Vec2::ZERO,
@@ -177,11 +172,9 @@ impl Default for ModuleCanvas {
             #[cfg(feature = "ndi")]
             ndi_sources: Vec::new(),
             #[cfg(feature = "ndi")]
-            ndi_discovery_running: false,
+            ndi_discovery_rx: None,
             #[cfg(feature = "ndi")]
-            ndi_source_receiver: receiver,
-            #[cfg(feature = "ndi")]
-            ndi_source_sender: sender,
+            pending_ndi_connect: None,
             editing_part_id: None,
         }
     }
@@ -476,8 +469,66 @@ impl ModuleCanvas {
                                             #[cfg(feature = "ndi")]
                                             SourceType::NdiInput { source_name } => {
                                                 ui.label("📡 NDI Input");
-                                                let display_name = source_name.clone().unwrap_or_else(|| "None".to_string());
-                                                ui.label(format!("Source: {}", display_name));
+                                                
+                                                // Display current source
+                                                let display_name = source_name.clone().unwrap_or_else(|| "Not Connected".to_string());
+                                                ui.label(format!("Current: {}", display_name));
+                                                
+                                                // Discover button
+                                                ui.horizontal(|ui| {
+                                                    if ui.button("🔍 Discover Sources").clicked() {
+                                                        // Start async discovery
+                                                        let (tx, rx) = std::sync::mpsc::channel();
+                                                        self.ndi_discovery_rx = Some(rx);
+                                                        mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
+                                                        self.ndi_sources.clear();
+                                                        ui.ctx().request_repaint();
+                                                    }
+                                                    
+                                                    // Check for discovery results
+                                                    if let Some(rx) = &self.ndi_discovery_rx {
+                                                        if let Ok(sources) = rx.try_recv() {
+                                                            self.ndi_sources = sources;
+                                                            self.ndi_discovery_rx = None;
+                                                        }
+                                                    }
+                                                    
+                                                    // Show spinner if discovering
+                                                    if self.ndi_discovery_rx.is_some() {
+                                                        ui.spinner();
+                                                        ui.label("Searching...");
+                                                    }
+                                                });
+                                                
+                                                // Source selection dropdown
+                                                if !self.ndi_sources.is_empty() {
+                                                    ui.separator();
+                                                    ui.label("Available Sources:");
+                                                    
+                                                    egui::ComboBox::from_id_source("ndi_source_select")
+                                                        .selected_text(display_name.clone())
+                                                        .show_ui(ui, |ui| {
+                                                            // Option to disconnect
+                                                            if ui.selectable_label(source_name.is_none(), "❌ None (Disconnect)").clicked() {
+                                                                *source_name = None;
+                                                            }
+                                                            
+                                                            // Available sources
+                                                            for ndi_source in &self.ndi_sources {
+                                                                let selected = source_name.as_ref() == Some(&ndi_source.name);
+                                                                if ui.selectable_label(selected, &ndi_source.name).clicked() {
+                                                                    *source_name = Some(ndi_source.name.clone());
+                                                                    
+                                                                    // Trigger connection action
+                                                                    self.pending_ndi_connect = Some((part_id, ndi_source.clone()));
+                                                                }
+                                                            }
+                                                        });
+                                                    
+                                                    ui.label(format!("Found {} source(s)", self.ndi_sources.len()));
+                                                } else if self.ndi_discovery_rx.is_none() {
+                                                    ui.label("Click 'Discover' to find NDI sources");
+                                                }
                                             }
                                             #[cfg(not(feature = "ndi"))]
                                             SourceType::NdiInput { .. } => {
