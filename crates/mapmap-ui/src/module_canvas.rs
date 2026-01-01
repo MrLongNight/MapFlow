@@ -6,11 +6,9 @@ use mapmap_core::module::{
     ModulizerType, OutputType, SourceType, TriggerType,
 };
 #[cfg(feature = "ndi")]
-use mapmap_io::ndi::Source as NdiSource;
+use mapmap_io::ndi::NdiSource;
 #[cfg(feature = "ndi")]
-use std::sync::{mpsc, Arc};
-#[cfg(feature = "ndi")]
-use tokio::runtime::Runtime;
+use std::sync::mpsc;
 
 /// Information about a socket position for hit detection
 #[derive(Clone)]

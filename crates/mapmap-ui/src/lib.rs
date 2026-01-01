@@ -60,7 +60,7 @@ pub use effect_chain_panel::{
 pub use inspector_panel::{InspectorAction, InspectorContext, InspectorPanel};
 pub use layer_panel::{LayerPanel, LayerPanelAction};
 #[cfg(feature = "ndi")]
-use mapmap_io::ndi::Source as NdiSource;
+pub use mapmap_io::ndi::NdiSource;
 pub use mapping_panel::MappingPanel;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};

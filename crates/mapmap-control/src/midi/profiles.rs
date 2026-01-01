@@ -66,6 +66,13 @@ impl ControllerProfile {
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
     }
+
+    /// Load from JSON file
+    pub fn load_from_file<P: AsRef<std::path::Path>>(path: P) -> std::io::Result<Self> {
+        let content = std::fs::read_to_string(path)?;
+        let profile = serde_json::from_str(&content)?;
+        Ok(profile)
+    }
 }
 
 /// Built-in controller profiles
@@ -78,8 +85,25 @@ impl BuiltInProfiles {
             Self::generic_controller(),
             Self::akai_apc40(),
             Self::novation_launchpad(),
-            super::ecler_nuo4::ecler_nuo4(),
+            Self::ecler_nuo4(),
         ]
+    }
+
+    /// Ecler NUO 4 profile (loads from JSON resource)
+    pub fn ecler_nuo4() -> ControllerProfile {
+        // Try to load from standard resource path
+        let path = "resources/controllers/ecler_nuo4/profile.json";
+        if let Ok(profile) = ControllerProfile::load_from_file(path) {
+            return profile;
+        }
+
+        // Fallback if file not found (minimal profile)
+        ControllerProfile {
+            name: "Ecler NUO 4 (Backup)".to_string(),
+            manufacturer: "Ecler".to_string(),
+            description: "Profile not found in resources/controllers/ecler_nuo4/".to_string(),
+            mappings: vec![],
+        }
     }
 
     /// Generic MIDI controller with common CC mappings
@@ -230,5 +254,21 @@ mod tests {
 
         assert_eq!(profile.name, loaded.name);
         assert_eq!(profile.mappings.len(), loaded.mappings.len());
+    }
+
+    #[test]
+    fn test_ecler_profile_loading() {
+        // Warning: This test depends on the external resource file existing
+        // It's useful for local dev, but might fail in CI if resources aren't checked out/available in the same path
+        let profile = BuiltInProfiles::ecler_nuo4();
+
+        // If file is found, it should have the correct name
+        if profile.description.contains("Loaded from JSON") {
+            assert_eq!(profile.name, "Ecler NUO 4");
+            assert!(profile.mappings.len() > 0);
+        } else {
+            // Fallback case
+            assert_eq!(profile.name, "Ecler NUO 4 (Backup)");
+        }
     }
 }

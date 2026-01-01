@@ -316,7 +316,7 @@ impl ModuleEvaluator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::module::{MapFlowModule, ModulePlaybackMode, PartType};
+    use crate::module::{MapFlowModule, ModulePlaybackMode};
 
     #[test]
     fn test_evaluator_creation() {

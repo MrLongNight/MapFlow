@@ -720,11 +720,11 @@ impl App {
                                 }
                                 mapmap_core::SourceCommand::NdiInput {
                                     source_name: _source_name,
-                                    trigger_value: _trigger_value,
+                                    trigger_value: _,
                                 } => {
                                     #[cfg(feature = "ndi")]
                                     {
-                                        if let Some(src_name) = source_name {
+                                        if let Some(src_name) = _source_name {
                                             let receiver = self.ndi_receivers.entry(part_id).or_insert_with(|| {
                                                 info!("Creating NDI receiver for part {} source {}", part_id, src_name);
                                                  mapmap_io::ndi::NdiReceiver::new().expect("Failed to create NDI receiver")
