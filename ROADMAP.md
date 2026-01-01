@@ -367,11 +367,12 @@
     - ✅ UI-Integration in Module Canvas
     - ⬜ wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt Update)
 
-- ✅ **Logging & Debug** (COMPLETED 2025-12-27)
+- ✅ **Logging & Debug** (COMPLETED 2025-12-28)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
   - ✅ LogConfig Struct mit Settings
   - ✅ Settings-UI für Logging (Log-Level, Pfad, Max-Files) - COMPLETED 2025-12-27
-  - ⬜ Audio-Device Debug validieren (manueller Test)
+  - ✅ File-basiertes Logging mit Timestamp-Dateinamen - COMPLETED 2025-12-28
+  - ✅ `logging_setup.rs` in Binary integriert - COMPLETED 2025-12-28
 
 - 🟡 **Ecler NUO 4 Controller Overlay Redesign** (IN PROGRESS 2025-12-27)
   
@@ -443,11 +444,14 @@
   - ✅ MIDI-Ports auswählbar in Settings
   - ✅ Auto-Connect zu erstem Port
 
-- 🟡 **Level Meter Redesign** (Code vorhanden, NICHT FUNKTIONAL)
-  - ✅ STEREO für beide Varianten → StereoAudioMeter Widget (Code existiert)
-  - ✅ Einbaurahmen mit 4 Phillips-Schrauben (Code existiert)
-  - ✅ Beschriftete dB-Skala (Code existiert)
-  - ❌ In UI integriert aber NICHT FUNKTIONAL - Audio-Analyse defekt
+- ✅ **Level Meter Redesign** (FIXED 2026-01-01)
+  - ✅ STEREO für beide Varianten → StereoAudioMeter Widget
+  - ✅ Einbaurahmen mit 4 Phillips-Schrauben
+  - ✅ Beschriftete dB-Skala
+  - ✅ Audio-Analyse Bugs gefixt:
+    - ✅ Analyzer-Reset bei Device-Wechsel (keine Phantom-Signale mehr)
+    - ✅ Korrekte dB-Berechnung mit NEG_INFINITY für Stille
+    - ✅ Noise-Gate und Gain-Anpassung für schwache Signale
   - 📄 **Fix:** Abhängig von Audio-Migration (siehe `AUDIO_ANALYSIS_MIGRATION.md`)
 
 ### 🟢 MODULE-CANVAS PANELS (Implementiert 2025-12-26)
