@@ -377,7 +377,7 @@
 - 🟡 **NDI/Spout Video I/O** (mapmap-io)
   - ✅ **NDI Support** (`mapmap-io/src/ndi/`)
     - ✅ NdiReceiver für NDI-Source-Empfang
-    - ✅ NdiSender für NDI-Output
+    - 🟡 NdiSender für NDI-Output (Partial/Stub)
     - ✅ Source Discovery (async)
     - ✅ Feature-Flag: `ndi`
   - 🟡 **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
@@ -556,11 +556,11 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
-- ⬜ **NDI-Integration** (`mapmap-ndi/`)
-  - ⬜ `grafton-ndi` Rust Bindings integrieren
-  - ⬜ NDI Sender (wgpu Texture → NDI Stream)
-  - ⬜ NDI Receiver (NDI Stream → Fullscreen Texture)
-  - ⬜ Multi-Source-Diüscovery (NDI Finder)
+- 🟡 **NDI-Integration** (`mapmap-ndi/`)
+  - ✅ `grafton-ndi` Rust Bindings integrieren
+  - 🟡 NDI Sender (wgpu Texture → NDI Stream)
+  - ✅ NDI Receiver (NDI Stream → Fullscreen Texture)
+  - ✅ Multi-Source-Discovery (NDI Finder)
   - ⬜ Latenz-Optimierung (<100ms Ziel)
 
 - ⬜ **Player-Modus** (`--player-ndi`)
