@@ -139,7 +139,6 @@ struct App {
     /// Output assignments (OutputID -> Texture Name)
     output_assignments: std::collections::HashMap<u64, String>,
     /// Recent Effect Configurations (User Prefs)
-    /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
     /// Edge blend renderer for output windows
     edge_blend_renderer: Option<EdgeBlendRenderer>,
@@ -1208,7 +1207,7 @@ impl App {
                         active_window_ids.insert(preview_id);
 
                         // Ensure render assignment exists for preview
-                        self.output_assignments.insert(preview_id, assignment.source_part_id.map(|id| format!("tex_{}", id)).unwrap_or_default());
+                        self.output_assignments.insert(preview_id, assignment.source_part_id.map(|id| format!("part_{}", id)).unwrap_or_default());
 
                         if self.window_manager.get(preview_id).is_none() {
                             self.window_manager.create_projector_window(
@@ -1217,7 +1216,7 @@ impl App {
                                 preview_id,
                                 &format!("Preview: {}", name),
                                 false, // Always windowed
-                                true, // Show cursor
+                                false, // Show cursor
                                 0, // Default screen (0)
                             )?;
                             info!("Created preview window for output {}", output_id);
@@ -1652,7 +1651,6 @@ impl App {
 
 
                     // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
-                    // === PREVIEW PANEL (Bottom, collapsible) ===
                     // === PREVIEW PANEL (Left Sidebar, independent) ===
                     if self.ui_state.show_preview_panel {
                         egui::SidePanel::left("preview_sidebar")
@@ -2079,7 +2077,6 @@ impl App {
 
             // Post-render logic for egui actions
         } else {
-            // Check for direct output assignment from Module Graph
             // Check for direct output assignment from Module Graph
             if let Some(tex_name) = self.output_assignments.get(&output_id) {
                 if self.texture_pool.has_texture(tex_name) {
