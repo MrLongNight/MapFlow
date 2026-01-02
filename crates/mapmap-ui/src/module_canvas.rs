@@ -87,6 +87,8 @@ pub struct ModuleCanvas {
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
     editing_part_id: Option<ModulePartId>,
+    /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
+    pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
 }
 
 /// Live audio data for trigger nodes
@@ -180,6 +182,7 @@ impl Default for ModuleCanvas {
             pending_ndi_connect: None,
             available_outputs: Vec::new(),
             editing_part_id: None,
+            node_previews: std::collections::HashMap::new(),
         }
     }
 }
@@ -493,6 +496,15 @@ impl ModuleCanvas {
                                             } => {
                                                 ui.label("📁 Media File");
                                                 
+                                                // === FILE PATH ===
+                                                // Show Preview if available
+                                                if let Some(tex_id) = self.node_previews.get(&part_id) {
+                                                    ui.add_space(5.0);
+                                                    let size = Vec2::new(240.0, 135.0); // 16:9 preview
+                                                    ui.image((*tex_id, size));
+                                                    ui.add_space(5.0);
+                                                }
+
                                                 // === FILE PATH ===
                                                 ui.horizontal(|ui| {
                                                     ui.label("Path:");
