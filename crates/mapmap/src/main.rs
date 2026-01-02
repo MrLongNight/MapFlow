@@ -18,7 +18,7 @@ use mapmap_core::{
         backend::cpal_backend::CpalBackend,
         backend::AudioBackend,
     },
-    AppState, ModuleEvaluator, OutputId,
+    AppState, ModuleEvaluator, OutputId, RenderOp,
 };
 
 use mapmap_mcp::{McpAction, McpServer};
@@ -56,7 +56,7 @@ struct App {
     /// Texture pool for intermediate textures.
     texture_pool: TexturePool,
     /// The main compositor.
-    compositor: Compositor,
+    _compositor: Compositor,
     /// The effect chain renderer.
     effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
@@ -64,9 +64,9 @@ struct App {
     /// Cache for mesh GPU buffers
     mesh_buffer_cache: MeshBufferCache,
     /// Quad renderer for passthrough.
-    quad_renderer: QuadRenderer,
+    _quad_renderer: QuadRenderer,
     /// Final composite texture before output processing.
-    composite_texture: String,
+    _composite_texture: String,
     /// Ping-pong textures for layer composition.
     layer_ping_pong: [String; 2],
     /// The application state (project data).
@@ -136,6 +136,8 @@ struct App {
     output_assignments: std::collections::HashMap<u64, String>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
+    /// Render Operations from Module Evaluator
+    render_ops: Vec<RenderOp>,
 }
 
 impl App {
@@ -360,12 +362,12 @@ impl App {
             ui_state,
             backend,
             texture_pool,
-            compositor,
+            _compositor: compositor,
             effect_chain_renderer,
             mesh_renderer,
             mesh_buffer_cache,
-            quad_renderer,
-            composite_texture,
+            _quad_renderer: quad_renderer,
+            _composite_texture: composite_texture,
             layer_ping_pong,
             state,
             audio_backend,
@@ -435,6 +437,7 @@ impl App {
                     .join("MapFlow")
                     .join("recent_effect_configs.json"),
             ),
+            render_ops: Vec::new(),
         };
 
         // Create initial dummy texture
@@ -753,12 +756,17 @@ impl App {
                             }
                         }
 
-                        // 2. Handle Output Assignments
+                        // 2. Handle Render Ops (New System)
+                        self.render_ops = result.render_ops;
+                        
+                        // Update Output Assignments for Preview
                         self.output_assignments.clear();
-                        for (output_id, assignment) in result.output_assignments {
-                            if let Some(source_id) = assignment.source_part_id {
-                                let tex_name = format!("part_{}", source_id);
-                                self.output_assignments.insert(output_id, tex_name);
+                        for op in &self.render_ops {
+                            if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
+                                if let Some(source_id) = op.source_part_id {
+                                    let tex_name = format!("part_{}", source_id);
+                                    self.output_assignments.insert(*id, tex_name);
+                                }
                             }
                         }
                     }
@@ -1898,60 +1906,163 @@ impl App {
 
             // Post-render logic for egui actions
         } else {
-            // Check for direct output assignment from Module Graph
-            if let Some(tex_name) = self.output_assignments.get(&output_id) {
-                if self.texture_pool.has_texture(tex_name) {
-                    let source_view = self.texture_pool.get_view(tex_name);
+            // === Node-Based Rendering Pipeline ===
+            
+            // 1. Find the RenderOp for this output
+            let target_op = self.render_ops.iter().find(|op| {
+                if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
+                    *id == output_id
+                } else {
+                    false
+                }
+            });
 
-                    // Render directly to output using empty effect chain (pass-through)
-                    self.effect_chain_renderer.apply_chain(
-                        &mut encoder,
-                        &source_view,
-                        &view,
-                        &mapmap_core::EffectChain::default(),
-                        0.0,
-                        window_context.surface_config.width,
-                        window_context.surface_config.height,
+            if let Some(op) = target_op {
+                // Determine source texture view
+                let owned_source_view = if let Some(src_id) = op.source_part_id {
+                    let tex_name = format!("part_{}", src_id);
+                    if self.texture_pool.has_texture(&tex_name) {
+                        Some(self.texture_pool.get_view(&tex_name))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                let source_view_ref = owned_source_view.as_ref();
+
+                let effective_view = source_view_ref.or(self.dummy_view.as_ref());
+
+                if let Some(src_view) = effective_view {
+                    // Start Frame (Clear Output)
+                    {
+                        let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Output Clear Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: &view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: None,
+                            occlusion_query_set: None,
+                            timestamp_writes: None,
+                        });
+                    }
+
+                    self.mesh_renderer.begin_frame();
+
+                    // Retrieve Mesh Buffers
+                    let (vertex_buffer, index_buffer, index_count) = self
+                        .mesh_buffer_cache
+                        .get_buffers(&self.backend.device, op.layer_part_id, &op.mesh.to_mesh());
+
+                    // Setup Uniforms (Transform & Opacity)
+                    let transform = glam::Mat4::IDENTITY; // TODO: Implement Mesh Transform if needed
+                    let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
+                        &self.backend.queue,
+                        transform,
+                        op.opacity,
                     );
 
-                    self.backend.queue.submit(Some(encoder.finish()));
-                    surface_texture.present();
-                    return Ok(());
+                    // Setup Texture
+                    let mut final_view = src_view;
+                    let mut _temp_view_holder: Option<wgpu::TextureView> = None; // Keep view alive
+
+                    if !op.effects.is_empty() {
+                         let time = self.start_time.elapsed().as_secs_f32();
+                         let mut chain = mapmap_core::EffectChain::new();
+                         
+                         for modulizer in &op.effects {
+                             if let mapmap_core::module::ModulizerType::Effect { effect_type: mod_effect, params } = modulizer {
+                                 let core_effect = match mod_effect {
+                                     mapmap_core::module::EffectType::Blur => Some(mapmap_core::effects::EffectType::Blur),
+                                     mapmap_core::module::EffectType::Invert => Some(mapmap_core::effects::EffectType::Invert),
+                                     mapmap_core::module::EffectType::Pixelate => Some(mapmap_core::effects::EffectType::Pixelate),
+                                     mapmap_core::module::EffectType::Brightness | 
+                                     mapmap_core::module::EffectType::Contrast | 
+                                     mapmap_core::module::EffectType::Saturation => Some(mapmap_core::effects::EffectType::ColorAdjust),
+                                     mapmap_core::module::EffectType::ChromaticAberration => Some(mapmap_core::effects::EffectType::ChromaticAberration),
+                                     mapmap_core::module::EffectType::EdgeDetect => Some(mapmap_core::effects::EffectType::EdgeDetect),
+                                     mapmap_core::module::EffectType::FilmGrain => Some(mapmap_core::effects::EffectType::FilmGrain),
+                                     mapmap_core::module::EffectType::Vignette => Some(mapmap_core::effects::EffectType::Vignette),
+                                     _ => None
+                                 };
+                                 
+                                 if let Some(et) = core_effect {
+                                     let effect_id = chain.add_effect(et);
+                                     // Copy parameters from module effect to render effect
+                                     if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                         effect.parameters = params.clone();
+                                     }
+                                 }
+                             }
+                         }
+
+                         if chain.enabled_effects().count() > 0 {
+                            let target_tex_name = &self.layer_ping_pong[0];
+                            let (w, h) = (
+                                window_context.surface_config.width,
+                                window_context.surface_config.height,
+                            );
+                             
+                            self.texture_pool.resize_if_needed(target_tex_name, w, h);
+                            let target_view = self.texture_pool.get_view(target_tex_name);
+
+                            self.effect_chain_renderer.apply_chain(
+                                &mut encoder,
+                                src_view,
+                                &target_view,
+                                &chain,
+                                time,
+                                w,
+                                h
+                            );
+                            
+                            _temp_view_holder = Some(target_view);
+                            final_view = _temp_view_holder.as_ref().unwrap();
+                        }
+                    }
+
+                    let texture_bind_group = self.mesh_renderer.create_texture_bind_group(final_view);
+
+                    // Draw Mesh
+                    {
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Mesh Render Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Load, // Accumulate on black
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+
+                        self.mesh_renderer.draw(
+                            &mut render_pass,
+                            vertex_buffer,
+                            index_buffer,
+                            index_count,
+                            &uniform_bind_group,
+                            &texture_bind_group,
+                            true, // Perspective correction
+                        );
+                    }
                 }
-            }
-
-            // Ensure textures are the correct size
-            self.texture_pool.resize_if_needed(
-                &self.composite_texture,
-                window_context.surface_config.width,
-                window_context.surface_config.height,
-            );
-            self.texture_pool.resize_if_needed(
-                &self.layer_ping_pong[0],
-                window_context.surface_config.width,
-                window_context.surface_config.height,
-            );
-            self.texture_pool.resize_if_needed(
-                &self.layer_ping_pong[1],
-                window_context.surface_config.width,
-                window_context.surface_config.height,
-            );
-
-            // Get layer textures
-            let composite_view = self.texture_pool.get_view(&self.composite_texture);
-            let layer_pp_views = [
-                self.texture_pool.get_view(&self.layer_ping_pong[0]),
-                self.texture_pool.get_view(&self.layer_ping_pong[1]),
-            ];
-
-            let mut current_target_idx = 0;
-
-            // Clear the initial composite target
-            {
+            } else {
+                // No op for this output - Clear to Black
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Clear Composite Pass"),
+                    label: Some("Clear Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &layer_pp_views[0],
+                        view: &view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -1963,167 +2074,6 @@ impl App {
                     timestamp_writes: None,
                 });
             }
-
-            // Start the frame for the compositor (reset cache)
-            self.compositor.begin_frame();
-            self.mesh_renderer.begin_frame();
-
-            // Main layer composition loop
-            for layer in self.state.layer_manager.visible_layers() {
-                // Render layer content (render mappings via mesh renderer)
-                let temp_layer_content = self.texture_pool.create(
-                    "temp_layer_content",
-                    window_context.surface_config.width,
-                    window_context.surface_config.height,
-                    self.backend.surface_format(),
-                    wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-                );
-                let temp_layer_content_view = self.texture_pool.get_view(&temp_layer_content);
-
-                // Clear layer content texture to transparent
-                {
-                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Layer Content Clear"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &temp_layer_content_view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        occlusion_query_set: None,
-                        timestamp_writes: None,
-                    });
-                }
-
-                // Render all visible mappings for this layer
-                // Check if layer has associated paint_id and find mappings
-                if let Some(paint_id) = layer.paint_id {
-                    let mappings_list = self.state.mapping_manager.mappings_for_paint(paint_id);
-                    let mappings_for_layer = mappings_list
-                        .iter()
-                        .filter(|m| m.visible && m.opacity > 0.0);
-
-                    for mapping in mappings_for_layer {
-                        // Get GPU buffers for this mapping's mesh (cached)
-                        let (vertex_buffer, index_buffer, index_count) = self
-                            .mesh_buffer_cache
-                            .get_buffers(&self.backend.device, mapping.id, &mapping.mesh);
-
-                        // Create transform matrix for this mapping
-                        let transform = glam::Mat4::IDENTITY; // TODO: Apply layer transform
-                        let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
-                            &self.backend.queue,
-                            transform,
-                            mapping.opacity,
-                        );
-
-                        // Use dummy texture for now (TODO: Get paint's actual texture)
-                        let texture_view = self.dummy_view.as_ref().unwrap();
-                        let texture_bind_group =
-                            self.mesh_renderer.create_texture_bind_group(texture_view);
-
-                        // Render the mesh
-                        {
-                            let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Mesh Render Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: &temp_layer_content_view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load, // Don't clear, accumulate
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    occlusion_query_set: None,
-                                    timestamp_writes: None,
-                                });
-
-                            self.mesh_renderer.draw(
-                                &mut render_pass,
-                                vertex_buffer,
-                                index_buffer,
-                                index_count,
-                                &uniform_bind_group,
-                                &texture_bind_group,
-                                true, // Use perspective correction
-                            );
-                        }
-                    }
-                }
-
-                // Apply effect chain to the layer content
-                self.effect_chain_renderer.apply_chain(
-                    &mut encoder,
-                    &temp_layer_content_view,
-                    &composite_view, // Output of effects goes to composite texture
-                    &layer.effect_chain,
-                    self.start_time.elapsed().as_secs_f32(),
-                    window_context.surface_config.width,
-                    window_context.surface_config.height,
-                );
-
-                // Composite the result with the previous layers
-                let current_base_view = &layer_pp_views[current_target_idx];
-                let next_target_view = &layer_pp_views[1 - current_target_idx];
-
-                let bind_group = self
-                    .compositor
-                    .create_bind_group(current_base_view, &composite_view);
-                let uniform_bind_group = self.compositor.get_uniform_bind_group(
-                    &self.backend.queue,
-                    layer.blend_mode,
-                    layer.opacity,
-                );
-
-                {
-                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Layer Composite Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: next_target_view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
-
-                    self.compositor.composite(
-                        &mut rpass,
-                        self.quad_renderer.vertex_buffer(),
-                        self.quad_renderer.index_buffer(),
-                        &bind_group,
-                        &uniform_bind_group,
-                    );
-                }
-
-                // Swap for next iteration
-                current_target_idx = 1 - current_target_idx;
-                self.texture_pool.release(&temp_layer_content);
-            }
-
-            // TODO: Apply output transforms (edge blend, color calibration) here
-
-            // Final copy to the screen
-            // Apply Effect Chain (replaces final blit)
-            let final_texture_view = &layer_pp_views[current_target_idx];
-            self.effect_chain_renderer.apply_chain(
-                &mut encoder,
-                final_texture_view,
-                &view,
-                &self.state.effect_chain,
-                self.start_time.elapsed().as_secs_f32(),
-                window_context.surface_config.width,
-                window_context.surface_config.height,
-            );
         }
 
         self.backend.queue.submit(Some(encoder.finish()));

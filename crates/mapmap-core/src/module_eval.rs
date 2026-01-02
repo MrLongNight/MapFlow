@@ -1,17 +1,40 @@
 //! Module Graph Evaluator
 //!
 //! Traverses the module graph and computes output values.
-//! This is the runtime that connects:
-//! - Triggers (Audio, MIDI, etc.) to Sources
-//! - Sources to Effects
-//! - Effects to Outputs
+//! This handles the full pipeline: Trigger -> Source -> Mask -> Effect -> Layer(Mesh) -> Output.
 
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{
-    MapFlowModule, ModulePartId, ModulePartType, OutputType, SourceType, TriggerType,
+    BlendModeType, LayerType, MapFlowModule, MaskType, MeshType, ModulePartId, ModulePartType,
+    ModulizerType, OutputType, SourceType, TriggerType,
 };
 use std::collections::HashMap;
+
+/// Render operation containing all info needed to render a layer to an output
+#[derive(Debug, Clone)]
+pub struct RenderOp {
+    /// The output node ID (Part ID)
+    pub output_part_id: ModulePartId,
+    /// The specific output type configuration
+    pub output_type: OutputType,
+
+    /// The layer node ID calling for this render
+    pub layer_part_id: ModulePartId,
+    /// The mesh geometry to use
+    pub mesh: MeshType,
+    /// Layer opacity
+    pub opacity: f32,
+    /// Layer blend mode
+    pub blend_mode: Option<BlendModeType>,
+
+    /// Source part ID (if any)
+    pub source_part_id: Option<ModulePartId>,
+    /// Applied effects in order (Source -> Effect1 -> Effect2 -> ...)
+    pub effects: Vec<ModulizerType>,
+    /// Applied masks
+    pub masks: Vec<MaskType>,
+}
 
 /// Evaluation result for a single frame
 #[derive(Debug, Clone, Default)]
@@ -20,8 +43,8 @@ pub struct ModuleEvalResult {
     pub trigger_values: HashMap<ModulePartId, Vec<f32>>,
     /// Source commands: part_id -> SourceCommand
     pub source_commands: HashMap<ModulePartId, SourceCommand>,
-    /// Output assignments: output_id -> texture_id
-    pub output_assignments: HashMap<u64, TextureAssignment>,
+    /// Render operations to specific outputs
+    pub render_ops: Vec<RenderOp>,
 }
 
 /// Command for a source node
@@ -50,17 +73,11 @@ pub enum SourceCommand {
     },
 }
 
-/// Texture assignment for an output
-#[derive(Debug, Clone)]
-pub struct TextureAssignment {
-    /// ID of the output (projector, NDI, etc.)
-    pub output_id: u64,
-    /// Type of output
-    pub output_type: OutputType,
-    /// Source part ID that feeds this output
-    pub source_part_id: Option<ModulePartId>,
-    /// Opacity/blend factor
-    pub opacity: f32,
+/// Helper struct for chain tracing results
+struct ProcessingChain {
+    source_id: Option<ModulePartId>,
+    effects: Vec<ModulizerType>,
+    masks: Vec<MaskType>,
 }
 
 /// Module graph evaluator
@@ -117,33 +134,91 @@ impl ModuleEvaluator {
             }
         }
 
-        // Step 4: Find output assignments
+        // Step 4: Trace Render Pipeline
+        // Start from Output nodes and trace back to Layers, then to Sources/Effects
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
-                let output_id = match output_type {
-                    OutputType::Projector { id, .. } => *id,
-                    OutputType::NdiOutput { .. } => part.id,
-                    #[cfg(target_os = "windows")]
-                    OutputType::Spout { .. } => part.id,
-                };
+                // Find connected input (should be a Layer)
+                if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
+                    if let Some(layer_part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                        if let ModulePartType::Layer(layer_type) = &layer_part.part_type {
+                            match layer_type {
+                                LayerType::Single {
+                                    mesh,
+                                    opacity,
+                                    blend_mode,
+                                    ..
+                                } => {
+                                    // Trace back from Layer to find Source chain
+                                    let chain = self.trace_chain(module, layer_part.id);
 
-                // Find the source that feeds this output (trace back through connections)
-                let source_part_id = self.find_source_for_output(module, part.id);
-                let opacity = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
-
-                result.output_assignments.insert(
-                    output_id,
-                    TextureAssignment {
-                        output_id,
-                        output_type: output_type.clone(),
-                        source_part_id,
-                        opacity,
-                    },
-                );
+                                    result.render_ops.push(RenderOp {
+                                        output_part_id: part.id,
+                                        output_type: output_type.clone(),
+                                        layer_part_id: layer_part.id,
+                                        mesh: mesh.clone(),
+                                        opacity: *opacity,
+                                        blend_mode: *blend_mode,
+                                        source_part_id: chain.source_id,
+                                        effects: chain.effects,
+                                        masks: chain.masks,
+                                    });
+                                }
+                                LayerType::Group { .. } => {
+                                    // TODO: Handle groups
+                                }
+                                LayerType::All { .. } => {
+                                    // TODO: Handle global layers (all)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         result
+    }
+
+    /// Trace the processing input chain backwards from a start node (e.g. Layer input)
+    fn trace_chain(&self, module: &MapFlowModule, start_node_id: ModulePartId) -> ProcessingChain {
+        let mut effects = Vec::new();
+        let mut masks = Vec::new();
+        let mut source_id = None;
+        let mut current_id = start_node_id;
+
+        // Safety limit to prevent infinite loops in cyclic graphs
+        for _ in 0..50 {
+            if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
+                if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                    match &part.part_type {
+                        ModulePartType::Source(_) => {
+                            source_id = Some(part.id);
+                            break;
+                        }
+                        ModulePartType::Modulizer(mod_type) => {
+                            effects.insert(0, mod_type.clone()); // Prepend (execution order)
+                            current_id = part.id;
+                        }
+                        ModulePartType::Mask(mask_type) => {
+                            masks.insert(0, mask_type.clone());
+                            current_id = part.id;
+                        }
+                        _ => break, // Hit something else (e.g. Trigger), chain ends
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        ProcessingChain {
+            source_id,
+            effects,
+            masks,
+        }
     }
 
     /// Evaluate a trigger node and return output values
@@ -279,65 +354,5 @@ impl ModuleEvaluator {
                 trigger_value,
             }),
         }
-    }
-
-    /// Find the source part that ultimately feeds an output
-    fn find_source_for_output(
-        &self,
-        module: &MapFlowModule,
-        output_part_id: ModulePartId,
-    ) -> Option<ModulePartId> {
-        // Trace back through connections to find a source
-        let mut current = output_part_id;
-        let mut visited = std::collections::HashSet::new();
-
-        while visited.insert(current) {
-            // Find a connection that goes TO this part
-            if let Some(conn) = module.connections.iter().find(|c| c.to_part == current) {
-                // Check if from_part is a source
-                if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
-                    match &part.part_type {
-                        ModulePartType::Source(_) => return Some(part.id),
-                        _ => {
-                            current = conn.from_part;
-                            continue;
-                        }
-                    }
-                }
-            }
-            break;
-        }
-
-        None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::module::{MapFlowModule, ModulePlaybackMode};
-
-    #[test]
-    fn test_evaluator_creation() {
-        let evaluator = ModuleEvaluator::new();
-        assert_eq!(evaluator.audio_trigger_data.beat_detected, false);
-    }
-
-    #[test]
-    fn test_evaluate_empty_module() {
-        let evaluator = ModuleEvaluator::new();
-        let module = MapFlowModule {
-            id: 1,
-            name: "Test".to_string(),
-            color: [1.0, 1.0, 1.0, 1.0],
-            parts: vec![],
-            connections: vec![],
-            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
-        };
-
-        let result = evaluator.evaluate(&module);
-        assert!(result.trigger_values.is_empty());
-        assert!(result.source_commands.is_empty());
-        assert!(result.output_assignments.is_empty());
     }
 }

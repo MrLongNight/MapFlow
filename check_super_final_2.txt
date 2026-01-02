@@ -1,0 +1,80 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:813:57
+    |
+813 | ...                   let mut handle = |coord: &mut (f32, f32), name: &str| {
+    |                           ----^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:747:45
+    |
+747 | ...                   let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
+    |                           ----^^^^^^^^^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:853:79
+    |
+853 | ...                   LayerType::Group { name, opacity, blend_mode, mesh } => {
+    |                                                         ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:859:71
+    |
+859 | ...                   LayerType::All { opacity, blend_mode } => {
+    |                                                 ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+
+warning: method `add_output_node` is never used
+    --> crates\mapmap-ui\src\module_canvas.rs:1163:8
+     |
+ 186 | impl ModuleCanvas {
+     | ----------------- method in this implementation
+...
+1163 |     fn add_output_node(&mut self, manager: &mut ModuleManager, output_type: OutputType) {
+     |        ^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling mapmap v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap)
+warning: `mapmap-ui` (lib) generated 5 warnings (run `cargo fix --lib -p mapmap-ui` to apply 4 suggestions)
+warning: value assigned to `owned_source_view` is never read
+    --> crates\mapmap\src\main.rs:1922:72
+     |
+1922 |                 let mut owned_source_view: Option<wgpu::TextureView> = None;
+     |                                                                        ^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `compositor`, `effect_chain_renderer`, `quad_renderer`, `composite_texture`, and `layer_ping_pong` are never read
+  --> crates\mapmap\src\main.rs:59:5
+   |
+48 | struct App {
+   |        --- fields in this struct
+...
+59 |     compositor: Compositor,
+   |     ^^^^^^^^^^
+60 |     /// The effect chain renderer.
+61 |     effect_chain_renderer: EffectChainRenderer,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+...
+67 |     quad_renderer: QuadRenderer,
+   |     ^^^^^^^^^^^^^
+68 |     /// Final composite texture before output processing.
+69 |     composite_texture: String,
+   |     ^^^^^^^^^^^^^^^^^
+70 |     /// Ping-pong textures for layer composition.
+71 |     layer_ping_pong: [String; 2],
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mapmap` (bin "MapFlow") generated 2 warnings
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.65s

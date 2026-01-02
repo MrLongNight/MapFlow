@@ -64,7 +64,10 @@ impl MapFlowModule {
                 }],
             ),
             PartType::Modulator => (
-                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
+                ModulePartType::Modulizer(ModulizerType::Effect {
+                    effect_type: EffectType::Blur,
+                    params: HashMap::new(),
+                }),
                 vec![
                     ModuleSocket {
                         name: "Media In".to_string(),
@@ -80,26 +83,14 @@ impl MapFlowModule {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            PartType::Mesh => (
-                ModulePartType::Mesh(MeshType::Quad {
-                    tl: (0.0, 0.0),
-                    tr: (1.0, 0.0),
-                    br: (1.0, 1.0),
-                    bl: (0.0, 1.0),
-                }),
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Mesh Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
+
             PartType::Layer => (
-                ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+                ModulePartType::Layer(LayerType::Single {
+                    id: 1,
+                    name: "Layer 1".to_string(),
                     opacity: 1.0,
                     blend_mode: None,
+                    mesh: default_mesh_quad(),
                 }),
                 vec![ModuleSocket {
                     name: "Media In".to_string(),
@@ -204,23 +195,13 @@ impl MapFlowModule {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            ModulePartType::Mesh(_) => (
+            ModulePartType::Layer(_) => (
                 vec![ModuleSocket {
-                    name: "Media In".to_string(),
+                    name: "Input".to_string(),
                     socket_type: ModuleSocketType::Media,
                 }],
                 vec![ModuleSocket {
-                    name: "Mesh Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
-            ModulePartType::LayerAssignment(_) => (
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Layer Out".to_string(),
+                    name: "Output".to_string(),
                     socket_type: ModuleSocketType::Layer,
                 }],
             ),
@@ -348,8 +329,7 @@ pub enum ModulePartType {
     Source(SourceType),
     Mask(MaskType),
     Modulizer(ModulizerType),
-    Mesh(MeshType),
-    LayerAssignment(LayerAssignmentType),
+    Layer(LayerType),
     Output(OutputType),
 }
 
@@ -360,7 +340,6 @@ pub enum PartType {
     Source,
     Mask,
     Modulator,
-    Mesh,
     Layer,
     Output,
 }
@@ -593,6 +572,227 @@ pub enum MeshType {
     Custom { path: String },
 }
 
+impl MeshType {
+    fn compute_revision_hash(&self) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
+        match self {
+            MeshType::Quad { tl, tr, br, bl } => {
+                0u8.hash(&mut hasher); // Variant ID
+                tl.0.to_bits().hash(&mut hasher);
+                tl.1.to_bits().hash(&mut hasher);
+                tr.0.to_bits().hash(&mut hasher);
+                tr.1.to_bits().hash(&mut hasher);
+                br.0.to_bits().hash(&mut hasher);
+                br.1.to_bits().hash(&mut hasher);
+                bl.0.to_bits().hash(&mut hasher);
+                bl.1.to_bits().hash(&mut hasher);
+            }
+            MeshType::Grid { rows, cols } => {
+                1u8.hash(&mut hasher);
+                rows.hash(&mut hasher);
+                cols.hash(&mut hasher);
+            }
+            MeshType::TriMesh => {
+                2u8.hash(&mut hasher);
+            }
+            MeshType::Circle {
+                segments,
+                arc_angle,
+            } => {
+                3u8.hash(&mut hasher);
+                segments.hash(&mut hasher);
+                arc_angle.to_bits().hash(&mut hasher);
+            }
+            MeshType::BezierSurface { control_points } => {
+                4u8.hash(&mut hasher);
+                control_points.len().hash(&mut hasher);
+                for (x, y) in control_points {
+                    x.to_bits().hash(&mut hasher);
+                    y.to_bits().hash(&mut hasher);
+                }
+            }
+            MeshType::Polygon { vertices } => {
+                5u8.hash(&mut hasher);
+                vertices.len().hash(&mut hasher);
+                for (x, y) in vertices {
+                    x.to_bits().hash(&mut hasher);
+                    y.to_bits().hash(&mut hasher);
+                }
+            }
+            MeshType::Cylinder { segments, height } => {
+                6u8.hash(&mut hasher);
+                segments.hash(&mut hasher);
+                height.to_bits().hash(&mut hasher);
+            }
+            MeshType::Sphere {
+                lat_segments,
+                lon_segments,
+            } => {
+                7u8.hash(&mut hasher);
+                lat_segments.hash(&mut hasher);
+                lon_segments.hash(&mut hasher);
+            }
+            MeshType::Custom { path } => {
+                8u8.hash(&mut hasher);
+                path.hash(&mut hasher);
+            }
+        }
+        hasher.finish()
+    }
+
+    pub fn to_mesh(&self) -> crate::mesh::Mesh {
+        use crate::mesh::Mesh;
+        use glam::Vec2;
+
+        let mut mesh = match self {
+            MeshType::Quad { tl, tr, br, bl } => {
+                let mut mesh = Mesh::quad();
+                let corners = [
+                    Vec2::new(tl.0, tl.1),
+                    Vec2::new(tr.0, tr.1),
+                    Vec2::new(br.0, br.1),
+                    Vec2::new(bl.0, bl.1),
+                ];
+                mesh.apply_keystone(corners);
+                mesh
+            }
+            MeshType::Grid { rows, cols } => Mesh::create_grid(*rows, *cols),
+            MeshType::TriMesh => Mesh::triangle(),
+            MeshType::Circle { segments, .. } => {
+                Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
+            }
+            MeshType::BezierSurface { control_points } => {
+                // For Bezier surface, create a grid and warp it based on control points
+                // For now, use a simple grid as a placeholder until full Bezier implementation
+                if control_points.len() >= 4 {
+                    let mesh = Mesh::create_grid(8, 8);
+                    // TODO: Implement proper Bezier surface interpolation
+                    mesh
+                } else {
+                    Mesh::quad()
+                }
+            }
+            MeshType::Polygon { vertices } => {
+                // Create a triangle fan from polygon vertices
+                if vertices.len() < 3 {
+                    Mesh::quad()
+                } else {
+                    use crate::mesh::{MeshVertex, MeshType as CoreMeshType};
+                    
+                    // Calculate center point for triangle fan
+                    let center = vertices.iter().fold((0.0, 0.0), |acc, v| {
+                        (acc.0 + v.0, acc.1 + v.1)
+                    });
+                    let center = (center.0 / vertices.len() as f32, center.1 / vertices.len() as f32);
+                    
+                    let mut mesh_vertices = Vec::with_capacity(vertices.len() + 1);
+                    mesh_vertices.push(MeshVertex::new(
+                        Vec2::new(center.0, center.1),
+                        Vec2::new(0.5, 0.5),
+                    ));
+                    
+                    for v in vertices {
+                        mesh_vertices.push(MeshVertex::new(
+                            Vec2::new(v.0, v.1),
+                            Vec2::new(v.0, v.1),
+                        ));
+                    }
+                    
+                    let mut indices = Vec::with_capacity((vertices.len() * 3) as usize);
+                    for i in 0..vertices.len() {
+                        indices.push(0); // Center
+                        indices.push((i + 1) as u16);
+                        indices.push(((i + 1) % vertices.len() + 1) as u16);
+                    }
+                    
+                    Mesh {
+                        mesh_type: CoreMeshType::Custom,
+                        vertices: mesh_vertices,
+                        indices,
+                        revision: 0,
+                    }
+                }
+            }
+            MeshType::Cylinder { segments, height } => {
+                // Create a cylindrical mesh by wrapping a grid
+                let rows = (height * 10.0).max(2.0) as u32;
+                let cols = (*segments).max(3);
+                Mesh::create_grid(rows, cols)
+            }
+            MeshType::Sphere {
+                lat_segments,
+                lon_segments,
+            } => {
+                // Create a UV sphere mesh
+                use crate::mesh::{MeshVertex, MeshType as CoreMeshType};
+                
+                let lat_segs = (*lat_segments).max(3);
+                let lon_segs = (*lon_segments).max(3);
+                
+                let mut mesh_vertices = Vec::new();
+                let mut indices = Vec::new();
+                
+                // Generate vertices
+                for lat in 0..=lat_segs {
+                    let theta = (lat as f32 / lat_segs as f32) * std::f32::consts::PI;
+                    let sin_theta = theta.sin();
+                    let cos_theta = theta.cos();
+                    
+                    for lon in 0..=lon_segs {
+                        let phi = (lon as f32 / lon_segs as f32) * std::f32::consts::TAU;
+                        let _sin_phi = phi.sin();
+                        let cos_phi = phi.cos();
+                        
+                        let x = 0.5 + 0.5 * sin_theta * cos_phi;
+                        let y = 0.5 + 0.5 * cos_theta;
+                        let u = lon as f32 / lon_segs as f32;
+                        let v = lat as f32 / lat_segs as f32;
+                        
+                        mesh_vertices.push(MeshVertex::new(
+                            Vec2::new(x, y),
+                            Vec2::new(u, v),
+                        ));
+                    }
+                }
+                
+                // Generate indices
+                for lat in 0..lat_segs {
+                    for lon in 0..lon_segs {
+                        let first = (lat * (lon_segs + 1) + lon) as u16;
+                        let second = first + lon_segs as u16 + 1;
+                        
+                        indices.push(first);
+                        indices.push(second);
+                        indices.push(first + 1);
+                        
+                        indices.push(second);
+                        indices.push(second + 1);
+                        indices.push(first + 1);
+                    }
+                }
+                
+                Mesh {
+                    mesh_type: CoreMeshType::Custom,
+                    vertices: mesh_vertices,
+                    indices,
+                    revision: 0,
+                }
+            }
+            MeshType::Custom { path: _ } => {
+                // TODO: Load mesh from file
+                // For now, return a quad as fallback
+                Mesh::quad()
+            }
+        };
+
+        // Ensure revision tracks content changes (for Render Cache)
+        mesh.revision = self.compute_revision_hash();
+        mesh
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ResourceType {
     MediaFile { path: String },
@@ -602,9 +802,15 @@ pub enum ResourceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulizerType {
-    Effect(EffectType),
+    Effect {
+        effect_type: EffectType,
+        #[serde(default)]
+        params: HashMap<String, f32>,
+    },
     BlendMode(BlendModeType),
-    AudioReactive { source: String },
+    AudioReactive {
+        source: String,
+    },
 }
 
 /// Available visual effects
@@ -638,6 +844,7 @@ pub enum EffectType {
     ChromaticAberration,
     VHS,
     FilmGrain,
+    Vignette,
 }
 
 impl EffectType {
@@ -667,6 +874,7 @@ impl EffectType {
             EffectType::ChromaticAberration,
             EffectType::VHS,
             EffectType::FilmGrain,
+            EffectType::Vignette,
         ]
     }
 
@@ -696,6 +904,7 @@ impl EffectType {
             EffectType::ChromaticAberration => "Chromatic Aberration",
             EffectType::VHS => "VHS",
             EffectType::FilmGrain => "Film Grain",
+            EffectType::Vignette => "Vignette",
         }
     }
 }
@@ -738,20 +947,33 @@ impl BlendModeType {
     }
 }
 
+fn default_mesh_quad() -> MeshType {
+    MeshType::Quad {
+        tl: (0.0, 0.0),
+        tr: (1.0, 0.0),
+        br: (1.0, 1.0),
+        bl: (0.0, 1.0),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum LayerAssignmentType {
-    SingleLayer {
+pub enum LayerType {
+    Single {
         id: u64,
         name: String,
         opacity: f32,
         blend_mode: Option<BlendModeType>,
+        #[serde(default = "default_mesh_quad")]
+        mesh: MeshType,
     },
     Group {
         name: String,
         opacity: f32,
         blend_mode: Option<BlendModeType>,
+        #[serde(default = "default_mesh_quad")]
+        mesh: MeshType,
     },
-    AllLayers {
+    All {
         opacity: f32,
         blend_mode: Option<BlendModeType>,
     },

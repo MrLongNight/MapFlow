@@ -1,0 +1,281 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+    Checking mapmap-ui v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-ui)
+error[E0599]: no variant or associated item named `Vignette` found for enum `mapmap_core::module::EffectType` in the current scope
+   --> crates\mapmap-ui\src\module_canvas.rs:683:115
+    |
+683 | ...effect, ModuleEffectType::Vignette), "Vignette").clicked() { changed_type = Some(ModuleEffectType::Vignette); }
+    |                              ^^^^^^^^ variant or associated item not found in `mapmap_core::module::EffectType`
+
+error[E0599]: no variant or associated item named `Vignette` found for enum `mapmap_core::module::EffectType` in the current scope
+   --> crates\mapmap-ui\src\module_canvas.rs:683:188
+    |
+683 | ... = Some(ModuleEffectType::Vignette); }
+    |                              ^^^^^^^^ variant or associated item not found in `mapmap_core::module::EffectType`
+
+error[E0599]: no variant or associated item named `Vignette` found for enum `mapmap_core::module::EffectType` in the current scope
+   --> crates\mapmap-ui\src\module_canvas.rs:700:75
+    |
+700 | ...                   ModuleEffectType::Vignette => {
+    |                                         ^^^^^^^^ variant or associated item not found in `mapmap_core::module::EffectType`
+
+error[E0599]: no variant or associated item named `Vignette` found for enum `mapmap_core::module::EffectType` in the current scope
+   --> crates\mapmap-ui\src\module_canvas.rs:737:71
+    |
+737 | ...                   ModuleEffectType::Vignette => {
+    |                                         ^^^^^^^^ variant or associated item not found in `mapmap_core::module::EffectType`
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1423:66
+     |
+1423 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Blur));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1423 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Blur));
+1423 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1428:66
+     |
+1428 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Sharpen));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1428 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Sharpen));
+1428 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1433:66
+     |
+1433 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Invert));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1433 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Invert));
+1433 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1439:66
+     |
+1439 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Brightness));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1439 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Brightness));
+1439 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1444:66
+     |
+1444 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Contrast));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1444 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Contrast));
+1444 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1449:66
+     |
+1449 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Saturation));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1449 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Saturation));
+1449 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1454:66
+     |
+1454 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::HueShift));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1454 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::HueShift));
+1454 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1460:66
+     |
+1460 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Kaleidoscope));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1460 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Kaleidoscope));
+1460 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1465:66
+     |
+1465 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Mirror));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1465 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Mirror));
+1465 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1470:66
+     |
+1470 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Wave));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1470 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Wave));
+1470 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1476:66
+     |
+1476 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Glitch));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1476 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Glitch));
+1476 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1481:66
+     |
+1481 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::VHS));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1481 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::VHS));
+1481 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:1486:66
+     |
+1486 | ...                   self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Pixelate));
+     |                                                        ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+1486 -                                 self.add_modulator_node(manager, ModulizerType::Effect(ModuleEffectType::Pixelate));
+1486 +                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: /* value */, params: /* value */ });
+     |
+
+error[E0164]: expected tuple struct or tuple variant, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:3166:21
+     |
+3166 |                     ModulizerType::Effect(_) => "Effect",
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^ not a tuple struct or tuple variant
+     |
+help: the struct variant's fields are being ignored
+     |
+3166 -                     ModulizerType::Effect(_) => "Effect",
+3166 +                     ModulizerType::Effect { effect_type: _, params: _ } => "Effect",
+     |
+
+error[E0164]: expected tuple struct or tuple variant, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:3175:58
+     |
+3175 | ...                   matches!(modulizer_type, ModulizerType::Effect(_)),
+     |                                                ^^^^^^^^^^^^^^^^^^^^^^^^ not a tuple struct or tuple variant
+     |
+help: the struct variant's fields are being ignored
+     |
+3175 -                                 matches!(modulizer_type, ModulizerType::Effect(_)),
+3175 +                                 matches!(modulizer_type, ModulizerType::Effect { effect_type: _, params: _ }),
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:3180:47
+     |
+3180 | ...                   *modulizer_type = ModulizerType::Effect(EffectType::Blur);
+     |                                         ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+3180 -                             *modulizer_type = ModulizerType::Effect(EffectType::Blur);
+3180 +                             *modulizer_type = ModulizerType::Effect { effect_type: /* value */, params: /* value */ };
+     |
+
+error[E0164]: expected tuple struct or tuple variant, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:3194:24
+     |
+3194 |                 if let ModulizerType::Effect(effect) = modulizer_type {
+     |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not a tuple struct or tuple variant
+     |
+help: the struct variant's fields are being ignored
+     |
+3194 -                 if let ModulizerType::Effect(effect) = modulizer_type {
+3194 +                 if let ModulizerType::Effect { effect_type: _, params: _ } = modulizer_type {
+     |
+
+error[E0164]: expected tuple struct or tuple variant, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:3763:21
+     |
+3763 |                     ModulizerType::Effect(effect) => match effect {
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not a tuple struct or tuple variant
+     |
+help: the struct variant's fields are being ignored
+     |
+3763 -                     ModulizerType::Effect(effect) => match effect {
+3763 +                     ModulizerType::Effect { effect_type: _, params: _ } => match effect {
+     |
+
+error[E0164]: expected tuple struct or tuple variant, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:3902:17
+     |
+3902 |                 ModulizerType::Effect(effect) => format!("✨ {}", effect.name()),
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not a tuple struct or tuple variant
+     |
+help: the struct variant's fields are being ignored
+     |
+3902 -                 ModulizerType::Effect(effect) => format!("✨ {}", effect.name()),
+3902 +                 ModulizerType::Effect { effect_type: _, params: _ } => format!("✨ {}", effect.name()),
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:4107:51
+     |
+4107 |                         ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
+     |                                                   ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+4107 -                         ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
+4107 +                         ModulePartType::Modulizer(ModulizerType::Effect { effect_type: /* value */, params: /* value */ }),
+     |
+
+error[E0533]: expected value, found struct variant `ModulizerType::Effect`
+    --> crates\mapmap-ui\src\module_canvas.rs:4151:51
+     |
+4151 |                         ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
+     |                                                   ^^^^^^^^^^^^^^^^^^^^^ not a value
+     |
+help: you might have meant to create a new value of the struct
+     |
+4151 -                         ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Glitch)),
+4151 +                         ModulePartType::Modulizer(ModulizerType::Effect { effect_type: /* value */, params: /* value */ }),
+     |
+
+Some errors have detailed explanations: E0164, E0533, E0599.
+For more information about an error, try `rustc --explain E0164`.
+error: could not compile `mapmap-ui` (lib) due to 25 previous errors

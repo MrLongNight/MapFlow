@@ -1,0 +1,68 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:813:57
+    |
+813 | ...                   let mut handle = |coord: &mut (f32, f32), name: &str| {
+    |                           ----^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:747:45
+    |
+747 | ...                   let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
+    |                           ----^^^^^^^^^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:853:79
+    |
+853 | ...                   LayerType::Group { name, opacity, blend_mode, mesh } => {
+    |                                                         ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:859:71
+    |
+859 | ...                   LayerType::All { opacity, blend_mode } => {
+    |                                                 ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+
+warning: method `add_output_node` is never used
+    --> crates\mapmap-ui\src\module_canvas.rs:1163:8
+     |
+ 186 | impl ModuleCanvas {
+     | ----------------- method in this implementation
+...
+1163 |     fn add_output_node(&mut self, manager: &mut ModuleManager, output_type: OutputType) {
+     |        ^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling mapmap v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap)
+warning: `mapmap-ui` (lib) generated 5 warnings (run `cargo fix --lib -p mapmap-ui` to apply 4 suggestions)
+error[E0599]: the method `clone` exists for enum `Option<mapmap_render::TextureView>`, but its trait bounds were not satisfied
+    --> crates\mapmap\src\main.rs:1932:51
+     |
+1932 |                     source_view = self.dummy_view.clone();
+     |                                                   ^^^^^ method cannot be called on `Option<mapmap_render::TextureView>` due to unsatisfied trait bounds
+     |
+    ::: C:\Users\Vinyl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-0.19.4\src\lib.rs:360:1
+     |
+ 360 | pub struct TextureView {
+     | ---------------------- doesn't satisfy `mapmap_render::TextureView: Clone`
+     |
+    ::: C:\Users\Vinyl\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\core\src\option.rs:599:1
+     |
+ 599 | pub enum Option<T> {
+     | ------------------ doesn't satisfy `Option<mapmap_render::TextureView>: Clone`
+     |
+     = note: the following trait bounds were not satisfied:
+             `mapmap_render::TextureView: Clone`
+             which is required by `Option<mapmap_render::TextureView>: Clone`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mapmap` (bin "MapFlow") due to 1 previous error
