@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.8
-> **Stand:** 2025-12-31 19:30
+> **Stand:** 2026-01-02 12:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -348,24 +348,24 @@
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
-- 🟡 **Advanced Layer Triggering & Linking** (PLANNED)
-  - [ ] **Audio Trigger Node Enhancements**
-    - [ ] Implement `inverted output` boolean flag for each trigger signal output.
-  - [ ] **Universal Link System** (Layers, Masks, Effects, Blends)
-    - [ ] Add `Link Mode` property to Node inspector (Off, Master, Slave).
-    - [ ] **Master Mode**:
+- ✅ **Advanced Layer Triggering & Linking** (COMPLETED 2026-01-02)
+  - ✅ **Audio Trigger Node Enhancements**
+    - ✅ Implement `inverted output` boolean flag for each trigger signal output.
+  - ✅ **Universal Link System** (Layers, Masks, Effects, Blends)
+    - ✅ Add `Link Mode` property to Node inspector (Off, Master, Slave).
+    - ✅ **Master Mode**:
       - Exposes `Master Link Output` connector.
       - Sends active/visibility state.
-    - [ ] **Slave Mode**:
+    - ✅ **Slave Mode**:
       - Exposes `Slave Link Input` connector.
       - Reacts to linked Master state.
-    - [ ] **Link Logic**:
+    - ✅ **Link Logic**:
       - Enforce connection rules: Master Link Output only connects to Slave Link Input.
       - Connectors only visible/active when Link Mode is enabled.
       - Slave Property: `Link Behavior` (Same as Master / Inverted).
-  - [ ] **Trigger Input for Nodes**
-    - [ ] Add optional `Trigger Input` pin to Layer, Group, Mask, Effect, Blend nodes.
-    - [ ] Logic: Input Signal controls visibility/activity (Active if Signal > 0.5).
+  - ✅ **Trigger Input for Nodes**
+    - ✅ Add optional `Trigger Input` pin to Layer, Group, Mask, Effect, Blend nodes.
+    - ✅ Logic: Input Signal controls visibility/activity (Active if Signal > 0.5).
 
 - 🟡 **Assignment System** (PR #140 MERGED 2025-12-31)
   - ✅ `AssignmentManager` implementieren (COMPLETED 2025-12-31)
@@ -556,11 +556,11 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
-- ⬜ **NDI-Integration** (`mapmap-ndi/`)
-  - ⬜ `grafton-ndi` Rust Bindings integrieren
-  - ⬜ NDI Sender (wgpu Texture → NDI Stream)
-  - ⬜ NDI Receiver (NDI Stream → Fullscreen Texture)
-  - ⬜ Multi-Source-Diüscovery (NDI Finder)
+- 🟡 **NDI-Integration** (`mapmap-ndi/`)
+  - ✅ `grafton-ndi` Rust Bindings integrieren
+  - 🟡 NDI Sender (wgpu Texture → NDI Stream)
+  - ✅ NDI Receiver (NDI Stream → Fullscreen Texture)
+  - ✅ Multi-Source-Discovery (NDI Finder)
   - ⬜ Latenz-Optimierung (<100ms Ziel)
 
 - ⬜ **Player-Modus** (`--player-ndi`)
