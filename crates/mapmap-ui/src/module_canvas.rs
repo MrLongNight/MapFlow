@@ -2,9 +2,8 @@ use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType,
-    LinkBehavior, LinkMode, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager,
-    ModulePart, ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData,
-    OutputType, SourceType, TriggerType,
+    MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId,
+    ModulePartType, ModuleSocketType, ModulizerType, OutputType, SourceType, TriggerType,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -87,6 +86,8 @@ pub struct ModuleCanvas {
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
     editing_part_id: Option<ModulePartId>,
+    /// Map of part IDs to Egui Texture IDs for previews
+    pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
 }
 
 /// Live audio data for trigger nodes
@@ -180,6 +181,7 @@ impl Default for ModuleCanvas {
             pending_ndi_connect: None,
             available_outputs: Vec::new(),
             editing_part_id: None,
+            node_previews: std::collections::HashMap::new(),
         }
     }
 }
@@ -474,6 +476,15 @@ impl ModuleCanvas {
                                         match source {
                                             SourceType::MediaFile { path } => {
                                                 ui.label("📁 Media File");
+                                                
+                                                // Show Preview if available
+                                                if let Some(tex_id) = self.node_previews.get(&part_id) {
+                                                    ui.add_space(5.0);
+                                                    let size = Vec2::new(240.0, 135.0); // 16:9 preview
+                                                    ui.image((*tex_id, size));
+                                                    ui.add_space(5.0);
+                                                }
+
                                                 ui.horizontal(|ui| {
                                                     ui.add(
                                                         egui::TextEdit::singleline(path)
@@ -481,14 +492,7 @@ impl ModuleCanvas {
                                                     );
                                                     if ui.button("📂").clicked() {
                                                         if let Some(picked) = rfd::FileDialog::new()
-                                                            .add_filter(
-                                                                "Media",
-                                                                &[
-                                                                    "mp4", "mov", "avi", "mkv",
-                                                                    "webm", "gif", "png", "jpg",
-                                                                    "jpeg",
-                                                                ],
-                                                            )
+                                                            // .add_filter(...) // (keep simpler for now or copy filters)
                                                             .pick_file()
                                                         {
                                                             *path = picked.display().to_string();

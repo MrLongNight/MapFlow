@@ -375,4 +375,16 @@ impl WindowManager {
     pub fn get_output_id_from_window_id(&self, window_id: WindowId) -> Option<OutputId> {
         self.window_id_map.get(&window_id).copied()
     }
+
+    /// Removes all windows whose OutputId is not in the provided set of active IDs.
+    /// The main window (ID 0) is never removed.
+    pub fn cleanup_windows(&mut self, keep_ids: std::collections::HashSet<OutputId>) {
+        let current_ids: Vec<OutputId> = self.windows.keys().cloned().collect();
+        for id in current_ids {
+            if id != 0 && !keep_ids.contains(&id) {
+                self.remove_window(id);
+                info!("Cleaned up stale window {}", id);
+            }
+        }
+    }
 }

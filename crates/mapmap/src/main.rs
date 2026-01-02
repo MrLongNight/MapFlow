@@ -137,17 +137,19 @@ struct App {
     #[allow(dead_code)]
     shader_graph_manager: mapmap_render::ShaderGraphManager,
     /// Output assignments (OutputID -> Texture Name)
-    output_assignments: std::collections::HashMap<u64, String>,
+    /// Output assignments (OutputID -> Texture Name)
+    _output_assignments: std::collections::HashMap<u64, String>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
     /// Render Operations from Module Evaluator
     render_ops: Vec<RenderOp>,
     /// Edge blend renderer for output windows
-    edge_blend_renderer: Option<EdgeBlendRenderer>,
+    /// Edge blend renderer for output windows
+    _edge_blend_renderer: Option<EdgeBlendRenderer>,
     /// Color calibration renderer for output windows
-    color_calibration_renderer: Option<ColorCalibrationRenderer>,
+    _color_calibration_renderer: Option<ColorCalibrationRenderer>,
     /// Temporary textures for output rendering (OutputID -> Texture)
-    output_temp_textures: HashMap<u64, wgpu::Texture>,
+    _output_temp_textures: HashMap<u64, wgpu::Texture>,
 }
 
 impl App {
@@ -458,7 +460,7 @@ impl App {
             ndi_receivers: std::collections::HashMap::new(),
             #[cfg(feature = "ndi")]
             ndi_senders: std::collections::HashMap::new(),
-            output_assignments: HashMap::new(),
+            _output_assignments: HashMap::new(),
             shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
             recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
                 dirs::data_dir()
@@ -467,9 +469,9 @@ impl App {
                     .join("recent_effect_configs.json"),
             ),
             render_ops: Vec::new(),
-            edge_blend_renderer,
-            color_calibration_renderer,
-            output_temp_textures: HashMap::new(),
+            _edge_blend_renderer: edge_blend_renderer,
+            _color_calibration_renderer: color_calibration_renderer,
+            _output_temp_textures: HashMap::new(),
         };
 
         // Create initial dummy texture
@@ -790,39 +792,13 @@ impl App {
                             }
                         }
 
-                        // 2. Handle Render Ops (New System)
+                        // 2. Handle Render Ops
                         self.render_ops = result.render_ops;
 
-                        // Update Output Assignments for Preview
-                        self.output_assignments.clear();
-                        for op in &self.render_ops {
-                            if let mapmap_core::module::OutputType::Projector { id, .. } =
-                                &op.output_type
-                            {
-                                if let Some(source_id) = op.source_part_id {
-                                    let tex_name = format!("part_{}", source_id);
-                                    self.output_assignments.insert(*id, tex_name);
-                                }
-                            }
+                        // 3. Sync Output Windows
+                        if let Err(e) = self.sync_output_windows(elwt) {
+                            error!("Failed to sync output windows: {}", e);
                         }
-
-                        // 3. Sync output windows with evaluation result
-                        // TODO: Re-enable sync_output_windows logic once compatible with new RenderOp system
-                        // HEAD logic for output assignment is using `self.render_ops` directly,
-                        // while `sync_output_windows` expects `output_assignments: HashMap`.
-                        // The loop above populates `self.output_assignments`, but `sync_output_windows` needs to know output details.
-                        // For now, I'll comment out the call or adapt it if necessary, but preserving HEAD behavior is key.
-                        // HEAD code didn't call `sync_output_windows` in the conflict block?
-                        // Wait, looking at HEAD block:
-                        /*
-                        803-                        for op in &self.render_ops {
-                        804-                            if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
-                        805-                                if let Some(source_id) = op.source_part_id {
-                        806-                                    let tex_name = format!("part_{}", source_id);
-                        807-                                    self.output_assignments.insert(*id, tex_name);
-                        */
-                        // It ends there. No call to `sync_output_windows`.
-                        // So I will NOT call it here, consistent with HEAD.
                     }
                 }
 
@@ -1170,29 +1146,36 @@ impl App {
         }
     }
 
-    /// Synchronizes output windows with the current module evaluation result.
-    ///
-    /// Creates windows for new output assignments and removes windows that are no longer needed.
-    /// Synchronizes output windows and NDI senders with the current module graph output nodes.
+    /// Synchronizes output windows with the current module definition.
     fn sync_output_windows<T>(
         &mut self,
         event_loop: &winit::event_loop::EventLoopWindowTarget<T>,
-        output_assignments: &std::collections::HashMap<
-            u64,
-            mapmap_core::module_eval::TextureAssignment,
-        >,
     ) -> Result<()> {
         use mapmap_core::module::OutputType;
         const PREVIEW_FLAG: u64 = 1u64 << 63;
 
-        // Track active IDs for cleanup
         let mut active_window_ids = std::collections::HashSet::new();
         let mut active_sender_ids = std::collections::HashSet::new();
 
-        // 1. Process Assignments
-        for (output_id, assignment) in output_assignments {
-            // -- Projector Logic --
-            match &assignment.output_type {
+        // Collect output parts from active module
+        let output_parts: Vec<_> = self
+            .state
+            .module_manager
+            .modules()
+            .iter()
+            .flat_map(|m| &m.parts)
+            .filter_map(|p| {
+                if let mapmap_core::module::ModulePartType::Output(out_type) = &p.part_type {
+                    Some((p.id, out_type.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Process Parts
+        for (part_id, output_type) in output_parts {
+            match output_type {
                 OutputType::Projector {
                     name,
                     fullscreen,
@@ -1202,46 +1185,37 @@ impl App {
                     ..
                 } => {
                     // 1. Primary Window
-                    active_window_ids.insert(*output_id);
+                    active_window_ids.insert(part_id);
 
-                    if let Some(window_context) = self.window_manager.get(*output_id) {
+                    if let Some(window_context) = self.window_manager.get(part_id) {
                         // Update existing
                         let is_fullscreen = window_context.window.fullscreen().is_some();
-                        if is_fullscreen != *fullscreen {
-                            window_context.window.set_fullscreen(if *fullscreen {
+                        if is_fullscreen != fullscreen {
+                            window_context.window.set_fullscreen(if fullscreen {
                                 Some(winit::window::Fullscreen::Borderless(None))
                             } else {
                                 None
                             });
                         }
-                        window_context.window.set_cursor_visible(!*hide_cursor);
+                        window_context.window.set_cursor_visible(!hide_cursor);
                     } else {
                         // Create new
                         self.window_manager.create_projector_window(
                             event_loop,
                             &self.backend,
-                            *output_id,
-                            name,
-                            *fullscreen,
-                            *hide_cursor,
-                            *target_screen,
+                            part_id,
+                            &name,
+                            fullscreen,
+                            hide_cursor,
+                            target_screen,
                         )?;
-                        info!("Created projector window for output {}", output_id);
+                        info!("Created projector window for output {}", part_id);
                     }
 
                     // 2. Extra Preview Window
-                    if *extra_preview_window {
-                        let preview_id = output_id | PREVIEW_FLAG;
+                    if extra_preview_window {
+                        let preview_id = part_id | PREVIEW_FLAG;
                         active_window_ids.insert(preview_id);
-
-                        // Ensure render assignment exists for preview
-                        self.output_assignments.insert(
-                            preview_id,
-                            assignment
-                                .source_part_id
-                                .map(|id| format!("part_{}", id))
-                                .unwrap_or_default(),
-                        );
 
                         if self.window_manager.get(preview_id).is_none() {
                             self.window_manager.create_projector_window(
@@ -1250,22 +1224,19 @@ impl App {
                                 preview_id,
                                 &format!("Preview: {}", name),
                                 false, // Always windowed
-                                false, // Show cursor
-                                0,     // Default screen (0)
+                                true,  // Cursor visible
+                                0,     // Default screen
                             )?;
-                            info!("Created preview window for output {}", output_id);
+                            info!("Created preview window for output {}", part_id);
                         }
                     }
                 }
                 OutputType::NdiOutput { name: _name } => {
-                    // -- NDI Logic --
-                    active_sender_ids.insert(*output_id);
-
+                    active_sender_ids.insert(part_id);
                     #[cfg(feature = "ndi")]
                     {
-                        if !self.ndi_senders.contains_key(output_id) {
-                            // Create NDI Sender
-                            let width = 1920; // TODO: Dynamic Res
+                        if !self.ndi_senders.contains_key(&part_id) {
+                            let width = 1920;
                             let height = 1080;
                             match mapmap_io::ndi::NdiSender::new(
                                 _name.clone(),
@@ -1278,7 +1249,7 @@ impl App {
                             ) {
                                 Ok(sender) => {
                                     info!("Created NDI sender: {}", _name);
-                                    self.ndi_senders.insert(*output_id, sender);
+                                    self.ndi_senders.insert(part_id, sender);
                                 }
                                 Err(e) => error!("Failed to create NDI sender {}: {}", _name, e),
                             }
@@ -1286,35 +1257,18 @@ impl App {
                     }
                 }
                 #[cfg(target_os = "windows")]
-                OutputType::Spout { .. } => {
-                    // TODO: Spout Sender
-                }
+                OutputType::Spout { .. } => {}
             }
         }
 
-        // 2. Cleanup Windows
-        let window_ids: Vec<u64> = self.window_manager.window_ids().cloned().collect();
-        for id in window_ids {
-            if id != 0 && !active_window_ids.contains(&id) {
-                self.window_manager.remove_window(id);
-                // Also remove assignment if it was a preview
-                if (id & PREVIEW_FLAG) != 0 {
-                    self.output_assignments.remove(&id);
-                }
-                info!("Closed window {}", id);
-            }
-        }
+        // Cleanup Windows
+        self.window_manager.cleanup_windows(active_window_ids);
 
-        // 3. Cleanup NDI Senders
+        // Cleanup Senders
         #[cfg(feature = "ndi")]
         {
-            let sender_ids: Vec<u64> = self.ndi_senders.keys().cloned().collect();
-            for id in sender_ids {
-                if !active_sender_ids.contains(&id) {
-                    self.ndi_senders.remove(&id);
-                    info!("Removed NDI sender {}", id);
-                }
-            }
+            self.ndi_senders
+                .retain(|id, _| active_sender_ids.contains(id));
         }
 
         Ok(())
@@ -1369,6 +1323,57 @@ impl App {
             // --------- ImGui removed (Phase 6 Complete) ----------
 
             // --------- egui: UI separat zeichnen ---------
+            // --------- egui: UI separat zeichnen ---------
+
+            // Sync Texture Previews for Module Canvas
+            {
+                // Free old textures
+                let ids_to_free: Vec<egui::TextureId> = self
+                    .ui_state
+                    .module_canvas
+                    .node_previews
+                    .values()
+                    .cloned()
+                    .collect();
+                for id in ids_to_free {
+                    self.egui_renderer.free_texture(&id);
+                }
+                self.ui_state.module_canvas.node_previews.clear();
+
+                // Register new textures for active sources
+                // Access via project.active_module
+                let active_part_ids: Vec<u64> = self
+                    .state
+                    .module_manager
+                    .modules()
+                    .iter()
+                    .flat_map(|m| &m.parts)
+                    .filter_map(|p| {
+                        if let mapmap_core::module::ModulePartType::Source(_) = p.part_type {
+                            Some(p.id)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                for part_id in active_part_ids {
+                    let tex_name = format!("part_{}", part_id);
+                    if self.texture_pool.has_texture(&tex_name) {
+                        let view = self.texture_pool.get_view(&tex_name);
+                        let tex_id = self.egui_renderer.register_native_texture(
+                            &self.backend.device,
+                            &view,
+                            wgpu::FilterMode::Linear,
+                        );
+                        self.ui_state
+                            .module_canvas
+                            .node_previews
+                            .insert(part_id, tex_id);
+                    }
+                }
+            }
+
             let dashboard_action = None;
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
@@ -1554,7 +1559,48 @@ impl App {
                                 ui.separator();
 
                                 egui::ScrollArea::vertical().show(ui, |ui| {
-                                    // NOTE: Layers section removed per user request - use Module Canvas instead
+                                    // Preview Section (Moved here per user request)
+                                    egui::CollapsingHeader::new("👁️ Preview")
+                                        .default_open(true)
+                                        .show(ui, |ui| {
+                                            // Update preview panel with output info from module graph
+                                            let output_infos: Vec<mapmap_ui::OutputPreviewInfo> = self
+                                                .state
+                                                .module_manager
+                                                .modules()
+                                                .iter()
+                                                .flat_map(|module| {
+                                                    module.parts.iter().filter_map(|part| {
+                                                        if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+                                                            match output_type {
+                                                                mapmap_core::module::OutputType::Projector { ref id, ref name, ref show_in_preview_panel, .. } => {
+                                                                    // Look up texture from render_ops
+                                                                    let texture_name = self.render_ops.iter()
+                                                                        .find(|op| op.output_part_id == *id)
+                                                                        .and_then(|op| op.source_part_id)
+                                                                        .map(|sid| format!("part_{}", sid));
+
+                                                                    Some(mapmap_ui::OutputPreviewInfo {
+                                                                        id: *id,
+                                                                        name: name.clone(),
+                                                                        show_in_panel: *show_in_preview_panel,
+                                                                        texture_name,
+                                                                    })
+                                                                }
+                                                                _ => None,
+                                                            }
+                                                        } else {
+                                                            None
+                                                        }
+                                                    })
+                                                })
+                                                .collect();
+
+                                            self.ui_state.preview_panel.update_outputs(output_infos);
+                                            self.ui_state.preview_panel.show(ui);
+                                        });
+
+                                    // Master Controls Section
 
                                     // Master Controls Section
                                     egui::CollapsingHeader::new("🎚️ Master")
@@ -1684,45 +1730,7 @@ impl App {
 
 
                     // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
-                    // === PREVIEW PANEL (Left Sidebar, independent) ===
-                    if self.ui_state.show_preview_panel {
-                        egui::SidePanel::left("preview_sidebar")
-                            .resizable(true)
-                            .default_width(220.0)
-                            .min_width(150.0)
-                            .max_width(400.0)
-                            .show(ctx, |ui| {
-                                // Update preview panel with output info from module graph
-                                let output_infos: Vec<mapmap_ui::OutputPreviewInfo> = self
-                                    .state
-                                    .module_manager
-                                    .modules()
-                                    .iter()
-                                    .flat_map(|module| {
-                                        module.parts.iter().filter_map(|part| {
-                                            if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
-                                                match output_type {
-                                                    mapmap_core::module::OutputType::Projector { ref id, ref name, ref show_in_preview_panel, .. } => {
-                                                        Some(mapmap_ui::OutputPreviewInfo {
-                                                            id: *id,
-                                                            name: name.clone(),
-                                                            show_in_panel: *show_in_preview_panel,
-                                                            texture_name: self.output_assignments.get(id).cloned(),
-                                                        })
-                                                    }
-                                                    _ => None,
-                                                }
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                    })
-                                    .collect();
 
-                                self.ui_state.preview_panel.update_outputs(output_infos);
-                                self.ui_state.preview_panel.show(ui);
-                            });
-                    }
 
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
@@ -2113,9 +2121,16 @@ impl App {
             // === Node-Based Rendering Pipeline ===
 
             // 1. Find the RenderOp for this output
+            const PREVIEW_FLAG: u64 = 1u64 << 63;
+            let target_output_id = if output_id & PREVIEW_FLAG != 0 {
+                output_id ^ PREVIEW_FLAG
+            } else {
+                output_id
+            };
+
             let target_op = self.render_ops.iter().find(|op| {
                 if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
-                    *id == output_id
+                    *id == target_output_id
                 } else {
                     false
                 }
