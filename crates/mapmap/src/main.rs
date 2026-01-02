@@ -139,7 +139,6 @@ struct App {
     /// Output assignments (OutputID -> Texture Name)
     output_assignments: std::collections::HashMap<u64, String>,
     /// Recent Effect Configurations (User Prefs)
-    /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
     /// Edge blend renderer for output windows
     edge_blend_renderer: Option<EdgeBlendRenderer>,
