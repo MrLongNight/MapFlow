@@ -492,7 +492,20 @@ impl ModuleCanvas {
                                                     );
                                                     if ui.button("📂").clicked() {
                                                         if let Some(picked) = rfd::FileDialog::new()
-                                                            // .add_filter(...) // (keep simpler for now or copy filters)
+                                                            .add_filter(
+                                                                "Media files",
+                                                                &[
+                                                                    "mp4",
+                                                                    "mov",
+                                                                    "avi",
+                                                                    "mkv",
+                                                                    "webm",
+                                                                    "gif",
+                                                                    "png",
+                                                                    "jpg",
+                                                                    "jpeg",
+                                                                ],
+                                                            )
                                                             .pick_file()
                                                         {
                                                             *path = picked.display().to_string();
