@@ -1457,18 +1457,6 @@ impl ModuleCanvas {
         ui.horizontal(|ui| {
             ui.add_space(4.0);
 
-            // Create New Module
-            if ui
-                .button("➕ New Module")
-                .on_hover_text("Create a new module")
-                .clicked()
-            {
-                let new_module_id = manager.create_module("New Module".to_string());
-                self.active_module_id = Some(new_module_id);
-            }
-
-            ui.separator();
-
             // Part creation tools (only enabled when module is active)
             let has_module = self.active_module_id.is_some();
 
@@ -1843,8 +1831,8 @@ impl ModuleCanvas {
 
             ui.separator();
 
-            // === MODULE SELECTOR ===
-            ui.label("Module:");
+            // === COMBINED MODULE MANAGEMENT ===
+            // One unified dropdown: Select existing module or create new
             let module_names: Vec<_> = manager
                 .list_modules()
                 .iter()
@@ -1854,52 +1842,64 @@ impl ModuleCanvas {
                 .active_module_id
                 .and_then(|id| manager.get_module_mut(id))
                 .map(|m| m.name.clone())
-                .unwrap_or_else(|| "None".to_string());
+                .unwrap_or_else(|| "Select Module...".to_string());
 
-            egui::ComboBox::from_id_source("module_selector")
-                .selected_text(current_name)
+            egui::ComboBox::from_id_source("module_unified_selector")
+                .selected_text(format!("📦 {}", current_name))
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.active_module_id, None, "None");
+                    ui.set_min_width(150.0);
+                    
+                    // New Module option at the top
+                    if ui.button("➕ New Module").clicked() {
+                        let new_module_id = manager.create_module("New Module".to_string());
+                        self.active_module_id = Some(new_module_id);
+                    }
+                    
+                    ui.separator();
+                    
+                    // None option
+                    if ui.selectable_value(&mut self.active_module_id, None, "— None —").clicked() {}
+                    
+                    // List existing modules
                     for (id, name) in module_names {
-                        ui.selectable_value(&mut self.active_module_id, Some(id), name);
+                        if ui.selectable_value(&mut self.active_module_id, Some(id), name).clicked() {}
                     }
                 });
 
-            // === SPACER - push zoom controls to right ===
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                // === ZOOM CONTROLS (now on the right) ===
-                // Fit to view button
-                if ui
-                    .button("⊡")
-                    .on_hover_text("Fit to view / Reset zoom")
-                    .clicked()
-                {
-                    self.zoom = 1.0;
-                    self.pan_offset = Vec2::ZERO;
-                }
+            ui.separator();
 
-                // Zoom percentage display
-                ui.label(format!("{:.0}%", self.zoom * 100.0));
+            // === ZOOM CONTROLS ===
+            ui.label("Zoom:");
 
-                // Zoom in button
-                if ui.button("+").on_hover_text("Zoom in").clicked() {
-                    self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
-                }
+            // Zoom out button
+            if ui.button("−").on_hover_text("Zoom out").clicked() {
+                self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
+            }
 
-                // Zoom slider
-                ui.add(
-                    egui::Slider::new(&mut self.zoom, 0.2..=3.0)
-                        .show_value(false)
-                        .clamp_to_range(true),
-                );
+            // Zoom slider
+            ui.add(
+                egui::Slider::new(&mut self.zoom, 0.2..=3.0)
+                    .show_value(false)
+                    .clamp_to_range(true),
+            );
 
-                // Zoom out button
-                if ui.button("−").on_hover_text("Zoom out").clicked() {
-                    self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
-                }
+            // Zoom in button
+            if ui.button("+").on_hover_text("Zoom in").clicked() {
+                self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
+            }
 
-                ui.label("Zoom:");
-            });
+            // Zoom percentage display
+            ui.label(format!("{:.0}%", self.zoom * 100.0));
+
+            // Fit to view button
+            if ui
+                .button("⊡")
+                .on_hover_text("Fit to view / Reset zoom")
+                .clicked()
+            {
+                self.zoom = 1.0;
+                self.pan_offset = Vec2::ZERO;
+            }
 
             // === MODULE MANAGEMENT (only when module selected) ===
             if let Some(module_id) = self.active_module_id {
