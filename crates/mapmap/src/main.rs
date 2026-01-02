@@ -1968,7 +1968,6 @@ impl App {
                     );
 
                     // Setup Texture
-                    // Setup Texture
                     let mut final_view = src_view;
                     let mut _temp_view_holder: Option<wgpu::TextureView> = None; // Keep view alive
 
