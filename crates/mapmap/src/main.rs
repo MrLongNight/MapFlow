@@ -1216,7 +1216,7 @@ impl App {
                                 preview_id,
                                 &format!("Preview: {}", name),
                                 false, // Always windowed
-                                true, // Show cursor
+                                false, // Show cursor
                                 0, // Default screen (0)
                             )?;
                             info!("Created preview window for output {}", output_id);
