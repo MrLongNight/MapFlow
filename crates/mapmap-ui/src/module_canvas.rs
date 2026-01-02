@@ -1522,14 +1522,16 @@ impl ModuleCanvas {
                         ui.menu_button("📑 Layer", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "single".contains(&filter)) && ui.button("🔲 Single Layer").clicked() {
-                                let layer_id = 0;
-                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Single { 
-                                    id: layer_id, 
-                                    name: "Layer 1".to_string(), 
-                                    opacity: 1.0, 
-                                    blend_mode: None,
-                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
-                                }));
+                                if let Some(module_id) = self.active_module_id {
+                                    let layer_id = Self::generate_unique_layer_id(manager, module_id);
+                                    self.add_module_node(manager, ModulePartType::Layer(LayerType::Single { 
+                                        id: layer_id, 
+                                        name: format!("Layer {}", layer_id), 
+                                        opacity: 1.0, 
+                                        blend_mode: None,
+                                        mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
+                                    }));
+                                }
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -1558,14 +1560,16 @@ impl ModuleCanvas {
                             
                             // Helper for adding mesh layers within the closure
                             let mut add_mesh_layer = |ui: &mut Ui, name: &str, mesh: MeshType| {
-                                let layer_id = 0;
-                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Single {
-                                    id: layer_id,
-                                    name: name.to_string(),
-                                    opacity: 1.0,
-                                    blend_mode: None,
-                                    mesh,
-                                }));
+                                if let Some(module_id) = self.active_module_id {
+                                    let layer_id = Self::generate_unique_layer_id(manager, module_id);
+                                    self.add_module_node(manager, ModulePartType::Layer(LayerType::Single {
+                                        id: layer_id,
+                                        name: format!("{} {}", name, layer_id),
+                                        opacity: 1.0,
+                                        blend_mode: None,
+                                        mesh,
+                                    }));
+                                }
                                 self.search_filter.clear();
                                 ui.close_menu();
                             };
@@ -4026,6 +4030,27 @@ impl ModuleCanvas {
                 pos.1 = preferred.1;
                 pos.0 += node_width + 20.0;
             }
+        }
+    }
+
+    /// Generate a unique layer ID by finding the maximum existing layer ID
+    fn generate_unique_layer_id(manager: &ModuleManager, module_id: u64) -> u64 {
+        if let Some(module) = manager.get_module(module_id) {
+            module.parts.iter()
+                .filter_map(|p| {
+                    if let mapmap_core::module::ModulePartType::Layer(ref layer_type) = p.part_type {
+                        match layer_type {
+                            mapmap_core::module::LayerType::Single { id, .. } => Some(*id),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .max()
+                .unwrap_or(0) + 1
+        } else {
+            1
         }
     }
 

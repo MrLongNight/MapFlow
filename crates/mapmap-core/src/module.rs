@@ -605,8 +605,38 @@ impl MeshType {
                 segments.hash(&mut hasher);
                 arc_angle.to_bits().hash(&mut hasher);
             }
-            _ => {
-                255u8.hash(&mut hasher);
+            MeshType::BezierSurface { control_points } => {
+                4u8.hash(&mut hasher);
+                control_points.len().hash(&mut hasher);
+                for (x, y) in control_points {
+                    x.to_bits().hash(&mut hasher);
+                    y.to_bits().hash(&mut hasher);
+                }
+            }
+            MeshType::Polygon { vertices } => {
+                5u8.hash(&mut hasher);
+                vertices.len().hash(&mut hasher);
+                for (x, y) in vertices {
+                    x.to_bits().hash(&mut hasher);
+                    y.to_bits().hash(&mut hasher);
+                }
+            }
+            MeshType::Cylinder { segments, height } => {
+                6u8.hash(&mut hasher);
+                segments.hash(&mut hasher);
+                height.to_bits().hash(&mut hasher);
+            }
+            MeshType::Sphere {
+                lat_segments,
+                lon_segments,
+            } => {
+                7u8.hash(&mut hasher);
+                lat_segments.hash(&mut hasher);
+                lon_segments.hash(&mut hasher);
+            }
+            MeshType::Custom { path } => {
+                8u8.hash(&mut hasher);
+                path.hash(&mut hasher);
             }
         }
         hasher.finish()
@@ -633,7 +663,128 @@ impl MeshType {
             MeshType::Circle { segments, .. } => {
                 Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
             }
-            _ => Mesh::quad(),
+            MeshType::BezierSurface { control_points } => {
+                // For Bezier surface, create a grid and warp it based on control points
+                // For now, use a simple grid as a placeholder until full Bezier implementation
+                if control_points.len() >= 4 {
+                    let mesh = Mesh::create_grid(8, 8);
+                    // TODO: Implement proper Bezier surface interpolation
+                    mesh
+                } else {
+                    Mesh::quad()
+                }
+            }
+            MeshType::Polygon { vertices } => {
+                // Create a triangle fan from polygon vertices
+                if vertices.len() < 3 {
+                    Mesh::quad()
+                } else {
+                    use crate::mesh::{MeshVertex, MeshType as CoreMeshType};
+                    
+                    // Calculate center point for triangle fan
+                    let center = vertices.iter().fold((0.0, 0.0), |acc, v| {
+                        (acc.0 + v.0, acc.1 + v.1)
+                    });
+                    let center = (center.0 / vertices.len() as f32, center.1 / vertices.len() as f32);
+                    
+                    let mut mesh_vertices = Vec::with_capacity(vertices.len() + 1);
+                    mesh_vertices.push(MeshVertex::new(
+                        Vec2::new(center.0, center.1),
+                        Vec2::new(0.5, 0.5),
+                    ));
+                    
+                    for v in vertices {
+                        mesh_vertices.push(MeshVertex::new(
+                            Vec2::new(v.0, v.1),
+                            Vec2::new(v.0, v.1),
+                        ));
+                    }
+                    
+                    let mut indices = Vec::with_capacity((vertices.len() * 3) as usize);
+                    for i in 0..vertices.len() {
+                        indices.push(0); // Center
+                        indices.push((i + 1) as u16);
+                        indices.push(((i + 1) % vertices.len() + 1) as u16);
+                    }
+                    
+                    Mesh {
+                        mesh_type: CoreMeshType::Custom,
+                        vertices: mesh_vertices,
+                        indices,
+                        revision: 0,
+                    }
+                }
+            }
+            MeshType::Cylinder { segments, height } => {
+                // Create a cylindrical mesh by wrapping a grid
+                let rows = (height * 10.0).max(2.0) as u32;
+                let cols = (*segments).max(3);
+                Mesh::create_grid(rows, cols)
+            }
+            MeshType::Sphere {
+                lat_segments,
+                lon_segments,
+            } => {
+                // Create a UV sphere mesh
+                use crate::mesh::{MeshVertex, MeshType as CoreMeshType};
+                
+                let lat_segs = (*lat_segments).max(3);
+                let lon_segs = (*lon_segments).max(3);
+                
+                let mut mesh_vertices = Vec::new();
+                let mut indices = Vec::new();
+                
+                // Generate vertices
+                for lat in 0..=lat_segs {
+                    let theta = (lat as f32 / lat_segs as f32) * std::f32::consts::PI;
+                    let sin_theta = theta.sin();
+                    let cos_theta = theta.cos();
+                    
+                    for lon in 0..=lon_segs {
+                        let phi = (lon as f32 / lon_segs as f32) * std::f32::consts::TAU;
+                        let _sin_phi = phi.sin();
+                        let cos_phi = phi.cos();
+                        
+                        let x = 0.5 + 0.5 * sin_theta * cos_phi;
+                        let y = 0.5 + 0.5 * cos_theta;
+                        let u = lon as f32 / lon_segs as f32;
+                        let v = lat as f32 / lat_segs as f32;
+                        
+                        mesh_vertices.push(MeshVertex::new(
+                            Vec2::new(x, y),
+                            Vec2::new(u, v),
+                        ));
+                    }
+                }
+                
+                // Generate indices
+                for lat in 0..lat_segs {
+                    for lon in 0..lon_segs {
+                        let first = (lat * (lon_segs + 1) + lon) as u16;
+                        let second = first + lon_segs as u16 + 1;
+                        
+                        indices.push(first);
+                        indices.push(second);
+                        indices.push(first + 1);
+                        
+                        indices.push(second);
+                        indices.push(second + 1);
+                        indices.push(first + 1);
+                    }
+                }
+                
+                Mesh {
+                    mesh_type: CoreMeshType::Custom,
+                    vertices: mesh_vertices,
+                    indices,
+                    revision: 0,
+                }
+            }
+            MeshType::Custom { path: _ } => {
+                // TODO: Load mesh from file
+                // For now, return a quad as fallback
+                Mesh::quad()
+            }
         };
 
         // Ensure revision tracks content changes (for Render Cache)

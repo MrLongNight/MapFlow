@@ -2004,8 +2004,8 @@ impl App {
                          if chain.enabled_effects().count() > 0 {
                             let target_tex_name = &self.layer_ping_pong[0];
                             let (w, h) = (
-                                self.window_context.surface_config.width,
-                                self.window_context.surface_config.height,
+                                window_context.surface_config.width,
+                                window_context.surface_config.height,
                             );
                              
                             self.texture_pool.resize_if_needed(target_tex_name, w, h);
@@ -2021,9 +2021,9 @@ impl App {
                                 h
                             );
                             
-                           _temp_view_holder = Some(target_view);
-                           final_view = _temp_view_holder.as_ref().unwrap();
-                         }
+                            _temp_view_holder = Some(target_view);
+                            final_view = _temp_view_holder.as_ref().unwrap();
+                        }
                     }
 
                     let texture_bind_group = self.mesh_renderer.create_texture_bind_group(final_view);
