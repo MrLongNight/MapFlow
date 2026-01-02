@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-02: fix: Remove build artifact files from repository (#156)
 - 2026-01-01: feat(presets): Add NDI Source, NDI Output, Spout Source, Spout Output presets
 - 2026-01-01: feat(presets): Increase node spacing (200→300px) and add missing output connections
 - 2026-01-01: feat(ui): Add category to node titles (e.g., "🎬 Source: Media File")
