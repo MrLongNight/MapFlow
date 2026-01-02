@@ -29,108 +29,20 @@ impl MapFlowModule {
                     output_config,
                 })
             }
-<<<<<<< HEAD
-            PartType::Source => (
-                ModulePartType::Source(SourceType::MediaFile {
-                    path: String::new(),
-                }),
-                vec![ModuleSocket {
-                    name: "Trigger In".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Mask => (
-                ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-                vec![
-                    ModuleSocket {
-                        name: "Media In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                    ModuleSocket {
-                        name: "Mask In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                ],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Modulator => (
-                ModulePartType::Modulizer(ModulizerType::Effect {
-                    effect_type: EffectType::Blur,
-                    params: HashMap::new(),
-                }),
-                vec![
-                    ModuleSocket {
-                        name: "Media In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                    ModuleSocket {
-                        name: "Trigger In".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                ],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-
-            PartType::Layer => (
-                ModulePartType::Layer(LayerType::Single {
-                    id: 1,
-                    name: "Layer 1".to_string(),
-                    opacity: 1.0,
-                    blend_mode: None,
-                    mesh: default_mesh_quad(),
-                }),
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Layer Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
-            PartType::Output => (
-                ModulePartType::Output(OutputType::Projector {
-                    id: 1,
-                    name: "Projector 1".to_string(),
-                    fullscreen: false,
-                    hide_cursor: true,
-                    target_screen: 0,
-                    show_in_preview_panel: true,
-                    extra_preview_window: false,
-                }),
-                vec![ModuleSocket {
-                    name: "Layer In".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-                vec![], // No outputs - outputs are sinks
-            ),
-=======
             PartType::Source => ModulePartType::Source(SourceType::MediaFile {
                 path: String::new(),
             }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-            PartType::Modulator => {
-                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur))
-            }
-            PartType::Mesh => ModulePartType::Mesh(MeshType::Quad {
-                tl: (0.0, 0.0),
-                tr: (1.0, 0.0),
-                br: (1.0, 1.0),
-                bl: (0.0, 1.0),
+            PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
+                effect_type: EffectType::Blur,
+                params: HashMap::new(),
             }),
-            PartType::Layer => ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+            PartType::Layer => ModulePartType::Layer(LayerType::Single {
+                id: 1,
+                name: "Layer 1".to_string(),
                 opacity: 1.0,
                 blend_mode: None,
+                mesh: default_mesh_quad(),
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 1,
@@ -141,7 +53,6 @@ impl MapFlowModule {
                 show_in_preview_panel: true,
                 extra_preview_window: false,
             }),
->>>>>>> feat/advanced-output
         };
 
         let mut part = ModulePart {
@@ -1266,5 +1177,72 @@ impl ModuleManager {
 impl Default for ModuleManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_part_source_sockets() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        let id = module.add_part(PartType::Source, (0.0, 0.0));
+        let part = module.parts.iter().find(|p| p.id == id).unwrap();
+
+        assert_eq!(part.inputs.len(), 1);
+        assert_eq!(part.inputs[0].name, "Trigger In");
+        assert_eq!(part.outputs.len(), 1);
+        assert_eq!(part.outputs[0].name, "Media Out");
+    }
+
+    #[test]
+    fn test_add_part_layer_sockets() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        let id = module.add_part(PartType::Layer, (0.0, 0.0));
+        let part = module.parts.iter().find(|p| p.id == id).unwrap();
+
+        // Layer has Input and Output
+        assert_eq!(part.inputs.len(), 1);
+        assert_eq!(part.outputs.len(), 1);
+    }
+
+    #[test]
+    fn test_audio_trigger_output_config_defaults() {
+        let config = AudioTriggerOutputConfig::default();
+        let outputs = config.generate_outputs();
+        // Default is beat output only
+        assert_eq!(outputs.len(), 1);
+        assert_eq!(outputs[0].name, "Beat Out");
+    }
+
+    #[test]
+    fn test_audio_trigger_output_config_all() {
+        let config = AudioTriggerOutputConfig {
+            frequency_bands: true,
+            volume_outputs: true,
+            beat_output: true,
+            bpm_output: true,
+            inverted_outputs: Default::default(),
+        };
+        let outputs = config.generate_outputs();
+        // 9 bands + 2 volume + 1 beat + 1 bpm = 13
+        assert_eq!(outputs.len(), 13);
     }
 }
