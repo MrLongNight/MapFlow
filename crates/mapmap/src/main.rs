@@ -1651,7 +1651,6 @@ impl App {
 
 
                     // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
-                    // === PREVIEW PANEL (Bottom, collapsible) ===
                     // === PREVIEW PANEL (Left Sidebar, independent) ===
                     if self.ui_state.show_preview_panel {
                         egui::SidePanel::left("preview_sidebar")
