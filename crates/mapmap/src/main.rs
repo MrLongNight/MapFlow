@@ -2002,24 +2002,27 @@ impl App {
                          }
 
                          if chain.enabled_effects().count() > 0 {
-                             let target_tex_name = &self.layer_ping_pong[0];
-                             let (w, h) = (1920, 1080); // Default resolution for now
+                            let target_tex_name = &self.layer_ping_pong[0];
+                            let (w, h) = (
+                                self.window_context.surface_config.width,
+                                self.window_context.surface_config.height,
+                            );
                              
-                             self.texture_pool.resize_if_needed(target_tex_name, w, h);
-                             let target_view = self.texture_pool.get_view(target_tex_name);
+                            self.texture_pool.resize_if_needed(target_tex_name, w, h);
+                            let target_view = self.texture_pool.get_view(target_tex_name);
 
-                             self.effect_chain_renderer.apply_chain(
-                                 &mut encoder,
-                                 src_view,
-                                 &target_view,
-                                 &chain,
-                                 time,
-                                 w,
-                                 h
-                             );
+                            self.effect_chain_renderer.apply_chain(
+                                &mut encoder,
+                                src_view,
+                                &target_view,
+                                &chain,
+                                time,
+                                w,
+                                h
+                            );
                             
-                            _temp_view_holder = Some(target_view);
-                            final_view = _temp_view_holder.as_ref().unwrap();
+                           _temp_view_holder = Some(target_view);
+                           final_view = _temp_view_holder.as_ref().unwrap();
                          }
                     }
 
