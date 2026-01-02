@@ -51,6 +51,9 @@
 **/*.rs.bk
 *.pdb
 
+# Build/test output files
+check_*.txt
+
 # vcpkg (local only, not tracked)
 /vcpkg/
 project.mflow
