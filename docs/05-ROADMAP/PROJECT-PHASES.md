@@ -90,12 +90,11 @@ This phase enables distributed output across multiple PCs, supporting profession
 
 The master PC renders all content and streams the finished video to player clients.
 
-- [ ] **NDI Integration** (`mapmap-ndi/`)
-  - [ ] Create new crate `mapmap-ndi`
-  - [ ] Integrate `grafton-ndi` Rust bindings
-  - [ ] Implement NDI Sender (wgpu Texture → NDI)
-  - [ ] Implement NDI Receiver (NDI → Fullscreen)
-  - [ ] Multi-source discovery (NDI Finder)
+- [x] **NDI Integration** (`mapmap-io/src/ndi/`)
+  - [x] Integrated `grafton-ndi` Rust bindings (feature flag `ndi`)
+  - [x] Implemented NDI Sender (`NdiSender`)
+  - [x] Implemented NDI Receiver (`NdiReceiver`)
+  - [x] Multi-source discovery (async NDI Finder)
   - [ ] Latency optimization (<100ms target)
 
 - [ ] **Player Mode** (`--player-ndi`)
