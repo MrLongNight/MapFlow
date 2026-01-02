@@ -741,8 +741,8 @@ impl ModuleCanvas {
                                                         ui.add(egui::Slider::new(soft, 0.0..=1.0).text("Softness"));
                                                     }
                                                     ModuleEffectType::ChromaticAberration => {
-                                                       let amt = params.entry("amount".to_string()).or_insert(0.01);
-                                                       ui.add(egui::Slider::new(amt, 0.0..=0.1).text("Amount"));
+                                                        let amt = params.entry("amount".to_string()).or_insert(0.01);
+                                                        ui.add(egui::Slider::new(amt, 0.0..=0.1).text("Amount"));
                                                     }
                                                     ModuleEffectType::Brightness | ModuleEffectType::Contrast | ModuleEffectType::Saturation => {
                                                         let bri = params.entry("brightness".to_string()).or_insert(0.0);
