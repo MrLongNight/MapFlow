@@ -1207,7 +1207,7 @@ impl App {
                         active_window_ids.insert(preview_id);
 
                         // Ensure render assignment exists for preview
-                        self.output_assignments.insert(preview_id, assignment.source_part_id.map(|id| format!("tex_{}", id)).unwrap_or_default());
+                        self.output_assignments.insert(preview_id, assignment.source_part_id.map(|id| format!("part_{}", id)).unwrap_or_default());
 
                         if self.window_manager.get(preview_id).is_none() {
                             self.window_manager.create_projector_window(
