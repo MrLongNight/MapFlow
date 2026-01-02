@@ -56,18 +56,21 @@ impl PreviewPanel {
     /// Returns the rect used by the panel for layout purposes
     pub fn show(&mut self, ui: &mut Ui) -> Rect {
         let panel_rect = ui.available_rect_before_wrap();
-        
+
         // Header with collapse toggle
         ui.horizontal(|ui| {
             let icon = if self.expanded { "▼" } else { "▶" };
             if ui.button(format!("{} Preview", icon)).clicked() {
                 self.expanded = !self.expanded;
             }
-            
+
             if self.expanded {
                 ui.separator();
-                ui.label(format!("{} outputs", self.outputs.iter().filter(|o| o.show_in_panel).count()));
-                
+                ui.label(format!(
+                    "{} outputs",
+                    self.outputs.iter().filter(|o| o.show_in_panel).count()
+                ));
+
                 // Height adjustment
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("−").clicked() && self.panel_height > 80.0 {
@@ -79,16 +82,16 @@ impl PreviewPanel {
                 });
             }
         });
-        
+
         if self.expanded {
             ui.add_space(4.0);
-            
+
             // Preview content area
             let preview_area = egui::Frame::none()
                 .fill(ui.style().visuals.extreme_bg_color)
                 .inner_margin(8.0)
                 .rounding(4.0);
-            
+
             preview_area.show(ui, |ui| {
                 ui.set_min_height(self.panel_height - 40.0);
                 
@@ -168,10 +171,10 @@ impl PreviewPanel {
                 }
             });
         }
-        
+
         panel_rect
     }
-    
+
     /// Get the current panel height (for layout calculations)
     pub fn current_height(&self) -> f32 {
         if self.expanded {
