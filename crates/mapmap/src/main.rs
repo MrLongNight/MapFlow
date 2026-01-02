@@ -1576,7 +1576,7 @@ impl App {
                                                                 mapmap_core::module::OutputType::Projector { ref id, ref name, ref show_in_preview_panel, .. } => {
                                                                     // Look up texture from render_ops
                                                                     let texture_name = self.render_ops.iter()
-                                                                        .find(|op| op.output_part_id == *id)
+                                                                        .find(|op| op.output_part_id == part.id)
                                                                         .and_then(|op| op.source_part_id)
                                                                         .map(|sid| format!("part_{}", sid));
 
