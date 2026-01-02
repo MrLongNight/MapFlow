@@ -1843,7 +1843,7 @@ impl ModuleCanvas {
 
             ui.separator();
 
-            // Module selector dropdown
+            // === MODULE SELECTOR ===
             ui.label("Module:");
             let module_names: Vec<_> = manager
                 .list_modules()
@@ -1865,40 +1865,41 @@ impl ModuleCanvas {
                     }
                 });
 
-            ui.separator();
+            // === SPACER - push zoom controls to right ===
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                // === ZOOM CONTROLS (now on the right) ===
+                // Fit to view button
+                if ui
+                    .button("⊡")
+                    .on_hover_text("Fit to view / Reset zoom")
+                    .clicked()
+                {
+                    self.zoom = 1.0;
+                    self.pan_offset = Vec2::ZERO;
+                }
 
-            // === ZOOM CONTROLS ===
-            ui.label("Zoom:");
+                // Zoom percentage display
+                ui.label(format!("{:.0}%", self.zoom * 100.0));
 
-            // Zoom out button
-            if ui.button("−").on_hover_text("Zoom out").clicked() {
-                self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
-            }
+                // Zoom in button
+                if ui.button("+").on_hover_text("Zoom in").clicked() {
+                    self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
+                }
 
-            // Zoom slider
-            ui.add(
-                egui::Slider::new(&mut self.zoom, 0.2..=3.0)
-                    .show_value(false)
-                    .clamp_to_range(true),
-            );
+                // Zoom slider
+                ui.add(
+                    egui::Slider::new(&mut self.zoom, 0.2..=3.0)
+                        .show_value(false)
+                        .clamp_to_range(true),
+                );
 
-            // Zoom in button
-            if ui.button("+").on_hover_text("Zoom in").clicked() {
-                self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
-            }
+                // Zoom out button
+                if ui.button("−").on_hover_text("Zoom out").clicked() {
+                    self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
+                }
 
-            // Zoom percentage display
-            ui.label(format!("{:.0}%", self.zoom * 100.0));
-
-            // Fit to view button
-            if ui
-                .button("⊡")
-                .on_hover_text("Fit to view / Reset zoom")
-                .clicked()
-            {
-                self.zoom = 1.0;
-                self.pan_offset = Vec2::ZERO;
-            }
+                ui.label("Zoom:");
+            });
 
             // === MODULE MANAGEMENT (only when module selected) ===
             if let Some(module_id) = self.active_module_id {

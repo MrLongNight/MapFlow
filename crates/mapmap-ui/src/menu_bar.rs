@@ -354,26 +354,57 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                     ui.separator();
 
-                    // === BPM DISPLAY ===
-                    let bpm = ui_state.current_bpm;
-                    let bpm_text = if let Some(tempo) = bpm {
-                        format!("{:.0} BPM", tempo)
-                    } else {
-                        "--- BPM".to_string()
-                    };
+                    // === COMBINED AUDIO/TEMPO SECTION ===
+                    ui.horizontal(|ui| {
+                        // BPM Display (compact)
+                        let bpm = ui_state.current_bpm;
+                        let bpm_text = if let Some(tempo) = bpm {
+                            format!("{:.0}", tempo)
+                        } else {
+                            "---".to_string()
+                        };
 
-                    ui.add(egui::Label::new(
-                        egui::RichText::new(bpm_text)
-                            .size(16.0)
-                            .color(egui::Color32::from_rgb(255, 200, 0))
-                            .strong(),
-                    ))
-                    .on_hover_text("Erkanntes Tempo (Beats per Minute)");
+                        ui.label("🎵");
+                        ui.add(egui::Label::new(
+                            egui::RichText::new(bpm_text)
+                                .size(14.0)
+                                .color(egui::Color32::from_rgb(255, 200, 0))
+                                .strong(),
+                        ))
+                        .on_hover_text("BPM (Beats per Minute)");
+                        ui.label(
+                            egui::RichText::new("BPM")
+                                .size(10.0)
+                                .color(egui::Color32::GRAY),
+                        );
+
+                        ui.add_space(8.0);
+
+                        // Audio Level Meter (compact stereo)
+                        let audio_level = ui_state.current_audio_level;
+                        let db = if audio_level > 0.0001 {
+                            20.0 * audio_level.log10()
+                        } else {
+                            -60.0
+                        };
+
+                        // Duplicate mono to stereo for now
+                        let left_db = db;
+                        let right_db = db;
+
+                        ui.label("🔊");
+
+                        // Compact AudioMeter
+                        ui.add(AudioMeter::new(
+                            ui_state.user_config.meter_style,
+                            left_db,
+                            right_db,
+                        ));
+                    });
 
                     ui.separator();
 
                     // === MIDI SECTION ===
-                    // MIDI Status indicator (passed via ui_state)
                     #[cfg(feature = "midi")]
                     {
                         // Simple toggle button for controller overlay with icon
@@ -404,7 +435,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
                         ui.separator();
 
-                        // Learn button with proper icon or text fallback
+                        // Learn button
                         let learn_btn = if ui_state.is_midi_learn_mode {
                             egui::Button::new("Learn").fill(egui::Color32::YELLOW)
                         } else {
@@ -418,32 +449,6 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                             ui_state.is_midi_learn_mode = !ui_state.is_midi_learn_mode;
                         }
                     }
-
-                    ui.separator();
-
-                    // === AUDIO LEVEL METER (Stereo) ===
-                    let audio_level = ui_state.current_audio_level;
-                    let db = if audio_level > 0.0001 {
-                        20.0 * audio_level.log10()
-                    } else {
-                        -60.0
-                    };
-
-                    // In a future update, we will get stereo levels from the backend.
-                    // For now, duplicate the mono signal to both channels.
-                    let left_db = db;
-                    let right_db = db;
-
-                    ui.label("🔊");
-
-                    // AudioMeter will try to fill vertical space (clamped).
-                    // We don't need to specify size manually anymore, the widget has defaults and layout logic.
-                    // But we can override width if needed. The widget defaults to 300/360 depending on style.
-                    ui.add(AudioMeter::new(
-                        ui_state.user_config.meter_style,
-                        left_db,
-                        right_db,
-                    ));
 
                     // === SPACER - push performance to right ===
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

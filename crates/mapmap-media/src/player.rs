@@ -153,11 +153,12 @@ impl VideoPlayer {
                 Some(frame)
             }
             Err(e) => {
-                warn!("Decoder error during playback: {}", e);
-                // We don't immediately stop on one bad frame, maybe?
-                // But for robustness, maybe we should just log and keep last frame.
-                // If it persists, we transition to Error.
-                // For now, let's just log and return last frame.
+                // EndOfStream is expected at the end of media - handle silently
+                // Only warn for actual decoder errors
+                if !matches!(e, crate::MediaError::EndOfStream) {
+                    warn!("Decoder error during playback: {}", e);
+                }
+                // Return last frame to avoid visual glitches
                 self.last_frame.clone()
             }
         }
