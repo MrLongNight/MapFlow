@@ -415,7 +415,7 @@ impl ModuleEvaluator {
         }
 
         match source_type {
-            SourceType::MediaFile { path } => {
+            SourceType::MediaFile { path, .. } => {
                 if path.is_empty() {
                     return None;
                 }

@@ -4,6 +4,23 @@ use std::collections::HashMap;
 pub type ModuleId = u64;
 pub type ModulePartId = u64;
 
+// Default value helpers for serde
+fn default_speed() -> f32 {
+    1.0
+}
+fn default_opacity() -> f32 {
+    1.0
+}
+fn default_contrast() -> f32 {
+    1.0
+}
+fn default_saturation() -> f32 {
+    1.0
+}
+fn default_scale() -> f32 {
+    1.0
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MapFlowModule {
     pub id: ModuleId,
@@ -24,6 +41,21 @@ impl MapFlowModule {
             PartType::Trigger => ModulePartType::Trigger(TriggerType::Beat),
             PartType::Source => ModulePartType::Source(SourceType::MediaFile {
                 path: String::new(),
+                speed: 1.0,
+                loop_enabled: true,
+                start_time: 0.0,
+                end_time: 0.0,
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
             }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
             PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
@@ -564,6 +596,51 @@ impl AudioTriggerOutputConfig {
 pub enum SourceType {
     MediaFile {
         path: String,
+        /// Playback speed multiplier (1.0 = normal)
+        #[serde(default = "default_speed")]
+        speed: f32,
+        /// Loop playback
+        #[serde(default)]
+        loop_enabled: bool,
+        /// Start time in seconds (for clips)
+        #[serde(default)]
+        start_time: f32,
+        /// End time in seconds (0 = full duration)
+        #[serde(default)]
+        end_time: f32,
+        /// Transparency/Opacity (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+        /// Blend mode for compositing
+        #[serde(default)]
+        blend_mode: Option<BlendModeType>,
+        /// Color correction: Brightness (-1.0 to 1.0)
+        #[serde(default)]
+        brightness: f32,
+        /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_contrast")]
+        contrast: f32,
+        /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_saturation")]
+        saturation: f32,
+        /// Color correction: Hue shift (-180 to 180 degrees)
+        #[serde(default)]
+        hue_shift: f32,
+        /// Transform: Scale X
+        #[serde(default = "default_scale")]
+        scale_x: f32,
+        /// Transform: Scale Y
+        #[serde(default = "default_scale")]
+        scale_y: f32,
+        /// Transform: Rotation in degrees
+        #[serde(default)]
+        rotation: f32,
+        /// Transform: Position offset X
+        #[serde(default)]
+        offset_x: f32,
+        /// Transform: Position offset Y
+        #[serde(default)]
+        offset_y: f32,
     },
     Shader {
         name: String,
@@ -582,6 +659,30 @@ pub enum SourceType {
     SpoutInput {
         sender_name: String,
     },
+}
+
+impl SourceType {
+    /// Create a new MediaFile source with default settings
+    pub fn new_media_file(path: String) -> Self {
+        SourceType::MediaFile {
+            path,
+            speed: 1.0,
+            loop_enabled: true,
+            start_time: 0.0,
+            end_time: 0.0,
+            opacity: 1.0,
+            blend_mode: None,
+            brightness: 0.0,
+            contrast: 1.0,
+            saturation: 1.0,
+            hue_shift: 0.0,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            rotation: 0.0,
+            offset_x: 0.0,
+            offset_y: 0.0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

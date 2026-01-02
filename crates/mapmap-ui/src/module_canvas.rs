@@ -1,9 +1,10 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
-    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType, MapFlowModule,
-    MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModulePartType, ModuleSocketType,
-    ModulizerType, OutputType, SourceType, TriggerType, NodeLinkData,
+    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType,
+    MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId,
+    ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData, OutputType, SourceType,
+    TriggerType,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -472,12 +473,32 @@ impl ModuleCanvas {
                                     ModulePartType::Source(source) => {
                                         ui.label("Source Type:");
                                         match source {
-                                            SourceType::MediaFile { path } => {
+                                            SourceType::MediaFile { 
+                                                path, 
+                                                speed, 
+                                                loop_enabled, 
+                                                start_time, 
+                                                end_time, 
+                                                opacity, 
+                                                blend_mode,
+                                                brightness,
+                                                contrast,
+                                                saturation,
+                                                hue_shift,
+                                                scale_x,
+                                                scale_y,
+                                                rotation,
+                                                offset_x,
+                                                offset_y,
+                                            } => {
                                                 ui.label("📁 Media File");
+                                                
+                                                // === FILE PATH ===
                                                 ui.horizontal(|ui| {
+                                                    ui.label("Path:");
                                                     ui.add(
                                                         egui::TextEdit::singleline(path)
-                                                            .desired_width(120.0),
+                                                            .desired_width(160.0),
                                                     );
                                                     if ui.button("📂").clicked() {
                                                         if let Some(picked) = rfd::FileDialog::new()
@@ -493,6 +514,102 @@ impl ModuleCanvas {
                                                         {
                                                             *path = picked.display().to_string();
                                                         }
+                                                    }
+                                                });
+                                                
+                                                ui.separator();
+                                                
+                                                // === PLAYBACK CONTROLS ===
+                                                ui.collapsing("▶️ Playback", |ui| {
+                                                    ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
+                                                    ui.checkbox(loop_enabled, "🔁 Loop");
+                                                    ui.separator();
+                                                    ui.label("Clip Region:");
+                                                    ui.add(egui::Slider::new(start_time, 0.0..=300.0).text("Start").suffix("s"));
+                                                    ui.add(egui::Slider::new(end_time, 0.0..=300.0).text("End").suffix("s"));
+                                                    if ui.button("Reset Clip").clicked() {
+                                                        *start_time = 0.0;
+                                                        *end_time = 0.0;
+                                                    }
+                                                });
+                                                
+                                                // === APPEARANCE ===
+                                                ui.collapsing("🎨 Appearance", |ui| {
+                                                    ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+                                                    
+                                                    // Blend Mode selector
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Blend Mode:");
+                                                        egui::ComboBox::from_id_source("blend_mode_selector")
+                                                            .selected_text(match blend_mode {
+                                                                Some(BlendModeType::Normal) => "Normal",
+                                                                Some(BlendModeType::Add) => "Add",
+                                                                Some(BlendModeType::Multiply) => "Multiply",
+                                                                Some(BlendModeType::Screen) => "Screen",
+                                                                Some(BlendModeType::Overlay) => "Overlay",
+                                                                Some(BlendModeType::Difference) => "Difference",
+                                                                Some(BlendModeType::Exclusion) => "Exclusion",
+                                                                None => "Normal",
+                                                            })
+                                                            .show_ui(ui, |ui| {
+                                                                if ui.selectable_label(blend_mode.is_none(), "Normal").clicked() {
+                                                                    *blend_mode = None;
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Add), "Add").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Add);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Multiply), "Multiply").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Multiply);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Screen), "Screen").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Screen);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Overlay), "Overlay").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Overlay);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Difference), "Difference").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Difference);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Exclusion), "Exclusion").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Exclusion);
+                                                                }
+                                                            });
+                                                    });
+                                                });
+                                                
+                                                // === COLOR CORRECTION ===
+                                                ui.collapsing("🌈 Color Correction", |ui| {
+                                                    ui.add(egui::Slider::new(brightness, -1.0..=1.0).text("Brightness"));
+                                                    ui.add(egui::Slider::new(contrast, 0.0..=2.0).text("Contrast"));
+                                                    ui.add(egui::Slider::new(saturation, 0.0..=2.0).text("Saturation"));
+                                                    ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).text("Hue Shift").suffix("°"));
+                                                    if ui.button("Reset Colors").clicked() {
+                                                        *brightness = 0.0;
+                                                        *contrast = 1.0;
+                                                        *saturation = 1.0;
+                                                        *hue_shift = 0.0;
+                                                    }
+                                                });
+                                                
+                                                // === TRANSFORM ===
+                                                ui.collapsing("📐 Transform", |ui| {
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Scale:");
+                                                        ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
+                                                        ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
+                                                    });
+                                                    ui.add(egui::Slider::new(rotation, -180.0..=180.0).text("Rotation").suffix("°"));
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Offset:");
+                                                        ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
+                                                        ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
+                                                    });
+                                                    if ui.button("Reset Transform").clicked() {
+                                                        *scale_x = 1.0;
+                                                        *scale_y = 1.0;
+                                                        *rotation = 0.0;
+                                                        *offset_x = 0.0;
+                                                        *offset_y = 0.0;
                                                     }
                                                 });
                                             }
@@ -1304,7 +1421,9 @@ impl ModuleCanvas {
         use mapmap_core::module::{ModulePartType, TriggerType};
 
         match part_type {
-            ModulePartType::Trigger(TriggerType::AudioFFT { band, threshold, .. }) => {
+            ModulePartType::Trigger(TriggerType::AudioFFT {
+                band, threshold, ..
+            }) => {
                 let value = self.get_trigger_value(band);
                 let is_active = value > *threshold;
                 (true, value, *threshold, is_active)
@@ -1415,12 +1534,6 @@ impl ModuleCanvas {
         }
     }
 
-
-
-
-
-
-
     pub fn show(
         &mut self,
         ui: &mut Ui,
@@ -1526,7 +1639,7 @@ impl ModuleCanvas {
                         ui.menu_button("📹 Source", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "media file video image".contains(&filter)) && ui.button("🎬 Media File").clicked() {
-                                self.add_source_node(manager, SourceType::MediaFile { path: String::new() });
+                                self.add_source_node(manager, SourceType::new_media_file(String::new()));
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -1866,41 +1979,6 @@ impl ModuleCanvas {
                     }
                 });
 
-            ui.separator();
-
-            // === ZOOM CONTROLS ===
-            ui.label("Zoom:");
-
-            // Zoom out button
-            if ui.button("−").on_hover_text("Zoom out").clicked() {
-                self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
-            }
-
-            // Zoom slider
-            ui.add(
-                egui::Slider::new(&mut self.zoom, 0.2..=3.0)
-                    .show_value(false)
-                    .clamp_to_range(true),
-            );
-
-            // Zoom in button
-            if ui.button("+").on_hover_text("Zoom in").clicked() {
-                self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
-            }
-
-            // Zoom percentage display
-            ui.label(format!("{:.0}%", self.zoom * 100.0));
-
-            // Fit to view button
-            if ui
-                .button("⊡")
-                .on_hover_text("Fit to view / Reset zoom")
-                .clicked()
-            {
-                self.zoom = 1.0;
-                self.pan_offset = Vec2::ZERO;
-            }
-
             // === MODULE MANAGEMENT (only when module selected) ===
             if let Some(module_id) = self.active_module_id {
                 ui.separator();
@@ -1983,6 +2061,40 @@ impl ModuleCanvas {
                 {
                     self.show_presets = !self.show_presets;
                 }
+            }
+
+            // === ZOOM CONTROLS (at the end of toolbar) ===
+            ui.separator();
+            ui.label("Zoom:");
+
+            // Zoom out button
+            if ui.button("−").on_hover_text("Zoom out").clicked() {
+                self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
+            }
+
+            // Zoom slider
+            ui.add(
+                egui::Slider::new(&mut self.zoom, 0.2..=3.0)
+                    .show_value(false)
+                    .clamp_to_range(true),
+            );
+
+            // Zoom in button
+            if ui.button("+").on_hover_text("Zoom in").clicked() {
+                self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
+            }
+
+            // Zoom percentage display
+            ui.label(format!("{:.0}%", self.zoom * 100.0));
+
+            // Fit to view button
+            if ui
+                .button("⊡")
+                .on_hover_text("Fit to view / Reset zoom")
+                .clicked()
+            {
+                self.zoom = 1.0;
+                self.pan_offset = Vec2::ZERO;
             }
 
             ui.add_space(4.0);
@@ -3004,10 +3116,7 @@ impl ModuleCanvas {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            ModulePartType::Mesh(_) => (
-                vec![],
-                vec![],
-            ),
+            ModulePartType::Mesh(_) => (vec![], vec![]),
             ModulePartType::Layer(_) => (
                 vec![ModuleSocket {
                     name: "Media In".to_string(),
@@ -3115,8 +3224,8 @@ impl ModuleCanvas {
     #[allow(dead_code)]
     fn render_node_inspector(ui: &mut Ui, part: &mut mapmap_core::module::ModulePart) {
         use mapmap_core::module::{
-            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType,
-            ModulizerType, OutputType, SourceType, TriggerType,
+            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType, ModulizerType,
+            OutputType, SourceType, TriggerType,
         };
 
         let (_, _, icon, type_name) = Self::get_part_style(&part.part_type);
@@ -3154,7 +3263,8 @@ impl ModuleCanvas {
                             *trigger_type = TriggerType::AudioFFT {
                                 band: mapmap_core::module::AudioBand::Bass,
                                 threshold: 0.5,
-                                output_config: mapmap_core::module::AudioTriggerOutputConfig::default(),
+                                output_config:
+                                    mapmap_core::module::AudioTriggerOutputConfig::default(),
                             };
                         }
                         if ui
@@ -3207,9 +3317,7 @@ impl ModuleCanvas {
                             )
                             .clicked()
                         {
-                            *source_type = SourceType::MediaFile {
-                                path: String::new(),
-                            };
+                            *source_type = SourceType::new_media_file(String::new());
                         }
                         if ui
                             .selectable_label(
@@ -3257,7 +3365,7 @@ impl ModuleCanvas {
                     });
 
                 // Properties for SourceType
-                if let SourceType::MediaFile { path } = source_type {
+                if let SourceType::MediaFile { path, .. } = source_type {
                     ui.add_space(4.0);
                     ui.label("Media Path:");
                     ui.horizontal(|ui| {
@@ -3382,7 +3490,10 @@ impl ModuleCanvas {
                             )
                             .clicked()
                         {
-                            *modulizer_type = ModulizerType::Effect { effect_type: EffectType::Blur, params: std::collections::HashMap::new() };
+                            *modulizer_type = ModulizerType::Effect {
+                                effect_type: EffectType::Blur,
+                                params: std::collections::HashMap::new(),
+                            };
                         }
                         if ui
                             .selectable_label(
@@ -3396,7 +3507,11 @@ impl ModuleCanvas {
                     });
 
                 // Effect sub-selector
-                if let ModulizerType::Effect { effect_type: effect, .. } = modulizer_type {
+                if let ModulizerType::Effect {
+                    effect_type: effect,
+                    ..
+                } = modulizer_type
+                {
                     ui.add_space(4.0);
                     ui.label("Effect:");
                     egui::ComboBox::from_id_source("effect_type")
@@ -3437,24 +3552,52 @@ impl ModuleCanvas {
                 egui::ComboBox::from_id_source("layer_type")
                     .selected_text(current_type_name)
                     .show_ui(ui, |ui| {
-                        if ui.selectable_label(matches!(layer_type, LayerType::Single { .. }), "Single Layer").clicked() {
+                        if ui
+                            .selectable_label(
+                                matches!(layer_type, LayerType::Single { .. }),
+                                "Single Layer",
+                            )
+                            .clicked()
+                        {
                             *layer_type = LayerType::Single {
                                 id: 0,
                                 name: "Layer 1".to_string(),
                                 opacity: 1.0,
                                 blend_mode: None,
-                                mesh: mapmap_core::module::MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) },
+                                mesh: mapmap_core::module::MeshType::Quad {
+                                    tl: (0.0, 0.0),
+                                    tr: (1.0, 0.0),
+                                    br: (1.0, 1.0),
+                                    bl: (0.0, 1.0),
+                                },
                             };
                         }
-                        if ui.selectable_label(matches!(layer_type, LayerType::Group { .. }), "Group").clicked() {
+                        if ui
+                            .selectable_label(
+                                matches!(layer_type, LayerType::Group { .. }),
+                                "Group",
+                            )
+                            .clicked()
+                        {
                             *layer_type = LayerType::Group {
                                 name: "Group 1".to_string(),
                                 opacity: 1.0,
                                 blend_mode: None,
-                                mesh: mapmap_core::module::MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) },
+                                mesh: mapmap_core::module::MeshType::Quad {
+                                    tl: (0.0, 0.0),
+                                    tr: (1.0, 0.0),
+                                    br: (1.0, 1.0),
+                                    bl: (0.0, 1.0),
+                                },
                             };
                         }
-                        if ui.selectable_label(matches!(layer_type, LayerType::All { .. }), "All Layers").clicked() {
+                        if ui
+                            .selectable_label(
+                                matches!(layer_type, LayerType::All { .. }),
+                                "All Layers",
+                            )
+                            .clicked()
+                        {
                             *layer_type = LayerType::All {
                                 opacity: 1.0,
                                 blend_mode: None,
@@ -3466,33 +3609,59 @@ impl ModuleCanvas {
 
                 // Common Properties access
                 let (opacity, blend_mode, mesh) = match layer_type {
-                    LayerType::Single { opacity, blend_mode, mesh, .. } => (Some(opacity), blend_mode, Some(mesh)),
-                    LayerType::Group { opacity, blend_mode, mesh, .. } => (Some(opacity), blend_mode, Some(mesh)),
-                    LayerType::All { opacity, blend_mode } => (Some(opacity), blend_mode, None),
+                    LayerType::Single {
+                        opacity,
+                        blend_mode,
+                        mesh,
+                        ..
+                    } => (Some(opacity), blend_mode, Some(mesh)),
+                    LayerType::Group {
+                        opacity,
+                        blend_mode,
+                        mesh,
+                        ..
+                    } => (Some(opacity), blend_mode, Some(mesh)),
+                    LayerType::All {
+                        opacity,
+                        blend_mode,
+                    } => (Some(opacity), blend_mode, None),
                 };
 
                 if let Some(opacity) = opacity {
-                     ui.label("Opacity:");
-                     ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Value"));
+                    ui.label("Opacity:");
+                    ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Value"));
                 }
 
                 ui.label("Blend Mode:");
                 let current_blend = blend_mode.map(|b| b.name()).unwrap_or("Keep Original");
-                egui::ComboBox::from_id_source("layer_blend").selected_text(current_blend).show_ui(ui, |ui| {
-                    if ui.selectable_label(blend_mode.is_none(), "Keep Original").clicked() { *blend_mode = None; }
-                    ui.separator();
-                    for b in BlendModeType::all() {
-                        if ui.selectable_label(blend_mode.as_ref().is_some_and(|current| *current == *b), b.name()).clicked() {
-                            *blend_mode = Some(*b);
+                egui::ComboBox::from_id_source("layer_blend")
+                    .selected_text(current_blend)
+                    .show_ui(ui, |ui| {
+                        if ui
+                            .selectable_label(blend_mode.is_none(), "Keep Original")
+                            .clicked()
+                        {
+                            *blend_mode = None;
                         }
-                    }
-                });
-                
+                        ui.separator();
+                        for b in BlendModeType::all() {
+                            if ui
+                                .selectable_label(
+                                    blend_mode.as_ref().is_some_and(|current| *current == *b),
+                                    b.name(),
+                                )
+                                .clicked()
+                            {
+                                *blend_mode = Some(*b);
+                            }
+                        }
+                    });
+
                 if let Some(mesh) = mesh {
-                     ui.separator();
-                     ui.label("Mesh Type:");
-                     ui.label(format!("{:?}", mesh));
-                     ui.label("(Edit Mesh in Canvas Node Properties)");
+                    ui.separator();
+                    ui.label("Mesh Type:");
+                    ui.label(format!("{:?}", mesh));
+                    ui.label("(Edit Mesh in Canvas Node Properties)");
                 }
             }
             ModulePartType::Mesh(mesh) => {
@@ -3912,8 +4081,8 @@ impl ModuleCanvas {
         part_type: &mapmap_core::module::ModulePartType,
     ) -> (Color32, Color32, &'static str, &'static str) {
         use mapmap_core::module::{
-            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType,
-            ModulizerType, OutputType, SourceType, TriggerType,
+            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType, ModulizerType,
+            OutputType, SourceType, TriggerType,
         };
         match part_type {
             ModulePartType::Trigger(trigger) => {
@@ -3970,7 +4139,10 @@ impl ModuleCanvas {
             }
             ModulePartType::Modulizer(mod_type) => {
                 let name = match mod_type {
-                    ModulizerType::Effect { effect_type: effect, .. } => match effect {
+                    ModulizerType::Effect {
+                        effect_type: effect,
+                        ..
+                    } => match effect {
                         EffectType::Blur => "Blur",
                         EffectType::Sharpen => "Sharpen",
                         EffectType::Invert => "Invert",
@@ -4091,7 +4263,7 @@ impl ModuleCanvas {
                 TriggerType::Beat => "🥁 Beat".to_string(),
             },
             ModulePartType::Source(source_type) => match source_type {
-                SourceType::MediaFile { path } => {
+                SourceType::MediaFile { path, .. } => {
                     if path.is_empty() {
                         "📁 Select file...".to_string()
                     } else {
@@ -4118,7 +4290,10 @@ impl ModuleCanvas {
                 MaskType::Gradient { angle, .. } => format!("🌈 Gradient {}°", *angle as i32),
             },
             ModulePartType::Modulizer(modulizer_type) => match modulizer_type {
-                ModulizerType::Effect { effect_type: effect, .. } => format!("✨ {}", effect.name()),
+                ModulizerType::Effect {
+                    effect_type: effect,
+                    ..
+                } => format!("✨ {}", effect.name()),
                 ModulizerType::BlendMode(blend) => format!("🔀 {}", blend.name()),
                 ModulizerType::AudioReactive { source } => format!("🔊 {}", source),
             },
@@ -4253,9 +4428,12 @@ impl ModuleCanvas {
     /// Generate a unique layer ID by finding the maximum existing layer ID
     fn generate_unique_layer_id(manager: &ModuleManager, module_id: u64) -> u64 {
         if let Some(module) = manager.get_module(module_id) {
-            module.parts.iter()
+            module
+                .parts
+                .iter()
                 .filter_map(|p| {
-                    if let mapmap_core::module::ModulePartType::Layer(ref layer_type) = p.part_type {
+                    if let mapmap_core::module::ModulePartType::Layer(ref layer_type) = p.part_type
+                    {
                         match layer_type {
                             mapmap_core::module::LayerType::Single { id, .. } => Some(*id),
                             _ => None,
@@ -4265,21 +4443,32 @@ impl ModuleCanvas {
                     }
                 })
                 .max()
-                .unwrap_or(0) + 1
+                .unwrap_or(0)
+                + 1
         } else {
             1
         }
     }
 
-    fn add_module_node(&self, manager: &mut ModuleManager, part_type: mapmap_core::module::ModulePartType) {
+    fn add_module_node(
+        &self,
+        manager: &mut ModuleManager,
+        part_type: mapmap_core::module::ModulePartType,
+    ) {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
                 use mapmap_core::module::ModulePart;
-                
-                let pos = Self::find_free_position(&module.parts, (self.pan_offset.x.abs() + 200.0, self.pan_offset.y.abs() + 200.0));
+
+                let pos = Self::find_free_position(
+                    &module.parts,
+                    (
+                        self.pan_offset.x.abs() + 200.0,
+                        self.pan_offset.y.abs() + 200.0,
+                    ),
+                );
                 let (inputs, outputs) = Self::get_sockets_for_part_type(&part_type);
                 let id = module.parts.iter().map(|p| p.id).max().unwrap_or(0) + 1;
-                
+
                 module.parts.push(ModulePart {
                     id,
                     part_type,
@@ -4307,9 +4496,7 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
+                        ModulePartType::Source(SourceType::new_media_file(String::new())),
                         (350.0, 100.0), // Increased from 250 to 350
                         None,
                     ),
@@ -4341,14 +4528,15 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
+                        ModulePartType::Source(SourceType::new_media_file(String::new())),
                         (350.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
-                        ModulePartType::Modulizer(ModulizerType::Effect { effect_type: EffectType::Blur, params: std::collections::HashMap::new() }),
+                        ModulePartType::Modulizer(ModulizerType::Effect {
+                            effect_type: EffectType::Blur,
+                            params: std::collections::HashMap::new(),
+                        }),
                         (650.0, 100.0), // Increased spacing
                         None,
                     ),
@@ -4385,14 +4573,15 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
+                        ModulePartType::Source(SourceType::new_media_file(String::new())),
                         (350.0, 100.0), // Increased spacing
                         None,
                     ),
                     (
-                        ModulePartType::Modulizer(ModulizerType::Effect { effect_type: EffectType::Glitch, params: std::collections::HashMap::new() }),
+                        ModulePartType::Modulizer(ModulizerType::Effect {
+                            effect_type: EffectType::Glitch,
+                            params: std::collections::HashMap::new(),
+                        }),
                         (650.0, 100.0), // Increased spacing
                         None,
                     ),
@@ -4434,9 +4623,7 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
+                        ModulePartType::Source(SourceType::new_media_file(String::new())),
                         (350.0, 100.0), // Increased spacing
                         None,
                     ),
@@ -4508,9 +4695,7 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
+                        ModulePartType::Source(SourceType::new_media_file(String::new())),
                         (350.0, 100.0),
                         None,
                     ),
@@ -4574,9 +4759,7 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
-                        ModulePartType::Source(SourceType::MediaFile {
-                            path: String::new(),
-                        }),
+                        ModulePartType::Source(SourceType::new_media_file(String::new())),
                         (350.0, 100.0),
                         None,
                     ),
