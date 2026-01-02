@@ -1,9 +1,9 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
-    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, LayerType, MapFlowModule,
+    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType, MapFlowModule,
     MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModulePartType, ModuleSocketType,
-    ModulizerType, OutputType, SourceType, TriggerType, LinkMode, LinkBehavior, NodeLinkData,
+    ModulizerType, OutputType, SourceType, TriggerType, NodeLinkData,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -301,7 +301,7 @@ impl ModuleCanvas {
                                                 ui.collapsing("🔄 Invert Signals (NOT Logic)", |ui| {
                                                     ui.label("Select signals to invert (Active = 0.0):");
                                                     
-                                                    let mut toggle_invert = |name: &str, label: &str| {
+                                                    let mut toggle_invert = |ui: &mut Ui, name: &str, label: &str| {
                                                         let name_string = name.to_string();
                                                         let mut invert = output_config.inverted_outputs.contains(&name_string);
                                                         if ui.checkbox(&mut invert, label).changed() {
@@ -314,26 +314,26 @@ impl ModuleCanvas {
                                                     };
 
                                                     if output_config.beat_output {
-                                                        toggle_invert("Beat Out", "🥁 Beat Out");
+                                                        toggle_invert(ui, "Beat Out", "🥁 Beat Out");
                                                     }
                                                     if output_config.bpm_output {
-                                                        toggle_invert("BPM Out", "⏱️ BPM Out");
+                                                        toggle_invert(ui, "BPM Out", "⏱️ BPM Out");
                                                     }
                                                     if output_config.volume_outputs {
-                                                        toggle_invert("RMS Volume", "📊 RMS Volume");
-                                                        toggle_invert("Peak Volume", "📊 Peak Volume");
+                                                        toggle_invert(ui, "RMS Volume", "📊 RMS Volume");
+                                                        toggle_invert(ui, "Peak Volume", "📊 Peak Volume");
                                                     }
                                                     if output_config.frequency_bands {
                                                         ui.label("Bands:");
-                                                        toggle_invert("SubBass Out", "SubBass (20-60Hz)");
-                                                        toggle_invert("Bass Out", "Bass (60-250Hz)");
-                                                        toggle_invert("LowMid Out", "LowMid (250-500Hz)");
-                                                        toggle_invert("Mid Out", "Mid (500-2kHz)");
-                                                        toggle_invert("HighMid Out", "HighMid (2-4kHz)");
-                                                        toggle_invert("UpperMid Out", "UpperMid (4-6kHz)");
-                                                        toggle_invert("Presence Out", "Presence (4-6kHz)");
-                                                        toggle_invert("Brilliance Out", "Brilliance (6-14kHz)");
-                                                        toggle_invert("Air Out", "Air (14-20kHz)");
+                                                        toggle_invert(ui, "SubBass Out", "SubBass (20-60Hz)");
+                                                        toggle_invert(ui, "Bass Out", "Bass (60-250Hz)");
+                                                        toggle_invert(ui, "LowMid Out", "LowMid (250-500Hz)");
+                                                        toggle_invert(ui, "Mid Out", "Mid (500-2kHz)");
+                                                        toggle_invert(ui, "HighMid Out", "HighMid (2-4kHz)");
+                                                        toggle_invert(ui, "UpperMid Out", "UpperMid (4-6kHz)");
+                                                        toggle_invert(ui, "Presence Out", "Presence (4-6kHz)");
+                                                        toggle_invert(ui, "Brilliance Out", "Brilliance (6-14kHz)");
+                                                        toggle_invert(ui, "Air Out", "Air (14-20kHz)");
                                                     }
                                                 });
                                                 
@@ -968,6 +968,95 @@ impl ModuleCanvas {
                                             }
                                         }
                                     }
+                                    ModulePartType::Mesh(mesh) => {
+                                        ui.label("🕸️ Mesh Node");
+                                        ui.separator();
+                                        
+                                        // Duplicated mesh editor logic (refactor later)
+                                        ui.label("Mesh Configuration:");
+                                            
+                                        egui::ComboBox::from_id_source(format!("mesh_type_{}", part_id))
+                                            .selected_text(match mesh {
+                                                MeshType::Quad { .. } => "Quad",
+                                                MeshType::Grid { .. } => "Grid",
+                                                MeshType::BezierSurface { .. } => "Bezier",
+                                                MeshType::Polygon { .. } => "Polygon",
+                                                MeshType::TriMesh => "Triangle",
+                                                MeshType::Circle { .. } => "Circle",
+                                                MeshType::Cylinder { .. } => "Cylinder",
+                                                MeshType::Sphere { .. } => "Sphere",
+                                                MeshType::Custom { .. } => "Custom",
+                                            })
+                                            .show_ui(ui, |ui| {
+                                                if ui.selectable_label(matches!(mesh, MeshType::Quad {..}), "Quad").clicked() {
+                                                    *mesh = MeshType::Quad { tl:(0.0,0.0), tr:(1.0,0.0), br:(1.0,1.0), bl:(0.0,1.0) };
+                                                }
+                                                if ui.selectable_label(matches!(mesh, MeshType::Grid {..}), "Grid").clicked() {
+                                                    *mesh = MeshType::Grid { rows: 4, cols: 4 };
+                                                }
+                                            });
+
+                                        match mesh {
+                                            MeshType::Quad { tl, tr, br, bl } => {
+                                                ui.label("Corner Mapping (0.0-1.0):");
+                                                let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
+                                                    ui.horizontal(|ui| {
+                                                        ui.label(name);
+                                                        ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).clamp_range(0.0..=1.0).prefix("X: "));
+                                                        ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).clamp_range(0.0..=1.0).prefix("Y: "));
+                                                    });
+                                                };
+                                                coord_ui("Top Left:", tl);
+                                                coord_ui("Top Right:", tr);
+                                                coord_ui("Bottom Right:", br);
+                                                coord_ui("Bottom Left:", bl);
+
+                                                ui.separator();
+                                                ui.label("Visual Editor:");
+                                                let (response, painter) = ui.allocate_painter(Vec2::new(240.0, 180.0), Sense::click_and_drag());
+                                                let rect = response.rect;
+                                                painter.rect_filled(rect, 0.0, Color32::from_gray(30));
+                                                painter.rect_stroke(rect, 0.0, Stroke::new(1.0, Color32::GRAY));
+
+                                                let to_screen = |norm: (f32, f32)| -> Pos2 {
+                                                    Pos2::new(rect.min.x + norm.0 * rect.width(), rect.min.y + norm.1 * rect.height())
+                                                };
+                                                let from_screen = |pos: Pos2| -> (f32, f32) {
+                                                    (((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0), ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0))
+                                                };
+
+                                                let p_tl = to_screen(*tl);
+                                                let p_tr = to_screen(*tr);
+                                                let p_br = to_screen(*br);
+                                                let p_bl = to_screen(*bl);
+
+                                                painter.add(egui::Shape::convex_polygon(
+                                                    vec![p_tl, p_tr, p_br, p_bl],
+                                                    Color32::from_rgba_unmultiplied(100, 150, 255, 50),
+                                                    Stroke::new(1.0, Color32::LIGHT_BLUE),
+                                                ));
+
+                                                let handle = |coord: &mut (f32, f32), name: &str| {
+                                                    let pos = to_screen(*coord);
+                                                    let id = response.id.with(name);
+                                                    let h_rect = Rect::from_center_size(pos, Vec2::splat(12.0));
+                                                    let h_resp = ui.interact(h_rect, id, Sense::drag());
+                                                    if h_resp.dragged() {
+                                                        if let Some(mp) = ui.input(|i| i.pointer.interact_pos()) {
+                                                            *coord = from_screen(mp);
+                                                        }
+                                                    }
+                                                    painter.circle_filled(pos, 6.0, if h_resp.hovered() || h_resp.dragged() { Color32::WHITE } else { Color32::LIGHT_BLUE });
+                                                };
+                                                handle(tl, "tl"); handle(tr, "tr"); handle(br, "br"); handle(bl, "bl");
+                                            }
+                                            MeshType::Grid { rows, cols } => {
+                                                ui.add(egui::Slider::new(rows, 1..=32).text("Rows"));
+                                                ui.add(egui::Slider::new(cols, 1..=32).text("Cols"));
+                                            }
+                                            _ => { ui.label("Editor not implemented for this mesh type"); }
+                                        }
+                                    }
                                     ModulePartType::Output(output) => {
                                         ui.label("Output:");
                                         match output {
@@ -1041,6 +1130,7 @@ impl ModuleCanvas {
                                             }
                                         }
                                     }
+                                    // All part types handled above
                                 }
 
                                 // Link System UI
@@ -1049,7 +1139,7 @@ impl ModuleCanvas {
                                     let supports_link_system = matches!(part.part_type, 
                                         ModulePartType::Mask(_) | 
                                         ModulePartType::Modulizer(_) | 
-                                        ModulePartType::LayerAssignment(_) |
+                                        ModulePartType::Layer(_) |
                                         ModulePartType::Mesh(_)
                                     );
                                     
@@ -1105,6 +1195,7 @@ impl ModuleCanvas {
                                             }
                                         });
                                     }
+                                }
 
                                 ui.add_space(16.0);
                                 ui.separator();
@@ -2817,6 +2908,7 @@ impl ModuleCanvas {
                                             size: *size,
                                             inputs,
                                             outputs,
+                                            link_data: NodeLinkData::default(),
                                         });
                                         part_ids.push(id);
                                     }
@@ -2910,6 +3002,10 @@ impl ModuleCanvas {
                     name: "Media Out".to_string(),
                     socket_type: ModuleSocketType::Media,
                 }],
+            ),
+            ModulePartType::Mesh(_) => (
+                vec![],
+                vec![],
             ),
             ModulePartType::Layer(_) => (
                 vec![ModuleSocket {
@@ -3398,6 +3494,10 @@ impl ModuleCanvas {
                      ui.label("(Edit Mesh in Canvas Node Properties)");
                 }
             }
+            ModulePartType::Mesh(mesh) => {
+                ui.label("Mesh Configuration");
+                ui.label(format!("Type: {:?}", mesh));
+            }
             ModulePartType::Output(output_type) => {
                 ui.label("Output Type:");
                 let current = match output_type {
@@ -3545,6 +3645,7 @@ impl ModuleCanvas {
                     mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
                     mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
                     mapmap_core::module::ModuleSocketType::Output => "power-plug.svg",
+                    mapmap_core::module::ModuleSocketType::Link => "power-plug.svg",
                 };
 
                 // Draw Cable (Bezier) FIRST so plugs are on top
@@ -3906,12 +4007,18 @@ impl ModuleCanvas {
                     ModulizerType::AudioReactive { .. } => "Audio Reactive",
                 };
                 (
-                    Color32::from_rgb(60, 60, 50),
-                    Color32::from_rgb(180, 140, 60),
+                    egui::Color32::from_rgb(60, 60, 50),
+                    egui::Color32::from_rgb(180, 140, 60),
                     "〰️",
                     name,
                 )
             }
+            ModulePartType::Mesh(_) => (
+                egui::Color32::from_rgb(60, 60, 80),
+                egui::Color32::from_rgb(100, 100, 200),
+                "🕸️",
+                "Mesh",
+            ),
             ModulePartType::Layer(layer) => {
                 let name = match layer {
                     LayerType::Single { .. } => "Single Layer",
@@ -3950,6 +4057,7 @@ impl ModuleCanvas {
             ModulePartType::Source(_) => "Source",
             ModulePartType::Mask(_) => "Mask",
             ModulePartType::Modulizer(_) => "Modulator",
+            ModulePartType::Mesh(_) => "Mesh",
             ModulePartType::Layer(_) => "Layer",
             ModulePartType::Output(_) => "Output",
         }
@@ -3963,6 +4071,7 @@ impl ModuleCanvas {
             ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
             ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
             ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
+            ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
         }
     }
 
@@ -4012,6 +4121,7 @@ impl ModuleCanvas {
                 ModulizerType::BlendMode(blend) => format!("🔀 {}", blend.name()),
                 ModulizerType::AudioReactive { source } => format!("🔊 {}", source),
             },
+            ModulePartType::Mesh(_) => "🕸️ Mesh".to_string(),
             ModulePartType::Layer(layer_type) => {
                 use mapmap_core::module::LayerType;
                 match layer_type {
@@ -4039,6 +4149,7 @@ impl ModuleCanvas {
             ModulePartType::Source(_) => PartType::Source,
             ModulePartType::Mask(_) => PartType::Mask,
             ModulePartType::Modulizer(_) => PartType::Modulator,
+            ModulePartType::Mesh(_) => PartType::Mesh,
             ModulePartType::Layer(_) => PartType::Layer,
             ModulePartType::Output(_) => PartType::Output,
         }
@@ -4055,8 +4166,9 @@ impl ModuleCanvas {
                 ModulePartType::Source(_) => 1,
                 ModulePartType::Mask(_) => 2,
                 ModulePartType::Modulizer(_) => 3,
-                ModulePartType::Layer(_) => 4,
-                ModulePartType::Output(_) => 5,
+                ModulePartType::Mesh(_) => 4,
+                ModulePartType::Layer(_) => 5,
+                ModulePartType::Output(_) => 6,
             }
         };
 
@@ -4174,6 +4286,7 @@ impl ModuleCanvas {
                     size: None,
                     inputs,
                     outputs,
+                    link_data: mapmap_core::module::NodeLinkData::default(),
                 });
             }
         }

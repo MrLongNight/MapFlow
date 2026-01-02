@@ -509,6 +509,5 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             ui.add_space(4.0);
             ui.separator();
         });
-
     actions
 }

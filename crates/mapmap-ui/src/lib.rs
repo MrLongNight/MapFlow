@@ -42,6 +42,7 @@ pub mod theme;
 pub mod timeline_v2;
 pub mod transform_panel;
 pub mod undo_redo;
+pub mod widgets;
 
 pub use controller_overlay_panel::ControllerOverlayPanel;
 pub use i18n::LocaleManager;
@@ -193,8 +194,8 @@ pub struct AppUI {
     pub osc_client_input: String,
     pub show_controls: bool,
     pub show_stats: bool,
-    pub show_layers: bool,
     pub show_toolbar: bool,
+    pub show_layers: bool,
 
     pub show_timeline: bool,
     pub show_shader_graph: bool,

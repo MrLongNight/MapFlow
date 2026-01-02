@@ -6,13 +6,8 @@
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{
-<<<<<<< HEAD
-    BlendModeType, LayerType, MapFlowModule, MaskType, MeshType, ModulePartId, ModulePartType,
-    ModulizerType, OutputType, SourceType, TriggerType,
-=======
-    LinkBehavior, LinkMode, MapFlowModule, ModulePartId, ModulePartType, OutputType, SourceType,
-    TriggerType,
->>>>>>> feat/advanced-output
+    BlendModeType, LayerType, LinkBehavior, LinkMode, MapFlowModule, MaskType, MeshType,
+    ModulePartId, ModulePartType, ModulizerType, OutputType, SourceType, TriggerType,
 };
 use std::collections::HashMap;
 
@@ -187,17 +182,18 @@ impl ModuleEvaluator {
             }
         }
 
-<<<<<<< HEAD
         // Step 4: Trace Render Pipeline
         // Start from Output nodes and trace back to Layers, then to Sources/Effects
-=======
-        // Step 7: Find output assignments
->>>>>>> feat/advanced-output
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 // Find connected input (should be a Layer)
                 if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
                     if let Some(layer_part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                        // Apply Link System Opacity (from trigger_inputs)
+                        // If the Layer is a Slave or has Trigger Input enabled, its effective opacity is modulated here.
+                        let link_opacity =
+                            trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
+
                         if let ModulePartType::Layer(layer_type) = &layer_part.part_type {
                             match layer_type {
                                 LayerType::Single {
@@ -209,13 +205,12 @@ impl ModuleEvaluator {
                                     // Trace back from Layer to find Source chain
                                     let chain = self.trace_chain(module, layer_part.id);
 
-<<<<<<< HEAD
                                     result.render_ops.push(RenderOp {
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
                                         mesh: mesh.clone(),
-                                        opacity: *opacity,
+                                        opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
                                         effects: chain.effects,
@@ -232,24 +227,6 @@ impl ModuleEvaluator {
                         }
                     }
                 }
-=======
-                // Find the source that feeds this output (trace back through connections)
-                let source_part_id = self.find_source_for_output(module, part.id);
-
-                // Opacity is determined by the trigger input (Control Signal)
-                // For a Slave Layer, this 'trigger_input' is the processed Link signal.
-                let opacity = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
-
-                result.output_assignments.insert(
-                    output_id,
-                    TextureAssignment {
-                        output_id,
-                        output_type: output_type.clone(),
-                        source_part_id,
-                        opacity,
-                    },
-                );
->>>>>>> feat/advanced-output
             }
         }
 

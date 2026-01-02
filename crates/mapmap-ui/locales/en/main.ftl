@@ -338,6 +338,7 @@ menu-edit-copy = Copy
 menu-edit-paste = Paste
 menu-edit-delete = Delete
 menu-edit-select-all = Select All
+view-toolbar = Show Toolbar
 view-egui-panels = Egui Panels
 panel-dashboard = Dashboard
 panel-media-browser = Media Browser

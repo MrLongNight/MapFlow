@@ -353,6 +353,7 @@ menu-edit-copy = Kopieren
 menu-edit-paste = Einfügen
 menu-edit-delete = Löschen
 menu-edit-select-all = Alles auswählen
+view-toolbar = Werkzeugleiste anzeigen
 view-egui-panels = Egui-Bedienfelder
 panel-dashboard = Dashboard
 panel-media-browser = Medienbrowser
