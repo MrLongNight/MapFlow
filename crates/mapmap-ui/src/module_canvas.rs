@@ -3970,7 +3970,9 @@ impl ModuleCanvas {
 
         // Draw property display based on part type
         let property_text = Self::get_part_property_text(&part.part_type);
-        if !property_text.is_empty() {
+        let has_property_text = !property_text.is_empty();
+        
+        if has_property_text {
             // Position at the bottom of the node to avoid overlapping sockets
             let property_y = rect.max.y - 10.0 * self.zoom;
             painter.text(
@@ -3984,9 +3986,10 @@ impl ModuleCanvas {
 
         // Draw audio trigger VU meter and live value display
         if is_audio_trigger {
-            let meter_y = property_y + 18.0 * self.zoom;
-            let meter_width = rect.width() - 20.0 * self.zoom;
+            let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
             let meter_height = 12.0 * self.zoom;
+            let meter_y = rect.max.y - (offset_from_bottom * self.zoom) - meter_height;
+            let meter_width = rect.width() - 20.0 * self.zoom;
             let meter_x = rect.min.x + 10.0 * self.zoom;
 
             // Background bar
