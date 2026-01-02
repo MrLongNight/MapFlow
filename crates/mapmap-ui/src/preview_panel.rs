@@ -56,18 +56,21 @@ impl PreviewPanel {
     /// Returns the rect used by the panel for layout purposes
     pub fn show(&mut self, ui: &mut Ui) -> Rect {
         let panel_rect = ui.available_rect_before_wrap();
-        
+
         // Header with collapse toggle
         ui.horizontal(|ui| {
             let icon = if self.expanded { "▼" } else { "▶" };
             if ui.button(format!("{} Preview", icon)).clicked() {
                 self.expanded = !self.expanded;
             }
-            
+
             if self.expanded {
                 ui.separator();
-                ui.label(format!("{} outputs", self.outputs.iter().filter(|o| o.show_in_panel).count()));
-                
+                ui.label(format!(
+                    "{} outputs",
+                    self.outputs.iter().filter(|o| o.show_in_panel).count()
+                ));
+
                 // Height adjustment
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("−").clicked() && self.panel_height > 80.0 {
@@ -79,24 +82,24 @@ impl PreviewPanel {
                 });
             }
         });
-        
+
         if self.expanded {
             ui.add_space(4.0);
-            
+
             // Preview content area
             let preview_area = egui::Frame::none()
                 .fill(ui.style().visuals.extreme_bg_color)
                 .inner_margin(8.0)
                 .rounding(4.0);
-            
+
             preview_area.show(ui, |ui| {
                 ui.set_min_height(self.panel_height - 40.0);
-                
+
                 // Get outputs that should be shown
                 let visible_outputs: Vec<_> = self.outputs.iter()
                     .filter(|o| o.show_in_panel)
                     .collect();
-                
+
                 if visible_outputs.is_empty() {
                     ui.centered_and_justified(|ui| {
                         ui.label("No outputs configured for preview.\nAdd a Projector Output node and enable 'Show in Preview Panel'.");
@@ -110,11 +113,11 @@ impl PreviewPanel {
                         .min(200.0)
                         .max(80.0);
                     let thumbnail_height = thumbnail_width * 9.0 / 16.0; // 16:9 aspect ratio
-                    
+
                     ui.horizontal_wrapped(|ui| {
                         for output in visible_outputs {
                             let is_selected = self.selected_output == Some(output.id);
-                            
+
                             // Preview thumbnail frame
                             let response = egui::Frame::none()
                                 .fill(if is_selected {
@@ -136,14 +139,14 @@ impl PreviewPanel {
                                             Vec2::new(thumbnail_width, thumbnail_height),
                                             egui::Sense::click(),
                                         );
-                                        
+
                                         // Draw placeholder or texture
                                         ui.painter().rect_filled(
                                             rect,
                                             2.0,
                                             egui::Color32::from_gray(40),
                                         );
-                                        
+
                                         // Draw "no signal" pattern
                                         ui.painter().text(
                                             rect.center(),
@@ -152,14 +155,14 @@ impl PreviewPanel {
                                             egui::FontId::proportional(12.0),
                                             egui::Color32::GRAY,
                                         );
-                                        
+
                                         // Output label
                                         ui.label(&output.name);
-                                        
+
                                         response
                                     }).inner
                                 });
-                            
+
                             if response.inner.clicked() {
                                 self.selected_output = Some(output.id);
                             }
@@ -168,10 +171,10 @@ impl PreviewPanel {
                 }
             });
         }
-        
+
         panel_rect
     }
-    
+
     /// Get the current panel height (for layout calculations)
     pub fn current_height(&self) -> f32 {
         if self.expanded {

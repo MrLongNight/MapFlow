@@ -29,108 +29,20 @@ impl MapFlowModule {
                     output_config,
                 })
             }
-<<<<<<< HEAD
-            PartType::Source => (
-                ModulePartType::Source(SourceType::MediaFile {
-                    path: String::new(),
-                }),
-                vec![ModuleSocket {
-                    name: "Trigger In".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Mask => (
-                ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-                vec![
-                    ModuleSocket {
-                        name: "Media In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                    ModuleSocket {
-                        name: "Mask In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                ],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Modulator => (
-                ModulePartType::Modulizer(ModulizerType::Effect {
-                    effect_type: EffectType::Blur,
-                    params: HashMap::new(),
-                }),
-                vec![
-                    ModuleSocket {
-                        name: "Media In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                    ModuleSocket {
-                        name: "Trigger In".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                ],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-
-            PartType::Layer => (
-                ModulePartType::Layer(LayerType::Single {
-                    id: 1,
-                    name: "Layer 1".to_string(),
-                    opacity: 1.0,
-                    blend_mode: None,
-                    mesh: default_mesh_quad(),
-                }),
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Layer Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
-            PartType::Output => (
-                ModulePartType::Output(OutputType::Projector {
-                    id: 1,
-                    name: "Projector 1".to_string(),
-                    fullscreen: false,
-                    hide_cursor: true,
-                    target_screen: 0,
-                    show_in_preview_panel: true,
-                    extra_preview_window: false,
-                }),
-                vec![ModuleSocket {
-                    name: "Layer In".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-                vec![], // No outputs - outputs are sinks
-            ),
-=======
             PartType::Source => ModulePartType::Source(SourceType::MediaFile {
                 path: String::new(),
             }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-            PartType::Modulator => {
-                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur))
-            }
-            PartType::Mesh => ModulePartType::Mesh(MeshType::Quad {
-                tl: (0.0, 0.0),
-                tr: (1.0, 0.0),
-                br: (1.0, 1.0),
-                bl: (0.0, 1.0),
+            PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
+                effect_type: EffectType::Blur,
+                params: HashMap::new(),
             }),
-            PartType::Layer => ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+            PartType::Layer => ModulePartType::Layer(LayerType::Single {
+                id: 1,
+                name: "Layer 1".to_string(),
                 opacity: 1.0,
                 blend_mode: None,
+                mesh: default_mesh_quad(),
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 1,
@@ -141,7 +53,6 @@ impl MapFlowModule {
                 show_in_preview_panel: true,
                 extra_preview_window: false,
             }),
->>>>>>> feat/advanced-output
         };
 
         let mut part = ModulePart {
@@ -815,34 +726,35 @@ impl MeshType {
                 if vertices.len() < 3 {
                     Mesh::quad()
                 } else {
-                    use crate::mesh::{MeshVertex, MeshType as CoreMeshType};
-                    
+                    use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
+
                     // Calculate center point for triangle fan
-                    let center = vertices.iter().fold((0.0, 0.0), |acc, v| {
-                        (acc.0 + v.0, acc.1 + v.1)
-                    });
-                    let center = (center.0 / vertices.len() as f32, center.1 / vertices.len() as f32);
-                    
+                    let center = vertices
+                        .iter()
+                        .fold((0.0, 0.0), |acc, v| (acc.0 + v.0, acc.1 + v.1));
+                    let center = (
+                        center.0 / vertices.len() as f32,
+                        center.1 / vertices.len() as f32,
+                    );
+
                     let mut mesh_vertices = Vec::with_capacity(vertices.len() + 1);
                     mesh_vertices.push(MeshVertex::new(
                         Vec2::new(center.0, center.1),
                         Vec2::new(0.5, 0.5),
                     ));
-                    
+
                     for v in vertices {
-                        mesh_vertices.push(MeshVertex::new(
-                            Vec2::new(v.0, v.1),
-                            Vec2::new(v.0, v.1),
-                        ));
+                        mesh_vertices
+                            .push(MeshVertex::new(Vec2::new(v.0, v.1), Vec2::new(v.0, v.1)));
                     }
-                    
+
                     let mut indices = Vec::with_capacity((vertices.len() * 3) as usize);
                     for i in 0..vertices.len() {
                         indices.push(0); // Center
                         indices.push((i + 1) as u16);
                         indices.push(((i + 1) % vertices.len() + 1) as u16);
                     }
-                    
+
                     Mesh {
                         mesh_type: CoreMeshType::Custom,
                         vertices: mesh_vertices,
@@ -862,53 +774,50 @@ impl MeshType {
                 lon_segments,
             } => {
                 // Create a UV sphere mesh
-                use crate::mesh::{MeshVertex, MeshType as CoreMeshType};
-                
+                use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
+
                 let lat_segs = (*lat_segments).max(3);
                 let lon_segs = (*lon_segments).max(3);
-                
+
                 let mut mesh_vertices = Vec::new();
                 let mut indices = Vec::new();
-                
+
                 // Generate vertices
                 for lat in 0..=lat_segs {
                     let theta = (lat as f32 / lat_segs as f32) * std::f32::consts::PI;
                     let sin_theta = theta.sin();
                     let cos_theta = theta.cos();
-                    
+
                     for lon in 0..=lon_segs {
                         let phi = (lon as f32 / lon_segs as f32) * std::f32::consts::TAU;
                         let _sin_phi = phi.sin();
                         let cos_phi = phi.cos();
-                        
+
                         let x = 0.5 + 0.5 * sin_theta * cos_phi;
                         let y = 0.5 + 0.5 * cos_theta;
                         let u = lon as f32 / lon_segs as f32;
                         let v = lat as f32 / lat_segs as f32;
-                        
-                        mesh_vertices.push(MeshVertex::new(
-                            Vec2::new(x, y),
-                            Vec2::new(u, v),
-                        ));
+
+                        mesh_vertices.push(MeshVertex::new(Vec2::new(x, y), Vec2::new(u, v)));
                     }
                 }
-                
+
                 // Generate indices
                 for lat in 0..lat_segs {
                     for lon in 0..lon_segs {
                         let first = (lat * (lon_segs + 1) + lon) as u16;
                         let second = first + lon_segs as u16 + 1;
-                        
+
                         indices.push(first);
                         indices.push(second);
                         indices.push(first + 1);
-                        
+
                         indices.push(second);
                         indices.push(second + 1);
                         indices.push(first + 1);
                     }
                 }
-                
+
                 Mesh {
                     mesh_type: CoreMeshType::Custom,
                     vertices: mesh_vertices,
