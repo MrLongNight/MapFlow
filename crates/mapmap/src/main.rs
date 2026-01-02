@@ -29,8 +29,8 @@ use mapmap_core::module::ModulePartId;
 use mapmap_io::{load_project, save_project};
 use mapmap_media::player::{PlaybackCommand, VideoPlayer};
 use mapmap_render::{
-    Compositor, EffectChainRenderer, MeshBufferCache, MeshRenderer, OscillatorRenderer,
-    QuadRenderer, TexturePool, WgpuBackend,
+    ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, EffectChainRenderer, MeshBufferCache,
+    MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
@@ -128,6 +128,10 @@ struct App {
     #[cfg(feature = "ndi")]
     ndi_receivers:
         std::collections::HashMap<mapmap_core::module::ModulePartId, mapmap_io::ndi::NdiReceiver>,
+    /// NDI Senders for module outputs
+    #[cfg(feature = "ndi")]
+    ndi_senders:
+        std::collections::HashMap<mapmap_core::module::ModulePartId, mapmap_io::ndi::NdiSender>,
 
     /// Shader Graph Manager (Runtime)
     #[allow(dead_code)]
@@ -136,8 +140,17 @@ struct App {
     output_assignments: std::collections::HashMap<u64, String>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
+<<<<<<< HEAD
     /// Render Operations from Module Evaluator
     render_ops: Vec<RenderOp>,
+=======
+    /// Edge blend renderer for output windows
+    edge_blend_renderer: Option<EdgeBlendRenderer>,
+    /// Color calibration renderer for output windows
+    color_calibration_renderer: Option<ColorCalibrationRenderer>,
+    /// Temporary textures for output rendering (OutputID -> Texture)
+    output_temp_textures: HashMap<u64, wgpu::Texture>,
+>>>>>>> feat/advanced-output
 }
 
 impl App {
@@ -156,6 +169,21 @@ impl App {
         let mesh_renderer = MeshRenderer::new(backend.device.clone(), backend.surface_format())?;
         let mesh_buffer_cache = MeshBufferCache::new();
         let quad_renderer = QuadRenderer::new(&backend.device, backend.surface_format())?;
+        
+        // Initialize advanced output renderers
+        let edge_blend_renderer = EdgeBlendRenderer::new(backend.device.clone(), backend.surface_format())
+            .map_err(|e| {
+                tracing::warn!("Failed to create edge blend renderer: {}", e);
+                e
+            })
+            .ok();
+            
+        let color_calibration_renderer = ColorCalibrationRenderer::new(backend.device.clone(), backend.surface_format())
+            .map_err(|e| {
+                tracing::warn!("Failed to create color calibration renderer: {}", e);
+                e
+            })
+            .ok();
 
         let mut window_manager = WindowManager::new();
 
@@ -429,6 +457,8 @@ impl App {
             },
             #[cfg(feature = "ndi")]
             ndi_receivers: std::collections::HashMap::new(),
+            #[cfg(feature = "ndi")]
+            ndi_senders: std::collections::HashMap::new(),
             output_assignments: HashMap::new(),
             shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
             recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
@@ -437,7 +467,13 @@ impl App {
                     .join("MapFlow")
                     .join("recent_effect_configs.json"),
             ),
+<<<<<<< HEAD
             render_ops: Vec::new(),
+=======
+            edge_blend_renderer,
+            color_calibration_renderer,
+            output_temp_textures: HashMap::new(),
+>>>>>>> feat/advanced-output
         };
 
         // Create initial dummy texture
@@ -564,7 +600,9 @@ impl App {
 
                 match event {
                     WindowEvent::CloseRequested => {
-                        elwt.exit();
+                        if output_id == 0 {
+                            elwt.exit();
+                        }
                     }
                     WindowEvent::Resized(size) => {
                         let new_size =
@@ -761,13 +799,25 @@ impl App {
                         
                         // Update Output Assignments for Preview
                         self.output_assignments.clear();
+<<<<<<< HEAD
                         for op in &self.render_ops {
                             if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
                                 if let Some(source_id) = op.source_part_id {
                                     let tex_name = format!("part_{}", source_id);
                                     self.output_assignments.insert(*id, tex_name);
                                 }
+=======
+                        for (output_id, assignment) in &result.output_assignments {
+                            if let Some(source_id) = assignment.source_part_id {
+                                let tex_name = format!("part_{}", source_id);
+                                self.output_assignments.insert(*output_id, tex_name);
+>>>>>>> feat/advanced-output
                             }
+                        }
+
+                        // 3. Sync output windows with evaluation result
+                        if let Err(e) = self.sync_output_windows(elwt, &result.output_assignments) {
+                            error!("Failed to sync output windows: {}", e);
                         }
                     }
                 }
@@ -1114,6 +1164,148 @@ impl App {
             }
             Err(e) => error!("Failed to load project: {}", e),
         }
+    }
+
+    /// Synchronizes output windows with the current module evaluation result.
+    ///
+    /// Creates windows for new output assignments and removes windows that are no longer needed.
+    /// Synchronizes output windows and NDI senders with the current module graph output nodes.
+    fn sync_output_windows<T>(
+        &mut self,
+        event_loop: &winit::event_loop::EventLoopWindowTarget<T>,
+        output_assignments: &std::collections::HashMap<u64, mapmap_core::module_eval::TextureAssignment>,
+    ) -> Result<()> {
+        use mapmap_core::module::OutputType;
+        const PREVIEW_FLAG: u64 = 1u64 << 63;
+
+        // Track active IDs for cleanup
+        let mut active_window_ids = std::collections::HashSet::new();
+        let mut active_sender_ids = std::collections::HashSet::new();
+
+        // 1. Process Assignments
+        for (output_id, assignment) in output_assignments {
+            // -- Projector Logic --
+            match &assignment.output_type {
+                OutputType::Projector {
+                    name,
+                    fullscreen,
+                    hide_cursor,
+                    target_screen,
+                    extra_preview_window,
+                    ..
+                } => {
+                    // 1. Primary Window
+                    active_window_ids.insert(*output_id);
+                    
+                    if let Some(window_context) = self.window_manager.get(*output_id) {
+                         // Update existing
+                         let is_fullscreen = window_context.window.fullscreen().is_some();
+                         if is_fullscreen != *fullscreen {
+                             window_context.window.set_fullscreen(if *fullscreen {
+                                 Some(winit::window::Fullscreen::Borderless(None))
+                             } else {
+                                 None
+                             });
+                         }
+                         window_context.window.set_cursor_visible(!*hide_cursor);
+                    } else {
+                         // Create new
+                        self.window_manager.create_projector_window(
+                            event_loop,
+                            &self.backend,
+                            *output_id,
+                            name,
+                            *fullscreen,
+                            *hide_cursor,
+                            *target_screen,
+                        )?;
+                        info!("Created projector window for output {}", output_id);
+                    }
+
+                    // 2. Extra Preview Window
+                    if *extra_preview_window {
+                        let preview_id = output_id | PREVIEW_FLAG;
+                        active_window_ids.insert(preview_id);
+
+                        // Ensure render assignment exists for preview
+                        self.output_assignments.insert(preview_id, assignment.source_part_id.map(|id| format!("part_{}", id)).unwrap_or_default());
+
+                        if self.window_manager.get(preview_id).is_none() {
+                            self.window_manager.create_projector_window(
+                                event_loop,
+                                &self.backend,
+                                preview_id,
+                                &format!("Preview: {}", name),
+                                false, // Always windowed
+                                false, // Show cursor
+                                0, // Default screen (0)
+                            )?;
+                            info!("Created preview window for output {}", output_id);
+                        }
+                    }
+                }
+                OutputType::NdiOutput { name: _name } => {
+                    // -- NDI Logic --
+                    active_sender_ids.insert(*output_id);
+                    
+                    #[cfg(feature = "ndi")]
+                    {
+                        if !self.ndi_senders.contains_key(output_id) {
+                             // Create NDI Sender
+                             let width = 1920; // TODO: Dynamic Res
+                             let height = 1080;
+                             match mapmap_io::ndi::NdiSender::new(
+                                 _name.clone(),
+                                 mapmap_io::format::VideoFormat {
+                                     width,
+                                     height,
+                                     pixel_format: mapmap_io::format::PixelFormat::BGRA8,
+                                     frame_rate: 60.0,
+                                 },
+                             ) {
+                                 Ok(sender) => {
+                                     info!("Created NDI sender: {}", _name);
+                                     self.ndi_senders.insert(*output_id, sender);
+                                 }
+                                 Err(e) => error!("Failed to create NDI sender {}: {}", _name, e),
+                             }
+                        }
+                    }
+                }
+                #[cfg(target_os = "windows")]
+                OutputType::Spout { .. } => {
+                    // TODO: Spout Sender
+                }
+
+            }
+        }
+
+        // 2. Cleanup Windows
+        let window_ids: Vec<u64> = self.window_manager.window_ids().cloned().collect();
+        for id in window_ids {
+            if id != 0 && !active_window_ids.contains(&id) {
+                self.window_manager.remove_window(id);
+                // Also remove assignment if it was a preview
+                if (id & PREVIEW_FLAG) != 0 {
+                    self.output_assignments.remove(&id);
+                }
+                info!("Closed window {}", id);
+            }
+        }
+        
+        // 3. Cleanup NDI Senders
+        #[cfg(feature = "ndi")]
+        {
+             let sender_ids: Vec<u64> = self.ndi_senders.keys().cloned().collect();
+             for id in sender_ids {
+                 if !active_sender_ids.contains(&id) {
+                     self.ndi_senders.remove(&id);
+                     info!("Removed NDI sender {}", id);
+                 }
+             }
+        }
+
+        Ok(())
     }
 
     /// Renders a single frame for a given output.
@@ -1480,13 +1672,13 @@ impl App {
 
 
                     // NOTE: Inspector Panel removed per user request - functionality moved to Module Canvas
-                    // === PREVIEW PANEL (Bottom, collapsible) ===
+                    // === PREVIEW PANEL (Left Sidebar, independent) ===
                     if self.ui_state.show_preview_panel {
-                        egui::TopBottomPanel::bottom("preview_panel")
+                        egui::SidePanel::left("preview_sidebar")
                             .resizable(true)
-                            .min_height(40.0)
-                            .max_height(250.0)
-                            .default_height(self.ui_state.preview_panel.current_height())
+                            .default_width(220.0)
+                            .min_width(150.0)
+                            .max_width(400.0)
                             .show(ctx, |ui| {
                                 // Update preview panel with output info from module graph
                                 let output_infos: Vec<mapmap_ui::OutputPreviewInfo> = self
@@ -1917,6 +2109,7 @@ impl App {
                 }
             });
 
+<<<<<<< HEAD
             if let Some(op) = target_op {
                 // Determine source texture view
                 let owned_source_view = if let Some(src_id) = op.source_part_id {
@@ -1966,6 +2159,159 @@ impl App {
                         transform,
                         op.opacity,
                     );
+=======
+                    // Retrieve Output Config and feature flags
+                    let output_config_opt = self.state.output_manager.get_output(output_id);
+                    
+                    let use_edge_blend = output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+                        
+                    let use_color_calib = output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+
+                    if use_edge_blend || use_color_calib {
+                        // === ADVANCED RENDERING PIPELINE ===
+                        
+                        // 1. Prepare Intermediate Texture if chaining (Both enabled)
+                        let need_temp = use_edge_blend && use_color_calib;
+                        let mut temp_view_opt: Option<wgpu::TextureView> = None;
+
+                        if need_temp {
+                            let width = window_context.surface_config.width;
+                            let height = window_context.surface_config.height;
+                            
+                            // Check if existing temp texture is valid
+                            let recreate = if let Some(tex) = self.output_temp_textures.get(&output_id) {
+                                tex.width() != width || tex.height() != height
+                            } else {
+                                true
+                            };
+
+                            if recreate {
+                                let texture = self.backend.device.create_texture(&wgpu::TextureDescriptor {
+                                    label: Some(&format!("Output {} Temp Texture", output_id)),
+                                    size: wgpu::Extent3d {
+                                        width,
+                                        height,
+                                        depth_or_array_layers: 1,
+                                    },
+                                    mip_level_count: 1,
+                                    sample_count: 1,
+                                    dimension: wgpu::TextureDimension::D2,
+                                    format: self.backend.surface_format(),
+                                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                                    view_formats: &[],
+                                });
+                                self.output_temp_textures.insert(output_id, texture);
+                            }
+                            
+                            temp_view_opt = Some(self.output_temp_textures.get(&output_id).unwrap().create_view(&wgpu::TextureViewDescriptor::default()));
+                        }
+
+                        // 2. Render Passes
+                        
+                        // Pass 1: Edge Blend (or Color Calib if it's the only one, logic below handles order)
+                        // Order: Source -> [Edge Blend] -> [Color Calib] -> Screen
+                        
+                        let config = output_config_opt.unwrap(); // Safe due to logic above
+                        
+                        if use_edge_blend {
+                            let renderer = self.edge_blend_renderer.as_ref().unwrap();
+                            
+                            // Determine target for Edge Blend
+                            let target_view = if use_color_calib {
+                                temp_view_opt.as_ref().unwrap() // Render to Temp
+                            } else {
+                                &view // Render to Screen
+                            };
+
+                            // Resources
+                            let bind_group = renderer.create_texture_bind_group(&source_view);
+                            let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
+                            let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Edge Blend Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                            
+                            renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                        }
+                        
+                        if use_color_calib {
+                            let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                            
+                            // Input to Color Calib is either Source or Temp (from Edge Blend)
+                            let input_view_for_cc = if use_edge_blend {
+                                temp_view_opt.as_ref().unwrap()
+                            } else {
+                                &source_view
+                            };
+
+                            // Target is always Screen (since it's the last pass here)
+                            // Note: If we add warping later, it might change.
+                            let target_view = &view;
+
+                            // Resources
+                            let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
+                            let uniform_buffer = renderer.create_uniform_buffer(&config.color_calibration);
+                            let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Color Calibration Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view, // Always screen
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), // Replace content
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                            
+                            renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                        }
+
+                    } else {
+                         // === DIRECT QUAD RENDERING (Fallback/Default) ===
+                        // Create bind group before render pass to satisfy lifetimes
+                        let bind_group = self
+                            .quad_renderer
+                            .create_bind_group(&self.backend.device, &source_view);
+
+                        // Render directly to output using QuadRenderer for efficiency
+                        {
+                            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Direct Output Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+
+                            self.quad_renderer.draw(&mut render_pass, &bind_group);
+                        }
+                    }
+
+>>>>>>> feat/advanced-output
 
                     // Setup Texture
                     let mut final_view = src_view;
