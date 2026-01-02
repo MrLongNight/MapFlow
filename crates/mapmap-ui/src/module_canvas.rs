@@ -226,7 +226,6 @@ impl ModuleCanvas {
         ctx: &egui::Context,
         module: &mut mapmap_core::module::MapFlowModule,
     ) {
-        let mut changed_part_id = None;
         if let Some(part_id) = self.editing_part_id {
             let part_exists = module.parts.iter().any(|p| p.id == part_id);
 
@@ -302,7 +301,7 @@ impl ModuleCanvas {
                                                 ui.collapsing("🔄 Invert Signals (NOT Logic)", |ui| {
                                                     ui.label("Select signals to invert (Active = 0.0):");
 
-                                                    let mut toggle_invert = |name: &str, label: &str| {
+                                                    let mut toggle_invert = |ui: &mut egui::Ui, name: &str, label: &str| {
                                                         let name_string = name.to_string();
                                                         let mut invert = output_config.inverted_outputs.contains(&name_string);
                                                         if ui.checkbox(&mut invert, label).changed() {
@@ -315,26 +314,26 @@ impl ModuleCanvas {
                                                     };
 
                                                     if output_config.beat_output {
-                                                        toggle_invert("Beat Out", "🥁 Beat Out");
+                                                        toggle_invert(ui, "Beat Out", "🥁 Beat Out");
                                                     }
                                                     if output_config.bpm_output {
-                                                        toggle_invert("BPM Out", "⏱️ BPM Out");
+                                                        toggle_invert(ui, "BPM Out", "⏱️ BPM Out");
                                                     }
                                                     if output_config.volume_outputs {
-                                                        toggle_invert("RMS Volume", "📊 RMS Volume");
-                                                        toggle_invert("Peak Volume", "📊 Peak Volume");
+                                                        toggle_invert(ui, "RMS Volume", "📊 RMS Volume");
+                                                        toggle_invert(ui, "Peak Volume", "📊 Peak Volume");
                                                     }
                                                     if output_config.frequency_bands {
                                                         ui.label("Bands:");
-                                                        toggle_invert("SubBass Out", "SubBass (20-60Hz)");
-                                                        toggle_invert("Bass Out", "Bass (60-250Hz)");
-                                                        toggle_invert("LowMid Out", "LowMid (250-500Hz)");
-                                                        toggle_invert("Mid Out", "Mid (500-2kHz)");
-                                                        toggle_invert("HighMid Out", "HighMid (2-4kHz)");
-                                                        toggle_invert("UpperMid Out", "UpperMid (4-6kHz)");
-                                                        toggle_invert("Presence Out", "Presence (4-6kHz)");
-                                                        toggle_invert("Brilliance Out", "Brilliance (6-14kHz)");
-                                                        toggle_invert("Air Out", "Air (14-20kHz)");
+                                                        toggle_invert(ui, "SubBass Out", "SubBass (20-60Hz)");
+                                                        toggle_invert(ui, "Bass Out", "Bass (60-250Hz)");
+                                                        toggle_invert(ui, "LowMid Out", "LowMid (250-500Hz)");
+                                                        toggle_invert(ui, "Mid Out", "Mid (500-2kHz)");
+                                                        toggle_invert(ui, "HighMid Out", "HighMid (2-4kHz)");
+                                                        toggle_invert(ui, "UpperMid Out", "UpperMid (4-6kHz)");
+                                                        toggle_invert(ui, "Presence Out", "Presence (4-6kHz)");
+                                                        toggle_invert(ui, "Brilliance Out", "Brilliance (6-14kHz)");
+                                                        toggle_invert(ui, "Air Out", "Air (14-20kHz)");
                                                     }
                                                 });
 
@@ -2812,6 +2811,7 @@ impl ModuleCanvas {
                                             part_type: part_type.clone(),
                                             position: *position,
                                             size: *size,
+                                            link_data: Default::default(),
                                             inputs,
                                             outputs,
                                         });
@@ -3604,6 +3604,7 @@ impl ModuleCanvas {
                     mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
                     mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
                     mapmap_core::module::ModuleSocketType::Output => "power-plug.svg",
+                    mapmap_core::module::ModuleSocketType::Link => "link.svg",
                 };
 
                 // Draw Cable (Bezier) FIRST so plugs are on top
@@ -4025,6 +4026,7 @@ impl ModuleCanvas {
             ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
             ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
             ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
+            ModuleSocketType::Link => Color32::from_rgb(0, 150, 255),
         }
     }
 
@@ -4251,6 +4253,7 @@ impl ModuleCanvas {
                     part_type,
                     position: pos,
                     size: None,
+                    link_data: Default::default(),
                     inputs,
                     outputs,
                 });
