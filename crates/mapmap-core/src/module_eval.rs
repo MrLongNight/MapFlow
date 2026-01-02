@@ -9,7 +9,8 @@
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{
-    MapFlowModule, ModulePartId, ModulePartType, OutputType, SourceType, TriggerType,
+    LinkBehavior, LinkMode, MapFlowModule, ModulePartId, ModulePartType, OutputType, SourceType,
+    TriggerType,
 };
 use std::collections::HashMap;
 
@@ -104,10 +105,58 @@ impl ModuleEvaluator {
             }
         }
 
-        // Step 2: Propagate trigger values through the graph
-        let trigger_inputs = self.compute_trigger_inputs(module, &result.trigger_values);
+        // Step 2: First propagation (Triggers -> Nodes)
+        // This populates inputs for Master nodes if they use Trigger Input
+        let mut trigger_inputs = self.compute_trigger_inputs(module, &result.trigger_values);
 
-        // Step 3: Generate source commands
+        // Step 3: Process Master Links (Nodes -> Link Out)
+        for part in &module.parts {
+            if part.link_data.mode == LinkMode::Master {
+                // Determine Master Activity
+                let mut activity = 1.0; // Default active
+
+                if part.link_data.trigger_input_enabled {
+                    // Check if we received a trigger signal
+                    // If enabled but no signal connected/active, strictly it should be 0.0?
+                    // "Der Layer mit master link benötigt dann ein Trigger Signal..." -> Yes.
+                    if let Some(&val) = trigger_inputs.get(&part.id) {
+                        activity = val;
+                    } else {
+                        activity = 0.0;
+                    }
+                }
+
+                // Write activity to Link Out socket
+                // Link Out is appended at the end of outputs list
+                if !part.outputs.is_empty() {
+                    let output_count = part.outputs.len();
+                    // Create a vector of zeros, set last to activity
+                    // Note: We assume only Link Out carries signal from a Layer/Effect node
+                    // Media outputs carry textures (not modeled here in trigger_values)
+                    let mut values = vec![0.0; output_count];
+                    values[output_count - 1] = activity;
+
+                    result.trigger_values.insert(part.id, values);
+                }
+            }
+        }
+
+        // Step 4: Second propagation (Master Link Out -> Slave Link In)
+        // Re-compute to propagate Link signals to Slaves
+        trigger_inputs = self.compute_trigger_inputs(module, &result.trigger_values);
+
+        // Step 5: Process Slave Behaviors (Invert Link Input)
+        for part in &module.parts {
+            if part.link_data.mode == LinkMode::Slave {
+                if let Some(val) = trigger_inputs.get_mut(&part.id) {
+                    if part.link_data.behavior == LinkBehavior::Inverted {
+                        *val = 1.0 - (*val).clamp(0.0, 1.0);
+                    }
+                }
+            }
+        }
+
+        // Step 6: Generate source commands
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
@@ -117,7 +166,7 @@ impl ModuleEvaluator {
             }
         }
 
-        // Step 4: Find output assignments
+        // Step 7: Find output assignments
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 let output_id = match output_type {
@@ -129,6 +178,9 @@ impl ModuleEvaluator {
 
                 // Find the source that feeds this output (trace back through connections)
                 let source_part_id = self.find_source_for_output(module, part.id);
+
+                // Opacity is determined by the trigger input (Control Signal)
+                // For a Slave Layer, this 'trigger_input' is the processed Link signal.
                 let opacity = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
 
                 result.output_assignments.insert(
@@ -156,33 +208,69 @@ impl ModuleEvaluator {
             } => {
                 let mut values = Vec::new();
 
+                // Helper to push and optionally invert value
+                let mut push_val = |name: &str, val: f32| {
+                    let inverted = output_config.inverted_outputs.contains(name);
+                    let final_val = if inverted {
+                        1.0 - val.clamp(0.0, 1.0)
+                    } else {
+                        val
+                    };
+                    values.push(final_val);
+                };
+
                 // Generate values based on config
+                // ORDER MUST MATCH AudioTriggerOutputConfig::generate_outputs
                 if output_config.frequency_bands {
-                    values.extend_from_slice(&self.audio_trigger_data.band_energies);
+                    let bands = [
+                        "SubBass Out",
+                        "Bass Out",
+                        "LowMid Out",
+                        "Mid Out",
+                        "HighMid Out",
+                        "UpperMid Out",
+                        "Presence Out",
+                        "Brilliance Out",
+                        "Air Out",
+                    ];
+                    for (i, name) in bands.iter().enumerate() {
+                        if i < self.audio_trigger_data.band_energies.len() {
+                            push_val(name, self.audio_trigger_data.band_energies[i]);
+                        } else {
+                            push_val(name, 0.0);
+                        }
+                    }
                 }
                 if output_config.volume_outputs {
-                    values.push(self.audio_trigger_data.rms_volume);
-                    values.push(self.audio_trigger_data.peak_volume);
+                    push_val("RMS Volume", self.audio_trigger_data.rms_volume);
+                    push_val("Peak Volume", self.audio_trigger_data.peak_volume);
                 }
                 if output_config.beat_output {
-                    values.push(if self.audio_trigger_data.beat_detected {
+                    let val = if self.audio_trigger_data.beat_detected {
                         1.0
                     } else {
                         0.0
-                    });
+                    };
+                    push_val("Beat Out", val);
                 }
                 if output_config.bpm_output {
-                    values.push(self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0);
-                    // Normalize BPM
+                    let val = self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0;
+                    push_val("BPM Out", val);
                 }
 
-                // Fallback: if empty, use beat
+                // Fallback: if empty, add beat output (matches generate_outputs fallback)
                 if values.is_empty() {
-                    values.push(if self.audio_trigger_data.beat_detected {
+                    let val = if self.audio_trigger_data.beat_detected {
                         1.0
                     } else {
                         0.0
-                    });
+                    };
+                    // Note: generate_outputs fallback uses "Beat Out" name, so we check that
+                    // But effectively we just push the value.
+                    // If we want to support inversion on fallback, we need to check "Beat Out"
+                    let inverted = output_config.inverted_outputs.contains("Beat Out");
+                    let final_val = if inverted { 1.0 - val } else { val };
+                    values.push(final_val);
                 }
 
                 values

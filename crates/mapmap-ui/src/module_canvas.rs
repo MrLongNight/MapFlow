@@ -3,7 +3,7 @@ use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerAssignmentType, MapFlowModule,
     MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId, ModuleSocketType,
-    ModulizerType, OutputType, SourceType, TriggerType,
+    ModulizerType, OutputType, SourceType, TriggerType, LinkMode, LinkBehavior, NodeLinkData,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -225,6 +225,7 @@ impl ModuleCanvas {
         ctx: &egui::Context,
         module: &mut mapmap_core::module::MapFlowModule,
     ) {
+        let mut changed_part_id = None;
         if let Some(part_id) = self.editing_part_id {
             let part_exists = module.parts.iter().any(|p| p.id == part_id);
 
@@ -296,8 +297,48 @@ impl ModuleCanvas {
                                                 ui.checkbox(&mut output_config.volume_outputs, "📊 Volume (RMS, Peak)");
                                                 ui.checkbox(&mut output_config.frequency_bands, "🎵 Frequency Bands (9)");
                                                 
+                                                ui.separator();
+                                                ui.collapsing("🔄 Invert Signals (NOT Logic)", |ui| {
+                                                    ui.label("Select signals to invert (Active = 0.0):");
+                                                    
+                                                    let mut toggle_invert = |name: &str, label: &str| {
+                                                        let name_string = name.to_string();
+                                                        let mut invert = output_config.inverted_outputs.contains(&name_string);
+                                                        if ui.checkbox(&mut invert, label).changed() {
+                                                            if invert {
+                                                                output_config.inverted_outputs.insert(name_string);
+                                                            } else {
+                                                                output_config.inverted_outputs.remove(&name_string);
+                                                            }
+                                                        }
+                                                    };
+
+                                                    if output_config.beat_output {
+                                                        toggle_invert("Beat Out", "🥁 Beat Out");
+                                                    }
+                                                    if output_config.bpm_output {
+                                                        toggle_invert("BPM Out", "⏱️ BPM Out");
+                                                    }
+                                                    if output_config.volume_outputs {
+                                                        toggle_invert("RMS Volume", "📊 RMS Volume");
+                                                        toggle_invert("Peak Volume", "📊 Peak Volume");
+                                                    }
+                                                    if output_config.frequency_bands {
+                                                        ui.label("Bands:");
+                                                        toggle_invert("SubBass Out", "SubBass (20-60Hz)");
+                                                        toggle_invert("Bass Out", "Bass (60-250Hz)");
+                                                        toggle_invert("LowMid Out", "LowMid (250-500Hz)");
+                                                        toggle_invert("Mid Out", "Mid (500-2kHz)");
+                                                        toggle_invert("HighMid Out", "HighMid (2-4kHz)");
+                                                        toggle_invert("UpperMid Out", "UpperMid (4-6kHz)");
+                                                        toggle_invert("Presence Out", "Presence (4-6kHz)");
+                                                        toggle_invert("Brilliance Out", "Brilliance (6-14kHz)");
+                                                        toggle_invert("Air Out", "Air (14-20kHz)");
+                                                    }
+                                                });
+                                                
                                                 // Note: Changing output config requires regenerating sockets
-                                                // This will be handled when the part is saved/reloaded
+                                                // This will be handled when the part is updated
                                             }
                                             TriggerType::Random {
                                                 min_interval_ms,
@@ -1104,6 +1145,69 @@ impl ModuleCanvas {
                                         }
                                     }
                                 }
+
+                                // Link System UI
+                                {
+                                    use mapmap_core::module::*;
+                                    let supports_link_system = matches!(part.part_type, 
+                                        ModulePartType::Mask(_) | 
+                                        ModulePartType::Modulizer(_) | 
+                                        ModulePartType::LayerAssignment(_) |
+                                        ModulePartType::Mesh(_)
+                                    );
+                                    
+                                    if supports_link_system {
+                                        ui.separator();
+                                        ui.collapsing("🔗 Link System", |ui| {
+                                            let mut changed = false;
+                                            let link_data = &mut part.link_data;
+                                            
+                                            ui.horizontal(|ui| {
+                                                ui.label("Link Mode:");
+                                                egui::ComboBox::from_id_source(format!("link_mode_{}", part_id))
+                                                    .selected_text(format!("{:?}", link_data.mode))
+                                                    .show_ui(ui, |ui| {
+                                                        if ui.selectable_label(link_data.mode == LinkMode::Off, "Off").clicked() {
+                                                            link_data.mode = LinkMode::Off;
+                                                            changed = true;
+                                                        }
+                                                        if ui.selectable_label(link_data.mode == LinkMode::Master, "Master").clicked() {
+                                                            link_data.mode = LinkMode::Master;
+                                                            changed = true;
+                                                        }
+                                                        if ui.selectable_label(link_data.mode == LinkMode::Slave, "Slave").clicked() {
+                                                            link_data.mode = LinkMode::Slave;
+                                                            changed = true;
+                                                        }
+                                                    });
+                                            });
+
+                                            if link_data.mode == LinkMode::Slave {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Behavior:");
+                                                    egui::ComboBox::from_id_source(format!("link_behavior_{}", part_id))
+                                                        .selected_text(format!("{:?}", link_data.behavior))
+                                                        .show_ui(ui, |ui| {
+                                                            if ui.selectable_label(link_data.behavior == LinkBehavior::SameAsMaster, "Same as Master").clicked() {
+                                                                link_data.behavior = LinkBehavior::SameAsMaster;
+                                                            }
+                                                            if ui.selectable_label(link_data.behavior == LinkBehavior::Inverted, "Inverted").clicked() {
+                                                                link_data.behavior = LinkBehavior::Inverted;
+                                                            }
+                                                        });
+                                                });
+                                                ui.label("ℹ️ Visibility controlled by Link Input");
+                                            } else {
+                                                 if ui.checkbox(&mut link_data.trigger_input_enabled, "Enable Trigger Input (Visibility Control)").changed() {
+                                                     changed = true;
+                                                 }
+                                            }
+                                            
+                                            if changed {
+                                                changed_part_id = Some(part_id);
+                                            }
+                                        });
+                                    }
 
                                 ui.add_space(16.0);
                                 ui.separator();

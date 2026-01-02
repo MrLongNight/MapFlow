@@ -20,122 +20,57 @@ impl MapFlowModule {
         static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-        let (module_part_type, inputs, outputs) = match part_type {
+        let module_part_type = match part_type {
             PartType::Trigger => {
                 let output_config = AudioTriggerOutputConfig::default();
-                (
-                    ModulePartType::Trigger(TriggerType::AudioFFT {
-                        band: AudioBand::Bass,
-                        threshold: 0.5,
-                        output_config: output_config.clone(),
-                    }),
-                    vec![], // No inputs - triggers are sources
-                    output_config.generate_outputs(),
-                )
+                ModulePartType::Trigger(TriggerType::AudioFFT {
+                    band: AudioBand::Bass,
+                    threshold: 0.5,
+                    output_config,
+                })
             }
-            PartType::Source => (
-                ModulePartType::Source(SourceType::MediaFile {
-                    path: String::new(),
-                }),
-                vec![ModuleSocket {
-                    name: "Trigger In".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Mask => (
-                ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-                vec![
-                    ModuleSocket {
-                        name: "Media In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                    ModuleSocket {
-                        name: "Mask In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                ],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Modulator => (
-                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur)),
-                vec![
-                    ModuleSocket {
-                        name: "Media In".to_string(),
-                        socket_type: ModuleSocketType::Media,
-                    },
-                    ModuleSocket {
-                        name: "Trigger In".to_string(),
-                        socket_type: ModuleSocketType::Trigger,
-                    },
-                ],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
-            PartType::Mesh => (
-                ModulePartType::Mesh(MeshType::Quad {
-                    tl: (0.0, 0.0),
-                    tr: (1.0, 0.0),
-                    br: (1.0, 1.0),
-                    bl: (0.0, 1.0),
-                }),
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Mesh Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
-            PartType::Layer => (
-                ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
-                    opacity: 1.0,
-                    blend_mode: None,
-                }),
-                vec![ModuleSocket {
-                    name: "Media In".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-                vec![ModuleSocket {
-                    name: "Layer Out".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-            ),
-            PartType::Output => (
-                ModulePartType::Output(OutputType::Projector {
-                    id: 1,
-                    name: "Projector 1".to_string(),
-                    fullscreen: false,
-                    hide_cursor: true,
-                    target_screen: 0,
-                    show_in_preview_panel: true,
-                    extra_preview_window: false,
-                }),
-                vec![ModuleSocket {
-                    name: "Layer In".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-                vec![], // No outputs - outputs are sinks
-            ),
+            PartType::Source => ModulePartType::Source(SourceType::MediaFile {
+                path: String::new(),
+            }),
+            PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
+            PartType::Modulator => {
+                ModulePartType::Modulizer(ModulizerType::Effect(EffectType::Blur))
+            }
+            PartType::Mesh => ModulePartType::Mesh(MeshType::Quad {
+                tl: (0.0, 0.0),
+                tr: (1.0, 0.0),
+                br: (1.0, 1.0),
+                bl: (0.0, 1.0),
+            }),
+            PartType::Layer => ModulePartType::LayerAssignment(LayerAssignmentType::AllLayers {
+                opacity: 1.0,
+                blend_mode: None,
+            }),
+            PartType::Output => ModulePartType::Output(OutputType::Projector {
+                id: 1,
+                name: "Projector 1".to_string(),
+                fullscreen: false,
+                hide_cursor: true,
+                target_screen: 0,
+                show_in_preview_panel: true,
+                extra_preview_window: false,
+            }),
         };
 
-        let part = ModulePart {
+        let mut part = ModulePart {
             id,
             part_type: module_part_type,
             position,
             size: None,
-            inputs,
-            outputs,
+            link_data: NodeLinkData::default(),
+            inputs: vec![],
+            outputs: vec![],
         };
+
+        // Compute initial sockets
+        let (inputs, outputs) = part.compute_sockets();
+        part.inputs = inputs;
+        part.outputs = outputs;
 
         self.parts.push(part);
         id
@@ -151,7 +86,215 @@ impl MapFlowModule {
             std::sync::atomic::AtomicU64::new(10000);
         let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-        let (inputs, outputs) = match &part_type {
+        let mut part = ModulePart {
+            id,
+            part_type,
+            position,
+            size: None,
+            link_data: NodeLinkData::default(),
+            inputs: vec![],
+            outputs: vec![],
+        };
+
+        // Compute initial sockets
+        let (inputs, outputs) = part.compute_sockets();
+        part.inputs = inputs;
+        part.outputs = outputs;
+
+        self.parts.push(part);
+        id
+    }
+
+    /// Update the position of a part
+    pub fn update_part_position(&mut self, part_id: ModulePartId, new_position: (f32, f32)) {
+        if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
+            part.position = new_position;
+        }
+    }
+
+    /// Add a connection between two parts
+    pub fn add_connection(
+        &mut self,
+        from_part: ModulePartId,
+        from_socket: usize,
+        to_part: ModulePartId,
+        to_socket: usize,
+    ) {
+        self.connections.push(ModuleConnection {
+            from_part,
+            from_socket,
+            to_part,
+            to_socket,
+        });
+    }
+
+    /// Remove a connection
+    pub fn remove_connection(
+        &mut self,
+        from_part: ModulePartId,
+        from_socket: usize,
+        to_part: ModulePartId,
+        to_socket: usize,
+    ) {
+        self.connections.retain(|c| {
+            !(c.from_part == from_part
+                && c.from_socket == from_socket
+                && c.to_part == to_part
+                && c.to_socket == to_socket)
+        });
+    }
+
+    /// Regenerate sockets for a part based on its current configuration
+    pub fn update_part_sockets(&mut self, part_id: ModulePartId) {
+        let mut in_count = 0;
+        let mut out_count = 0;
+
+        if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
+            let (new_inputs, new_outputs) = part.compute_sockets();
+            part.inputs = new_inputs;
+            part.outputs = new_outputs;
+            in_count = part.inputs.len();
+            out_count = part.outputs.len();
+        }
+
+        // Cleanup connections that are now out of bounds
+        if in_count > 0 || out_count > 0 {
+            self.connections.retain(|c| {
+                if c.to_part == part_id && c.to_socket >= in_count {
+                    return false;
+                }
+                if c.from_part == part_id && c.from_socket >= out_count {
+                    return false;
+                }
+                true
+            });
+        }
+    }
+
+    /// Legacy wrapper for backward compatibility (renamed from update_part_outputs)
+    pub fn update_part_outputs(&mut self, part_id: ModulePartId) {
+        self.update_part_sockets(part_id);
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ModulePlaybackMode {
+    TimelineDuration { duration_ms: u64 },
+    LoopUntilManualSwitch,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModulePart {
+    pub id: ModulePartId,
+    pub part_type: ModulePartType,
+    pub position: (f32, f32),
+    /// Custom size (width, height). If None, uses default size.
+    #[serde(default)]
+    pub size: Option<(f32, f32)>,
+    #[serde(default)]
+    pub link_data: NodeLinkData,
+    pub inputs: Vec<ModuleSocket>,
+    pub outputs: Vec<ModuleSocket>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NodeLinkData {
+    pub mode: LinkMode,
+    pub behavior: LinkBehavior,
+    pub trigger_input_enabled: bool,
+}
+
+impl Default for NodeLinkData {
+    fn default() -> Self {
+        Self {
+            mode: LinkMode::Off,
+            behavior: LinkBehavior::SameAsMaster,
+            trigger_input_enabled: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum LinkMode {
+    Off,
+    Master,
+    Slave,
+}
+
+impl Default for LinkMode {
+    fn default() -> Self {
+        Self::Off
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum LinkBehavior {
+    SameAsMaster,
+    Inverted,
+}
+
+impl Default for LinkBehavior {
+    fn default() -> Self {
+        Self::SameAsMaster
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModuleSocket {
+    pub name: String,
+    pub socket_type: ModuleSocketType,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ModuleSocketType {
+    Trigger,
+    Media,
+    Effect,
+    Layer,
+    Output,
+    Link,
+}
+
+impl ModulePart {
+    pub fn compute_sockets(&self) -> (Vec<ModuleSocket>, Vec<ModuleSocket>) {
+        let (mut inputs, mut outputs) = self.part_type.get_default_sockets();
+
+        // Apply Link System Sockets
+        // Link Out (Master)
+        if self.link_data.mode == LinkMode::Master {
+            outputs.push(ModuleSocket {
+                name: "Link Out".to_string(),
+                socket_type: ModuleSocketType::Link,
+            });
+        }
+
+        // Link In (Slave)
+        if self.link_data.mode == LinkMode::Slave {
+            inputs.push(ModuleSocket {
+                name: "Link In".to_string(),
+                socket_type: ModuleSocketType::Link,
+            });
+        }
+
+        // Trigger Input (Visibility Control)
+        // Available if enabled, for Master or normal nodes.
+        // Slave nodes rely on Link In, but technically could have both?
+        // Logic: Master sends Its visibility. It can be controlled by Trigger In.
+        // Slave receives visibility.
+        if self.link_data.trigger_input_enabled {
+            inputs.push(ModuleSocket {
+                name: "Trigger In (Vis)".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+        }
+
+        (inputs, outputs)
+    }
+}
+
+impl ModulePartType {
+    pub fn get_default_sockets(&self) -> (Vec<ModuleSocket>, Vec<ModuleSocket>) {
+        match self {
             ModulePartType::Trigger(trigger_type) => {
                 let outputs = match trigger_type {
                     TriggerType::AudioFFT { output_config, .. } => output_config.generate_outputs(),
@@ -231,115 +374,8 @@ impl MapFlowModule {
                 }],
                 vec![], // No outputs - outputs are sinks
             ),
-        };
-
-        let part = ModulePart {
-            id,
-            part_type,
-            position,
-            size: None,
-            inputs,
-            outputs,
-        };
-
-        self.parts.push(part);
-        id
-    }
-
-    /// Update the position of a part
-    pub fn update_part_position(&mut self, part_id: ModulePartId, new_position: (f32, f32)) {
-        if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
-            part.position = new_position;
         }
     }
-
-    /// Add a connection between two parts
-    pub fn add_connection(
-        &mut self,
-        from_part: ModulePartId,
-        from_socket: usize,
-        to_part: ModulePartId,
-        to_socket: usize,
-    ) {
-        self.connections.push(ModuleConnection {
-            from_part,
-            from_socket,
-            to_part,
-            to_socket,
-        });
-    }
-
-    /// Remove a connection
-    pub fn remove_connection(
-        &mut self,
-        from_part: ModulePartId,
-        from_socket: usize,
-        to_part: ModulePartId,
-        to_socket: usize,
-    ) {
-        self.connections.retain(|c| {
-            !(c.from_part == from_part
-                && c.from_socket == from_socket
-                && c.to_part == to_part
-                && c.to_socket == to_socket)
-        });
-    }
-
-    /// Regenerate outputs for a part based on its current configuration
-    /// This is called when AudioTriggerOutputConfig changes
-    pub fn update_part_outputs(&mut self, part_id: ModulePartId) {
-        if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
-            match &part.part_type {
-                ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) => {
-                    // Remove connections to outputs that no longer exist
-                    let new_output_count = output_config.generate_outputs().len();
-                    self.connections.retain(|c| {
-                        if c.from_part == part_id {
-                            c.from_socket < new_output_count
-                        } else {
-                            true
-                        }
-                    });
-                    // Regenerate outputs
-                    part.outputs = output_config.generate_outputs();
-                }
-                _ => {} // Other part types don't need dynamic output regeneration
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ModulePlaybackMode {
-    TimelineDuration { duration_ms: u64 },
-    LoopUntilManualSwitch,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ModulePart {
-    pub id: ModulePartId,
-    pub part_type: ModulePartType,
-    pub position: (f32, f32),
-    /// Custom size (width, height). If None, uses default size.
-    #[serde(default)]
-    pub size: Option<(f32, f32)>,
-    pub inputs: Vec<ModuleSocket>,
-    pub outputs: Vec<ModuleSocket>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ModuleSocket {
-    pub name: String,
-    pub socket_type: ModuleSocketType,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-pub enum ModuleSocketType {
-    Trigger,
-    Media,
-    Effect,
-    Layer,
-    Output,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -424,6 +460,9 @@ pub struct AudioTriggerOutputConfig {
     pub beat_output: bool,
     /// Enable BPM output
     pub bpm_output: bool,
+    /// Set of output names that should be inverted
+    #[serde(default)]
+    pub inverted_outputs: std::collections::HashSet<String>,
 }
 
 impl Default for AudioTriggerOutputConfig {
@@ -433,6 +472,7 @@ impl Default for AudioTriggerOutputConfig {
             volume_outputs: false,  // Off by default
             beat_output: true,      // ON by default - main use case
             bpm_output: false,      // Off by default
+            inverted_outputs: std::collections::HashSet::new(),
         }
     }
 }
