@@ -2889,7 +2889,7 @@ mod logging_setup;
 
 /// The main entry point for the application.
 fn main() -> Result<()> {
-    // Initialize logging with default configuration
+    // Initialize logging with default configuration.
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
 
