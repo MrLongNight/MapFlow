@@ -3969,12 +3969,13 @@ impl ModuleCanvas {
         );
 
         // Draw property display based on part type
-        let property_y = rect.min.y + title_height + 8.0 * self.zoom;
         let property_text = Self::get_part_property_text(&part.part_type);
         if !property_text.is_empty() {
+            // Position at the bottom of the node to avoid overlapping sockets
+            let property_y = rect.max.y - 10.0 * self.zoom;
             painter.text(
                 Pos2::new(rect.center().x, property_y),
-                egui::Align2::CENTER_TOP,
+                egui::Align2::CENTER_CENTER,
                 property_text,
                 egui::FontId::proportional(10.0 * self.zoom),
                 Color32::from_gray(160),
