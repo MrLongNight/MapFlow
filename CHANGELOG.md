@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-02: feat: Effect Chain Rendering with Configurable Parameters (#153)
 - 2026-01-02: fix: Complete mesh implementations and resolve layer ID collisions (#154)
 - 2026-01-01: feat(presets): Add NDI Source, NDI Output, Spout Source, Spout Output presets
 - 2026-01-01: feat(presets): Increase node spacing (200→300px) and add missing output connections
