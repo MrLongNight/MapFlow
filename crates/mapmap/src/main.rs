@@ -2079,7 +2079,6 @@ impl App {
             // Post-render logic for egui actions
         } else {
             // Check for direct output assignment from Module Graph
-            // Check for direct output assignment from Module Graph
             if let Some(tex_name) = self.output_assignments.get(&output_id) {
                 if self.texture_pool.has_texture(tex_name) {
                     let source_view = self.texture_pool.get_view(tex_name);
