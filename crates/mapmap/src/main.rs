@@ -1600,8 +1600,6 @@ impl App {
                                         });
 
                                     // Master Controls Section
-
-                                    // Master Controls Section
                                     egui::CollapsingHeader::new("🎚️ Master")
                                         .default_open(false)
                                         .show(ui, |ui| {
