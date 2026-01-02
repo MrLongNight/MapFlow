@@ -68,6 +68,23 @@ Implementiere tatsächliche Window-Ausgabe für Projector Output Nodes aus dem M
 - [x] Monitor/Screen selection logic
 - [x] Cursor hiding implementation
 
+### 5. Advanced Output Rendering
+- [ ] Implement Edge Blending (using `EdgeBlendRenderer`)
+- [ ] Implement Color Calibration (using `ColorCalibrationRenderer`)
+- [ ] Integrate into `render_output` pipeline before final blit
+
+### 6. Network & Interop Outputs
+- [ ] NDI Output Implementation
+  - [ ] Initialize `NdiSender` for `OutputType::Ndi`
+  - [ ] Copy texture data to CPU and send via NDI
+- [ ] Spout Output Implementation (Windows)
+  - [ ] Initialize Spout Sender
+  - [ ] Share `wgpu` texture via shared handles (if possible) or memory copy
+
+### 7. Separate Preview Window
+- [ ] Implement `create_preview_window`
+- [ ] Sync with `OutputType::Projector` "extra_preview_window" flag
+
 ## 📊 Datenfluss
 
 ```
