@@ -1323,7 +1323,6 @@ impl App {
             // --------- ImGui removed (Phase 6 Complete) ----------
 
             // --------- egui: UI separat zeichnen ---------
-            // --------- egui: UI separat zeichnen ---------
 
             // Sync Texture Previews for Module Canvas
             {
