@@ -740,6 +740,26 @@ impl App {
                     }
                 }
 
+                // Update all active media players and upload frames to texture pool
+                // This ensures previews work even without triggers connected
+                let player_ids: Vec<u64> = self.media_players.keys().cloned().collect();
+                for part_id in player_ids {
+                    if let Some(player) = self.media_players.get_mut(&part_id) {
+                        if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
+                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
+                                let tex_name = format!("part_{}", part_id);
+                                self.texture_pool.upload_data(
+                                    &self.backend.queue,
+                                    &tex_name,
+                                    data,
+                                    frame.format.width,
+                                    frame.format.height,
+                                );
+                            }
+                        }
+                    }
+                }
+
                 if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
                     if let Some(module) = self.state.module_manager.get_module(active_module_id) {
                         let result = self.module_evaluator.evaluate(module);

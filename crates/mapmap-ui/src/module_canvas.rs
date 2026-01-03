@@ -542,21 +542,21 @@ impl ModuleCanvas {
                                                 
                                                 ui.separator();
                                                 
-                                                // === PLAYBACK CONTROLS ===
-                                                ui.collapsing("▶️ Playback", |ui| {
-                                                    // Transport Controls
-                                                    ui.horizontal(|ui| {
-                                                        if ui.button("▶ Play").clicked() {
-                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
-                                                        }
-                                                        if ui.button("⏸ Pause").clicked() {
-                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
-                                                        }
-                                                        if ui.button("⏹ Stop").clicked() {
-                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
-                                                        }
-                                                    });
-                                                    ui.separator();
+                                                // === TRANSPORT CONTROLS (Always Visible) ===
+                                                ui.horizontal(|ui| {
+                                                    if ui.button("▶ Play").clicked() {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
+                                                    }
+                                                    if ui.button("⏸ Pause").clicked() {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
+                                                    }
+                                                    if ui.button("⏹ Stop").clicked() {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
+                                                    }
+                                                });
+                                                
+                                                // === PLAYBACK SETTINGS ===
+                                                ui.collapsing("⚙️ Playback Settings", |ui| {
                                                     ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
                                                     ui.checkbox(loop_enabled, "🔁 Loop");
                                                     ui.separator();
