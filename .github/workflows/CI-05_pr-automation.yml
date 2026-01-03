@@ -36,44 +36,59 @@ jobs:
     if: | 
       (github.event.pull_request &&
        (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
+        contains(github.event.pull_request.labels.*.name, 'jules-task') ||
         contains(github.event.pull_request.body, 'Created by Jules')) &&
        github.event.pull_request.draft == false) ||
       (github.event.workflow_run &&
        github.event.workflow_run.conclusion != 'skipped') ||
+      (github.event.check_suite &&
+       github.event.check_suite.conclusion != 'skipped') ||
       github.event_name == 'workflow_dispatch'
 
     steps:
-    - name: Find Jules PR for workflow run
+    - name: Find Jules PR for workflow run or check suite
       id: find-pr
       uses: actions/github-script@v7
       with:
         script: |
           // Check conditions internally to satisfy linter
-          if (context.eventName !== 'workflow_run' || process.env.JULES_AUTOMATION_ENABLED !== 'true') {
+          if ((context.eventName !== 'workflow_run' && context.eventName !== 'check_suite') || process.env.JULES_AUTOMATION_ENABLED !== 'true') {
             core.setOutput('has_pr', 'false');
             core.setOutput('pr_number', '');
             return;
           }
 
-          const run = context.payload.workflow_run;
+          // Get head_sha from either workflow_run or check_suite
+          const headSha = context.payload.workflow_run?.head_sha || context.payload.check_suite?.head_sha;
+          if (!headSha) {
+            console.log('⏭️ No head_sha found in event payload');
+            core.exportVariable('HAS_PR', 'false');
+            return;
+          }
+
+          console.log(`🔍 Looking for PR with head SHA: ${headSha}`);
+          
           const { data: prs } = await github.rest.pulls.list({
             owner: context.repo.owner,
             repo: context.repo.repo,
             state: 'open'
           });
           
-          // Find PR matching the workflow run head SHA
+          // Find PR matching the head SHA with jules-pr, jules-task label or "Created by Jules" in body
           const pr = prs.find(p => 
-            p.head.sha === run.head_sha &&
-            (p.labels.some(l => l.name === 'jules-pr') || (p.body && p.body.includes('Created by Jules')))
+            p.head.sha === headSha &&
+            (p.labels.some(l => l.name === 'jules-pr' || l.name === 'jules-task') || 
+             (p.body && p.body.includes('Created by Jules')))
           );
           
           if (pr) {
+            console.log(`✅ Found PR #${pr.number} for head SHA ${headSha}`);
             core.exportVariable('FIND_PR_NUMBER', pr.number.toString());
             core.exportVariable('HAS_PR', 'true');
             core.setOutput('pr_number', pr.number);
             core.setOutput('has_pr', 'true');
           } else {
+            console.log(`⏭️ No Jules PR found for head SHA ${headSha} (checked labels: jules-pr, jules-task)`);
             core.exportVariable('HAS_PR', 'false');
           }
 
@@ -94,18 +109,41 @@ jobs:
           }
           
           if (!prNumber) {
-            console.log('⏭️ No PR to process for checks');
+            console.log('⏭️ No PR to process for checks - skipping failure comment');
             return;
           }
           
           prNumber = parseInt(prNumber);
           console.log(`🔍 Checking checks for PR #${prNumber}`);
           
+          // Get the PR to verify it's a Jules PR
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber
+          });
+          
+          // Check if it's a Jules PR (jules-pr, jules-task, or "Created by Jules")
+          const isJulesPR = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'jules-task') ||
+                           (pr.body && pr.body.includes('Created by Jules'));
+          
+          if (!isJulesPR) {
+            console.log('⏭️ Not a Jules PR - skipping failure comment');
+            return;
+          }
+          
           // Get check suites for the PR
+          const headSha = context.payload.pull_request?.head.sha || 
+                         context.payload.workflow_run?.head_sha || 
+                         context.payload.check_suite?.head_sha ||
+                         pr.head.sha;
+          
+          console.log(`🔍 Checking checks for head SHA: ${headSha}`);
+          
           const { data: checkSuites } = await github.rest.checks.listSuitesForRef({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            ref: context.payload.pull_request?.head.sha || context.payload.workflow_run?.head_sha
+            ref: headSha
           });
           
           let hasFailures = false;
@@ -123,6 +161,7 @@ jobs:
                 hasFailures = true;
                 failureDetails.push({
                   name: check.name,
+                  url: check.html_url,
                   output: check.output
                 });
               }
@@ -130,20 +169,44 @@ jobs:
           }
           
           if (hasFailures) {
-            // Generate analysis using Copilot-like logic (simplified AI analysis)
-            let analysis = '### 🤖 Copilot-Analyse der Check-Fehler:\n\n';
+            // Check for existing failure comments to avoid duplicates
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const existingFailureComment = comments.find(c => 
+              c.body && c.body.includes('🤖 Copilot-Analyse der Check-Fehler') &&
+              c.body.includes(headSha.substring(0, 7))
+            );
+            
+            if (existingFailureComment) {
+              console.log('⏭️ Failure comment already exists for this commit - skipping duplicate');
+              core.setOutput('has_failures', 'true');
+              return;
+            }
+            
+            // Generate analysis with check details and log URLs
+            let analysis = `### 🤖 Copilot-Analyse der Check-Fehler:\n\n`;
+            analysis += `**Commit:** ${headSha.substring(0, 7)}\n\n`;
+            
             failureDetails.forEach((failure, index) => {
               analysis += `#### Fehler ${index + 1}: ${failure.name}\n`;
-              analysis += `**Meldung:** ${failure.output.title || 'Keine spezifische Meldung'}\n`;
-              if (failure.output.summary) {
+              analysis += `**Status:** ❌ Failed\n`;
+              if (failure.url) {
+                analysis += `**Log-URL:** ${failure.url}\n`;
+              }
+              analysis += `**Meldung:** ${failure.output?.title || 'Keine spezifische Meldung'}\n`;
+              if (failure.output?.summary) {
                 analysis += `**Details:** ${failure.output.summary}\n`;
               }
               // Basic solution suggestions based on common Rust/CI issues
-              if (failure.name.includes('test') && failure.output.summary.includes('failed')) {
+              if (failure.name.includes('test') && failure.output?.summary?.includes('failed')) {
                 analysis += `**Lösungsansatz:** Überprüfe die Testfälle auf Assertions-Fehler. Führe \`cargo test -- --nocapture\` lokal aus, um detaillierte Ausgaben zu sehen. Stelle sicher, dass alle Inputs valide sind und keine Nebenwirkungen auftreten.\n\n`;
-              } else if (failure.name.includes('clippy') && failure.output.summary.includes('warning')) {
+              } else if (failure.name.includes('clippy') && failure.output?.summary?.includes('warning')) {
                 analysis += `**Lösungsansatz:** Clippy-Warnungen beheben. Führe \`cargo clippy --fix\` aus, um automatische Korrekturen anzuwenden. Überprüfe Rust-API-Guidelines für Stil-Konventionen.\n\n`;
-              } else if (failure.name.includes('fmt') && failure.output.summary.includes('format')) {
+              } else if (failure.name.includes('fmt') && failure.output?.summary?.includes('format')) {
                 analysis += `**Lösungsansatz:** Code-Formatierung anpassen. Führe \`cargo fmt\` aus, um den Code automatisch zu formatieren.\n\n`;
               } else {
                 analysis += `**Lösungsansatz:** Überprüfe die vollständigen Logs für weitere Details. Konsultiere die Projekt-Dokumentation in \`docs/\` oder \`AGENTS.md\` für spezifische Guidelines.\n\n`;
@@ -159,8 +222,10 @@ jobs:
               body: commentBody
             });
             
+            console.log(`✅ Posted failure comment on PR #${prNumber}`);
             core.setOutput('has_failures', 'true');
           } else {
+            console.log('✅ No check failures found');
             core.setOutput('has_failures', 'false');
           }
 
@@ -191,8 +256,8 @@ jobs:
             pull_number: prNumber
           });
           
-          // Check if it's a Jules PR
-          const isJulesPR = pr.labels.some(l => l.name === 'jules-pr') || 
+          // Check if it's a Jules PR (jules-pr, jules-task, or "Created by Jules")
+          const isJulesPR = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'jules-task') || 
                            (pr.body && pr.body.includes('Created by Jules'));
           if (!isJulesPR) {
             console.log('⏭️ Not a Jules PR - skipping');
