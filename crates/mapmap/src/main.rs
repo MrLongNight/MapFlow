@@ -1846,9 +1846,14 @@ impl App {
                                                                     }
                                                                 }
                                                                 mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
-                                                                    self.audio_analyzer.update_config(mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
-                                                                        sample_rate: cfg.sample_rate, fft_size: cfg.fft_size, overlap: cfg.overlap, smoothing: cfg.smoothing,
-                                                                    });
+                                                                    self.audio_analyzer.update_config(
+                                                                        mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
+                                                                            sample_rate: cfg.sample_rate,
+                                                                            fft_size: cfg.fft_size,
+                                                                            overlap: cfg.overlap,
+                                                                            smoothing: cfg.smoothing,
+                                                                        },
+                                                                    );
                                                                     self.state.audio_config = cfg;
                                                                 }
                                                             }
