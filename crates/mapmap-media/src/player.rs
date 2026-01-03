@@ -128,7 +128,8 @@ impl VideoPlayer {
         self.current_time += dt.mul_f32(self.playback_speed);
 
         // Check for end of stream
-        if self.current_time >= duration {
+        // Only check if duration is known (non-zero)
+        if duration > Duration::ZERO && self.current_time >= duration {
             match self.loop_mode {
                 LoopMode::Loop => {
                     self.current_time = Duration::ZERO;
@@ -153,11 +154,34 @@ impl VideoPlayer {
                 Some(frame)
             }
             Err(e) => {
-                // EndOfStream is expected at the end of media - handle silently
-                // Only warn for actual decoder errors
-                if !matches!(e, crate::MediaError::EndOfStream) {
+                if matches!(e, crate::MediaError::EndOfStream) {
+                    // Handle EOF loop logic
+                    match self.loop_mode {
+                        LoopMode::Loop => {
+                            self.current_time = Duration::ZERO;
+                            if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
+                                self.transition_to_error(seek_err);
+                            } else {
+                                let _ = self.status_sender.send(PlaybackStatus::Looped);
+                                // Try to get the first frame again immediately so we don't drop a frame
+                                if let Ok(frame) = self.decoder.next_frame() {
+                                    self.last_frame = Some(frame.clone());
+                                    return Some(frame);
+                                }
+                            }
+                        }
+                        LoopMode::PlayOnce => {
+                            self.current_time = duration;
+                            let _ = self.transition_state(PlaybackState::Stopped);
+                            let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
+                        }
+                    }
+                } else {
                     warn!("Decoder error during playback: {}", e);
+                    // Only transition to error if it's a critical decode error,
+                    // otherwise keep trying next frame
                 }
+
                 // Return last frame to avoid visual glitches
                 self.last_frame.clone()
             }
