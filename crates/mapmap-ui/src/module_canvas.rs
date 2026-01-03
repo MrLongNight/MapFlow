@@ -11,6 +11,14 @@ use mapmap_io::ndi::NdiSource;
 #[cfg(feature = "ndi")]
 use std::sync::mpsc;
 
+/// Playback commands for media players
+#[derive(Debug, Clone, PartialEq)]
+pub enum MediaPlaybackCommand {
+    Play,
+    Pause,
+    Stop,
+}
+
 /// Information about a socket position for hit detection
 #[derive(Clone)]
 struct SocketInfo {
@@ -89,6 +97,8 @@ pub struct ModuleCanvas {
     editing_part_id: Option<ModulePartId>,
     /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
     pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
+    /// Pending playback commands (Part ID, Command)
+    pub pending_playback_commands: Vec<(ModulePartId, MediaPlaybackCommand)>,
 }
 
 /// Live audio data for trigger nodes
@@ -183,6 +193,7 @@ impl Default for ModuleCanvas {
             available_outputs: Vec::new(),
             editing_part_id: None,
             node_previews: std::collections::HashMap::new(),
+            pending_playback_commands: Vec::new(),
         }
     }
 }
@@ -533,6 +544,19 @@ impl ModuleCanvas {
                                                 
                                                 // === PLAYBACK CONTROLS ===
                                                 ui.collapsing("▶️ Playback", |ui| {
+                                                    // Transport Controls
+                                                    ui.horizontal(|ui| {
+                                                        if ui.button("▶ Play").clicked() {
+                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
+                                                        }
+                                                        if ui.button("⏸ Pause").clicked() {
+                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
+                                                        }
+                                                        if ui.button("⏹ Stop").clicked() {
+                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
+                                                        }
+                                                    });
+                                                    ui.separator();
                                                     ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
                                                     ui.checkbox(loop_enabled, "🔁 Loop");
                                                     ui.separator();

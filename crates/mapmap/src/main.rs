@@ -696,6 +696,50 @@ impl App {
                 // --- MODULE EVALUATION ---
                 self.module_evaluator.update_audio(&analysis_v2);
 
+                // Process pending playback commands from UI
+                for (part_id, cmd) in self.ui_state.module_canvas.pending_playback_commands.drain(..) {
+                    // If player doesn't exist and we get a Play command, try to create it
+                    if !self.media_players.contains_key(&part_id) {
+                        if let mapmap_ui::MediaPlaybackCommand::Play = &cmd {
+                            // Find the source path from the module manager
+                            if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
+                                if let Some(module) = self.state.module_manager.get_module(active_module_id) {
+                                    if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                        if let mapmap_core::module::ModulePartType::Source(
+                                            mapmap_core::module::SourceType::MediaFile { ref path, .. }
+                                        ) = &part.part_type {
+                                            if !path.is_empty() {
+                                                match mapmap_media::open_path(path) {
+                                                    Ok(player) => {
+                                                        self.media_players.insert(part_id, player);
+                                                    }
+                                                    Err(e) => {
+                                                        error!("Failed to load media '{}': {}", path, e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if let Some(player) = self.media_players.get_mut(&part_id) {
+                        match cmd {
+                            mapmap_ui::MediaPlaybackCommand::Play => {
+                                let _ = player.command_sender().send(PlaybackCommand::Play);
+                            }
+                            mapmap_ui::MediaPlaybackCommand::Pause => {
+                                let _ = player.command_sender().send(PlaybackCommand::Pause);
+                            }
+                            mapmap_ui::MediaPlaybackCommand::Stop => {
+                                let _ = player.command_sender().send(PlaybackCommand::Stop);
+                            }
+                        }
+                    }
+                }
+
                 if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
                     if let Some(module) = self.state.module_manager.get_module(active_module_id) {
                         let result = self.module_evaluator.evaluate(module);
