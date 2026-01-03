@@ -37,7 +37,7 @@ use rfd::FileDialog;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::thread;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 use window_manager::WindowManager;
 use winit::{
     event::{Event, WindowEvent},
@@ -697,36 +697,46 @@ impl App {
                 self.module_evaluator.update_audio(&analysis_v2);
 
                 // Process pending playback commands from UI
-                for (part_id, cmd) in self.ui_state.module_canvas.pending_playback_commands.drain(..) {
-                    info!("Processing playback command {:?} for part_id={}", cmd, part_id);
+                for (part_id, cmd) in self
+                    .ui_state
+                    .module_canvas
+                    .pending_playback_commands
+                    .drain(..)
+                {
                     // If player doesn't exist and we get a Play command, try to create it
                     if !self.media_players.contains_key(&part_id) {
                         if let mapmap_ui::MediaPlaybackCommand::Play = &cmd {
-                            info!("Player doesn't exist for part_id={}, attempting to create...", part_id);
                             // Find the source path from the module manager
-                            if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
-                                if let Some(module) = self.state.module_manager.get_module(active_module_id) {
-                                    if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                            if let Some(active_module_id) =
+                                self.ui_state.module_canvas.active_module_id
+                            {
+                                if let Some(module) =
+                                    self.state.module_manager.get_module(active_module_id)
+                                {
+                                    if let Some(part) =
+                                        module.parts.iter().find(|p| p.id == part_id)
+                                    {
                                         if let mapmap_core::module::ModulePartType::Source(
-                                            mapmap_core::module::SourceType::MediaFile { ref path, .. }
-                                        ) = &part.part_type {
-                                            info!("Found media path: '{}'", path);
+                                            mapmap_core::module::SourceType::MediaFile {
+                                                ref path,
+                                                ..
+                                            },
+                                        ) = &part.part_type
+                                        {
                                             if !path.is_empty() {
                                                 match mapmap_media::open_path(path) {
                                                     Ok(player) => {
-                                                        info!("Successfully created player for '{}'", path);
                                                         self.media_players.insert(part_id, player);
                                                     }
                                                     Err(e) => {
-                                                        error!("Failed to load media '{}': {}", path, e);
+                                                        error!(
+                                                            "Failed to load media '{}': {}",
+                                                            path, e
+                                                        );
                                                     }
                                                 }
                                             }
-                                        } else {
-                                            warn!("Part {} is not a MediaFile source", part_id);
                                         }
-                                    } else {
-                                        warn!("Part {} not found in module", part_id);
                                     }
                                 }
                             }
@@ -751,17 +761,11 @@ impl App {
                 // Update all active media players and upload frames to texture pool
                 // This ensures previews work even without triggers connected
                 let player_ids: Vec<u64> = self.media_players.keys().cloned().collect();
-                if !player_ids.is_empty() {
-                    debug!("Updating {} active media players", player_ids.len());
-                }
                 for part_id in player_ids {
                     if let Some(player) = self.media_players.get_mut(&part_id) {
-                        debug!("Updating player for part_id={}, state={:?}", part_id, player.state());
                         if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                            debug!("Got frame for part_id={}, size={}x{}", part_id, frame.format.width, frame.format.height);
                             if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
                                 let tex_name = format!("part_{}", part_id);
-                                debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
                                 self.texture_pool.upload_data(
                                     &self.backend.queue,
                                     &tex_name,
@@ -769,8 +773,6 @@ impl App {
                                     frame.format.width,
                                     frame.format.height,
                                 );
-                            } else {
-                                debug!("Frame data is GPU-based, not CPU");
                             }
                         }
                     }
@@ -1440,7 +1442,13 @@ impl App {
             // Sync Texture Previews for Module Canvas
             {
                 // Free old textures
-                let ids_to_free: Vec<egui::TextureId> = self.ui_state.module_canvas.node_previews.values().cloned().collect();
+                let ids_to_free: Vec<egui::TextureId> = self
+                    .ui_state
+                    .module_canvas
+                    .node_previews
+                    .values()
+                    .cloned()
+                    .collect();
                 for id in ids_to_free {
                     self.egui_renderer.free_texture(&id);
                 }
@@ -1453,7 +1461,13 @@ impl App {
                     .modules()
                     .iter()
                     .flat_map(|m| &m.parts)
-                    .filter_map(|p| if let mapmap_core::module::ModulePartType::Source(_) = p.part_type { Some(p.id) } else { None })
+                    .filter_map(|p| {
+                        if let mapmap_core::module::ModulePartType::Source(_) = p.part_type {
+                            Some(p.id)
+                        } else {
+                            None
+                        }
+                    })
                     .collect();
 
                 for part_id in active_part_ids {
@@ -1529,7 +1543,7 @@ impl App {
                         self.ui_state.icon_manager.as_ref(),
                         Some(&mut self.recent_effect_configs),
                     );
-                    
+
                     // Render Oscillator Panel
                     self.ui_state.oscillator_panel.render(
                         ctx,
@@ -1678,7 +1692,7 @@ impl App {
                                         })
                                     })
                                     .collect();
-                                
+
                                 self.ui_state.preview_panel.update_outputs(output_infos);
                                 self.ui_state.preview_panel.show(ui);
                             });
@@ -1822,7 +1836,7 @@ impl App {
                                 .iter()
                                 .map(|o| (o.id, o.name.clone()))
                                 .collect();
-                            
+
                             self.ui_state.module_canvas.show(
                                 ui,
                                 &mut self.state.module_manager,
@@ -1920,9 +1934,9 @@ impl App {
                                                 self.state.dirty = true;
                                             }
                                         });
-                                        
+
                                         ui.label("💡 Each output can be assigned to a different screen/projector");
-                                        
+
                                         // List current outputs if any
                                         let output_count = self.state.output_manager.outputs().len();
                                         if output_count > 0 {
@@ -2220,13 +2234,22 @@ impl App {
                 } else {
                     None
                 };
-                let source_view_ref = owned_source_view.as_ref();
-                let effective_view = source_view_ref.or(self.dummy_view.as_ref());
+                // owned_source_view is Option<Arc<TextureView>>
+                // self.dummy_view is Option<TextureView>
+
+                // We need to normalize types.
+                // Since owned_source_view returns Arc<TextureView>, let's just use deref.
+
+                // Helper to get &TextureView from Option<Arc<TextureView>> or Option<TextureView>
+                let src_view_ref = owned_source_view.as_deref();
+                let dummy_view_ref = self.dummy_view.as_ref();
+                let effective_view = src_view_ref.or(dummy_view_ref);
 
                 if let Some(src_view) = effective_view {
                     // --- 1. Effect Chain Processing (Common) ---
                     let mut final_view = src_view;
-                    let mut _temp_view_holder: Option<wgpu::TextureView> = None;
+                    // _temp_view_holder needs to hold ownership if we create a new view (Arc)
+                    let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
                     if !op.effects.is_empty() {
                         let time = self.start_time.elapsed().as_secs_f32();
@@ -2294,7 +2317,7 @@ impl App {
                                 h,
                             );
                             _temp_view_holder = Some(target_view);
-                            final_view = _temp_view_holder.as_ref().unwrap();
+                            final_view = _temp_view_holder.as_deref().unwrap();
                         }
                     }
 
