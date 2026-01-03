@@ -666,7 +666,31 @@ impl App {
                 }
             }
             Event::LoopExiting => {
-                info!("Application exiting, saving autosave...");
+                info!("Application exiting, saving autosave and config...");
+                
+                // 1. Save User Config (UI State)
+                self.ui_state.user_config.show_left_sidebar = self.ui_state.show_left_sidebar;
+                self.ui_state.user_config.show_inspector = self.ui_state.show_inspector;
+                self.ui_state.user_config.show_timeline = self.ui_state.show_timeline;
+                self.ui_state.user_config.show_media_browser = self.ui_state.show_media_browser;
+                self.ui_state.user_config.show_module_canvas = self.ui_state.show_module_canvas;
+                self.ui_state.user_config.show_controller_overlay = self.ui_state.show_controller_overlay;
+                
+                // Get main window maximization state
+                if let Some(main_window) = self.window_manager.get(0) {
+                     self.ui_state.user_config.window_maximized = main_window.window.is_maximized();
+                     // Note: Width/Height/X/Y are typically tracked during move/resize, not just at exit,
+                     // but we could explicitly query inner_size here if needed.
+                     // For now, maximization and flags are key.
+                }
+
+                if let Err(e) = self.ui_state.user_config.save() {
+                    error!("Failed to save user config: {}", e);
+                } else {
+                    info!("User config saved successfully.");
+                }
+
+                // 2. Save Project Autosave
                 let autosave_path = dirs::data_local_dir()
                     .unwrap_or_else(|| PathBuf::from("."))
                     .join("MapFlow")

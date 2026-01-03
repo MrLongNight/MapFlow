@@ -1004,8 +1004,10 @@ impl ModuleCanvas {
                                         
                                         // Helper to render mesh UI
                                         let render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
-                                            ui.separator();
-                                            ui.label("Mesh Configuration:");
+                                            ui.add_space(8.0);
+                                            ui.group(|ui| {
+                                                ui.label(egui::RichText::new("🕸️ Mesh/Geometry").strong());
+                                                ui.separator();
                                             
                                             egui::ComboBox::from_id_source(format!("mesh_type_{}", id_salt))
                                                 .selected_text(match mesh {
@@ -1089,6 +1091,7 @@ impl ModuleCanvas {
                                                 }
                                                 _ => { ui.label("Editor not implemented for this mesh type"); }
                                             }
+                                            }); 
                                         };
 
                                         match layer {
