@@ -1491,6 +1491,98 @@ impl App {
         Ok(())
     }
 
+    /// Renders the controls panel content (Media and Audio sections)
+    fn render_controls_content(&mut self, ui: &mut egui::Ui) {
+        egui::CollapsingHeader::new("📁 Media")
+            .default_open(false)
+            .show(ui, |ui| {
+                let _ = self.ui_state.media_browser.ui(
+                    ui,
+                    &self.ui_state.i18n,
+                    self.ui_state.icon_manager.as_ref(),
+                );
+            });
+        egui::CollapsingHeader::new("🔊 Audio")
+            .default_open(false)
+            .show(ui, |ui| {
+                let analysis_v2 = self.audio_analyzer.get_latest_analysis();
+                let legacy_analysis = if self.audio_backend.is_some() {
+                    Some(mapmap_core::audio::AudioAnalysis {
+                        timestamp: analysis_v2.timestamp,
+                        fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
+                        band_energies: [
+                            analysis_v2.band_energies[0],
+                            analysis_v2.band_energies[1],
+                            analysis_v2.band_energies[2],
+                            analysis_v2.band_energies[3],
+                            analysis_v2.band_energies[4],
+                            analysis_v2.band_energies[5],
+                            analysis_v2.band_energies[6],
+                        ],
+                        rms_volume: analysis_v2.rms_volume,
+                        peak_volume: analysis_v2.peak_volume,
+                        beat_detected: analysis_v2.beat_detected,
+                        beat_strength: analysis_v2.beat_strength,
+                        onset_detected: false,
+                        tempo_bpm: None,
+                        waveform: analysis_v2.waveform.clone(),
+                    })
+                } else {
+                    None
+                };
+
+                if let Some(action) = self.ui_state.audio_panel.ui(
+                    ui,
+                    &self.ui_state.i18n,
+                    legacy_analysis.as_ref(),
+                    &self.state.audio_config,
+                    &self.audio_devices,
+                    &mut self.ui_state.selected_audio_device,
+                ) {
+                    match action {
+                        mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
+                            info!("Audio device changed to: {}", device);
+                            self.ui_state
+                                .user_config
+                                .set_audio_device(Some(device.clone()));
+                            self.audio_analyzer.reset();
+                            if let Some(backend) = &mut self.audio_backend {
+                                backend.stop();
+                            }
+                            self.audio_backend = None;
+                            match CpalBackend::new(Some(device.clone())) {
+                                Ok(mut backend) => {
+                                    if let Err(e) = backend.start() {
+                                        error!("Failed to start audio backend: {}", e);
+                                    } else {
+                                        info!("Audio backend started successfully");
+                                    }
+                                    self.audio_backend = Some(backend);
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "Failed to create audio backend for device '{}': {}",
+                                        device, e
+                                    );
+                                }
+                            }
+                        }
+                        mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
+                            self.audio_analyzer.update_config(
+                                mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
+                                    sample_rate: cfg.sample_rate,
+                                    fft_size: cfg.fft_size,
+                                    overlap: cfg.overlap,
+                                    smoothing: cfg.smoothing,
+                                },
+                            );
+                            self.state.audio_config = cfg;
+                        }
+                    }
+                }
+            });
+    }
+
     /// Renders a single frame for a given output.
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         let now = std::time::Instant::now();
@@ -1803,58 +1895,11 @@ impl App {
                                                 ui.separator();
 
                                                 // INLINED CONTROLS CONTENT (Split View)
-                                                egui::ScrollArea::vertical().id_source("controls_sidebar_scroll_split").show(ui, |ui| {
-                                                    egui::CollapsingHeader::new("📁 Media").default_open(false).show(ui, |ui| {
-                                                        let _ = self.ui_state.media_browser.ui(ui, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
+                                                egui::ScrollArea::vertical()
+                                                    .id_source("controls_sidebar_scroll_split")
+                                                    .show(ui, |ui| {
+                                                        self.render_controls_content(ui);
                                                     });
-                                                    egui::CollapsingHeader::new("🔊 Audio").default_open(false).show(ui, |ui| {
-                                                        let analysis_v2 = self.audio_analyzer.get_latest_analysis();
-                                                        let legacy_analysis = if self.audio_backend.is_some() {
-                                                            Some(mapmap_core::audio::AudioAnalysis {
-                                                                timestamp: analysis_v2.timestamp,
-                                                                fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
-                                                                band_energies: [
-                                                                    analysis_v2.band_energies[0], analysis_v2.band_energies[1], analysis_v2.band_energies[2],
-                                                                    analysis_v2.band_energies[3], analysis_v2.band_energies[4], analysis_v2.band_energies[5],
-                                                                    analysis_v2.band_energies[6],
-                                                                ],
-                                                                rms_volume: analysis_v2.rms_volume,
-                                                                peak_volume: analysis_v2.peak_volume,
-                                                                beat_detected: analysis_v2.beat_detected,
-                                                                beat_strength: analysis_v2.beat_strength,
-                                                                onset_detected: false,
-                                                                tempo_bpm: None,
-                                                                waveform: analysis_v2.waveform.clone(),
-                                                            })
-                                                        } else { None };
-
-                                                        if let Some(action) = self.ui_state.audio_panel.ui(ui, &self.ui_state.i18n, legacy_analysis.as_ref(), &self.state.audio_config, &self.audio_devices, &mut self.ui_state.selected_audio_device) {
-                                                            match action {
-                                                                mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
-                                                                    info!("Audio device changed to: {}", device);
-                                                                    self.ui_state.user_config.set_audio_device(Some(device.clone()));
-                                                                    self.audio_analyzer.reset();
-                                                                    if let Some(backend) = &mut self.audio_backend { backend.stop(); }
-                                                                    self.audio_backend = None;
-                                                                    match CpalBackend::new(Some(device.clone())) {
-                                                                        Ok(mut backend) => {
-                                                                            if let Err(e) = backend.start() { error!("Failed to start audio backend: {}", e); }
-                                                                            else { info!("Audio backend started successfully"); }
-                                                                            self.audio_backend = Some(backend);
-                                                                        }
-                                                                        Err(e) => { error!("Failed to create audio backend for device '{}': {}", device, e); }
-                                                                    }
-                                                                }
-                                                                mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
-                                                                    self.audio_analyzer.update_config(mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
-                                                                        sample_rate: cfg.sample_rate, fft_size: cfg.fft_size, overlap: cfg.overlap, smoothing: cfg.smoothing,
-                                                                    });
-                                                                    self.state.audio_config = cfg;
-                                                                }
-                                                            }
-                                                        }
-                                                    });
-                                                });
                                             });
 
                                         ui.add_space(4.0); // Spacing between panels
@@ -1878,58 +1923,11 @@ impl App {
                                         ui.separator();
 
                                         // INLINED CONTROLS CONTENT (Full View)
-                                        egui::ScrollArea::vertical().id_source("controls_sidebar_scroll_full").show(ui, |ui| {
-                                            egui::CollapsingHeader::new("📁 Media").default_open(false).show(ui, |ui| {
-                                                let _ = self.ui_state.media_browser.ui(ui, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
+                                        egui::ScrollArea::vertical()
+                                            .id_source("controls_sidebar_scroll_full")
+                                            .show(ui, |ui| {
+                                                self.render_controls_content(ui);
                                             });
-                                            egui::CollapsingHeader::new("🔊 Audio").default_open(false).show(ui, |ui| {
-                                                let analysis_v2 = self.audio_analyzer.get_latest_analysis();
-                                                let legacy_analysis = if self.audio_backend.is_some() {
-                                                    Some(mapmap_core::audio::AudioAnalysis {
-                                                        timestamp: analysis_v2.timestamp,
-                                                        fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
-                                                        band_energies: [
-                                                            analysis_v2.band_energies[0], analysis_v2.band_energies[1], analysis_v2.band_energies[2],
-                                                            analysis_v2.band_energies[3], analysis_v2.band_energies[4], analysis_v2.band_energies[5],
-                                                            analysis_v2.band_energies[6],
-                                                        ],
-                                                        rms_volume: analysis_v2.rms_volume,
-                                                        peak_volume: analysis_v2.peak_volume,
-                                                        beat_detected: analysis_v2.beat_detected,
-                                                        beat_strength: analysis_v2.beat_strength,
-                                                        onset_detected: false,
-                                                        tempo_bpm: None,
-                                                        waveform: analysis_v2.waveform.clone(),
-                                                    })
-                                                } else { None };
-
-                                                if let Some(action) = self.ui_state.audio_panel.ui(ui, &self.ui_state.i18n, legacy_analysis.as_ref(), &self.state.audio_config, &self.audio_devices, &mut self.ui_state.selected_audio_device) {
-                                                    match action {
-                                                        mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
-                                                            info!("Audio device changed to: {}", device);
-                                                            self.ui_state.user_config.set_audio_device(Some(device.clone()));
-                                                            self.audio_analyzer.reset();
-                                                            if let Some(backend) = &mut self.audio_backend { backend.stop(); }
-                                                            self.audio_backend = None;
-                                                            match CpalBackend::new(Some(device.clone())) {
-                                                                Ok(mut backend) => {
-                                                                    if let Err(e) = backend.start() { error!("Failed to start audio backend: {}", e); }
-                                                                    else { info!("Audio backend started successfully"); }
-                                                                    self.audio_backend = Some(backend);
-                                                                }
-                                                                Err(e) => { error!("Failed to create audio backend for device '{}': {}", device, e); }
-                                                            }
-                                                        }
-                                                        mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
-                                                            self.audio_analyzer.update_config(mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
-                                                                sample_rate: cfg.sample_rate, fft_size: cfg.fft_size, overlap: cfg.overlap, smoothing: cfg.smoothing,
-                                                            });
-                                                            self.state.audio_config = cfg;
-                                                        }
-                                                    }
-                                                }
-                                            });
-                                        });
                                     }
                                 }
 
