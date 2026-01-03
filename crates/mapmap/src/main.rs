@@ -265,7 +265,31 @@ impl App {
             }
         }
 
-        let state = AppState::new("New Project");
+        // Initialize state, trying to load autosave first
+        let mut state = AppState::new("New Project");
+        
+        let autosave_path = dirs::data_local_dir()
+            .map(|p| p.join("MapFlow").join("autosave.mflow"));
+
+        if let Some(path) = &autosave_path {
+            if path.exists() {
+                info!("Found autosave at {:?}, attempting to load...", path);
+                match load_project(path) {
+                    Ok(loaded_state) => {
+                        info!("Successfully loaded autosave.");
+                        state = loaded_state;
+                    },
+                    Err(e) => {
+                        error!("Failed to load autosave: {}", e);
+                        // Fallback to new project is automatic as state is already initialized
+                    }
+                }
+            } else {
+                info!("No autosave found at {:?}, starting new project.", path);
+            }
+        } else {
+            warn!("Could not determine data local directory for autosave.");
+        }
 
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
@@ -639,6 +663,23 @@ impl App {
                         }
                     }
                     _ => (),
+                }
+            }
+            Event::LoopExiting => {
+                info!("Application exiting, saving autosave...");
+                let autosave_path = dirs::data_local_dir()
+                    .unwrap_or_else(|| PathBuf::from("."))
+                    .join("MapFlow")
+                    .join("autosave.mflow");
+
+                if let Some(parent) = autosave_path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+
+                if let Err(e) = save_project(&self.state, &autosave_path) {
+                    error!("Exit autosave failed: {}", e);
+                } else {
+                    info!("Exit autosave successful to {:?}", autosave_path);
                 }
             }
             Event::AboutToWait => {
