@@ -47,7 +47,7 @@ jobs:
     - name: Install system dependencies (Ubuntu)
       run: |
         sudo apt-get update
-        sudo apt-get install -y libasound2-dev pkg-config libavutil-dev libavcodec-dev libavformat-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
+        sudo apt-get install -y libasound2-dev pkg-config libavutil-dev libavcodec-dev libavformat-dev libswscale-dev libavdevice-dev libavfilter-dev libavresample-dev libswresample-dev ffmpeg
 
         # Install NDI SDK for grafton-ndi check
         wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
@@ -121,6 +121,7 @@ jobs:
           libswscale-dev \
           libavdevice-dev \
           libavfilter-dev \
+          libavresample-dev \
           libswresample-dev \
           ffmpeg \
           libasound2-dev
