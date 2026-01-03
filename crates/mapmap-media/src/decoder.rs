@@ -146,11 +146,34 @@ mod ffmpeg_impl {
 
             // Calculate FPS
             let fps = video_stream.avg_frame_rate();
-            let fps_value = fps.numerator() as f64 / fps.denominator() as f64;
+            let fps_value = if fps.denominator() == 0 {
+                30.0 // Default fallback
+            } else {
+                fps.numerator() as f64 / fps.denominator() as f64
+            };
 
             // Calculate duration
-            let duration_secs = video_stream.duration() as f64 * f64::from(time_base);
-            let duration = Duration::from_secs_f64(duration_secs);
+            let raw_duration = video_stream.duration();
+            let duration_secs = raw_duration as f64 * f64::from(time_base);
+
+            info!(
+                "Video info: FPS={:.2}, RawDuration={}, TimeBase={}/{}, CalcDuration={}",
+                fps_value,
+                raw_duration,
+                time_base.numerator(),
+                time_base.denominator(),
+                duration_secs
+            );
+
+            let duration = if duration_secs < 0.0 || duration_secs.is_nan() {
+                warn!(
+                    "Invalid video duration: {} seconds (raw: {}), defaulting to 0",
+                    duration_secs, raw_duration
+                );
+                Duration::ZERO
+            } else {
+                Duration::from_secs_f64(duration_secs)
+            };
 
             // Create decoder context
             let mut decoder = ffmpeg::codec::Context::from_parameters(codec_params)
