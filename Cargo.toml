@@ -42,7 +42,7 @@ parking_lot = "0.12"
 arc-swap = "1.6"
 
 # Media
-ffmpeg-next = "6.1"
+ffmpeg-next = "7.0"
 
 # Audio
 cpal = { version = "0.15", default-features = false }
@@ -108,7 +108,7 @@ cc = "1.0"
 winres = "0.1"
 
 [profile.dev]
-opt-level = 1  # Slightly optimize for better wgpu performance in debug
+opt-level = 1 # Slightly optimize for better wgpu performance in debug
 
 [profile.release]
 opt-level = 3
