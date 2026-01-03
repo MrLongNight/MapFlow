@@ -47,7 +47,7 @@ jobs:
     - name: Install system dependencies (Ubuntu)
       run: |
         sudo apt-get update
-        sudo apt-get install -y libasound2-dev pkg-config
+        sudo apt-get install -y libasound2-dev pkg-config libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev
         bash scripts/install-ffmpeg-dev.sh
 
     - name: Check formatting
