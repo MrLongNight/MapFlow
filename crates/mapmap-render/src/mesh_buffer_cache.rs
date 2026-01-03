@@ -62,17 +62,35 @@ impl MeshBufferCache {
         }
 
         // Cache miss or stale - create new buffers
-        let vertices: Vec<GpuVertex> = mesh
-            .vertices
-            .iter()
-            .map(GpuVertex::from_mesh_vertex)
-            .collect();
+        // Optimization: Use mapped_at_creation to avoid intermediate Vec<GpuVertex> allocation
+        let vertex_size =
+            (std::mem::size_of::<GpuVertex>() * mesh.vertices.len()) as wgpu::BufferAddress;
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("Mesh Vertex Buffer {}", mapping_id)),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        // Handle empty meshes safely
+        let vertex_buffer = if vertex_size > 0 {
+            let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(&format!("Mesh Vertex Buffer {}", mapping_id)),
+                size: vertex_size,
+                usage: wgpu::BufferUsages::VERTEX,
+                mapped_at_creation: true,
+            });
+
+            {
+                let mut buffer_view = buffer.slice(..).get_mapped_range_mut();
+                let target_slice: &mut [GpuVertex] = bytemuck::cast_slice_mut(&mut buffer_view);
+                for (i, v) in mesh.vertices.iter().enumerate() {
+                    target_slice[i] = GpuVertex::from_mesh_vertex(v);
+                }
+            }
+            buffer.unmap();
+            buffer
+        } else {
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("Mesh Vertex Buffer {}", mapping_id)),
+                contents: &[],
+                usage: wgpu::BufferUsages::VERTEX,
+            })
+        };
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("Mesh Index Buffer {}", mapping_id)),
