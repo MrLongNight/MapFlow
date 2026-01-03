@@ -58,7 +58,7 @@ impl Default for TextureDescriptor {
 pub struct TexturePool {
     device: Arc<wgpu::Device>,
     textures: RwLock<HashMap<String, TextureHandle>>,
-    views: RwLock<HashMap<String, wgpu::TextureView>>,
+    views: RwLock<HashMap<String, Arc<wgpu::TextureView>>>,
 }
 
 impl TexturePool {
@@ -108,19 +108,22 @@ impl TexturePool {
         let view = handle.create_view();
         let name_owned = name.to_string();
 
+        // Insert view first to avoid race condition where texture exists but view doesn't
+        self.views
+            .write()
+            .insert(name_owned.clone(), Arc::new(view));
         self.textures.write().insert(name_owned.clone(), handle);
-        self.views.write().insert(name_owned.clone(), view);
 
         name_owned
     }
 
     /// Get a texture view by name.
-    pub fn get_view(&self, name: &str) -> wgpu::TextureView {
-        self.textures
+    pub fn get_view(&self, name: &str) -> Arc<wgpu::TextureView> {
+        self.views
             .read()
             .get(name)
-            .expect("Texture not found in pool")
-            .create_view()
+            .expect("Texture view not found in pool")
+            .clone()
     }
 
     /// Check if a texture exists in the pool.
@@ -153,7 +156,9 @@ impl TexturePool {
                 handle.height = new_height;
 
                 let new_view = handle.create_view();
-                self.views.write().insert(name.to_string(), new_view);
+                self.views
+                    .write()
+                    .insert(name.to_string(), Arc::new(new_view));
             }
         }
     }
