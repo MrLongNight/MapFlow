@@ -56,4 +56,10 @@ check_*.txt
 
 # vcpkg (local only, not tracked)
 /vcpkg/
+/vcpkg_installed/
+
+# Temporary build/debug files
+*.txt
+!README.txt
+!CHANGELOG.txt
 project.mflow
