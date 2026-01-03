@@ -48,6 +48,13 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libasound2-dev pkg-config libavutil-dev libavcodec-dev libavformat-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
+
+        # Install NDI SDK for grafton-ndi check
+        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
+        sudo ./Install_NDI_SDK_v5_Linux.sh
+        echo "NDI_SDK_DIR=$HOME/NDI SDK for Linux" >> $GITHUB_ENV
+
         bash scripts/install-ffmpeg-dev.sh
 
     - name: Check formatting
@@ -122,7 +129,7 @@ jobs:
         wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
         tar xzf Install_NDI_SDK_v5_Linux.tar.gz
         sudo ./Install_NDI_SDK_v5_Linux.sh
-        export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
+        echo "NDI_SDK_DIR=$HOME/NDI SDK for Linux" >> $GITHUB_ENV
 
         bash scripts/install-ffmpeg-dev.sh
         # Verify installations
