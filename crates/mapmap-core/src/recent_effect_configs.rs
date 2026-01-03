@@ -267,7 +267,8 @@ impl RecentEffectConfigs {
 
     /// Save to a JSON file
     pub fn save_to_path(&self, path: &PathBuf) -> std::io::Result<()> {
-        let content = serde_json::to_string_pretty(self).map_err(std::io::Error::other)?;
+        let content = serde_json::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
