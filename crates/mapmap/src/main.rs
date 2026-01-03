@@ -1832,7 +1832,14 @@ impl App {
                                                             })
                                                         } else { None };
 
-                                                        if let Some(action) = self.ui_state.audio_panel.ui(ui, &self.ui_state.i18n, legacy_analysis.as_ref(), &self.state.audio_config, &self.audio_devices, &mut self.ui_state.selected_audio_device) {
+                                                        if let Some(action) = self.ui_state.audio_panel.ui(
+                                                            ui,
+                                                            &self.ui_state.i18n,
+                                                            legacy_analysis.as_ref(),
+                                                            &self.state.audio_config,
+                                                            &self.audio_devices,
+                                                            &mut self.ui_state.selected_audio_device,
+                                                        ) {
                                                             match action {
                                                                 mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
                                                                     info!("Audio device changed to: {}", device);
