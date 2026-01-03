@@ -94,12 +94,12 @@ impl PreviewPanel {
 
             preview_area.show(ui, |ui| {
                 ui.set_min_height(self.panel_height - 40.0);
-                
+
                 // Get outputs that should be shown
                 let visible_outputs: Vec<_> = self.outputs.iter()
                     .filter(|o| o.show_in_panel)
                     .collect();
-                
+
                 if visible_outputs.is_empty() {
                     ui.centered_and_justified(|ui| {
                         ui.label("No outputs configured for preview.\nAdd a Projector Output node and enable 'Show in Preview Panel'.");
@@ -110,14 +110,13 @@ impl PreviewPanel {
                     let num_outputs = visible_outputs.len();
                     let spacing = 8.0;
                     let thumbnail_width = ((available_width - spacing * (num_outputs as f32 - 1.0)) / num_outputs as f32)
-                        .min(200.0)
-                        .max(80.0);
+                        .clamp(80.0, 200.0);
                     let thumbnail_height = thumbnail_width * 9.0 / 16.0; // 16:9 aspect ratio
-                    
+
                     ui.horizontal_wrapped(|ui| {
                         for output in visible_outputs {
                             let is_selected = self.selected_output == Some(output.id);
-                            
+
                             // Preview thumbnail frame
                             let response = egui::Frame::none()
                                 .fill(if is_selected {
@@ -139,14 +138,14 @@ impl PreviewPanel {
                                             Vec2::new(thumbnail_width, thumbnail_height),
                                             egui::Sense::click(),
                                         );
-                                        
+
                                         // Draw placeholder or texture
                                         ui.painter().rect_filled(
                                             rect,
                                             2.0,
                                             egui::Color32::from_gray(40),
                                         );
-                                        
+
                                         // Draw "no signal" pattern
                                         ui.painter().text(
                                             rect.center(),
@@ -155,14 +154,14 @@ impl PreviewPanel {
                                             egui::FontId::proportional(12.0),
                                             egui::Color32::GRAY,
                                         );
-                                        
+
                                         // Output label
                                         ui.label(&output.name);
-                                        
+
                                         response
                                     }).inner
                                 });
-                            
+
                             if response.inner.clicked() {
                                 self.selected_output = Some(output.id);
                             }

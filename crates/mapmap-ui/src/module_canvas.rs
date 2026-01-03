@@ -304,18 +304,18 @@ impl ModuleCanvas {
                                                     egui::Slider::new(threshold, 0.0..=1.0)
                                                         .text("Threshold"),
                                                 );
-                                                
+
                                                 ui.separator();
                                                 ui.label("📤 Output Configuration:");
                                                 ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
                                                 ui.checkbox(&mut output_config.bpm_output, "⏱️ BPM");
                                                 ui.checkbox(&mut output_config.volume_outputs, "📊 Volume (RMS, Peak)");
                                                 ui.checkbox(&mut output_config.frequency_bands, "🎵 Frequency Bands (9)");
-                                                
+
                                                 ui.separator();
                                                 ui.collapsing("🔄 Invert Signals (NOT Logic)", |ui| {
                                                     ui.label("Select signals to invert (Active = 0.0):");
-                                                    
+
                                                     let mut toggle_invert = |ui: &mut Ui, name: &str, label: &str| {
                                                         let name_string = name.to_string();
                                                         let mut invert = output_config.inverted_outputs.contains(&name_string);
@@ -351,7 +351,7 @@ impl ModuleCanvas {
                                                         toggle_invert(ui, "Air Out", "Air (14-20kHz)");
                                                     }
                                                 });
-                                                
+
                                                 // Note: Changing output config requires regenerating sockets
                                                 // This will be handled when the part is updated
                                             }
@@ -487,13 +487,13 @@ impl ModuleCanvas {
                                     ModulePartType::Source(source) => {
                                         ui.label("Source Type:");
                                         match source {
-                                            SourceType::MediaFile { 
-                                                path, 
-                                                speed, 
-                                                loop_enabled, 
-                                                start_time, 
-                                                end_time, 
-                                                opacity, 
+                                            SourceType::MediaFile {
+                                                path,
+                                                speed,
+                                                loop_enabled,
+                                                start_time,
+                                                end_time,
+                                                opacity,
                                                 blend_mode,
                                                 brightness,
                                                 contrast,
@@ -506,7 +506,7 @@ impl ModuleCanvas {
                                                 offset_y,
                                             } => {
                                                 ui.label("📁 Media File");
-                                                
+
                                                 // === FILE PATH ===
                                                 // Show Preview if available
                                                 if let Some(tex_id) = self.node_previews.get(&part_id) {
@@ -539,9 +539,9 @@ impl ModuleCanvas {
                                                         }
                                                     }
                                                 });
-                                                
+
                                                 ui.separator();
-                                                
+
                                                 // === TRANSPORT CONTROLS (Always Visible) ===
                                                 ui.horizontal(|ui| {
                                                     if ui.button("▶ Play").clicked() {
@@ -554,7 +554,7 @@ impl ModuleCanvas {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
                                                     }
                                                 });
-                                                
+
                                                 // === PLAYBACK SETTINGS ===
                                                 ui.collapsing("⚙️ Playback Settings", |ui| {
                                                     ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
@@ -568,11 +568,11 @@ impl ModuleCanvas {
                                                         *end_time = 0.0;
                                                     }
                                                 });
-                                                
+
                                                 // === APPEARANCE ===
                                                 ui.collapsing("🎨 Appearance", |ui| {
                                                     ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
-                                                    
+
                                                     // Blend Mode selector
                                                     ui.horizontal(|ui| {
                                                         ui.label("Blend Mode:");
@@ -612,7 +612,7 @@ impl ModuleCanvas {
                                                             });
                                                     });
                                                 });
-                                                
+
                                                 // === COLOR CORRECTION ===
                                                 ui.collapsing("🌈 Color Correction", |ui| {
                                                     ui.add(egui::Slider::new(brightness, -1.0..=1.0).text("Brightness"));
@@ -626,7 +626,7 @@ impl ModuleCanvas {
                                                         *hue_shift = 0.0;
                                                     }
                                                 });
-                                                
+
                                                 // === TRANSFORM ===
                                                 ui.collapsing("📐 Transform", |ui| {
                                                     ui.horizontal(|ui| {
@@ -666,11 +666,11 @@ impl ModuleCanvas {
                                             #[cfg(feature = "ndi")]
                                             SourceType::NdiInput { source_name } => {
                                                 ui.label("📡 NDI Input");
-                                                
+
                                                 // Display current source
                                                 let display_name = source_name.clone().unwrap_or_else(|| "Not Connected".to_string());
                                                 ui.label(format!("Current: {}", display_name));
-                                                
+
                                                 // Discover button
                                                 ui.horizontal(|ui| {
                                                     if ui.button("🔍 Discover Sources").clicked() {
@@ -681,7 +681,7 @@ impl ModuleCanvas {
                                                         self.ndi_sources.clear();
                                                         ui.ctx().request_repaint();
                                                     }
-                                                    
+
                                                     // Check for discovery results
                                                     if let Some(rx) = &self.ndi_discovery_rx {
                                                         if let Ok(sources) = rx.try_recv() {
@@ -689,19 +689,19 @@ impl ModuleCanvas {
                                                             self.ndi_discovery_rx = None;
                                                         }
                                                     }
-                                                    
+
                                                     // Show spinner if discovering
                                                     if self.ndi_discovery_rx.is_some() {
                                                         ui.spinner();
                                                         ui.label("Searching...");
                                                     }
                                                 });
-                                                
+
                                                 // Source selection dropdown
                                                 if !self.ndi_sources.is_empty() {
                                                     ui.separator();
                                                     ui.label("Available Sources:");
-                                                    
+
                                                     egui::ComboBox::from_id_source("ndi_source_select")
                                                         .selected_text(display_name.clone())
                                                         .show_ui(ui, |ui| {
@@ -709,19 +709,19 @@ impl ModuleCanvas {
                                                             if ui.selectable_label(source_name.is_none(), "❌ None (Disconnect)").clicked() {
                                                                 *source_name = None;
                                                             }
-                                                            
+
                                                             // Available sources
                                                             for ndi_source in &self.ndi_sources {
                                                                 let selected = source_name.as_ref() == Some(&ndi_source.name);
                                                                 if ui.selectable_label(selected, &ndi_source.name).clicked() {
                                                                     *source_name = Some(ndi_source.name.clone());
-                                                                    
+
                                                                     // Trigger connection action
                                                                     self.pending_ndi_connect = Some((part_id, ndi_source.clone()));
                                                                 }
                                                             }
                                                         });
-                                                    
+
                                                     ui.label(format!("Found {} source(s)", self.ndi_sources.len()));
                                                 } else if self.ndi_discovery_rx.is_none() {
                                                     ui.label("Click 'Discover' to find NDI sources");
@@ -844,7 +844,7 @@ impl ModuleCanvas {
                                             ModulizerType::Effect { effect_type: effect, params } => {
                                                 ui.label("✨ Effect");
                                                 let mut changed_type = None;
-                                                
+
                                                 egui::ComboBox::from_id_source(format!("{}_effect", part_id))
                                                     .selected_text(format!("{:?}", effect))
                                                     .show_ui(ui, |ui| {
@@ -853,42 +853,42 @@ impl ModuleCanvas {
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Invert), "Invert").clicked() { changed_type = Some(ModuleEffectType::Invert); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Sharpen), "Sharpen").clicked() { changed_type = Some(ModuleEffectType::Sharpen); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Threshold), "Threshold").clicked() { changed_type = Some(ModuleEffectType::Threshold); }
-                                                        
+
                                                         ui.label("--- Color ---");
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Brightness), "Brightness").clicked() { changed_type = Some(ModuleEffectType::Brightness); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Contrast), "Contrast").clicked() { changed_type = Some(ModuleEffectType::Contrast); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Saturation), "Saturation").clicked() { changed_type = Some(ModuleEffectType::Saturation); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::HueShift), "Hue Shift").clicked() { changed_type = Some(ModuleEffectType::HueShift); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Colorize), "Colorize").clicked() { changed_type = Some(ModuleEffectType::Colorize); }
-                                                        
+
                                                         ui.label("--- Distortion ---");
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Wave), "Wave").clicked() { changed_type = Some(ModuleEffectType::Wave); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Spiral), "Spiral").clicked() { changed_type = Some(ModuleEffectType::Spiral); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Kaleidoscope), "Kaleidoscope").clicked() { changed_type = Some(ModuleEffectType::Kaleidoscope); }
-                                                        
+
                                                         ui.label("--- Stylize ---");
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Pixelate), "Pixelate").clicked() { changed_type = Some(ModuleEffectType::Pixelate); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::EdgeDetect), "Edge Detect").clicked() { changed_type = Some(ModuleEffectType::EdgeDetect); }
-                                                        
+
                                                         ui.label("--- Composite ---");
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::RgbSplit), "RGB Split").clicked() { changed_type = Some(ModuleEffectType::RgbSplit); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::ChromaticAberration), "Chromatic").clicked() { changed_type = Some(ModuleEffectType::ChromaticAberration); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::FilmGrain), "Film Grain").clicked() { changed_type = Some(ModuleEffectType::FilmGrain); }
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Vignette), "Vignette").clicked() { changed_type = Some(ModuleEffectType::Vignette); }
                                                     });
-                                                
+
                                                 if let Some(new_type) = changed_type {
                                                     *effect = new_type;
                                                     params.clear();
                                                     // Set defaults
                                                     match new_type {
-                                                        ModuleEffectType::Blur => { 
+                                                        ModuleEffectType::Blur => {
                                                             params.insert("radius".to_string(), 5.0);
                                                             params.insert("samples".to_string(), 9.0);
                                                         }
                                                         ModuleEffectType::Pixelate => { params.insert("pixel_size".to_string(), 8.0); }
-                                                        ModuleEffectType::FilmGrain => { 
-                                                            params.insert("amount".to_string(), 0.1); 
+                                                        ModuleEffectType::FilmGrain => {
+                                                            params.insert("amount".to_string(), 0.1);
                                                             params.insert("speed".to_string(), 1.0);
                                                         }
                                                         ModuleEffectType::Vignette => {
@@ -909,7 +909,7 @@ impl ModuleCanvas {
                                                         _ => {}
                                                     }
                                                 }
-                                                
+
                                                 ui.separator();
                                                 match effect {
                                                     ModuleEffectType::Blur => {
@@ -1001,14 +1001,14 @@ impl ModuleCanvas {
                                     }
                                     ModulePartType::Layer(layer) => {
                                         ui.label("📋 Layer:");
-                                        
+
                                         // Helper to render mesh UI
                                         let render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
                                             ui.add_space(8.0);
                                             ui.group(|ui| {
                                                 ui.label(egui::RichText::new("🕸️ Mesh/Geometry").strong());
                                                 ui.separator();
-                                            
+
                                             egui::ComboBox::from_id_source(format!("mesh_type_{}", id_salt))
                                                 .selected_text(match mesh {
                                                     MeshType::Quad { .. } => "Quad",
@@ -1091,7 +1091,7 @@ impl ModuleCanvas {
                                                 }
                                                 _ => { ui.label("Editor not implemented for this mesh type"); }
                                             }
-                                            }); 
+                                            });
                                         };
 
                                         match layer {
@@ -1100,7 +1100,7 @@ impl ModuleCanvas {
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
-                                                
+
                                                 // Blend mode
                                                 let blend_text = blend_mode.as_ref().map(|b| format!("{:?}", b)).unwrap_or_else(|| "None".to_string());
                                                 egui::ComboBox::from_id_source("layer_blend").selected_text(blend_text).show_ui(ui, |ui| {
@@ -1127,10 +1127,10 @@ impl ModuleCanvas {
                                     ModulePartType::Mesh(mesh) => {
                                         ui.label("🕸️ Mesh Node");
                                         ui.separator();
-                                        
+
                                         // Duplicated mesh editor logic (refactor later)
                                         ui.label("Mesh Configuration:");
-                                            
+
                                         egui::ComboBox::from_id_source(format!("mesh_type_{}", part_id))
                                             .selected_text(match mesh {
                                                 MeshType::Quad { .. } => "Quad",
@@ -1226,21 +1226,21 @@ impl ModuleCanvas {
                                                 extra_preview_window,
                                             } => {
                                                 ui.label("📽️ Projector Output");
-                                                
+
                                                 // Output ID selection
                                                 ui.horizontal(|ui| {
                                                     ui.label("Output #:");
                                                     ui.add(egui::DragValue::new(id).clamp_range(1..=8));
                                                 });
-                                                
+
                                                 ui.horizontal(|ui| {
                                                     ui.label("Name:");
                                                     ui.text_edit_singleline(name);
                                                 });
-                                                
+
                                                 ui.separator();
                                                 ui.label("🖥️ Window Settings:");
-                                                
+
                                                 // Target screen selection
                                                 ui.horizontal(|ui| {
                                                     ui.label("Target Screen:");
@@ -1255,10 +1255,10 @@ impl ModuleCanvas {
                                                             }
                                                         });
                                                 });
-                                                
+
                                                 ui.checkbox(fullscreen, "🖼️ Fullscreen");
                                                 ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
-                                                
+
                                                 ui.separator();
                                                 ui.label("👁️ Preview:");
                                                 ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
@@ -1292,19 +1292,19 @@ impl ModuleCanvas {
                                 // Link System UI
                                 {
                                     use mapmap_core::module::*;
-                                    let supports_link_system = matches!(part.part_type, 
-                                        ModulePartType::Mask(_) | 
-                                        ModulePartType::Modulizer(_) | 
+                                    let supports_link_system = matches!(part.part_type,
+                                        ModulePartType::Mask(_) |
+                                        ModulePartType::Modulizer(_) |
                                         ModulePartType::Layer(_) |
                                         ModulePartType::Mesh(_)
                                     );
-                                    
+
                                     if supports_link_system {
                                         ui.separator();
                                         ui.collapsing("🔗 Link System", |ui| {
                                             let mut changed = false;
                                             let link_data = &mut part.link_data;
-                                            
+
                                             ui.horizontal(|ui| {
                                                 ui.label("Link Mode:");
                                                 egui::ComboBox::from_id_source(format!("link_mode_{}", part_id))
@@ -1340,12 +1340,10 @@ impl ModuleCanvas {
                                                         });
                                                 });
                                                 ui.label("ℹ️ Visibility controlled by Link Input");
-                                            } else {
-                                                 if ui.checkbox(&mut link_data.trigger_input_enabled, "Enable Trigger Input (Visibility Control)").changed() {
-                                                     changed = true;
-                                                 }
+                                            } else if ui.checkbox(&mut link_data.trigger_input_enabled, "Enable Trigger Input (Visibility Control)").changed() {
+                                                changed = true;
                                             }
-                                            
+
                                             if changed {
                                                 changed_part_id = Some(part_id);
                                             }
@@ -1859,10 +1857,10 @@ impl ModuleCanvas {
                             if (show_all || "single".contains(&filter)) && ui.button("🔲 Single Layer").clicked() {
                                 if let Some(module_id) = self.active_module_id {
                                     let layer_id = Self::generate_unique_layer_id(manager, module_id);
-                                    self.add_module_node(manager, ModulePartType::Layer(LayerType::Single { 
-                                        id: layer_id, 
-                                        name: format!("Layer {}", layer_id), 
-                                        opacity: 1.0, 
+                                    self.add_module_node(manager, ModulePartType::Layer(LayerType::Single {
+                                        id: layer_id,
+                                        name: format!("Layer {}", layer_id),
+                                        opacity: 1.0,
                                         blend_mode: None,
                                         mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
                                     }));
@@ -1871,11 +1869,11 @@ impl ModuleCanvas {
                                 ui.close_menu();
                             }
                             if (show_all || "group".contains(&filter)) && ui.button("📂 Layer Group").clicked() {
-                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Group { 
-                                    name: "Group 1".to_string(), 
-                                    opacity: 1.0, 
+                                self.add_module_node(manager, ModulePartType::Layer(LayerType::Group {
+                                    name: "Group 1".to_string(),
+                                    opacity: 1.0,
                                     blend_mode: None,
-                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) } 
+                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
                                 }));
                                 self.search_filter.clear();
                                 ui.close_menu();
@@ -1892,7 +1890,7 @@ impl ModuleCanvas {
                     if show_all || "mesh quad triangle circle grid bezier cylinder sphere".contains(&filter) {
                         ui.menu_button("🔷 Global Layer (Mesh)", |ui| {
                             ui.set_min_width(180.0);
-                            
+
                             // Helper for adding mesh layers within the closure
                             let mut add_mesh_layer = |ui: &mut Ui, name: &str, mesh: MeshType| {
                                 if let Some(module_id) = self.active_module_id {
@@ -2000,18 +1998,18 @@ impl ModuleCanvas {
                 .selected_text(format!("📦 {}", current_name))
                 .show_ui(ui, |ui| {
                     ui.set_min_width(150.0);
-                    
+
                     // New Module option at the top
                     if ui.button("➕ New Module").clicked() {
                         let new_module_id = manager.create_module("New Module".to_string());
                         self.active_module_id = Some(new_module_id);
                     }
-                    
+
                     ui.separator();
-                    
+
                     // None option
-                    if ui.selectable_value(&mut self.active_module_id, None, "— None —").clicked() {}
-                    
+                    ui.selectable_value(&mut self.active_module_id, None, "— None —").clicked();
+
                     // List existing modules
                     for (id, name) in module_names {
                         if ui.selectable_value(&mut self.active_module_id, Some(id), name).clicked() {}
@@ -4010,7 +4008,7 @@ impl ModuleCanvas {
         // Draw property display based on part type
         let property_text = Self::get_part_property_text(&part.part_type);
         let has_property_text = !property_text.is_empty();
-        
+
         if has_property_text {
             // Position at the bottom of the node to avoid overlapping sockets
             let property_y = rect.max.y - 10.0 * self.zoom;
