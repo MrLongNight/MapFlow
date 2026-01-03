@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-03: fix: Remove trailing whitespace from module_canvas.rs, preview_panel.rs, and main.rs to fix rustfmt CI errors
 - 2026-01-03: feat(ui): Separate collapsible Controls and Preview panels in left sidebar
 - 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
 - 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)

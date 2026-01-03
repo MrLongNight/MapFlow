@@ -1579,7 +1579,7 @@ impl App {
                         self.ui_state.icon_manager.as_ref(),
                         Some(&mut self.recent_effect_configs),
                     );
-                    
+
                     // Render Oscillator Panel
                     self.ui_state.oscillator_panel.render(
                         ctx,
@@ -1715,12 +1715,12 @@ impl App {
                                                 if ui.button(format!("{} Controls", icon)).clicked() {
                                                     self.ui_state.controls_panel_expanded = !self.ui_state.controls_panel_expanded;
                                                 }
-                                                
+
                                                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                                     if ui.button("◀").on_hover_text("Sidebar einklappen").clicked() {
                                                         self.ui_state.show_left_sidebar = false;
                                                     }
-                                                    
+
                                                     if self.ui_state.controls_panel_expanded {
                                                         // Height adjustment buttons
                                                         if ui.button("−").on_hover_text("Höhe verringern").clicked() && self.ui_state.controls_panel_height > 100.0 {
@@ -1732,10 +1732,10 @@ impl App {
                                                     }
                                                 });
                                             });
-                                            
+
                                             if self.ui_state.controls_panel_expanded {
                                                 ui.separator();
-                                                
+
                                                 // Controls content area with fixed height and scroll
                                                 egui::ScrollArea::vertical()
                                                     .max_height(self.ui_state.controls_panel_height)
@@ -1832,9 +1832,9 @@ impl App {
                                                     });
                                             }
                                         });
-                                    
+
                                     ui.add_space(8.0);
-                                    
+
                                     // === PREVIEW PANEL (Bottom Section) ===
                                     if self.ui_state.show_preview_panel {
                                         egui::Frame::none()
@@ -1868,7 +1868,7 @@ impl App {
                                                         })
                                                     })
                                                     .collect();
-                                                
+
                                                 self.ui_state.preview_panel.update_outputs(output_infos);
                                                 self.ui_state.preview_panel.show(ui);
                                             });
@@ -1898,7 +1898,7 @@ impl App {
                                 .iter()
                                 .map(|o| (o.id, o.name.clone()))
                                 .collect();
-                            
+
                             self.ui_state.module_canvas.show(
                                 ui,
                                 &mut self.state.module_manager,
@@ -1996,9 +1996,9 @@ impl App {
                                                 self.state.dirty = true;
                                             }
                                         });
-                                        
+
                                         ui.label("💡 Each output can be assigned to a different screen/projector");
-                                        
+
                                         // List current outputs if any
                                         let output_count = self.state.output_manager.outputs().len();
                                         if output_count > 0 {
