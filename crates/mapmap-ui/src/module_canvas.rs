@@ -4007,7 +4007,7 @@ impl ModuleCanvas {
         // Draw property display based on part type
         let property_text = Self::get_part_property_text(&part.part_type);
         let has_property_text = !property_text.is_empty();
-        
+
         if has_property_text {
             // Position at the bottom of the node to avoid overlapping sockets
             let property_y = rect.max.y - 10.0 * self.zoom;

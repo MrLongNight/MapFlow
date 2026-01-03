@@ -270,6 +270,10 @@ pub struct AppUI {
     pub preview_panel: PreviewPanel,
     /// Show preview panel
     pub show_preview_panel: bool,
+    /// Controls panel expanded state
+    pub controls_panel_expanded: bool,
+    /// Controls panel height when expanded
+    pub controls_panel_height: f32,
 }
 
 impl Default for AppUI {
@@ -359,7 +363,9 @@ impl Default for AppUI {
             is_midi_learn_mode: false,
             current_bpm: None,
             preview_panel: PreviewPanel::default(),
-            show_preview_panel: true, // Show by default
+            show_preview_panel: true,      // Show by default
+            controls_panel_expanded: true, // Expanded by default
+            controls_panel_height: 300.0,  // Default height
         }
     }
 }
