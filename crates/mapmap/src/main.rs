@@ -1814,12 +1814,8 @@ impl App {
                                                                 timestamp: analysis_v2.timestamp,
                                                                 fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
                                                                 band_energies: [
-                                                                    analysis_v2.band_energies[0],
-                                                                    analysis_v2.band_energies[1],
-                                                                    analysis_v2.band_energies[2],
-                                                                    analysis_v2.band_energies[3],
-                                                                    analysis_v2.band_energies[4],
-                                                                    analysis_v2.band_energies[5],
+                                                                    analysis_v2.band_energies[0], analysis_v2.band_energies[1], analysis_v2.band_energies[2],
+                                                                    analysis_v2.band_energies[3], analysis_v2.band_energies[4], analysis_v2.band_energies[5],
                                                                     analysis_v2.band_energies[6],
                                                                 ],
                                                                 rms_volume: analysis_v2.rms_volume,
@@ -1832,14 +1828,7 @@ impl App {
                                                             })
                                                         } else { None };
 
-                                                        if let Some(action) = self.ui_state.audio_panel.ui(
-                                                            ui,
-                                                            &self.ui_state.i18n,
-                                                            legacy_analysis.as_ref(),
-                                                            &self.state.audio_config,
-                                                            &self.audio_devices,
-                                                            &mut self.ui_state.selected_audio_device,
-                                                        ) {
+                                                        if let Some(action) = self.ui_state.audio_panel.ui(ui, &self.ui_state.i18n, legacy_analysis.as_ref(), &self.state.audio_config, &self.audio_devices, &mut self.ui_state.selected_audio_device) {
                                                             match action {
                                                                 mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
                                                                     info!("Audio device changed to: {}", device);
@@ -1857,14 +1846,9 @@ impl App {
                                                                     }
                                                                 }
                                                                 mapmap_ui::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
-                                                                    self.audio_analyzer.update_config(
-                                                                        mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
-                                                                            sample_rate: cfg.sample_rate,
-                                                                            fft_size: cfg.fft_size,
-                                                                            overlap: cfg.overlap,
-                                                                            smoothing: cfg.smoothing,
-                                                                        },
-                                                                    );
+                                                                    self.audio_analyzer.update_config(mapmap_core::audio::analyzer_v2::AudioAnalyzerV2Config {
+                                                                        sample_rate: cfg.sample_rate, fft_size: cfg.fft_size, overlap: cfg.overlap, smoothing: cfg.smoothing,
+                                                                    });
                                                                     self.state.audio_config = cfg;
                                                                 }
                                                             }
@@ -1919,14 +1903,7 @@ impl App {
                                                     })
                                                 } else { None };
 
-                                                if let Some(action) = self.ui_state.audio_panel.ui(
-                                                    ui,
-                                                    &self.ui_state.i18n,
-                                                    legacy_analysis.as_ref(),
-                                                    &self.state.audio_config,
-                                                    &self.audio_devices,
-                                                    &mut self.ui_state.selected_audio_device,
-                                                ) {
+                                                if let Some(action) = self.ui_state.audio_panel.ui(ui, &self.ui_state.i18n, legacy_analysis.as_ref(), &self.state.audio_config, &self.audio_devices, &mut self.ui_state.selected_audio_device) {
                                                     match action {
                                                         mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
                                                             info!("Audio device changed to: {}", device);
