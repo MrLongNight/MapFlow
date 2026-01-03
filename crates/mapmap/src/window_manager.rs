@@ -61,6 +61,7 @@ impl WindowManager {
     }
 
     /// Creates the main control window with optional saved geometry.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_main_window_with_geometry<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
@@ -193,6 +194,7 @@ impl WindowManager {
     /// Creates a new projector window from a Module OutputType::Projector.
     ///
     /// If a window for the given `output_id` already exists, this function does nothing.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_projector_window<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
