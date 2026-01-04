@@ -1474,10 +1474,8 @@ impl ModuleCanvas {
                                                         });
                                                 });
                                                 ui.label("ℹ️ Visibility controlled by Link Input");
-                                            } else {
-                                                 if ui.checkbox(&mut link_data.trigger_input_enabled, "Enable Trigger Input (Visibility Control)").changed() {
-                                                     changed = true;
-                                                 }
+                                            } else if ui.checkbox(&mut link_data.trigger_input_enabled, "Enable Trigger Input (Visibility Control)").changed() {
+                                                changed = true;
                                             }
 
                                             if changed {
@@ -2147,7 +2145,7 @@ impl ModuleCanvas {
                     ui.separator();
 
                     // None option
-                    if ui.selectable_value(&mut self.active_module_id, None, "— None —").clicked() {}
+                    ui.selectable_value(&mut self.active_module_id, None, "— None —").clicked();
 
                     // List existing modules
                     for (id, name) in module_names {

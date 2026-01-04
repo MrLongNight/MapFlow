@@ -8,6 +8,9 @@
 //! - Effect chain post-processing
 //! - Preset system for effect chains
 
+// Allow certain Clippy lints at crate level for pragmatic reasons
+#![allow(clippy::empty_line_after_doc_comments)]
+#![allow(clippy::manual_map)]
 use thiserror::Error;
 
 pub mod backend;

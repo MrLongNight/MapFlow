@@ -95,7 +95,7 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
                     });
                 }
             }
-            ModulePartType::Source(source) => if let crate::module::SourceType::MediaFile { path, .. } = source {
+            ModulePartType::Source(crate::module::SourceType::MediaFile { ref path, .. }) => {
                 if path.is_empty() {
                     issues.push(ModuleIssue {
                         severity: IssueSeverity::Warning,
@@ -103,7 +103,7 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
                         part_id: Some(part.id),
                     });
                 }
-            },
+            }
             _ => {}
         }
     }
