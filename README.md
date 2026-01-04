@@ -1,13 +1,13 @@
 <div align="center">
-  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.webp" alt="MapFlow Logo" width="600"/>
+  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.png" alt="MapFlow Logo" width="500"/>
 </div>
 
-<div align="center"> <!-- Dynamic CI/CD Status Badges -->
+<!-- Dynamic CI/CD Status Badges -->
 [![Build & Test](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-01_build%26test.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-01_build%26test.yml)
 [![Security Scan](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml)
 [![Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-09_create-releases.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-09_create-releases.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-</div>
+
 
 # MapFlow
 
