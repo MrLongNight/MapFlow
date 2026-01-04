@@ -1,5 +1,5 @@
-<div align="center">
-  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.webp" alt="MapFlow Logo" width="400"/>
+<div align="left">
+  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.webp" alt="MapFlow Logo"/>
 </div>
 
 <!-- Dynamic CI/CD Status Badges -->
