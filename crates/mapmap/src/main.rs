@@ -2533,22 +2533,44 @@ impl App {
                                     }
                                     mapmap_core::module::EffectType::Brightness
                                     | mapmap_core::module::EffectType::Contrast
-                                    | mapmap_core::module::EffectType::Saturation => {
+                                    | mapmap_core::module::EffectType::Saturation
+                                    | mapmap_core::module::EffectType::HueShift
+                                    | mapmap_core::module::EffectType::Colorize => {
                                         Some(mapmap_core::effects::EffectType::ColorAdjust)
                                     }
-                                    mapmap_core::module::EffectType::ChromaticAberration => {
+                                    mapmap_core::module::EffectType::ChromaticAberration
+                                    | mapmap_core::module::EffectType::RgbSplit => {
                                         Some(mapmap_core::effects::EffectType::ChromaticAberration)
                                     }
                                     mapmap_core::module::EffectType::EdgeDetect => {
                                         Some(mapmap_core::effects::EffectType::EdgeDetect)
                                     }
-                                    mapmap_core::module::EffectType::FilmGrain => {
+                                    mapmap_core::module::EffectType::FilmGrain
+                                    | mapmap_core::module::EffectType::VHS => {
                                         Some(mapmap_core::effects::EffectType::FilmGrain)
                                     }
                                     mapmap_core::module::EffectType::Vignette => {
                                         Some(mapmap_core::effects::EffectType::Vignette)
                                     }
-                                    _ => None,
+                                    mapmap_core::module::EffectType::Kaleidoscope => {
+                                        Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                    }
+                                    // Not yet implemented in core renderer
+                                    mapmap_core::module::EffectType::Sharpen
+                                    | mapmap_core::module::EffectType::Threshold
+                                    | mapmap_core::module::EffectType::Wave
+                                    | mapmap_core::module::EffectType::Spiral
+                                    | mapmap_core::module::EffectType::Pinch
+                                    | mapmap_core::module::EffectType::Mirror
+                                    | mapmap_core::module::EffectType::Halftone
+                                    | mapmap_core::module::EffectType::Posterize
+                                    | mapmap_core::module::EffectType::Glitch => {
+                                        tracing::warn_once!(
+                                            "Effect {:?} not yet implemented in renderer",
+                                            mod_effect
+                                        );
+                                        None
+                                    }
                                 };
                                 if let Some(et) = core_effect {
                                     let effect_id = chain.add_effect(et);

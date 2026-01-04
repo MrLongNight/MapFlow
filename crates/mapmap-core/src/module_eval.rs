@@ -9,7 +9,9 @@ use crate::module::{
     BlendModeType, LayerType, LinkBehavior, LinkMode, MapFlowModule, MaskType, MeshType,
     ModulePartId, ModulePartType, ModulizerType, OutputType, SourceType, TriggerType,
 };
+use rand::Rng;
 use std::collections::HashMap;
+use std::time::Instant;
 
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
@@ -85,6 +87,8 @@ struct ProcessingChain {
 pub struct ModuleEvaluator {
     /// Current trigger data from audio analysis
     audio_trigger_data: AudioTriggerData,
+    /// Creation time for timing calculations
+    start_time: Instant,
 }
 
 impl Default for ModuleEvaluator {
@@ -98,6 +102,7 @@ impl ModuleEvaluator {
     pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
+            start_time: Instant::now(),
         }
     }
 
@@ -534,12 +539,31 @@ impl ModuleEvaluator {
                 }]
             }
             TriggerType::Random { probability, .. } => {
-                // Placeholder for random
-                vec![if 0.5 < *probability { 1.0 } else { 0.0 }]
+                // Generate random value and compare to probability
+                let random_value: f32 = rand::rng().random();
+                vec![if random_value < *probability {
+                    1.0
+                } else {
+                    0.0
+                }]
             }
-            TriggerType::Fixed { .. } => {
-                // Fixed triggers need timing state, return 1.0 for now
-                vec![1.0]
+            TriggerType::Fixed {
+                interval_ms,
+                offset_ms,
+            } => {
+                // Calculate elapsed time since start
+                let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
+                // Apply offset and check if we're in the "on" phase
+                let adjusted_time = elapsed_ms.saturating_sub(*offset_ms as u64);
+                let interval = *interval_ms as u64;
+                if interval == 0 {
+                    vec![1.0] // Avoid division by zero
+                } else {
+                    // Trigger is "on" for 10% of the interval (pulse)
+                    let pulse_duration = (interval / 10).max(16); // At least 16ms
+                    let phase = adjusted_time % interval;
+                    vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
+                }
             }
             TriggerType::Midi { .. } => {
                 // MIDI triggers need external input
