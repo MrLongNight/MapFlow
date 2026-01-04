@@ -1,7 +1,7 @@
 # MapFlow
 
 <div align="center">
-  <img src="resources/app_icons/mapflow.png" alt="MapFlow Logo" width="200"/>
+  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.webp" alt="MapFlow Logo" width="200"/>
 </div>
 
 <!-- Dynamic CI/CD Status Badges -->
