@@ -154,7 +154,7 @@ impl App {
     /// Creates a new `App`.
     async fn new(event_loop: &EventLoop<()>) -> Result<Self> {
         let backend = WgpuBackend::new().await?;
-        
+
         // Version marker to confirm correct build is running
         tracing::info!(">>> BUILD VERSION: 2026-01-04-FIX-RENDER-CHECK <<<");
 
@@ -270,9 +270,9 @@ impl App {
 
         // Initialize state, trying to load autosave first
         let mut state = AppState::new("New Project");
-        
-        let autosave_path = dirs::data_local_dir()
-            .map(|p| p.join("MapFlow").join("autosave.mflow"));
+
+        let autosave_path =
+            dirs::data_local_dir().map(|p| p.join("MapFlow").join("autosave.mflow"));
 
         if let Some(path) = &autosave_path {
             if path.exists() {
@@ -281,7 +281,7 @@ impl App {
                     Ok(loaded_state) => {
                         info!("Successfully loaded autosave.");
                         state = loaded_state;
-                    },
+                    }
                     Err(e) => {
                         error!("Failed to load autosave: {}", e);
                         // Fallback to new project is automatic as state is already initialized
@@ -290,11 +290,12 @@ impl App {
             } else {
                 info!("No autosave found at {:?}, starting new project.", path);
             }
-            
+
             // --- SELF-HEAL: Reconcile Output IDs ---
             // Ensure Output Nodes in the graph point to valid IDs in OutputManager.
             // If ID mismatch but NAME match, update the ID.
-            let valid_outputs: HashMap<String, u64> = state.output_manager
+            let valid_outputs: HashMap<String, u64> = state
+                .output_manager
                 .outputs()
                 .iter()
                 .map(|o| (o.name.clone(), o.id))
@@ -305,15 +306,26 @@ impl App {
             for module in state.module_manager.modules_mut() {
                 for part in &mut module.parts {
                     if let mapmap_core::module::ModulePartType::Output(
-                        mapmap_core::module::OutputType::Projector { ref mut id, ref name, .. }
-                    ) = &mut part.part_type {
+                        mapmap_core::module::OutputType::Projector {
+                            ref mut id,
+                            ref name,
+                            ..
+                        },
+                    ) = &mut part.part_type
+                    {
                         if !valid_ids.contains(id) {
                             if let Some(new_id) = valid_outputs.get(name) {
-                                info!("Self-Heal: Relinking Output '{}' from ID {} to {}.", name, id, new_id);
+                                info!(
+                                    "Self-Heal: Relinking Output '{}' from ID {} to {}.",
+                                    name, id, new_id
+                                );
                                 *id = *new_id;
                                 fixed_count += 1;
                             } else {
-                                warn!("Self-Heal: Output '{}' (ID {}) has no matching Output Window.", name, id);
+                                warn!(
+                                    "Self-Heal: Output '{}' (ID {}) has no matching Output Window.",
+                                    name, id
+                                );
                             }
                         }
                     }
@@ -326,8 +338,6 @@ impl App {
         } else {
             warn!("Could not determine data local directory for autosave.");
         }
-
-
 
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
@@ -705,21 +715,22 @@ impl App {
             }
             Event::LoopExiting => {
                 info!("Application exiting, saving autosave and config...");
-                
+
                 // 1. Save User Config (UI State)
                 self.ui_state.user_config.show_left_sidebar = self.ui_state.show_left_sidebar;
                 self.ui_state.user_config.show_inspector = self.ui_state.show_inspector;
                 self.ui_state.user_config.show_timeline = self.ui_state.show_timeline;
                 self.ui_state.user_config.show_media_browser = self.ui_state.show_media_browser;
                 self.ui_state.user_config.show_module_canvas = self.ui_state.show_module_canvas;
-                self.ui_state.user_config.show_controller_overlay = self.ui_state.show_controller_overlay;
-                
+                self.ui_state.user_config.show_controller_overlay =
+                    self.ui_state.show_controller_overlay;
+
                 // Get main window maximization state
                 if let Some(main_window) = self.window_manager.get(0) {
-                     self.ui_state.user_config.window_maximized = main_window.window.is_maximized();
-                     // Note: Width/Height/X/Y are typically tracked during move/resize, not just at exit,
-                     // but we could explicitly query inner_size here if needed.
-                     // For now, maximization and flags are key.
+                    self.ui_state.user_config.window_maximized = main_window.window.is_maximized();
+                    // Note: Width/Height/X/Y are typically tracked during move/resize, not just at exit,
+                    // but we could explicitly query inner_size here if needed.
+                    // For now, maximization and flags are key.
                 }
 
                 if let Err(e) = self.ui_state.user_config.save() {
@@ -800,28 +811,55 @@ impl App {
                 self.module_evaluator.update_audio(&analysis_v2);
 
                 // Process pending playback commands from UI
-                for (part_id, cmd) in self.ui_state.module_canvas.pending_playback_commands.drain(..) {
-                    info!("Processing playback command {:?} for part_id={}", cmd, part_id);
+                for (part_id, cmd) in self
+                    .ui_state
+                    .module_canvas
+                    .pending_playback_commands
+                    .drain(..)
+                {
+                    info!(
+                        "Processing playback command {:?} for part_id={}",
+                        cmd, part_id
+                    );
                     // If player doesn't exist and we get a Play command, try to create it
                     if !self.media_players.contains_key(&part_id) {
                         if let mapmap_ui::MediaPlaybackCommand::Play = &cmd {
-                            info!("Player doesn't exist for part_id={}, attempting to create...", part_id);
+                            info!(
+                                "Player doesn't exist for part_id={}, attempting to create...",
+                                part_id
+                            );
                             // Find the source path from the module manager
-                            if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
-                                if let Some(module) = self.state.module_manager.get_module(active_module_id) {
-                                    if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                            if let Some(active_module_id) =
+                                self.ui_state.module_canvas.active_module_id
+                            {
+                                if let Some(module) =
+                                    self.state.module_manager.get_module(active_module_id)
+                                {
+                                    if let Some(part) =
+                                        module.parts.iter().find(|p| p.id == part_id)
+                                    {
                                         if let mapmap_core::module::ModulePartType::Source(
-                                            mapmap_core::module::SourceType::MediaFile { ref path, .. }
-                                        ) = &part.part_type {
+                                            mapmap_core::module::SourceType::MediaFile {
+                                                ref path,
+                                                ..
+                                            },
+                                        ) = &part.part_type
+                                        {
                                             info!("Found media path: '{}'", path);
                                             if !path.is_empty() {
                                                 match mapmap_media::open_path(path) {
                                                     Ok(player) => {
-                                                        info!("Successfully created player for '{}'", path);
+                                                        info!(
+                                                            "Successfully created player for '{}'",
+                                                            path
+                                                        );
                                                         self.media_players.insert(part_id, player);
                                                     }
                                                     Err(e) => {
-                                                        error!("Failed to load media '{}': {}", path, e);
+                                                        error!(
+                                                            "Failed to load media '{}': {}",
+                                                            path, e
+                                                        );
                                                     }
                                                 }
                                             }
@@ -857,7 +895,10 @@ impl App {
                     // Handle Reload by removing player (will be recreated on next frame)
                     if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
                         if self.media_players.remove(&part_id).is_some() {
-                            info!("Removed old media player for part_id={} for reload", part_id);
+                            info!(
+                                "Removed old media player for part_id={} for reload",
+                                part_id
+                            );
                         }
                     }
                 }
@@ -870,12 +911,23 @@ impl App {
                 }
                 for part_id in player_ids {
                     if let Some(player) = self.media_players.get_mut(&part_id) {
-                        debug!("Updating player for part_id={}, state={:?}", part_id, player.state());
+                        debug!(
+                            "Updating player for part_id={}, state={:?}",
+                            part_id,
+                            player.state()
+                        );
                         if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                            debug!("Got frame for part_id={}, size={}x{}", part_id, frame.format.width, frame.format.height);
+                            debug!(
+                                "Got frame for part_id={}, size={}x{}",
+                                part_id, frame.format.width, frame.format.height
+                            );
                             if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
                                 let tex_name = format!("part_{}", part_id);
-                                debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
+                                debug!(
+                                    "Uploading texture '{}' with {} bytes",
+                                    tex_name,
+                                    data.len()
+                                );
                                 self.texture_pool.upload_data(
                                     &self.backend.queue,
                                     &tex_name,
@@ -996,12 +1048,19 @@ impl App {
                                 info!("=== Render Pipeline Status ===");
                                 info!("  render_ops count: {}", self.render_ops.len());
                                 for (i, op) in self.render_ops.iter().enumerate() {
-                                    info!("  Op[{}]: source_part_id={:?}, output={:?}", 
-                                        i, op.source_part_id, 
+                                    info!(
+                                        "  Op[{}]: source_part_id={:?}, output={:?}",
+                                        i,
+                                        op.source_part_id,
                                         match &op.output_type {
-                                            mapmap_core::module::OutputType::Projector { id, .. } => format!("Projector({})", id),
-                                            mapmap_core::module::OutputType::NdiOutput { name } => format!("NDI({})", name),
-                                            mapmap_core::module::OutputType::Spout { name } => format!("Spout({})", name),
+                                            mapmap_core::module::OutputType::Projector {
+                                                id,
+                                                ..
+                                            } => format!("Projector({})", id),
+                                            mapmap_core::module::OutputType::NdiOutput { name } =>
+                                                format!("NDI({})", name),
+                                            mapmap_core::module::OutputType::Spout { name } =>
+                                                format!("Spout({})", name),
                                         }
                                     );
                                     if let Some(sid) = op.source_part_id {
@@ -1538,7 +1597,8 @@ impl App {
         // Identify active media files
         for module in self.state.module_manager.modules() {
             for part in &module.parts {
-                if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &part.part_type {
+                if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &part.part_type
+                {
                     if !path.is_empty() {
                         active_sources.insert(part.id);
 
@@ -1548,12 +1608,18 @@ impl App {
                             match mapmap_media::open_path(path) {
                                 Ok(mut player) => {
                                     if let Err(e) = player.play() {
-                                        error!("Failed to start playback for source {}: {}", part.id, e);
+                                        error!(
+                                            "Failed to start playback for source {}: {}",
+                                            part.id, e
+                                        );
                                     }
                                     self.media_players.insert(part.id, player);
                                 }
                                 Err(e) => {
-                                    error!("Failed to create video player for source {}: {}", part.id, e);
+                                    error!(
+                                        "Failed to create video player for source {}: {}",
+                                        part.id, e
+                                    );
                                 }
                             }
                         }
@@ -1563,7 +1629,8 @@ impl App {
         }
 
         // Cleanup removed players
-        self.media_players.retain(|id, _| active_sources.contains(id));
+        self.media_players
+            .retain(|id, _| active_sources.contains(id));
     }
 
     /// Update all media players and upload frames to texture pool
@@ -1572,7 +1639,7 @@ impl App {
             // Update player logic
             if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
                 let tex_name = format!("part_{}", id);
-                
+
                 // Upload to GPU if data is on CPU
                 if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
                     self.texture_pool.upload_data(
@@ -1580,7 +1647,7 @@ impl App {
                         &tex_name,
                         data,
                         frame.format.width,
-                        frame.format.height
+                        frame.format.height,
                     );
                 }
             }
@@ -1644,7 +1711,13 @@ impl App {
             // Sync Texture Previews for Module Canvas
             {
                 // Free old textures
-                let ids_to_free: Vec<egui::TextureId> = self.ui_state.module_canvas.node_previews.values().cloned().collect();
+                let ids_to_free: Vec<egui::TextureId> = self
+                    .ui_state
+                    .module_canvas
+                    .node_previews
+                    .values()
+                    .cloned()
+                    .collect();
                 for id in ids_to_free {
                     self.egui_renderer.free_texture(&id);
                 }
@@ -1657,7 +1730,13 @@ impl App {
                     .modules()
                     .iter()
                     .flat_map(|m| &m.parts)
-                    .filter_map(|p| if let mapmap_core::module::ModulePartType::Source(_) = p.part_type { Some(p.id) } else { None })
+                    .filter_map(|p| {
+                        if let mapmap_core::module::ModulePartType::Source(_) = p.part_type {
+                            Some(p.id)
+                        } else {
+                            None
+                        }
+                    })
                     .collect();
 
                 for part_id in active_part_ids {
@@ -2510,7 +2589,7 @@ impl App {
                         output_config_opt.is_some() && self.edge_blend_renderer.is_some();
                     let use_color_calib =
                         output_config_opt.is_some() && self.color_calibration_renderer.is_some();
-                    
+
                     let needs_post_processing = use_edge_blend || use_color_calib;
 
                     // A. Prepare Mesh Target
@@ -2518,18 +2597,20 @@ impl App {
                     // Otherwise, Mesh writes directly to the Surface.
                     let mesh_target_view_ref;
                     let mesh_output_tex_name = &self.layer_ping_pong[1]; // Use secondary ping-pong for mesh output
-                    
+
                     // Scope to keep view borrow short
                     let mut _mesh_intermediate_view: Option<wgpu::TextureView> = None;
 
                     if needs_post_processing {
                         let width = window_context.surface_config.width;
                         let height = window_context.surface_config.height;
-                        
+
                         // Resize intermediate texture to match output resolution
-                        self.texture_pool.resize_if_needed(mesh_output_tex_name, width, height);
-                        
-                        _mesh_intermediate_view = Some(self.texture_pool.get_view(mesh_output_tex_name));
+                        self.texture_pool
+                            .resize_if_needed(mesh_output_tex_name, width, height);
+
+                        _mesh_intermediate_view =
+                            Some(self.texture_pool.get_view(mesh_output_tex_name));
                         mesh_target_view_ref = _mesh_intermediate_view.as_ref().unwrap();
                     } else {
                         mesh_target_view_ref = &view;
@@ -2562,16 +2643,24 @@ impl App {
                                 op.layer_part_id,
                                 &op.mesh.to_mesh(),
                             );
-                        
+
                         // LOGGING: Check mesh and opacity (ROBUST)
-                        static DRAW_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                        static DRAW_COUNT: std::sync::atomic::AtomicU64 =
+                            std::sync::atomic::AtomicU64::new(0);
                         let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         if count % 120 == 0 {
-                                info!("Render: Drawing Mesh for output {}", output_id);
-                                info!("  -> index_count: {}", index_count);
-                                info!("  -> opacity: {}", op.opacity);
-                                info!("  -> layer_part_id: {}", op.layer_part_id);
-                                info!("  -> pipeline: mesh -> {}", if needs_post_processing { "post-process" } else { "surface" });
+                            info!("Render: Drawing Mesh for output {}", output_id);
+                            info!("  -> index_count: {}", index_count);
+                            info!("  -> opacity: {}", op.opacity);
+                            info!("  -> layer_part_id: {}", op.layer_part_id);
+                            info!(
+                                "  -> pipeline: mesh -> {}",
+                                if needs_post_processing {
+                                    "post-process"
+                                } else {
+                                    "surface"
+                                }
+                            );
                         }
 
                         let transform = glam::Mat4::IDENTITY;
@@ -2615,7 +2704,7 @@ impl App {
                     if needs_post_processing {
                         // Input for post-processing is the result of the mesh render
                         let post_input_view = mesh_target_view_ref;
-                        
+
                         // Setup intermediate for EdgeBlend -> ColorCalib chain if both are active
                         let need_double_pass = use_edge_blend && use_color_calib;
                         let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
@@ -2672,7 +2761,7 @@ impl App {
                             } else {
                                 &view
                             };
-                            
+
                             let bind_group = renderer.create_texture_bind_group(post_input_view);
                             let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
                             let uniform_bind_group =
@@ -2704,10 +2793,10 @@ impl App {
                             } else {
                                 post_input_view
                             };
-                            
+
                             // Output is always Surface
                             let target_view = &view;
-                            
+
                             let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
                             let uniform_buffer =
                                 renderer.create_uniform_buffer(&config.color_calibration);
@@ -2733,11 +2822,15 @@ impl App {
                         }
                     }
                 } else {
-                         static MISSING_VIEW: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-                         if MISSING_VIEW.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 120 == 0 {
-                              tracing::warn!("Render: No effective view for output {} (Texture logic failed)", output_id);
-                         }
+                    static MISSING_VIEW: std::sync::atomic::AtomicU64 =
+                        std::sync::atomic::AtomicU64::new(0);
+                    if MISSING_VIEW.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 120 == 0 {
+                        tracing::warn!(
+                            "Render: No effective view for output {} (Texture logic failed)",
+                            output_id
+                        );
                     }
+                }
             } else {
                 // No op for this output - Clear to Black
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

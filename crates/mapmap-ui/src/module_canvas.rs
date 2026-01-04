@@ -4036,7 +4036,7 @@ impl ModuleCanvas {
         // Draw property display based on part type
         let property_text = Self::get_part_property_text(&part.part_type);
         let has_property_text = !property_text.is_empty();
-        
+
         if has_property_text {
             // Position at the bottom of the node to avoid overlapping sockets
             let property_y = rect.max.y - 10.0 * self.zoom;
@@ -4429,9 +4429,15 @@ impl ModuleCanvas {
                         .show(ui, |ui| {
                             for issue in &self.diagnostic_issues {
                                 let (icon, color) = match issue.severity {
-                                    mapmap_core::diagnostics::IssueSeverity::Error => ("❌", Color32::RED),
-                                    mapmap_core::diagnostics::IssueSeverity::Warning => ("⚠", Color32::YELLOW),
-                                    mapmap_core::diagnostics::IssueSeverity::Info => ("ℹ", Color32::LIGHT_BLUE),
+                                    mapmap_core::diagnostics::IssueSeverity::Error => {
+                                        ("❌", Color32::RED)
+                                    }
+                                    mapmap_core::diagnostics::IssueSeverity::Warning => {
+                                        ("⚠", Color32::YELLOW)
+                                    }
+                                    mapmap_core::diagnostics::IssueSeverity::Info => {
+                                        ("ℹ", Color32::LIGHT_BLUE)
+                                    }
                                 };
                                 ui.horizontal(|ui| {
                                     ui.colored_label(color, icon);
