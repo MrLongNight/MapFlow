@@ -1,11 +1,11 @@
-name: "CI-01: Build&Test"
+name: "CI-01:Build&Test"
 
 on:
-  push: 
+  push:
     branches: [ "main" ]
-  pull_request: 
+  pull_request:
     branches: [ "main" ]
-  workflow_dispatch: 
+  workflow_dispatch:
     inputs:
       skip_tests:
         description: 'Skip tests (faster builds)'
@@ -19,7 +19,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
-  RUST_BACKTRACE:  1
+  RUST_BACKTRACE: 1
   # Projekt-MS RUNTIME-Vorgabe (MSRV)
   RUST_TOOLCHAIN: stable
 
@@ -32,7 +32,7 @@ jobs:
       contents: read
 
     steps:
-    - name:  Configure Git
+    - name: Configure Git
       run: git config --global --add safe.directory "*"
     - uses: actions/checkout@v4
 
@@ -47,16 +47,7 @@ jobs:
     - name: Install system dependencies (Ubuntu)
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          libasound2-dev \
-          pkg-config \
-          libavcodec-dev \
-          libavformat-dev \
-          libavutil-dev \
-          libswscale-dev \
-          libavdevice-dev \
-          libavfilter-dev \
-          libswresample-dev
+        sudo apt-get install -y libasound2-dev pkg-config
         bash scripts/install-ffmpeg-dev.sh
 
     - name: Check formatting
@@ -73,11 +64,11 @@ jobs:
     env:
       RUST_TOOLCHAIN: stable
     permissions:
-      contents:  read
+      contents: read
 
     steps:
     - name: Configure Git
-      run:  git config --global --add safe. directory "*"
+      run: git config --global --add safe.directory "*"
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
@@ -85,7 +76,7 @@ jobs:
         tool-cache: false
         android: true
         dotnet: true
-        haskell:  true
+        haskell: true
         large-packages: true
         swap-storage: true
 
@@ -99,10 +90,10 @@ jobs:
         override: true
         components: rustfmt, clippy
 
-    - name:  Rust Cache
+    - name: Rust Cache
       uses: swatinem/rust-cache@v2
 
-    - name: Install FFmpeg and system dependencies (Ubuntu)
+    - name: Install system dependencies (Ubuntu)
       run: |
         sudo apt-get update -y
         sudo apt-get install -y \
@@ -126,34 +117,25 @@ jobs:
           libswresample-dev \
           ffmpeg \
           libasound2-dev
-        
-        echo "✓ FFmpeg development libraries installed"
 
-    - name: Install NDI SDK
-      run: |
-        wget https://downloads.ndi. tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
-        tar xzf Install_NDI_SDK_v5_Linux.tar. gz
-        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo ":: warning::NDI SDK installation may require manual acceptance"
+        # Install NDI SDK
+        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
+        sudo ./Install_NDI_SDK_v5_Linux.sh
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
-        echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
 
-    - name: Run FFmpeg setup script
-      run: bash scripts/install-ffmpeg-dev.sh
-
-    - name:  Verify installations
-      run: |
+        bash scripts/install-ffmpeg-dev.sh
+        # Verify installations
         pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
         pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
         pkg-config --exists alsa && echo "✓ ALSA found" || echo "✗ ALSA not found"
         pkg-config --exists libavutil && echo "✓ libavutil found" || (echo "✗ libavutil not found"; exit 1)
-        pkg-config --exists libavcodec && echo "✓ libavcodec found" || (echo "✗ libavcodec not found"; exit 1)
-        pkg-config --exists libavformat && echo "✓ libavformat found" || (echo "✗ libavformat not found"; exit 1)
 
     # We only build RELEASE to save disk space (debug artifacts are huge)
     - name: Build & Test (Release)
       env:
         RUST_BACKTRACE: full
-      run:  |
+      run: |
         cargo build --release --verbose --all-features
 
     - name: Run tests (Release)
@@ -182,10 +164,10 @@ jobs:
     runs-on: windows-latest
     env:
       RUST_TOOLCHAIN: stable
-    permissions: 
+    permissions:
       contents: read
 
-    steps: 
+    steps:
     - name: Configure Git
       run: git config --global core.autocrlf false
     - uses: actions/checkout@v4
@@ -198,7 +180,7 @@ jobs:
         override: true
         components: rustfmt, clippy
 
-    - name:  Rust Cache
+    - name: Rust Cache
       uses: swatinem/rust-cache@v2
 
     # NOTE: NDI SDK requires registration and cannot be automated in CI
@@ -211,7 +193,7 @@ jobs:
 
     - name: Run tests (Release, without NDI)
       if: ${{ github.event.inputs.skip_tests != 'true' }}
-      env: 
+      env:
         RUST_BACKTRACE: full
       run: cargo test --release --workspace --verbose --no-default-features --features audio
 
@@ -231,7 +213,7 @@ jobs:
       RUST_TOOLCHAIN: stable
     permissions:
       security-events: write
-      contents:  read
+      contents: read
       checks: write
 
     steps:
@@ -239,9 +221,9 @@ jobs:
       run: git config --global --add safe.directory "*"
     - uses: actions/checkout@v4
 
-    - name:  Set up Rust toolchain
+    - name: Set up Rust toolchain
       uses: actions-rs/toolchain@v1
-      with: 
+      with:
         toolchain: stable
         profile: minimal
         override: true
@@ -249,16 +231,16 @@ jobs:
     - name: Run cargo audit
       uses: rustsec/audit-check@v2
       with:
-        token:  ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   # Success gate for branch protection
-  ci-success: 
+  ci-success:
     name: CI Success Gate
     needs: [quality, build-and-test, build-windows, security]
     runs-on: ubuntu-latest
     if: always()
     permissions:
-      contents:  read
+      contents: read
 
     steps:
     - name: Fail if any job failed or was cancelled
@@ -274,7 +256,7 @@ jobs:
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
-        if [ "${{ needs. build-windows.result }}" != "success" ]; then
+        if [ "${{ needs.build-windows.result }}" != "success" ]; then
           echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All CI checks passed successfully"
