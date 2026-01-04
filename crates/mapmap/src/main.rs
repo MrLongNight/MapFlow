@@ -87,6 +87,8 @@ struct App {
     last_autosave: std::time::Instant,
     /// Last update timestamp for delta time calculation.
     last_update: std::time::Instant,
+    /// Last render timestamp for FPS calculation.
+    last_render_time: std::time::Instant,
     /// Application start time.
     start_time: std::time::Instant,
     /// Receiver for MCP commands
@@ -479,6 +481,7 @@ impl App {
             egui_renderer,
             last_autosave: std::time::Instant::now(),
             last_update: std::time::Instant::now(),
+            last_render_time: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
             mcp_receiver,
             control_manager: ControlManager::new(),
@@ -914,55 +917,20 @@ impl App {
                     }
                 }
 
-                // Update all active media players and upload frames to texture pool
-                // This ensures previews work even without triggers connected
-                let player_ids: Vec<u64> = self.media_players.keys().cloned().collect();
-                if !player_ids.is_empty() {
-                    debug!("Updating {} active media players", player_ids.len());
+                // Update update logic with real delta time
+                let now = std::time::Instant::now();
+                let dt = now.duration_since(self.last_update).as_secs_f32();
+                self.last_update = now;
+
+                // Only update if time has passed (avoid zero-delta updates)
+                if dt > 0.0 {
+                    self.sync_media_players();
+                    self.update_media_players(dt);
                 }
-                for part_id in player_ids {
-                    if let Some(player) = self.media_players.get_mut(&part_id) {
-                        debug!(
-                            "Updating player for part_id={}, state={:?}",
-                            part_id,
-                            player.state()
-                        );
 
-                        // Update UI Info
-                        let (w, h) = player.resolution();
-                        self.ui_state.module_canvas.active_media_info.insert(
-                            part_id,
-                            mapmap_ui::MediaInfo {
-                                width: w,
-                                height: h,
-                                fps: player.fps() as f32,
-                            },
-                        );
-
-                        if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                            debug!(
-                                "Got frame for part_id={}, size={}x{}",
-                                part_id, frame.format.width, frame.format.height
-                            );
-                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                                let tex_name = format!("part_{}", part_id);
-                                debug!(
-                                    "Uploading texture '{}' with {} bytes",
-                                    tex_name,
-                                    data.len()
-                                );
-                                self.texture_pool.upload_data(
-                                    &self.backend.queue,
-                                    &tex_name,
-                                    data,
-                                    frame.format.width,
-                                    frame.format.height,
-                                );
-                            } else {
-                                debug!("Frame data is GPU-based, not CPU");
-                            }
-                        }
-                    }
+                // Request redraw for all active windows
+                for window_ctx in self.window_manager.iter() {
+                    window_ctx.window.request_redraw();
                 }
 
                 if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
@@ -1029,24 +997,7 @@ impl App {
                                                 player.command_sender().send(PlaybackCommand::Play);
                                         }
 
-                                        // Update player with fixed DT for now (should use real DT)
-                                        if let Some(frame) =
-                                            player.update(std::time::Duration::from_millis(16))
-                                        {
-                                            // Upload to texture pool
-                                            if let mapmap_io::format::FrameData::Cpu(data) =
-                                                &frame.data
-                                            {
-                                                let tex_name = format!("part_{}", part_id);
-                                                self.texture_pool.upload_data(
-                                                    &self.backend.queue,
-                                                    &tex_name,
-                                                    data,
-                                                    frame.format.width,
-                                                    frame.format.height,
-                                                );
-                                            }
-                                        }
+                                        // Update player logic is handled centrally in update_media_players
                                     }
                                 }
                                 mapmap_core::SourceCommand::NdiInput {
@@ -1784,12 +1735,11 @@ impl App {
     /// Renders a single frame for a given output.
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         let now = std::time::Instant::now();
-        let delta_time = now.duration_since(self.last_update).as_secs_f32();
-        self.last_update = now;
+        // Use last_render_time for FPS calculation
+        let delta_time = now.duration_since(self.last_render_time).as_secs_f32();
+        self.last_render_time = now;
 
-        // --- Media Player Update ---
-        self.sync_media_players();
-        self.update_media_players(delta_time);
+        // Media players are now updated in the event loop (AboutToWait)
 
         // Calculate FPS with smoothing (rolling average of last 60 frames)
         let frame_time_ms = delta_time * 1000.0;
