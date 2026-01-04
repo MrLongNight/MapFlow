@@ -114,6 +114,38 @@ impl ModuleEvaluator {
     pub fn evaluate(&self, module: &MapFlowModule) -> ModuleEvalResult {
         let mut result = ModuleEvalResult::default();
 
+        // === DIAGNOSTICS: Log module structure ===
+        let output_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Output(_)))
+            .count();
+        let layer_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Layer(_)))
+            .count();
+        let source_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Source(_)))
+            .count();
+        let trigger_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Trigger(_)))
+            .count();
+
+        tracing::debug!(
+            "ModuleEval: parts={} (outputs={}, layers={}, sources={}, triggers={}), connections={}",
+            module.parts.len(),
+            output_count,
+            layer_count,
+            source_count,
+            trigger_count,
+            module.connections.len()
+        );
+
         // Step 1: Evaluate all trigger nodes
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
@@ -185,6 +217,10 @@ impl ModuleEvaluator {
 
         // Step 4: Trace Render Pipeline
         // Start from Output nodes and trace back to Layers, then to Sources/Effects
+        let mut outputs_without_connection = Vec::new();
+        let mut outputs_without_layer = Vec::new();
+        let mut outputs_without_source = Vec::new();
+
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 // Find connected input (should be a Layer)
@@ -220,6 +256,10 @@ impl ModuleEvaluator {
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
+
+                                    if chain.source_id.is_none() {
+                                        outputs_without_source.push(part.id);
+                                    }
                                 }
                                 LayerType::Group {
                                     opacity,
@@ -242,15 +282,62 @@ impl ModuleEvaluator {
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
+
+                                    if chain.source_id.is_none() {
+                                        outputs_without_source.push(part.id);
+                                    }
                                 }
                                 LayerType::All { .. } => {
                                     // TODO: Handle global layers (all)
                                 }
                             }
                         }
+                    } else {
+                        outputs_without_layer.push(part.id);
+                        tracing::warn!(
+                            "ModuleEval: Output {} connected to non-Layer node {}",
+                            part.id,
+                            conn.from_part
+                        );
                     }
+                } else {
+                    outputs_without_connection.push(part.id);
                 }
             }
+        }
+
+        // === DIAGNOSTICS: Log summary ===
+        if result.render_ops.is_empty() && output_count > 0 {
+            tracing::warn!(
+                "ModuleEval: No render_ops generated despite {} output nodes!",
+                output_count
+            );
+            if !outputs_without_connection.is_empty() {
+                tracing::warn!(
+                    "  → {} outputs have NO incoming connection: {:?}",
+                    outputs_without_connection.len(),
+                    outputs_without_connection
+                );
+            }
+            if !outputs_without_layer.is_empty() {
+                tracing::warn!(
+                    "  → {} outputs connected to non-Layer nodes: {:?}",
+                    outputs_without_layer.len(),
+                    outputs_without_layer
+                );
+            }
+            if !outputs_without_source.is_empty() {
+                tracing::warn!(
+                    "  → {} outputs have Layer but no Source connected: {:?}",
+                    outputs_without_source.len(),
+                    outputs_without_source
+                );
+            }
+        } else {
+            tracing::debug!(
+                "ModuleEval: Generated {} render_ops",
+                result.render_ops.len()
+            );
         }
 
         result
