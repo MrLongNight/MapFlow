@@ -290,6 +290,39 @@ impl App {
             } else {
                 info!("No autosave found at {:?}, starting new project.", path);
             }
+            
+            // --- SELF-HEAL: Reconcile Output IDs ---
+            // Ensure Output Nodes in the graph point to valid IDs in OutputManager.
+            // If ID mismatch but NAME match, update the ID.
+            let valid_outputs: HashMap<String, u64> = state.output_manager
+                .outputs()
+                .iter()
+                .map(|o| (o.name.clone(), o.id))
+                .collect();
+            let valid_ids: Vec<u64> = valid_outputs.values().cloned().collect();
+
+            let mut fixed_count = 0;
+            for module in state.module_manager.modules_mut() {
+                for part in &mut module.parts {
+                    if let mapmap_core::module::ModulePartType::Output(
+                        mapmap_core::module::OutputType::Projector { ref mut id, ref name, .. }
+                    ) = &mut part.part_type {
+                        if !valid_ids.contains(id) {
+                            if let Some(new_id) = valid_outputs.get(name) {
+                                info!("Self-Heal: Relinking Output '{}' from ID {} to {}.", name, id, new_id);
+                                *id = *new_id;
+                                fixed_count += 1;
+                            } else {
+                                warn!("Self-Heal: Output '{}' (ID {}) has no matching Output Window.", name, id);
+                            }
+                        }
+                    }
+                }
+            }
+            if fixed_count > 0 {
+                info!("Self-Heal: Fixed {} output connections.", fixed_count);
+                state.dirty = true;
+            }
         } else {
             warn!("Could not determine data local directory for autosave.");
         }

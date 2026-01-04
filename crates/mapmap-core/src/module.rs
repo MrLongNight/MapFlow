@@ -1277,6 +1277,11 @@ impl ModuleManager {
         self.modules.values().collect()
     }
 
+    /// Get all modules mutably
+    pub fn modules_mut(&mut self) -> Vec<&mut MapFlowModule> {
+        self.modules.values_mut().collect()
+    }
+
     /// Generate a new part ID
     pub fn next_part_id(&mut self) -> ModulePartId {
         let id = self.next_part_id;
