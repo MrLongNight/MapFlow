@@ -245,29 +245,23 @@ impl Default for NodeLinkData {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Default)]
 pub enum LinkMode {
+    #[default]
     Off,
     Master,
     Slave,
 }
 
-impl Default for LinkMode {
-    fn default() -> Self {
-        Self::Off
-    }
-}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Default)]
 pub enum LinkBehavior {
+    #[default]
     SameAsMaster,
     Inverted,
 }
 
-impl Default for LinkBehavior {
-    fn default() -> Self {
-        Self::SameAsMaster
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleSocket {
@@ -851,9 +845,9 @@ impl MeshType {
                 // For Bezier surface, create a grid and warp it based on control points
                 // For now, use a simple grid as a placeholder until full Bezier implementation
                 if control_points.len() >= 4 {
-                    let mesh = Mesh::create_grid(8, 8);
+                    
                     // TODO: Implement proper Bezier surface interpolation
-                    mesh
+                    Mesh::create_grid(8, 8)
                 } else {
                     Mesh::quad()
                 }
@@ -885,7 +879,7 @@ impl MeshType {
                             .push(MeshVertex::new(Vec2::new(v.0, v.1), Vec2::new(v.0, v.1)));
                     }
 
-                    let mut indices = Vec::with_capacity((vertices.len() * 3) as usize);
+                    let mut indices = Vec::with_capacity(((vertices.len() * 3)));
                     for i in 0..vertices.len() {
                         indices.push(0); // Center
                         indices.push((i + 1) as u16);
