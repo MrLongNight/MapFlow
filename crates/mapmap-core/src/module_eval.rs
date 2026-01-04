@@ -577,6 +577,14 @@ impl ModuleEvaluator {
                 // Shortcut triggers need keyboard input
                 vec![0.0]
             }
+            TriggerType::MidiClock { .. } => {
+                // MIDI clock triggers depend on external clock ticks
+                vec![0.0]
+            }
+            TriggerType::AbletonLink { .. } => {
+                // Ableton Link triggers depend on shared session state
+                vec![0.0]
+            }
         }
     }
 

@@ -490,6 +490,22 @@ impl ModuleCanvas {
                                                     ));
                                                 });
                                             }
+                                            TriggerType::MidiClock { divider } => {
+                                                ui.label("⏱️ MIDI Clock");
+                                                ui.label("Triggers on MIDI clock ticks / beats.");
+                                                ui.add(
+                                                    egui::Slider::new(divider, 1..=16)
+                                                        .text("Beat Divider"),
+                                                );
+                                            }
+                                            TriggerType::AbletonLink { quantum } => {
+                                                ui.label("🔗 Ableton Link");
+                                                ui.label("Syncs to shared Link timeline.");
+                                                ui.add(
+                                                    egui::Slider::new(quantum, 1.0..=16.0)
+                                                        .text("Quantum (beats)"),
+                                                );
+                                            }
                                         }
                                     }
                                     ModulePartType::Source(source) => {
@@ -1639,7 +1655,7 @@ impl ModuleCanvas {
                     let show_all = filter.is_empty();
 
                     // === TRIGGER SUBMENU ===
-                    if show_all || "trigger audio fft beat midi osc keyboard shortcut random timer".contains(&filter) {
+                    if show_all || "trigger audio fft beat midi osc keyboard shortcut random timer link ableton clock".contains(&filter) {
                         ui.menu_button("⚡ Trigger", |ui| {
                             ui.set_min_width(180.0);
                             if show_all { ui.label(egui::RichText::new("Audio Analysis").weak()); }
@@ -1659,6 +1675,11 @@ impl ModuleCanvas {
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
+                            if (show_all || "midi clock".contains(&filter)) && ui.button("⏱️ MIDI Clock").clicked() {
+                                self.add_trigger_node(manager, TriggerType::MidiClock { divider: 1 });
+                                self.search_filter.clear();
+                                ui.close_menu();
+                            }
                             if (show_all || "osc".contains(&filter)) && ui.button("📡 OSC").clicked() {
                                 self.add_trigger_node(manager, TriggerType::Osc { address: "/trigger".to_string() });
                                 self.search_filter.clear();
@@ -1666,6 +1687,11 @@ impl ModuleCanvas {
                             }
                             if (show_all || "keyboard shortcut".contains(&filter)) && ui.button("⌨️ Shortcut").clicked() {
                                 self.add_trigger_node(manager, TriggerType::Shortcut { key_code: "Space".to_string(), modifiers: 0 });
+                                self.search_filter.clear();
+                                ui.close_menu();
+                            }
+                            if (show_all || "link ableton".contains(&filter)) && ui.button("🔗 Ableton Link").clicked() {
+                                self.add_trigger_node(manager, TriggerType::AbletonLink { quantum: 4.0 });
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -3306,8 +3332,10 @@ impl ModuleCanvas {
                     TriggerType::Random { .. } => "Random",
                     TriggerType::Fixed { .. } => "Fixed Timer",
                     TriggerType::Midi { .. } => "MIDI",
+                    TriggerType::MidiClock { .. } => "MIDI Clock",
                     TriggerType::Osc { .. } => "OSC",
                     TriggerType::Shortcut { .. } => "Shortcut",
+                    TriggerType::AbletonLink { .. } => "Ableton Link",
                 };
                 egui::ComboBox::from_id_source("trigger_type")
                     .selected_text(current)
@@ -3356,6 +3384,60 @@ impl ModuleCanvas {
                                 interval_ms: 1000,
                                 offset_ms: 0,
                             };
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(trigger_type, TriggerType::Midi { .. }),
+                                "MIDI",
+                            )
+                            .clicked()
+                        {
+                            *trigger_type = TriggerType::Midi {
+                                channel: 1,
+                                note: 60,
+                                device: String::new(),
+                            };
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(trigger_type, TriggerType::MidiClock { .. }),
+                                "MIDI Clock",
+                            )
+                            .clicked()
+                        {
+                            *trigger_type = TriggerType::MidiClock { divider: 1 };
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(trigger_type, TriggerType::Osc { .. }),
+                                "OSC",
+                            )
+                            .clicked()
+                        {
+                            *trigger_type = TriggerType::Osc {
+                                address: "/trigger".to_string(),
+                            };
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(trigger_type, TriggerType::Shortcut { .. }),
+                                "Shortcut",
+                            )
+                            .clicked()
+                        {
+                            *trigger_type = TriggerType::Shortcut {
+                                key_code: "Space".to_string(),
+                                modifiers: 0,
+                            };
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(trigger_type, TriggerType::AbletonLink { .. }),
+                                "Ableton Link",
+                            )
+                            .clicked()
+                        {
+                            *trigger_type = TriggerType::AbletonLink { quantum: 4.0 };
                         }
                     });
             }
@@ -4159,10 +4241,12 @@ impl ModuleCanvas {
                     TriggerType::AudioFFT { .. } => "Audio FFT",
                     TriggerType::Beat => "Beat",
                     TriggerType::Midi { .. } => "MIDI",
+                    TriggerType::MidiClock { .. } => "MIDI Clock",
                     TriggerType::Osc { .. } => "OSC",
                     TriggerType::Shortcut { .. } => "Shortcut",
                     TriggerType::Random { .. } => "Random",
                     TriggerType::Fixed { .. } => "Fixed Timer",
+                    TriggerType::AbletonLink { .. } => "Ableton Link",
                 };
                 (
                     Color32::from_rgb(60, 50, 70),
@@ -4327,8 +4411,10 @@ impl ModuleCanvas {
                 TriggerType::Random { .. } => "🎲 Random".to_string(),
                 TriggerType::Fixed { interval_ms, .. } => format!("⏱️ {}ms", interval_ms),
                 TriggerType::Midi { channel, note, .. } => format!("🎹 Ch{} N{}", channel, note),
+                TriggerType::MidiClock { divider } => format!("⏱️ MIDI ÷{}", divider),
                 TriggerType::Osc { address } => format!("📡 {}", address),
                 TriggerType::Shortcut { key_code, .. } => format!("⌨️ {}", key_code),
+                TriggerType::AbletonLink { quantum } => format!("🔗 Q{:.1}", quantum),
                 TriggerType::Beat => "🥁 Beat".to_string(),
             },
             ModulePartType::Source(source_type) => match source_type {

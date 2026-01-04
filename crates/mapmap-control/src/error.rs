@@ -42,6 +42,10 @@ pub enum ControlError {
 
     #[error("Invalid message: {0}")]
     InvalidMessage(String),
+
+    #[cfg(feature = "link")]
+    #[error("Ableton Link error: {0}")]
+    LinkError(String),
 }
 
 /// Result type for control operations

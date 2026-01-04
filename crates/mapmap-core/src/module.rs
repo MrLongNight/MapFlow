@@ -463,6 +463,26 @@ pub enum TriggerType {
     },
     /// Beat detection (legacy)
     Beat,
+    /// MIDI clock trigger (24 PPQ derived beat)
+    MidiClock {
+        /// Divide pulses to trigger every Nth beat
+        #[serde(default = "default_clock_divider")]
+        divider: u8,
+    },
+    /// Ableton Link tempo/phase trigger
+    AbletonLink {
+        /// Quantum size in beats
+        #[serde(default = "default_link_quantum")]
+        quantum: f32,
+    },
+}
+
+fn default_clock_divider() -> u8 {
+    1
+}
+
+fn default_link_quantum() -> f32 {
+    4.0
 }
 
 /// Audio frequency bands for FFT trigger

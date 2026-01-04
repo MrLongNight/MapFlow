@@ -238,6 +238,7 @@
   - ✅ Simplified OSC-Mapping (HashMap) - Legacy Learn Mode removed
   - ✅ UI: OSC-Server-Status und Port-Konfiguration implementiert (mit `imgui`)
   - ✅ Default-OSC-Port: 8000 (konfigurierbar)
+  - 🟡 Neue Trigger-Nodes: Ableton Link (Tempo/Phase) & MIDI Clock (24 PPQ Divider) – Basis über `ableton-link-rs`
 
 - ⬜ **MIDI-System (LOW PRIORITY)** (`mapmap-control/src/midi/`) - FULLY WIRED 2025-12-27
   - ✅ MIDI-Input (`midi/input.rs`)
@@ -341,6 +342,7 @@
   - ✅ Multi-select, Mini-map, Auto-layout, Search popup
   - ✅ Undo/Redo, Node Inspector Dropdowns
   - ✅ "Add Node" Menu: Unified dropdown with search/filter (COMPLETED 2025-12-29)
+  - 🟡 Neue Trigger-Nodes: MIDI Clock & Ableton Link (Tempo/Phase Sync)
   - ⬜ Resize Drag Interaction (Handle vorhanden, Drag-Logik fehlt)
   - ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
   - ⬜ MIDI/OSC Device Selectors
