@@ -154,6 +154,9 @@ impl App {
     /// Creates a new `App`.
     async fn new(event_loop: &EventLoop<()>) -> Result<Self> {
         let backend = WgpuBackend::new().await?;
+        
+        // Version marker to confirm correct build is running
+        tracing::info!(">>> BUILD VERSION: 2026-01-04-FIX-RENDER-CHECK <<<");
 
         // Initialize renderers
         let texture_pool = TexturePool::new(backend.device.clone());
