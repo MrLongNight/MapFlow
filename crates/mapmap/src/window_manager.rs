@@ -88,6 +88,11 @@ impl WindowManager {
 
         let window = Arc::new(window_builder.build(event_loop)?);
 
+        // Re-apply icon explicitly to be sure
+        if let Some(icon) = load_app_icon() {
+            window.set_window_icon(Some(icon));
+        }
+
         let window_id = window.id();
         let output_id: OutputId = 0; // Reserved ID for the main window
 
@@ -155,6 +160,11 @@ impl WindowManager {
                 })
                 .build(event_loop)?,
         );
+
+        // Re-apply icon explicitly to be sure
+        if let Some(icon) = load_app_icon() {
+            window.set_window_icon(Some(icon));
+        }
 
         let window_id_winit = window.id();
 
@@ -260,6 +270,11 @@ impl WindowManager {
 
         // Build the window
         let window = Arc::new(window_builder.build(event_loop)?);
+
+        // Re-apply icon explicitly to be sure
+        if let Some(icon) = load_app_icon() {
+            window.set_window_icon(Some(icon));
+        }
 
         // Hide cursor if requested
         window.set_cursor_visible(!hide_cursor);
@@ -397,13 +412,14 @@ fn load_app_icon() -> Option<winit::window::Icon> {
                 Ok(img) => {
                     let rgba = img.to_rgba8();
                     let (width, height) = rgba.dimensions();
+                    tracing::info!("Found icon at {:?} ({}x{})", path, width, height);
                     match winit::window::Icon::from_rgba(rgba.into_raw(), width, height) {
                         Ok(icon) => {
-                            tracing::info!("Loaded app icon from {:?}", path);
+                            tracing::info!("Successfully created winit icon from {:?}", path);
                             return Some(icon);
                         }
                         Err(e) => {
-                            tracing::warn!("Failed to create icon from {:?}: {}", path, e);
+                            tracing::warn!("Failed to create winit icon from {:?}: {}", path, e);
                         }
                     }
                 }

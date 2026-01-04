@@ -2552,17 +2552,14 @@ impl App {
                                 &op.mesh.to_mesh(),
                             );
                         
-                        // LOGGING: Check mesh and opacity
-                        static mut LAST_DRAW_LOG: u64 = 0;
-                        let now_ms = (std::time::Instant::now().elapsed().as_millis()) as u64;
-                        unsafe {
-                            if now_ms > LAST_DRAW_LOG + 1000 {
-                                LAST_DRAW_LOG = now_ms;
+                        // LOGGING: Check mesh and opacity (ROBUST)
+                        static DRAW_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                        let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        if count % 120 == 0 {
                                 info!("Render: Drawing Mesh for output {}", output_id);
                                 info!("  -> index_count: {}", index_count);
                                 info!("  -> opacity: {}", op.opacity);
                                 info!("  -> layer_part_id: {}", op.layer_part_id);
-                            }
                         }
 
                         let transform = glam::Mat4::IDENTITY;
@@ -2601,7 +2598,12 @@ impl App {
                             );
                         }
                     }
-                }
+                } else {
+                         static MISSING_VIEW: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                         if MISSING_VIEW.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 120 == 0 {
+                              tracing::warn!("Render: No effective view for output {} (Texture logic failed)", output_id);
+                         }
+                    }
             } else {
                 // No op for this output - Clear to Black
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
