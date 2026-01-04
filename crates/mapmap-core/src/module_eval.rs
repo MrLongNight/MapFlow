@@ -78,7 +78,6 @@ struct ProcessingChain {
     source_id: Option<ModulePartId>,
     effects: Vec<ModulizerType>,
     masks: Vec<MaskType>,
-    override_mesh: Option<MeshType>,
 }
 
 /// Module graph evaluator
@@ -206,14 +205,11 @@ impl ModuleEvaluator {
                                     // Trace back from Layer to find Source chain
                                     let chain = self.trace_chain(module, layer_part.id);
 
-                                    // Use override mesh from Mesh Node if present, otherwise use Layer's internal mesh
-                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
-
                                     result.render_ops.push(RenderOp {
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
-                                        mesh: final_mesh,
+                                        mesh: mesh.clone(),
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
@@ -221,27 +217,8 @@ impl ModuleEvaluator {
                                         masks: chain.masks,
                                     });
                                 }
-                                LayerType::Group {
-                                    opacity,
-                                    blend_mode,
-                                    mesh,
-                                    ..
-                                } => {
-                                    // Groups function similarly to Single layers for rendering context
-                                    let chain = self.trace_chain(module, layer_part.id);
-                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
-
-                                    result.render_ops.push(RenderOp {
-                                        output_part_id: part.id,
-                                        output_type: output_type.clone(),
-                                        layer_part_id: layer_part.id,
-                                        mesh: final_mesh,
-                                        opacity: *opacity * link_opacity,
-                                        blend_mode: *blend_mode,
-                                        source_part_id: chain.source_id,
-                                        effects: chain.effects,
-                                        masks: chain.masks,
-                                    });
+                                LayerType::Group { .. } => {
+                                    // TODO: Handle groups
                                 }
                                 LayerType::All { .. } => {
                                     // TODO: Handle global layers (all)
@@ -260,7 +237,6 @@ impl ModuleEvaluator {
     fn trace_chain(&self, module: &MapFlowModule, start_node_id: ModulePartId) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
-        let mut override_mesh = None;
         let mut source_id = None;
         let mut current_id = start_node_id;
 
@@ -281,14 +257,6 @@ impl ModuleEvaluator {
                             masks.insert(0, mask_type.clone());
                             current_id = part.id;
                         }
-                        ModulePartType::Mesh(mesh_type) => {
-                            // If we encounter a mesh node, it overrides the layer's mesh
-                            // We capture the mesh and continue tracing upstream (input 0)
-                            if override_mesh.is_none() {
-                                override_mesh = Some(mesh_type.clone());
-                            }
-                            current_id = part.id;
-                        }
                         _ => break, // Hit something else (e.g. Trigger), chain ends
                     }
                 } else {
@@ -303,7 +271,6 @@ impl ModuleEvaluator {
             source_id,
             effects,
             masks,
-            override_mesh,
         }
     }
 
