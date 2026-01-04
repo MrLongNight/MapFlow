@@ -68,7 +68,7 @@ jobs:
   # Build and test on Ubuntu with audio support
   build-and-test:
     name: Build & Test (Ubuntu with Audio)
-    runs-on: ubuntu-24. 04
+    runs-on: ubuntu-latest
     # Use a newer toolchain for building (resolver for dependencies that require newer Cargo)
     env:
       RUST_TOOLCHAIN: stable
