@@ -1,7 +1,7 @@
 name: "CI-01: Build&Test"
 
 on:
-  push: 
+  push:  
     branches: [ "main" ]
   pull_request: 
     branches: [ "main" ]
@@ -12,14 +12,14 @@ on:
         required: false
         default: 'false'
         type: choice
-        options:
+        options: 
           - 'true'
           - 'false'
 
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
-  RUST_BACKTRACE:  1
+  RUST_BACKTRACE:   1
   # Projekt-MS RUNTIME-Vorgabe (MSRV)
   RUST_TOOLCHAIN: stable
 
@@ -68,16 +68,16 @@ jobs:
   # Build and test on Ubuntu with audio support
   build-and-test:
     name: Build & Test (Ubuntu with Audio)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24. 04
     # Use a newer toolchain for building (resolver for dependencies that require newer Cargo)
     env:
       RUST_TOOLCHAIN: stable
     permissions:
-      contents:  read
+      contents: read
 
     steps:
     - name: Configure Git
-      run:  git config --global --add safe. directory "*"
+      run: git config --global --add safe.directory "*"
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
@@ -131,13 +131,13 @@ jobs:
 
     - name: Install NDI SDK
       run: |
-        wget https://downloads.ndi. tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
         tar xzf Install_NDI_SDK_v5_Linux.tar. gz
-        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo ":: warning::NDI SDK installation may require manual acceptance"
+        yes | sudo ./Install_NDI_SDK_v5_Linux. sh || echo "::  warning:: NDI SDK installation may require manual acceptance"
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
         echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
 
-    - name: Run FFmpeg setup script
+    - name:  Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
     - name:  Verify installations
@@ -153,14 +153,14 @@ jobs:
     - name: Build & Test (Release)
       env:
         RUST_BACKTRACE: full
-      run:  |
+      run: |
         cargo build --release --verbose --all-features
 
     - name: Run tests (Release)
-      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      if: ${{ github.event. inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
-      run: cargo test --release --workspace --verbose --all-features
+      run:  cargo test --release --workspace --verbose --all-features
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
@@ -178,21 +178,21 @@ jobs:
 
   # Build on Windows (without FFmpeg - ffmpeg-next 6.x incompatible with FFmpeg 7.x)
   build-windows:
-    name: Build (Windows)
+    name:  Build (Windows)
     runs-on: windows-latest
     env:
       RUST_TOOLCHAIN: stable
     permissions: 
       contents: read
 
-    steps: 
+    steps:  
     - name: Configure Git
       run: git config --global core.autocrlf false
     - uses: actions/checkout@v4
 
-    - name: Set up Rust toolchain
+    - name:  Set up Rust toolchain
       uses: actions-rs/toolchain@v1
-      with:
+      with: 
         toolchain: stable
         profile: minimal
         override: true
@@ -206,14 +206,14 @@ jobs:
     - name: Build (Release, Windows - without NDI)
       env:
         RUST_BACKTRACE: full
-      run: |
+      run:  |
         cargo build --release --verbose --no-default-features --features "audio"
 
     - name: Run tests (Release, without NDI)
       if: ${{ github.event.inputs.skip_tests != 'true' }}
-      env: 
+      env:  
         RUST_BACKTRACE: full
-      run: cargo test --release --workspace --verbose --no-default-features --features audio
+      run:  cargo test --release --workspace --verbose --no-default-features --features audio
 
     - name: Upload artifacts (Windows binary)
       uses: actions/upload-artifact@v4
@@ -231,7 +231,7 @@ jobs:
       RUST_TOOLCHAIN: stable
     permissions:
       security-events: write
-      contents:  read
+      contents: read
       checks: write
 
     steps:
@@ -239,12 +239,12 @@ jobs:
       run: git config --global --add safe.directory "*"
     - uses: actions/checkout@v4
 
-    - name:  Set up Rust toolchain
+    - name:   Set up Rust toolchain
       uses: actions-rs/toolchain@v1
-      with: 
+      with:  
         toolchain: stable
         profile: minimal
-        override: true
+        override:  true
 
     - name: Run cargo audit
       uses: rustsec/audit-check@v2
@@ -258,7 +258,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     permissions:
-      contents:  read
+      contents: read
 
     steps:
     - name: Fail if any job failed or was cancelled
@@ -267,14 +267,14 @@ jobs:
         # Check results of dependent jobs and fail if any are not "success"
         # Note: build-windows is included but may have issues with FFmpeg - we log but don't fail
         if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
-          echo "::error::One or more required jobs failed or were cancelled."
+          echo "::error:: One or more required jobs failed or were cancelled."
           echo "quality: ${{ needs.quality.result }}"
           echo "build-and-test: ${{ needs.build-and-test.result }}"
-          echo "build-windows: ${{ needs.build-windows.result }}"
+          echo "build-windows: ${{ needs.build-windows. result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
-        if [ "${{ needs. build-windows.result }}" != "success" ]; then
+        if [ "${{ needs.build-windows.result }}" != "success" ]; then
           echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All CI checks passed successfully"
