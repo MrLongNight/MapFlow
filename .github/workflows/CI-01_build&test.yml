@@ -132,7 +132,7 @@ jobs:
     - name: Install NDI SDK
       run: |
         wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
-        tar xzf Install_NDI_SDK_v5_Linux.tar. gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
         yes | sudo ./Install_NDI_SDK_v5_Linux. sh || echo "::  warning:: NDI SDK installation may require manual acceptance"
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
         echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV

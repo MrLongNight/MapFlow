@@ -106,7 +106,8 @@ pub struct ModuleCanvas {
     /// Whether diagnostic popup is shown
     show_diagnostics: bool,
     /// Active Media Info (PartID -> Info)
-    pub active_media_info: std::collections::HashMap<mapmap_core::module::ModulePartId, crate::MediaInfo>,
+    pub active_media_info:
+        std::collections::HashMap<mapmap_core::module::ModulePartId, crate::MediaInfo>,
 }
 
 /// Live audio data for trigger nodes
@@ -271,12 +272,18 @@ impl ModuleCanvas {
             let mut global_fps = 60.0;
             for p in &module.parts {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { output_width, output_height, output_fps, .. }
-                ) = &p.part_type {
-                     global_width = *output_width;
-                     global_height = *output_height;
-                     global_fps = *output_fps;
-                     break;
+                    mapmap_core::module::OutputType::Projector {
+                        output_width,
+                        output_height,
+                        output_fps,
+                        ..
+                    },
+                ) = &p.part_type
+                {
+                    global_width = *output_width;
+                    global_height = *output_height;
+                    global_fps = *output_fps;
+                    break;
                 }
             }
 
@@ -543,19 +550,19 @@ impl ModuleCanvas {
                                                     ui.add_space(5.0);
                                                     let size = Vec2::new(240.0, 135.0); // 16:9 preview
                                                     ui.image((*tex_id, size));
-                                                    
+
                                                     // Show Media Info & Warnings
                                                     if let Some(info) = self.active_media_info.get(&part_id) {
                                                         ui.vertical(|ui| {
                                                             ui.label(egui::RichText::new(format!("{}x{} @ {:.2} fps", info.width, info.height, info.fps)).size(11.0).weak());
-                                                            
+
                                                             // Check against Projector Output
                                                             if let Some(target_w) = target_width {
                                                                 if *target_w > 0 && *target_w != info.width {
                                                                      ui.label(egui::RichText::new(format!("⚠ Scaling to {}x{}", target_w, target_height.unwrap_or(0))).color(egui::Color32::YELLOW).size(11.0));
                                                                 }
                                                             }
-                                                            
+
                                                             // Check against Global Output
                                                             if global_width > 0 && (info.width != global_width || info.height != global_height) {
                                                                 ui.label(egui::RichText::new(format!("⚠ Mismatch Output ({}x{})", global_width, global_height)).color(egui::Color32::from_rgb(255, 165, 0)).size(11.0));
@@ -688,11 +695,11 @@ impl ModuleCanvas {
                                                         ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
                                                         ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
                                                     });
-                                                    
+
                                                     // === TARGET SETTINGS ===
                                                     ui.separator();
                                                     ui.label("🎯 Target Settings (Override)");
-                                                    
+
                                                     // Width Override
                                                     ui.horizontal(|ui| {
                                                         let mut enabled = target_width.is_some();
@@ -1365,7 +1372,7 @@ impl ModuleCanvas {
 
                                                 ui.separator();
                                                 ui.label("📏 Global Output Settings:");
-                                                
+
                                                 ui.horizontal(|ui| {
                                                     ui.label("Resolution:");
                                                     ui.add(egui::DragValue::new(output_width).speed(1.0).prefix("W: "));
