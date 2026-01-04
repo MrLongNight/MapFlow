@@ -2498,14 +2498,11 @@ impl App {
         } else {
             // === Node-Based Rendering Pipeline ===
 
-            // 1. Find the RenderOp for this output
-            let target_op = self.render_ops.iter().find(|op| {
-                if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
-                    *id == output_id
-                } else {
-                    false
-                }
-            });
+            // 1. Find the RenderOp for this output (use output_part_id, not Projector id)
+            let target_op = self
+                .render_ops
+                .iter()
+                .find(|op| op.output_part_id == output_id);
 
             if let Some(op) = target_op {
                 // Determine source texture view
