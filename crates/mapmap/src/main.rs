@@ -2551,6 +2551,20 @@ impl App {
                                 op.layer_part_id,
                                 &op.mesh.to_mesh(),
                             );
+                        
+                        // LOGGING: Check mesh and opacity
+                        static mut LAST_DRAW_LOG: u64 = 0;
+                        let now_ms = (std::time::Instant::now().elapsed().as_millis()) as u64;
+                        unsafe {
+                            if now_ms > LAST_DRAW_LOG + 1000 {
+                                LAST_DRAW_LOG = now_ms;
+                                info!("Render: Drawing Mesh for output {}", output_id);
+                                info!("  -> index_count: {}", index_count);
+                                info!("  -> opacity: {}", op.opacity);
+                                info!("  -> layer_part_id: {}", op.layer_part_id);
+                            }
+                        }
+
                         let transform = glam::Mat4::IDENTITY;
                         let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
                             &self.backend.queue,
