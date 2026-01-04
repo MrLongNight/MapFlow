@@ -1,7 +1,5 @@
-# MapFlow
-
 <div align="center">
-  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.webp" alt="MapFlow Logo" width="200"/>
+  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.webp" alt="MapFlow Logo" width="400"/>
 </div>
 
 <!-- Dynamic CI/CD Status Badges -->
@@ -9,6 +7,8 @@
 [![Security Scan](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml)
 [![Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-09_create-releases.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-09_create-releases.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+# MapFlow
 
 > **Modern, High-Performance Projection Mapping Suite**
 
