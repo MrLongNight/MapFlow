@@ -393,6 +393,13 @@ impl WindowManager {
     pub fn get_output_id_from_window_id(&self, window_id: WindowId) -> Option<OutputId> {
         self.window_id_map.get(&window_id).copied()
     }
+
+    /// Requests a redraw for all managed windows.
+    pub fn request_redraw_all(&self) {
+        for window_context in self.windows.values() {
+            window_context.window.request_redraw();
+        }
+    }
 }
 
 /// Helper function to load the application icon.
