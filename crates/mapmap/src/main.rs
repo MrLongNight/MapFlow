@@ -1812,7 +1812,7 @@ impl App {
                         self.ui_state.icon_manager.as_ref(),
                         Some(&mut self.recent_effect_configs),
                     );
-                    
+
                     // Render Oscillator Panel
                     self.ui_state.oscillator_panel.render(
                         ctx,
@@ -1961,7 +1961,7 @@ impl App {
                                         })
                                     })
                                     .collect();
-                                
+
                                 self.ui_state.preview_panel.update_outputs(output_infos);
                                 self.ui_state.preview_panel.show(ui);
                             });
@@ -2105,7 +2105,7 @@ impl App {
                                 .iter()
                                 .map(|o| (o.id, o.name.clone()))
                                 .collect();
-                            
+
                             self.ui_state.module_canvas.show(
                                 ui,
                                 &mut self.state.module_manager,
@@ -2203,9 +2203,9 @@ impl App {
                                                 self.state.dirty = true;
                                             }
                                         });
-                                        
+
                                         ui.label("💡 Each output can be assigned to a different screen/projector");
-                                        
+
                                         // List current outputs if any
                                         let output_count = self.state.output_manager.outputs().len();
                                         if output_count > 0 {
