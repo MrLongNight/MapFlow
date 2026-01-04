@@ -2469,19 +2469,125 @@ impl App {
                         }
                     }
 
-                    // --- 2. Advanced Output OR Mesh Rendering ---
+                    // --- 2. Combined Mesh & Output Processing Pipeline ---
+                    // Pipeline: Source -> [Mesh Warp] -> (Intermediate) -> [Edge Blend/Color] -> Surface
+
                     let output_config_opt = self.state.output_manager.get_output(output_id);
                     let use_edge_blend =
                         output_config_opt.is_some() && self.edge_blend_renderer.is_some();
                     let use_color_calib =
                         output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+                    
+                    let needs_post_processing = use_edge_blend || use_color_calib;
 
-                    if use_edge_blend || use_color_calib {
-                        // === ADVANCED RENDERING PIPELINE ===
-                        let need_temp = use_edge_blend && use_color_calib;
-                        let mut temp_view_opt: Option<wgpu::TextureView> = None;
+                    // A. Prepare Mesh Target
+                    // If we need post-processing (Edge Blend/Color), Mesh writes to PingPong1.
+                    // Otherwise, Mesh writes directly to the Surface.
+                    let mesh_target_view_ref;
+                    let mesh_output_tex_name = &self.layer_ping_pong[1]; // Use secondary ping-pong for mesh output
+                    
+                    // Scope to keep view borrow short
+                    let mut _mesh_intermediate_view: Option<wgpu::TextureView> = None;
 
-                        if need_temp {
+                    if needs_post_processing {
+                        let width = window_context.surface_config.width;
+                        let height = window_context.surface_config.height;
+                        
+                        // Resize intermediate texture to match output resolution
+                        self.texture_pool.resize_if_needed(mesh_output_tex_name, width, height);
+                        
+                        _mesh_intermediate_view = Some(self.texture_pool.get_view(mesh_output_tex_name));
+                        mesh_target_view_ref = _mesh_intermediate_view.as_ref().unwrap();
+                    } else {
+                        mesh_target_view_ref = &view;
+                    }
+
+                    // B. Clear Mesh Target
+                    {
+                        let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Mesh Target Clear Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: mesh_target_view_ref,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: None,
+                            occlusion_query_set: None,
+                            timestamp_writes: None,
+                        });
+                    }
+
+                    // C. Render Mesh (Warping)
+                    {
+                        self.mesh_renderer.begin_frame();
+                        let (vertex_buffer, index_buffer, index_count) =
+                            self.mesh_buffer_cache.get_buffers(
+                                &self.backend.device,
+                                op.layer_part_id,
+                                &op.mesh.to_mesh(),
+                            );
+                        
+                        // LOGGING: Check mesh and opacity (ROBUST)
+                        static DRAW_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                        let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        if count % 120 == 0 {
+                                info!("Render: Drawing Mesh for output {}", output_id);
+                                info!("  -> index_count: {}", index_count);
+                                info!("  -> opacity: {}", op.opacity);
+                                info!("  -> layer_part_id: {}", op.layer_part_id);
+                                info!("  -> pipeline: mesh -> {}", if needs_post_processing { "post-process" } else { "surface" });
+                        }
+
+                        let transform = glam::Mat4::IDENTITY;
+                        let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
+                            &self.backend.queue,
+                            transform,
+                            op.opacity,
+                        );
+                        let texture_bind_group =
+                            self.mesh_renderer.create_texture_bind_group(final_view);
+
+                        {
+                            let mut render_pass =
+                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: Some("Mesh Render Pass"),
+                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                        view: mesh_target_view_ref,
+                                        resolve_target: None,
+                                        ops: wgpu::Operations {
+                                            load: wgpu::LoadOp::Load,
+                                            store: wgpu::StoreOp::Store,
+                                        },
+                                    })],
+                                    depth_stencil_attachment: None,
+                                    occlusion_query_set: None,
+                                    timestamp_writes: None,
+                                });
+                            self.mesh_renderer.draw(
+                                &mut render_pass,
+                                vertex_buffer,
+                                index_buffer,
+                                index_count,
+                                &uniform_bind_group,
+                                &texture_bind_group,
+                                true,
+                            );
+                        }
+                    }
+
+                    // D. Post-Processing (Edge Blend / Color Calibration)
+                    if needs_post_processing {
+                        // Input for post-processing is the result of the mesh render
+                        let post_input_view = mesh_target_view_ref;
+                        
+                        // Setup intermediate for EdgeBlend -> ColorCalib chain if both are active
+                        let need_double_pass = use_edge_blend && use_color_calib;
+                        let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
+
+                        if need_double_pass {
                             let width = window_context.surface_config.width;
                             let height = window_context.surface_config.height;
                             let recreate =
@@ -2497,7 +2603,7 @@ impl App {
                                         .device
                                         .create_texture(&wgpu::TextureDescriptor {
                                             label: Some(&format!(
-                                                "Output {} Temp Texture",
+                                                "Output {} Blend Temp Texture",
                                                 output_id
                                             )),
                                             size: wgpu::Extent3d {
@@ -2515,7 +2621,7 @@ impl App {
                                         });
                                 self.output_temp_textures.insert(output_id, texture);
                             }
-                            temp_view_opt = Some(
+                            blend_output_temp_view_opt = Some(
                                 self.output_temp_textures
                                     .get(&output_id)
                                     .unwrap()
@@ -2527,12 +2633,14 @@ impl App {
 
                         if use_edge_blend {
                             let renderer = self.edge_blend_renderer.as_ref().unwrap();
+                            // If Color Calib follows, render to BlendTemp. Else render to Surface.
                             let target_view = if use_color_calib {
-                                temp_view_opt.as_ref().unwrap()
+                                blend_output_temp_view_opt.as_ref().unwrap()
                             } else {
                                 &view
                             };
-                            let bind_group = renderer.create_texture_bind_group(final_view);
+                            
+                            let bind_group = renderer.create_texture_bind_group(post_input_view);
                             let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
                             let uniform_bind_group =
                                 renderer.create_uniform_bind_group(&uniform_buffer);
@@ -2557,12 +2665,16 @@ impl App {
 
                         if use_color_calib {
                             let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                            // Input is BlendTemp (if Blend ran) or MeshOutput (if Blend didn't run)
                             let input_view_for_cc = if use_edge_blend {
-                                temp_view_opt.as_ref().unwrap()
+                                blend_output_temp_view_opt.as_ref().unwrap()
                             } else {
-                                final_view
+                                post_input_view
                             };
+                            
+                            // Output is always Surface
                             let target_view = &view;
+                            
                             let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
                             let uniform_buffer =
                                 renderer.create_uniform_buffer(&config.color_calibration);
@@ -2585,77 +2697,6 @@ impl App {
                                     timestamp_writes: None,
                                 });
                             renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
-                        }
-                    } else {
-                        // === MESH RENDERING (Default/Keystone) ===
-                        {
-                            let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                label: Some("Output Clear Pass"),
-                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: &view,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                        store: wgpu::StoreOp::Store,
-                                    },
-                                })],
-                                depth_stencil_attachment: None,
-                                occlusion_query_set: None,
-                                timestamp_writes: None,
-                            });
-                        }
-                        self.mesh_renderer.begin_frame();
-                        let (vertex_buffer, index_buffer, index_count) =
-                            self.mesh_buffer_cache.get_buffers(
-                                &self.backend.device,
-                                op.layer_part_id,
-                                &op.mesh.to_mesh(),
-                            );
-                        
-                        // LOGGING: Check mesh and opacity (ROBUST)
-                        static DRAW_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-                        let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        if count % 120 == 0 {
-                                info!("Render: Drawing Mesh for output {}", output_id);
-                                info!("  -> index_count: {}", index_count);
-                                info!("  -> opacity: {}", op.opacity);
-                                info!("  -> layer_part_id: {}", op.layer_part_id);
-                        }
-
-                        let transform = glam::Mat4::IDENTITY;
-                        let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
-                            &self.backend.queue,
-                            transform,
-                            op.opacity,
-                        );
-                        let texture_bind_group =
-                            self.mesh_renderer.create_texture_bind_group(final_view);
-
-                        {
-                            let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Mesh Render Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: &view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load,
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    occlusion_query_set: None,
-                                    timestamp_writes: None,
-                                });
-                            self.mesh_renderer.draw(
-                                &mut render_pass,
-                                vertex_buffer,
-                                index_buffer,
-                                index_count,
-                                &uniform_bind_group,
-                                &texture_bind_group,
-                                true,
-                            );
                         }
                     }
                 } else {
