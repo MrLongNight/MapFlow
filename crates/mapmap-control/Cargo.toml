@@ -14,6 +14,9 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 
+# Ableton Link (optional)
+ableton-link-rs = { workspace = true, optional = true }
+
 # MIDI (optional)
 midir = { workspace = true, optional = true }
 
@@ -35,5 +38,6 @@ http = { version = "1.1", optional = true }
 default = ["midi", "osc"]
 midi = ["midir"]
 osc = ["rosc"]
+link = ["ableton-link-rs"]
 http-api = ["axum", "tokio", "tower", "tower-http", "futures", "http"]
-full = ["midi", "osc", "http-api"]
+full = ["midi", "osc", "http-api", "link"]

@@ -89,6 +89,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "1.0"
 anyhow = "1.0"
 
+# Sync / Link
+ableton-link-rs = "0.1.2"
+
 # Testing
 proptest = "1.4"
 criterion = "0.5"
