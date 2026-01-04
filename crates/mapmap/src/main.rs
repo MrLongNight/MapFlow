@@ -291,6 +291,8 @@ impl App {
             warn!("Could not determine data local directory for autosave.");
         }
 
+
+
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
             Ok(None) => vec![],
