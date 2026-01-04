@@ -1635,6 +1635,11 @@ impl App {
 
     /// Update all media players and upload frames to texture pool
     fn update_media_players(&mut self, dt: f32) {
+        static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+            std::sync::atomic::AtomicU32::new(0);
+        let log_this_frame =
+            FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 60 == 0;
+
         for (id, player) in &mut self.media_players {
             // Update player logic
             if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
@@ -1642,6 +1647,15 @@ impl App {
 
                 // Upload to GPU if data is on CPU
                 if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
+                    if log_this_frame {
+                        tracing::info!(
+                            "Frame upload: part_id={}, size={}x{}, data_len={}",
+                            id,
+                            frame.format.width,
+                            frame.format.height,
+                            data.len()
+                        );
+                    }
                     self.texture_pool.upload_data(
                         &self.backend.queue,
                         &tex_name,
@@ -1650,6 +1664,8 @@ impl App {
                         frame.format.height,
                     );
                 }
+            } else if log_this_frame {
+                tracing::warn!("Media player {} returned no frame", id);
             }
         }
     }
