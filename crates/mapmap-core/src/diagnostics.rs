@@ -45,7 +45,7 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
 
         if let (Some(src), Some(dst)) = (from_part, to_part) {
             // Check socket bounds
-            let (src_inputs, src_outputs) = src.compute_sockets();
+            let (_src_inputs, src_outputs) = src.compute_sockets();
             if conn.from_socket >= src_outputs.len() {
                 issues.push(ModuleIssue {
                     severity: IssueSeverity::Error,
@@ -74,9 +74,9 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
                 // Verify Layer state
                 // e.g. check if mesh looks reasonable (not all zeros?)
                 match layer_type {
-                    crate::module::LayerType::Single { mesh, .. }
-                    | crate::module::LayerType::Group { mesh, .. } => {
-                        // Basic Check?
+                    crate::module::LayerType::Single { .. }
+                    | crate::module::LayerType::Group { .. } => {
+                        // Basic mesh validation could go here
                     }
                     crate::module::LayerType::All { .. } => {
                         // Master Layer
