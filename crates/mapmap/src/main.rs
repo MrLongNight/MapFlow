@@ -25,7 +25,7 @@ use mapmap_mcp::{McpAction, McpServer};
 // Define McpAction locally or import if we move it to core later -> Removed local definition
 
 use crossbeam_channel::{unbounded, Receiver};
-use mapmap_core::module::ModulePartId;
+use mapmap_core::module::{ModulePartId, ModulePartType, SourceType};
 use mapmap_io::{load_project, save_project};
 use mapmap_media::player::{PlaybackCommand, VideoPlayer};
 use mapmap_render::{
@@ -1498,11 +1498,71 @@ impl App {
         Ok(())
     }
 
+    /// Synchronize media players with active source modules
+    fn sync_media_players(&mut self) {
+        let mut active_sources = std::collections::HashSet::new();
+
+        // Identify active media files
+        for module in self.state.module_manager.modules() {
+            for part in &module.parts {
+                if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &part.part_type {
+                    if !path.is_empty() {
+                        active_sources.insert(part.id);
+
+                        // Create player if not exists
+                        // Note: Using entry API would be cleaner but path update requires check
+                        if !self.media_players.contains_key(&part.id) {
+                            match mapmap_media::open_path(path) {
+                                Ok(mut player) => {
+                                    if let Err(e) = player.play() {
+                                        error!("Failed to start playback for source {}: {}", part.id, e);
+                                    }
+                                    self.media_players.insert(part.id, player);
+                                }
+                                Err(e) => {
+                                    error!("Failed to create video player for source {}: {}", part.id, e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cleanup removed players
+        self.media_players.retain(|id, _| active_sources.contains(id));
+    }
+
+    /// Update all media players and upload frames to texture pool
+    fn update_media_players(&mut self, dt: f32) {
+        for (id, player) in &mut self.media_players {
+            // Update player logic
+            if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
+                let tex_name = format!("part_{}", id);
+                
+                // Upload to GPU if data is on CPU
+                if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
+                    self.texture_pool.upload_data(
+                        &self.backend.queue,
+                        &tex_name,
+                        data,
+                        frame.format.width,
+                        frame.format.height
+                    );
+                }
+            }
+        }
+    }
+
     /// Renders a single frame for a given output.
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         let now = std::time::Instant::now();
         let delta_time = now.duration_since(self.last_update).as_secs_f32();
         self.last_update = now;
+
+        // --- Media Player Update ---
+        self.sync_media_players();
+        self.update_media_players(delta_time);
 
         // Calculate FPS with smoothing (rolling average of last 60 frames)
         let frame_time_ms = delta_time * 1000.0;
