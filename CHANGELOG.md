@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-02: fix: Remove build artifact files from repository (#156)
 - 2026-01-02: feat: Effect Chain Rendering with Configurable Parameters (#153)
 - 2026-01-02: fix: Complete mesh implementations and resolve layer ID collisions (#154)
-- 2026-01-01: feat(presets): Add NDI Source, NDI Output, Spout Source, Spout Output presets
+- 2026-01-02: feat(presets): Add NDI Source, NDI Output, Spout Source, Spout Output presets
+- 2026-01-04: fix(ci): Make NDI SDK dependency optional for CI builds without SDK (#179)
+- 2026-01-04: fix(core): automated Clippy fixes (redundant closures, unwrap_or_default)
+- 2026-01-04: fix(build): Fix grafton-ndi build paths for Linux CI
 - 2026-01-01: feat(presets): Increase node spacing (200→300px) and add missing output connections
 - 2026-01-01: feat(ui): Add category to node titles (e.g., "🎬 Source: Media File")
 - 2026-01-01: feat(ui): Add right-click context menu for nodes with Properties and Delete options

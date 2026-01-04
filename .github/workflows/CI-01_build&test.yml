@@ -157,13 +157,14 @@ jobs:
       env:
         RUST_BACKTRACE: full
       run: |
-        cargo build --release --verbose --all-features
+        cargo build --release --verbose --no-default-features --features "all-io"
 
     - name: Run tests (Release)
-      if: ${{ github.event. inputs.skip_tests != 'true' }}
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
-      run:  cargo test --release --workspace --verbose --all-features
+      # Exclude NDI feature for standard CI to avoid SDK path issues
+      run: cargo test --release --workspace --verbose --no-default-features --features "all-io"
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
