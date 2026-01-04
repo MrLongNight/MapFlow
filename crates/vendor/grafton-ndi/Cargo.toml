@@ -1,0 +1,21 @@
+[package]
+name = "grafton-ndi"
+version = "0.2.4"
+edition = "2021"
+build = "build.rs"
+authors = ["Grant Sparks <grant@grafton.ai>"]
+description = "Unofficial idiomatic Rust bindings for the NDI 6 SDK"
+license = "Apache-2.0"
+repository = "https://github.com/GrantSparks/grafton-ndi"
+homepage = "https://www.grafton.ai"
+categories = ["api-bindings"]
+keywords = ["ndi", "video", "audio", "network"]
+readme = "README.md"
+exclude = ["target/", ".gitignore", ".github/", "NDI_6_SDK.zip"]
+
+[dependencies]
+png = "0.17.13"
+
+[build-dependencies]
+bindgen = "0.69.4"
+lodepng = "3.10.2"

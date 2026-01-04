@@ -123,3 +123,6 @@ inherits = "release"
 # incompatibility warning for Rust 2024 never type fallback. This will be
 # resolved when rfd is updated to v0.15+ (requires libwayland-dev system package).
 # The warning does not affect functionality in current Rust versions.
+
+[patch.crates-io]
+grafton-ndi = { path = "crates/vendor/grafton-ndi" }
