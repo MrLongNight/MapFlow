@@ -3,9 +3,9 @@ name: "CI-01: Build&Test"
 on:
   push:  
     branches: [ "main" ]
-  pull_request: 
+  pull_request:  
     branches: [ "main" ]
-  workflow_dispatch: 
+  workflow_dispatch:  
     inputs:
       skip_tests:
         description: 'Skip tests (faster builds)'
@@ -19,22 +19,22 @@ on:
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
-  RUST_BACKTRACE:   1
+  RUST_BACKTRACE:    1
   # Projekt-MS RUNTIME-Vorgabe (MSRV)
   RUST_TOOLCHAIN: stable
 
 jobs:
   # Code quality checks
-  quality:
+  quality: 
     name: Code Quality (Format & Lint)
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
-    - name:  Configure Git
+    - name:   Configure Git
       run: git config --global --add safe.directory "*"
-    - uses: actions/checkout@v4
+    - uses:  actions/checkout@v4
 
     - name: Set up Rust toolchain
       uses: actions-rs/toolchain@v1
@@ -66,7 +66,7 @@ jobs:
       run: cargo clippy --workspace --all-features -- -D warnings
 
   # Build and test on Ubuntu with audio support
-  build-and-test:
+  build-and-test: 
     name: Build & Test (Ubuntu with Audio)
     runs-on: ubuntu-latest
     # Use a newer toolchain for building (resolver for dependencies that require newer Cargo)
@@ -76,7 +76,7 @@ jobs:
       contents: read
 
     steps:
-    - name: Configure Git
+    - name:  Configure Git
       run: git config --global --add safe.directory "*"
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
@@ -85,7 +85,7 @@ jobs:
         tool-cache: false
         android: true
         dotnet: true
-        haskell:  true
+        haskell:   true
         large-packages: true
         swap-storage: true
 
@@ -94,12 +94,12 @@ jobs:
     - name: Set up Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain:  stable
         profile: minimal
         override: true
         components: rustfmt, clippy
 
-    - name:  Rust Cache
+    - name:   Rust Cache
       uses: swatinem/rust-cache@v2
 
     - name: Install FFmpeg and system dependencies (Ubuntu)
@@ -131,16 +131,33 @@ jobs:
 
     - name: Install NDI SDK
       run: |
-        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
-        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
-        yes | sudo ./Install_NDI_SDK_v5_Linux. sh || echo "::  warning:: NDI SDK installation may require manual acceptance"
+        wget https://downloads.ndi. tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar. gz
+        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo ":: warning::NDI SDK installation may require manual acceptance"
+        
+        # Verschiebe NDI SDK in Verzeichnis ohne Leerzeichen
         if [ -d "NDI SDK for Linux" ]; then
-          mv "NDI SDK for Linux" "$HOME/"
+          sudo mv "NDI SDK for Linux" /usr/local/ndi_sdk
+          echo "✓ NDI SDK moved to /usr/local/ndi_sdk"
+        elif [ -d "/usr/local/NDI SDK for Linux" ]; then
+          sudo mv "/usr/local/NDI SDK for Linux" /usr/local/ndi_sdk
+          echo "✓ NDI SDK moved from /usr/local to /usr/local/ndi_sdk"
         fi
-        export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
-        echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
+        
+        # Setze Umgebungsvariablen für NDI SDK
+        echo "NDI_SDK_DIR=/usr/local/ndi_sdk" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=/usr/local/ndi_sdk/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        
+        # Verifiziere Installation
+        if [ -d "/usr/local/ndi_sdk" ]; then
+          echo "✓ NDI SDK successfully installed at /usr/local/ndi_sdk"
+          ls -la /usr/local/ndi_sdk/lib/x86_64-linux-gnu/ || echo "::warning::NDI lib directory structure may differ"
+        else
+          echo "::error::NDI SDK installation failed"
+          exit 1
+        fi
 
-    - name:  Run FFmpeg setup script
+    - name:   Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
     - name:  Verify installations
@@ -160,7 +177,7 @@ jobs:
         cargo build --release --verbose --no-default-features --features "all-io"
 
     - name: Run tests (Release)
-      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      if: ${{ github.event. inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
       # Exclude NDI feature for standard CI to avoid SDK path issues
@@ -168,7 +185,7 @@ jobs:
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
-      run: cargo test --release --doc --verbose --all-features
+      run:  cargo test --release --doc --verbose --all-features
 
     - name: Generate documentation
       run: cargo doc --no-deps --all-features
@@ -182,11 +199,11 @@ jobs:
 
   # Build on Windows (without FFmpeg - ffmpeg-next 6.x incompatible with FFmpeg 7.x)
   build-windows:
-    name:  Build (Windows)
+    name:   Build (Windows)
     runs-on: windows-latest
     env:
       RUST_TOOLCHAIN: stable
-    permissions: 
+    permissions:  
       contents: read
 
     steps:  
@@ -194,23 +211,23 @@ jobs:
       run: git config --global core.autocrlf false
     - uses: actions/checkout@v4
 
-    - name:  Set up Rust toolchain
+    - name:   Set up Rust toolchain
       uses: actions-rs/toolchain@v1
-      with: 
+      with:  
         toolchain: stable
         profile: minimal
-        override: true
+        override:  true
         components: rustfmt, clippy
 
-    - name:  Rust Cache
-      uses: swatinem/rust-cache@v2
+    - name:   Rust Cache
+      uses:  swatinem/rust-cache@v2
 
     # NOTE: NDI SDK requires registration and cannot be automated in CI
     # Building without NDI feature for Windows CI builds
     - name: Build (Release, Windows - without NDI)
       env:
         RUST_BACKTRACE: full
-      run:  |
+      run:   |
         cargo build --release --verbose --no-default-features --features "audio"
 
     - name: Run tests (Release, without NDI)
@@ -227,7 +244,7 @@ jobs:
         if-no-files-found: ignore
 
   # Security scanning
-  security:
+  security: 
     name: Security Audit
     runs-on: ubuntu-latest
     # use newer toolchain for security scanning/build
@@ -243,42 +260,42 @@ jobs:
       run: git config --global --add safe.directory "*"
     - uses: actions/checkout@v4
 
-    - name:   Set up Rust toolchain
+    - name:    Set up Rust toolchain
       uses: actions-rs/toolchain@v1
       with:  
         toolchain: stable
         profile: minimal
-        override:  true
+        override:   true
 
-    - name: Run cargo audit
+    - name:  Run cargo audit
       uses: rustsec/audit-check@v2
       with:
-        token:  ${{ secrets.GITHUB_TOKEN }}
+        token:   ${{ secrets.GITHUB_TOKEN }}
 
   # Success gate for branch protection
-  ci-success: 
+  ci-success:  
     name: CI Success Gate
     needs: [quality, build-and-test, build-windows, security]
-    runs-on: ubuntu-latest
+    runs-on:  ubuntu-latest
     if: always()
     permissions:
       contents: read
 
     steps:
-    - name: Fail if any job failed or was cancelled
+    - name:  Fail if any job failed or was cancelled
       if: always()
       run: |
         # Check results of dependent jobs and fail if any are not "success"
         # Note: build-windows is included but may have issues with FFmpeg - we log but don't fail
         if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
-          echo "::error:: One or more required jobs failed or were cancelled."
+          echo ":: error::One or more required jobs failed or were cancelled."
           echo "quality: ${{ needs.quality.result }}"
-          echo "build-and-test: ${{ needs.build-and-test.result }}"
-          echo "build-windows: ${{ needs.build-windows. result }}"
+          echo "build-and-test: ${{ needs. build-and-test.result }}"
+          echo "build-windows: ${{ needs.build-windows.result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
         if [ "${{ needs.build-windows.result }}" != "success" ]; then
-          echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
+          echo ":: warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All CI checks passed successfully"
