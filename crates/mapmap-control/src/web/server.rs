@@ -256,6 +256,14 @@ async fn security_headers(req: Request, next: Next) -> Response {
         HeaderValue::from_static("no-referrer"),
     );
 
+    // Content Security Policy
+    // Prevent loading any external resources (scripts, styles, images, etc.)
+    // as this is a pure API server.
+    headers.insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("default-src 'none'; frame-ancestors 'none';"),
+    );
+
     response
 }
 
@@ -329,6 +337,12 @@ mod tests {
         assert_eq!(
             headers.get("Referrer-Policy").and_then(|h| h.to_str().ok()),
             Some("no-referrer")
+        );
+        assert_eq!(
+            headers
+                .get("Content-Security-Policy")
+                .and_then(|h| h.to_str().ok()),
+            Some("default-src 'none'; frame-ancestors 'none';")
         );
     }
 }
