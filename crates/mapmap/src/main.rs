@@ -2565,7 +2565,7 @@ impl App {
                                     | mapmap_core::module::EffectType::Halftone
                                     | mapmap_core::module::EffectType::Posterize
                                     | mapmap_core::module::EffectType::Glitch => {
-                                        tracing::warn_once!(
+                                        tracing::warn!(
                                             "Effect {:?} not yet implemented in renderer",
                                             mod_effect
                                         );
