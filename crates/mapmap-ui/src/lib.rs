@@ -183,6 +183,14 @@ pub enum UIAction {
 
 use mapmap_control::ControlTarget;
 
+/// Information about currently loaded media for UI display
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MediaInfo {
+    pub width: u32,
+    pub height: u32,
+    pub fps: f32,
+}
+
 /// UI state for the application
 pub struct AppUI {
     pub menu_bar: menu_bar::MenuBar,

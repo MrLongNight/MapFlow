@@ -2373,8 +2373,6 @@ dependencies = [
 [[package]]
 name = "grafton-ndi"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6cdee7a1ed65b4178d0086e8d96e52a278751ef6d43263360b81c50caf634c6"
 dependencies = [
  "bindgen 0.69.5",
  "lodepng",

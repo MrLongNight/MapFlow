@@ -57,6 +57,14 @@ pub enum MediaError {
 /// Result type for media operations
 pub type Result<T> = std::result::Result<T, MediaError>;
 
+/// Options for opening media
+#[derive(Debug, Clone, Default)]
+pub struct MediaOpenOptions {
+    pub target_width: Option<u32>,
+    pub target_height: Option<u32>,
+    pub target_fps: Option<f32>,
+}
+
 /// Open a media file or image sequence and create a video player
 ///
 /// This function auto-detects the media type from the path:
@@ -65,7 +73,7 @@ pub type Result<T> = std::result::Result<T, MediaError>;
 /// - If path has a still image extension, `StillImageDecoder` is used.
 /// - If HAP feature is enabled and file might be HAP, try HAP decoder first.
 /// - Otherwise, it's assumed to be a video file and opened with `FFmpegDecoder`.
-pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
+pub fn open_path<P: AsRef<Path>>(path: P, options: MediaOpenOptions) -> Result<VideoPlayer> {
     let path = path.as_ref();
 
     // Check if it's an image sequence (directory)
@@ -97,13 +105,13 @@ pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
                 }
                 Err(_) => {
                     tracing::debug!("Not a HAP file, falling back to FFmpeg: {:?}", path);
-                    Box::new(FFmpegDecoder::open(path)?)
+                    Box::new(FFmpegDecoder::open(path, options)?)
                 }
             }
         }
         _ => {
             // Default to FFmpeg for video files
-            let ffmpeg_decoder = FFmpegDecoder::open(path)?;
+            let ffmpeg_decoder = FFmpegDecoder::open(path, options)?;
             Box::new(ffmpeg_decoder)
         }
     };
