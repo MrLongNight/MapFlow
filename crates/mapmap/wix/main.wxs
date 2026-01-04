@@ -31,7 +31,7 @@
             <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
         </Component>
         <!-- Icon path: from target\release go up 2 levels to project root, then into resources -->
-        <Icon Id="MapFlowIcon.exe" SourceFile="$(var.CargoTargetBinDir)\..\..\resources\app_icons\mapflow.ico" />
+        <Icon Id="MapFlowIcon.exe" SourceFile="$(var.CargoTargetBinDir)\..\..\resources\app_icons\MapFlow_Logo_LQ-Full.ico" />
         <Property Id="ARPPRODUCTICON" Value="MapFlowIcon.exe" />
         <UI>
             <UIRef Id="WixUI_Minimal" />

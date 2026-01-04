@@ -76,6 +76,7 @@ impl WindowManager {
 
         let mut window_builder = WindowBuilder::new()
             .with_title("MapFlow - Main Control")
+            .with_window_icon(load_app_icon())
             .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height))
             .with_maximized(maximized);
 
@@ -142,6 +143,7 @@ impl WindowManager {
         let window = Arc::new(
             WindowBuilder::new()
                 .with_title(format!("MapFlow Output - {}", output_config.name))
+                .with_window_icon(load_app_icon())
                 .with_inner_size(winit::dpi::PhysicalSize::new(
                     output_config.resolution.0,
                     output_config.resolution.1,
@@ -243,6 +245,7 @@ impl WindowManager {
 
         let mut window_builder = WindowBuilder::new()
             .with_title(format!("MapFlow - {}", name))
+            .with_window_icon(load_app_icon())
             .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height));
 
         // Set fullscreen if requested
@@ -375,4 +378,40 @@ impl WindowManager {
     pub fn get_output_id_from_window_id(&self, window_id: WindowId) -> Option<OutputId> {
         self.window_id_map.get(&window_id).copied()
     }
+}
+
+/// Helper function to load the application icon.
+fn load_app_icon() -> Option<winit::window::Icon> {
+    let search_paths = [
+        "resources/app_icons/MapFlow_Logo_HQ-Full-M.png",
+        "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png",
+        "../../resources/app_icons/MapFlow_Logo_HQ-Full-M.png",
+        "resources/app_icons/mapflow.png",
+        "../resources/app_icons/mapflow.png",
+    ];
+
+    for path_str in search_paths {
+        let path = std::path::Path::new(path_str);
+        if path.exists() {
+            match image::open(path) {
+                Ok(img) => {
+                    let rgba = img.to_rgba8();
+                    let (width, height) = rgba.dimensions();
+                    match winit::window::Icon::from_rgba(rgba.into_raw(), width, height) {
+                        Ok(icon) => {
+                            tracing::info!("Loaded app icon from {:?}", path);
+                            return Some(icon);
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to create icon from {:?}: {}", path, e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to open icon {:?}: {}", path, e);
+                }
+            }
+        }
+    }
+    None
 }
