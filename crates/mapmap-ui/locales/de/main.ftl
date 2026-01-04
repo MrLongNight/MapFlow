@@ -421,3 +421,4 @@ settings-language = Sprache
 settings-logging = Protokollierung
 tooltip-toggle-visibility = Sichtbarkeit umschalten
 tooltip-layer-opacity = Ebenen-Deckkraft
+canvas-empty-state = Rechtsklick um Knoten hinzuzufügen oder aus der Seitenleiste ziehen

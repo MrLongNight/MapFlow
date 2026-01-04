@@ -2188,7 +2188,7 @@ impl ModuleCanvas {
         }
     }
 
-    fn render_canvas(&mut self, ui: &mut Ui, module: &mut MapFlowModule, _locale: &LocaleManager) {
+    fn render_canvas(&mut self, ui: &mut Ui, module: &mut MapFlowModule, locale: &LocaleManager) {
         self.ensure_icons_loaded(ui.ctx());
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
@@ -2395,6 +2395,17 @@ impl ModuleCanvas {
 
         // Draw grid
         self.draw_grid(&painter, canvas_rect);
+
+        // Check for empty state and show helper text
+        if module.parts.is_empty() {
+            painter.text(
+                canvas_rect.center(),
+                egui::Align2::CENTER_CENTER,
+                locale.t("canvas-empty-state"),
+                egui::FontId::proportional(20.0),
+                ui.visuals().weak_text_color(),
+            );
+        }
 
         // Draw connections first (behind nodes)
         self.draw_connections(&painter, module, &to_screen);

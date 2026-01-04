@@ -405,3 +405,4 @@ settings-language = Language
 settings-logging = Logging
 tooltip-toggle-visibility = Toggle Visibility
 tooltip-layer-opacity = Layer Opacity
+canvas-empty-state = Right-click to add nodes or drag from sidebar
