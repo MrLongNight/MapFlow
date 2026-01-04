@@ -811,6 +811,17 @@ impl App {
                             mapmap_ui::MediaPlaybackCommand::Stop => {
                                 let _ = player.command_sender().send(PlaybackCommand::Stop);
                             }
+                            mapmap_ui::MediaPlaybackCommand::Reload => {
+                                // Remove existing player - it will be recreated with new path
+                                info!("Reloading media player for part_id={}", part_id);
+                                // (Player removal handled below)
+                            }
+                        }
+                    }
+                    // Handle Reload by removing player (will be recreated on next frame)
+                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
+                        if self.media_players.remove(&part_id).is_some() {
+                            info!("Removed old media player for part_id={} for reload", part_id);
                         }
                     }
                 }

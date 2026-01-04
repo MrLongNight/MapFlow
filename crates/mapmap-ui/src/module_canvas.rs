@@ -17,6 +17,8 @@ pub enum MediaPlaybackCommand {
     Play,
     Pause,
     Stop,
+    /// Reload the media from disk (used when path changes)
+    Reload,
 }
 
 /// Information about a socket position for hit detection
@@ -536,6 +538,8 @@ impl ModuleCanvas {
                                                             .pick_file()
                                                         {
                                                             *path = picked.display().to_string();
+                                                            // Trigger reload of the media player
+                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Reload));
                                                         }
                                                     }
                                                 });

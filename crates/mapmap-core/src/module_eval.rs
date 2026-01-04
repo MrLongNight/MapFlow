@@ -264,22 +264,57 @@ impl ModuleEvaluator {
         let mut source_id = None;
         let mut current_id = start_node_id;
 
+        tracing::warn!("trace_chain: Starting from node {}", start_node_id);
+        tracing::warn!(
+            "trace_chain: Module has {} connections",
+            module.connections.len()
+        );
+
         // Safety limit to prevent infinite loops in cyclic graphs
-        for _ in 0..50 {
+        for iteration in 0..50 {
+            tracing::debug!(
+                "trace_chain: Iteration {}, looking for connection TO node {}",
+                iteration,
+                current_id
+            );
+
             if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
+                tracing::debug!(
+                    "trace_chain: Found connection from {} to {} (socket {} -> {})",
+                    conn.from_part,
+                    conn.to_part,
+                    conn.from_socket,
+                    conn.to_socket
+                );
+
                 if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                    tracing::debug!(
+                        "trace_chain: Upstream node {} is {:?}",
+                        part.id,
+                        std::mem::discriminant(&part.part_type)
+                    );
+
                     match &part.part_type {
                         ModulePartType::Source(_) => {
                             source_id = Some(part.id);
+                            tracing::debug!(
+                                "trace_chain: Found Source node {}, chain complete!",
+                                part.id
+                            );
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
                             effects.insert(0, mod_type.clone()); // Prepend (execution order)
                             current_id = part.id;
+                            tracing::debug!(
+                                "trace_chain: Found Modulizer, continuing from {}",
+                                part.id
+                            );
                         }
                         ModulePartType::Mask(mask_type) => {
                             masks.insert(0, mask_type.clone());
                             current_id = part.id;
+                            tracing::debug!("trace_chain: Found Mask, continuing from {}", part.id);
                         }
                         ModulePartType::Mesh(mesh_type) => {
                             // If we encounter a mesh node, it overrides the layer's mesh
@@ -288,16 +323,36 @@ impl ModuleEvaluator {
                                 override_mesh = Some(mesh_type.clone());
                             }
                             current_id = part.id;
+                            tracing::debug!("trace_chain: Found Mesh, continuing from {}", part.id);
                         }
-                        _ => break, // Hit something else (e.g. Trigger), chain ends
+                        other => {
+                            tracing::debug!(
+                                "trace_chain: Found unsupported node type {:?}, breaking",
+                                std::mem::discriminant(other)
+                            );
+                            break;
+                        }
                     }
                 } else {
+                    tracing::debug!(
+                        "trace_chain: Connection from_part {} not found in parts!",
+                        conn.from_part
+                    );
                     break;
                 }
             } else {
+                tracing::debug!("trace_chain: No connection found TO node {}", current_id);
                 break;
             }
         }
+
+        tracing::warn!(
+            "trace_chain: Result - source_id={:?}, effects={}, masks={}, override_mesh={}",
+            source_id,
+            effects.len(),
+            masks.len(),
+            override_mesh.is_some()
+        );
 
         ProcessingChain {
             source_id,
