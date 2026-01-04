@@ -23,9 +23,9 @@ fn default_scale() -> f32 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MapFlowModule {
-    pub id: ModuleId,
+    pub id:  ModuleId,
     pub name: String,
-    pub color: [f32; 4],
+    pub color:  [f32; 4],
     pub parts: Vec<ModulePart>,
     pub connections: Vec<ModuleConnection>,
     pub playback_mode: ModulePlaybackMode,
@@ -34,11 +34,11 @@ pub struct MapFlowModule {
 impl MapFlowModule {
     /// Add a part to this module with proper socket configuration
     pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
-        static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync:: atomic::AtomicU64:: new(1);
         let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering:: SeqCst);
 
         let module_part_type = match part_type {
-            PartType:: Trigger => ModulePartType::Trigger(TriggerType::Beat),
+            PartType::Trigger => ModulePartType::Trigger(TriggerType::Beat),
             PartType::Source => ModulePartType::Source(SourceType::MediaFile {
                 path: String::new(),
                 speed: 1.0,
@@ -61,21 +61,21 @@ impl MapFlowModule {
                 target_fps: None,
             }),
             PartType:: Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-            PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
+            PartType:: Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
                 effect_type: EffectType::Blur,
                 params: std::collections::HashMap::new(),
             }),
             PartType:: Mesh => ModulePartType::Mesh(MeshType::Grid { cols: 10, rows: 10 }),
             PartType::Layer => ModulePartType::Layer(LayerType::Single {
                 id: 0,
-                name:  "Layer 1".to_string(),
+                name: "Layer 1".to_string(),
                 opacity: 1.0,
                 blend_mode: None,
                 mesh:  default_mesh_quad(),
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 0,
-                name:  "Output".to_string(),
+                name: "Output". to_string(),
                 fullscreen: false,
                 hide_cursor: true,
                 target_screen:  0,
@@ -166,7 +166,7 @@ impl MapFlowModule {
         to_part: ModulePartId,
         to_socket: usize,
     ) {
-        self.connections.retain(|c| {
+        self.connections. retain(|c| {
             !(c.from_part == from_part
                 && c.from_socket == from_socket
                 && c. to_part == to_part
@@ -189,7 +189,7 @@ impl MapFlowModule {
 
         // Cleanup connections that are now out of bounds
         if in_count > 0 || out_count > 0 {
-            self.connections.retain(|c| {
+            self.connections. retain(|c| {
                 if c.to_part == part_id && c.to_socket >= in_count {
                     return false;
                 }
@@ -215,10 +215,10 @@ pub enum ModulePlaybackMode {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModulePart {
-    pub id:  ModulePartId,
+    pub id: ModulePartId,
     pub part_type: ModulePartType,
-    pub position: (f32, f32),
-    /// Custom size (width, height). If None, uses default size.
+    pub position:  (f32, f32),
+    /// Custom size (width, height). If None, uses default size. 
     #[serde(default)]
     pub size: Option<(f32, f32)>,
     #[serde(default)]
@@ -237,7 +237,7 @@ pub struct NodeLinkData {
 impl Default for NodeLinkData {
     fn default() -> Self {
         Self {
-            mode: LinkMode::Off,
+            mode: LinkMode:: Off,
             behavior: LinkBehavior::SameAsMaster,
             trigger_input_enabled: false,
         }
@@ -327,7 +327,7 @@ impl ModulePartType {
                         socket_type: ModuleSocketType::Trigger,
                     }],
                 };
-                (vec! [], outputs) // No inputs - triggers are sources
+                (vec![], outputs) // No inputs - triggers are sources
             }
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
@@ -339,7 +339,7 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            ModulePartType::Mask(_) => (
+            ModulePartType:: Mask(_) => (
                 vec![
                     ModuleSocket {
                         name: "Media In".to_string(),
@@ -374,8 +374,8 @@ impl ModulePartType {
             ModulePartType::Layer(_) => (
                 vec![
                     ModuleSocket {
-                        name: "Input".to_string(),
-                        socket_type: ModuleSocketType::Media,
+                        name: "Input". to_string(),
+                        socket_type: ModuleSocketType:: Media,
                     },
                     ModuleSocket {
                         name: "Trigger". to_string(),
@@ -498,7 +498,7 @@ pub struct AudioTriggerOutputConfig {
     pub bpm_output: bool,
     /// Set of output names that should be inverted
     #[serde(default)]
-    pub inverted_outputs: std:: collections::HashSet<String>,
+    pub inverted_outputs: std::collections::HashSet<String>,
 }
 
 impl Default for AudioTriggerOutputConfig {
@@ -679,20 +679,20 @@ pub enum SourceType {
 impl SourceType {
     /// Create a new MediaFile source with default settings
     pub fn new_media_file(path: String) -> Self {
-        SourceType:: MediaFile {
+        SourceType::MediaFile {
             path,
             speed: 1.0,
             loop_enabled: true,
             start_time: 0.0,
             end_time: 0.0,
             opacity: 1.0,
-            blend_mode: None,
+            blend_mode:  None,
             brightness: 0.0,
             contrast: 1.0,
             saturation: 1.0,
             hue_shift: 0.0,
-            scale_x: 1.0,
-            scale_y:  1.0,
+            scale_x:  1.0,
+            scale_y: 1.0,
             rotation: 0.0,
             offset_x: 0.0,
             offset_y: 0.0,
@@ -841,7 +841,7 @@ impl MeshType {
             MeshType::Circle { segments, ..  } => {
                 Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
             }
-            MeshType::BezierSurface { control_points } => {
+            MeshType:: BezierSurface { control_points } => {
                 // For Bezier surface, create a grid and warp it based on control points
                 // For now, use a simple grid as a placeholder until full Bezier implementation
                 if control_points.len() >= 4 {
@@ -862,14 +862,14 @@ impl MeshType {
                     // Calculate center point for triangle fan
                     let center = vertices
                         .iter()
-                        .fold((0.0, 0.0), |acc, v| (acc. 0 + v.0, acc.1 + v. 1));
+                        .fold((0.0, 0.0), |acc, v| (acc. 0 + v.0, acc.1 + v.1));
                     let center = (
                         center.0 / vertices.len() as f32,
                         center.1 / vertices.len() as f32,
                     );
 
                     let mut mesh_vertices = Vec::with_capacity(vertices.len() + 1);
-                    mesh_vertices.push(MeshVertex:: new(
+                    mesh_vertices. push(MeshVertex:: new(
                         Vec2::new(center.0, center.1),
                         Vec2::new(0.5, 0.5),
                     ));
@@ -879,18 +879,19 @@ impl MeshType {
                             .push(MeshVertex::new(Vec2::new(v.0, v.1), Vec2::new(v.0, v.1)));
                     }
 
+                    // FIX: Komplettes Triangle-Fan-Indices generieren (3 Indices pro Dreieck)
                     let mut indices = Vec::with_capacity(vertices.len() * 3);
-                    for i in 0.. vertices.len() {
-                        indices.push(0); // Center
-                        indices.push((i + 1) as u16);
-                        indices.push(((i + 1) % vertices.len() + 1) as u16);
+                    for i in 0..vertices.len() {
+                        indices.push(0); // Center vertex
+                        indices.push((i + 1) as u16); // Current outer vertex
+                        indices.push(((i + 1) % vertices.len() + 1) as u16); // Next outer vertex (wrapping)
                     }
 
                     Mesh {
                         mesh_type: CoreMeshType:: Custom,
                         vertices: mesh_vertices,
                         indices,
-                        revision:  0,
+                        revision: 0,
                     }
                 }
             }
@@ -914,7 +915,7 @@ impl MeshType {
                 let mut indices = Vec::new();
 
                 // Generate vertices
-                for lat in 0.. =lat_segs {
+                for lat in 0..=lat_segs {
                     let theta = (lat as f32 / lat_segs as f32) * std::f32::consts::PI;
                     let sin_theta = theta.sin();
                     let cos_theta = theta.cos();
@@ -1065,14 +1066,14 @@ impl EffectType {
             EffectType:: Contrast => "Contrast",
             EffectType::Saturation => "Saturation",
             EffectType::HueShift => "Hue Shift",
-            EffectType::Colorize => "Colorize",
-            EffectType::Wave => "Wave",
-            EffectType:: Spiral => "Spiral",
+            EffectType:: Colorize => "Colorize",
+            EffectType:: Wave => "Wave",
+            EffectType::Spiral => "Spiral",
             EffectType::Pinch => "Pinch",
             EffectType::Mirror => "Mirror",
             EffectType::Kaleidoscope => "Kaleidoscope",
             EffectType::Pixelate => "Pixelate",
-            EffectType:: Halftone => "Halftone",
+            EffectType::Halftone => "Halftone",
             EffectType::EdgeDetect => "Edge Detect",
             EffectType::Posterize => "Posterize",
             EffectType::Glitch => "Glitch",
@@ -1238,7 +1239,7 @@ impl ModuleManager {
             modules:  HashMap::new(),
             next_module_id: 1,
             next_part_id: 1,
-            color_palette:  vec![
+            color_palette: vec![
                 [1.0, 0.2, 0.2, 1.0],
                 [1.0, 0.5, 0.2, 1.0],
                 [1.0, 1.0, 0.2, 1.0],
@@ -1264,7 +1265,7 @@ impl ModuleManager {
         let id = self.next_module_id;
         self.next_module_id += 1;
 
-        let color = self.color_palette[self. next_color_index % self. color_palette.len()];
+        let color = self.color_palette[self.next_color_index % self.color_palette.len()];
         self.next_color_index += 1;
 
         let module = MapFlowModule {
@@ -1325,4 +1326,4 @@ impl Default for ModuleManager {
     fn default() -> Self {
         Self::new()
     }
-            }
+                }
