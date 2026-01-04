@@ -56,6 +56,9 @@ impl MapFlowModule {
                 rotation: 0.0,
                 offset_x: 0.0,
                 offset_y: 0.0,
+                target_width: None,
+                target_height: None,
+                target_fps: None,
             }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
             PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
@@ -78,6 +81,9 @@ impl MapFlowModule {
                 target_screen: 0,
                 show_in_preview_panel: true,
                 extra_preview_window: false,
+                output_width: 0,
+                output_height: 0,
+                output_fps: 60.0,
             }),
         };
 
@@ -372,10 +378,16 @@ impl ModulePartType {
                 }],
             ),
             ModulePartType::Layer(_) => (
-                vec![ModuleSocket {
-                    name: "Input".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
+                vec![
+                    ModuleSocket {
+                        name: "Input".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Trigger".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
                 vec![ModuleSocket {
                     name: "Output".to_string(),
                     socket_type: ModuleSocketType::Layer,
@@ -641,6 +653,15 @@ pub enum SourceType {
         /// Transform: Position offset Y
         #[serde(default)]
         offset_y: f32,
+        /// Target output width (None = use original resolution)
+        #[serde(default)]
+        target_width: Option<u32>,
+        /// Target output height (None = use original resolution)
+        #[serde(default)]
+        target_height: Option<u32>,
+        /// Target FPS override (None = use original FPS)
+        #[serde(default)]
+        target_fps: Option<f32>,
     },
     Shader {
         name: String,
@@ -681,6 +702,9 @@ impl SourceType {
             rotation: 0.0,
             offset_x: 0.0,
             offset_y: 0.0,
+            target_width: None,
+            target_height: None,
+            target_fps: None,
         }
     }
 }
@@ -1160,6 +1184,15 @@ pub enum OutputType {
         /// Open a separate preview window for this output
         #[serde(default)]
         extra_preview_window: bool,
+        /// Output resolution width (0 = use window size)
+        #[serde(default)]
+        output_width: u32,
+        /// Output resolution height (0 = use window size)
+        #[serde(default)]
+        output_height: u32,
+        /// Output target FPS (0.0 = unlimited/vsync)
+        #[serde(default = "default_output_fps")]
+        output_fps: f32,
     },
     /// NDI network video output
     NdiOutput {
@@ -1172,6 +1205,10 @@ pub enum OutputType {
 
 fn default_true() -> bool {
     true
+}
+
+fn default_output_fps() -> f32 {
+    60.0
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

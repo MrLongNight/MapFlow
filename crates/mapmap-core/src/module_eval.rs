@@ -370,7 +370,11 @@ impl ModuleEvaluator {
                 current_id
             );
 
-            if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
+            if let Some(conn) = module
+                .connections
+                .iter()
+                .find(|c| c.to_part == current_id && c.to_socket == 0)
+            {
                 tracing::debug!(
                     "trace_chain: Found connection from {} to {} (socket {} -> {})",
                     conn.from_part,

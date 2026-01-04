@@ -1,6 +1,6 @@
 //! Video decoder abstraction with FFmpeg implementation
 
-use crate::{MediaError, Result};
+use crate::{MediaError, MediaOpenOptions, Result};
 use std::path::Path;
 use std::time::Duration;
 use tracing::info;
@@ -109,13 +109,25 @@ mod ffmpeg_impl {
 
     impl RealFFmpegDecoder {
         pub fn try_clone(&self) -> Result<Self> {
-            Self::open(self.path.clone(), self.hw_accel)
+            Self::open(
+                self.path.clone(),
+                self.hw_accel,
+                MediaOpenOptions {
+                    target_width: Some(self.width),
+                    target_height: Some(self.height),
+                    target_fps: None, // We lose original FPS config on clone, but that's ok for now
+                },
+            )
         }
     }
 
     impl RealFFmpegDecoder {
         /// Open a video file with optional hardware acceleration
-        pub fn open<P: AsRef<Path>>(path: P, hw_accel: HwAccelType) -> Result<Self> {
+        pub fn open<P: AsRef<Path>>(
+            path: P,
+            hw_accel: HwAccelType,
+            options: MediaOpenOptions,
+        ) -> Result<Self> {
             let path = path.as_ref();
 
             if !path.exists() {
@@ -146,10 +158,16 @@ mod ffmpeg_impl {
 
             // Calculate FPS
             let fps = video_stream.avg_frame_rate();
-            let fps_value = if fps.denominator() == 0 {
+            let fps_native = if fps.denominator() == 0 {
                 30.0 // Default fallback
             } else {
                 fps.numerator() as f64 / fps.denominator() as f64
+            };
+
+            let fps_value = if let Some(target) = options.target_fps {
+                target as f64
+            } else {
+                fps_native
             };
 
             // Calculate duration
@@ -189,14 +207,18 @@ mod ffmpeg_impl {
             let width = decoder.width();
             let height = decoder.height();
 
-            // Create scaler to convert to RGBA
+            // Determine target dimensions
+            let target_width = options.target_width.unwrap_or(width);
+            let target_height = options.target_height.unwrap_or(height);
+
+            // Create scaler to convert to RGBA and resize if needed
             let scaler = ffmpeg::software::scaling::Context::get(
                 decoder.format(),
                 width,
                 height,
                 ffmpeg::format::Pixel::RGBA,
-                width,
-                height,
+                target_width,
+                target_height,
                 ffmpeg::software::scaling::Flags::BILINEAR,
             )
             .map_err(|e| MediaError::DecoderError(e.to_string()))?;
@@ -218,8 +240,8 @@ mod ffmpeg_impl {
                 time_base,
                 duration,
                 fps: fps_value,
-                width,
-                height,
+                width: target_width, // Store target dimensions
+                height: target_height,
                 hw_accel: actual_hw_accel,
                 path: path.to_path_buf(),
             })
@@ -434,15 +456,19 @@ pub enum FFmpegDecoder {
 
 impl FFmpegDecoder {
     /// Open a video file (uses FFmpeg if feature is enabled, test pattern otherwise)
-    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-        Self::open_with_hw_accel(path, HwAccelType::None)
+    pub fn open<P: AsRef<Path>>(path: P, options: MediaOpenOptions) -> Result<Self> {
+        Self::open_with_hw_accel(path, HwAccelType::None, options)
     }
 
     /// Open a video file with hardware acceleration
-    pub fn open_with_hw_accel<P: AsRef<Path>>(_path: P, _hw_accel: HwAccelType) -> Result<Self> {
+    pub fn open_with_hw_accel<P: AsRef<Path>>(
+        _path: P,
+        _hw_accel: HwAccelType,
+        options: MediaOpenOptions,
+    ) -> Result<Self> {
         #[cfg(feature = "ffmpeg")]
         {
-            match ffmpeg_impl::RealFFmpegDecoder::open(_path, _hw_accel) {
+            match ffmpeg_impl::RealFFmpegDecoder::open(_path, _hw_accel, options) {
                 Ok(decoder) => Ok(FFmpegDecoder::Real(decoder)),
                 Err(e) => {
                     warn!("FFmpeg decoder failed: {}, using test pattern", e);
@@ -469,7 +495,10 @@ impl FFmpegDecoder {
     }
 
     /// Detect and use best available hardware acceleration
-    pub fn open_with_auto_hw_accel<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn open_with_auto_hw_accel<P: AsRef<Path>>(
+        path: P,
+        options: MediaOpenOptions,
+    ) -> Result<Self> {
         #[cfg(target_os = "linux")]
         let hw_accel = HwAccelType::VAAPI;
 
@@ -482,7 +511,7 @@ impl FFmpegDecoder {
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
         let hw_accel = HwAccelType::None;
 
-        Self::open_with_hw_accel(path, hw_accel)
+        Self::open_with_hw_accel(path, hw_accel, options)
     }
 }
 

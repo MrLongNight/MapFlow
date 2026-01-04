@@ -148,6 +148,8 @@ struct App {
     color_calibration_renderer: Option<ColorCalibrationRenderer>,
     /// Temporary textures for output rendering (OutputID -> Texture)
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
+    /// Active FPS limit from output settings
+    active_fps_limit: Option<f32>,
 }
 
 impl App {
@@ -542,6 +544,7 @@ impl App {
             edge_blend_renderer,
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
+            active_fps_limit: None,
         };
 
         // Create initial dummy texture
@@ -841,13 +844,21 @@ impl App {
                                         if let mapmap_core::module::ModulePartType::Source(
                                             mapmap_core::module::SourceType::MediaFile {
                                                 ref path,
+                                                target_width,
+                                                target_height,
+                                                target_fps,
                                                 ..
                                             },
                                         ) = &part.part_type
                                         {
                                             info!("Found media path: '{}'", path);
                                             if !path.is_empty() {
-                                                match mapmap_media::open_path(path) {
+                                                let options = mapmap_media::MediaOpenOptions {
+                                                    target_width: *target_width,
+                                                    target_height: *target_height,
+                                                    target_fps: *target_fps,
+                                                };
+                                                match mapmap_media::open_path(path, options) {
                                                     Ok(player) => {
                                                         info!(
                                                             "Successfully created player for '{}'",
@@ -916,6 +927,18 @@ impl App {
                             part_id,
                             player.state()
                         );
+
+                        // Update UI Info
+                        let (w, h) = player.resolution();
+                        self.ui_state.module_canvas.active_media_info.insert(
+                            part_id,
+                            mapmap_ui::MediaInfo {
+                                width: w,
+                                height: h,
+                                fps: player.fps() as f32,
+                            },
+                        );
+
                         if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
                             debug!(
                                 "Got frame for part_id={}, size={}x{}",
@@ -961,7 +984,32 @@ impl App {
                                     let player_exists = self.media_players.contains_key(&part_id);
 
                                     if !player_exists {
-                                        match mapmap_media::open_path(&path) {
+                                        // Lookup settings from part
+                                        let mut options = mapmap_media::MediaOpenOptions {
+                                            target_width: None,
+                                            target_height: None,
+                                            target_fps: None,
+                                        };
+
+                                        if let Some(part) =
+                                            module.parts.iter().find(|p| p.id == part_id)
+                                        {
+                                            if let mapmap_core::module::ModulePartType::Source(
+                                                mapmap_core::module::SourceType::MediaFile {
+                                                    target_width,
+                                                    target_height,
+                                                    target_fps,
+                                                    ..
+                                                },
+                                            ) = &part.part_type
+                                            {
+                                                options.target_width = *target_width;
+                                                options.target_height = *target_height;
+                                                options.target_fps = *target_fps;
+                                            }
+                                        }
+
+                                        match mapmap_media::open_path(&path, options) {
                                             Ok(player) => {
                                                 self.media_players.insert(part_id, player);
                                             }
@@ -1091,8 +1139,14 @@ impl App {
 
                         // 3. Sync output windows with evaluation result
                         let render_ops_clone = self.render_ops.clone();
-                        if let Err(e) = self.sync_output_windows(elwt, &render_ops_clone) {
-                            error!("Failed to sync output windows: {}", e);
+                        match self.sync_output_windows(elwt, &render_ops_clone) {
+                            Ok(max_fps) => {
+                                self.active_fps_limit =
+                                    if max_fps > 0.0 { Some(max_fps) } else { None };
+                            }
+                            Err(e) => {
+                                error!("Failed to sync output windows: {}", e);
+                            }
                         }
                     }
                 }
@@ -1159,6 +1213,30 @@ impl App {
 
                 let _param_updates = self.state.effect_animator.update(delta_time);
                 // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
+
+                // FPS Limiting
+                if let Some(limit) = self.active_fps_limit {
+                    if limit > 0.0 {
+                        let target_dt = std::time::Duration::from_secs_f64(1.0 / limit as f64);
+                        let next_frame_time = self.last_update + target_dt;
+
+                        if std::time::Instant::now() < next_frame_time {
+                            elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
+                                next_frame_time,
+                            ));
+                            // Don't redaw yet?
+                            // If we wait, we exit handle_event and wake up later.
+                            // But we still need to process Draw if we are ready?
+                            // No, if we wait, we shouldn't draw yet.
+                            // But AboutToWait calls Redraw.
+                            // If we set WaitUntil, AboutToWait loop might continue or exit.
+                            // We should probably RETURN here if we are waiting, so we don't request redraw.
+                            return Ok(());
+                        }
+                    }
+                }
+
+                elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
                 // Redraw all windows
                 for output_id in self
@@ -1449,13 +1527,14 @@ impl App {
         &mut self,
         event_loop: &winit::event_loop::EventLoopWindowTarget<T>,
         render_ops: &[mapmap_core::module_eval::RenderOp],
-    ) -> Result<()> {
+    ) -> Result<f32> {
         use mapmap_core::module::OutputType;
         const PREVIEW_FLAG: u64 = 1u64 << 63;
 
         // Track active IDs for cleanup
         let mut active_window_ids = std::collections::HashSet::new();
         let mut active_sender_ids = std::collections::HashSet::new();
+        let mut max_fps: f32 = 0.0;
 
         // 1. Process RenderOps
         for op in render_ops {
@@ -1471,7 +1550,14 @@ impl App {
                     target_screen,
                     show_in_preview_panel: _,
                     extra_preview_window,
+                    output_width,
+                    output_height,
+                    output_fps,
                 } => {
+                    // Update FPS
+                    if *output_fps > max_fps {
+                        max_fps = *output_fps;
+                    }
                     // 1. Primary Window
                     active_window_ids.insert(output_id);
 
@@ -1486,6 +1572,18 @@ impl App {
                             });
                         }
                         window_context.window.set_cursor_visible(!*hide_cursor);
+
+                        // Resolution / Resizing
+                        if !*fullscreen && *output_width > 0 && *output_height > 0 {
+                            let current_size = window_context.window.inner_size();
+                            if current_size.width != *output_width
+                                || current_size.height != *output_height
+                            {
+                                let _ = window_context.window.request_inner_size(
+                                    winit::dpi::PhysicalSize::new(*output_width, *output_height),
+                                );
+                            }
+                        }
                     } else {
                         // Create new
                         self.window_manager.create_projector_window(
@@ -1587,7 +1685,7 @@ impl App {
             }
         }
 
-        Ok(())
+        Ok(max_fps)
     }
 
     /// Synchronize media players with active source modules
@@ -1597,7 +1695,13 @@ impl App {
         // Identify active media files
         for module in self.state.module_manager.modules() {
             for part in &module.parts {
-                if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &part.part_type
+                if let ModulePartType::Source(SourceType::MediaFile {
+                    path,
+                    target_width,
+                    target_height,
+                    target_fps,
+                    ..
+                }) = &part.part_type
                 {
                     if !path.is_empty() {
                         active_sources.insert(part.id);
@@ -1605,7 +1709,13 @@ impl App {
                         // Create player if not exists
                         // Note: Using entry API would be cleaner but path update requires check
                         if !self.media_players.contains_key(&part.id) {
-                            match mapmap_media::open_path(path) {
+                            let options = mapmap_media::MediaOpenOptions {
+                                target_width: *target_width,
+                                target_height: *target_height,
+                                target_fps: *target_fps,
+                            };
+
+                            match mapmap_media::open_path(path, options) {
                                 Ok(mut player) => {
                                     if let Err(e) = player.play() {
                                         error!(
