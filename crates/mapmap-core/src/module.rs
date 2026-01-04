@@ -463,7 +463,7 @@ pub enum TriggerType {
     },
     /// Beat detection (legacy)
     Beat,
-    /// MIDI clock trigger (24 PPQ derived beat)
+    /// MIDI clock trigger (24 PPQ = pulses per quarter note derived beat)
     MidiClock {
         /// Divide pulses to trigger every Nth beat
         #[serde(default = "default_clock_divider")]
