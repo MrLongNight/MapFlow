@@ -6,7 +6,7 @@ fn main() {
     if let Ok(_ndi) = NDI::new() {
         println!("NDI initialized successfully.");
 
-        // We first need to look for a source on the network
+        // We first need to look for a source on the Networks. 
         // let finder = Finder::default();
         let finder = Finder::new(false, None, Some("192.168.0.110"));
         let ndi_find = Find::new(finder).expect("Failed to create NDI find instance");
