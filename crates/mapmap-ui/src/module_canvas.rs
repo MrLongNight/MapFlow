@@ -1685,10 +1685,12 @@ impl ModuleCanvas {
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
-                            if (show_all || "link ableton".contains(&filter)) && ui.button("🔗 Ableton Link").clicked() {
-                                self.add_trigger_node(manager, TriggerType::AbletonLink { quantum: 4.0 });
-                                self.search_filter.clear();
-                                ui.close_menu();
+                            if show_all || "link ableton".contains(&filter) {
+                                if ui.button("🔗 Ableton Link").clicked() {
+                                    self.add_trigger_node(manager, TriggerType::AbletonLink { quantum: 4.0 });
+                                    self.search_filter.clear();
+                                    ui.close_menu();
+                                }
                             }
                             if (show_all || "keyboard shortcut".contains(&filter)) && ui.button("⌨️ Shortcut").clicked() {
                                 self.add_trigger_node(manager, TriggerType::Shortcut { key_code: "Space".to_string(), modifiers: 0 });
