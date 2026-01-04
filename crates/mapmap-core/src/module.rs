@@ -821,7 +821,6 @@ impl MeshType {
                 // For Bezier surface, create a grid and warp it based on control points
                 // For now, use a simple grid as a placeholder until full Bezier implementation
                 if control_points.len() >= 4 {
-
                     // TODO: Implement proper Bezier surface interpolation
                     Mesh::create_grid(8, 8)
                 } else {
