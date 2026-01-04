@@ -21,12 +21,15 @@ impl AbletonLinkHandle {
     /// The underlying `ableton-link-rs` types are constructed but no async
     /// tasks are spawned here, keeping initialization cheap.
     pub fn new(default_bpm: f64) -> Result<Self> {
-        let mut handle = Self {
+        if !(20.0..=300.0).contains(&default_bpm) {
+            return Err(ControlError::LinkError(
+                "Tempo must be between 20 and 300 BPM".to_string(),
+            ));
+        }
+        Ok(Self {
             _tempo: Tempo::new(default_bpm),
             _clock: Clock::default(),
-        };
-        handle.set_tempo_bpm(default_bpm)?;
-        Ok(handle)
+        })
     }
 
     /// Return the configured default tempo.
