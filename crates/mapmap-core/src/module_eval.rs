@@ -264,8 +264,8 @@ impl ModuleEvaluator {
         let mut source_id = None;
         let mut current_id = start_node_id;
 
-        tracing::warn!("trace_chain: Starting from node {}", start_node_id);
-        tracing::warn!(
+        tracing::debug!("trace_chain: Starting from node {}", start_node_id);
+        tracing::debug!(
             "trace_chain: Module has {} connections",
             module.connections.len()
         );
@@ -346,7 +346,7 @@ impl ModuleEvaluator {
             }
         }
 
-        tracing::warn!(
+        tracing::debug!(
             "trace_chain: Result - source_id={:?}, effects={}, masks={}, override_mesh={}",
             source_id,
             effects.len(),

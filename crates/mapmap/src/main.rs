@@ -954,6 +954,36 @@ impl App {
                         // 2. Handle Render Ops (New System)
                         self.render_ops = result.render_ops;
 
+                        // Log render ops status once per second
+                        static mut LAST_RENDER_LOG: u64 = 0;
+                        let now_ms = (timestamp * 1000.0) as u64;
+                        unsafe {
+                            if now_ms / 1000 > LAST_RENDER_LOG {
+                                LAST_RENDER_LOG = now_ms / 1000;
+                                info!("=== Render Pipeline Status ===");
+                                info!("  render_ops count: {}", self.render_ops.len());
+                                for (i, op) in self.render_ops.iter().enumerate() {
+                                    info!("  Op[{}]: source_part_id={:?}, output={:?}", 
+                                        i, op.source_part_id, 
+                                        match &op.output_type {
+                                            mapmap_core::module::OutputType::Projector { id, .. } => format!("Projector({})", id),
+                                            mapmap_core::module::OutputType::NdiOutput { name } => format!("NDI({})", name),
+                                            mapmap_core::module::OutputType::Spout { name } => format!("Spout({})", name),
+                                        }
+                                    );
+                                    if let Some(sid) = op.source_part_id {
+                                        let tex_name = format!("part_{}", sid);
+                                        let has_tex = self.texture_pool.has_texture(&tex_name);
+                                        info!("    -> Texture '{}' exists: {}", tex_name, has_tex);
+                                    }
+                                }
+                                info!("  media_players count: {}", self.media_players.len());
+                                for (id, _player) in &self.media_players {
+                                    info!("    -> Player for part_id={}", id);
+                                }
+                            }
+                        }
+
                         // Update Output Assignments for Preview
                         self.output_assignments.clear();
                         for op in &self.render_ops {
