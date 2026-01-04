@@ -238,8 +238,7 @@ impl Default for NodeLinkData {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkMode {
     #[default]
     Off,
@@ -247,15 +246,12 @@ pub enum LinkMode {
     Slave,
 }
 
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkBehavior {
     #[default]
     SameAsMaster,
     Inverted,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleSocket {

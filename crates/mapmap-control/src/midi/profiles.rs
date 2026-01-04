@@ -265,7 +265,7 @@ mod tests {
         // If file is found, it should have the correct name
         if profile.description.contains("Loaded from JSON") {
             assert_eq!(profile.name, "Ecler NUO 4");
-            assert!(profile.mappings.len() > 0);
+            assert!(!profile.mappings.is_empty());
         } else {
             // Fallback case
             assert_eq!(profile.name, "Ecler NUO 4 (Backup)");
