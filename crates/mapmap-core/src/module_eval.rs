@@ -221,8 +221,27 @@ impl ModuleEvaluator {
                                         masks: chain.masks,
                                     });
                                 }
-                                LayerType::Group { .. } => {
-                                    // TODO: Handle groups
+                                LayerType::Group {
+                                    opacity,
+                                    blend_mode,
+                                    mesh,
+                                    ..
+                                } => {
+                                    // Groups function similarly to Single layers for rendering context
+                                    let chain = self.trace_chain(module, layer_part.id);
+                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
+
+                                    result.render_ops.push(RenderOp {
+                                        output_part_id: part.id,
+                                        output_type: output_type.clone(),
+                                        layer_part_id: layer_part.id,
+                                        mesh: final_mesh,
+                                        opacity: *opacity * link_opacity,
+                                        blend_mode: *blend_mode,
+                                        source_part_id: chain.source_id,
+                                        effects: chain.effects,
+                                        masks: chain.masks,
+                                    });
                                 }
                                 LayerType::All { .. } => {
                                     // TODO: Handle global layers (all)
