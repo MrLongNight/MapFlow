@@ -49,9 +49,9 @@ jobs:
           
           // Get merge base between PR and main
           const { data: comparison } = await github.rest.repos.compareCommits({
-            owner: context. repo.owner,
+            owner: context.repo.owner,
             repo: context.repo.repo,
-            base: mainBranch. commit.sha,
+            base: mainBranch.commit.sha,
             head: pr.head.sha
           });
           
@@ -72,7 +72,7 @@ jobs:
             core.warning(`Branch ist ${comparison.behind_by} Commit(s) hinter main`);
             
             // Comment on PR
-            await github.rest. issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: pr.number,
@@ -192,16 +192,20 @@ jobs:
 
     - name: Install NDI SDK
       run: |
-        wget https://downloads.ndi. tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
-        tar xzf Install_NDI_SDK_v5_Linux.tar. gz
-        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo ":: warning::  NDI SDK installation may require manual acceptance"
+        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
+        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo "::warning::NDI SDK installation may require manual acceptance"
+        # Set NDI SDK paths for grafton-ndi build
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
         echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        # Verify NDI installation
+        ls -la "$NDI_SDK_DIR" 2>/dev/null || echo "::warning::NDI SDK directory not found at $NDI_SDK_DIR"
 
-    - name:   Run FFmpeg setup script
+    - name: Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
-    - name:  Verify installations
+    - name: Verify installations
       run: |
         pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
         pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
@@ -322,20 +326,20 @@ jobs:
       contents: read
 
     steps:
-    - name:  Fail if any job failed or was cancelled
+    - name: Fail if any job failed or was cancelled
       if: always()
       run: |
         # Check results of dependent jobs and fail if any are not "success"
         # Note: build-windows is included but may have issues with FFmpeg - we log but don't fail
         if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
-          echo ":: error::  One or more required jobs failed or were cancelled."
+          echo "::error::One or more required jobs failed or were cancelled."
           echo "quality: ${{ needs.quality.result }}"
-          echo "build-and-test: ${{ needs. build-and-test.result }}"
+          echo "build-and-test: ${{ needs.build-and-test.result }}"
           echo "build-windows: ${{ needs.build-windows.result }}"
-          echo "security: ${{ needs. security.result }}"
+          echo "security: ${{ needs.security.result }}"
           exit 1
         fi
         if [ "${{ needs.build-windows.result }}" != "success" ]; then
-          echo ":: warning:: Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
+          echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All CI checks passed successfully"
