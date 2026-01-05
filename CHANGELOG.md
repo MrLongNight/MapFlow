@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-05: fix(ci): comprehensive CI pipeline fixes for main branch (fix syntax errors, add ci-linux feature)
 - 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
 - 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)
 - 2026-01-02: fix: Remove build artifact files from repository (#156)
@@ -130,7 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-22: Migrate Paint Manager Panel from ImGui to egui (#73)
 - 2025-12-22: Migrate Transform Controls Panel to egui (#70)
 - 2025-12-22: Fix: CI-Testfehler und Clippy-Warnungen (#77)
-- 2025-12-21: feat: Complete media pipeline for GIFs and image sequences (#67)
+- 2025-12-21: feat(media): Complete media pipeline for GIFs and image sequences (#67)
 - 2025-12-21: fix(ci): Correct formatting in mapmap-media/src/lib.rs (#65)
 - 2025-12-21: feat(media): Complete media pipeline for GIFs and image sequences (#65)
 - 2025-12-21: Implement Cue System UI Panel (#66)
