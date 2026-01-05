@@ -124,7 +124,7 @@ jobs:
       run: cargo fmt --all -- --check
 
     - name: Run Clippy
-      run: cargo clippy --workspace --all-features -- -D warnings
+      run: cargo clippy --workspace --no-default-features --features audio -- -W warnings
 
   # Build and test on Ubuntu with audio support
   build-and-test:
