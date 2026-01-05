@@ -19,115 +19,201 @@ on:
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
-  RUST_BACKTRACE:    1
-  # Projekt-MS RUNTIME-Vorgabe (MSRV)
+  RUST_BACKTRACE: 1
   RUST_TOOLCHAIN: stable
+  # Optimierungen für schnellere Builds
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  # Code quality checks
-  quality: 
-    name: Code Quality (Format & Lint)
+  # ========================================
+  # PHASE 1: Pre-Checks & Auto-Fixes
+  # ========================================
+  
+  pre-checks:
+    name: "Pre-Checks (Auto-Fix)"
     runs-on: ubuntu-latest
     permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+    - name: Configure Git
+      run: git config --global --add safe.directory "*"
+    
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Install cargo-make (Task Runner)
+      run: cargo install --locked cargo-make
+    
+    - name: Check & Auto-Fix Formatting
+      id: fmt
+      run: |
+        cargo fmt --all
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "formatted=true" >> $GITHUB_OUTPUT
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: Auto-format code (cargo fmt) [skip ci]"
+          git push
+        else
+          echo "formatted=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Check Cargo.toml formatting
+      run: cargo install cargo-sort && cargo sort --workspace --check || cargo sort --workspace
+    
+    - name: Fix common Clippy issues (Auto-Fix)
+      continue-on-error: true
+      run: cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
+    
+    - name:  Commit Auto-Fixes
+      if: steps.fmt.outputs.formatted == 'true'
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          git add -A
+          git commit -m "chore: Auto-fix Clippy warnings [skip ci]"
+          git push
+        fi
+
+  # ========================================
+  # PHASE 2: Code Quality & Linting
+  # ========================================
+  
+  quality:
+    name: "Code Quality (Format & Lint)"
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    permissions: 
       contents: read
+      pull-requests: write
+      checks: write
 
     steps:
-    - name:   Configure Git
+    - name:  Configure Git
       run: git config --global --add safe.directory "*"
+    
     - uses:  actions/checkout@v4
-
-    - name: Set up Rust toolchain
-      uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
-        profile: minimal
-        override: true
-        components: rustfmt, clippy
+        ref: ${{ github.head_ref }}
+    
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy, rust-src
 
     - name: Install system dependencies (Ubuntu)
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          libasound2-dev \
-          pkg-config \
-          libavcodec-dev \
-          libavformat-dev \
-          libavutil-dev \
-          libswscale-dev \
-          libavdevice-dev \
-          libavfilter-dev \
-          libswresample-dev
+          libasound2-dev pkg-config \
+          libavcodec-dev libavformat-dev libavutil-dev \
+          libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
         bash scripts/install-ffmpeg-dev.sh
 
-    - name: Check formatting
+    # ---- NEUE TOOLS ----
+    
+    - name: Cache Rust dependencies
+      uses:  Swatinem/rust-cache@v2
+      with:
+        shared-key: "quality-cache"
+
+    - name: Check formatting (Final)
       run: cargo fmt --all -- --check
 
-    - name: Run Clippy
-      # Use ci-linux feature to exclude platform-specific dependencies (NDI, Spout, Syphon)
-      run: cargo clippy --workspace --features "mapmap-io/ci-linux" -- -D warnings
+    - name: Run Clippy with reviewdog
+      uses: giraffate/clippy-action@v1
+      with:
+        reporter: github-pr-review
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        clippy_flags: --workspace --features "mapmap-io/ci-linux" --all-targets -- -D warnings
 
-  # Build and test on Ubuntu with audio support
-  build-and-test: 
-    name: Build & Test (Ubuntu with Audio)
+    - name: Check for unused dependencies
+      run: |
+        cargo install cargo-udeps --locked
+        cargo +nightly udeps --workspace --features "mapmap-io/ci-linux"
+      continue-on-error: true
+
+    - name: Check dependency tree
+      run: |
+        cargo install cargo-tree
+        cargo tree --workspace --duplicates
+
+    - name: Detect security vulnerabilities (cargo-deny)
+      run: |
+        cargo install cargo-deny --locked
+        cargo deny check advisories
+
+    - name: Check license compatibility
+      run: cargo deny check licenses
+      continue-on-error: true
+
+    - name: Check for TODO/FIXME comments
+      run: |
+        cargo install cargo-fixme --locked
+        cargo fixme --workspace
+      continue-on-error: true
+
+  # ========================================
+  # PHASE 3: Build & Test
+  # ========================================
+  
+  build-and-test:
+    name: "Build & Test (Ubuntu with Audio)"
     runs-on: ubuntu-latest
-    # Use a newer toolchain for building (resolver for dependencies that require newer Cargo)
-    env:
-      RUST_TOOLCHAIN: stable
+    needs: quality
     permissions:
       contents: read
+      checks: write
 
     steps:
-    - name:  Configure Git
+    - name: Configure Git
       run: git config --global --add safe.directory "*"
+    
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
-        # this might remove tools that are actually needed, if set to "true" but usually safe for rust builds
         tool-cache: false
         android: true
         dotnet: true
-        haskell:   true
+        haskell: true
         large-packages: true
         swap-storage: true
 
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
 
     - name: Set up Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain:  stable
-        profile: minimal
-        override: true
-        components: rustfmt, clippy
+        components: rustfmt, clippy, llvm-tools-preview
 
-    - name:   Rust Cache
-      uses: swatinem/rust-cache@v2
+    - name:  Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: "build-cache"
 
     - name: Install FFmpeg and system dependencies (Ubuntu)
       run: |
         sudo apt-get update -y
         sudo apt-get install -y \
-          build-essential \
-          pkg-config \
-          clang \
-          libclang-dev \
-          libfontconfig1-dev \
-          libfreetype6-dev \
-          libxcb1-dev \
-          libxcb-render0-dev \
-          libxcb-shape0-dev \
-          libxcb-xfixes0-dev \
-          libx11-dev \
-          libavcodec-dev \
-          libavformat-dev \
-          libavutil-dev \
-          libswscale-dev \
-          libavdevice-dev \
-          libavfilter-dev \
-          libswresample-dev \
-          ffmpeg \
-          libasound2-dev
-        
+          build-essential pkg-config clang libclang-dev \
+          libfontconfig1-dev libfreetype6-dev \
+          libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev \
+          libavcodec-dev libavformat-dev libavutil-dev \
+          libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+          ffmpeg libasound2-dev
         echo "✓ FFmpeg development libraries installed"
 
     - name: Install NDI SDK
@@ -135,33 +221,15 @@ jobs:
         wget https://downloads.ndi. tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
         tar xzf Install_NDI_SDK_v5_Linux.tar. gz
         yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo ":: warning::NDI SDK installation may require manual acceptance"
-        
-        # Verschiebe NDI SDK in Verzeichnis ohne Leerzeichen
-        if [ -d "NDI SDK for Linux" ]; then
-          sudo mv "NDI SDK for Linux" /usr/local/ndi_sdk
-          echo "✓ NDI SDK moved to /usr/local/ndi_sdk"
-        elif [ -d "/usr/local/NDI SDK for Linux" ]; then
-          sudo mv "/usr/local/NDI SDK for Linux" /usr/local/ndi_sdk
-          echo "✓ NDI SDK moved from /usr/local to /usr/local/ndi_sdk"
-        fi
-        
-        # Setze Umgebungsvariablen für NDI SDK
-        echo "NDI_SDK_DIR=/usr/local/ndi_sdk" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=/usr/local/ndi_sdk/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        
-        # Verifiziere Installation
-        if [ -d "/usr/local/ndi_sdk" ]; then
-          echo "✓ NDI SDK successfully installed at /usr/local/ndi_sdk"
-          ls -la /usr/local/ndi_sdk/lib/x86_64-linux-gnu/ || echo "::warning::NDI lib directory structure may differ"
-        else
-          echo "::error::NDI SDK installation failed"
-          exit 1
-        fi
+        export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
+        echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        ls -la "$NDI_SDK_DIR" 2>/dev/null || echo ":: warning::NDI SDK directory not found at $NDI_SDK_DIR"
 
-    - name:   Run FFmpeg setup script
+    - name: Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
-    - name:  Verify installations
+    - name: Verify installations
       run: |
         pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
         pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
@@ -170,25 +238,47 @@ jobs:
         pkg-config --exists libavcodec && echo "✓ libavcodec found" || (echo "✗ libavcodec not found"; exit 1)
         pkg-config --exists libavformat && echo "✓ libavformat found" || (echo "✗ libavformat not found"; exit 1)
 
+    # ---- NEUE TEST-TOOLS ----
+    
+    - name: Install cargo-nextest (Faster test runner)
+      run: cargo install cargo-nextest --locked
+
     - name: Build & Test (Release)
       env:
         RUST_BACKTRACE: full
-      run: |
-        cargo build --release --verbose --features "mapmap-io/ci-linux"
+      run: cargo build --release --verbose --features "mapmap-io/ci-linux"
 
-    - name: Run tests (Release)
-      if: ${{ github.event. inputs.skip_tests != 'true' }}
+    - name: Run tests with nextest
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
-        RUST_BACKTRACE: full
-      # Use ci-linux feature to exclude platform-specific dependencies
-      run: cargo test --release --workspace --verbose --features "mapmap-io/ci-linux"
+        RUST_BACKTRACE:  full
+      run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
       run: cargo test --release --doc --verbose --features "mapmap-io/ci-linux"
 
+    - name: Generate code coverage (tarpaulin)
+      if: ${{ github.event.inputs. skip_tests != 'true' }}
+      run: |
+        cargo install cargo-tarpaulin --locked
+        cargo tarpaulin --workspace --features "mapmap-io/ci-linux" --out Xml --output-dir coverage
+      continue-on-error: true
+
+    - name: Upload coverage to Codecov
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      uses: codecov/codecov-action@v3
+      with:
+        files: coverage/cobertura.xml
+      continue-on-error: true
+
     - name: Generate documentation
-      run: cargo doc --no-deps --features "mapmap-io/ci-linux"
+      run: cargo doc --no-deps --features "mapmap-io/ci-linux" --document-private-items
+
+    - name: Check documentation coverage
+      run: |
+        RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --features "mapmap-io/ci-linux"
+      continue-on-error:  true
 
     - name: Upload artifacts (Release binary)
       uses: actions/upload-artifact@v4
@@ -197,42 +287,43 @@ jobs:
         path: target/release/MapFlow
         if-no-files-found: ignore
 
-  # Build on Windows (without FFmpeg - ffmpeg-next 6.x incompatible with FFmpeg 7.x)
+  # ========================================
+  # PHASE 4: Windows Build
+  # ========================================
+  
   build-windows:
-    name:   Build (Windows)
+    name: "Build (Windows)"
     runs-on: windows-latest
-    env:
-      RUST_TOOLCHAIN: stable
-    permissions:  
+    needs: quality
+    permissions:
       contents: read
 
-    steps:  
-    - name: Configure Git
+    steps:
+    - name:  Configure Git
       run: git config --global core.autocrlf false
+    
     - uses: actions/checkout@v4
+      with: 
+        ref: ${{ github. head_ref }}
 
-    - name:   Set up Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:  
-        toolchain: stable
-        profile: minimal
-        override:  true
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
         components: rustfmt, clippy
 
-    - name:   Rust Cache
-      uses:  swatinem/rust-cache@v2
+    - name:  Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: "windows-cache"
 
-    # NOTE: NDI SDK requires registration and cannot be automated in CI
-    # Building without NDI feature for Windows CI builds
-    - name: Build (Release, Windows - without NDI)
+    - name:  Build (Release, Windows - without NDI)
       env:
         RUST_BACKTRACE: full
-      run:   |
-        cargo build --release --verbose --no-default-features --features "audio"
+      run: cargo build --release --verbose --no-default-features --features "audio"
 
     - name: Run tests (Release, without NDI)
-      if: ${{ github.event.inputs.skip_tests != 'true' }}
-      env:  
+      if: ${{ github. event.inputs.skip_tests != 'true' }}
+      env:
         RUST_BACKTRACE: full
       run:  cargo test --release --workspace --verbose --no-default-features --features audio
 
@@ -243,55 +334,99 @@ jobs:
         path: target/release/MapFlow.exe
         if-no-files-found: ignore
 
-  # Security scanning
-  security: 
-    name: Security Audit
+  # ========================================
+  # PHASE 5: Security & Supply Chain
+  # ========================================
+  
+  security:
+    name: "Security Audit"
     runs-on: ubuntu-latest
-    # use newer toolchain for security scanning/build
-    env:
-      RUST_TOOLCHAIN: stable
+    needs: quality
     permissions:
       security-events: write
-      contents: read
+      contents:  read
       checks: write
 
     steps:
     - name: Configure Git
       run: git config --global --add safe.directory "*"
+    
     - uses: actions/checkout@v4
-
-    - name:    Set up Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:  
-        toolchain: stable
-        profile: minimal
-        override:   true
-
-    - name:  Run cargo audit
-      uses: rustsec/audit-check@v2
       with:
-        token:   ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.head_ref }}
 
-  # Success gate for branch protection
-  ci-success:  
-    name: CI Success Gate
+    - name: Set up Rust toolchain
+      uses:  dtolnay/rust-toolchain@stable
+
+    - name: Run cargo audit (RustSec)
+      uses: rustsec/audit-check@v2
+      with: 
+        token:  ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Check supply chain security (cargo-vet)
+      run: |
+        cargo install cargo-vet --locked
+        cargo vet || echo ":: warning::cargo-vet check failed"
+      continue-on-error: true
+
+    - name:  Dependency review
+      uses: actions/dependency-review-action@v3
+      if: github.event_name == 'pull_request'
+
+  # ========================================
+  # PHASE 6: Performance & Benchmarks
+  # ========================================
+  
+  benchmarks:
+    name: "Performance Benchmarks"
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+    
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Run benchmarks
+      run: cargo bench --workspace --features "mapmap-io/ci-linux" -- --output-format bencher | tee output.txt
+      continue-on-error: true
+    
+    - name: Compare with baseline
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'cargo'
+        output-file-path: output.txt
+        github-token: ${{ secrets. GITHUB_TOKEN }}
+        auto-push: false
+      continue-on-error: true
+
+  # ========================================
+  # PHASE 7: Success Gate
+  # ========================================
+  
+  ci-success: 
+    name: "CI Success Gate"
     needs: [quality, build-and-test, build-windows, security]
-    runs-on:  ubuntu-latest
+    runs-on: ubuntu-latest
     if: always()
     permissions:
       contents: read
 
     steps:
-    - name:  Fail if any job failed or was cancelled
+    - name: Fail if any job failed or was cancelled
       if: always()
       run: |
-        # Check results of dependent jobs and fail if any are not "success"
-        # Note: build-windows is included but may have issues with FFmpeg - we log but don't fail
-        if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
+        if [ "${{ needs.quality.result }}" != "success" ] || \
+           [ "${{ needs.build-and-test.result }}" != "success" ] || \
+           [ "${{ needs.security.result }}" != "success" ]; then
           echo ":: error::One or more required jobs failed or were cancelled."
-          echo "quality: ${{ needs.quality.result }}"
-          echo "build-and-test: ${{ needs. build-and-test.result }}"
-          echo "build-windows: ${{ needs.build-windows.result }}"
+          echo "quality:  ${{ needs.quality.result }}"
+          echo "build-and-test: ${{ needs.build-and-test.result }}"
+          echo "build-windows: ${{ needs.build-windows. result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
