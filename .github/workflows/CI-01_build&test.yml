@@ -3,9 +3,9 @@ name: "CI-01: Build&Test"
 on:
   push:  
     branches: [ "main" ]
-  pull_request: 
+  pull_request:  
     branches: [ "main" ]
-  workflow_dispatch: 
+  workflow_dispatch:  
     inputs:
       skip_tests:
         description: 'Skip tests (faster builds)'
@@ -19,20 +19,81 @@ on:
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
-  RUST_BACKTRACE:   1
+  RUST_BACKTRACE:    1
   # Projekt-MS RUNTIME-Vorgabe (MSRV)
   RUST_TOOLCHAIN: stable
 
 jobs:
+  # NEW: Check if PR branch is up-to-date with main
+  check-branch-status:
+    name: Check Branch Status
+    runs-on:  ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - name: Check if PR branch is up-to-date
+      uses: actions/github-script@v7
+      with:
+        script:  |
+          const pr = context.payload.pull_request;
+          
+          // Get the latest commit from main
+          const { data: mainBranch } = await github.rest.repos.getBranch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            branch: 'main'
+          });
+          
+          // Get merge base between PR and main
+          const { data: comparison } = await github.rest.repos.compareCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            base: mainBranch.commit.sha,
+            head: pr.head.sha
+          });
+          
+          // Check if PR is behind main
+          if (comparison.behind_by > 0) {
+            const message = `⚠️ **Branch nicht aktuell**\n\n` +
+              `Dieser PR-Branch ist **${comparison.behind_by} Commit(s)** hinter \`main\`.\n\n` +
+              `**Bitte aktualisiere den Branch vor dem Merge:**\n` +
+              `\`\`\`bash\n` +
+              `git checkout ${pr.head.ref}\n` +
+              `git fetch origin\n` +
+              `git merge origin/main\n` +
+              `# oder\n` +
+              `git rebase origin/main\n` +
+              `\`\`\`\n\n` +
+              `Oder nutze den **"Update branch"**-Button oben im PR. `;
+            
+            core.warning(`Branch ist ${comparison.behind_by} Commit(s) hinter main`);
+            
+            // Comment on PR
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: message
+            });
+            
+            // Set output for potential branch protection
+            core.setFailed(`PR branch ist nicht auf dem aktuellen Stand von main (${comparison.behind_by} commits behind)`);
+          } else {
+            core.info('✓ PR branch ist auf dem aktuellen Stand');
+          }
+
   # Code quality checks
-  quality:
+  quality: 
     name: Code Quality (Format & Lint)
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
-    - name:  Configure Git
+    - name:   Configure Git
       run: git config --global --add safe.directory "*"
     - uses: actions/checkout@v4
 
@@ -63,8 +124,7 @@ jobs:
       run: cargo fmt --all -- --check
 
     - name: Run Clippy
-      # Use specific features to avoid platform-specific compilation errors (no spout/syphon/ndi)
-      run: cargo clippy --workspace --features "mapmap-io/ci-linux" -- -D warnings
+      run: cargo clippy --workspace --all-features -- -D warnings
 
   # Build and test on Ubuntu with audio support
   build-and-test:
@@ -86,21 +146,21 @@ jobs:
         tool-cache: false
         android: true
         dotnet: true
-        haskell:  true
+        haskell:   true
         large-packages: true
-        swap-storage: true
+        swap-storage:  true
 
     - uses: actions/checkout@v4
 
     - name: Set up Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain:  stable
         profile: minimal
         override: true
         components: rustfmt, clippy
 
-    - name:  Rust Cache
+    - name:   Rust Cache
       uses: swatinem/rust-cache@v2
 
     - name: Install FFmpeg and system dependencies (Ubuntu)
@@ -134,17 +194,18 @@ jobs:
       run: |
         wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
         tar xzf Install_NDI_SDK_v5_Linux.tar.gz
-        yes | sudo ./Install_NDI_SDK_v5_Linux. sh || echo "::  warning:: NDI SDK installation may require manual acceptance"
-        if [ -d "NDI SDK for Linux" ]; then
-          mv "NDI SDK for Linux" "$HOME/"
-        fi
+        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo "::warning::NDI SDK installation may require manual acceptance"
+        # Set NDI SDK paths for grafton-ndi build
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
         echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        # Verify NDI installation
+        ls -la "$NDI_SDK_DIR" 2>/dev/null || echo "::warning::NDI SDK directory not found at $NDI_SDK_DIR"
 
-    - name:  Run FFmpeg setup script
+    - name: Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
-    - name:  Verify installations
+    - name: Verify installations
       run: |
         pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
         pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
@@ -158,21 +219,20 @@ jobs:
       env:
         RUST_BACKTRACE: full
       run: |
-        cargo build --release --verbose --features "mapmap-io/ci-linux"
+        cargo build --release --verbose --all-features
 
     - name: Run tests (Release)
-      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      if: ${{ github.event. inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
-      # Exclude NDI feature for standard CI to avoid SDK path issues
-      run: cargo test --release --workspace --verbose --features "mapmap-io/ci-linux"
+      run:   cargo test --release --workspace --verbose --all-features
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
-      run: cargo test --release --doc --verbose --features "mapmap-io/ci-linux"
+      run:  cargo test --release --doc --verbose --all-features
 
     - name: Generate documentation
-      run: cargo doc --no-deps --features "mapmap-io/ci-linux"
+      run: cargo doc --no-deps --all-features
 
     - name: Upload artifacts (Release binary)
       uses: actions/upload-artifact@v4
@@ -183,11 +243,11 @@ jobs:
 
   # Build on Windows (without FFmpeg - ffmpeg-next 6.x incompatible with FFmpeg 7.x)
   build-windows:
-    name:  Build (Windows)
+    name:   Build (Windows)
     runs-on: windows-latest
     env:
       RUST_TOOLCHAIN: stable
-    permissions: 
+    permissions:  
       contents: read
 
     steps:  
@@ -195,23 +255,23 @@ jobs:
       run: git config --global core.autocrlf false
     - uses: actions/checkout@v4
 
-    - name:  Set up Rust toolchain
+    - name:   Set up Rust toolchain
       uses: actions-rs/toolchain@v1
-      with: 
+      with:  
         toolchain: stable
         profile: minimal
-        override: true
+        override:  true
         components: rustfmt, clippy
 
-    - name:  Rust Cache
-      uses: swatinem/rust-cache@v2
+    - name:   Rust Cache
+      uses:  swatinem/rust-cache@v2
 
     # NOTE: NDI SDK requires registration and cannot be automated in CI
     # Building without NDI feature for Windows CI builds
     - name: Build (Release, Windows - without NDI)
       env:
         RUST_BACKTRACE: full
-      run:  |
+      run:   |
         cargo build --release --verbose --no-default-features --features "audio"
 
     - name: Run tests (Release, without NDI)
@@ -228,7 +288,7 @@ jobs:
         if-no-files-found: ignore
 
   # Security scanning
-  security:
+  security: 
     name: Security Audit
     runs-on: ubuntu-latest
     # use newer toolchain for security scanning/build
@@ -236,7 +296,7 @@ jobs:
       RUST_TOOLCHAIN: stable
     permissions:
       security-events: write
-      contents: read
+      contents:  read
       checks: write
 
     steps:
@@ -244,23 +304,23 @@ jobs:
       run: git config --global --add safe.directory "*"
     - uses: actions/checkout@v4
 
-    - name:   Set up Rust toolchain
+    - name:    Set up Rust toolchain
       uses: actions-rs/toolchain@v1
       with:  
         toolchain: stable
         profile: minimal
-        override:  true
+        override:   true
 
-    - name: Run cargo audit
+    - name:  Run cargo audit
       uses: rustsec/audit-check@v2
       with:
-        token:  ${{ secrets.GITHUB_TOKEN }}
+        token:   ${{ secrets.GITHUB_TOKEN }}
 
   # Success gate for branch protection
-  ci-success: 
+  ci-success:  
     name: CI Success Gate
     needs: [quality, build-and-test, build-windows, security]
-    runs-on: ubuntu-latest
+    runs-on:  ubuntu-latest
     if: always()
     permissions:
       contents: read
@@ -272,10 +332,10 @@ jobs:
         # Check results of dependent jobs and fail if any are not "success"
         # Note: build-windows is included but may have issues with FFmpeg - we log but don't fail
         if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
-          echo "::error:: One or more required jobs failed or were cancelled."
+          echo "::error::One or more required jobs failed or were cancelled."
           echo "quality: ${{ needs.quality.result }}"
           echo "build-and-test: ${{ needs.build-and-test.result }}"
-          echo "build-windows: ${{ needs.build-windows. result }}"
+          echo "build-windows: ${{ needs.build-windows.result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
