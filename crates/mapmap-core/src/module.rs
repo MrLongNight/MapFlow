@@ -1319,6 +1319,6 @@ impl ModuleManager {
 
 impl Default for ModuleManager {
     fn default() -> Self {
-        Self:: new()
+        Self::new()
     }
 }
