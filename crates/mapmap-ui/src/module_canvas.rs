@@ -2,9 +2,9 @@ use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType,
-    MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId,
-    ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData, OutputType, SourceType,
-    TriggerType,
+    MapFlowModule, MappingOverlay, MaskShape, MaskType, MeshType, ModuleManager, ModulePart,
+    ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData, OutputType,
+    SourceType, TriggerType,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -1127,6 +1127,7 @@ impl ModuleCanvas {
                                                     MeshType::BezierSurface { .. } => "Bezier",
                                                     MeshType::Polygon { .. } => "Polygon",
                                                     MeshType::TriMesh => "Triangle",
+                                                    MeshType::Hexagon { .. } => "Hexagon",
                                                     MeshType::Circle { .. } => "Circle",
                                                     MeshType::Cylinder { .. } => "Cylinder",
                                                     MeshType::Sphere { .. } => "Sphere",
@@ -1184,7 +1185,7 @@ impl ModuleCanvas {
 
                                                     let handle = |coord: &mut (f32, f32), name: &str| {
                                                         let pos = to_screen(*coord);
-                                                        let id = response.id.with(name);
+                                                        let id = response.id.with(id_salt).with(name);
                                                         let h_rect = Rect::from_center_size(pos, Vec2::splat(12.0));
                                                         let h_resp = ui.interact(h_rect, id, Sense::drag());
                                                         if h_resp.dragged() {
@@ -1206,7 +1207,7 @@ impl ModuleCanvas {
                                         };
 
                                         match layer {
-                                            LayerType::Single { id, name, opacity, blend_mode, mesh } => {
+                                            LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_overlay } => {
                                                 ui.label("🔲 Single Layer");
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
@@ -1222,6 +1223,45 @@ impl ModuleCanvas {
                                                 });
 
                                                 render_mesh_ui(ui, mesh, *id);
+
+                                                // Mapping Overlay UI
+                                                ui.add_space(8.0);
+                                                ui.group(|ui| {
+                                                    ui.label(egui::RichText::new("🎯 Mapping Overlay").strong());
+
+                                                    ui.checkbox(&mut mapping_overlay.show_grid, "Grid");
+                                                    if mapping_overlay.show_grid {
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut mapping_overlay.grid_rows).clamp_range(1..=32).prefix("Rows: "));
+                                                            ui.add(egui::DragValue::new(&mut mapping_overlay.grid_cols).clamp_range(1..=32).prefix("Cols: "));
+                                                        });
+                                                    }
+
+                                                    ui.checkbox(&mut mapping_overlay.show_checkerboard, "Checkerboard");
+                                                    if mapping_overlay.show_checkerboard {
+                                                        ui.add(egui::DragValue::new(&mut mapping_overlay.checkerboard_size).clamp_range(1..=16).prefix("Size: "));
+                                                    }
+
+                                                    ui.checkbox(&mut mapping_overlay.show_outline, "Edge Outline");
+                                                    if mapping_overlay.show_outline {
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut mapping_overlay.outline_width).clamp_range(0.5..=10.0).speed(0.5).prefix("Width: "));
+                                                            let mut color = Color32::from_rgba_unmultiplied(
+                                                                (mapping_overlay.outline_color[0] * 255.0) as u8,
+                                                                (mapping_overlay.outline_color[1] * 255.0) as u8,
+                                                                (mapping_overlay.outline_color[2] * 255.0) as u8,
+                                                                (mapping_overlay.outline_color[3] * 255.0) as u8,
+                                                            );
+                                                            egui::color_picker::color_edit_button_srgba(ui, &mut color, egui::color_picker::Alpha::OnlyBlend);
+                                                            mapping_overlay.outline_color = [
+                                                                color.r() as f32 / 255.0,
+                                                                color.g() as f32 / 255.0,
+                                                                color.b() as f32 / 255.0,
+                                                                color.a() as f32 / 255.0,
+                                                            ];
+                                                        });
+                                                    }
+                                                });
                                             }
                                             LayerType::Group { name, opacity, mesh, .. } => {
                                                 ui.label("📂 Group");
@@ -1249,6 +1289,7 @@ impl ModuleCanvas {
                                                 MeshType::BezierSurface { .. } => "Bezier",
                                                 MeshType::Polygon { .. } => "Polygon",
                                                 MeshType::TriMesh => "Triangle",
+                                                MeshType::Hexagon { .. } => "Hexagon",
                                                 MeshType::Circle { .. } => "Circle",
                                                 MeshType::Cylinder { .. } => "Cylinder",
                                                 MeshType::Sphere { .. } => "Sphere",
@@ -1305,7 +1346,7 @@ impl ModuleCanvas {
 
                                                 let handle = |coord: &mut (f32, f32), name: &str| {
                                                     let pos = to_screen(*coord);
-                                                    let id = response.id.with(name);
+                                                    let id = response.id.with(part_id).with(name);
                                                     let h_rect = Rect::from_center_size(pos, Vec2::splat(12.0));
                                                     let h_resp = ui.interact(h_rect, id, Sense::drag());
                                                     if h_resp.dragged() {
@@ -1996,7 +2037,8 @@ impl ModuleCanvas {
                                         name: format!("Layer {}", layer_id),
                                         opacity: 1.0,
                                         blend_mode: None,
-                                        mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
+                                        mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) },
+                                        mapping_overlay: MappingOverlay::default(),
                                     }));
                                 }
                                 self.search_filter.clear();
@@ -2007,7 +2049,8 @@ impl ModuleCanvas {
                                     name: "Group 1".to_string(),
                                     opacity: 1.0,
                                     blend_mode: None,
-                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
+                                    mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) },
+                                    mapping_overlay: MappingOverlay::default(),
                                 }));
                                 self.search_filter.clear();
                                 ui.close_menu();
@@ -2035,6 +2078,7 @@ impl ModuleCanvas {
                                         opacity: 1.0,
                                         blend_mode: None,
                                         mesh,
+                                        mapping_overlay: MappingOverlay::default(),
                                     }));
                                 }
                                 self.search_filter.clear();
@@ -2050,6 +2094,9 @@ impl ModuleCanvas {
                             }
                             if (show_all || "circle arc".contains(&filter)) && ui.button("⭕ Circle/Arc").clicked() {
                                 add_mesh_layer(ui, "Circle Layer", MeshType::Circle { segments: 32, arc_angle: 360.0 });
+                            }
+                            if (show_all || "hexagon".contains(&filter)) && ui.button("⬡ Hexagon").clicked() {
+                                add_mesh_layer(ui, "Hexagon Layer", MeshType::Hexagon { size: 1.0 });
                             }
                             if show_all { ui.separator(); ui.label(egui::RichText::new("Subdivided").weak()); }
                             if (show_all || "grid".contains(&filter)) && ui.button("▦ Grid (4x4)").clicked() {
@@ -3760,6 +3807,7 @@ impl ModuleCanvas {
                                     br: (1.0, 1.0),
                                     bl: (0.0, 1.0),
                                 },
+                                mapping_overlay: MappingOverlay::default(),
                             };
                         }
                         if ui
@@ -3779,6 +3827,7 @@ impl ModuleCanvas {
                                     br: (1.0, 1.0),
                                     bl: (0.0, 1.0),
                                 },
+                                mapping_overlay: MappingOverlay::default(),
                             };
                         }
                         if ui

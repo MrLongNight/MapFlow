@@ -72,6 +72,7 @@ impl MapFlowModule {
                 opacity: 1.0,
                 blend_mode: None,
                 mesh: default_mesh_quad(),
+                mapping_overlay: MappingOverlay::default(),
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 0,
@@ -733,6 +734,8 @@ pub enum MeshType {
     Polygon { vertices: Vec<(f32, f32)> },
     /// Triangle mesh
     TriMesh,
+    /// Hexagon (6-sided regular polygon)
+    Hexagon { size: f32 },
     /// Circle/Arc for curved surfaces
     Circle { segments: u32, arc_angle: f32 },
     /// Cylinder projection (for 3D surfaces)
@@ -770,6 +773,10 @@ impl MeshType {
             }
             MeshType::TriMesh => {
                 2u8.hash(&mut hasher);
+            }
+            MeshType::Hexagon { size } => {
+                9u8.hash(&mut hasher);
+                size.to_bits().hash(&mut hasher);
             }
             MeshType::Circle {
                 segments,
@@ -834,6 +841,42 @@ impl MeshType {
             }
             MeshType::Grid { rows, cols } => Mesh::create_grid(*rows, *cols),
             MeshType::TriMesh => Mesh::triangle(),
+            MeshType::Hexagon { size } => {
+                // Create a regular hexagon centered at 0.5, 0.5
+                use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
+                let center = Vec2::new(0.5, 0.5);
+                let radius = size * 0.5;
+                let mut mesh_vertices = Vec::with_capacity(7); // Center + 6 vertices
+                mesh_vertices.push(MeshVertex::new(center, Vec2::new(0.5, 0.5))); // Center
+
+                // Create 6 vertices around the hexagon
+                for i in 0..6 {
+                    let angle =
+                        (i as f32) * std::f32::consts::TAU / 6.0 - std::f32::consts::FRAC_PI_2; // Start at top
+                    let x = center.x + radius * angle.cos();
+                    let y = center.y + radius * angle.sin();
+                    let u = 0.5 + 0.5 * angle.cos();
+                    let v = 0.5 + 0.5 * angle.sin();
+                    mesh_vertices.push(MeshVertex::new(Vec2::new(x, y), Vec2::new(u, v)));
+                }
+
+                // Create triangle fan indices
+                let indices = vec![
+                    0, 1, 2, // Triangle 1
+                    0, 2, 3, // Triangle 2
+                    0, 3, 4, // Triangle 3
+                    0, 4, 5, // Triangle 4
+                    0, 5, 6, // Triangle 5
+                    0, 6, 1, // Triangle 6 (close the fan)
+                ];
+
+                Mesh {
+                    mesh_type: CoreMeshType::Custom,
+                    vertices: mesh_vertices,
+                    indices,
+                    revision: 0,
+                }
+            }
             MeshType::Circle { segments, .. } => {
                 Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
             }
@@ -1118,6 +1161,63 @@ impl BlendModeType {
     }
 }
 
+/// Mapping overlay settings for visual alignment helpers
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MappingOverlay {
+    /// Show grid overlay
+    #[serde(default)]
+    pub show_grid: bool,
+    /// Number of grid rows
+    #[serde(default = "default_grid_size")]
+    pub grid_rows: u32,
+    /// Number of grid columns
+    #[serde(default = "default_grid_size")]
+    pub grid_cols: u32,
+    /// Show checkerboard pattern
+    #[serde(default)]
+    pub show_checkerboard: bool,
+    /// Checkerboard square size (in cells)
+    #[serde(default = "default_checker_size")]
+    pub checkerboard_size: u32,
+    /// Show edge outline
+    #[serde(default)]
+    pub show_outline: bool,
+    /// Outline color [R, G, B, A] (0.0-1.0)
+    #[serde(default = "default_outline_color")]
+    pub outline_color: [f32; 4],
+    /// Outline width in pixels
+    #[serde(default = "default_outline_width")]
+    pub outline_width: f32,
+}
+
+fn default_grid_size() -> u32 {
+    4
+}
+fn default_checker_size() -> u32 {
+    2
+}
+fn default_outline_color() -> [f32; 4] {
+    [1.0, 1.0, 1.0, 1.0]
+}
+fn default_outline_width() -> f32 {
+    2.0
+}
+
+impl Default for MappingOverlay {
+    fn default() -> Self {
+        Self {
+            show_grid: false,
+            grid_rows: 4,
+            grid_cols: 4,
+            show_checkerboard: false,
+            checkerboard_size: 2,
+            show_outline: false,
+            outline_color: [1.0, 1.0, 1.0, 1.0],
+            outline_width: 2.0,
+        }
+    }
+}
+
 fn default_mesh_quad() -> MeshType {
     MeshType::Quad {
         tl: (0.0, 0.0),
@@ -1136,6 +1236,9 @@ pub enum LayerType {
         blend_mode: Option<BlendModeType>,
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Mapping overlay for alignment helpers
+        #[serde(default)]
+        mapping_overlay: MappingOverlay,
     },
     Group {
         name: String,
@@ -1143,6 +1246,9 @@ pub enum LayerType {
         blend_mode: Option<BlendModeType>,
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Mapping overlay for alignment helpers
+        #[serde(default)]
+        mapping_overlay: MappingOverlay,
     },
     All {
         opacity: f32,
