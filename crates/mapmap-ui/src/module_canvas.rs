@@ -17,6 +17,8 @@ pub enum MediaPlaybackCommand {
     Play,
     Pause,
     Stop,
+    /// Reload the media from disk (used when path changes)
+    Reload,
 }
 
 /// Information about a socket position for hit detection
@@ -99,6 +101,10 @@ pub struct ModuleCanvas {
     pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
     /// Pending playback commands (Part ID, Command)
     pub pending_playback_commands: Vec<(ModulePartId, MediaPlaybackCommand)>,
+    /// Last diagnostic check results
+    pub diagnostic_issues: Vec<mapmap_core::diagnostics::ModuleIssue>,
+    /// Whether diagnostic popup is shown
+    show_diagnostics: bool,
 }
 
 /// Live audio data for trigger nodes
@@ -194,6 +200,8 @@ impl Default for ModuleCanvas {
             editing_part_id: None,
             node_previews: std::collections::HashMap::new(),
             pending_playback_commands: Vec::new(),
+            diagnostic_issues: Vec::new(),
+            show_diagnostics: false,
         }
     }
 }
@@ -536,6 +544,8 @@ impl ModuleCanvas {
                                                             .pick_file()
                                                         {
                                                             *path = picked.display().to_string();
+                                                            // Trigger reload of the media player
+                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Reload));
                                                         }
                                                     }
                                                 });
@@ -2100,6 +2110,19 @@ impl ModuleCanvas {
                 {
                     self.show_presets = !self.show_presets;
                 }
+
+                // Check Module button
+                let check_label = if self.diagnostic_issues.is_empty() {
+                    "✓ Check"
+                } else {
+                    "⚠ Check"
+                };
+                if ui.button(check_label).on_hover_text("Check module for issues").clicked() {
+                    if let Some(module) = manager.get_module(module_id) {
+                        self.diagnostic_issues = mapmap_core::diagnostics::check_module_integrity(module);
+                        self.show_diagnostics = true;
+                    }
+                }
             }
 
             // === ZOOM CONTROLS (at the end of toolbar) ===
@@ -2868,6 +2891,9 @@ impl ModuleCanvas {
         if self.show_presets {
             self.draw_presets_popup(ui, canvas_rect, module);
         }
+
+        // Draw diagnostics popup if visible
+        self.render_diagnostics_popup(ui);
 
         // Draw context menu for parts
         if let (Some(part_id), Some(pos)) = (self.context_menu_part, self.context_menu_pos) {
@@ -4356,6 +4382,77 @@ impl ModuleCanvas {
                 OutputType::Spout { name } => format!("🚰 {}", name),
             },
         }
+    }
+
+    /// Render the diagnostics popup window
+    fn render_diagnostics_popup(&mut self, ui: &mut Ui) {
+        if !self.show_diagnostics {
+            return;
+        }
+
+        let popup_size = Vec2::new(350.0, 250.0);
+        let available = ui.available_rect_before_wrap();
+        let popup_pos = Pos2::new(
+            (available.min.x + available.max.x - popup_size.x) / 2.0,
+            (available.min.y + available.max.y - popup_size.y) / 2.0,
+        );
+        let popup_rect = egui::Rect::from_min_size(popup_pos, popup_size);
+
+        // Background
+        let painter = ui.painter();
+        painter.rect_filled(
+            popup_rect,
+            8.0,
+            Color32::from_rgba_unmultiplied(30, 35, 45, 245),
+        );
+        painter.rect_stroke(
+            popup_rect,
+            8.0,
+            Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
+        );
+
+        let inner_rect = popup_rect.shrink(12.0);
+        ui.allocate_ui_at_rect(inner_rect, |ui| {
+            ui.vertical(|ui| {
+                ui.heading(if self.diagnostic_issues.is_empty() {
+                    "✓ Module Check: OK"
+                } else {
+                    "⚠ Module Check: Issues Found"
+                });
+                ui.add_space(8.0);
+
+                if self.diagnostic_issues.is_empty() {
+                    ui.label("No issues found. Your module looks good!");
+                } else {
+                    egui::ScrollArea::vertical()
+                        .max_height(150.0)
+                        .show(ui, |ui| {
+                            for issue in &self.diagnostic_issues {
+                                let (icon, color) = match issue.severity {
+                                    mapmap_core::diagnostics::IssueSeverity::Error => {
+                                        ("❌", Color32::RED)
+                                    }
+                                    mapmap_core::diagnostics::IssueSeverity::Warning => {
+                                        ("⚠", Color32::YELLOW)
+                                    }
+                                    mapmap_core::diagnostics::IssueSeverity::Info => {
+                                        ("ℹ", Color32::LIGHT_BLUE)
+                                    }
+                                };
+                                ui.horizontal(|ui| {
+                                    ui.colored_label(color, icon);
+                                    ui.label(&issue.message);
+                                });
+                            }
+                        });
+                }
+
+                ui.add_space(8.0);
+                if ui.button("Close").clicked() {
+                    self.show_diagnostics = false;
+                }
+            });
+        });
     }
 
     /// Convert ModulePartType back to PartType for add_part

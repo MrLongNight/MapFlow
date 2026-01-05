@@ -7,11 +7,13 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 ### For New Users
 - [Getting Started](01-GETTING-STARTED/) - Installation, Build, Quick Start
 - [User Guide](04-USER-GUIDE/) - Features, UI Panels, Keyboard Shortcuts
+- [MIDI Control](04-USER-GUIDE/MIDI_CONTROL.md) - Controller Setup & Mapping
 
 ### For Developers
 - [Architecture](03-ARCHITECTURE/) - System Design, Crates, Data Flow
 - [Contributing](02-CONTRIBUTING/) - How to Contribute, Code Guidelines
 - [Technical Reference](07-TECHNICAL/) - Shaders, Rendering, Performance
+- [Audits & Reports](07-TECHNICAL/audits/) - Code & Security Audits
 
 ### For Project Managers
 - [Roadmap & Phases](05-ROADMAP/) - Complete Phase Plan (0-7)

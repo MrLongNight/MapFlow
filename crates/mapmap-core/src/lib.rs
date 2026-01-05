@@ -29,6 +29,7 @@ pub mod audio;
 pub mod audio_media_pipeline;
 pub mod audio_reactive;
 pub mod codegen;
+pub mod diagnostics;
 pub mod effect_animation;
 pub mod effects;
 pub mod logging;

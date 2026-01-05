@@ -11,13 +11,8 @@ pub struct MeshEditor {
     /// Mesh vertices
     vertices: Vec<Vertex>,
     /// Mesh faces (triangles)
+    /// Mesh faces (triangles)
     faces: Vec<Face>,
-    /// Selected vertices
-    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
-    selected: Vec<usize>,
-    /// Dragging vertex
-    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
-    dragging: Option<usize>,
     /// Editor mode
     mode: EditMode,
     /// Symmetry settings
@@ -25,14 +20,6 @@ pub struct MeshEditor {
     /// Snap settings
     snap_to_grid: bool,
     grid_size: f32,
-    /// Subdivision level
-    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
-    subdivision_level: u32,
-    /// Canvas transform
-    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
-    pan_offset: Vec2,
-    #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
-    zoom: f32,
 }
 
 /// Mesh vertex with Bezier control points
@@ -83,15 +70,10 @@ impl MeshEditor {
         Self {
             vertices: Vec::new(),
             faces: Vec::new(),
-            selected: Vec::new(),
-            dragging: None,
             mode: EditMode::Select,
             symmetry: SymmetryMode::None,
             snap_to_grid: false,
             grid_size: 20.0,
-            subdivision_level: 0,
-            pan_offset: Vec2::ZERO,
-            zoom: 1.0,
         }
     }
 

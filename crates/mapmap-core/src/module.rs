@@ -56,6 +56,9 @@ impl MapFlowModule {
                 rotation: 0.0,
                 offset_x: 0.0,
                 offset_y: 0.0,
+                target_width: None,
+                target_height: None,
+                target_fps: None,
             }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
             PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
@@ -78,6 +81,9 @@ impl MapFlowModule {
                 target_screen: 0,
                 show_in_preview_panel: true,
                 extra_preview_window: false,
+                output_width: 0,
+                output_height: 0,
+                output_fps: 60.0,
             }),
         };
 
@@ -293,7 +299,7 @@ impl ModulePart {
         // Trigger Input (Visibility Control)
         // Available if enabled, for Master or normal nodes.
         // Slave nodes rely on Link In, but technically could have both?
-        // Logic: Master sends Its visibility. It can be controlled by Trigger In.
+        // Logic: Master sends Its visibility.  It can be controlled by Trigger In.
         // Slave receives visibility.
         if self.link_data.trigger_input_enabled {
             inputs.push(ModuleSocket {
@@ -362,10 +368,16 @@ impl ModulePartType {
                 }],
             ),
             ModulePartType::Layer(_) => (
-                vec![ModuleSocket {
-                    name: "Input".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
+                vec![
+                    ModuleSocket {
+                        name: "Input".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Trigger".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
                 vec![ModuleSocket {
                     name: "Output".to_string(),
                     socket_type: ModuleSocketType::Layer,
@@ -570,7 +582,7 @@ impl AudioTriggerOutputConfig {
             });
         }
 
-        // Fallback: if nothing is enabled, add at least beat output
+        // Fallback:  if nothing is enabled, add at least beat output
         if outputs.is_empty() {
             outputs.push(ModuleSocket {
                 name: "Beat Out".to_string(),
@@ -604,7 +616,7 @@ pub enum SourceType {
         /// Blend mode for compositing
         #[serde(default)]
         blend_mode: Option<BlendModeType>,
-        /// Color correction: Brightness (-1.0 to 1.0)
+        /// Color correction:  Brightness (-1.0 to 1.0)
         #[serde(default)]
         brightness: f32,
         /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
@@ -616,7 +628,7 @@ pub enum SourceType {
         /// Color correction: Hue shift (-180 to 180 degrees)
         #[serde(default)]
         hue_shift: f32,
-        /// Transform: Scale X
+        /// Transform:  Scale X
         #[serde(default = "default_scale")]
         scale_x: f32,
         /// Transform: Scale Y
@@ -631,6 +643,15 @@ pub enum SourceType {
         /// Transform: Position offset Y
         #[serde(default)]
         offset_y: f32,
+        /// Target output width (None = use original resolution)
+        #[serde(default)]
+        target_width: Option<u32>,
+        /// Target output height (None = use original resolution)
+        #[serde(default)]
+        target_height: Option<u32>,
+        /// Target FPS override (None = use original FPS)
+        #[serde(default)]
+        target_fps: Option<f32>,
     },
     Shader {
         name: String,
@@ -671,6 +692,9 @@ impl SourceType {
             rotation: 0.0,
             offset_x: 0.0,
             offset_y: 0.0,
+            target_width: None,
+            target_height: None,
+            target_fps: None,
         }
     }
 }
@@ -850,11 +874,12 @@ impl MeshType {
                             .push(MeshVertex::new(Vec2::new(v.0, v.1), Vec2::new(v.0, v.1)));
                     }
 
+                    // FIX: Komplettes Triangle-Fan-Indices generieren (3 Indices pro Dreieck)
                     let mut indices = Vec::with_capacity(vertices.len() * 3);
                     for i in 0..vertices.len() {
-                        indices.push(0); // Center
-                        indices.push((i + 1) as u16);
-                        indices.push(((i + 1) % vertices.len() + 1) as u16);
+                        indices.push(0); // Center vertex
+                        indices.push((i + 1) as u16); // Current outer vertex
+                        indices.push(((i + 1) % vertices.len() + 1) as u16); // Next outer vertex (wrapping)
                     }
 
                     Mesh {
@@ -1149,6 +1174,15 @@ pub enum OutputType {
         /// Open a separate preview window for this output
         #[serde(default)]
         extra_preview_window: bool,
+        /// Output resolution width (0 = use window size)
+        #[serde(default)]
+        output_width: u32,
+        /// Output resolution height (0 = use window size)
+        #[serde(default)]
+        output_height: u32,
+        /// Output target FPS (0.0 = unlimited/vsync)
+        #[serde(default = "default_output_fps")]
+        output_fps: f32,
     },
     /// NDI network video output
     NdiOutput {
@@ -1161,6 +1195,10 @@ pub enum OutputType {
 
 fn default_true() -> bool {
     true
+}
+
+fn default_output_fps() -> f32 {
+    60.0
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1266,6 +1304,11 @@ impl ModuleManager {
         self.modules.values().collect()
     }
 
+    /// Get all modules mutably
+    pub fn modules_mut(&mut self) -> Vec<&mut MapFlowModule> {
+        self.modules.values_mut().collect()
+    }
+
     /// Generate a new part ID
     pub fn next_part_id(&mut self) -> ModulePartId {
         let id = self.next_part_id;
@@ -1276,6 +1319,6 @@ impl ModuleManager {
 
 impl Default for ModuleManager {
     fn default() -> Self {
-        Self::new()
+        Self:: new()
     }
 }

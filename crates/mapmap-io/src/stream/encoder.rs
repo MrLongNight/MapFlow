@@ -5,7 +5,7 @@
 #[cfg(feature = "stream")]
 use crate::error::{IoError, Result};
 #[cfg(feature = "stream")]
-use crate::format::{VideoFormat, VideoFrame};
+use crate::format::{FrameData, VideoFormat, VideoFrame};
 
 /// Video codec enumeration.
 #[cfg(feature = "stream")]

@@ -1,0 +1,9 @@
+name: "MapFlow CodeQL Config"
+
+paths-ignore:
+  - target/**
+  - vcpkg/**
+  - '**/build/**'
+
+queries:
+  - uses: security-and-quality

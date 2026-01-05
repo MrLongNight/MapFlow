@@ -9,7 +9,9 @@ use crate::module::{
     BlendModeType, LayerType, LinkBehavior, LinkMode, MapFlowModule, MaskType, MeshType,
     ModulePartId, ModulePartType, ModulizerType, OutputType, SourceType, TriggerType,
 };
+use rand::Rng;
 use std::collections::HashMap;
+use std::time::Instant;
 
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
@@ -78,12 +80,15 @@ struct ProcessingChain {
     source_id: Option<ModulePartId>,
     effects: Vec<ModulizerType>,
     masks: Vec<MaskType>,
+    override_mesh: Option<MeshType>,
 }
 
 /// Module graph evaluator
 pub struct ModuleEvaluator {
     /// Current trigger data from audio analysis
     audio_trigger_data: AudioTriggerData,
+    /// Creation time for timing calculations
+    start_time: Instant,
 }
 
 impl Default for ModuleEvaluator {
@@ -97,6 +102,7 @@ impl ModuleEvaluator {
     pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
+            start_time: Instant::now(),
         }
     }
 
@@ -112,6 +118,38 @@ impl ModuleEvaluator {
     /// Evaluate a module for one frame
     pub fn evaluate(&self, module: &MapFlowModule) -> ModuleEvalResult {
         let mut result = ModuleEvalResult::default();
+
+        // === DIAGNOSTICS: Log module structure ===
+        let output_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Output(_)))
+            .count();
+        let layer_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Layer(_)))
+            .count();
+        let source_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Source(_)))
+            .count();
+        let trigger_count = module
+            .parts
+            .iter()
+            .filter(|p| matches!(p.part_type, ModulePartType::Trigger(_)))
+            .count();
+
+        tracing::debug!(
+            "ModuleEval: parts={} (outputs={}, layers={}, sources={}, triggers={}), connections={}",
+            module.parts.len(),
+            output_count,
+            layer_count,
+            source_count,
+            trigger_count,
+            module.connections.len()
+        );
 
         // Step 1: Evaluate all trigger nodes
         for part in &module.parts {
@@ -184,6 +222,10 @@ impl ModuleEvaluator {
 
         // Step 4: Trace Render Pipeline
         // Start from Output nodes and trace back to Layers, then to Sources/Effects
+        let mut outputs_without_connection = Vec::new();
+        let mut outputs_without_layer = Vec::new();
+        let mut outputs_without_source = Vec::new();
+
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 // Find connected input (should be a Layer)
@@ -205,29 +247,102 @@ impl ModuleEvaluator {
                                     // Trace back from Layer to find Source chain
                                     let chain = self.trace_chain(module, layer_part.id);
 
+                                    // Use override mesh from Mesh Node if present, otherwise use Layer's internal mesh
+                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
+
                                     result.render_ops.push(RenderOp {
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
-                                        mesh: mesh.clone(),
+                                        mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
+
+                                    if chain.source_id.is_none() {
+                                        outputs_without_source.push(part.id);
+                                    }
                                 }
-                                LayerType::Group { .. } => {
-                                    // TODO: Handle groups
+                                LayerType::Group {
+                                    opacity,
+                                    blend_mode,
+                                    mesh,
+                                    ..
+                                } => {
+                                    // Groups function similarly to Single layers for rendering context
+                                    let chain = self.trace_chain(module, layer_part.id);
+                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
+
+                                    result.render_ops.push(RenderOp {
+                                        output_part_id: part.id,
+                                        output_type: output_type.clone(),
+                                        layer_part_id: layer_part.id,
+                                        mesh: final_mesh,
+                                        opacity: *opacity * link_opacity,
+                                        blend_mode: *blend_mode,
+                                        source_part_id: chain.source_id,
+                                        effects: chain.effects,
+                                        masks: chain.masks,
+                                    });
+
+                                    if chain.source_id.is_none() {
+                                        outputs_without_source.push(part.id);
+                                    }
                                 }
                                 LayerType::All { .. } => {
                                     // TODO: Handle global layers (all)
                                 }
                             }
                         }
+                    } else {
+                        outputs_without_layer.push(part.id);
+                        tracing::warn!(
+                            "ModuleEval: Output {} connected to non-Layer node {}",
+                            part.id,
+                            conn.from_part
+                        );
                     }
+                } else {
+                    outputs_without_connection.push(part.id);
                 }
             }
+        }
+
+        // === DIAGNOSTICS: Log summary ===
+        if result.render_ops.is_empty() && output_count > 0 {
+            tracing::warn!(
+                "ModuleEval: No render_ops generated despite {} output nodes!",
+                output_count
+            );
+            if !outputs_without_connection.is_empty() {
+                tracing::warn!(
+                    "  → {} outputs have NO incoming connection: {:?}",
+                    outputs_without_connection.len(),
+                    outputs_without_connection
+                );
+            }
+            if !outputs_without_layer.is_empty() {
+                tracing::warn!(
+                    "  → {} outputs connected to non-Layer nodes: {:?}",
+                    outputs_without_layer.len(),
+                    outputs_without_layer
+                );
+            }
+            if !outputs_without_source.is_empty() {
+                tracing::warn!(
+                    "  → {} outputs have Layer but no Source connected: {:?}",
+                    outputs_without_source.len(),
+                    outputs_without_source
+                );
+            }
+        } else {
+            tracing::debug!(
+                "ModuleEval: Generated {} render_ops",
+                result.render_ops.len()
+            );
         }
 
         result
@@ -237,40 +352,105 @@ impl ModuleEvaluator {
     fn trace_chain(&self, module: &MapFlowModule, start_node_id: ModulePartId) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
+        let mut override_mesh = None;
         let mut source_id = None;
         let mut current_id = start_node_id;
 
+        tracing::debug!("trace_chain: Starting from node {}", start_node_id);
+        tracing::debug!(
+            "trace_chain: Module has {} connections",
+            module.connections.len()
+        );
+
         // Safety limit to prevent infinite loops in cyclic graphs
-        for _ in 0..50 {
+        for iteration in 0..50 {
+            tracing::debug!(
+                "trace_chain: Iteration {}, looking for connection TO node {}",
+                iteration,
+                current_id
+            );
+
             if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
+                tracing::debug!(
+                    "trace_chain: Found connection from {} to {} (socket {} -> {})",
+                    conn.from_part,
+                    conn.to_part,
+                    conn.from_socket,
+                    conn.to_socket
+                );
+
                 if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                    tracing::debug!(
+                        "trace_chain: Upstream node {} is {:?}",
+                        part.id,
+                        std::mem::discriminant(&part.part_type)
+                    );
+
                     match &part.part_type {
                         ModulePartType::Source(_) => {
                             source_id = Some(part.id);
+                            tracing::debug!(
+                                "trace_chain: Found Source node {}, chain complete!",
+                                part.id
+                            );
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
                             effects.insert(0, mod_type.clone()); // Prepend (execution order)
                             current_id = part.id;
+                            tracing::debug!(
+                                "trace_chain: Found Modulizer, continuing from {}",
+                                part.id
+                            );
                         }
                         ModulePartType::Mask(mask_type) => {
                             masks.insert(0, mask_type.clone());
                             current_id = part.id;
+                            tracing::debug!("trace_chain: Found Mask, continuing from {}", part.id);
                         }
-                        _ => break, // Hit something else (e.g. Trigger), chain ends
+                        ModulePartType::Mesh(mesh_type) => {
+                            // If we encounter a mesh node, it overrides the layer's mesh
+                            // We capture the mesh and continue tracing upstream (input 0)
+                            if override_mesh.is_none() {
+                                override_mesh = Some(mesh_type.clone());
+                            }
+                            current_id = part.id;
+                            tracing::debug!("trace_chain: Found Mesh, continuing from {}", part.id);
+                        }
+                        other => {
+                            tracing::debug!(
+                                "trace_chain: Found unsupported node type {:?}, breaking",
+                                std::mem::discriminant(other)
+                            );
+                            break;
+                        }
                     }
                 } else {
+                    tracing::debug!(
+                        "trace_chain: Connection from_part {} not found in parts!",
+                        conn.from_part
+                    );
                     break;
                 }
             } else {
+                tracing::debug!("trace_chain: No connection found TO node {}", current_id);
                 break;
             }
         }
+
+        tracing::debug!(
+            "trace_chain: Result - source_id={:?}, effects={}, masks={}, override_mesh={}",
+            source_id,
+            effects.len(),
+            masks.len(),
+            override_mesh.is_some()
+        );
 
         ProcessingChain {
             source_id,
             effects,
             masks,
+            override_mesh,
         }
     }
 
@@ -359,12 +539,31 @@ impl ModuleEvaluator {
                 }]
             }
             TriggerType::Random { probability, .. } => {
-                // Placeholder for random
-                vec![if 0.5 < *probability { 1.0 } else { 0.0 }]
+                // Generate random value and compare to probability
+                let random_value: f32 = rand::rng().random();
+                vec![if random_value < *probability {
+                    1.0
+                } else {
+                    0.0
+                }]
             }
-            TriggerType::Fixed { .. } => {
-                // Fixed triggers need timing state, return 1.0 for now
-                vec![1.0]
+            TriggerType::Fixed {
+                interval_ms,
+                offset_ms,
+            } => {
+                // Calculate elapsed time since start
+                let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
+                // Apply offset and check if we're in the "on" phase
+                let adjusted_time = elapsed_ms.saturating_sub(*offset_ms as u64);
+                let interval = *interval_ms as u64;
+                if interval == 0 {
+                    vec![1.0] // Avoid division by zero
+                } else {
+                    // Trigger is "on" for 10% of the interval (pulse)
+                    let pulse_duration = (interval / 10).max(16); // At least 16ms
+                    let phase = adjusted_time % interval;
+                    vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
+                }
             }
             TriggerType::Midi { .. } => {
                 // MIDI triggers need external input
