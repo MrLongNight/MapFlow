@@ -1471,6 +1471,7 @@ impl App {
                     target_screen,
                     show_in_preview_panel: _,
                     extra_preview_window,
+                    ..
                 } => {
                     // 1. Primary Window
                     active_window_ids.insert(output_id);
