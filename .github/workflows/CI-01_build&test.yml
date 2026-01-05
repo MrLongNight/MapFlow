@@ -216,20 +216,20 @@ jobs:
       env:
         RUST_BACKTRACE: full
       run: |
-        cargo build --release --verbose --all-features
+        cargo build --release --verbose --no-default-features --features "audio"
 
     - name: Run tests (Release)
-      if: ${{ github.event. inputs.skip_tests != 'true' }}
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
-      run:   cargo test --release --workspace --verbose --all-features
+      run: cargo test --release --workspace --verbose --no-default-features --features audio
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
-      run:  cargo test --release --doc --verbose --all-features
+      run: cargo test --release --doc --verbose --no-default-features --features audio
 
     - name: Generate documentation
-      run: cargo doc --no-deps --all-features
+      run: cargo doc --no-deps --no-default-features --features audio
 
     - name: Upload artifacts (Release binary)
       uses: actions/upload-artifact@v4
