@@ -1,10 +1,10 @@
 //! Effect Recent Configs System
 //!
-//! Automatically stores the last N configurations for each effect type,
+//!  Automatically stores the last N configurations for each effect type,
 //! allowing quick access to recently used settings like GIMP's preset system.
 
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
+use std::collections: :{HashMap, VecDeque};
 use std::path::PathBuf;
 use tracing::{debug, info};
 
@@ -19,7 +19,7 @@ pub struct EffectConfig {
     /// Human-readable name (auto-generated or user-set)
     pub name: String,
     /// Effect parameters as key-value pairs
-    pub params: HashMap<String, EffectParamValue>,
+    pub params:  HashMap<String, EffectParamValue>,
 }
 
 /// Parameter value types for effects
@@ -38,8 +38,8 @@ pub enum EffectParamValue {
 impl EffectConfig {
     /// Create a new config with current timestamp
     pub fn new(params: HashMap<String, EffectParamValue>) -> Self {
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
+        let timestamp = std::time:: SystemTime::now()
+            .duration_since(std::time:: UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
 
@@ -70,23 +70,23 @@ impl EffectConfig {
     /// Generate a descriptive name from key parameters
     fn generate_name(params: &HashMap<String, EffectParamValue>) -> String {
         // Try to create a meaningful name from the first few params
-        let mut parts: Vec<String> = Vec::new();
+        let mut parts:  Vec<String> = Vec::new();
 
-        for (key, value) in params.iter().take(3) {
+        for (key, value) in params. iter().take(3) {
             let short_key = if key.len() > 6 { &key[..6] } else { key };
             let val_str = match value {
                 EffectParamValue::Float(v) => format!("{:.1}", v),
                 EffectParamValue::Int(v) => format!("{}", v),
-                EffectParamValue::Bool(v) => if *v { "on" } else { "off" }.to_string(),
+                EffectParamValue::Bool(v) => if *v { "on" } else { "off" }. to_string(),
                 EffectParamValue::Color(c) => format!(
                     "#{:02x}{:02x}{:02x}",
                     (c[0] * 255.0) as u8,
                     (c[1] * 255.0) as u8,
                     (c[2] * 255.0) as u8
                 ),
-                _ => "...".to_string(),
+                _ => "... ".to_string(),
             };
-            parts.push(format!("{}:{}", short_key, val_str));
+            parts.push(format! ("{}:{}", short_key, val_str));
         }
 
         if parts.is_empty() {
@@ -98,7 +98,7 @@ impl EffectConfig {
 
     /// Check if this config matches another (same parameters)
     pub fn matches(&self, other: &EffectConfig) -> bool {
-        self.params == other.params
+        self. params == other.params
     }
 }
 
@@ -113,17 +113,17 @@ impl RecentConfigQueue {
     /// Create a new empty queue
     pub fn new() -> Self {
         Self {
-            configs: VecDeque::new(),
+            configs:  VecDeque::new(),
         }
     }
 
     /// Add a new configuration to the recent list
     ///
-    /// If the config already exists (same params), it moves to the front.
-    /// Otherwise, adds to front and removes oldest if > MAX_RECENT_CONFIGS.
+    /// If the config already exists (same params), it moves to the front. 
+    /// Otherwise, adds to front and removes oldest if > MAX_RECENT_CONFIGS. 
     pub fn add(&mut self, config: EffectConfig) {
         // Check if this config already exists
-        if let Some(pos) = self.configs.iter().position(|c| c.matches(&config)) {
+        if let Some(pos) = self.configs.iter().position(|c| c. matches(&config)) {
             // Move to front
             self.configs.remove(pos);
         }
@@ -149,7 +149,7 @@ impl RecentConfigQueue {
 
     /// Get the most recent config
     pub fn most_recent(&self) -> Option<&EffectConfig> {
-        self.configs.front()
+        self.configs. front()
     }
 
     /// Clear all recent configs
@@ -182,24 +182,24 @@ impl RecentEffectConfigs {
     /// Create a new manager
     pub fn new() -> Self {
         Self {
-            configs: HashMap::new(),
+            configs:  HashMap::new(),
             config_path: None,
         }
     }
 
     /// Create with persistence path
     pub fn with_persistence(path: PathBuf) -> Self {
-        let mut manager = Self::load_from_path(&path).unwrap_or_else(Self::new);
+        let mut manager = Self::load_from_path(&path).unwrap_or_default();
         manager.config_path = Some(path);
         manager
     }
 
     /// Add a config for an effect type
-    pub fn add_config(&mut self, effect_type: &str, config: EffectConfig) {
-        debug!("Adding recent config for effect: {}", effect_type);
+    pub fn add_config(&mut self, effect_type: &str, config:  EffectConfig) {
+        debug!("Adding recent config for effect:  {}", effect_type);
 
         self.configs
-            .entry(effect_type.to_string())
+            .entry(effect_type. to_string())
             .or_insert_with(RecentConfigQueue::new)
             .add(config);
 
@@ -240,7 +240,7 @@ impl RecentEffectConfigs {
     }
 
     /// Apply a recent config by index
-    pub fn get_by_index(&self, effect_type: &str, index: usize) -> Option<&EffectConfig> {
+    pub fn get_by_index(&self, effect_type: &str, index:  usize) -> Option<&EffectConfig> {
         self.configs.get(effect_type)?.get(index)
     }
 
@@ -268,7 +268,7 @@ impl RecentEffectConfigs {
     /// Save to a JSON file
     pub fn save_to_path(&self, path: &PathBuf) -> std::io::Result<()> {
         let content = serde_json::to_string_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
 
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
@@ -276,14 +276,14 @@ impl RecentEffectConfigs {
         }
 
         std::fs::write(path, content)?;
-        info!("Saved recent effect configs to {:?}", path);
+        info!("Saved recent effect configs to {: ?}", path);
         Ok(())
     }
 
     /// Save to the persisted path if set
     pub fn save(&self) -> std::io::Result<()> {
         if let Some(path) = &self.config_path {
-            self.save_to_path(path)
+            self. save_to_path(path)
         } else {
             Ok(())
         }
@@ -303,7 +303,7 @@ pub fn create_blur_config(radius: f32, sigma: f32) -> EffectConfig {
     EffectConfig::new(params)
 }
 
-pub fn create_color_config(hue: f32, saturation: f32, brightness: f32) -> EffectConfig {
+pub fn create_color_config(hue: f32, saturation:  f32, brightness: f32) -> EffectConfig {
     let mut params = HashMap::new();
     params.insert("hue".to_string(), EffectParamValue::Float(hue));
     params.insert(
@@ -314,7 +314,7 @@ pub fn create_color_config(hue: f32, saturation: f32, brightness: f32) -> Effect
         "brightness".to_string(),
         EffectParamValue::Float(brightness),
     );
-    EffectConfig::new(params)
+    EffectConfig:: new(params)
 }
 
 #[cfg(test)]
@@ -350,7 +350,7 @@ mod tests {
         let mut params = HashMap::new();
         params.insert("value".to_string(), EffectParamValue::Float(1.0));
 
-        let config1 = EffectConfig::new(params.clone());
+        let config1 = EffectConfig::new(params. clone());
         let config2 = EffectConfig::new(params.clone());
 
         queue.add(config1);
