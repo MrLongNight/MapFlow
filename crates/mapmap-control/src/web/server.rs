@@ -52,7 +52,8 @@ fn default_allowed_origins() -> Vec<String> {
 impl Default for WebServerConfig {
     fn default() -> Self {
         Self {
-            host: "0.0.0.0".to_string(),
+            // Secure by default: bind to localhost to prevent accidental network exposure
+            host: "127.0.0.1".to_string(),
             port: 8080,
             enable_cors: true,
             allowed_origins: default_allowed_origins(),
