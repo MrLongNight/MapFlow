@@ -34,12 +34,8 @@ jobs:
       FIND_PR_NUMBER: ''
       HAS_PR: 'false'
     if: | 
-      (github.event.pull_request &&
-       (contains(github.event.pull_request.labels.*.name, 'jules-pr') || 
-        contains(github.event.pull_request.body, 'Created by Jules')) &&
-       github.event.pull_request.draft == false) ||
-      (github.event.workflow_run &&
-       github.event.workflow_run.conclusion != 'skipped') ||
+      github.event.pull_request != null ||
+      github.event.workflow_run != null ||
       github.event_name == 'workflow_dispatch'
 
     steps:
@@ -191,11 +187,11 @@ jobs:
             pull_number: prNumber
           });
           
-          // Check if it's a Jules PR
-          const isJulesPR = pr.labels.some(l => l.name === 'jules-pr') || 
+          // Check if it's eligible for auto-merge (jules-pr, auto-merge label, or Created by Jules)
+          const isAutoMergeEligible = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'auto-merge') || 
                            (pr.body && pr.body.includes('Created by Jules'));
-          if (!isJulesPR) {
-            console.log('⏭️ Not a Jules PR - skipping');
+          if (!isAutoMergeEligible) {
+            console.log('⏭️ PR has no auto-merge label - skipping auto-merge (checks still run)');
             return;
           }
           
