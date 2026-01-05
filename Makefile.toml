@@ -1,0 +1,32 @@
+[tasks.format]
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.lint]
+command = "cargo"
+args = ["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]
+
+[tasks.test]
+command = "cargo"
+args = ["test", "--workspace"]
+
+[tasks.check-all]
+dependencies = ["format", "lint", "test"]
+
+[tasks.ci-local]
+description = "Run full CI pipeline locally"
+dependencies = [
+    "format",
+    "lint", 
+    "test",
+    "audit",
+    "doc"
+]
+
+[tasks.audit]
+command = "cargo"
+args = ["audit"]
+
+[tasks.doc]
+command = "cargo"
+args = ["doc", "--no-deps", "--workspace"]
