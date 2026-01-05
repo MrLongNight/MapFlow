@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 env:
-  # Anzahl der Backup-Tags die behalten werden (ältere werden gelöscht)
+  # Anzahl der Backup-Tags die behalten werden (ältere werden gelöscht!)
   MAX_BACKUP_TAGS: 30
 
 jobs:
