@@ -63,7 +63,8 @@ jobs:
       run: cargo fmt --all -- --check
 
     - name: Run Clippy
-      run: cargo clippy --workspace --all-features -- -D warnings
+      # Use ci-linux feature to exclude platform-specific dependencies (NDI, Spout, Syphon)
+      run: cargo clippy --workspace --features "mapmap-io/ci-linux" -- -D warnings
 
   # Build and test on Ubuntu with audio support
   build-and-test: 
@@ -169,26 +170,25 @@ jobs:
         pkg-config --exists libavcodec && echo "✓ libavcodec found" || (echo "✗ libavcodec not found"; exit 1)
         pkg-config --exists libavformat && echo "✓ libavformat found" || (echo "✗ libavformat not found"; exit 1)
 
-    # We only build RELEASE to save disk space (debug artifacts are huge)
     - name: Build & Test (Release)
       env:
         RUST_BACKTRACE: full
       run: |
-        cargo build --release --verbose --no-default-features --features "all-io"
+        cargo build --release --verbose --features "mapmap-io/ci-linux"
 
     - name: Run tests (Release)
       if: ${{ github.event. inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
-      # Exclude NDI feature for standard CI to avoid SDK path issues
-      run: cargo test --release --workspace --verbose --no-default-features --features "all-io"
+      # Use ci-linux feature to exclude platform-specific dependencies
+      run: cargo test --release --workspace --verbose --features "mapmap-io/ci-linux"
 
     - name: Run doc tests
       if: ${{ github.event.inputs.skip_tests != 'true' }}
-      run:  cargo test --release --doc --verbose --all-features
+      run: cargo test --release --doc --verbose --features "mapmap-io/ci-linux"
 
     - name: Generate documentation
-      run: cargo doc --no-deps --all-features
+      run: cargo doc --no-deps --features "mapmap-io/ci-linux"
 
     - name: Upload artifacts (Release binary)
       uses: actions/upload-artifact@v4

@@ -59,7 +59,7 @@ jobs:
           libavfilter-dev
 
     - name: Build project
-      run: cargo build --release
+      run: cargo build --release --features "mapmap-io/ci-linux"
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4

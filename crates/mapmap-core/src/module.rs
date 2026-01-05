@@ -23,9 +23,9 @@ fn default_scale() -> f32 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MapFlowModule {
-    pub id:  ModuleId,
+    pub id: ModuleId,
     pub name: String,
-    pub color:  [f32; 4],
+    pub color: [f32; 4],
     pub parts: Vec<ModulePart>,
     pub connections: Vec<ModuleConnection>,
     pub playback_mode: ModulePlaybackMode,
@@ -34,8 +34,8 @@ pub struct MapFlowModule {
 impl MapFlowModule {
     /// Add a part to this module with proper socket configuration
     pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
-        static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync:: atomic::AtomicU64:: new(1);
-        let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering:: SeqCst);
+        static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let module_part_type = match part_type {
             PartType::Trigger => ModulePartType::Trigger(TriggerType::Beat),
@@ -60,36 +60,36 @@ impl MapFlowModule {
                 target_height: None,
                 target_fps: None,
             }),
-            PartType:: Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
-            PartType:: Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
+            PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
+            PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
                 effect_type: EffectType::Blur,
                 params: std::collections::HashMap::new(),
             }),
-            PartType:: Mesh => ModulePartType::Mesh(MeshType::Grid { cols: 10, rows: 10 }),
+            PartType::Mesh => ModulePartType::Mesh(MeshType::Grid { cols: 10, rows: 10 }),
             PartType::Layer => ModulePartType::Layer(LayerType::Single {
                 id: 0,
                 name: "Layer 1".to_string(),
                 opacity: 1.0,
                 blend_mode: None,
-                mesh:  default_mesh_quad(),
+                mesh: default_mesh_quad(),
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 0,
-                name: "Output". to_string(),
+                name: "Output".to_string(),
                 fullscreen: false,
                 hide_cursor: true,
-                target_screen:  0,
+                target_screen: 0,
                 show_in_preview_panel: true,
                 extra_preview_window: false,
                 output_width: 0,
                 output_height: 0,
-                output_fps:  60.0,
+                output_fps: 60.0,
             }),
         };
 
         let mut part = ModulePart {
             id,
-            part_type:  module_part_type,
+            part_type: module_part_type,
             position,
             size: None,
             link_data: NodeLinkData::default(),
@@ -112,8 +112,8 @@ impl MapFlowModule {
         part_type: ModulePartType,
         position: (f32, f32),
     ) -> ModulePartId {
-        static NEXT_PART_ID:  std::sync::atomic::AtomicU64 =
-            std::sync::atomic:: AtomicU64::new(10000);
+        static NEXT_PART_ID: std::sync::atomic::AtomicU64 =
+            std::sync::atomic::AtomicU64::new(10000);
         let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let mut part = ModulePart {
@@ -145,9 +145,9 @@ impl MapFlowModule {
     /// Add a connection between two parts
     pub fn add_connection(
         &mut self,
-        from_part:  ModulePartId,
+        from_part: ModulePartId,
         from_socket: usize,
-        to_part:  ModulePartId,
+        to_part: ModulePartId,
         to_socket: usize,
     ) {
         self.connections.push(ModuleConnection {
@@ -166,10 +166,10 @@ impl MapFlowModule {
         to_part: ModulePartId,
         to_socket: usize,
     ) {
-        self.connections. retain(|c| {
+        self.connections.retain(|c| {
             !(c.from_part == from_part
                 && c.from_socket == from_socket
-                && c. to_part == to_part
+                && c.to_part == to_part
                 && c.to_socket == to_socket)
         });
     }
@@ -189,7 +189,7 @@ impl MapFlowModule {
 
         // Cleanup connections that are now out of bounds
         if in_count > 0 || out_count > 0 {
-            self.connections. retain(|c| {
+            self.connections.retain(|c| {
                 if c.to_part == part_id && c.to_socket >= in_count {
                     return false;
                 }
@@ -217,8 +217,8 @@ pub enum ModulePlaybackMode {
 pub struct ModulePart {
     pub id: ModulePartId,
     pub part_type: ModulePartType,
-    pub position:  (f32, f32),
-    /// Custom size (width, height). If None, uses default size. 
+    pub position: (f32, f32),
+    /// Custom size (width, height). If None, uses default size.
     #[serde(default)]
     pub size: Option<(f32, f32)>,
     #[serde(default)]
@@ -237,15 +237,14 @@ pub struct NodeLinkData {
 impl Default for NodeLinkData {
     fn default() -> Self {
         Self {
-            mode: LinkMode:: Off,
+            mode: LinkMode::Off,
             behavior: LinkBehavior::SameAsMaster,
             trigger_input_enabled: false,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkMode {
     #[default]
     Off,
@@ -253,15 +252,12 @@ pub enum LinkMode {
     Slave,
 }
 
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkBehavior {
     #[default]
     SameAsMaster,
     Inverted,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleSocket {
@@ -293,7 +289,7 @@ impl ModulePart {
         }
 
         // Link In (Slave)
-        if self.link_data.mode == LinkMode:: Slave {
+        if self.link_data.mode == LinkMode::Slave {
             inputs.push(ModuleSocket {
                 name: "Link In".to_string(),
                 socket_type: ModuleSocketType::Link,
@@ -301,10 +297,10 @@ impl ModulePart {
         }
 
         // Trigger Input (Visibility Control)
-        // Available if enabled, for Master or normal nodes. 
-        // Slave nodes rely on Link In, but technically could have both? 
+        // Available if enabled, for Master or normal nodes.
+        // Slave nodes rely on Link In, but technically could have both?
         // Logic: Master sends Its visibility.  It can be controlled by Trigger In.
-        // Slave receives visibility. 
+        // Slave receives visibility.
         if self.link_data.trigger_input_enabled {
             inputs.push(ModuleSocket {
                 name: "Trigger In (Vis)".to_string(),
@@ -323,7 +319,7 @@ impl ModulePartType {
                 let outputs = match trigger_type {
                     TriggerType::AudioFFT { output_config, .. } => output_config.generate_outputs(),
                     _ => vec![ModuleSocket {
-                        name:  "Trigger Out".to_string(),
+                        name: "Trigger Out".to_string(),
                         socket_type: ModuleSocketType::Trigger,
                     }],
                 };
@@ -331,15 +327,15 @@ impl ModulePartType {
             }
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
-                    name: "Trigger In". to_string(),
-                    socket_type: ModuleSocketType:: Trigger,
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
                 }],
                 vec![ModuleSocket {
-                    name:  "Media Out".to_string(),
+                    name: "Media Out".to_string(),
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            ModulePartType:: Mask(_) => (
+            ModulePartType::Mask(_) => (
                 vec![
                     ModuleSocket {
                         name: "Media In".to_string(),
@@ -368,18 +364,18 @@ impl ModulePartType {
                 ],
                 vec![ModuleSocket {
                     name: "Media Out".to_string(),
-                    socket_type:  ModuleSocketType::Media,
+                    socket_type: ModuleSocketType::Media,
                 }],
             ),
             ModulePartType::Layer(_) => (
                 vec![
                     ModuleSocket {
-                        name: "Input". to_string(),
-                        socket_type: ModuleSocketType:: Media,
+                        name: "Input".to_string(),
+                        socket_type: ModuleSocketType::Media,
                     },
                     ModuleSocket {
-                        name: "Trigger". to_string(),
-                        socket_type: ModuleSocketType:: Trigger,
+                        name: "Trigger".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
                     },
                 ],
                 vec![ModuleSocket {
@@ -392,12 +388,12 @@ impl ModulePartType {
                     name: "Layer In".to_string(),
                     socket_type: ModuleSocketType::Layer,
                 }],
-                vec! [], // No outputs - outputs are sinks
+                vec![], // No outputs - outputs are sinks
             ),
-            ModulePartType:: Mesh(_) => (
+            ModulePartType::Mesh(_) => (
                 vec![
                     ModuleSocket {
-                        name: "Vertex In".to_string(), // Optional vertex modification? 
+                        name: "Vertex In".to_string(), // Optional vertex modification?
                         socket_type: ModuleSocketType::Media,
                     },
                     ModuleSocket {
@@ -441,7 +437,7 @@ pub enum PartType {
 pub enum TriggerType {
     /// Audio FFT analysis with configurable outputs
     AudioFFT {
-        band:  AudioBand,
+        band: AudioBand,
         threshold: f32,
         /// Which outputs are enabled
         output_config: AudioTriggerOutputConfig,
@@ -450,7 +446,7 @@ pub enum TriggerType {
     Random {
         min_interval_ms: u32,
         max_interval_ms: u32,
-        probability:  f32,
+        probability: f32,
     },
     /// Fixed time-based trigger
     Fixed { interval_ms: u32, offset_ms: u32 },
@@ -458,7 +454,7 @@ pub enum TriggerType {
     Midi {
         device: String,
         channel: u8,
-        note:  u8,
+        note: u8,
     },
     /// OSC message trigger
     Osc { address: String },
@@ -505,10 +501,10 @@ impl Default for AudioTriggerOutputConfig {
     fn default() -> Self {
         Self {
             frequency_bands: false, // Off by default
-            volume_outputs:  false,  // Off by default
+            volume_outputs: false,  // Off by default
             beat_output: true,      // ON by default - main use case
-            bpm_output:  false,      // Off by default
-            inverted_outputs: std:: collections::HashSet::new(),
+            bpm_output: false,      // Off by default
+            inverted_outputs: std::collections::HashSet::new(),
         }
     }
 }
@@ -522,23 +518,23 @@ impl AudioTriggerOutputConfig {
         if self.frequency_bands {
             outputs.push(ModuleSocket {
                 name: "SubBass Out".to_string(),
-                socket_type: ModuleSocketType:: Trigger,
-            });
-            outputs. push(ModuleSocket {
-                name: "Bass Out".to_string(),
-                socket_type:  ModuleSocketType::Trigger,
+                socket_type: ModuleSocketType::Trigger,
             });
             outputs.push(ModuleSocket {
-                name: "LowMid Out". to_string(),
-                socket_type: ModuleSocketType:: Trigger,
+                name: "Bass Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
+            });
+            outputs.push(ModuleSocket {
+                name: "LowMid Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
             });
             outputs.push(ModuleSocket {
                 name: "Mid Out".to_string(),
                 socket_type: ModuleSocketType::Trigger,
             });
-            outputs. push(ModuleSocket {
+            outputs.push(ModuleSocket {
                 name: "HighMid Out".to_string(),
-                socket_type: ModuleSocketType:: Trigger,
+                socket_type: ModuleSocketType::Trigger,
             });
             outputs.push(ModuleSocket {
                 name: "UpperMid Out".to_string(),
@@ -561,8 +557,8 @@ impl AudioTriggerOutputConfig {
         // Volume outputs
         if self.volume_outputs {
             outputs.push(ModuleSocket {
-                name: "RMS Volume". to_string(),
-                socket_type: ModuleSocketType:: Trigger,
+                name: "RMS Volume".to_string(),
+                socket_type: ModuleSocketType::Trigger,
             });
             outputs.push(ModuleSocket {
                 name: "Peak Volume".to_string(),
@@ -574,23 +570,23 @@ impl AudioTriggerOutputConfig {
         if self.beat_output {
             outputs.push(ModuleSocket {
                 name: "Beat Out".to_string(),
-                socket_type: ModuleSocketType:: Trigger,
+                socket_type: ModuleSocketType::Trigger,
             });
         }
 
         // BPM output
         if self.bpm_output {
             outputs.push(ModuleSocket {
-                name:  "BPM Out".to_string(),
-                socket_type:  ModuleSocketType::Trigger,
+                name: "BPM Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
             });
         }
 
         // Fallback:  if nothing is enabled, add at least beat output
         if outputs.is_empty() {
             outputs.push(ModuleSocket {
-                name: "Beat Out". to_string(),
-                socket_type: ModuleSocketType:: Trigger,
+                name: "Beat Out".to_string(),
+                socket_type: ModuleSocketType::Trigger,
             });
         }
 
@@ -619,7 +615,7 @@ pub enum SourceType {
         opacity: f32,
         /// Blend mode for compositing
         #[serde(default)]
-        blend_mode:  Option<BlendModeType>,
+        blend_mode: Option<BlendModeType>,
         /// Color correction:  Brightness (-1.0 to 1.0)
         #[serde(default)]
         brightness: f32,
@@ -649,7 +645,7 @@ pub enum SourceType {
         offset_y: f32,
         /// Target output width (None = use original resolution)
         #[serde(default)]
-        target_width:  Option<u32>,
+        target_width: Option<u32>,
         /// Target output height (None = use original resolution)
         #[serde(default)]
         target_height: Option<u32>,
@@ -666,7 +662,7 @@ pub enum SourceType {
     },
     /// NDI network video source
     NdiInput {
-        /// The name of the NDI source to connect to. 
+        /// The name of the NDI source to connect to.
         /// If None, the first available source will be used.
         source_name: Option<String>,
     },
@@ -686,12 +682,12 @@ impl SourceType {
             start_time: 0.0,
             end_time: 0.0,
             opacity: 1.0,
-            blend_mode:  None,
+            blend_mode: None,
             brightness: 0.0,
             contrast: 1.0,
             saturation: 1.0,
             hue_shift: 0.0,
-            scale_x:  1.0,
+            scale_x: 1.0,
             scale_y: 1.0,
             rotation: 0.0,
             offset_x: 0.0,
@@ -753,10 +749,10 @@ pub enum MeshType {
 impl MeshType {
     fn compute_revision_hash(&self) -> u64 {
         use std::collections::hash_map::DefaultHasher;
-        use std::hash: :{Hash, Hasher};
-        let mut hasher = DefaultHasher:: new();
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
         match self {
-            MeshType:: Quad { tl, tr, br, bl } => {
+            MeshType::Quad { tl, tr, br, bl } => {
                 0u8.hash(&mut hasher); // Variant ID
                 tl.0.to_bits().hash(&mut hasher);
                 tl.1.to_bits().hash(&mut hasher);
@@ -772,7 +768,7 @@ impl MeshType {
                 rows.hash(&mut hasher);
                 cols.hash(&mut hasher);
             }
-            MeshType:: TriMesh => {
+            MeshType::TriMesh => {
                 2u8.hash(&mut hasher);
             }
             MeshType::Circle {
@@ -796,12 +792,12 @@ impl MeshType {
                 vertices.len().hash(&mut hasher);
                 for (x, y) in vertices {
                     x.to_bits().hash(&mut hasher);
-                    y. to_bits().hash(&mut hasher);
+                    y.to_bits().hash(&mut hasher);
                 }
             }
-            MeshType:: Cylinder { segments, height } => {
+            MeshType::Cylinder { segments, height } => {
                 6u8.hash(&mut hasher);
-                segments. hash(&mut hasher);
+                segments.hash(&mut hasher);
                 height.to_bits().hash(&mut hasher);
             }
             MeshType::Sphere {
@@ -817,7 +813,7 @@ impl MeshType {
                 path.hash(&mut hasher);
             }
         }
-        hasher. finish()
+        hasher.finish()
     }
 
     pub fn to_mesh(&self) -> crate::mesh::Mesh {
@@ -825,7 +821,7 @@ impl MeshType {
         use glam::Vec2;
 
         let mut mesh = match self {
-            MeshType:: Quad { tl, tr, br, bl } => {
+            MeshType::Quad { tl, tr, br, bl } => {
                 let mut mesh = Mesh::quad();
                 let corners = [
                     Vec2::new(tl.0, tl.1),
@@ -838,14 +834,13 @@ impl MeshType {
             }
             MeshType::Grid { rows, cols } => Mesh::create_grid(*rows, *cols),
             MeshType::TriMesh => Mesh::triangle(),
-            MeshType::Circle { segments, ..  } => {
+            MeshType::Circle { segments, .. } => {
                 Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
             }
-            MeshType:: BezierSurface { control_points } => {
+            MeshType::BezierSurface { control_points } => {
                 // For Bezier surface, create a grid and warp it based on control points
                 // For now, use a simple grid as a placeholder until full Bezier implementation
                 if control_points.len() >= 4 {
-                    
                     // TODO: Implement proper Bezier surface interpolation
                     Mesh::create_grid(8, 8)
                 } else {
@@ -857,19 +852,19 @@ impl MeshType {
                 if vertices.len() < 3 {
                     Mesh::quad()
                 } else {
-                    use crate::mesh: :{MeshType as CoreMeshType, MeshVertex};
+                    use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
 
                     // Calculate center point for triangle fan
                     let center = vertices
                         .iter()
-                        .fold((0.0, 0.0), |acc, v| (acc. 0 + v.0, acc.1 + v.1));
+                        .fold((0.0, 0.0), |acc, v| (acc.0 + v.0, acc.1 + v.1));
                     let center = (
                         center.0 / vertices.len() as f32,
                         center.1 / vertices.len() as f32,
                     );
 
                     let mut mesh_vertices = Vec::with_capacity(vertices.len() + 1);
-                    mesh_vertices. push(MeshVertex:: new(
+                    mesh_vertices.push(MeshVertex::new(
                         Vec2::new(center.0, center.1),
                         Vec2::new(0.5, 0.5),
                     ));
@@ -888,7 +883,7 @@ impl MeshType {
                     }
 
                     Mesh {
-                        mesh_type: CoreMeshType:: Custom,
+                        mesh_type: CoreMeshType::Custom,
                         vertices: mesh_vertices,
                         indices,
                         revision: 0,
@@ -897,7 +892,7 @@ impl MeshType {
             }
             MeshType::Cylinder { segments, height } => {
                 // Create a cylindrical mesh by wrapping a grid
-                let rows = (height * 10. 0).max(2.0) as u32;
+                let rows = (height * 10.0).max(2.0) as u32;
                 let cols = (*segments).max(3);
                 Mesh::create_grid(rows, cols)
             }
@@ -906,7 +901,7 @@ impl MeshType {
                 lon_segments,
             } => {
                 // Create a UV sphere mesh
-                use crate::mesh: :{MeshType as CoreMeshType, MeshVertex};
+                use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
 
                 let lat_segs = (*lat_segments).max(3);
                 let lon_segs = (*lon_segments).max(3);
@@ -952,12 +947,12 @@ impl MeshType {
 
                 Mesh {
                     mesh_type: CoreMeshType::Custom,
-                    vertices:  mesh_vertices,
+                    vertices: mesh_vertices,
                     indices,
                     revision: 0,
                 }
             }
-            MeshType::Custom { path:  _ } => {
+            MeshType::Custom { path: _ } => {
                 // TODO: Load mesh from file
                 // For now, return a quad as fallback
                 Mesh::quad()
@@ -974,7 +969,7 @@ impl MeshType {
 pub enum ResourceType {
     MediaFile { path: String },
     Shader { path: String },
-    LiveInput { source:  String },
+    LiveInput { source: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1033,17 +1028,17 @@ impl EffectType {
             EffectType::Invert,
             EffectType::Threshold,
             EffectType::Brightness,
-            EffectType:: Contrast,
+            EffectType::Contrast,
             EffectType::Saturation,
             EffectType::HueShift,
             EffectType::Colorize,
             EffectType::Wave,
-            EffectType:: Spiral,
+            EffectType::Spiral,
             EffectType::Pinch,
             EffectType::Mirror,
             EffectType::Kaleidoscope,
             EffectType::Pixelate,
-            EffectType:: Halftone,
+            EffectType::Halftone,
             EffectType::EdgeDetect,
             EffectType::Posterize,
             EffectType::Glitch,
@@ -1063,11 +1058,11 @@ impl EffectType {
             EffectType::Invert => "Invert",
             EffectType::Threshold => "Threshold",
             EffectType::Brightness => "Brightness",
-            EffectType:: Contrast => "Contrast",
+            EffectType::Contrast => "Contrast",
             EffectType::Saturation => "Saturation",
             EffectType::HueShift => "Hue Shift",
-            EffectType:: Colorize => "Colorize",
-            EffectType:: Wave => "Wave",
+            EffectType::Colorize => "Colorize",
+            EffectType::Wave => "Wave",
             EffectType::Spiral => "Spiral",
             EffectType::Pinch => "Pinch",
             EffectType::Mirror => "Mirror",
@@ -1079,9 +1074,9 @@ impl EffectType {
             EffectType::Glitch => "Glitch",
             EffectType::RgbSplit => "RGB Split",
             EffectType::ChromaticAberration => "Chromatic Aberration",
-            EffectType:: VHS => "VHS",
+            EffectType::VHS => "VHS",
             EffectType::FilmGrain => "Film Grain",
-            EffectType:: Vignette => "Vignette",
+            EffectType::Vignette => "Vignette",
         }
     }
 }
@@ -1103,10 +1098,10 @@ impl BlendModeType {
         &[
             BlendModeType::Normal,
             BlendModeType::Add,
-            BlendModeType:: Multiply,
+            BlendModeType::Multiply,
             BlendModeType::Screen,
             BlendModeType::Overlay,
-            BlendModeType:: Difference,
+            BlendModeType::Difference,
             BlendModeType::Exclusion,
         ]
     }
@@ -1116,7 +1111,7 @@ impl BlendModeType {
             BlendModeType::Normal => "Normal",
             BlendModeType::Add => "Add",
             BlendModeType::Multiply => "Multiply",
-            BlendModeType:: Screen => "Screen",
+            BlendModeType::Screen => "Screen",
             BlendModeType::Overlay => "Overlay",
             BlendModeType::Difference => "Difference",
             BlendModeType::Exclusion => "Exclusion",
@@ -1139,7 +1134,7 @@ pub enum LayerType {
         id: u64,
         name: String,
         opacity: f32,
-        blend_mode:  Option<BlendModeType>,
+        blend_mode: Option<BlendModeType>,
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
     },
@@ -1191,7 +1186,7 @@ pub enum OutputType {
     },
     /// NDI network video output
     NdiOutput {
-        /// The broadcast name of this NDI source. 
+        /// The broadcast name of this NDI source.
         name: String,
     },
     #[cfg(target_os = "windows")]
@@ -1226,7 +1221,7 @@ pub struct ModuleManager {
 
 impl PartialEq for ModuleManager {
     fn eq(&self, other: &Self) -> bool {
-        self.modules == other. modules
+        self.modules == other.modules
             && self.next_module_id == other.next_module_id
             && self.next_part_id == other.next_part_id
             && self.next_color_index == other.next_color_index
@@ -1236,7 +1231,7 @@ impl PartialEq for ModuleManager {
 impl ModuleManager {
     pub fn new() -> Self {
         Self {
-            modules:  HashMap::new(),
+            modules: HashMap::new(),
             next_module_id: 1,
             next_part_id: 1,
             color_palette: vec![
@@ -1274,7 +1269,7 @@ impl ModuleManager {
             color,
             parts: Vec::new(),
             connections: Vec::new(),
-            playback_mode: ModulePlaybackMode:: LoopUntilManualSwitch,
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
         };
 
         self.modules.insert(id, module);
@@ -1301,7 +1296,7 @@ impl ModuleManager {
 
     /// Get a module by ID (immutable)
     pub fn get_module(&self, id: ModuleId) -> Option<&MapFlowModule> {
-        self. modules.get(&id)
+        self.modules.get(&id)
     }
 
     /// Get all modules as a slice-like iterator
@@ -1326,4 +1321,4 @@ impl Default for ModuleManager {
     fn default() -> Self {
         Self::new()
     }
-                }
+}
