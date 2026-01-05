@@ -59,8 +59,16 @@ jobs:
           libswresample-dev
         bash scripts/install-ffmpeg-dev.sh
 
-    - name: Check formatting
-      run: cargo fmt --all -- --check
+    - name: Auto-fix formatting
+  run: |
+    cargo fmt --all
+    if [[ -n $(git status --porcelain) ]]; then
+      git config user.name "GitHub Actions Bot"
+      git config user.email "<>"
+      git add .
+      git commit -m "chore: Auto-format code (cargo fmt)"
+      git push
+    fi
 
     - name: Run Clippy
       # Use ci-linux feature to exclude platform-specific dependencies (NDI, Spout, Syphon)
