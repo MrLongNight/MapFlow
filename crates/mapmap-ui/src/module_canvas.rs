@@ -1969,7 +1969,7 @@ impl ModuleCanvas {
                                     extra_preview_window: false,
                                     output_width: 0,
                                     output_height: 0,
-                                    output_fps: 0.0,
+                                    output_fps: 60.0,
                                 }));
                                 self.search_filter.clear();
                                 ui.close_menu();
@@ -3769,7 +3769,7 @@ impl ModuleCanvas {
                                 extra_preview_window: false,
                                 output_width: 0,
                                 output_height: 0,
-                                output_fps: 0.0,
+                                output_fps: 60.0,
                             };
                         }
 
@@ -4659,7 +4659,7 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
-                            output_fps: 0.0,
+                            output_fps: 60.0,
                         }),
                         (650.0, 100.0), // Increased from 450 to 650
                         None,
@@ -4702,7 +4702,7 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
-                            output_fps: 0.0,
+                            output_fps: 60.0,
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -4758,7 +4758,7 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
-                            output_fps: 0.0,
+                            output_fps: 60.0,
                         }),
                         (1250.0, 100.0), // Increased spacing
                         None,
@@ -4800,7 +4800,7 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
-                            output_fps: 0.0,
+                            output_fps: 60.0,
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -4837,7 +4837,7 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
-                            output_fps: 0.0,
+                            output_fps: 60.0,
                         }),
                         (650.0, 100.0),
                         None,
@@ -4903,7 +4903,7 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
-                            output_fps: 0.0,
+                            output_fps: 60.0,
                         }),
                         (650.0, 100.0),
                         None,
