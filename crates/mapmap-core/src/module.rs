@@ -1368,7 +1368,11 @@ mod tests {
         };
 
         let part_id = module.add_part(PartType::Trigger, (0.0, 0.0));
-        let part = module.parts.iter().find(|p| p.id == part_id).expect("Part not found");
+        let part = module
+            .parts
+            .iter()
+            .find(|p| p.id == part_id)
+            .expect("Part not found");
 
         // Trigger (Beat) should have 1 output (Beat Out) and 0 inputs
         assert_eq!(part.outputs.len(), 1);
@@ -1419,7 +1423,7 @@ mod tests {
         let fft_part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
             band: AudioBand::Bass,
             threshold: 0.5,
-            output_config: config
+            output_config: config,
         });
 
         let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
@@ -1433,9 +1437,11 @@ mod tests {
 
         // Update part to disable bands (reducing outputs)
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == p1) {
-             if let ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) = &mut part.part_type {
-                 output_config.frequency_bands = false;
-             }
+            if let ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) =
+                &mut part.part_type
+            {
+                output_config.frequency_bands = false;
+            }
         }
 
         // This should trigger cleanup
