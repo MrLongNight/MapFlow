@@ -7,12 +7,12 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
 [dependencies]
 thiserror = { workspace = true }
 
 [build-dependencies]
 bindgen = { workspace = true }
 cbindgen = { workspace = true }
-
-[lib]
-crate-type = ["cdylib", "staticlib", "rlib"]
