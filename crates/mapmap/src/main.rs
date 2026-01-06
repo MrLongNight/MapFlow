@@ -1059,6 +1059,7 @@ impl App {
                                             } => format!("Projector({})", id),
                                             mapmap_core::module::OutputType::NdiOutput { name } =>
                                                 format!("NDI({})", name),
+                                            #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
                                         }
