@@ -9,7 +9,6 @@ use wgpu::util::DeviceExt;
 
 /// Cached GPU buffers for a mesh
 #[derive(Debug)]
-
 pub struct CachedMeshBuffers {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
@@ -20,14 +19,12 @@ pub struct CachedMeshBuffers {
 }
 
 /// Manages GPU buffers for meshes to avoid per-frame allocation
-
 pub struct MeshBufferCache {
     cache: HashMap<MappingId, CachedMeshBuffers>,
 }
 
 impl MeshBufferCache {
     /// Create a new mesh buffer cache
-
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
@@ -35,7 +32,6 @@ impl MeshBufferCache {
     }
 
     /// Get buffers for a mapping, creating or updating them if necessary
-
     pub fn get_buffers(
         &mut self,
         device: &wgpu::Device,
@@ -102,13 +98,11 @@ impl MeshBufferCache {
     }
 
     /// Remove a mapping from the cache
-
     pub fn remove(&mut self, mapping_id: MappingId) {
         self.cache.remove(&mapping_id);
     }
 
     /// Clear the cache
-
     pub fn clear(&mut self) {
         self.cache.clear();
     }
