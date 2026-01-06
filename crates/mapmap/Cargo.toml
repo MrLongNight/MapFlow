@@ -7,60 +7,9 @@ license = "GPL-3.0"
 repository = "https://github.com/MrLongNight/MapFlow"
 description = "MapFlow - Professional Projection Mapping Software"
 
-[dependencies]
-mapmap-core = { path = "../mapmap-core" }
-mapmap-render = { path = "../mapmap-render" }
-mapmap-media = { path = "../mapmap-media" }
-mapmap-ui = { path = "../mapmap-ui" }
-mapmap-control = { path = "../mapmap-control" }
-mapmap-io = { path = "../mapmap-io" }
-mapmap-mcp = { path = "../mapmap-mcp" }
-
-rfd = "0.14"
-
-wgpu = { workspace = true }
-winit = { workspace = true }
-pollster = { workspace = true }
-bytemuck = { workspace = true }
-glam = { workspace = true }
-image = { workspace = true }
-tokio = { workspace = true }
-futures = { workspace = true }
-crossbeam-channel = { workspace = true }
-rayon = { workspace = true }
-parking_lot = { workspace = true }
-arc-swap = { workspace = true }
-ffmpeg-next = { workspace = true, optional = true }
-cpal = { workspace = true }
-rustfft = { workspace = true }
-hound = { workspace = true }
-
-egui = { workspace = true }
-egui-wgpu = { workspace = true }
-egui-winit = { workspace = true }
-egui_extras = { workspace = true }
-midir = { workspace = true }
-rosc = { workspace = true }
-axum = { workspace = true }
-tower = { workspace = true }
-hyper = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
-ron = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-tracing-appender = "0.2"
-sysinfo = "0.33"
-dirs = "5.0"
-thiserror = { workspace = true }
-
-anyhow = { workspace = true }
-proptest = { workspace = true }
-criterion = { workspace = true }
-bindgen = { workspace = true }
-cbindgen = { workspace = true }
-cc = { workspace = true }
+[[bin]]
+name = "MapFlow"
+path = "src/main.rs"
 
 [features]
 default = ["audio", "midi", "ffmpeg"]
@@ -69,9 +18,60 @@ audio = ["mapmap-core/audio"]
 midi = ["mapmap-control/midi", "mapmap-ui/midi"]
 ndi = ["mapmap-io/ndi", "mapmap-ui/ndi"]
 
+[dependencies]
+
+anyhow = { workspace = true }
+arc-swap = { workspace = true }
+axum = { workspace = true }
+bindgen = { workspace = true }
+bytemuck = { workspace = true }
+cbindgen = { workspace = true }
+cc = { workspace = true }
+cpal = { workspace = true }
+criterion = { workspace = true }
+crossbeam-channel = { workspace = true }
+dirs = "5.0"
+
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+egui-winit = { workspace = true }
+egui_extras = { workspace = true }
+ffmpeg-next = { workspace = true, optional = true }
+futures = { workspace = true }
+glam = { workspace = true }
+hound = { workspace = true }
+hyper = { workspace = true }
+image = { workspace = true }
+mapmap-control = { path = "../mapmap-control" }
+mapmap-core = { path = "../mapmap-core" }
+mapmap-io = { path = "../mapmap-io" }
+mapmap-mcp = { path = "../mapmap-mcp" }
+mapmap-media = { path = "../mapmap-media" }
+mapmap-render = { path = "../mapmap-render" }
+mapmap-ui = { path = "../mapmap-ui" }
+midir = { workspace = true }
+parking_lot = { workspace = true }
+pollster = { workspace = true }
+proptest = { workspace = true }
+rayon = { workspace = true }
+
+rfd = "0.14"
+ron = { workspace = true }
+rosc = { workspace = true }
+rustfft = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sysinfo = "0.33"
+thiserror = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+tower = { workspace = true }
+tracing = { workspace = true }
+tracing-appender = "0.2"
+tracing-subscriber = { workspace = true }
+
+wgpu = { workspace = true }
+winit = { workspace = true }
+
 [build-dependencies]
 winres = { workspace = true }
-
-[[bin]]
-name = "MapFlow"
-path = "src/main.rs"

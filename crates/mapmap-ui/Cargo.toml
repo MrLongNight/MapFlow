@@ -7,47 +7,46 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[dependencies]
-mapmap-core = { path = "../mapmap-core" }
-mapmap-media = { path = "../mapmap-media" }
-mapmap-render = { path = "../mapmap-render" }
-mapmap-control = { path = "../mapmap-control", features = ["osc", "midi"] }
-mapmap-io = { path = "../mapmap-io", optional = true }                      # Added for NDI
-cpal = { workspace = true, optional = true }
-tokio = { workspace = true, optional = true }                               # Added for NDI async
-sysinfo = "0.29"
+[features]
+default = ["cpal", "midi"]
+midi = ["mapmap-control/midi"]
+ndi = ["dep:mapmap-io", "mapmap-io/ndi", "dep:tokio"]
 
+[dependencies]
+anyhow = { workspace = true }
+cpal = { workspace = true, optional = true }
+dirs = "5.0"
 
 # Phase 6: egui migration
 egui = { workspace = true }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
 egui_extras = { workspace = true }
-
-wgpu = { workspace = true }
-winit = { workspace = true }
-glam = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-image = { workspace = true }
-parking_lot = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
 fluent = { workspace = true }
 fluent-langneg = { workspace = true }
-unic-langid = { workspace = true }
-rust-embed = { workspace = true }
+glam = { workspace = true }
+image = { workspace = true }
+mapmap-control = { path = "../mapmap-control", features = ["osc", "midi"] }
+mapmap-core = { path = "../mapmap-core" }
+mapmap-io = { path = "../mapmap-io", optional = true }                      # Added for NDI
+mapmap-media = { path = "../mapmap-media" }
+mapmap-render = { path = "../mapmap-render" }
 once_cell = { workspace = true }
-dirs = "5.0"
-rfd = "0.14"
+parking_lot = { workspace = true }
 
 # SVG icon rendering
 resvg = { workspace = true }
-usvg = { workspace = true }
+rfd = "0.14"
+rust-embed = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sysinfo = "0.29"
+thiserror = { workspace = true }
 tiny-skia = { workspace = true }
+tokio = { workspace = true, optional = true }                               # Added for NDI async
+tracing = { workspace = true }
+unic-langid = { workspace = true }
+usvg = { workspace = true }
 
-[features]
-default = ["cpal", "midi"]
-midi = ["mapmap-control/midi"]
-ndi = ["dep:mapmap-io", "mapmap-io/ndi", "dep:tokio"]
+wgpu = { workspace = true }
+winit = { workspace = true }
