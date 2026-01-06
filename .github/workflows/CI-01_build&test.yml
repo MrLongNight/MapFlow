@@ -359,9 +359,10 @@ jobs:
       uses:  dtolnay/rust-toolchain@stable
 
     - name: Run cargo audit (RustSec)
-      uses: rustsec/audit-check@v2
-      with: 
-        token:  ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cargo install cargo-audit --locked
+        # Ignore RUSTSEC-2024-0370 (proc-macro-error "unmaintained" - transitive dep from egui_dock)
+        cargo audit --ignore RUSTSEC-2024-0370
 
     - name: Check supply chain security (cargo-vet)
       run: |
