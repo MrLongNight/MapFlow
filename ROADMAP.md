@@ -1,9 +1,9 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.8
-> **Stand:** 2025-12-31 19:30
+> **Version:** 1.9
+> **Stand:** 2026-01-02 12:00
 > **Zielgruppe:** @jules und Entwickler-Team
-> **Projekt-Version:** 0.2.0
+> **Projekt-Version:** 0.3.0
 
 ---
 
@@ -350,24 +350,18 @@
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
 
-- 🟡 **Advanced Layer Triggering & Linking** (PLANNED)
-  - [ ] **Audio Trigger Node Enhancements**
-    - [ ] Implement `inverted output` boolean flag for each trigger signal output.
-  - [ ] **Universal Link System** (Layers, Masks, Effects, Blends)
-    - [ ] Add `Link Mode` property to Node inspector (Off, Master, Slave).
-    - [ ] **Master Mode**:
-      - Exposes `Master Link Output` connector.
-      - Sends active/visibility state.
-    - [ ] **Slave Mode**:
-      - Exposes `Slave Link Input` connector.
-      - Reacts to linked Master state.
-    - [ ] **Link Logic**:
-      - Enforce connection rules: Master Link Output only connects to Slave Link Input.
-      - Connectors only visible/active when Link Mode is enabled.
-      - Slave Property: `Link Behavior` (Same as Master / Inverted).
-  - [ ] **Trigger Input for Nodes**
-    - [ ] Add optional `Trigger Input` pin to Layer, Group, Mask, Effect, Blend nodes.
-    - [ ] Logic: Input Signal controls visibility/activity (Active if Signal > 0.5).
+- ✅ **Advanced Layer Triggering & Linking** (COMPLETED 2026-01-02)
+  - ✅ **Audio Trigger Node Enhancements**
+    - ✅ Implement `inverted output` boolean flag for each trigger signal output.
+    - ✅ 10+ Output Sockets (Bands, Volume, Beat, BPM)
+  - ✅ **Universal Link System** (Layers, Masks, Effects, Blends)
+    - ✅ Add `Link Mode` property to Node inspector (Off, Master, Slave).
+    - ✅ **Master Mode**: Exposes `Link Out`.
+    - ✅ **Slave Mode**: Exposes `Link In`.
+    - ✅ **Link Logic**: Enforce connection rules.
+  - ✅ **Trigger Input for Nodes**
+    - ✅ Optional `Trigger Input` pin added to nodes.
+    - ✅ Signal controls visibility/activity.
 
 - 🟡 **Assignment System** (PR #140 MERGED 2025-12-31)
   - ✅ `AssignmentManager` implementieren (COMPLETED 2025-12-31)
@@ -377,16 +371,16 @@
   - ⬜ ControlSource zu ControlTarget Routing
 
 - 🟡 **NDI/Spout Video I/O** (mapmap-io)
-  - ✅ **NDI Support** (`mapmap-io/src/ndi/`)
-    - ✅ NdiReceiver für NDI-Source-Empfang
-    - ✅ NdiSender für NDI-Output
+  - 🟡 **NDI Support** (`mapmap-io/src/ndi/`)
+    - ✅ NdiReceiver für NDI-Source-Empfang (COMPLETED 2026-01-02)
+    - 🟡 NdiSender für NDI-Output (Skeleton implementiert, Send Logic TODO)
     - ✅ Source Discovery (async)
     - ✅ Feature-Flag: `ndi`
-  - 🟡 **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
+  - ✅ **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - COMPLETED 2025-12-31
     - ✅ SourceType::SpoutInput im Core
     - ✅ OutputType::Spout im Core
     - ✅ UI-Integration in Module Canvas
-    - ⬜ wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt Update)
+    - 🟡 wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt)
 
 - ✅ **Logging & Debug** (COMPLETED 2025-12-28)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
@@ -558,11 +552,11 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
-- ⬜ **NDI-Integration** (`mapmap-ndi/`)
-  - ⬜ `grafton-ndi` Rust Bindings integrieren
-  - ⬜ NDI Sender (wgpu Texture → NDI Stream)
-  - ⬜ NDI Receiver (NDI Stream → Fullscreen Texture)
-  - ⬜ Multi-Source-Diüscovery (NDI Finder)
+- 🟡 **NDI-Integration** (`mapmap-ndi/`)
+  - ✅ `grafton-ndi` Rust Bindings integrieren
+  - 🟡 NDI Sender (wgpu Texture → NDI Stream)
+  - ✅ NDI Receiver (NDI Stream → Fullscreen Texture) (COMPLETED 2026-01-02)
+  - ✅ Multi-Source-Discovery (NDI Finder) (COMPLETED 2026-01-02)
   - ⬜ Latenz-Optimierung (<100ms Ziel)
 
 - ⬜ **Player-Modus** (`--player-ndi`)
