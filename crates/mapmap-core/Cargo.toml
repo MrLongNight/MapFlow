@@ -7,38 +7,37 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-glam = { workspace = true }
-uuid = { version = "1.8.0", features = ["v4", "serde"] }
-cpal = { workspace = true, optional = true }
-rustfft = { workspace = true }
-hound = { workspace = true }
-crossbeam-channel = { workspace = true }
-parking_lot = { workspace = true }
-chrono = "0.4"
-dirs = "5.0"
-tracing = { workspace = true }
-winit = { workspace = true, optional = true }
-
-# Audio Analysis (Phase 1 Migration)
-audio-processor-analysis = "2.4"
-audio-processor-traits = "4.3"
-num-traits = "0.2"
-num-complex = "0.4"
-
-# Professional BPM/Key Detection
-stratum-dsp = "1.0"
-rand = "0.9.2"
-
-
 [features]
 default = ["audio"]
 audio = ["cpal"]
 winit = ["dep:winit"]
 mock-audio = []
+
+[dependencies]
+
+# Audio Analysis (Phase 1 Migration)
+audio-processor-analysis = "2.4"
+audio-processor-traits = "4.3"
+chrono = "0.4"
+cpal = { workspace = true, optional = true }
+crossbeam-channel = { workspace = true }
+dirs = "5.0"
+glam = { workspace = true }
+hound = { workspace = true }
+num-complex = "0.4"
+num-traits = "0.2"
+parking_lot = { workspace = true }
+rand = "0.9.2"
+rustfft = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Professional BPM/Key Detection
+stratum-dsp = "1.0"
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { version = "1.8.0", features = ["v4", "serde"] }
+winit = { workspace = true, optional = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
