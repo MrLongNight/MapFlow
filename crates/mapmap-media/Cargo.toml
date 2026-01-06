@@ -7,24 +7,24 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[dependencies]
-mapmap-io = { path = "../mapmap-io" }
-# FFmpeg is optional - we have a test pattern fallback
-ffmpeg-next = { workspace = true, optional = true }
-crossbeam-channel = { workspace = true }
-parking_lot = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-# Image decoding for still images, GIF, and sequences
-image = { workspace = true }
-walkdir = "2.4"
-# HAP codec support
-snap = { version = "1.1", optional = true }
-
 [features]
 default = []
 ffmpeg = ["ffmpeg-next"]
 hap = ["snap", "ffmpeg"]
+
+[dependencies]
+crossbeam-channel = { workspace = true }
+# FFmpeg is optional - we have a test pattern fallback
+ffmpeg-next = { workspace = true, optional = true }
+# Image decoding for still images, GIF, and sequences
+image = { workspace = true }
+mapmap-io = { path = "../mapmap-io" }
+parking_lot = { workspace = true }
+# HAP codec support
+snap = { version = "1.1", optional = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+walkdir = "2.4"
 
 [dev-dependencies]
 criterion = { workspace = true }

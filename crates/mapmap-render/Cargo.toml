@@ -8,25 +8,25 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+bytemuck = { workspace = true }
+crossbeam-channel = { workspace = true }
+glam = { workspace = true }
+image = { workspace = true }
 mapmap-core = { path = "../mapmap-core" }
+notify = { workspace = true }
+parking_lot = { workspace = true }
+pollster = { workspace = true }
+rand = "0.8"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
 wgpu = { workspace = true, features = ["hal"] }
 wgpu-hal = "0.19"
 winit = { workspace = true }
-pollster = { workspace = true }
-bytemuck = { workspace = true }
-glam = { workspace = true }
-image = { workspace = true }
-parking_lot = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-notify = { workspace = true }
-crossbeam-channel = { workspace = true }
-rand = "0.8"
 
 [dev-dependencies]
-futures-channel = "0.3.30"
 criterion = { workspace = true }
+futures-channel = "0.3.30"
 pollster = { workspace = true }
 tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
