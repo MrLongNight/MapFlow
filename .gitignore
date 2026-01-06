@@ -63,3 +63,10 @@ check_*.txt
 !README.txt
 !CHANGELOG.txt
 project.mflow
+
+# Archivist additions
+/.temp-archive/
+.vscode/settings.json
+.idea/
+*.tmp
+*.temp
