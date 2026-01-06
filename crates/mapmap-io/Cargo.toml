@@ -7,51 +7,6 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[dependencies]
-# Core dependencies
-wgpu = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-serde = { workspace = true }
-once_cell = { workspace = true }
-serde_json = { workspace = true }
-ron = { workspace = true }
-chrono = { workspace = true }
-mapmap-core = { path = "../mapmap-core" }
-
-# Format conversion
-image = { workspace = true }
-bytemuck = { workspace = true }
-
-# Async runtime
-tokio = { workspace = true, optional = true }
-
-# Media encoding/decoding
-ffmpeg-next = { workspace = true, optional = true }
-grafton-ndi = { version = "0.2.4", optional = true }
-
-# Platform-specific dependencies
-[target.'cfg(windows)'.dependencies]
-windows = { version = "0.52", features = [
-    "Win32_Graphics_Direct3D11",
-    "Win32_Graphics_Dxgi",
-    "Win32_System_Com",
-], optional = true }
-rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-cocoa = { version = "0.25", optional = true }
-core-foundation = { version = "0.9", optional = true }
-objc = { version = "0.2", optional = true }
-
-[build-dependencies]
-bindgen = { workspace = true, optional = true }
-cc = { workspace = true, optional = true }
-
-[dev-dependencies]
-tempfile = "3.8"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-
 [features]
 default = []
 # Individual features
@@ -76,3 +31,48 @@ texture-sharing = [] # Enable on platforms that support it
 all-io = ["ndi", "decklink", "spout", "syphon", "stream", "virtual-camera"]
 # CI-safe feature for Linux builds (excludes platform-specific: spout, syphon, ndi)
 ci-linux = ["stream", "virtual-camera"]
+
+[dependencies]
+bytemuck = { workspace = true }
+chrono = { workspace = true }
+
+# Media encoding/decoding
+ffmpeg-next = { workspace = true, optional = true }
+grafton-ndi = { version = "0.2.4", optional = true }
+
+# Format conversion
+image = { workspace = true }
+mapmap-core = { path = "../mapmap-core" }
+once_cell = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true, optional = true }
+tracing = { workspace = true }
+# Core dependencies
+wgpu = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = { version = "0.25", optional = true }
+core-foundation = { version = "0.9", optional = true }
+objc = { version = "0.2", optional = true }
+
+# Platform-specific dependencies
+[target.'cfg(windows)'.dependencies]
+rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
+windows = { version = "0.52", features = [
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_System_Com",
+], optional = true }
+
+[build-dependencies]
+bindgen = { workspace = true, optional = true }
+cc = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = "3.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
