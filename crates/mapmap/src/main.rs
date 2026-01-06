@@ -894,12 +894,13 @@ impl App {
                     }
                     // Handle Reload by removing player (will be recreated on next frame)
                     if cmd == mapmap_ui::MediaPlaybackCommand::Reload
-                        && self.media_players.remove(&part_id).is_some() {
-                            info!(
-                                "Removed old media player for part_id={} for reload",
-                                part_id
-                            );
-                        }
+                        && self.media_players.remove(&part_id).is_some()
+                    {
+                        info!(
+                            "Removed old media player for part_id={} for reload",
+                            part_id
+                        );
+                    }
                 }
 
                 // Update all active media players and upload frames to texture pool
@@ -1605,7 +1606,9 @@ impl App {
 
                         // Create player if not exists
                         // Note: Using entry API would be cleaner but path update requires check
-                        if let std::collections::hash_map::Entry::Vacant(e) = self.media_players.entry(part.id) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.media_players.entry(part.id)
+                        {
                             match mapmap_media::open_path(path) {
                                 Ok(mut player) => {
                                     if let Err(e) = player.play() {
@@ -1638,8 +1641,9 @@ impl App {
     fn update_media_players(&mut self, dt: f32) {
         static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
-        let log_this_frame =
-            FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed).is_multiple_of(60);
+        let log_this_frame = FRAME_LOG_COUNTER
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .is_multiple_of(60);
 
         for (id, player) in &mut self.media_players {
             // Update player logic
@@ -2860,7 +2864,10 @@ impl App {
                 } else {
                     static MISSING_VIEW: std::sync::atomic::AtomicU64 =
                         std::sync::atomic::AtomicU64::new(0);
-                    if MISSING_VIEW.fetch_add(1, std::sync::atomic::Ordering::Relaxed).is_multiple_of(120) {
+                    if MISSING_VIEW
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                        .is_multiple_of(120)
+                    {
                         tracing::warn!(
                             "Render: No effective view for output {} (Texture logic failed)",
                             output_id
