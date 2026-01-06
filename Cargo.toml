@@ -57,7 +57,6 @@ imgui-winit-support = "0.12"
 egui = "0.27"
 egui-wgpu = "0.27"
 egui-winit = "0.27"
-egui_dock = "0.12"
 egui_extras = { version = "0.27", features = ["image", "file", "svg"] }
 fluent = "0.16"
 fluent-langneg = "0.13"

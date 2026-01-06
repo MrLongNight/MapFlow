@@ -22,7 +22,6 @@ sysinfo = "0.29"
 egui = { workspace = true }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
-egui_dock = { workspace = true }
 egui_extras = { workspace = true }
 
 wgpu = { workspace = true }
