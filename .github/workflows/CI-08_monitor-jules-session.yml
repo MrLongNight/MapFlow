@@ -6,7 +6,18 @@ name: "CI-08: Monitor Jules Session"
 # ═══════════════════════════════════════════════════════════════
 
 on:
-  # Triggered by CI-04 when a session is created, or by CI-07 for next session
+  # Triggered by CI-04 when a session is created
+  workflow_call:
+    inputs:
+      session_id:
+        description: 'Jules session ID to monitor'
+        required: false
+        type: string
+      issue_number:
+        description: 'Related issue number'
+        required: false
+        type: string
+  # Or triggered manually
   workflow_dispatch:
     inputs:
       session_id:
@@ -31,8 +42,12 @@ env:
   # ═══════════════════════════════════════════════════════════════
   JULES_AUTOMATION_ENABLED: true
   
-  # Polling interval in seconds (60 = 1 minute)
-  POLL_INTERVAL_SECONDS: 60
+  # Initial delay in seconds (wait for Jules to start coding)
+  INITIAL_DELAY_SECONDS: 300  # 5 minutes
+  
+  # Polling interval in seconds (FALLBACK - primary trigger is Gmail/PR events)
+  # Reduced to 30 min since CI-12 Gmail Monitor handles real-time detection
+  POLL_INTERVAL_SECONDS: 1800  # 30 minutes (fallback only)
 
 jobs:
   check-enabled:
@@ -83,6 +98,7 @@ jobs:
           SESSION_ID: ${{ github.event.inputs.session_id }}
           ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
           POLL_INTERVAL: ${{ env.POLL_INTERVAL_SECONDS }}
+          INITIAL_DELAY: ${{ env.INITIAL_DELAY_SECONDS }}
         with:
           script: |
             const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
@@ -92,12 +108,20 @@ jobs:
               return;
             }
             
-            const pollInterval = parseInt(process.env.POLL_INTERVAL) || 60;
+            const pollInterval = parseInt(process.env.POLL_INTERVAL) || 180;
+            const initialDelay = parseInt(process.env.INITIAL_DELAY) || 300;
             let checkCount = 0;
             
             core.info('🔄 Starting CONTINUOUS monitoring (runs until all issues closed or disabled)');
+            core.info(`   Initial delay: ${initialDelay} seconds (waiting for Jules to code)`);
             core.info(`   Polling interval: ${pollInterval} seconds`);
             core.info('   To stop: Set JULES_AUTOMATION_ENABLED=false and re-run');
+            core.info('');
+            
+            // Initial delay - wait for Jules to start coding and create PR
+            core.info(`⏳ Waiting ${initialDelay} seconds before first check...`);
+            await new Promise(resolve => setTimeout(resolve, initialDelay * 1000));
+            core.info('✅ Initial delay complete, starting monitoring loop');
             core.info('');
             
             // Main monitoring loop - runs until no more open jules-task issues
@@ -257,7 +281,7 @@ jobs:
                             owner: context.repo.owner,
                             repo: context.repo.repo,
                             issue_number: pr.number,
-                            labels: ['jules-pr']
+                            labels: ['jules-pr', 'auto-merge']
                           });
                           
                           await github.rest.issues.createComment({
@@ -268,6 +292,91 @@ jobs:
                           });
                           
                           core.info(`      ✅ Created PR #${pr.number}`);
+                          
+                          // Wait for CI checks to complete (check every 60 seconds for 10 minutes)
+                          core.info(`      ⏳ Waiting for CI checks on PR #${pr.number}...`);
+                          let checksComplete = false;
+                          let checksPassed = false;
+                          let failedChecks = [];
+                          
+                          for (let i = 0; i < 10 && !checksComplete; i++) {
+                            await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 60s
+                            
+                            const { data: checkRuns } = await github.rest.checks.listForRef({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              ref: pr.head.sha
+                            });
+                            
+                            const pending = checkRuns.check_runs.filter(c => c.status !== 'completed');
+                            const failed = checkRuns.check_runs.filter(c => c.conclusion === 'failure' || c.conclusion === 'timed_out');
+                            
+                            if (pending.length === 0) {
+                              checksComplete = true;
+                              checksPassed = failed.length === 0;
+                              failedChecks = failed;
+                            } else {
+                              core.info(`        Still waiting... ${pending.length} checks pending`);
+                            }
+                          }
+                          
+                          if (checksComplete && checksPassed) {
+                            // Auto-merge the PR
+                            try {
+                              await github.rest.pulls.merge({
+                                owner: context.repo.owner,
+                                repo: context.repo.repo,
+                                pull_number: pr.number,
+                                merge_method: 'squash'
+                              });
+                              core.info(`      ✅ Auto-merged PR #${pr.number}`);
+                              
+                              // Close the issue with summary
+                              await github.rest.issues.createComment({
+                                owner: context.repo.owner,
+                                repo: context.repo.repo,
+                                issue_number: session.issueNumber,
+                                body: `## ✅ Jules Task Completed!\n\n**PR:** #${pr.number} (merged)\n**Branch:** \`${branch}\`\n\n---\n*Automatically completed by Jules CI/CD Pipeline*`
+                              });
+                              
+                              await github.rest.issues.update({
+                                owner: context.repo.owner,
+                                repo: context.repo.repo,
+                                issue_number: session.issueNumber,
+                                state: 'closed'
+                              });
+                              
+                              core.info(`      ✅ Closed issue #${session.issueNumber}`);
+                            } catch (mergeErr) {
+                              core.warning(`      Could not auto-merge: ${mergeErr.message}`);
+                            }
+                          } else if (checksComplete && !checksPassed) {
+                            // Create @jules comment with error details
+                            let errorComment = `@jules CI-Checks sind fehlgeschlagen. Bitte korrigiere die folgenden Fehler:\n\n`;
+                            
+                            for (const check of failedChecks) {
+                              errorComment += `### ❌ ${check.name}\n`;
+                              errorComment += `**Status:** ${check.conclusion}\n`;
+                              if (check.output && check.output.summary) {
+                                errorComment += `**Details:**\n\`\`\`\n${check.output.summary.slice(0, 500)}\n\`\`\`\n\n`;
+                              }
+                            }
+                            
+                            errorComment += `\n**Nächste Schritte:**\n`;
+                            errorComment += `1. Analysiere die Fehler oben\n`;
+                            errorComment += `2. Pushe Korrekturen zu Branch \`${branch}\`\n`;
+                            errorComment += `3. CI läuft automatisch erneut\n`;
+                            
+                            await github.rest.issues.createComment({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: pr.number,
+                              body: errorComment
+                            });
+                            
+                            core.warning(`      ❌ CI checks failed, @jules comment added`);
+                          }
+                          
                         } catch (prError) {
                           core.warning(`      Could not create PR: ${prError.message}`);
                         }

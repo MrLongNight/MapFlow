@@ -1322,3 +1322,132 @@ impl Default for ModuleManager {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_audio_trigger_output_config_defaults() {
+        let config = AudioTriggerOutputConfig::default();
+        let sockets = config.generate_outputs();
+
+        // Default is just Beat Output
+        assert!(sockets.iter().any(|s| s.name == "Beat Out"));
+        assert!(!sockets.iter().any(|s| s.name == "BPM Out"));
+        assert!(!sockets.iter().any(|s| s.name == "SubBass Out"));
+    }
+
+    #[test]
+    fn test_audio_trigger_output_config_all_enabled() {
+        let config = AudioTriggerOutputConfig {
+            frequency_bands: true,
+            volume_outputs: true,
+            beat_output: true,
+            bpm_output: true,
+            inverted_outputs: Default::default(),
+        };
+        let sockets = config.generate_outputs();
+
+        // 9 bands + 2 volume + 1 beat + 1 bpm = 13 sockets
+        assert_eq!(sockets.len(), 13);
+        assert!(sockets.iter().any(|s| s.name == "SubBass Out"));
+        assert!(sockets.iter().any(|s| s.name == "RMS Volume"));
+        assert!(sockets.iter().any(|s| s.name == "BPM Out"));
+    }
+
+    #[test]
+    fn test_module_add_part_sockets() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        let part_id = module.add_part(PartType::Trigger, (0.0, 0.0));
+        let part = module
+            .parts
+            .iter()
+            .find(|p| p.id == part_id)
+            .expect("Part not found");
+
+        // Trigger (Beat) should have 1 output (Beat Out) and 0 inputs
+        assert_eq!(part.outputs.len(), 1);
+        assert_eq!(part.outputs[0].name, "Trigger Out");
+        assert_eq!(part.inputs.len(), 0);
+    }
+
+    #[test]
+    fn test_connection_management() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        let p1 = module.add_part(PartType::Trigger, (0.0, 0.0));
+        let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
+
+        module.add_connection(p1, 0, p2, 1); // Connect Trigger Out to Layer Trigger In
+
+        assert_eq!(module.connections.len(), 1);
+        assert_eq!(module.connections[0].from_part, p1);
+        assert_eq!(module.connections[0].to_part, p2);
+
+        module.remove_connection(p1, 0, p2, 1);
+        assert_eq!(module.connections.len(), 0);
+    }
+
+    #[test]
+    fn test_socket_update_cleanup() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        // Create AudioFFT trigger with all bands (many outputs)
+        let config = AudioTriggerOutputConfig {
+            frequency_bands: true, // 9 bands
+            ..Default::default()
+        };
+        let fft_part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+            band: AudioBand::Bass,
+            threshold: 0.5,
+            output_config: config,
+        });
+
+        let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
+        let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
+
+        // Connect SubBass (index 0) and Air (index 8)
+        module.add_connection(p1, 0, p2, 1);
+        module.add_connection(p1, 8, p2, 1);
+
+        assert_eq!(module.connections.len(), 2);
+
+        // Update part to disable bands (reducing outputs)
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == p1) {
+            if let ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) =
+                &mut part.part_type
+            {
+                output_config.frequency_bands = false;
+            }
+        }
+
+        // This should trigger cleanup
+        module.update_part_sockets(p1);
+
+        assert_eq!(module.connections.len(), 1);
+        assert_eq!(module.connections[0].from_socket, 0);
+    }
+}
