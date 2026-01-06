@@ -1059,6 +1059,7 @@ impl App {
                                             } => format!("Projector({})", id),
                                             mapmap_core::module::OutputType::NdiOutput { name } =>
                                                 format!("NDI({})", name),
+                                            #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
                                         }
@@ -1486,6 +1487,7 @@ impl App {
                     target_screen,
                     show_in_preview_panel: _,
                     extra_preview_window,
+                    ..
                 } => {
                     // 1. Primary Window
                     active_window_ids.insert(output_id);
