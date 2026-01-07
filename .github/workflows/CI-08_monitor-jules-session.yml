@@ -43,11 +43,11 @@ env:
   JULES_AUTOMATION_ENABLED: true
   
   # Initial delay in seconds (wait for Jules to start coding)
-  INITIAL_DELAY_SECONDS: 300  # 5 minutes
+  INITIAL_DELAY_SECONDS: 180  # 3 minutes (optimized)
   
-  # Polling interval in seconds (FALLBACK - primary trigger is Gmail/PR events)
-  # Reduced to 30 min since CI-12 Gmail Monitor handles real-time detection
-  POLL_INTERVAL_SECONDS: 1800  # 30 minutes (fallback only)
+  # Polling interval in seconds - reduced for faster detection
+  # Primary: Gmail/PR events via CI-12, Fallback: polling
+  POLL_INTERVAL_SECONDS: 300  # 5 minutes (optimized from 30 min)
 
 jobs:
   check-enabled:
