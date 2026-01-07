@@ -1450,4 +1450,123 @@ mod tests {
         assert_eq!(module.connections.len(), 1);
         assert_eq!(module.connections[0].from_socket, 0);
     }
+
+    #[test]
+    fn test_link_mode_sockets() {
+        let mut part = ModulePart {
+            id: 1,
+            part_type: ModulePartType::Trigger(TriggerType::Beat), // Usually triggers are sources
+            position: (0.0, 0.0),
+            size: None,
+            link_data: NodeLinkData {
+                mode: LinkMode::Off,
+                behavior: LinkBehavior::SameAsMaster,
+                trigger_input_enabled: false,
+            },
+            inputs: vec![],
+            outputs: vec![],
+        };
+
+        // Case 1: Off (default)
+        let (inputs, outputs) = part.compute_sockets();
+        assert!(!inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
+        assert!(!outputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
+
+        // Case 2: Master -> Should have Link Out
+        part.link_data.mode = LinkMode::Master;
+        let (inputs, outputs) = part.compute_sockets();
+        assert!(outputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link Out"));
+        assert!(!inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
+
+        // Case 3: Slave -> Should have Link In
+        part.link_data.mode = LinkMode::Slave;
+        let (inputs, outputs) = part.compute_sockets();
+        assert!(inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link In"));
+        assert!(!outputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
+    }
+
+    #[test]
+    fn test_mesh_type_revision_hash() {
+        let mesh1 = MeshType::Quad {
+            tl: (0.0, 0.0),
+            tr: (1.0, 0.0),
+            br: (1.0, 1.0),
+            bl: (0.0, 1.0),
+        };
+        let mesh2 = MeshType::Quad {
+            tl: (0.0, 0.0),
+            tr: (1.0, 0.0),
+            br: (1.0, 1.0),
+            bl: (0.0, 1.0),
+        };
+        let mesh3 = MeshType::Grid { rows: 10, cols: 10 };
+
+        assert_eq!(mesh1.compute_revision_hash(), mesh2.compute_revision_hash());
+        assert_ne!(mesh1.compute_revision_hash(), mesh3.compute_revision_hash());
+
+        // Change one value
+        let mesh4 = MeshType::Quad {
+            tl: (0.1, 0.0),
+            tr: (1.0, 0.0),
+            br: (1.0, 1.0),
+            bl: (0.0, 1.0),
+        };
+        assert_ne!(mesh1.compute_revision_hash(), mesh4.compute_revision_hash());
+    }
+
+    #[test]
+    fn test_mesh_to_mesh_generation() {
+        // Test Quad generation
+        let quad_type = MeshType::Quad {
+            tl: (0.0, 0.0),
+            tr: (100.0, 0.0),
+            br: (100.0, 100.0),
+            bl: (0.0, 100.0),
+        };
+        let mesh = quad_type.to_mesh();
+        assert_eq!(mesh.vertex_count(), 4);
+
+        // Test Grid generation
+        let grid_type = MeshType::Grid { rows: 2, cols: 2 };
+        let grid_mesh = grid_type.to_mesh();
+        // 2x2 grid has (2+1)*(2+1) = 9 vertices
+        assert_eq!(grid_mesh.vertex_count(), 9);
+    }
+
+    #[test]
+    fn test_module_manager_crud() {
+        let mut manager = ModuleManager::new();
+
+        // Create
+        let id1 = manager.create_module("Module A".to_string());
+        let id2 = manager.create_module("Module B".to_string());
+        assert_ne!(id1, id2);
+
+        // Read/List
+        assert_eq!(manager.list_modules().len(), 2);
+        assert_eq!(manager.get_module(id1).unwrap().name, "Module A");
+
+        // Update (simulated via get_mut)
+        if let Some(m) = manager.get_module_mut(id1) {
+            m.name = "Module A Modified".to_string();
+        }
+        assert_eq!(manager.get_module(id1).unwrap().name, "Module A Modified");
+
+        // Delete
+        manager.delete_module(id1);
+        assert_eq!(manager.list_modules().len(), 1);
+        assert!(manager.get_module(id1).is_none());
+    }
 }
