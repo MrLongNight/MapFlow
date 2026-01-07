@@ -456,7 +456,7 @@ jobs:
                           owner: context.repo.owner,
                           repo: context.repo.repo,
                           issue_number: session.issueNumber,
-                          body: `✅ **Jules session completed!** Aber kein PR gefunden.\n\n**Mögliche Ursache:** Session wartet auf 'Publish PR' Klick in der Jules UI.\n\n🔗 **Session manuell überprüfen:** ${sessionUrl}\n\n_Nach dem Klick auf 'Publish PR' wird der CI-Monitor den PR automatisch erkennen._`
+                          body: `✅ **Jules session completed!** Aber kein PR gefunden.\n\n**Ursache:** Diese Session wurde OHNE \`automationMode: AUTO_CREATE_PR\` erstellt und wartet auf manuellen 'Publish PR' Klick.\n\n🔗 **Session öffnen:** ${sessionUrl}\n\n**Aktion erforderlich:** Bitte auf 'Publish PR' in der Jules UI klicken. Der CI-Monitor erkennt den PR dann automatisch.\n\n_Hinweis: Neue Sessions werden jetzt mit AUTO_CREATE_PR erstellt und benötigen keinen manuellen Klick mehr._`
                         });
                       }
                     }

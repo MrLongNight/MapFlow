@@ -245,6 +245,9 @@ jobs:
             const payload = {
               prompt: `Issue #${issueNumber}: ${title}\n\n${body}`,
               title: title,
+              // AUTO_CREATE_PR ensures Jules automatically pushes the branch and creates a PR
+              // without requiring manual 'Publish PR' click in the Jules UI
+              automationMode: 'AUTO_CREATE_PR',
               sourceContext: {
                 source: sourceName,
                 githubRepoContext: { startingBranch: 'main' }
