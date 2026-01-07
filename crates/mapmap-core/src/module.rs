@@ -1469,20 +1469,32 @@ mod tests {
 
         // Case 1: Off (default)
         let (inputs, outputs) = part.compute_sockets();
-        assert!(!inputs.iter().any(|s| s.socket_type == ModuleSocketType::Link));
-        assert!(!outputs.iter().any(|s| s.socket_type == ModuleSocketType::Link));
+        assert!(!inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
+        assert!(!outputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
 
         // Case 2: Master -> Should have Link Out
         part.link_data.mode = LinkMode::Master;
         let (inputs, outputs) = part.compute_sockets();
-        assert!(outputs.iter().any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link Out"));
-        assert!(!inputs.iter().any(|s| s.socket_type == ModuleSocketType::Link));
+        assert!(outputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link Out"));
+        assert!(!inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
 
         // Case 3: Slave -> Should have Link In
         part.link_data.mode = LinkMode::Slave;
         let (inputs, outputs) = part.compute_sockets();
-        assert!(inputs.iter().any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link In"));
-        assert!(!outputs.iter().any(|s| s.socket_type == ModuleSocketType::Link));
+        assert!(inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link In"));
+        assert!(!outputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link));
     }
 
     #[test]
@@ -1501,14 +1513,8 @@ mod tests {
         };
         let mesh3 = MeshType::Grid { rows: 10, cols: 10 };
 
-        assert_eq!(
-            mesh1.compute_revision_hash(),
-            mesh2.compute_revision_hash()
-        );
-        assert_ne!(
-            mesh1.compute_revision_hash(),
-            mesh3.compute_revision_hash()
-        );
+        assert_eq!(mesh1.compute_revision_hash(), mesh2.compute_revision_hash());
+        assert_ne!(mesh1.compute_revision_hash(), mesh3.compute_revision_hash());
 
         // Change one value
         let mesh4 = MeshType::Quad {
@@ -1517,10 +1523,7 @@ mod tests {
             br: (1.0, 1.0),
             bl: (0.0, 1.0),
         };
-        assert_ne!(
-            mesh1.compute_revision_hash(),
-            mesh4.compute_revision_hash()
-        );
+        assert_ne!(mesh1.compute_revision_hash(), mesh4.compute_revision_hash());
     }
 
     #[test]
