@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.8
-> **Stand:** 2025-12-31 19:30
+> **Version:** 1.9
+> **Stand:** 2026-01-07 12:43
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -724,6 +724,35 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ `scripts/check-ffmpeg-env.sh` – FFmpeg-Check
   - ✅ `scripts/install-ffmpeg-dev.sh` – FFmpeg-Install-Script
   - ✅ `rust-toolchain.toml` – Rust-Version 1.75
+
+### Phase 9: Lighting Integration – PLANNED
+
+- ⬜ **Art-Net DMX Output** (`mapmap-io/src/artnet/`)
+  - ⬜ `artnet_protocol` Crate integrieren
+  - ⬜ DMX-Universe-Sender implementieren
+  - ⬜ Audio-reaktive DMX-Werte generieren
+  - ⬜ UI: DMX-Channel-Mapper in Module Canvas
+
+- ⬜ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
+  - ⬜ `hueclient` für Bridge-Discovery und API-Zugriff
+  - ⬜ `udp-dtls` für Entertainment-Streaming
+  - ⬜ Audio-reaktive Farb-Synchronisation
+  - ⬜ Latenz-Ziel: <100ms
+  - ⬜ UI: Hue-Lampen-Auswahl und Zonen-Mapping
+
+### 🔬 Evaluierte Libraries (2026-01-07)
+
+| Library | Status | Beschreibung |
+|---------|--------|--------------|
+| `artnet_protocol` | ✅ Geplant | DMX über Art-Net |
+| `hueclient` | ✅ Geplant | Philips Hue API |
+| `udp-dtls` | ✅ Geplant | DTLS für Hue Entertainment |
+| `egui_node_editor` | 🔍 Evaluieren | Alternative Node-Editor |
+| `kurbo` | 🔍 Evaluieren | 2D-Geometrie/Bezier |
+| `femtovg` | 🔍 Evaluieren | GPU Vektor-Rendering |
+| `epaint` | ⏸️ Nicht nötig | Bereits via egui |
+| `ascending_graphics` | ❌ Abgelehnt | Überlappung mit wgpu |
+| `ledcat` | ⏸️ Zurückgestellt | LED-Strips (Nische) |
 
 ---
 
