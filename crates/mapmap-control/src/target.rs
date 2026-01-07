@@ -87,21 +87,32 @@ impl ControlTarget {
 /// Edge sides for edge blending
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EdgeSide {
+    /// Left edge
     Left,
+    /// Right edge
     Right,
+    /// Top edge
     Top,
+    /// Bottom edge
     Bottom,
 }
 
 /// Control value types
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ControlValue {
+    /// Float value (e.g. 0.0 - 1.0)
     Float(f32),
+    /// Integer value
     Int(i32),
+    /// Boolean value
     Bool(bool),
+    /// String value
     String(String),
+    /// Color value (RGBA u32)
     Color(u32), // RGBA
+    /// 2D Vector (x, y)
     Vec2(f32, f32),
+    /// 3D Vector (x, y, z)
     Vec3(f32, f32, f32),
 }
 
