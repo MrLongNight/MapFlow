@@ -2622,13 +2622,13 @@ impl App {
                 } else {
                     None
                 };
-                let source_view_ref = owned_source_view.as_ref();
+                let source_view_ref = owned_source_view.as_deref();
                 let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
                 if let Some(src_view) = effective_view {
                     // --- 1. Effect Chain Processing (Common) ---
                     let mut final_view = src_view;
-                    let mut _temp_view_holder: Option<wgpu::TextureView> = None;
+                    let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
                     if !op.effects.is_empty() {
                         let time = self.start_time.elapsed().as_secs_f32();
@@ -2740,7 +2740,8 @@ impl App {
                     let mesh_output_tex_name = &self.layer_ping_pong[1]; // Use secondary ping-pong for mesh output
 
                     // Scope to keep view borrow short
-                    let mut _mesh_intermediate_view: Option<wgpu::TextureView> = None;
+                    let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> =
+                        None;
 
                     if needs_post_processing {
                         let width = window_context.surface_config.width;
@@ -2752,7 +2753,7 @@ impl App {
 
                         _mesh_intermediate_view =
                             Some(self.texture_pool.get_view(mesh_output_tex_name));
-                        mesh_target_view_ref = _mesh_intermediate_view.as_ref().unwrap();
+                        mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
                     } else {
                         mesh_target_view_ref = &view;
                     }
