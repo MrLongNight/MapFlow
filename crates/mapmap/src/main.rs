@@ -1971,7 +1971,7 @@ impl App {
                                     .show(ui, |ui| {
                                         // Use fixed height when both are open
                                         let use_fixed_height = self.ui_state.show_preview_panel;
-                                        
+
                                         if use_fixed_height {
                                             ui.allocate_ui_with_layout(
                                                 egui::vec2(ui.available_width(), self.ui_state.control_panel_height),
@@ -2154,7 +2154,7 @@ impl App {
                                             });
                                         }
                                     });
-                                
+
                                 // Track open state
                                 self.ui_state.show_control_panel = controls_header.fully_open();
 
@@ -2202,7 +2202,7 @@ impl App {
                                         self.ui_state.preview_panel.update_outputs(output_infos);
                                         self.ui_state.preview_panel.show(ui);
                                     });
-                                
+
                                 // Track open state
                                 self.ui_state.show_preview_panel = preview_header.fully_open();
                             });
