@@ -61,6 +61,7 @@ impl WindowManager {
     }
 
     /// Creates the main control window with optional saved geometry.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_main_window_with_geometry<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
@@ -205,6 +206,7 @@ impl WindowManager {
     /// Creates a new projector window from a Module OutputType::Projector.
     ///
     /// If a window for the given `output_id` already exists, this function does nothing.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_projector_window<T>(
         &mut self,
         event_loop: &EventLoopWindowTarget<T>,
@@ -392,6 +394,16 @@ impl WindowManager {
     /// Returns the `OutputId` for a given `winit` `WindowId`.
     pub fn get_output_id_from_window_id(&self, window_id: WindowId) -> Option<OutputId> {
         self.window_id_map.get(&window_id).copied()
+    }
+
+    /// Requests a redraw for all managed windows.
+    ///
+    /// This avoids the need for the caller to collect window IDs and iterate manually,
+    /// preventing unnecessary allocations in the hot loop.
+    pub fn request_redraw_all(&self) {
+        for context in self.windows.values() {
+            context.window.request_redraw();
+        }
     }
 }
 

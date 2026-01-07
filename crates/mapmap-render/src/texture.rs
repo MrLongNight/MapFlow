@@ -58,7 +58,7 @@ impl Default for TextureDescriptor {
 pub struct TexturePool {
     device: Arc<wgpu::Device>,
     textures: RwLock<HashMap<String, TextureHandle>>,
-    views: RwLock<HashMap<String, wgpu::TextureView>>,
+    views: RwLock<HashMap<String, Arc<wgpu::TextureView>>>, // Changed to Arc
 }
 
 impl TexturePool {
@@ -106,21 +106,37 @@ impl TexturePool {
         };
 
         let view = handle.create_view();
+        let view_arc = Arc::new(view); // Wrap in Arc
+
         let name_owned = name.to_string();
 
         self.textures.write().insert(name_owned.clone(), handle);
-        self.views.write().insert(name_owned.clone(), view);
+        self.views.write().insert(name_owned.clone(), view_arc);
 
         name_owned
     }
 
     /// Get a texture view by name.
-    pub fn get_view(&self, name: &str) -> wgpu::TextureView {
-        self.textures
+    ///
+    /// Optimized to use cached views where possible to avoid expensive reallocation
+    /// in the render loop. Returns an Arc to the view.
+    pub fn get_view(&self, name: &str) -> Arc<wgpu::TextureView> {
+        // Fast path: check views cache
+        {
+            if let Some(view) = self.views.read().get(name).cloned() {
+                return view;
+            }
+        }
+
+        // Slow path: create from handle
+        let view = self
+            .textures
             .read()
             .get(name)
             .expect("Texture not found in pool")
-            .create_view()
+            .create_view();
+
+        Arc::new(view)
     }
 
     /// Check if a texture exists in the pool.
@@ -153,7 +169,9 @@ impl TexturePool {
                 handle.height = new_height;
 
                 let new_view = handle.create_view();
-                self.views.write().insert(name.to_string(), new_view);
+                self.views
+                    .write()
+                    .insert(name.to_string(), Arc::new(new_view));
             }
         }
     }
@@ -170,18 +188,12 @@ impl TexturePool {
         // Ensure texture exists and is correct size
         self.resize_if_needed(name, width, height);
 
-        // If it didn't exist, create it (resize_if_needed only resizes existing)
-        // Wait, resize_if_needed only checks if exists?
-        // Let's modify logic: ensure texture exists.
-
         let textures = self.textures.write();
         let handle = if let Some(handle) = textures.get(name) {
             handle.clone()
         } else {
             // Create new
-            drop(textures); // Drop lock before calling self.create
-                            // We need format. Default to Rgba8UnormSrgb?
-                            // Video frames are usually RGBA.
+            drop(textures);
             let _ = self.create(
                 name,
                 width,
@@ -189,7 +201,7 @@ impl TexturePool {
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             );
-            return self.upload_data(queue, name, data, width, height); // Recurse once
+            return self.upload_data(queue, name, data, width, height);
         };
 
         // Write data
@@ -228,24 +240,3 @@ pub struct PoolStats {
     pub free_textures: usize,
     pub total_memory: u64,
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_texture_descriptor_default() {
-//         let desc = TextureDescriptor::default();
-//         assert_eq!(desc.width, 1);
-//         assert_eq!(desc.height, 1);
-//         assert_eq!(desc.mip_levels, 1);
-//     }
-
-//     #[test]
-//     fn test_texture_pool() {
-//         let pool = TexturePool::new(10);
-//         let stats = pool.stats();
-//         assert_eq!(stats.total_textures, 0);
-//         assert_eq!(stats.free_textures, 0);
-//     }
-// }
