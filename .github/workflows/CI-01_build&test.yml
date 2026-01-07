@@ -1,11 +1,27 @@
 name: "CI-01: Build&Test"
 
+# ═══════════════════════════════════════════════════════════════
+# OPTIMIZED: Path filters + parallel jobs for faster CI
+# ═══════════════════════════════════════════════════════════════
+
 on:
-  push:  
+  push:
     branches: [ "main" ]
-  pull_request:  
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'scripts/**'
+      - 'deny.toml'
+  pull_request:
     branches: [ "main" ]
-  workflow_dispatch:  
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'scripts/**'
+      - 'deny.toml'
+  workflow_dispatch:
     inputs:
       skip_tests:
         description: 'Skip tests (faster builds)'
@@ -15,13 +31,20 @@ on:
         options: 
           - 'true'
           - 'false'
+      run_windows:
+        description: 'Run Windows build'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 env:
   CARGO_TERM_COLOR: always
   FREETYPE_SYS_USE_PKG_CONFIG: 1
   RUST_BACKTRACE: 1
   RUST_TOOLCHAIN: stable
-  # Optimierungen für schnellere Builds
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
@@ -88,6 +111,7 @@ jobs:
 
   # ========================================
   # PHASE 2: Code Quality & Linting
+  # PARALLEL with build-and-test, security
   # ========================================
   
   quality:
@@ -121,12 +145,11 @@ jobs:
           libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
         bash scripts/install-ffmpeg-dev.sh
 
-    # ---- NEUE TOOLS ----
-    
     - name: Cache Rust dependencies
       uses:  Swatinem/rust-cache@v2
       with:
         shared-key: "quality-cache"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
 
     - name: Check formatting (Final)
       run: cargo fmt --all -- --check
@@ -166,13 +189,13 @@ jobs:
       continue-on-error: true
 
   # ========================================
-  # PHASE 3: Build & Test
+  # PHASE 3: Build & Test (PARALLEL)
   # ========================================
   
   build-and-test:
-    name: "Build & Test (Ubuntu with Audio)"
+    name: "Build & Test (Ubuntu)"
     runs-on: ubuntu-latest
-    needs: quality
+    needs: pre-checks
     permissions:
       contents: read
       checks: write
@@ -204,6 +227,7 @@ jobs:
       uses: Swatinem/rust-cache@v2
       with:
         shared-key: "build-cache"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
 
     - name: Install FFmpeg and system dependencies (Ubuntu)
       run: |
@@ -239,8 +263,6 @@ jobs:
         pkg-config --exists libavcodec && echo "✓ libavcodec found" || (echo "✗ libavcodec not found"; exit 1)
         pkg-config --exists libavformat && echo "✓ libavformat found" || (echo "✗ libavformat not found"; exit 1)
 
-    # ---- NEUE TEST-TOOLS ----
-    
     - name: Install cargo-nextest (Faster test runner)
       run: cargo install cargo-nextest --locked
 
@@ -289,13 +311,19 @@ jobs:
         if-no-files-found: ignore
 
   # ========================================
-  # PHASE 4: Windows Build
+  # PHASE 4: Windows Build (OPTIONAL)
+  # Only on main branch or explicit request
   # ========================================
   
   build-windows:
     name: "Build (Windows)"
     runs-on: windows-latest
-    needs: quality
+    needs: pre-checks
+    # Only run on main branch push or explicit request
+    if: |
+      github.ref == 'refs/heads/main' || 
+      github.event.inputs.run_windows == 'true' ||
+      contains(github.event.pull_request.labels.*.name, 'test-windows')
     permissions:
       contents: read
 
@@ -316,6 +344,7 @@ jobs:
       uses: Swatinem/rust-cache@v2
       with:
         shared-key: "windows-cache"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
 
     - name:  Build (Release, Windows - without NDI)
       env:
@@ -336,13 +365,13 @@ jobs:
         if-no-files-found: ignore
 
   # ========================================
-  # PHASE 5: Security & Supply Chain
+  # PHASE 5: Security & Supply Chain (PARALLEL)
   # ========================================
   
   security:
     name: "Security Audit"
     runs-on: ubuntu-latest
-    needs: quality
+    needs: pre-checks
     permissions:
       security-events: write
       contents:  read
@@ -412,7 +441,7 @@ jobs:
   
   ci-success: 
     name: "CI Success Gate"
-    needs: [quality, build-and-test, build-windows, security]
+    needs: [quality, build-and-test, security]
     runs-on: ubuntu-latest
     if: always()
     permissions:
@@ -428,11 +457,7 @@ jobs:
           echo ":: error::One or more required jobs failed or were cancelled."
           echo "quality:  ${{ needs.quality.result }}"
           echo "build-and-test: ${{ needs.build-and-test.result }}"
-          echo "build-windows: ${{ needs.build-windows. result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
-        fi
-        if [ "${{ needs.build-windows.result }}" != "success" ]; then
-          echo ":: warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All CI checks passed successfully"

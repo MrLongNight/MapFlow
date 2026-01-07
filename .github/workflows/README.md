@@ -4,42 +4,41 @@ This directory contains automated workflows for the MapFlow project, implementin
 
 ## 🤖 Workflows Overview
 
-### 1. CI/CD Pipeline (`CI-01_build-and-test.yml`)
+### 1. CI/CD Pipeline (`CI-01_build-and-test.yml`) ⚡ OPTIMIZED
 
 **Purpose:** Comprehensive continuous integration and deployment pipeline
 
 **Triggers:**
-- Push to `main` branch
-- Pull requests to `main`
+- Push to `main` branch (with path filters)
+- Pull requests to `main` (with path filters)
 - Manual dispatch
 
-**Jobs:**
-- **Code Quality:** Formatting (`cargo fmt`) and linting (`cargo clippy`)
-- **Build & Test:** Multi-platform builds (Linux, macOS, Windows)
-- **Security Audit:** Dependency vulnerability scanning
+> [!TIP]
+> **Optimization:** Path filters + parallel jobs reduce runtime by ~30-50%
+
+**Path Filters (only runs when these change):**
+- `crates/**`, `Cargo.toml`, `Cargo.lock`, `scripts/**`, `deny.toml`
+
+**Jobs (PARALLEL execution after pre-checks):**
+- **Pre-Checks:** Auto-formatting and Clippy fixes
+- **Code Quality:** Linting and dependency checks (parallel)
+- **Build & Test:** Linux builds with audio (parallel)
+- **Windows Build:** Optional - only on `main` or with `test-windows` label
+- **Security Audit:** cargo-audit and dependency review (parallel)
 - **Success Gate:** Ensures all checks pass before merge
 
-**Features:**
-- Caches Cargo dependencies for faster builds
-- Parallel execution on multiple platforms
-- Generates release artifacts
-- Comprehensive test execution
-
-### 2. CodeQL Security Scan (`CI-02_security-scan.yml`)
+### 2. CodeQL Security Scan (`CI-02_security-scan.yml`) ⚡ OPTIMIZED
 
 **Purpose:** Automated security vulnerability detection
 
 **Triggers:**
-- Push to `main` branch
-- Pull requests to `main`
+- Push to `main` branch (with path filters)
 - Weekly schedule (Mondays at 00:00 UTC)
 - Manual dispatch
 
-**Features:**
-- Deep security analysis of Rust code
-- Security and quality queries
-- Automatic issue creation for findings
-- Integration with GitHub Security tab
+> [!TIP]
+> **Optimization:** Removed PR trigger - CodeQL is slow and not needed for every PR.
+> Fast security checks (cargo-audit) are in CI-01 for PRs.
 
 ### 3. Create Jules Development Issues (`CI-03_create-issues.yml`)
 
@@ -177,32 +176,34 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
    - Commit changes
 4. Trigger CI-04 for next oldest jules-task issue
 
-### 8. Monitor Jules Session (`CI-08_monitor-jules-session.yml`) 🆕
+### 8. Monitor Jules Session (`CI-08_monitor-jules-session.yml`) ⚡ OPTIMIZED
 
-**Purpose:** Continuously monitor Jules sessions and create PRs when ready
+**Purpose:** Event-based monitoring of Jules sessions (no continuous polling)
 
 **Triggers:**
-- Scheduled: Every 5 minutes (cron)
-- Manual dispatch
+- `workflow_call` from CI-04 (when session starts)
+- `push` to `jules-*` branches (when Jules creates PR branch)
+- Manual `workflow_dispatch`
+
+> [!TIP]
+> **Optimization:** Changed from continuous 6-hour polling to event-based triggers.
+> **Savings:** ~2000+ minutes/week
 
 **Features:**
+- **Single-Run Check:** Runs once per trigger, no polling loop
 - **Active Session Detection:** Finds sessions from issue comments
-- **Jules API Polling:** Checks session status via API
 - **Automatic PR Creation:** Creates PR when session completes
-- **Branch Detection:** Extracts branch from session data
 - **Label Management:** Adds jules-pr label automatically
-- **Failure Handling:** Notifies when sessions fail
+- **Timeout:** 30 minutes (reduced from 360)
 
 **Workflow:**
-1. Find all open jules-task issues
-2. Extract session IDs from comments
-3. Poll Jules API for each session
+1. Triggered by CI-04, branch push, or manual dispatch
+2. Find all open jules-task issues
+3. Check Jules API for each session (single check)
 4. When session completes:
-   - Detect branch name
    - Create PR with proper labels
    - Add success comment to issue
-5. When session fails:
-   - Add failure notification to issue
+5. Exit (no re-trigger)
 
 ## 🏷️ Labels Used
 
@@ -399,5 +400,5 @@ For issues with workflows:
 
 ---
 
-**Last Updated:** 2024-12-04  
+**Last Updated:** 2026-01-07 (Optimized for reduced Actions minutes)  
 **Maintained By:** MapFlow Team

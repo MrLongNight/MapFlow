@@ -1,10 +1,17 @@
 name: "CI-02:Security-Scan"
 
+# ═══════════════════════════════════════════════════════════════
+# OPTIMIZED: Weekly only + main push (removed PR trigger)
+# CodeQL is slow and not needed for every PR
+# ═══════════════════════════════════════════════════════════════
+
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
   schedule:
     - cron: '0 0 * * 1'  # Weekly on Monday
   workflow_dispatch:
