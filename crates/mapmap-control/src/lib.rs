@@ -26,33 +26,42 @@
 //!
 //! ## Modules
 //!
-//! - [`midi`]: MIDI input/output system
-//! - [`osc`]: OSC server and client
-//! - [`dmx`]: DMX output via Art-Net and sACN
-//! - [`web`]: Web API and WebSocket
-//! - [`cue`]: Cue system for show automation
-//! - [`shortcuts`]: Keyboard shortcuts and macros
-//! - [`target`]: Control target abstraction
-//! - [`error`]: Error types
+//! - [`midi`] - MIDI input/output system
+//! - [`osc`] - OSC server and client
+//! - [`dmx`] - DMX output via Art-Net and sACN
+//! - [`web`] - Web API and WebSocket
+//! - [`cue`] - Cue system for show automation
+//! - [`shortcuts`] - Keyboard shortcuts and macros
+//! - [`target`] - Control target abstraction
+//! - [`error`] - Error types
 
 // Core modules
+/// Error types
 pub mod error;
+/// Central control manager
 pub mod manager;
+/// Control target and value definitions
 pub mod target;
 
 // Control system modules
 #[cfg(feature = "midi")]
+/// MIDI input/output and processing
 pub mod midi;
 
+/// DMX output (Art-Net, sACN)
 pub mod dmx;
 
 #[cfg(feature = "osc")]
+/// OSC server and client
 pub mod osc;
 
 #[cfg(feature = "http-api")]
+/// Web API server
 pub mod web;
 
+/// Cue list management
 pub mod cue;
+/// Keyboard shortcuts
 pub mod shortcuts;
 
 // Re-exports
