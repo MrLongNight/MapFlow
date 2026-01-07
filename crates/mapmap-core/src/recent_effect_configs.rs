@@ -189,7 +189,7 @@ impl RecentEffectConfigs {
 
     /// Create with persistence path
     pub fn with_persistence(path: PathBuf) -> Self {
-        let mut manager = Self::load_from_path(&path).unwrap_or_else(Self::new);
+        let mut manager = Self::load_from_path(&path).unwrap_or_default();
         manager.config_path = Some(path);
         manager
     }
@@ -200,7 +200,7 @@ impl RecentEffectConfigs {
 
         self.configs
             .entry(effect_type.to_string())
-            .or_insert_with(RecentConfigQueue::new)
+            .or_default()
             .add(config);
 
         // Auto-save if persistence is enabled
@@ -267,7 +267,7 @@ impl RecentEffectConfigs {
 
     /// Save to a JSON file
     pub fn save_to_path(&self, path: &PathBuf) -> std::io::Result<()> {
-        let content = serde_json::to_string_pretty(self).map_err(|e| std::io::Error::other(e))?;
+        let content = serde_json::to_string_pretty(self).map_err(std::io::Error::other)?;
 
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {

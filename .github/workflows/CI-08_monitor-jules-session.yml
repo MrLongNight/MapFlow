@@ -43,11 +43,11 @@ env:
   JULES_AUTOMATION_ENABLED: true
   
   # Initial delay in seconds (wait for Jules to start coding)
-  INITIAL_DELAY_SECONDS: 300  # 5 minutes
+  INITIAL_DELAY_SECONDS: 180  # 3 minutes (optimized)
   
-  # Polling interval in seconds (FALLBACK - primary trigger is Gmail/PR events)
-  # Reduced to 30 min since CI-12 Gmail Monitor handles real-time detection
-  POLL_INTERVAL_SECONDS: 1800  # 30 minutes (fallback only)
+  # Polling interval in seconds - reduced for faster detection
+  # Primary: Gmail/PR events via CI-12, Fallback: polling
+  POLL_INTERVAL_SECONDS: 300  # 5 minutes (optimized from 30 min)
 
 jobs:
   check-enabled:
@@ -226,15 +226,67 @@ jobs:
                   const status = sessionData.state || sessionData.status || 'unknown';
                   
                   core.info(`      Status: ${status}`);
+                  core.info(`      Session data keys: ${Object.keys(sessionData).join(', ')}`);
+                  
+                  // Handle sessions waiting for user to click 'Publish PR'
+                  if (status === 'AWAITING_USER_FEEDBACK' || status === 'PAUSED') {
+                    core.warning(`      ⏳ Session wartet auf User-Eingabe (Publish PR). Bitte auf jules.google.com überprüfen.`);
+                    continue;
+                  }
                   
                   if (status === 'COMPLETED' || status === 'complete' || status === 'done') {
+                    // Jules API returns PR info in outputs array, not directly
+                    // Example: { outputs: [{ pullRequest: { url: '...', title: '...', description: '...' } }] }
+                    const outputs = sessionData.outputs || [];
+                    const prOutput = outputs.find(o => o.pullRequest);
+                    const prUrl = prOutput?.pullRequest?.url;
+                    const prTitle = prOutput?.pullRequest?.title;
+                    
+                    // Try to extract branch from various possible locations
                     const branch = sessionData.gitPush?.branch || 
                                   sessionData.branch || 
-                                  sessionData.pullRequest?.branch ||
-                                  sessionData.pullRequest?.head;
+                                  prOutput?.branch ||
+                                  prOutput?.pullRequest?.branch ||
+                                  prOutput?.pullRequest?.head;
                     
-                    core.info(`      Session data keys: ${Object.keys(sessionData).join(', ')}`);
+                    core.info(`      Outputs: ${outputs.length} items`);
+                    if (prUrl) core.info(`      PR URL: ${prUrl}`);
+                    if (branch) core.info(`      Branch: ${branch}`);
                     
+                    // If we have a PR URL, the PR already exists - just verify and add labels
+                    if (prUrl) {
+                      const prMatch = prUrl.match(/\/pull\/(\d+)$/);
+                      if (prMatch) {
+                        const prNumber = parseInt(prMatch[1], 10);
+                        core.info(`      ✅ PR #${prNumber} already exists: ${prUrl}`);
+                        
+                        // Add labels to existing PR
+                        try {
+                          await github.rest.issues.addLabels({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            issue_number: prNumber,
+                            labels: ['jules-pr', 'auto-merge']
+                          });
+                          core.info(`      ✅ Added labels to PR #${prNumber}`);
+                        } catch (labelErr) {
+                          // Labels may already exist
+                          core.info(`      ℹ️ Labels already exist or could not be added: ${labelErr.message}`);
+                        }
+                        
+                        // Comment on the issue
+                        await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: session.issueNumber,
+                          body: `✅ **Jules session completed!** PR gefunden: #${prNumber}\n\n🔗 ${prUrl}\n\nDer PR wird automatisch gemerged wenn alle CI-Checks bestanden sind.`
+                        });
+                        
+                        continue; // PR exists, move to next session
+                      }
+                    }
+                    
+                    // Fallback: If we have a branch but no PR URL, try to create PR
                     if (branch) {
                       core.info(`      ✅ Completed with branch: ${branch}`);
                       
@@ -384,13 +436,29 @@ jobs:
                         core.info(`      ℹ️ PR already exists for branch '${branch}'`);
                       }
                     } else {
-                      core.warning(`      No branch found in session data`);
-                      await github.rest.issues.createComment({
+                      // No branch and no PR URL found - likely waiting for 'Publish PR' click
+                      const sessionUrl = sessionData.url || `https://jules.google.com/session/${session.sessionId}`;
+                      core.warning(`      ⚠️ Weder Branch noch PR gefunden. Session wartet möglicherweise auf 'Publish PR' Klick.`);
+                      core.info(`      Session URL: ${sessionUrl}`);
+                      
+                      // Only comment if this is a new finding (check existing comments)
+                      const { data: comments } = await github.rest.issues.listComments({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: session.issueNumber,
-                        body: `✅ **Jules session completed!** No branch detected in session data - please check the session manually.`
+                        per_page: 50
                       });
+                      
+                      const alreadyNotified = comments.some(c => c.body.includes('Publish PR') || c.body.includes('manuell überprüfen'));
+                      
+                      if (!alreadyNotified) {
+                        await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: session.issueNumber,
+                          body: `✅ **Jules session completed!** Aber kein PR gefunden.\n\n**Ursache:** Diese Session wurde OHNE \`automationMode: AUTO_CREATE_PR\` erstellt und wartet auf manuellen 'Publish PR' Klick.\n\n🔗 **Session öffnen:** ${sessionUrl}\n\n**Aktion erforderlich:** Bitte auf 'Publish PR' in der Jules UI klicken. Der CI-Monitor erkennt den PR dann automatisch.\n\n_Hinweis: Neue Sessions werden jetzt mit AUTO_CREATE_PR erstellt und benötigen keinen manuellen Klick mehr._`
+                        });
+                      }
                     }
                     
                   } else if (status === 'FAILED' || status === 'failed' || status === 'error') {
@@ -416,15 +484,28 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));
             }
 
-      - name: Re-trigger self if timeout approaching
-        if: "!cancelled()"  # Geändert von 'always()' zu '!cancelled()', um manuelle Abbrüche zu respektieren
+      - name: Re-trigger self to continue monitoring
+        if: always()  # Use always() so it runs even after timeout cancellation
         uses: actions/github-script@v7
         with:
           script: |
             // GitHub Actions has a 6-hour timeout per job
             // Re-trigger this workflow to continue monitoring
             
-            // First check if there are still open issues
+            // Check if this was a manual cancellation
+            const { data: run } = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+            
+            // If cancelled by user (not timeout), don't re-trigger
+            if (run.conclusion === 'cancelled' && run.cancel_reason === 'user') {
+              core.info('⏹️ Workflow was manually cancelled - not re-triggering');
+              return;
+            }
+            
+            // Check if there are still open issues
             const { data: openIssues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,

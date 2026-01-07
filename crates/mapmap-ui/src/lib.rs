@@ -270,6 +270,10 @@ pub struct AppUI {
     pub preview_panel: PreviewPanel,
     /// Show preview panel
     pub show_preview_panel: bool,
+    /// Control panel height in unified sidebar (pixels)
+    pub control_panel_height: f32,
+    /// Show control panel in unified sidebar
+    pub show_control_panel: bool,
 }
 
 impl Default for AppUI {
@@ -359,7 +363,9 @@ impl Default for AppUI {
             is_midi_learn_mode: false,
             current_bpm: None,
             preview_panel: PreviewPanel::default(),
-            show_preview_panel: true, // Show by default
+            show_preview_panel: true,    // Show by default
+            control_panel_height: 250.0, // Default height in pixels
+            show_control_panel: true,    // Show by default
         }
     }
 }
