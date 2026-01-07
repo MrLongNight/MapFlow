@@ -9,7 +9,6 @@ use wgpu::util::DeviceExt;
 
 /// Cached GPU buffers for a mesh
 #[derive(Debug)]
-
 pub struct CachedMeshBuffers {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
