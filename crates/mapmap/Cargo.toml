@@ -35,7 +35,6 @@ dirs = "5.0"
 egui = { workspace = true }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
-egui_dock = { workspace = true }
 egui_extras = { workspace = true }
 ffmpeg-next = { workspace = true, optional = true }
 futures = { workspace = true }
