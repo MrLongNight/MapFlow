@@ -1162,16 +1162,7 @@ impl App {
                 // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
 
                 // Redraw all windows
-                for output_id in self
-                    .window_manager
-                    .window_ids()
-                    .copied()
-                    .collect::<Vec<_>>()
-                {
-                    if let Some(window_context) = self.window_manager.get(output_id) {
-                        window_context.window.request_redraw();
-                    }
-                }
+                self.window_manager.request_redraw_all();
             }
             _ => (),
         }
