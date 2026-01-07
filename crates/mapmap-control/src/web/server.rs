@@ -52,7 +52,7 @@ fn default_allowed_origins() -> Vec<String> {
 impl Default for WebServerConfig {
     fn default() -> Self {
         Self {
-            host: "0.0.0.0".to_string(),
+            host: "127.0.0.1".to_string(),
             port: 8080,
             enable_cors: true,
             allowed_origins: default_allowed_origins(),
@@ -291,6 +291,12 @@ mod tests {
     fn test_web_server_default_origins() {
         let config = WebServerConfig::default();
         assert!(config.allowed_origins.contains(&"*".to_string()));
+    }
+
+    #[test]
+    fn test_web_server_default_host() {
+        let config = WebServerConfig::default();
+        assert_eq!(config.host, "127.0.0.1");
     }
 
     #[tokio::test]
