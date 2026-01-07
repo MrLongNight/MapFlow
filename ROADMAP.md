@@ -747,12 +747,17 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 | `artnet_protocol` | ✅ Geplant | DMX über Art-Net |
 | `hueclient` | ✅ Geplant | Philips Hue API |
 | `udp-dtls` | ✅ Geplant | DTLS für Hue Entertainment |
+| `playa` ⚠️ | 🔍 Inspirationsquelle | Image Sequence Player (egui, Node-Compositing) – [GitHub](https://github.com/ssoj13/playa) |
+| `gled2` ⚠️ | 🔍 Inspirationsquelle | Licht-Animationen (Art-Net/DMX, Beat-Sync) – [GitLab](https://gitlab.com/photonenkollektiv/gled2) |
 | `egui_node_editor` | 🔍 Evaluieren | Alternative Node-Editor |
 | `kurbo` | 🔍 Evaluieren | 2D-Geometrie/Bezier |
 | `femtovg` | 🔍 Evaluieren | GPU Vektor-Rendering |
 | `epaint` | ⏸️ Nicht nötig | Bereits via egui |
 | `ascending_graphics` | ❌ Abgelehnt | Überlappung mit wgpu |
 | `ledcat` | ⏸️ Zurückgestellt | LED-Strips (Nische) |
+
+> ⚠️ = Nicht auf crates.io, nur als Git-Repository verfügbar
+
 
 ---
 
