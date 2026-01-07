@@ -68,10 +68,8 @@ impl TimelineV2 {
                 if ui.button("⏸ Pause").clicked() {
                     action = Some(TimelineAction::Pause);
                 }
-            } else {
-                if ui.button("⏵ Play").clicked() {
-                    action = Some(TimelineAction::Play);
-                }
+            } else if ui.button("⏵ Play").clicked() {
+                action = Some(TimelineAction::Play);
             }
 
             if ui.button("⏹ Stop").clicked() {
@@ -181,17 +179,15 @@ impl TimelineV2 {
             // Handle ruler scrubbing
             if response.hovered() || response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if pos.y <= ruler_rect.max.y {
-                        if response.is_pointer_button_down_on() {
-                            let time = (pos.x - rect.min.x) / self.zoom;
-                            let snapped = if ui.input(|i| i.modifiers.shift) {
-                                time // Bypass snap
-                            } else {
-                                self.snap_time(time)
-                            };
+                    if pos.y <= ruler_rect.max.y && response.is_pointer_button_down_on() {
+                        let time = (pos.x - rect.min.x) / self.zoom;
+                        let snapped = if ui.input(|i| i.modifiers.shift) {
+                            time // Bypass snap
+                        } else {
+                            self.snap_time(time)
+                        };
 
-                            action = Some(TimelineAction::Seek(snapped));
-                        }
+                        action = Some(TimelineAction::Seek(snapped));
                     }
                 }
             }
