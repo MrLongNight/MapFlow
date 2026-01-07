@@ -109,9 +109,9 @@ impl PreviewPanel {
                     let available_width = ui.available_width();
                     let num_outputs = visible_outputs.len();
                     let spacing = 8.0;
-                    let thumbnail_width = ((available_width - spacing * (num_outputs as f32 - 1.0)) / num_outputs as f32)
-                        .min(200.0)
-                        .max(80.0);
+                    let thumbnail_width = ((available_width - spacing * (num_outputs as f32 - 1.0))
+                        / num_outputs as f32)
+                        .clamp(80.0, 200.0);
                     let thumbnail_height = thumbnail_width * 9.0 / 16.0; // 16:9 aspect ratio
 
                     ui.horizontal_wrapped(|ui| {
