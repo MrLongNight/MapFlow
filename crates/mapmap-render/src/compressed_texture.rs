@@ -43,8 +43,8 @@ impl DxtFormat {
 
     /// Calculate expected data size for given dimensions
     pub fn calculate_size(&self, width: u32, height: u32) -> usize {
-        let blocks_x = (width + 3) / 4;
-        let blocks_y = (height + 3) / 4;
+        let blocks_x = width.div_ceil(4);
+        let blocks_y = height.div_ceil(4);
         (blocks_x * blocks_y * self.block_size()) as usize
     }
 }
@@ -92,7 +92,7 @@ pub fn upload_compressed_texture(
     format: DxtFormat,
 ) {
     // Calculate row pitch (bytes per row of blocks)
-    let blocks_per_row = (width + 3) / 4;
+    let blocks_per_row = width.div_ceil(4);
     let bytes_per_row = blocks_per_row * format.block_size();
 
     // Calculate aligned dimensions
@@ -118,7 +118,7 @@ pub fn upload_compressed_texture(
         wgpu::ImageDataLayout {
             offset: 0,
             bytes_per_row: Some(bytes_per_row),
-            rows_per_image: Some((aligned_height + 3) / 4), // Number of block rows
+            rows_per_image: Some(aligned_height.div_ceil(4)), // Number of block rows
         },
         wgpu::Extent3d {
             width: aligned_width,

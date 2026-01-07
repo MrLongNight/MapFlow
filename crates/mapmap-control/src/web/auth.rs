@@ -62,7 +62,14 @@ impl AuthConfig {
 }
 
 /// Extract API key from various sources
-pub fn extract_api_key(headers: &http::HeaderMap, query: Option<&str>) -> Option<String> {
+///
+/// checks:
+/// 1. Authorization header (Bearer token)
+/// 2. X-API-Key header
+///
+/// Query parameters are explicitly NOT supported for security reasons
+/// (to prevent API keys from appearing in server logs/browser history).
+pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Option<String> {
     // Try Authorization header first (Bearer token)
     if let Some(auth_header) = headers.get(http::header::AUTHORIZATION) {
         if let Ok(auth_str) = auth_header.to_str() {
@@ -79,24 +86,6 @@ pub fn extract_api_key(headers: &http::HeaderMap, query: Option<&str>) -> Option
         }
     }
 
-    // Try query parameter
-    if let Some(q) = query {
-        if let Some(key) = parse_api_key_from_query(q) {
-            return Some(key);
-        }
-    }
-
-    None
-}
-
-fn parse_api_key_from_query(query: &str) -> Option<String> {
-    for param in query.split('&') {
-        if let Some((key, value)) = param.split_once('=') {
-            if key == "api_key" {
-                return Some(value.to_string());
-            }
-        }
-    }
     None
 }
 
@@ -158,10 +147,11 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_query_param() {
+    fn test_extract_query_param_disabled() {
         let headers = http::HeaderMap::new();
+        // Query param extraction should be disabled for security
         let key = extract_api_key(&headers, Some("foo=bar&api_key=test_key"));
-        assert_eq!(key, Some("test_key".to_string()));
+        assert_eq!(key, None);
     }
 
     #[test]

@@ -893,13 +893,13 @@ impl App {
                         }
                     }
                     // Handle Reload by removing player (will be recreated on next frame)
-                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
-                        if self.media_players.remove(&part_id).is_some() {
-                            info!(
-                                "Removed old media player for part_id={} for reload",
-                                part_id
-                            );
-                        }
+                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload
+                        && self.media_players.remove(&part_id).is_some()
+                    {
+                        info!(
+                            "Removed old media player for part_id={} for reload",
+                            part_id
+                        );
                     }
                 }
 
@@ -1071,7 +1071,7 @@ impl App {
                                     }
                                 }
                                 info!("  media_players count: {}", self.media_players.len());
-                                for (id, _player) in &self.media_players {
+                                for id in self.media_players.keys() {
                                     info!("    -> Player for part_id={}", id);
                                 }
                             }
@@ -1162,16 +1162,7 @@ impl App {
                 // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
 
                 // Redraw all windows
-                for output_id in self
-                    .window_manager
-                    .window_ids()
-                    .copied()
-                    .collect::<Vec<_>>()
-                {
-                    if let Some(window_context) = self.window_manager.get(output_id) {
-                        window_context.window.request_redraw();
-                    }
-                }
+                self.window_manager.request_redraw_all();
             }
             _ => (),
         }
@@ -1272,6 +1263,21 @@ impl App {
                     );
                     if let Err(e) = receiver.connect(&source) {
                         error!("Failed to connect to NDI source: {}", e);
+                    }
+                }
+                mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) => {
+                    #[cfg(feature = "midi")]
+                    {
+                        use mapmap_ui::config::MidiAssignmentTarget;
+                        self.ui_state.user_config.set_midi_assignment(
+                            &element_id,
+                            MidiAssignmentTarget::MapFlow(target_id.clone()),
+                        );
+                        tracing::info!(
+                            "MIDI Assignment set via Global Learn: {} -> {}",
+                            element_id,
+                            target_id
+                        );
                     }
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
@@ -1606,7 +1612,9 @@ impl App {
 
                         // Create player if not exists
                         // Note: Using entry API would be cleaner but path update requires check
-                        if !self.media_players.contains_key(&part.id) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.media_players.entry(part.id)
+                        {
                             match mapmap_media::open_path(path) {
                                 Ok(mut player) => {
                                     if let Err(e) = player.play() {
@@ -1615,7 +1623,7 @@ impl App {
                                             part.id, e
                                         );
                                     }
-                                    self.media_players.insert(part.id, player);
+                                    e.insert(player);
                                 }
                                 Err(e) => {
                                     error!(
@@ -1639,8 +1647,9 @@ impl App {
     fn update_media_players(&mut self, dt: f32) {
         static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
-        let log_this_frame =
-            FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 60 == 0;
+        let log_this_frame = FRAME_LOG_COUNTER
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .is_multiple_of(60);
 
         for (id, player) in &mut self.media_players {
             // Update player logic
@@ -2562,26 +2571,6 @@ impl App {
                 }
             }
 
-            // Handle Global UI Actions
-            for action in self.ui_state.take_actions() {
-                // TODO: Handle Play, Pause, etc.
-                if let mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) = action {
-                    #[cfg(feature = "midi")]
-                    {
-                        use mapmap_ui::config::MidiAssignmentTarget;
-                        self.ui_state.user_config.set_midi_assignment(
-                            &element_id,
-                            MidiAssignmentTarget::MapFlow(target_id.clone()),
-                        );
-                        tracing::info!(
-                            "MIDI Assignment set via Global Learn: {} -> {}",
-                            element_id,
-                            target_id
-                        );
-                    }
-                }
-            }
-
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Egui Render Pass"),
@@ -2791,7 +2780,7 @@ impl App {
                         static DRAW_COUNT: std::sync::atomic::AtomicU64 =
                             std::sync::atomic::AtomicU64::new(0);
                         let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        if count % 120 == 0 {
+                        if count.is_multiple_of(120) {
                             info!("Render: Drawing Mesh for output {}", output_id);
                             info!("  -> index_count: {}", index_count);
                             info!("  -> opacity: {}", op.opacity);
@@ -2967,7 +2956,10 @@ impl App {
                 } else {
                     static MISSING_VIEW: std::sync::atomic::AtomicU64 =
                         std::sync::atomic::AtomicU64::new(0);
-                    if MISSING_VIEW.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 120 == 0 {
+                    if MISSING_VIEW
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                        .is_multiple_of(120)
+                    {
                         tracing::warn!(
                             "Render: No effective view for output {} (Texture logic failed)",
                             output_id
