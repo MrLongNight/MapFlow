@@ -1573,7 +1573,6 @@ mod tests {
 
 #[test]
 fn test_mesh_type_polygon_indices() {
-
     // Create a simple square polygon
     let vertices = vec![
         (0.0, 0.0),     // Bottom-Left
