@@ -50,6 +50,7 @@ egui_extras = { version = "0.27", features = ["image", "file", "svg"] }
 
 # Media
 ffmpeg-next = "7.0"
+libmpv2 = { version = "5.0", features = ["render"] }
 fluent = "0.16"
 fluent-langneg = "0.13"
 futures = "0.3"
