@@ -1738,47 +1738,31 @@ impl App {
             // Sync Texture Previews for Module Canvas
             {
                 // Free old textures
-                let ids_to_free: Vec<egui::TextureId> = self
-                    .ui_state
-                    .module_canvas
-                    .node_previews
-                    .values()
-                    .cloned()
-                    .collect();
-                for id in ids_to_free {
-                    self.egui_renderer.free_texture(&id);
+                // OPTIMIZATION: Iterate directly to avoid allocating intermediate Vec<TextureId>
+                for id in self.ui_state.module_canvas.node_previews.values() {
+                    self.egui_renderer.free_texture(id);
                 }
                 self.ui_state.module_canvas.node_previews.clear();
 
                 // Register new textures for active sources
-                let active_part_ids: Vec<u64> = self
-                    .state
-                    .module_manager
-                    .modules()
-                    .iter()
-                    .flat_map(|m| &m.parts)
-                    .filter_map(|p| {
-                        if let mapmap_core::module::ModulePartType::Source(_) = p.part_type {
-                            Some(p.id)
-                        } else {
-                            None
+                // OPTIMIZATION: Iterate directly to avoid allocating intermediate Vec<u64>
+                for module in self.state.module_manager.modules() {
+                    for part in &module.parts {
+                        if let mapmap_core::module::ModulePartType::Source(_) = part.part_type {
+                            let tex_name = format!("part_{}", part.id);
+                            if self.texture_pool.has_texture(&tex_name) {
+                                let view = self.texture_pool.get_view(&tex_name);
+                                let tex_id = self.egui_renderer.register_native_texture(
+                                    &self.backend.device,
+                                    &view,
+                                    wgpu::FilterMode::Linear,
+                                );
+                                self.ui_state
+                                    .module_canvas
+                                    .node_previews
+                                    .insert(part.id, tex_id);
+                            }
                         }
-                    })
-                    .collect();
-
-                for part_id in active_part_ids {
-                    let tex_name = format!("part_{}", part_id);
-                    if self.texture_pool.has_texture(&tex_name) {
-                        let view = self.texture_pool.get_view(&tex_name);
-                        let tex_id = self.egui_renderer.register_native_texture(
-                            &self.backend.device,
-                            &view,
-                            wgpu::FilterMode::Linear,
-                        );
-                        self.ui_state
-                            .module_canvas
-                            .node_previews
-                            .insert(part_id, tex_id);
                     }
                 }
             }
