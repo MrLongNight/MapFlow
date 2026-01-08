@@ -68,7 +68,8 @@ pub type Result<T> = std::result::Result<T, MediaError>;
 /// - If path has a GIF extension, `GifDecoder` is used.
 /// - If path has a still image extension, `StillImageDecoder` is used.
 /// - If HAP feature is enabled and file might be HAP, try HAP decoder first.
-/// - Otherwise, it's assumed to be a video file and opened with `FFmpegDecoder`.
+/// - If libmpv feature is enabled, use MPV decoder (supports all formats).
+/// - Otherwise, use FFmpegDecoder.
 pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
     let path = path.as_ref();
 
@@ -93,24 +94,45 @@ pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
         // HAP videos are typically in MOV containers
         #[cfg(feature = "hap")]
         "mov" => {
-            // Try HAP first, fall back to FFmpeg if it fails
+            // Try HAP first, fall back to other decoders if it fails
             match HapVideoDecoder::open(path) {
                 Ok(hap_decoder) => {
                     tracing::info!("Opened as HAP video: {:?}", path);
                     Box::new(hap_decoder)
                 }
                 Err(_) => {
-                    tracing::debug!("Not a HAP file, falling back to FFmpeg: {:?}", path);
-                    Box::new(FFmpegDecoder::open(path)?)
+                    tracing::debug!("Not a HAP file, trying other decoders: {:?}", path);
+                    open_video_file(path)?
                 }
             }
         }
-        _ => {
-            // Default to FFmpeg for video files
-            let ffmpeg_decoder = FFmpegDecoder::open(path)?;
-            Box::new(ffmpeg_decoder)
-        }
+        _ => open_video_file(path)?,
     };
 
     Ok(VideoPlayer::new_with_box(decoder))
+}
+
+/// Open a video file using the best available decoder
+/// Priority: libmpv (if enabled) > FFmpeg
+fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
+    let path = path.as_ref();
+
+    // Try libmpv first if available
+    #[cfg(feature = "libmpv")]
+    {
+        match MpvDecoder::open(path) {
+            Ok(decoder) => {
+                tracing::info!("Opened with MPV decoder: {:?}", path);
+                return Ok(Box::new(decoder));
+            }
+            Err(e) => {
+                tracing::warn!("MPV decoder failed, trying FFmpeg: {}", e);
+            }
+        }
+    }
+
+    // Fallback to FFmpeg
+    let decoder = FFmpegDecoder::open(path)?;
+    tracing::info!("Opened with FFmpeg decoder: {:?}", path);
+    Ok(Box::new(decoder))
 }
