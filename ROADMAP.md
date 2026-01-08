@@ -266,12 +266,12 @@
   - ✅ DMX-Fixtures (`dmx/fixtures.rs`)
   - ⬜ Nicht sofort erforderlich, für Phase 4+
 
-- ⬜ **Cue-System** (`mapmap-control/src/cue/`)
+- ✅ **Cue-System** (`mapmap-control/src/cue/`) – **In Timeline integriert**
   - ✅ Cue-Struktur (`cue/cue.rs`)
   - ✅ CueList (`cue/cue_list.rs`)
   - ✅ Crossfade (`cue/crossfade.rs`)
   - ✅ Triggers (`cue/triggers.rs`)
-  - ⬜ Cue-System in UI integrieren fehlt
+  - ℹ️ Kein separates Cue-Panel – Funktionalität via Timeline-Modi (siehe Phase 7)
 
 - ⬜ **Shortcuts** (`mapmap-control/src/shortcuts/`)
   - ✅ Keyboard-Shortcuts (`shortcuts/shortcuts.rs`)
@@ -520,24 +520,30 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
 - ✅ Layer (Layer-Referenz)
 - ✅ Output (Ausgabe-Referenz)
 
-### Phase 7: Advanced Show Control (Module-Based Timeline) – PLANNED
+### Phase 7: Advanced Show Control (Node-Based Timeline) – PLANNED
+
+> **Konzept:** Nodes werden im Canvas konfiguriert und in der Timeline arrangiert/automatisiert.
+
+- ⬜ **Playback-Modi für Nodes**
+  - ⬜ **Auto Full**: Alles vorkonfiguriert, läuft vollautomatisch nach Timeline
+  - ⬜ **Hybrid**: Node-Dauer in Timeline definiert, Parameter per MIDI/OSC/MCP steuerbar
+  - ⬜ **Manual**: Live-Wechsel zwischen Nodes, Mixing auf verschiedenen Timeline-Tracks
+  - ⬜ Mode-Property pro Node im Inspector
 
 - ⬜ **Architecture Refactor (Timeline V3)**
-  - ⬜ **Module Concept**: `TimelineModule` struct (Triggers, Resources, Assigned Layers)
-  - ⬜ **Modes**: Automatic vs. Manual/Hybrid Playback
-  - ⬜ **Track System**: Module-based tracks with collision detection (Track-based only)
-  - ⬜ **Data Model**: Migration from simple Keyframes to rich Modules
+  - ⬜ Node-Referenzen in Timeline-Tracks (Nodes aus Canvas werden referenziert)
+  - ⬜ Track System mit Multi-Track-Mixing
+  - ⬜ Data Model: Migration von Keyframes zu Node-Referenzen mit Zeitbereichen
 
 - ⬜ **UI Components**
-  - ⬜ **Module Canvas**: Drag & Drop palette for module creation
-  - ⬜ **Timeline Editor**: Drag & Drop arrangement, Snapping, Multi-Track
-  - ⬜ **Module Editor**: Multi-tab interface for parallel module editing (Double-click action)
-  - ⬜ **Transition Modules**: Visual transition editing with timeline-based duration
+  - ⬜ **Timeline Editor**: Drag & Drop von Canvas-Nodes, Snapping, Multi-Track
+  - ⬜ **Node Duration Handles**: Resize-Handles für Node-Zeitbereiche
+  - ⬜ **Transition Curves**: Crossfade zwischen Nodes auf gleichem Track
 
 - ⬜ **Features**
-  - ⬜ **Undo/Redo**: Full Command-Pattern integration for Timeline actions
-  - ⬜ **Templates**: Save/Load Module configurations
-  - ⬜ **Library**: Reusable Module presets
+  - ⬜ **Undo/Redo**: Full Command-Pattern integration
+  - ⬜ **Templates**: Save/Load Node-Konfigurationen
+  - ⬜ **Library**: Reusable Node-Presets
 
 ### MCP-Server Integration (Model Context Protocol) – NEU
 
