@@ -3433,7 +3433,14 @@ impl ModuleCanvas {
                     });
 
                 // Properties for SourceType
-                if let SourceType::MediaFile { path, .. } = source_type {
+                if let SourceType::MediaFile {
+                    path,
+                    target_width,
+                    target_height,
+                    target_fps,
+                    ..
+                } = source_type
+                {
                     ui.add_space(4.0);
                     ui.label("Media Path:");
                     ui.horizontal(|ui| {
@@ -3442,6 +3449,87 @@ impl ModuleCanvas {
                             if let Some(file_path) = rfd::FileDialog::new().pick_file() {
                                 *path = file_path.to_string_lossy().to_string();
                             }
+                        }
+                    });
+
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.label("Output Scaling (Optional):");
+
+                    // Target Width
+                    ui.horizontal(|ui| {
+                        let mut use_width = target_width.is_some();
+                        if ui.checkbox(&mut use_width, "Width:").changed() {
+                            *target_width = if use_width { Some(1920) } else { None };
+                        }
+                        if let Some(w) = target_width {
+                            let mut val = *w as i32;
+                            if ui
+                                .add(
+                                    egui::DragValue::new(&mut val)
+                                        .clamp_range(1..=7680)
+                                        .speed(10),
+                                )
+                                .changed()
+                            {
+                                *w = val.max(1) as u32;
+                            }
+                        } else {
+                            ui.label("(Original)");
+                        }
+                    });
+
+                    // Target Height
+                    ui.horizontal(|ui| {
+                        let mut use_height = target_height.is_some();
+                        if ui.checkbox(&mut use_height, "Height:").changed() {
+                            *target_height = if use_height { Some(1080) } else { None };
+                        }
+                        if let Some(h) = target_height {
+                            let mut val = *h as i32;
+                            if ui
+                                .add(
+                                    egui::DragValue::new(&mut val)
+                                        .clamp_range(1..=4320)
+                                        .speed(10),
+                                )
+                                .changed()
+                            {
+                                *h = val.max(1) as u32;
+                            }
+                        } else {
+                            ui.label("(Original)");
+                        }
+                    });
+
+                    // Target FPS
+                    ui.horizontal(|ui| {
+                        let mut use_fps = target_fps.is_some();
+                        if ui.checkbox(&mut use_fps, "FPS:").changed() {
+                            *target_fps = if use_fps { Some(30.0) } else { None };
+                        }
+                        if let Some(fps) = target_fps {
+                            ui.add(egui::Slider::new(fps, 1.0..=120.0).suffix(" fps"));
+                        } else {
+                            ui.label("(Original)");
+                        }
+                    });
+
+                    // Preset buttons
+                    ui.add_space(4.0);
+                    ui.horizontal(|ui| {
+                        if ui.small_button("720p").clicked() {
+                            *target_width = Some(1280);
+                            *target_height = Some(720);
+                        }
+                        if ui.small_button("1080p").clicked() {
+                            *target_width = Some(1920);
+                            *target_height = Some(1080);
+                        }
+                        if ui.small_button("Original").clicked() {
+                            *target_width = None;
+                            *target_height = None;
+                            *target_fps = None;
                         }
                     });
                 }
