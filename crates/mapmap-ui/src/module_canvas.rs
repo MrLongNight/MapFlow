@@ -3796,6 +3796,113 @@ impl ModuleCanvas {
                             };
                         }
                     });
+
+                // Properties for Projector output type
+                if let OutputType::Projector {
+                    name,
+                    fullscreen,
+                    target_screen,
+                    output_width,
+                    output_height,
+                    output_fps,
+                    show_in_preview_panel,
+                    extra_preview_window,
+                    ..
+                } = output_type
+                {
+                    ui.add_space(8.0);
+                    ui.separator();
+
+                    // Output Name
+                    ui.label("Name:");
+                    ui.text_edit_singleline(name);
+
+                    ui.add_space(4.0);
+
+                    // Resolution section
+                    ui.label("Resolution (0 = Window Size):");
+                    ui.horizontal(|ui| {
+                        ui.label("W:");
+                        let mut width_val = *output_width as i32;
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut width_val)
+                                    .clamp_range(0..=7680)
+                                    .speed(10),
+                            )
+                            .changed()
+                        {
+                            *output_width = width_val.max(0) as u32;
+                        }
+                        ui.label("H:");
+                        let mut height_val = *output_height as i32;
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut height_val)
+                                    .clamp_range(0..=4320)
+                                    .speed(10),
+                            )
+                            .changed()
+                        {
+                            *output_height = height_val.max(0) as u32;
+                        }
+                    });
+
+                    // Common resolutions preset buttons
+                    ui.horizontal(|ui| {
+                        if ui.small_button("720p").clicked() {
+                            *output_width = 1280;
+                            *output_height = 720;
+                        }
+                        if ui.small_button("1080p").clicked() {
+                            *output_width = 1920;
+                            *output_height = 1080;
+                        }
+                        if ui.small_button("4K").clicked() {
+                            *output_width = 3840;
+                            *output_height = 2160;
+                        }
+                        if ui.small_button("Auto").clicked() {
+                            *output_width = 0;
+                            *output_height = 0;
+                        }
+                    });
+
+                    ui.add_space(4.0);
+
+                    // FPS
+                    ui.label("Target FPS (0 = VSync):");
+                    ui.add(egui::Slider::new(output_fps, 0.0..=144.0).suffix(" fps"));
+
+                    ui.add_space(4.0);
+
+                    // Target Screen
+                    ui.label("Target Screen:");
+                    let mut screen_val = *target_screen as i32;
+                    if ui
+                        .add(egui::DragValue::new(&mut screen_val).clamp_range(0..=8))
+                        .changed()
+                    {
+                        *target_screen = screen_val.max(0) as u8;
+                    }
+                    ui.label("(0 = Primary, 1 = Secondary, etc.)");
+
+                    ui.add_space(4.0);
+
+                    // Toggles
+                    ui.checkbox(fullscreen, "Fullscreen");
+                    ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
+                    ui.checkbox(extra_preview_window, "Extra Preview Window");
+                }
+
+                // Properties for NDI output type
+                #[cfg(feature = "ndi")]
+                if let OutputType::NdiOutput { name } = output_type {
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.label("NDI Source Name:");
+                    ui.text_edit_singleline(name);
+                }
             }
         }
 
