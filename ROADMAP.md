@@ -792,21 +792,40 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Latenz-Ziel: <100ms
   - ⬜ UI: Hue-Lampen-Auswahl und Zonen-Mapping
 
-### 🔬 Evaluierte Libraries (2026-01-07)
+### 🔬 Evaluierte Libraries für Core-Funktionen
 
-| Library | Status | Beschreibung |
-|---------|--------|--------------|
-| `artnet_protocol` | ✅ Geplant | DMX über Art-Net |
-| `hueclient` | ✅ Geplant | Philips Hue API |
-| `udp-dtls` | ✅ Geplant | DTLS für Hue Entertainment |
-| `playa` | 🔍 Evaluieren | Image Sequence Player (egui, Node-Compositing, REST API) – [crates.io](https://crates.io/crates/playa) |
-| `gled` | 🔍 Evaluieren | Licht-Animationen (Art-Net/DMX, Beat-Sync, Shader-Editor) – [crates.io](https://crates.io/crates/gled) |
-| `egui_node_editor` | 🔍 Evaluieren | Alternative Node-Editor |
-| `kurbo` | 🔍 Evaluieren | 2D-Geometrie/Bezier |
-| `femtovg` | 🔍 Evaluieren | GPU Vektor-Rendering |
-| `epaint` | ⏸️ Nicht nötig | Bereits via egui |
-| `ascending_graphics` | ❌ Abgelehnt | Überlappung mit wgpu |
-| `ledcat` | ⏸️ Zurückgestellt | LED-Strips (Nische) |
+> **Fokus:** Render Pipeline, Node-Konzept, Timeline
+
+#### ✅ Hohe Priorität (sofortiger Mehrwert)
+
+| Library | Version | Core-Funktion | Mehrwert |
+|---------|---------|---------------|----------|
+| `egui_node_editor` | 0.9.0 | Node-Konzept | Ersetzt eigenen Canvas (5k LOC), Auto-Wire-Routing, MiniMap |
+| `playa` | 0.1.142 | Timeline | Multi-Track, Frame-Cache (LRU+Epoch), Compositing-Patterns |
+
+#### 🔄 Mittlere Priorität (optional)
+
+| Library | Core-Funktion | Mehrwert |
+|---------|---------------|----------|
+| `gled` | Timeline | Beat-Sync Referenz, Shader-Editor-Patterns |
+| `kurbo` | Render Pipeline | Bezier für Mesh-System |
+| `femtovg` | Render Pipeline | Alternative 2D-Rendering |
+
+#### ⏸️ Niedrige Priorität (Phase 9: Lighting)
+
+| Library | Beschreibung |
+|---------|--------------|
+| `artnet_protocol` | DMX über Art-Net |
+| `hueclient` | Philips Hue API |
+| `udp-dtls` | DTLS für Hue Entertainment |
+
+#### ❌ Nicht relevant
+
+| Library | Grund |
+|---------|-------|
+| `epaint` | Bereits via egui |
+| `ascending_graphics` | Überlappung mit wgpu |
+| `ledcat` | Nische (LED-Strips) |
 
 ---
 
