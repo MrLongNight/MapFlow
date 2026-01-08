@@ -14,4 +14,6 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
-*Noch keine Einträge. Tracker wartet auf kritische Erkenntnisse.*
+## 2026-01-08 - Undocumented Commit Found
+**Erkenntnis:** Commit `89be4cb` ("add Source Scaling UI controls") war nicht im Changelog.
+**Aktion:** Eintrag manuell hinzugefügt. PR-Nummer konnte nicht ermittelt werden (direkter Commit?).
