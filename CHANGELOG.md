@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-09: docs: reorganize documentation structure into subfolders (#210)
+- 2026-01-09: test(core): Add robust tests for Transform and Mesh logic (#212)
+- 2026-01-09: perf(render): Optimize texture sync loop in render path (#215)
+- 2026-01-09: docs: add README.md for core workspace crates (#213)
+- 2026-01-09: docs: Prioritize libraries by Core function relevance
+- 2026-01-09: docs: Expand Phase 7 with detailed implementation plan
+- 2026-01-08: feat(ui): add Source Scaling UI controls for MediaFile nodes
+- 2026-01-08: feat(ui): add Output Settings UI controls for Projector nodes
+- 2026-01-08: docs: Clarify Cue-System integration and Phase 7 playback modes
+- 2026-01-07: feat(ui): add separate toggle buttons for Controls and Preview panels
+- 2026-01-07: fix(control): default web server bind address to 127.0.0.1 for security (#207)
+- 2026-01-07: perf(ci): optimize GitHub Actions to reduce minutes usage
+- 2026-01-07: test(core): Guardian Module Tests - socket, mesh, CRUD (#205)
+- 2026-01-07: docs: Add crate READMEs (#196)
 - 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
 - 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)
 - 2026-01-02: fix: Remove build artifact files from repository (#156)

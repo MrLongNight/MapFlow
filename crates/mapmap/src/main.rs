@@ -148,6 +148,8 @@ struct App {
     color_calibration_renderer: Option<ColorCalibrationRenderer>,
     /// Temporary textures for output rendering (OutputID -> Texture)
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
+    /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
+    preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
 }
 
 impl App {
@@ -542,6 +544,7 @@ impl App {
             edge_blend_renderer,
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
+            preview_texture_cache: HashMap::new(),
         };
 
         // Create initial dummy texture
@@ -1794,34 +1797,72 @@ impl App {
 
             // Sync Texture Previews for Module Canvas
             {
-                // Free old textures
-                // OPTIMIZATION: Iterate directly to avoid allocating intermediate Vec<TextureId>
-                for id in self.ui_state.module_canvas.node_previews.values() {
-                    self.egui_renderer.free_texture(id);
-                }
-                self.ui_state.module_canvas.node_previews.clear();
-
-                // Register new textures for active sources
-                // OPTIMIZATION: Iterate directly to avoid allocating intermediate Vec<u64>
+                // Identify active sources
+                // OPTIMIZATION: Collect IDs first to avoid borrowing `self.state` during mutation
+                let mut active_source_ids = std::collections::HashSet::new();
                 for module in self.state.module_manager.modules() {
                     for part in &module.parts {
                         if let mapmap_core::module::ModulePartType::Source(_) = part.part_type {
-                            let tex_name = format!("part_{}", part.id);
-                            if self.texture_pool.has_texture(&tex_name) {
-                                let view = self.texture_pool.get_view(&tex_name);
-                                let tex_id = self.egui_renderer.register_native_texture(
+                            active_source_ids.insert(part.id);
+                        }
+                    }
+                }
+
+                // Update cache and register/free textures
+                let mut current_frame_previews = std::collections::HashMap::new();
+
+                for part_id in &active_source_ids {
+                    let tex_name = format!("part_{}", part_id);
+                    if self.texture_pool.has_texture(&tex_name) {
+                        let view = self.texture_pool.get_view(&tex_name);
+
+                        // Check cache using Entry API to avoid double borrow
+                        let texture_id = match self.preview_texture_cache.entry(*part_id) {
+                            std::collections::hash_map::Entry::Occupied(mut entry) => {
+                                let (cached_id, cached_view) = entry.get();
+                                if std::sync::Arc::ptr_eq(cached_view, &view) {
+                                    // Cache hit! View hasn't changed.
+                                    *cached_id
+                                } else {
+                                    // View changed (e.g. resized), re-register
+                                    self.egui_renderer.free_texture(cached_id);
+                                    let new_id = self.egui_renderer.register_native_texture(
+                                        &self.backend.device,
+                                        &view,
+                                        wgpu::FilterMode::Linear,
+                                    );
+                                    entry.insert((new_id, view.clone()));
+                                    new_id
+                                }
+                            }
+                            std::collections::hash_map::Entry::Vacant(entry) => {
+                                // New source
+                                let new_id = self.egui_renderer.register_native_texture(
                                     &self.backend.device,
                                     &view,
                                     wgpu::FilterMode::Linear,
                                 );
-                                self.ui_state
-                                    .module_canvas
-                                    .node_previews
-                                    .insert(part.id, tex_id);
+                                entry.insert((new_id, view.clone()));
+                                new_id
                             }
-                        }
+                        };
+
+                        current_frame_previews.insert(*part_id, texture_id);
                     }
                 }
+
+                // Cleanup stale cache entries
+                self.preview_texture_cache.retain(|id, (tex_id, _)| {
+                    if !active_source_ids.contains(id) {
+                        self.egui_renderer.free_texture(tex_id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+
+                // Update UI state map
+                self.ui_state.module_canvas.node_previews = current_frame_previews;
             }
 
             let dashboard_action = None;
