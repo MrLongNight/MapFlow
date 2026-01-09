@@ -28,61 +28,76 @@ fn test_transform_position() {
 
 #[test]
 fn test_transform_scale_around_center() {
-    // Default anchor is 0.5 (Center)
+    // Coordinate System: Top-Left is (0,0). Bottom-Right is (100, 100).
+    // Default anchor is 0.5 (Center) -> Pivot at (50, 50).
     let t = Transform::with_scale(Vec2::new(2.0, 2.0));
     let content_size = Vec2::new(100.0, 100.0);
     let matrix = t.to_matrix(content_size);
 
-    // Center point should stay at center (relative to itself)
-    // If the coordinate system is centered at 0,0:
-    let center = Vec4::new(0.0, 0.0, 0.0, 1.0);
+    // 1. Center Point (50, 50)
+    // Relative to Pivot (50, 50) -> (0, 0)
+    // Scale 2.0 -> (0, 0)
+    // Back to Pivot -> (50, 50)
+    let center = Vec4::new(50.0, 50.0, 0.0, 1.0);
     let transformed_center = matrix * center;
     assert_eq!(transformed_center, center);
 
-    // A point at (50, 0) (Right edge) should move to (100, 0)
-    let right_edge = Vec4::new(50.0, 0.0, 0.0, 1.0);
+    // 2. Right Edge Point (100, 50)
+    // Relative -> (50, 0)
+    // Scale 2.0 -> (100, 0)
+    // Back -> (150, 50)
+    // So it moves outward by 50 units.
+    let right_edge = Vec4::new(100.0, 50.0, 0.0, 1.0);
     let transformed_edge = matrix * right_edge;
-    assert_eq!(transformed_edge, Vec4::new(100.0, 0.0, 0.0, 1.0));
+    assert_eq!(transformed_edge, Vec4::new(150.0, 50.0, 0.0, 1.0));
 }
 
 #[test]
 fn test_transform_scale_around_top_left() {
-    // Anchor 0,0 (Top Left)
+    // Anchor 0,0 (Top Left) -> Pivot at (0, 0)
     let mut t = Transform::with_scale(Vec2::new(2.0, 2.0));
     t.anchor = Vec2::ZERO;
 
     let content_size = Vec2::new(100.0, 100.0);
     let matrix = t.to_matrix(content_size);
 
-    // Logic assumes object is centered at (0,0) in local space
-    // Top-Left corner of a 100x100 object is at (-50, -50)
-    let top_left = Vec4::new(-50.0, -50.0, 0.0, 1.0);
-
-    // With anchor at Top-Left, the Top-Left corner should NOT move
+    // 1. Top-Left Point (0, 0)
+    // Relative -> (0, 0)
+    // Scale -> (0, 0)
+    // Back -> (0, 0)
+    // Should stay fixed.
+    let top_left = Vec4::new(0.0, 0.0, 0.0, 1.0);
     let transformed_tl = matrix * top_left;
     assert!((transformed_tl.x - top_left.x).abs() < 1e-5);
     assert!((transformed_tl.y - top_left.y).abs() < 1e-5);
 
-    // The Center (0,0) should move away from Top-Left
-    // Distance was (50, 50), now should be (100, 100) from Top-Left (-50, -50)
-    // So Center should be at (50, 50)
-    let center = Vec4::new(0.0, 0.0, 0.0, 1.0);
+    // 2. Center Point (50, 50)
+    // Relative -> (50, 50)
+    // Scale 2.0 -> (100, 100)
+    // Back -> (100, 100)
+    // Moves away from TL.
+    let center = Vec4::new(50.0, 50.0, 0.0, 1.0);
     let transformed_center = matrix * center;
-    assert!((transformed_center.x - 50.0).abs() < 1e-5);
-    assert!((transformed_center.y - 50.0).abs() < 1e-5);
+    assert!((transformed_center.x - 100.0).abs() < 1e-5);
+    assert!((transformed_center.y - 100.0).abs() < 1e-5);
 }
 
 #[test]
 fn test_transform_rotation_around_center() {
-    // Rotate 90 degrees around center
-    let t = Transform::with_rotation_z(std::f32::consts::PI / 2.0);
+    // Coordinate System: Top-Left (0,0). Center (50,50).
+    // Anchor 0.5 -> Pivot (50, 50).
+    // Rotate 90 degrees around Z (CCW).
+    let t = Transform::with_rotation_z(std::f32::consts::FRAC_PI_2);
     let matrix = t.to_matrix(Vec2::new(100.0, 100.0));
 
-    // Point (50, 0) -> (0, 50)
-    let point = Vec4::new(50.0, 0.0, 0.0, 1.0);
+    // Point: Right Edge (100, 50)
+    // Relative to Pivot (50, 50) -> (50, 0)
+    // Rotate 90 deg CCW: (x, y) -> (-y, x) => (0, 50)
+    // Back to Pivot -> (50, 100) [Bottom Edge]
+    let point = Vec4::new(100.0, 50.0, 0.0, 1.0);
     let transformed = matrix * point;
 
-    assert!(transformed.abs_diff_eq(Vec4::new(0.0, 50.0, 0.0, 1.0), 1e-5));
+    assert!(transformed.abs_diff_eq(Vec4::new(50.0, 100.0, 0.0, 1.0), 1e-5));
 }
 
 #[test]

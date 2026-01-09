@@ -202,13 +202,14 @@ impl Transform {
     /// Calculate 4x4 transformation matrix
     /// Order: Translate → Rotate → Scale (TRS)
     pub fn to_matrix(&self, content_size: Vec2) -> Mat4 {
-        // Calculate anchor offset in pixels
-        let anchor_offset = content_size * (self.anchor - Vec2::splat(0.5));
+        // Calculate pivot point (origin for rotation/scale) based on anchor
+        // For 0..1 meshes, (0,0) is Top-Left.
+        // Pivot needs to be absolute offset from Top-Left.
+        let pivot = content_size * self.anchor;
 
         // Build transformation matrix
-        // 1. Translate to anchor point
-        let translate_to_anchor =
-            Mat4::from_translation(Vec3::new(-anchor_offset.x, -anchor_offset.y, 0.0));
+        // 1. Translate pivot to origin
+        let translate_pivot_to_origin = Mat4::from_translation(Vec3::new(-pivot.x, -pivot.y, 0.0));
 
         // 2. Scale
         let scale = Mat4::from_scale(Vec3::new(self.scale.x, self.scale.y, 1.0));
@@ -221,15 +222,15 @@ impl Transform {
             self.rotation.z,
         );
 
-        // 4. Translate back from anchor and apply position
+        // 4. Translate back to pivot + apply final position
         let translate_final = Mat4::from_translation(Vec3::new(
-            anchor_offset.x + self.position.x,
-            anchor_offset.y + self.position.y,
+            pivot.x + self.position.x,
+            pivot.y + self.position.y,
             0.0,
         ));
 
-        // Combine: Final Translation → Rotation → Scale → Anchor Translation
-        translate_final * rotation * scale * translate_to_anchor
+        // Combine: Final Translation → Rotation → Scale → Pivot Translation
+        translate_final * rotation * scale * translate_pivot_to_origin
     }
 
     /// Apply resize mode to this transform
@@ -823,5 +824,75 @@ mod tests {
         let (scale, pos) = ResizeMode::Original.calculate_transform(source, target);
         assert_eq!(scale, Vec2::ONE);
         assert_eq!(pos, Vec2::ZERO);
+    }
+
+    #[test]
+    fn test_transform_matrix_calculation() {
+        // Identity
+        let transform = Transform::identity();
+        let size = Vec2::new(100.0, 100.0);
+        let matrix = transform.to_matrix(size);
+        assert_eq!(matrix, Mat4::IDENTITY);
+
+        // Translation
+        let transform = Transform::with_position(Vec2::new(10.0, 20.0));
+        let matrix = transform.to_matrix(size);
+        let expected = Mat4::from_translation(Vec3::new(10.0, 20.0, 0.0));
+        assert_eq!(matrix, expected);
+
+        // Rotation (90 deg around Z)
+        // Note: Anchor is default (0.5, 0.5) = (50, 50)
+        let transform = Transform::with_rotation_z(std::f32::consts::FRAC_PI_2);
+        let matrix = transform.to_matrix(size);
+
+        // Check a specific point: Right Edge (100, 50)
+        // 1. To anchor (relative): (50, 0)
+        // 2. Rotate 90 deg: (0, 50)
+        // 3. Back from anchor: (50, 100)
+        let point = Vec3::new(100.0, 50.0, 0.0);
+        let transformed = matrix.transform_point3(point);
+
+        assert!(
+            (transformed.x - 50.0).abs() < 0.001,
+            "Expected X=50.0, got {}",
+            transformed.x
+        );
+        assert!(
+            (transformed.y - 100.0).abs() < 0.001,
+            "Expected Y=100.0, got {}",
+            transformed.y
+        );
+    }
+
+    #[test]
+    fn test_composition_limits() {
+        let mut comp = Composition::default();
+
+        comp.set_master_opacity(1.5);
+        assert_eq!(comp.master_opacity, 1.0);
+
+        comp.set_master_opacity(-0.5);
+        assert_eq!(comp.master_opacity, 0.0);
+
+        comp.set_master_speed(20.0);
+        assert_eq!(comp.master_speed, 10.0);
+
+        comp.set_master_speed(0.0);
+        assert_eq!(comp.master_speed, 0.1);
+    }
+
+    #[test]
+    fn test_layer_eject_all() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("L1");
+        let id2 = manager.create_layer("L2");
+
+        manager.get_layer_mut(id1).unwrap().paint_id = Some(1);
+        manager.get_layer_mut(id2).unwrap().paint_id = Some(2);
+
+        manager.eject_all();
+
+        assert_eq!(manager.get_layer(id1).unwrap().paint_id, None);
+        assert_eq!(manager.get_layer(id2).unwrap().paint_id, None);
     }
 }

@@ -14,4 +14,6 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
-*Noch keine Einträge. Tracker wartet auf kritische Erkenntnisse.*
+## 2026-01-09 - Dokumentationslücke entdeckt
+**Erkenntnis:** Zwischen dem 2026-01-02 und 2026-01-09 wurden ~8 wichtige Änderungen (PRs #205, #207, #210, #212, #213, #215 sowie direkte UI-Features) gemerged, aber nicht im CHANGELOG.md verzeichnet.
+**Aktion:** Tracker hat einen Audit durchgeführt und die fehlenden Einträge basierend auf der Git-Historie rekonstruiert. Zukünftige PRs müssen strikter auf CHANGELOG-Updates geprüft werden.
