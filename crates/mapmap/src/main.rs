@@ -934,7 +934,7 @@ impl App {
                                     {
                                         if !path.is_empty() {
                                             match mapmap_media::open_path(path) {
-                                                Ok(mut player) => {
+                                                Ok(player) => {
                                                     info!(
                                                         "Recreated player for '{}' after reload",
                                                         path
