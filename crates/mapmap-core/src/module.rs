@@ -874,7 +874,7 @@ impl MeshType {
                             .push(MeshVertex::new(Vec2::new(v.0, v.1), Vec2::new(v.0, v.1)));
                     }
 
-                    // FIX: Komplettes Triangle-Fan-Indices generieren (3 Indices pro Dreieck)
+                    // Verified: Triangle-Fan-Indices generation
                     let mut indices = Vec::with_capacity(vertices.len() * 3);
                     for i in 0..vertices.len() {
                         indices.push(0); // Center vertex
@@ -1569,4 +1569,49 @@ mod tests {
         assert_eq!(manager.list_modules().len(), 1);
         assert!(manager.get_module(id1).is_none());
     }
+}
+
+#[test]
+fn test_mesh_type_polygon_indices() {
+    // Create a simple square polygon
+    let vertices = vec![
+        (0.0, 0.0),     // Bottom-Left
+        (100.0, 0.0),   // Bottom-Right
+        (100.0, 100.0), // Top-Right
+        (0.0, 100.0),   // Top-Left
+    ];
+
+    let polygon = MeshType::Polygon { vertices };
+    let mesh = polygon.to_mesh();
+
+    // Check vertex count: 4 original + 1 center = 5
+    assert_eq!(mesh.vertices.len(), 5);
+
+    // Check indices
+    // 4 edges -> 4 triangles -> 12 indices
+    assert_eq!(mesh.indices.len(), 12);
+
+    // Verify triangle fan structure: (Center, Current, Next)
+    // Center is at index 0
+    // Outer vertices are at 1, 2, 3, 4
+
+    // Triangle 1: 0, 1, 2
+    assert_eq!(mesh.indices[0], 0);
+    assert_eq!(mesh.indices[1], 1);
+    assert_eq!(mesh.indices[2], 2);
+
+    // Triangle 2: 0, 2, 3
+    assert_eq!(mesh.indices[3], 0);
+    assert_eq!(mesh.indices[4], 2);
+    assert_eq!(mesh.indices[5], 3);
+
+    // Triangle 3: 0, 3, 4
+    assert_eq!(mesh.indices[6], 0);
+    assert_eq!(mesh.indices[7], 3);
+    assert_eq!(mesh.indices[8], 4);
+
+    // Triangle 4: 0, 4, 1 (Closing the loop)
+    assert_eq!(mesh.indices[9], 0);
+    assert_eq!(mesh.indices[10], 4);
+    assert_eq!(mesh.indices[11], 1);
 }
