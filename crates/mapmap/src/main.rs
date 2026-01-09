@@ -890,6 +890,29 @@ impl App {
                                 info!("Reloading media player for part_id={}", part_id);
                                 // (Player removal handled below)
                             }
+                            mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
+                                info!("Setting speed to {} for part_id={}", speed, part_id);
+                                let _ = player
+                                    .command_sender()
+                                    .send(PlaybackCommand::SetSpeed(speed));
+                            }
+                            mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
+                                info!("Setting loop to {} for part_id={}", enabled, part_id);
+                                let mode = if enabled {
+                                    mapmap_media::LoopMode::Loop
+                                } else {
+                                    mapmap_media::LoopMode::PlayOnce
+                                };
+                                let _ = player
+                                    .command_sender()
+                                    .send(PlaybackCommand::SetLoopMode(mode));
+                            }
+                            mapmap_ui::MediaPlaybackCommand::Seek(position) => {
+                                info!("Seeking to {} for part_id={}", position, part_id);
+                                let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                    std::time::Duration::from_secs_f64(position),
+                                ));
+                            }
                         }
                     }
                     // Handle Reload by removing player (will be recreated on next frame)
