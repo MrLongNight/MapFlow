@@ -62,4 +62,8 @@ check_*.txt
 *.txt
 !README.txt
 !CHANGELOG.txt
+!LICENSE.txt
 project.mflow
+
+# Archives
+/.temp-archive/
