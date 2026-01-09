@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.9
-> **Stand:** 2026-01-07 12:43
+> **Version:** 1.9.1
+> **Stand:** 2026-01-09 09:42
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -382,11 +382,12 @@
     - ✅ NdiSender für NDI-Output
     - ✅ Source Discovery (async)
     - ✅ Feature-Flag: `ndi`
-  - 🟡 **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
+    - ✅ Integration in Module Canvas mit Presets (PR #155)
+  - ✅ **Spout Support (Windows)** (`mapmap-io/src/spout/`, `mapmap-render/src/spout.rs`) - MERGED 2025-12-31
     - ✅ SourceType::SpoutInput im Core
     - ✅ OutputType::Spout im Core
     - ✅ UI-Integration in Module Canvas
-    - ⬜ wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop benötigt Update)
+    - 🟡 wgpu 0.19 HAL-Integration (Stub implementiert, DX11/DX12 Interop in Progress)
 
 - ✅ **Logging & Debug** (COMPLETED 2025-12-28)
   - ✅ Logging-Modul (`logging.rs`) mit File-Appender und Rotation
@@ -493,6 +494,8 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
   - ✅ MediaFile Panel (File Picker, Preview)
   - ✅ Shader Panel (Shader-Auswahl, Parameter-Editor)
   - ✅ LiveInput Panel (Device-Dropdown)
+  - ✅ Spout Source Panel (Name)
+  - ✅ NDI Source Panel (Name)
 
 - ✅ **Mask** - Masken für Compositing
   - ✅ File Mask Panel (File Picker)
@@ -512,6 +515,8 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
 - ✅ **Output** - Ausgabeziele
   - ✅ Projector Panel (ID, Name)
   - ✅ Preview Panel (Window-ID)
+  - ✅ Spout Output Panel (Sender Name)
+  - ✅ NDI Output Panel (Sender Name)
 
 #### Socket-Typen (für Wire-Kompatibilität)
 - ✅ Trigger (Signal-Flow)
@@ -600,7 +605,7 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
   - ✅ Resource-Definitionen implementiert
   - ✅ Prompt-Definitionen für AI-Assistenz implementiert
   - ✅ Integration mit Gemini CLI / Claude Desktop
-  - ✅ Dokumentation: MCP-API-Referenz (TODO)
+  - ✅ Dokumentation: MCP-API-Referenz (`crates/mapmap-mcp/README.md`)
 
 ### Multi-PC-Architektur (Phase 8) – NEU
 
