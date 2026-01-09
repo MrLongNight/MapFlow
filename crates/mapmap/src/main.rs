@@ -824,54 +824,50 @@ impl App {
                         "Processing playback command {:?} for part_id={}",
                         cmd, part_id
                     );
-                    // If player doesn't exist and we get a Play command, try to create it
-                    if !self.media_players.contains_key(&part_id) {
-                        if let mapmap_ui::MediaPlaybackCommand::Play = &cmd {
-                            info!(
-                                "Player doesn't exist for part_id={}, attempting to create...",
-                                part_id
-                            );
-                            // Find the source path from the module manager
-                            if let Some(active_module_id) =
-                                self.ui_state.module_canvas.active_module_id
+                    // If player doesn't exist and we get any command (except Reload), try to create it
+                    if !self.media_players.contains_key(&part_id)
+                        && cmd != mapmap_ui::MediaPlaybackCommand::Reload
+                    {
+                        info!(
+                            "Player doesn't exist for part_id={}, attempting to create...",
+                            part_id
+                        );
+                        // Find the source path from the module manager
+                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
+                        {
+                            if let Some(module) =
+                                self.state.module_manager.get_module(active_module_id)
                             {
-                                if let Some(module) =
-                                    self.state.module_manager.get_module(active_module_id)
-                                {
-                                    if let Some(part) =
-                                        module.parts.iter().find(|p| p.id == part_id)
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
                                     {
-                                        if let mapmap_core::module::ModulePartType::Source(
-                                            mapmap_core::module::SourceType::MediaFile {
-                                                ref path,
-                                                ..
-                                            },
-                                        ) = &part.part_type
-                                        {
-                                            info!("Found media path: '{}'", path);
-                                            if !path.is_empty() {
-                                                match mapmap_media::open_path(path) {
-                                                    Ok(player) => {
-                                                        info!(
-                                                            "Successfully created player for '{}'",
-                                                            path
-                                                        );
-                                                        self.media_players.insert(part_id, player);
-                                                    }
-                                                    Err(e) => {
-                                                        error!(
-                                                            "Failed to load media '{}': {}",
-                                                            path, e
-                                                        );
-                                                    }
+                                        info!("Found media path: '{}'", path);
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Successfully created player for '{}'",
+                                                        path
+                                                    );
+                                                    self.media_players.insert(part_id, player);
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to load media '{}': {}",
+                                                        path, e
+                                                    );
                                                 }
                                             }
-                                        } else {
-                                            warn!("Part {} is not a MediaFile source", part_id);
                                         }
                                     } else {
-                                        warn!("Part {} not found in module", part_id);
+                                        warn!("Part {} is not a MediaFile source", part_id);
                                     }
+                                } else {
+                                    warn!("Part {} not found in module", part_id);
                                 }
                             }
                         }
@@ -893,16 +889,77 @@ impl App {
                                 info!("Reloading media player for part_id={}", part_id);
                                 // (Player removal handled below)
                             }
+                            mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
+                                info!("Setting speed to {} for part_id={}", speed, part_id);
+                                let _ = player
+                                    .command_sender()
+                                    .send(PlaybackCommand::SetSpeed(speed));
+                            }
+                            mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
+                                info!("Setting loop to {} for part_id={}", enabled, part_id);
+                                let mode = if enabled {
+                                    mapmap_media::LoopMode::Loop
+                                } else {
+                                    mapmap_media::LoopMode::PlayOnce
+                                };
+                                let _ = player
+                                    .command_sender()
+                                    .send(PlaybackCommand::SetLoopMode(mode));
+                            }
+                            mapmap_ui::MediaPlaybackCommand::Seek(position) => {
+                                info!("Seeking to {} for part_id={}", position, part_id);
+                                let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                    std::time::Duration::from_secs_f64(position),
+                                ));
+                            }
                         }
                     }
-                    // Handle Reload by removing player (will be recreated on next frame)
-                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload
-                        && self.media_players.remove(&part_id).is_some()
-                    {
-                        info!(
-                            "Removed old media player for part_id={} for reload",
-                            part_id
-                        );
+                    // Handle Reload by removing player and immediately recreating
+                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
+                        if self.media_players.remove(&part_id).is_some() {
+                            info!(
+                                "Removed old media player for part_id={} for reload",
+                                part_id
+                            );
+                        }
+                        // Immediately recreate the player with the new path
+                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
+                        {
+                            if let Some(module) =
+                                self.state.module_manager.get_module(active_module_id)
+                            {
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
+                                    {
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Recreated player for '{}' after reload",
+                                                        path
+                                                    );
+                                                    // Auto-play after reload
+                                                    let _ = player
+                                                        .command_sender()
+                                                        .send(PlaybackCommand::Play);
+                                                    self.media_players.insert(part_id, player);
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to reload media '{}': {}",
+                                                        path, e
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
