@@ -92,18 +92,24 @@ pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Optio
 /// Constant-time string comparison to mitigate timing attacks
 ///
 /// Returns true if the two strings are identical.
-/// Note: This still leaks length information, but protects the content.
+/// Note: This comparison runs in time proportional to the length of `a` (the stored secret).
+/// This prevents attackers from guessing the length of the secret by observing the time taken
+/// to verify an invalid key of a certain length.
 fn constant_time_eq(a: &str, b: &str) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-
     let a_bytes = a.as_bytes();
     let b_bytes = b.as_bytes();
-    let mut result = 0u8;
 
-    for i in 0..a.len() {
-        result |= a_bytes[i] ^ b_bytes[i];
+    // Initialize result based on length comparison.
+    // If lengths differ, start with 1 (fail).
+    // Note: We deliberately do NOT return early here to ensure constant execution time
+    // dependent only on the stored key length.
+    let mut result = if a.len() != b.len() { 1u8 } else { 0u8 };
+
+    for (i, &byte) in a_bytes.iter().enumerate() {
+        // Safe access to b's bytes. If b is shorter, use 0 (which likely mismatches).
+        // This keeps the loop running for exactly a.len() iterations regardless of b's length.
+        let b_byte = *b_bytes.get(i).unwrap_or(&0);
+        result |= byte ^ b_byte;
     }
 
     result == 0
@@ -161,6 +167,8 @@ mod tests {
         assert!(!constant_time_eq("secret", "public"));
         assert!(!constant_time_eq("secret", "secret1"));
         assert!(!constant_time_eq("secret", "secre"));
+        // New case: b is longer
+        assert!(!constant_time_eq("secret", "secret_long"));
         assert!(!constant_time_eq("", "secret"));
         assert!(constant_time_eq("", ""));
     }
