@@ -524,26 +524,72 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
 
 > **Konzept:** Nodes werden im Canvas konfiguriert und in der Timeline arrangiert/automatisiert.
 
-- ⬜ **Playback-Modi für Nodes**
-  - ⬜ **Auto Full**: Alles vorkonfiguriert, läuft vollautomatisch nach Timeline
-  - ⬜ **Hybrid**: Node-Dauer in Timeline definiert, Parameter per MIDI/OSC/MCP steuerbar
-  - ⬜ **Manual**: Live-Wechsel zwischen Nodes, Mixing auf verschiedenen Timeline-Tracks
-  - ⬜ Mode-Property pro Node im Inspector
+#### 7.1 Core-Datenstrukturen (`mapmap-core/src/module.rs`)
 
-- ⬜ **Architecture Refactor (Timeline V3)**
-  - ⬜ Node-Referenzen in Timeline-Tracks (Nodes aus Canvas werden referenziert)
-  - ⬜ Track System mit Multi-Track-Mixing
-  - ⬜ Data Model: Migration von Keyframes zu Node-Referenzen mit Zeitbereichen
+- ⬜ **TimelineEntry Struct**
+  - ⬜ `node_id: ModulePartId` – Referenz auf Canvas-Node
+  - ⬜ `track_id: u32` – Track-Zuordnung
+  - ⬜ `start_time_ms: u64`, `duration_ms: u64` – Zeitbereich
+  - ⬜ `crossfade_in_ms`, `crossfade_out_ms` – Blend-Zeiten
+  - ⬜ `playback_mode: NodePlaybackMode`
 
-- ⬜ **UI Components**
-  - ⬜ **Timeline Editor**: Drag & Drop von Canvas-Nodes, Snapping, Multi-Track
-  - ⬜ **Node Duration Handles**: Resize-Handles für Node-Zeitbereiche
-  - ⬜ **Transition Curves**: Crossfade zwischen Nodes auf gleichem Track
+- ⬜ **NodePlaybackMode Enum**
+  - ⬜ `AutoFull` – Vorkonfiguriert, läuft automatisch
+  - ⬜ `Hybrid { controllable_params }` – Timeline-Dauer + externe Parameter-Steuerung
+  - ⬜ `Manual` – Nur aktiviert wenn manuell geschaltet
 
-- ⬜ **Features**
-  - ⬜ **Undo/Redo**: Full Command-Pattern integration
-  - ⬜ **Templates**: Save/Load Node-Konfigurationen
-  - ⬜ **Library**: Reusable Node-Presets
+- ⬜ **MapFlowModule Erweiterung**
+  - ⬜ `timeline_entries: Vec<TimelineEntry>`
+  - ⬜ `tracks: Vec<TimelineTrack>` (id, name, muted, solo)
+  - ⬜ `default_playback_mode: NodePlaybackMode`
+
+#### 7.2 Evaluator-Erweiterung (`mapmap-core/src/module_eval.rs`)
+
+- ⬜ **`evaluate_with_timeline()` Methode**
+  - ⬜ Aktive Nodes basierend auf `current_time_ms` ermitteln
+  - ⬜ Crossfade-Opacity berechnen bei überlappenden Entries
+  - ⬜ Parameter-Override für Hybrid-Mode (MIDI/OSC)
+
+- ⬜ **Erweiterter Evaluation-Flow**
+  1. Timeline-State → aktive Nodes
+  2. Trigger-Evaluation (nur aktive)
+  3. Parameter-Override anwenden
+  4. Chain-Tracing & RenderOp
+  5. Crossfade-Blending
+
+#### 7.3 Timeline UI V3 (`mapmap-ui/src/timeline_v3.rs`)
+
+- ⬜ **Multi-Track-Rendering**
+  - ⬜ TrackHeader (Name, Mute/Solo, Höhe)
+  - ⬜ TimeRuler (Timecode, Zoom, Playhead)
+  - ⬜ Unbegrenzte Tracks (dynamisch)
+
+- ⬜ **NodeBlock-Komponente**
+  - ⬜ Drag von Canvas → Timeline
+  - ⬜ Resize-Handles für Dauer
+  - ⬜ Mode-Indikator (A/H/M)
+  - ⬜ CrossfadeHandle (Triangle)
+
+- ⬜ **Interaktionen**
+  - ⬜ Drag & Drop mit Snapping
+  - ⬜ Right-Click Kontextmenü
+  - ⬜ Overlap → Auto-Crossfade
+
+#### 7.4 Integration
+
+- ⬜ Playback-Transport (Play, Pause, Seek, Loop)
+- ⬜ MIDI/OSC Parameter-Routing für Hybrid
+- ⬜ Manual-Mode: Next/Prev via MIDI/OSC/Shortcut
+- ⬜ Undo/Redo für Timeline-Aktionen
+
+#### Design-Entscheidungen
+
+| Frage | Entscheidung |
+|-------|-------------|
+| Track-Limit | Unbegrenzt (dynamisch) |
+| Node-Sharing | Ja – Instanzen mit eigenen Timeline-Einstellungen |
+| Crossfade | Nur innerhalb eines Tracks |
+| Manual-Steuerung | MIDI, OSC, Keyboard-Shortcuts |
 
 ### MCP-Server Integration (Model Context Protocol) – NEU
 
@@ -746,21 +792,40 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Latenz-Ziel: <100ms
   - ⬜ UI: Hue-Lampen-Auswahl und Zonen-Mapping
 
-### 🔬 Evaluierte Libraries (2026-01-07)
+### 🔬 Evaluierte Libraries für Core-Funktionen
 
-| Library | Status | Beschreibung |
-|---------|--------|--------------|
-| `artnet_protocol` | ✅ Geplant | DMX über Art-Net |
-| `hueclient` | ✅ Geplant | Philips Hue API |
-| `udp-dtls` | ✅ Geplant | DTLS für Hue Entertainment |
-| `playa` | 🔍 Evaluieren | Image Sequence Player (egui, Node-Compositing, REST API) – [crates.io](https://crates.io/crates/playa) |
-| `gled` | 🔍 Evaluieren | Licht-Animationen (Art-Net/DMX, Beat-Sync, Shader-Editor) – [crates.io](https://crates.io/crates/gled) |
-| `egui_node_editor` | 🔍 Evaluieren | Alternative Node-Editor |
-| `kurbo` | 🔍 Evaluieren | 2D-Geometrie/Bezier |
-| `femtovg` | 🔍 Evaluieren | GPU Vektor-Rendering |
-| `epaint` | ⏸️ Nicht nötig | Bereits via egui |
-| `ascending_graphics` | ❌ Abgelehnt | Überlappung mit wgpu |
-| `ledcat` | ⏸️ Zurückgestellt | LED-Strips (Nische) |
+> **Fokus:** Render Pipeline, Node-Konzept, Timeline
+
+#### ✅ Hohe Priorität (sofortiger Mehrwert)
+
+| Library | Version | Core-Funktion | Mehrwert |
+|---------|---------|---------------|----------|
+| `egui_node_editor` | 0.9.0 | Node-Konzept | Ersetzt eigenen Canvas (5k LOC), Auto-Wire-Routing, MiniMap |
+| `playa` | 0.1.142 | Timeline | Multi-Track, Frame-Cache (LRU+Epoch), Compositing-Patterns |
+
+#### 🔄 Mittlere Priorität (optional)
+
+| Library | Core-Funktion | Mehrwert |
+|---------|---------------|----------|
+| `gled` | Timeline | Beat-Sync Referenz, Shader-Editor-Patterns |
+| `kurbo` | Render Pipeline | Bezier für Mesh-System |
+| `femtovg` | Render Pipeline | Alternative 2D-Rendering |
+
+#### ⏸️ Niedrige Priorität (Phase 9: Lighting)
+
+| Library | Beschreibung |
+|---------|--------------|
+| `artnet_protocol` | DMX über Art-Net |
+| `hueclient` | Philips Hue API |
+| `udp-dtls` | DTLS für Hue Entertainment |
+
+#### ❌ Nicht relevant
+
+| Library | Grund |
+|---------|-------|
+| `epaint` | Bereits via egui |
+| `ascending_graphics` | Überlappung mit wgpu |
+| `ledcat` | Nische (LED-Strips) |
 
 ---
 
