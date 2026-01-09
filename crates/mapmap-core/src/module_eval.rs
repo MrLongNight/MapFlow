@@ -13,6 +13,55 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::time::Instant;
 
+/// Source-specific rendering properties (from MediaFile)
+#[derive(Debug, Clone, Default)]
+pub struct SourceProperties {
+    /// Source opacity (multiplied with layer opacity)
+    pub opacity: f32,
+    /// Color correction: Brightness (-1.0 to 1.0)
+    pub brightness: f32,
+    /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+    pub contrast: f32,
+    /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+    pub saturation: f32,
+    /// Color correction: Hue shift (-180 to 180 degrees)
+    pub hue_shift: f32,
+    /// Transform: Scale X
+    pub scale_x: f32,
+    /// Transform: Scale Y
+    pub scale_y: f32,
+    /// Transform: Rotation in degrees
+    pub rotation: f32,
+    /// Transform: Offset X
+    pub offset_x: f32,
+    /// Transform: Offset Y
+    pub offset_y: f32,
+    /// Flip horizontally
+    pub flip_horizontal: bool,
+    /// Flip vertically
+    pub flip_vertical: bool,
+}
+
+impl SourceProperties {
+    /// Default source properties (no modifications)
+    pub fn default_identity() -> Self {
+        Self {
+            opacity: 1.0,
+            brightness: 0.0,
+            contrast: 1.0,
+            saturation: 1.0,
+            hue_shift: 0.0,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            rotation: 0.0,
+            offset_x: 0.0,
+            offset_y: 0.0,
+            flip_horizontal: false,
+            flip_vertical: false,
+        }
+    }
+}
+
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
@@ -32,6 +81,8 @@ pub struct RenderOp {
 
     /// Source part ID (if any)
     pub source_part_id: Option<ModulePartId>,
+    /// Source-specific properties (color, transform, flip)
+    pub source_props: SourceProperties,
     /// Applied effects in order (Source -> Effect1 -> Effect2 -> ...)
     pub effects: Vec<ModulizerType>,
     /// Applied masks
@@ -258,6 +309,7 @@ impl ModuleEvaluator {
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
+                                        source_props: SourceProperties::default_identity(),
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
@@ -284,6 +336,7 @@ impl ModuleEvaluator {
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
+                                        source_props: SourceProperties::default_identity(),
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });

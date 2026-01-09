@@ -64,7 +64,9 @@ pub use logging::LogConfig;
 pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
 pub use mapping::{Mapping, MappingId, MappingManager};
 pub use mesh::{keystone, BezierPatch, Mesh, MeshType, MeshVertex, VertexId};
-pub use module_eval::{ModuleEvalResult, ModuleEvaluator, RenderOp, SourceCommand};
+pub use module_eval::{
+    ModuleEvalResult, ModuleEvaluator, RenderOp, SourceCommand, SourceProperties,
+};
 pub use monitor::{MonitorInfo, MonitorTopology};
 pub use oscillator::{
     ColorMode, CoordinateMode, OscillatorConfig, PhaseInitMode, RingParams, SimulationResolution,
