@@ -113,26 +113,38 @@ pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
 }
 
 /// Open a video file using the best available decoder
-/// Priority: libmpv (if enabled) > FFmpeg
+/// Priority: FFmpeg > libmpv (libmpv currently only provides placeholder frames)
 fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
     let path = path.as_ref();
 
-    // Try libmpv first if available
+    // Try FFmpeg first (stable, full frame support)
+    match FFmpegDecoder::open(path) {
+        Ok(decoder) => {
+            tracing::info!("Opened with FFmpeg decoder: {:?}", path);
+            return Ok(Box::new(decoder));
+        }
+        Err(e) => {
+            tracing::warn!("FFmpeg decoder failed: {}", e);
+        }
+    }
+
+    // Fallback to libmpv if available (currently placeholder frames only)
     #[cfg(feature = "libmpv")]
     {
         match MpvDecoder::open(path) {
             Ok(decoder) => {
-                tracing::info!("Opened with MPV decoder: {:?}", path);
+                tracing::info!("Opened with MPV decoder (fallback): {:?}", path);
                 return Ok(Box::new(decoder));
             }
             Err(e) => {
-                tracing::warn!("MPV decoder failed, trying FFmpeg: {}", e);
+                tracing::warn!("MPV decoder also failed: {}", e);
             }
         }
     }
 
-    // Fallback to FFmpeg
-    let decoder = FFmpegDecoder::open(path)?;
-    tracing::info!("Opened with FFmpeg decoder: {:?}", path);
-    Ok(Box::new(decoder))
+    // Both failed, return the FFmpeg error
+    Err(MediaError::FileOpen(format!(
+        "Could not open video: {:?}",
+        path
+    )))
 }
