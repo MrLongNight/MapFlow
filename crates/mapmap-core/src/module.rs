@@ -59,6 +59,9 @@ impl MapFlowModule {
                 target_width: None,
                 target_height: None,
                 target_fps: None,
+                flip_horizontal: false,
+                flip_vertical: false,
+                reverse_playback: false,
             }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
             PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
@@ -652,6 +655,15 @@ pub enum SourceType {
         /// Target FPS override (None = use original FPS)
         #[serde(default)]
         target_fps: Option<f32>,
+        /// Flip video horizontally
+        #[serde(default)]
+        flip_horizontal: bool,
+        /// Flip video vertically
+        #[serde(default)]
+        flip_vertical: bool,
+        /// Play video in reverse
+        #[serde(default)]
+        reverse_playback: bool,
     },
     Shader {
         name: String,
@@ -695,6 +707,9 @@ impl SourceType {
             target_width: None,
             target_height: None,
             target_fps: None,
+            flip_horizontal: false,
+            flip_vertical: false,
+            reverse_playback: false,
         }
     }
 }
