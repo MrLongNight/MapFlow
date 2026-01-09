@@ -209,8 +209,7 @@ impl Transform {
 
         // Build transformation matrix
         // 1. Translate pivot to origin
-        let translate_pivot_to_origin =
-            Mat4::from_translation(Vec3::new(-pivot.x, -pivot.y, 0.0));
+        let translate_pivot_to_origin = Mat4::from_translation(Vec3::new(-pivot.x, -pivot.y, 0.0));
 
         // 2. Scale
         let scale = Mat4::from_scale(Vec3::new(self.scale.x, self.scale.y, 1.0));
