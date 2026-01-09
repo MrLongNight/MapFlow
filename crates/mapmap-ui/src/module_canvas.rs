@@ -578,14 +578,12 @@ impl ModuleCanvas {
                                                     if speed_slider.changed() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetSpeed(*speed)));
                                                     }
-                                                    
-                                                    let loop_checkbox = ui.checkbox(loop_enabled, "🔁 Loop");
+                                                                                                        let loop_checkbox = ui.checkbox(loop_enabled, "🔁 Loop");
                                                     if loop_checkbox.changed() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
                                                     }
                                                     
-                                                    ui.separator();
-                                                    ui.label("Clip Region:");
+                                                    ui.separator();                                                    ui.label("Clip Region:");
                                                     ui.add(egui::Slider::new(start_time, 0.0..=300.0).text("Start").suffix("s"));
                                                     ui.add(egui::Slider::new(end_time, 0.0..=300.0).text("End").suffix("s"));
                                                     if ui.button("Reset Clip").clicked() {
