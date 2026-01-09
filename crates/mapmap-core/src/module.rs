@@ -1615,3 +1615,60 @@ fn test_mesh_type_polygon_indices() {
     assert_eq!(mesh.indices[10], 4);
     assert_eq!(mesh.indices[11], 1);
 }
+
+#[test]
+fn test_mesh_type_sphere_generation() {
+    let lat = 4;
+    let lon = 4;
+    let sphere = MeshType::Sphere {
+        lat_segments: lat,
+        lon_segments: lon,
+    };
+    let mesh = sphere.to_mesh();
+
+    // Vertices: (lat+1) * (lon+1) rings
+    let expected_verts = (lat + 1) * (lon + 1);
+    assert_eq!(mesh.vertices.len(), expected_verts as usize);
+
+    // Indices: lat * lon * 2 triangles * 3 indices
+    let expected_indices = lat * lon * 6;
+    assert_eq!(mesh.indices.len(), expected_indices as usize);
+}
+
+#[test]
+fn test_update_part_position() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+    };
+
+    let pid = module.add_part(PartType::Trigger, (0.0, 0.0));
+    module.update_part_position(pid, (100.0, 200.0));
+
+    let part = module.parts.first().unwrap();
+    assert_eq!(part.position, (100.0, 200.0));
+}
+
+#[test]
+fn test_source_type_defaults() {
+    let source = SourceType::new_media_file("video.mp4".to_string());
+    if let SourceType::MediaFile {
+        path,
+        speed,
+        loop_enabled,
+        opacity,
+        ..
+    } = source
+    {
+        assert_eq!(path, "video.mp4");
+        assert_eq!(speed, 1.0);
+        assert!(loop_enabled);
+        assert_eq!(opacity, 1.0);
+    } else {
+        panic!("Wrong source type created");
+    }
+}

@@ -675,4 +675,44 @@ mod tests {
         assert_eq!(analysis.rms_volume, 0.0);
         assert_eq!(analysis.peak_volume, 0.0);
     }
+
+    #[test]
+    fn test_beat_detection_simulation() {
+        let config = AudioAnalyzerV2Config {
+            sample_rate: 44100,
+            fft_size: 1024, // Smaller FFT for faster test
+            smoothing: 0.0, // Disable smoothing for instant reaction
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // Generate silence
+        let silence = vec![0.0f32; 1024];
+
+        // Generate a strong bass kick (60Hz)
+        let sample_rate = 44100.0;
+        let kick_freq = 60.0;
+        let kick: Vec<f32> = (0..1024)
+            .map(|i| (2.0 * std::f32::consts::PI * kick_freq * i as f32 / sample_rate).sin())
+            .collect();
+
+        // 1. Fill history with silence to establish low average
+        for i in 0..20 {
+            analyzer.process_samples(&silence, i as f64 * 0.02);
+        }
+
+        assert!(!analyzer.get_latest_analysis().beat_detected);
+
+        // 2. Inject Kick
+        analyzer.process_samples(&kick, 1.0);
+
+        // 3. Check for beat
+        let analysis = analyzer.get_latest_analysis();
+        assert!(
+            analysis.beat_detected,
+            "Beat should be detected after silence -> kick. Bass energy: {}",
+            analysis.band_energies[1]
+        );
+        assert!(analysis.beat_strength > 0.0);
+    }
 }
