@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-09: docs: 📚 Scribe: Add mapmap-mcp README and update ROADMAP/CHANGELOG
 - 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
 - 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)
 - 2026-01-02: fix: Remove build artifact files from repository (#156)

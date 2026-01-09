@@ -1,3 +1,21 @@
+# Scribe Journal - 2026-01-09
+
+## Discrepancy in Documentation Structure
+
+I noticed a significant discrepancy between the documentation structure described in typical "Inventory" prompts/templates (listing `01-OVERVIEW`, `04-API`) and the actual filesystem structure (`01-GETTING-STARTED`, `04-USER-GUIDE`).
+
+### Observations
+- The prompt templates often cite `docs/01-OVERVIEW/` as the first item.
+- The actual repository has `docs/01-GETTING-STARTED/`.
+- `docs/INDEX.md` correctly reflects the filesystem.
+- This mismatch can lead to confusion during automated reviews or when referencing documentation paths in new files.
+
+### Decision
+- I have chosen to link to the **actual filesystem paths** (`01-GETTING-STARTED`) in `crates/mapmap/README.md` to avoid broken links.
+- I am documenting this here to clarify why the implementation might appear to diverge from the prompt's "inventory".
+
+---
+
 # Scribe Journal - 2026-01-08
 
 ## Missing Crate READMEs
