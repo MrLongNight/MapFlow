@@ -10,12 +10,15 @@ repository.workspace = true
 [features]
 default = []
 ffmpeg = ["ffmpeg-next"]
+libmpv = ["dep:libmpv2"] # MPV-based video playback
 hap = ["snap", "ffmpeg"]
 
 [dependencies]
 crossbeam-channel = { workspace = true }
 # FFmpeg is optional - we have a test pattern fallback
 ffmpeg-next = { workspace = true, optional = true }
+# libmpv2 for MPV-based playback
+libmpv2 = { workspace = true, optional = true }
 # Image decoding for still images, GIF, and sequences
 image = { workspace = true }
 mapmap-io = { path = "../mapmap-io" }

@@ -148,6 +148,8 @@ struct App {
     color_calibration_renderer: Option<ColorCalibrationRenderer>,
     /// Temporary textures for output rendering (OutputID -> Texture)
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
+    /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
+    preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
 }
 
 impl App {
@@ -542,6 +544,7 @@ impl App {
             edge_blend_renderer,
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
+            preview_texture_cache: HashMap::new(),
         };
 
         // Create initial dummy texture
@@ -821,54 +824,50 @@ impl App {
                         "Processing playback command {:?} for part_id={}",
                         cmd, part_id
                     );
-                    // If player doesn't exist and we get a Play command, try to create it
-                    if !self.media_players.contains_key(&part_id) {
-                        if let mapmap_ui::MediaPlaybackCommand::Play = &cmd {
-                            info!(
-                                "Player doesn't exist for part_id={}, attempting to create...",
-                                part_id
-                            );
-                            // Find the source path from the module manager
-                            if let Some(active_module_id) =
-                                self.ui_state.module_canvas.active_module_id
+                    // If player doesn't exist and we get any command (except Reload), try to create it
+                    if !self.media_players.contains_key(&part_id)
+                        && cmd != mapmap_ui::MediaPlaybackCommand::Reload
+                    {
+                        info!(
+                            "Player doesn't exist for part_id={}, attempting to create...",
+                            part_id
+                        );
+                        // Find the source path from the module manager
+                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
+                        {
+                            if let Some(module) =
+                                self.state.module_manager.get_module(active_module_id)
                             {
-                                if let Some(module) =
-                                    self.state.module_manager.get_module(active_module_id)
-                                {
-                                    if let Some(part) =
-                                        module.parts.iter().find(|p| p.id == part_id)
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
                                     {
-                                        if let mapmap_core::module::ModulePartType::Source(
-                                            mapmap_core::module::SourceType::MediaFile {
-                                                ref path,
-                                                ..
-                                            },
-                                        ) = &part.part_type
-                                        {
-                                            info!("Found media path: '{}'", path);
-                                            if !path.is_empty() {
-                                                match mapmap_media::open_path(path) {
-                                                    Ok(player) => {
-                                                        info!(
-                                                            "Successfully created player for '{}'",
-                                                            path
-                                                        );
-                                                        self.media_players.insert(part_id, player);
-                                                    }
-                                                    Err(e) => {
-                                                        error!(
-                                                            "Failed to load media '{}': {}",
-                                                            path, e
-                                                        );
-                                                    }
+                                        info!("Found media path: '{}'", path);
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Successfully created player for '{}'",
+                                                        path
+                                                    );
+                                                    self.media_players.insert(part_id, player);
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to load media '{}': {}",
+                                                        path, e
+                                                    );
                                                 }
                                             }
-                                        } else {
-                                            warn!("Part {} is not a MediaFile source", part_id);
                                         }
                                     } else {
-                                        warn!("Part {} not found in module", part_id);
+                                        warn!("Part {} is not a MediaFile source", part_id);
                                     }
+                                } else {
+                                    warn!("Part {} not found in module", part_id);
                                 }
                             }
                         }
@@ -890,16 +889,77 @@ impl App {
                                 info!("Reloading media player for part_id={}", part_id);
                                 // (Player removal handled below)
                             }
+                            mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
+                                info!("Setting speed to {} for part_id={}", speed, part_id);
+                                let _ = player
+                                    .command_sender()
+                                    .send(PlaybackCommand::SetSpeed(speed));
+                            }
+                            mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
+                                info!("Setting loop to {} for part_id={}", enabled, part_id);
+                                let mode = if enabled {
+                                    mapmap_media::LoopMode::Loop
+                                } else {
+                                    mapmap_media::LoopMode::PlayOnce
+                                };
+                                let _ = player
+                                    .command_sender()
+                                    .send(PlaybackCommand::SetLoopMode(mode));
+                            }
+                            mapmap_ui::MediaPlaybackCommand::Seek(position) => {
+                                info!("Seeking to {} for part_id={}", position, part_id);
+                                let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                    std::time::Duration::from_secs_f64(position),
+                                ));
+                            }
                         }
                     }
-                    // Handle Reload by removing player (will be recreated on next frame)
-                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload
-                        && self.media_players.remove(&part_id).is_some()
-                    {
-                        info!(
-                            "Removed old media player for part_id={} for reload",
-                            part_id
-                        );
+                    // Handle Reload by removing player and immediately recreating
+                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
+                        if self.media_players.remove(&part_id).is_some() {
+                            info!(
+                                "Removed old media player for part_id={} for reload",
+                                part_id
+                            );
+                        }
+                        // Immediately recreate the player with the new path
+                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
+                        {
+                            if let Some(module) =
+                                self.state.module_manager.get_module(active_module_id)
+                            {
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
+                                    {
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Recreated player for '{}' after reload",
+                                                        path
+                                                    );
+                                                    // Auto-play after reload
+                                                    let _ = player
+                                                        .command_sender()
+                                                        .send(PlaybackCommand::Play);
+                                                    self.media_players.insert(part_id, player);
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to reload media '{}': {}",
+                                                        path, e
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1737,34 +1797,72 @@ impl App {
 
             // Sync Texture Previews for Module Canvas
             {
-                // Free old textures
-                // OPTIMIZATION: Iterate directly to avoid allocating intermediate Vec<TextureId>
-                for id in self.ui_state.module_canvas.node_previews.values() {
-                    self.egui_renderer.free_texture(id);
-                }
-                self.ui_state.module_canvas.node_previews.clear();
-
-                // Register new textures for active sources
-                // OPTIMIZATION: Iterate directly to avoid allocating intermediate Vec<u64>
+                // Identify active sources
+                // OPTIMIZATION: Collect IDs first to avoid borrowing `self.state` during mutation
+                let mut active_source_ids = std::collections::HashSet::new();
                 for module in self.state.module_manager.modules() {
                     for part in &module.parts {
                         if let mapmap_core::module::ModulePartType::Source(_) = part.part_type {
-                            let tex_name = format!("part_{}", part.id);
-                            if self.texture_pool.has_texture(&tex_name) {
-                                let view = self.texture_pool.get_view(&tex_name);
-                                let tex_id = self.egui_renderer.register_native_texture(
+                            active_source_ids.insert(part.id);
+                        }
+                    }
+                }
+
+                // Update cache and register/free textures
+                let mut current_frame_previews = std::collections::HashMap::new();
+
+                for part_id in &active_source_ids {
+                    let tex_name = format!("part_{}", part_id);
+                    if self.texture_pool.has_texture(&tex_name) {
+                        let view = self.texture_pool.get_view(&tex_name);
+
+                        // Check cache using Entry API to avoid double borrow
+                        let texture_id = match self.preview_texture_cache.entry(*part_id) {
+                            std::collections::hash_map::Entry::Occupied(mut entry) => {
+                                let (cached_id, cached_view) = entry.get();
+                                if std::sync::Arc::ptr_eq(cached_view, &view) {
+                                    // Cache hit! View hasn't changed.
+                                    *cached_id
+                                } else {
+                                    // View changed (e.g. resized), re-register
+                                    self.egui_renderer.free_texture(cached_id);
+                                    let new_id = self.egui_renderer.register_native_texture(
+                                        &self.backend.device,
+                                        &view,
+                                        wgpu::FilterMode::Linear,
+                                    );
+                                    entry.insert((new_id, view.clone()));
+                                    new_id
+                                }
+                            }
+                            std::collections::hash_map::Entry::Vacant(entry) => {
+                                // New source
+                                let new_id = self.egui_renderer.register_native_texture(
                                     &self.backend.device,
                                     &view,
                                     wgpu::FilterMode::Linear,
                                 );
-                                self.ui_state
-                                    .module_canvas
-                                    .node_previews
-                                    .insert(part.id, tex_id);
+                                entry.insert((new_id, view.clone()));
+                                new_id
                             }
-                        }
+                        };
+
+                        current_frame_previews.insert(*part_id, texture_id);
                     }
                 }
+
+                // Cleanup stale cache entries
+                self.preview_texture_cache.retain(|id, (tex_id, _)| {
+                    if !active_source_ids.contains(id) {
+                        self.egui_renderer.free_texture(tex_id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+
+                // Update UI state map
+                self.ui_state.module_canvas.node_previews = current_frame_previews;
             }
 
             let dashboard_action = None;

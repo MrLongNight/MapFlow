@@ -19,6 +19,12 @@ pub enum MediaPlaybackCommand {
     Stop,
     /// Reload the media from disk (used when path changes)
     Reload,
+    /// Set playback speed (1.0 = normal)
+    SetSpeed(f32),
+    /// Set loop mode
+    SetLoop(bool),
+    /// Seek to position (seconds from start)
+    Seek(f64),
 }
 
 /// Information about a socket position for hit detection
@@ -568,8 +574,15 @@ impl ModuleCanvas {
 
                                                 // === PLAYBACK SETTINGS ===
                                                 ui.collapsing("⚙️ Playback Settings", |ui| {
-                                                    ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
-                                                    ui.checkbox(loop_enabled, "🔁 Loop");
+                                                    let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
+                                                    if speed_slider.changed() {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetSpeed(*speed)));
+                                                    }
+                                                    let loop_checkbox = ui.checkbox(loop_enabled, "🔁 Loop");
+                                                    if loop_checkbox.changed() {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
+                                                    }
+
                                                     ui.separator();
                                                     ui.label("Clip Region:");
                                                     ui.add(egui::Slider::new(start_time, 0.0..=300.0).text("Start").suffix("s"));
