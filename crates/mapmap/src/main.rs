@@ -2886,11 +2886,18 @@ impl App {
                         }
 
                         let transform = glam::Mat4::IDENTITY;
-                        let uniform_bind_group = self.mesh_renderer.get_uniform_bind_group(
-                            &self.backend.queue,
-                            transform,
-                            op.opacity,
-                        );
+                        let uniform_bind_group =
+                            self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                                &self.backend.queue,
+                                transform,
+                                op.opacity * op.source_props.opacity,
+                                op.source_props.flip_horizontal,
+                                op.source_props.flip_vertical,
+                                op.source_props.brightness,
+                                op.source_props.contrast,
+                                op.source_props.saturation,
+                                op.source_props.hue_shift,
+                            );
                         let texture_bind_group =
                             self.mesh_renderer.create_texture_bind_group(final_view);
 
