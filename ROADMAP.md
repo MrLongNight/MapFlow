@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.9
-> **Stand:** 2026-01-09 06:00
+> **Stand:** 2026-01-10 06:30
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
