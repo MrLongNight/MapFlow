@@ -37,3 +37,7 @@ tracing = { workspace = true }
 
 # DMX dependencies
 uuid = { version = "1.10", features = ["v4"] }
+
+# Security
+sha2 = { workspace = true }
+hex = { workspace = true }
