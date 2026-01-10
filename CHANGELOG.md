@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-10: feat(render): Add SourceProperties to RenderOp for color/transform/flip (#b8453dc)
+- 2026-01-10: feat(media): Add flip, reverse playback and seek controls to Media Node (#9f8163d)
+- 2026-01-09: fix(security): Fix auth timing side-channel (#222)
+- 2026-01-09: perf(render): Cache egui textures to reduce bind group creation overhead (#221)
+- 2026-01-09: docs: Tracker update docs (#220)
+- 2026-01-09: chore: Archivist cleanup (#219)
+- 2026-01-09: test(core): Guardian test improvements (#218)
+- 2026-01-09: feat(media): libmpv2 integration (#216)
+- 2026-01-09: fix(security): Fix auth timing leak (#214)
 - 2026-01-09: docs: reorganize documentation structure into subfolders (#210)
 - 2026-01-09: test(core): Add robust tests for Transform and Mesh logic (#212)
 - 2026-01-09: perf(render): Optimize texture sync loop in render path (#215)
