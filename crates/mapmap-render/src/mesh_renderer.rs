@@ -28,13 +28,19 @@ impl GpuVertex {
 }
 
 /// Uniforms for mesh rendering (matches mesh_warp.wgsl)
-/// Note: Must be padded to 96 bytes (multiple of 16) for std140 layout
+/// Note: Must be padded to 128 bytes (multiple of 16) for std140 layout
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct MeshUniforms {
     transform: [[f32; 4]; 4], // 64 bytes
     opacity: f32,             // 4 bytes
-    _padding: [f32; 7],       // 28 bytes (total 96 bytes for std140 alignment)
+    flip_h: f32,              // 4 bytes
+    flip_v: f32,              // 4 bytes
+    brightness: f32,          // 4 bytes
+    contrast: f32,            // 4 bytes
+    saturation: f32,          // 4 bytes
+    hue_shift: f32,           // 4 bytes
+    _padding: f32,            // 4 bytes (total 96 bytes)
 }
 
 struct CachedMeshUniform {
@@ -258,7 +264,13 @@ impl MeshRenderer {
         let uniforms = MeshUniforms {
             transform: transform.to_cols_array_2d(),
             opacity,
-            _padding: [0.0; 7],
+            flip_h: 0.0,
+            flip_v: 0.0,
+            brightness: 0.0,
+            contrast: 1.0,
+            saturation: 1.0,
+            hue_shift: 0.0,
+            _padding: 0.0,
         };
 
         self.device
@@ -298,7 +310,13 @@ impl MeshRenderer {
             let uniforms = MeshUniforms {
                 transform: transform.to_cols_array_2d(),
                 opacity,
-                _padding: [0.0; 7],
+                flip_h: 0.0,
+                flip_v: 0.0,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                _padding: 0.0,
             };
 
             let buffer = self
@@ -329,7 +347,13 @@ impl MeshRenderer {
         let uniforms = MeshUniforms {
             transform: transform.to_cols_array_2d(),
             opacity,
-            _padding: [0.0; 7],
+            flip_h: 0.0,
+            flip_v: 0.0,
+            brightness: 0.0,
+            contrast: 1.0,
+            saturation: 1.0,
+            hue_shift: 0.0,
+            _padding: 0.0,
         };
 
         queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
@@ -342,6 +366,79 @@ impl MeshRenderer {
         bind_group
     }
 
+    /// Get a uniform bind group with source properties (flip, color correction)
+    pub fn get_uniform_bind_group_with_source_props(
+        &mut self,
+        queue: &wgpu::Queue,
+        transform: Mat4,
+        opacity: f32,
+        flip_h: bool,
+        flip_v: bool,
+        brightness: f32,
+        contrast: f32,
+        saturation: f32,
+        hue_shift: f32,
+    ) -> Arc<wgpu::BindGroup> {
+        // Expand cache if needed
+        if self.current_cache_index >= self.uniform_cache.len() {
+            let uniforms = MeshUniforms {
+                transform: transform.to_cols_array_2d(),
+                opacity,
+                flip_h: if flip_h { 1.0 } else { 0.0 },
+                flip_v: if flip_v { 1.0 } else { 0.0 },
+                brightness,
+                contrast,
+                saturation,
+                hue_shift,
+                _padding: 0.0,
+            };
+
+            let buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Mesh Uniform Buffer"),
+                    contents: bytemuck::cast_slice(&[uniforms]),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                });
+
+            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Mesh Uniform Bind Group"),
+                layout: &self.uniform_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
+            });
+
+            self.uniform_cache.push(CachedMeshUniform {
+                buffer,
+                bind_group: Arc::new(bind_group),
+            });
+        }
+
+        // Update current buffer
+        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let uniforms = MeshUniforms {
+            transform: transform.to_cols_array_2d(),
+            opacity,
+            flip_h: if flip_h { 1.0 } else { 0.0 },
+            flip_v: if flip_v { 1.0 } else { 0.0 },
+            brightness,
+            contrast,
+            saturation,
+            hue_shift,
+            _padding: 0.0,
+        };
+
+        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+
+        let bind_group = self.uniform_cache[self.current_cache_index]
+            .bind_group
+            .clone();
+        self.current_cache_index += 1;
+
+        bind_group
+    }
     /// Create a texture bind group
     pub fn create_texture_bind_group(&self, texture_view: &wgpu::TextureView) -> wgpu::BindGroup {
         self.device.create_bind_group(&wgpu::BindGroupDescriptor {
