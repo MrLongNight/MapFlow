@@ -160,16 +160,49 @@ pub enum ShapeType {
     },
 }
 
-/// Project - top-level container (Phase 2+)
+/// Top-level project container holding all scene data.
+///
+/// The `Project` struct serves as the root serializable object for a MapFlow project.
+/// It aggregates the major subsystems (Paints, Mappings, Layers) into a single unit
+/// for persistence and transport.
+///
+/// # Features
+///
+/// - **Paints:** Source content definitions (Images, Videos, Generators).
+/// - **Mappings:** Geometric definitions for projection surfaces (Meshes, Quads).
+/// - **Layers:** Composition hierarchy for blending paints and effects.
+///
+/// # Example
+///
+/// ```rust
+/// use mapmap_core::Project;
+///
+/// // Create a new empty project
+/// let project = Project::new("My Light Show");
+///
+/// assert_eq!(project.name, "My Light Show");
+/// assert!(project.paint_manager.paints().is_empty());
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Project {
+    /// The display name of the project.
     pub name: String,
+    /// Manages all visual source content (paints).
     pub paint_manager: PaintManager,
+    /// Manages projection geometry and surface mappings.
     pub mapping_manager: MappingManager,
+    /// Manages the composition stack and rendering order.
     pub layer_manager: LayerManager,
 }
 
 impl Project {
+    /// Creates a new, empty project with the given name.
+    ///
+    /// This initializes all internal managers to their default empty states.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the project.
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),

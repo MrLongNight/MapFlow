@@ -16,7 +16,7 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 - [Audits & Reports](07-TECHNICAL/audits/) - Code & Security Audits
 
 ### For Project Managers
-- [Roadmap & Phases](05-ROADMAP/) - Complete Phase Plan (0-7)
+- [Roadmap & Phases](../ROADMAP.md) - Complete Phase Plan (0-7)
 - [Project Status](05-ROADMAP/README.md) - Current Progress
 
 ### Learning
@@ -25,7 +25,7 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 - [Glossary](09-RESOURCES/GLOSSARY.md) - Terminology
 
 ### Reference
-- [Changelog](08-CHANGELOG/CHANGELOG.md) - Version History
+- [Changelog](../CHANGELOG.md) - Version History
 - [Contributors](09-RESOURCES/CONTRIBUTORS.md) - Credits
 - [External Resources](09-RESOURCES/LINKS.md)
 
@@ -57,12 +57,12 @@ docs/
 | Building | `01-GETTING-STARTED/BUILD.md` | Compile instructions |
 | Architecture | `03-ARCHITECTURE/ARCHITECTURE.md` | System design |
 | Contributing | `02-CONTRIBUTING/CONTRIBUTING.md` | Development workflow |
-| Roadmap | `05-ROADMAP/PROJECT-PHASES.md` | Phase overview |
+| Roadmap | `../ROADMAP.md` (Root) | Phase overview |
 | Features | `04-USER-GUIDE/FEATURES.md` | What MapFlow can do |
 | Tutorials | `06-TUTORIALS/README.md` | Learning path |
 
 ---
 
-Last Updated: 2025-12-04
+Last Updated: 2026-01-10
 
 <!-- CI/CD Test -->
