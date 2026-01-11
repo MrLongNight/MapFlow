@@ -1,328 +1,206 @@
-# Release notes for MapMap
+# Changelog
 
-&nbsp;
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- CI/CD: Installiert `libasound2-dev` und `libavutil-dev` für alsa-sys und ffmpeg-sys Build (Linux), um Fehler beim automatischen Build in PRs zu beheben. (#38, @jules)
-- **OSC-Integration:** OSC als primärer Control-Pfad integriert.
-  - Umfassendes OSC-Adress-Schema für die Steuerung von Layern, Master-Parametern, etc.
-  - OSC-Server, der standardmäßig auf Port 8000 lauscht.
-  - Bidirektionales Feedback zur Synchronisierung von Controller-Zuständen.
-  - "OSC Learn"-Modus zur einfachen Zuweisung von OSC-Adressen zu Parametern.
-  - Persistente Speicherung von OSC-Mappings in `osc_mappings.json`.
-  - `imgui`-basiertes UI-Panel zur Konfiguration des OSC-Servers, zur Verwaltung von Clients und Mappings.
-- **Dokumentation:** Vollständige OSC-Befehlsreferenz unter `docs/10-OSC-CONTROL/COMMAND-REFERENCE.md` hinzugefügt.
-- **Tests:** Unit-Tests für OSC-Learn- und Mapping-Funktionalität hinzugefügt.
-- **ControlManager:** Erweitert, um OSC-Learn, -Mapping und die Verwaltung mehrerer OSC-Clients zu unterstützen.
-- **Fehlerbehandlung:** Robuste Fehlerbehandlung beim Laden und Speichern von OSC-Mappings implementiert, um Abstürze zu verhindern.
+- 2026-01-10: feat(render): Add SourceProperties to RenderOp for color/transform/flip (#b8453dc)
+- 2026-01-10: feat(media): Add flip, reverse playback and seek controls to Media Node (#9f8163d)
+- 2026-01-09: fix(security): Fix auth timing side-channel (#222)
+- 2026-01-09: perf(render): Cache egui textures to reduce bind group creation overhead (#221)
+- 2026-01-09: docs: Tracker update docs (#220)
+- 2026-01-09: chore: Archivist cleanup (#219)
+- 2026-01-09: test(core): Guardian test improvements (#218)
+- 2026-01-09: feat(media): libmpv2 integration (#216)
+- 2026-01-09: fix(security): Fix auth timing leak (#214)
+- 2026-01-09: docs: reorganize documentation structure into subfolders (#210)
+- 2026-01-09: test(core): Add robust tests for Transform and Mesh logic (#212)
+- 2026-01-09: perf(render): Optimize texture sync loop in render path (#215)
+- 2026-01-09: docs: add README.md for core workspace crates (#213)
+- 2026-01-09: docs: Prioritize libraries by Core function relevance
+- 2026-01-09: docs: Expand Phase 7 with detailed implementation plan
+- 2026-01-08: feat(ui): add Source Scaling UI controls for MediaFile nodes
+- 2026-01-08: feat(ui): add Output Settings UI controls for Projector nodes
+- 2026-01-08: docs: Clarify Cue-System integration and Phase 7 playback modes
+- 2026-01-07: feat(ui): add separate toggle buttons for Controls and Preview panels
+- 2026-01-07: fix(control): default web server bind address to 127.0.0.1 for security (#207)
+- 2026-01-07: perf(ci): optimize GitHub Actions to reduce minutes usage
+- 2026-01-07: test(core): Guardian Module Tests - socket, mesh, CRUD (#205)
+- 2026-01-07: docs: Add crate READMEs (#196)
+- 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
+- 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)
+- 2026-01-02: fix: Remove build artifact files from repository (#156)
+- 2026-01-02: feat: Effect Chain Rendering with Configurable Parameters (#153)
+- 2026-01-02: fix: Complete mesh implementations and resolve layer ID collisions (#154)
+- 2026-01-01: feat(presets): Add NDI Source, NDI Output, Spout Source, Spout Output presets
+- 2026-01-01: feat(presets): Increase node spacing (200→300px) and add missing output connections
+- 2026-01-01: feat(ui): Add category to node titles (e.g., "🎬 Source: Media File")
+- 2026-01-01: feat(ui): Add right-click context menu for nodes with Properties and Delete options
+- 2026-01-01: feat(jules): Add 4 specialized agent roles (Guardian, Scribe, Tracker, Archivist)
+- 2025-12-31: 🛡️ Sentinel: [HIGH] Add HTTP Security Headers (Defense in Depth) (#143)
+- 2025-12-31: merge: PR #139 - Spout Integration (Core + UI + IO)
+- 2025-12-31: merge: PR #140 - Assignment System Foundation (AssignmentManager)
+- 2025-12-31: fix: Resolve all compiler warnings (unused variables, missing docs, ndi feature)
+- 2025-12-31: feat: Add `sd_480p30_rgba()` format preset to VideoFormat
+- 2025-12-31: feat: Add `ndi` feature flag to main mapmap crate
+- 2025-12-31: Implement Spout Source and Output Nodes (#139)
+- 2025-12-31: feat(ui): Unified Add Node menu with search (#131)
+- 2025-12-31: Finalize Cue System UI Integration (#142)
+- 2025-12-31: Feat: Implement UI Panel for Shortcut Editor (#141)
+- 2025-12-31: ⚡ Bolt: Remove unnecessary allocations in render/UI hot paths (#144)
+- 2025-12-31: merge: Resolve NDI/Spout conflicts with Unified Node Menu (#131, #137, #139)
+- 2025-12-31: feat(ui): Unified "Add Node" menu with search and NDI/Spout integration
+- 2025-12-30: feat(ui): Add proper Fader SVG icon for MIDI controller button (replaces broken emoji)
+- 2025-12-30: feat(ui): Remove Layers section and Inspector Panel from sidebar (use Module Canvas)
+- 2025-12-30: feat(config): Complete settings persistence (window size/position, panel visibility)
+- 2025-12-30: fix(config): Load all user settings at startup (audio device, target FPS, panel states)
+- 2025-12-30: fix(autosave): Use proper .mflow extension and store in user data directory
+- 2025-12-29: feat(ui): Unified "Add Node" menu with quick-search replacing 8 toolbar dropdowns
+- 2025-12-29: feat(ui): Added BPM display and playback controls to main toolbar (removed from sidebar)
+- 2025-12-29: fix(control): Stabilize MIDI clock BPM with sliding window average
+- 2025-12-29: fix(audio): Improve BPM stability with median filtering and outlier removal
+- 2025-12-29: fix(ui): Fix app settings window toggle logic and ID stability
+- 2025-12-31: refactor: optimize logging structure and levels (#138)
+- 2025-12-31: Knoteneigenschaften als Popup-Dialog implementieren (#136)
+- 2025-12-31: ⚡ Bolt: Implement Vertex Buffer Caching (#133)
+- 2025-12-31: 🛡️ Sentinel: [CRITICAL] Fix missing API authentication enforcement (#134)
+- 2025-12-31: ⚡ Bolt: optimize mesh vector allocations (#135)
+- 2025-12-29: 🛡️ Sentinel: Fix timing attack in API key validation (#132)
+- 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
+- 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)
+- 2025-12-29: feat(audio): Implement AudioAnalyzerV2 with working FFT analysis (replaces defective AudioAnalyzer)
+- 2025-12-29: fix(config): Add missing selected_audio_device field to UserConfig test
+- 2025-12-28: 🎨 Palette: Add tooltips to Layer Panel controls (#125)
+- 2025-12-28: feat(ui): implement stereo audio meter with Retro and Digital styles (#128)
+- 2025-12-28: ⚡ Bolt: Optimize ModuleSocketType to be Copy and remove redundant clones (#127)
+- 2025-12-28: 🛡️ Sentinel: [HIGH] Fix overly permissive CORS configuration (#126)
+- 2025-12-28: Performance Optimierungen - perf(core): avoid allocation in visible_layers and fix formatting (#122)
+- 2025-12-26: Remove trailing whitespace in controller_overlay_panel.rs (#118)
+- 2025-12-26: Fix PR check issues (#117)
+- 2025-12-26: resources/controllers/ecler_nuo4/elements.json hinzugefügt, um CI-Build-Fehler aus PR #117 zu beheben
+- 2025-12-26: Trailing whitespace in module_canvas.rs entfernt, CI-Fix für PR #117
+- 2025-12-26: test: enhance mapmap-core test coverage for layers (#114)
+- 2025-12-25: feat: Audio Meter Styles (Retro & Digital) (#112)
+- 2025-12-25: Implement Module Canvas System Foundation (#111)
+- 2025-12-24: Complete Icon System Integration (#110)
+- fix(ci): Mark unstable GPU tests in `multi_output_tests.rs` as ignored to prevent CI failures.
 
-&nbsp;
+## [0.2.0] - 2025-12-22: MapFlow Rebranding
+- 2025-12-23: Fix: Resize-Prozess bei Fenstergrößenanpassung robust gegen fehlende Größenangaben gemacht (siehe PR #104)
+- **REBRANDING:** Das Projekt wurde von **MapFlow** in **MapFlow** umbenannt.
+## [0.2.0] - 2025-12-23: MapFlow & UI Modernization
 
-## 2018-??-?? - MapMap 0.6.3
+### Rebranding
+- **REBRANDING:** Das Projekt wurde von **VjMapper** in **MapFlow** umbenannt.
+  - Windows Executable: `mapflow.exe`
+  - Linux Executable: `mapflow`
+  - Repository URL: `https://github.com/MrLongNight/MapFlow`
+  - Neue CI Icons und Application Icons integriert.
+  - Alle Dokumentationen aktualisiert.
 
-TODO
+### UI Migration (Phase 6 COMPLETE)
+- 2025-12-23: **COMPLETE ImGui Removal** – Alle Panels auf egui migriert
+- 2025-12-23: Cyber Dark Theme implementiert (Jules Session)
+- 2025-12-23: UI Modernization mit Themes, Scaling, und Docking Layout
+- 2025-12-23: Node Editor (Shader Graph) vollständig aktiviert
+- 2025-12-23: Timeline V2 Panel vollständig aktiviert
+- 2025-12-23: Mapping Manager Panel migriert (PR #97)
+- 2025-12-23: Output Panel vollständig migriert
+- 2025-12-23: Edge Blend & Oscillator Panels verifiziert
+- 2025-12-23: OSC Panel und Cue Panel migriert
+- 2025-12-22: Layer Manager Panel migriert
 
-&nbsp;
+### Multi-PC Architecture (Phase 8 Documentation)
+- 2025-12-23: Multi-PC-Architektur umfassend dokumentiert
+  - Option A: NDI Video-Streaming
+  - Option B: Distributed Rendering
+  - Option C: Legacy Slave Client (H.264/RTSP)
+  - Option D: Raspberry Pi Player
 
-## 2018-07-24 - MapMap 0.6.2
+### Tests & CI
+- 2025-12-22: Effect Chain Integration Tests hinzugefügt (PR #100)
+- 2025-12-22: Cue System UI Panel implementiert (PR #99)
+- 2025-12-22: Multi-Output-Rendering-Tests abgeschlossen
 
-- Remove an assert that might crash MapMap
-- Fix parsing of MapMap version in the project file (critical bug fixed)
-- Add qt5opengl in deps in INSTALL.md
-- Also create a zip archive in scripts/build.sh
+### Audio & Media Pipeline (COMPLETED 2025-12-23)
+- **Audio-Media-Pipeline Integration**: Audio-Stream vollständig in Media-Pipeline integriert
+  - Konfigurierbare Sample-Rate (default: 44100 Hz)
+  - Ring-Buffer für Audio-Analyse-Historie
+  - Audio-Position-Tracking für Frame-genaue Synchronisation
+  - Pipeline-Statistiken (Samples processed, frames analyzed, buffer fill level)
+- **Latenz-Kompensation**: Implementiert mit konfigurierbarem Delay (0-500ms)
+  - Automatische Latenz-Schätzung basierend auf Buffer-Status
+  - Zeitstempel-basierte Analyse-Auswahl für Audio-Video-Sync
+  - Smoothed-Analysis für geglättete Audio-Reaktivität
+- **GIF-Animation**: Vollständig implementiert mit korrektem Timing
+  - Frame-genaue Delay-Unterstützung aus GIF-Metadaten
+  - Loop-Unterstützung
+- **Image-Sequence-Playback**: Directory-basierte Bild-Sequenzen
+  - Automatische Erkennung von Bild-Formaten (PNG, JPG, TIFF, BMP, WebP)
+  - Sortierte Wiedergabe nach Dateiname
+  - Konfigurierbares FPS
+- **GPU-Upload-Optimierung**: Staging-Buffer-Pool implementiert
+  - Automatische Entscheidung zwischen Direct-Upload (<64KB) und Staged-Upload (>64KB)
+  - Row-Padding für wgpu Alignment Requirements
+  - Reduzierte CPU-GPU-Synchronisierungen für Video-Streaming
 
-&nbsp;
+## [0.1.0] - Unreleased
+- 2025-12-22: [CONSOLIDATED] All Jules UI Migrations (#78)
+- 2025-12-22: Migrate Audio Visualization Panel to egui (#72)
+- 2025-12-22: Add Project Save/Load Tests (#68)
+- 2025-12-22: Migrate Paint Manager Panel from ImGui to egui (#73)
+- 2025-12-22: Migrate Transform Controls Panel to egui (#70)
+- 2025-12-22: Fix: CI-Testfehler und Clippy-Warnungen (#77)
+- 2025-12-21: feat: Complete media pipeline for GIFs and image sequences (#67)
+- 2025-12-21: fix(ci): Correct formatting in mapmap-media/src/lib.rs (#65)
+- 2025-12-21: feat(media): Complete media pipeline for GIFs and image sequences (#65)
+- 2025-12-21: Implement Cue System UI Panel (#66)
+- 2025-12-21: test(osc): Expand OSC address routing integration tests (#62)
+- 2025-12-21: test(audio): Expand audio system unit tests (#61)
+- 2025-12-21: ci: Add Windows build job to CI-01 workflow (#60)
+- 2025-12-21: feat(i18n): Add user config persistence for language settings (#59)
+- 2025-12-20: docs(roadmap): Mark audio backend integration as completed (#56)
+- 2025-12-19: feat(mcp): Add media playback tools and fix send_osc handler (#55)
+- 2025-12-16: Enforce Audio Build and Integrate CPAL Backend (#51)
+- 2025-12-14: Refactor Media Playback State Machine and Control System (#52)
+- 2025-12-14: Refactor: Complete rewrite of Media Playback State Machine and Control System Refactoring.
+    - `mapmap-media`: New `PlaybackState`, `PlaybackCommand`, `PlaybackStatus`. Removed legacy modes. Robust State Machine implementation in `player.rs`.
+    - `mapmap-control`: Removed `OscLearn`, `MidiLearn`. Simplified `OscMapping` and `MidiMapping` (HashMap based). Robust initialization for missing backends.
+    - `mapmap-ui`: Updated `Dashboard` and `AppUI` to match new Media API (Loop/PlayOnce modes).
+- 2025-12-14: fix: resolve winit/wgpu dependency conflicts in mapmap-ui (#50)
+- 2025-12-12: Fix: `mapmap-control` doc test for OSC server updated to use `poll_packet` instead of non-existent `poll_event`.
+- 2025-12-12: Fix: `test_backend_creation` now handles headless CI environments by skipping gracefully when GPU backend unavailable.
+- 2025-12-12: Fix: Corrected `VideoEncoder` keyframe logic (first frame is now keyframe) and updated `test_video_encoder_keyframe` to match.
+- 2025-12-12: Fix: MIDI unit tests (input/output) now accept initialization failures in CI environments where MIDI devices are unavailable.
+- 2025-12-12: Fix: Alle aktuellen dead_code-Stellen mit #[allow(dead_code)] und Erklärung markiert, so dass der Build wieder erfolgreich läuft. (Siehe auch DEAD_CODE_GUIDE.md)
+- 2025-12-12: fix: CI `alsa-sys` and `ffmpeg-sys-next` build failures by installing `libasound2-dev` and FFmpeg dev libs in `quality` job.
+- 2025-12-12: fix: Updated examples `simple_render.rs` and `hello_world_projection.rs` for `winit` 0.29 and `wgpu` 0.19.
+- 2025-12-12: CI: Umstellung auf Rust Nightly für Edition 2024 Support (#50).
+- 2025-12-12: fix: Import-Fehler in mapmap/src/main.rs behoben (mapmap-render Refactoring).
+- 2025-12-12: Behoben: Version-Konflikte bei winit (von 0.27.5 auf 0.29) und Kompatibilitätsissues mit wgpu 0.19 in mapmap-ui.
+- 2025-12-12: Update Roadmap: Phase 6 UI Migration & Phase 7 Packaging Status (#47)
+- 2025-12-12: fix: resolve CI config, winres dependency and dashboard loop logic (#46)
+- 2025-12-12: fix: stabilize build, CI and control tests (#45)
+- 2025-12-12: fix: CI Workflow fixes (Package Name, VS Verification, Release Artifacts)
+- 2025-12-12: fix: Build stabilization (wgpu lifetimes, lockfile corruption)
+- 2025-12-12: test: Complete unit tests for Control Web API
+- 2025-12-12: fix: Feature flag guards for Control module
+- 2025-12-12: fix: Resolve WGPU compilation errors in mapmap-render (removed compilation_options)
+- 2025-12-12: fix: Update winit dependency in mapmap-ui to 0.27.5 with features
+- 2025-12-12: fix: Refactor dashboard assignment logic
+- 2025-12-12: feat: Release Workflow & Installers (MSI/Deb) (#44)
+- 2025-12-12: docs: Add Multi-PC Feasibility Study (#43)
+- 2025-12-12: 🎨 Palette: Add Tooltips to Dashboard Controls (#41)
+- 2025-12-11: feat(media): Implement robust media playback state machine (#40)
 
-## 2018-04-09 - MapMap 0.6.1
+### Fixed
 
-- Add .url link file to GStreamer on macOS and packaged it in the DMG.
-- Fix: crash because undoStack was uninitialized (closes #413).
-- Windows environnement variable fix
+- **CI:** Add `toolchain: stable` to the build workflow to fix CI failures. ([#39](https://github.com/MrLongNight/MapFlow/pull/39))
+- **UI:** Fix incorrect import path for media player enums in `dashboard.rs`. ([#39](https://github.com/MrLongNight/MapFlow/pull/39))
 
-&nbsp;
+### Added
 
-## 2018-04-08 - MapMap 0.6.0
-
-- Add macOS Application Icon
-- Fix video rate bug (Closes #369)
-- Change the default test card
-- Add preference to show controls only on mouse over
-- Add simplified and traditional chinese translations
-- Add Spanish translation
-- Rename "Mesh subdivisions" to "Subdivisions"
-- Rename width/height to horizontal/vertical for mesh subdivision naming
-- Rename GUI elements: paint, mapping, source, destination, dimension #376
-- Fix: Cursor no longer displays in fullscreen without controls (closes #387)
-- Allow to change source of the current layer in context menu. Request #377
-- Implement scale/rotate icons and minor fix
-- Replace CTRL-click for free-hand transforms with re-click
-- Prevent adding camera action in OSX and WINDOWS where it is not created (closes #366).
-- Fixed linker problem on Ubuntu 17.10 (closes #382)
-- Transition to the Mardown syntax for the README file
-- Prevent changing paint for mapping if not compatible.
-- Allow the change of paint id on mapping using OSC (closes #302).
-- Added paintId as property + preserved backwards compatibility for files.
-- Allows possibility of changing paint of a mapping from the interface (related to #302).
-- Remove infinite recursion in VideoImpl (closes #351).
-- Add item ID as part of properties.
-- Simplified property browser interface by removing useless top-item property.
-- Added tooltips specifying the ID of each element.
-- Bugfix: let mappings names adjust size (closes #365).
-- Fix problem with OSC messages (unset names in mappings were left empty).
-- Integrate transform function
-- Improve some icons, zoom, solo mode, prefs, test signal
-- Fix the play/pause button when adding media or color paints
-- Enabled paint context menu
-- Implemented basic rotation/scaling of polygons.
-- Fix error in the Mesh::toPolygon() (wrong number of vertices).
-- Fit all shapes to view canvas instead current shape
-- Add a .travis.yml file for automated builds on travis-ci.org
-- Reduce the size of the zoom tool bars
-- Add drag and drop feature for media file and project
-- Reorganize source code files
-- Mouse wheel: press control to zoom.
-- Always show scroll bars in mapping canvas
-- Boundary checks - fix #319 crash when receiving osc messages
-- Fix crash when DEL is pressed while no mappings to delete - fixes #315
-- Proper management of mappings related to a paint in undo/redo (relates to #315).
-- Only show camera input button on GNU/Linux, since it doesn't work on the other platforms
-
-&nbsp;
-
-## 2017-01-01 - MapMap 0.5.0
-
-- Fix bug: it was impossible to get out of test signal mode by pressing ESC.
-- Reorganize _updateToPreferredScreen().
-- Rewrite constraining of screen no in setPreferredScreen(int).
-- Bug fix: force fullscreen on output window if test signal is activated (closes #304).
-- Added a _setFullScreen() method + renamed _is_fullscreen to _isFullScreen (camelCase).
-- Put some order in the view menu.
-- Remove toolbars sub-menu.
-- Fix all french language files for 0.5 (closes #219).
-- Thread-safe access OSC server to prevent crashes (not fully tested) (closes #307).
-- Prevent property browsers from disappearing by making splitters' children non-collapsible.
-- Fix #305 merge menus
-- Fix #274: Document OSC within the software
-- Comment-out unused elements in preferences.
-- Remove playback menu and reorganize items in View menu.
-- Fix #310: Document how to generate doc with markdown + delete CHANGELOG.md that was a duplicate
-- Minor reorganization of sub-menu declarations.
-- Rename outputsMenu for outputScreenMenu (more appropriate).
-- Fix bug: outputs menu was empty when only one screen.
-- Integrate outputs menu into view menu.
-- Fix #303: Update list of contributors by hand
-- Fix icons for test signal.
-- Change vertices background to make them visible on white layers
-- Stylesheet improvements
-- Changed play/pause key sequence from spacebar to CTRL-SHIFT-P (closes #292)
-- update translation files (closes #278).
-- Fix potential bug: translators were declared out of scope.
-- Fix bug: duplicating a mesh resulted in crash (closes #298).
-- Implement support for animated GIFs (closes #291, closes #189).
-- Update install instructions on ArchLinux (closes #269) and Ubuntu
-- Add support for webm file type.
-- Increase pull-away parameter cause it was still possible to bring vertex outside of opposite corners in quads.
-- Update INSTALL information to allow detection of cameras on Ubuntu
-- Fix bug: it was possible to cross through an opposing vertex in a quad. - Used constants instead of magic numbers to control the vertex constraining procedure.
-- Fix bug: moving quad vertices around glued vertices in impractical ways to the edges.
-- Fix bug: duplicating a color mapping resulted in segfault.
-- Bug fix: audio was not stopping when opening dialog (eg. save as, open, import media, etc.)
-- Fixed bug: in some cases the video was blank because of bad audio connection.
-- Fix problems with video files without audio codec not working properly (closes #280) - Cleanup and refactoring
-- Test cards pattern improvements
-- Change crosshair style for more visibility on light mapping
-- Add toolbar title for  source and destination canvas
-- Change "perspective" word to "layout" and their shortcut to avoid conflicts with some OS
-- Cosmetic changes
-- Trying to fix translation but still not working
-- Fixed style problem: on Ubuntu, text was white-on-white in property browser
-- Fixed typo in translations
-- Added mention of 15.04 in INSTALL
-- Comment checkbox and radio (for later still not working)
-- Look n feel improvements
-- Add librairies to about dialog
-- About Dialog Improvements
-- Add about projection mapping resource
-- Make release notes accesible for users
-- Make a script to generate contributors from the git logs
-- Add Gui class forwarding file
-- Change mapmap resource file name and add new documentation resource file
-- Remove old useless code from ancient OSC-support system.
-- Fix bug: Hiding a solo-ed mapping was stopping playback.
-- Reintegrate audio support (works on Linux).
-- Fix bug: New paints were automatically started (play()) when added, thus invalidating the feature that non-visible paints do not play.
-- Add "Send feedback" to help menu
-- Update "Undo stack" to "Undo history"
-- Improve vertices movement shortcuts
-- Always align mapping layers buttons on the right side
-- Cosmetic changes in duplicate mapping function
-- Bug Fix: Clicking the zoom toolbars button of the output panel while there is no mesh present will crash the software.
-- Bug Fix: Crash when try to duplicate color mapping
-- Fix some bugs about Windows release
-- Improve preferences dialog
-- Changes for Windows packaging
-- Implement camera on user interface
-- Bug fix: when loading project solo/visible/locked were not activated in the mapping list widgets.
-- Bug fix: when moving layers around video would pause.
-- Cleanup in code related to display of paint icons in list widgets.
-- Adjustments in paint icons (make sure they are always square with the right dimensions).
-- Fixed bug: main pause button was not working anymore.
-- New feature: Paints that are currently not visible are shown in interface with a red bar on them.
-- Small fix: Switch between vertex with Shift+Space keys
-- Fix bug: OSC messages that change solo, visible, locked status of mappings were not changed in the GUI.
-- Small fix: path is valid for regexp if at least one element was valid
-- Allow OSC message addressing of paints and mappings by names through regular expressions.
-- encode4mmp: more doc + fix shebang syntax
-- Add support for OSC message: rewind individual paint.
-- Fix problem with OSC port being overriden by default settings even after changing it in preferences.
-- Integrate true FPS in the status bar.
-- Fix bug: vertices were not sticking correctly on source.
-- Cleanup in main.cpp options.
-- Some cleanup related to OSC.
-- Frame rate is now an option that can be specified on the commandline.
-- Pause paints that are not visible anyway.
-- Create meshes instead of quads for color mappings (closes #150).
-- Write log to file
-- Fixed bug introduced by paint control option (segfaulted with color paints).
-- Increased the sticky radius a bit.
-- Fixed bug introduced by paint control option (segfaulted with color paints).
-- Refactor videoimpl
-- Enable display of controls of mappings related to current paint (closes #142).
-- Improved look of locked color.
-- Added script to automatically convert videos to PhotoJPEG (a good format for MapMap).
-- Disable right click on context menu actions
-- more decklink prototypes
-- Don't need screen actions on single screen mode
-- Merge MapperGLCanvas.cpp
-- Allow to finely choose on which display to output
-- improving the menu and adding some useful link
-- Make the duplication of mapping undoable and redoable.
-
-&nbsp;
-
-## 2016-04-19 - MapMap 0.4.0
-
-- Add zoom toolbar
-- Add console window
-- Fix #179: Paints and mappings renamings are now saved in file
-- Fix #162: Zooming in the destination canvas changes the size of controls in output window.
-- Fix #154: Problem with some video files: shape is size of single point
-- Can rename paints and mappings via OSC
-- Can rename paints and mappings with double click
-- Fix #156: White rectangle around the fullscreen window
-- Fix #152: The software frozen when we load a project and the video files are not found
-- Abled to locate the video files if is not found when load a project
-- Fix #149: Deleting a mapping actually deletes a paint when the paint tab is chosen
-- Improve Test signal
-- Enhancement #117: Ellipse conical projection
-- Performance improvements
-- OSC general bug fixes
-- OSC support on OSX
-- Done #174: Be able to rename a Paint
-- Done #72: Be able to name paints and mappings - for OSC controls
-- Center the test signal #97 (must use all the space available)
-- Fix #159: Program just freezes when importing corrupted video file
-- Done #145: The user doesn't need to see the undo stack
-- Done #40: Ctrl-Q should quit the application
-- Done #183: Display logging output in a console and be able to turn it on and off
-- Done #203: The toolbar can be shown or hidden at will by the user
-- Done #147: Be able to delete a mapping with the delete key #147 (tested on Ubuntu)
-- Done #184: Make sure names support UTF-8 characters
-- Done #201 UX Design document: implement main toolbar improvements
-- Add solo/lock/mute/delete/duplicate mapping icons
-- Hide cursor when canvas controls are not shown
-- Can undo or redo Add/Remove paint
-- Implement #240 Allow easy switch between destination+source, destination-only and source-only views
-- Automatically move output screen to secondary screen
-- Fix bug: ESC key would not work properly to exit full screen.
-- Remove implicit shortcuts for menus (they were conflicting with other ALT+ based shortcuts).
-- Fix: It should be possible to have an output window when using a single screen (closes #209
-- Add LICENSE
-- Can reorder mapping by drag & drop
-- Fix: Flickering video images when loading from the commandline (closes #218).
-- Introduction of namespace
-- Add OSC support for play, pause, and rewind.
-- Fix: On Ubuntu 15.10 : window geometry not preserved after quit (closes #227).
-- Add option on the commandline to force language.
-- Fix error in mapmap.pro related to translations.
-- Fix blocking bug on OSX: program was freezing when move was loaded
-- Implemented new feature: holding the shift key while moving a vertex temporarily inverts stick
-
-&nbsp;
-
-## 2015-10-30 - MapMap 0.3.1
-
-- Fix #138: splash screen does not show when installed
-- Fix #139: Stylesheet is not applied when the app is installed on Linux
-- Fix #135: Video playback is broken
-- Fix #103: OSC not working on OS X
-
-&nbsp;
-
-## 2015-07-17 - MapMap 0.3.0
-
-- Add zoom and scroll/drag in editor windows
-- Add transparency support for both paint and mapping
-- Use native color dialog
-- Undo/redo move and add actions
-- Fix perspective-correct textures in quads
-
-&nbsp;
-
-## 2014-12-28 - MapMap 0.2.0
-
-- Add --file option.
-- Add --osc-port option.
-- Add --reset-settings option.
-- Add crosshair cursor in fullscreen mode.
-- Add logo title in about dialog.
-- Can change OSC port via the new preference dialog.
-- Control mapping visibility from OSC (ticket #43)
-- File chooser now remembers last used directory.
-- Port to Qt5.
-- Recent files and videos menu items.
-- Select a shape with a click.
-- Select individual vertex and move it with the arrow keys.
-- Speed rate for playback.
-- Test signal image.
-- Videos plays by default at startup.
-- Fix: Add missing MM.h
-- Fix: Check for a valid OSC port number.
-- Fix: Fix fullscreen on GNOME
-- Fix: Fix main splitter proportions
-- Fix: Fix memory leak with the GStreamer pipeline manager.
-- Fix: Hide cursor in output window.
-- Fix: Press escape to toggle fullscreen.
-- Fix: Save fullscreen setting.
-- Fix: Save visibility of mappings.
-
-&nbsp;
-
-## 2014-07-07 - MapMap 0.1.1
-
-- Fix packaging on OS X 10.9.3.
-- Fix: all media share same OpenGL texture
-- Fix: Avoid segfault when right-click with no existing output shape.
-- Fix: fix error in ordering of mesh vertices.
-- Use GStreamer 1.x
-- New icons. Nicer looking control points.
-- Play/pause/rewind buttons
-- Change URI of media with double-click.
-- Play movies when we load a project.
-- Append file extension if none is provided.
-
-&nbsp;
-
-## 2014-04-30 - MapMap 0.1.0
-
-- Initial release.
-- Qt user interface.
-- Video mapping with GStreamer.
-- Quad, meshes, triangles, circles.
-- Color paint.
-- Fullscreen output window.
-- MMP project XML file format version 0.1.
-
-&nbsp;
-
-
+- **Media:** Implement a robust and fault-tolerant media playback state machine with a command-based control system, validated state transitions, and comprehensive unit tests. ([#39](https://github.com/MrLongNight/MapFlow/pull/39))
+- **UI:** Add a speed slider, loop mode selector, and timeline scrubber to the dashboard for media playback control. ([#39](https://github.com/MrLongNight/MapFlow/pull/39))
