@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.9
-> **Stand:** 2026-01-10 06:30
+> **Stand:** 2026-01-10 10:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -158,6 +158,8 @@
   - ✅ PlaybackStatus Channel
   - ✅ Simplified Loop-Modi (Loop, PlayOnce) - Legacy modes removed
   - ✅ Frame-Seeking & Timestamp-Management
+  - ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
+  - ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
 
 - ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
   - ✅ Media-Pipeline-Abstraktion
