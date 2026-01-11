@@ -538,12 +538,24 @@ impl MediaBrowser {
                 .map(|(i, _)| i)
                 .collect();
 
-            match self.view_mode {
-                ViewMode::Grid => {
-                    action = self.render_grid_view(ui, &entry_indices, icons);
-                }
-                ViewMode::List => {
-                    action = self.render_list_view(ui, &entry_indices, icons);
+            if entry_indices.is_empty() {
+                ui.vertical_centered(|ui| {
+                    ui.add_space(40.0);
+                    // Differentiate between empty folder and no search results
+                    if self.entries.is_empty() {
+                        ui.label(locale.t("media-browser-empty-folder"));
+                    } else {
+                        ui.label(locale.t("media-browser-no-results"));
+                    }
+                });
+            } else {
+                match self.view_mode {
+                    ViewMode::Grid => {
+                        action = self.render_grid_view(ui, &entry_indices, icons);
+                    }
+                    ViewMode::List => {
+                        action = self.render_list_view(ui, &entry_indices, icons);
+                    }
                 }
             }
         });
