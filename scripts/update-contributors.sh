@@ -9,7 +9,7 @@
 # while (<>) {
 # 	next if $seen{$_};
 # 	$seen{$_} = push @authors, "- ", $_;
-# 
+#
 # }
 # END {
 # 	print "## Contributors\n\n";

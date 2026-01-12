@@ -39,7 +39,7 @@ fn luminance(color: vec3<f32>) -> f32 {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let pixel_size = vec2<f32>(1.0) / uniforms.resolution;
-    
+
     // Sample 3x3 neighborhood
     let tl = luminance(textureSample(input_texture, input_sampler, input.uv + vec2<f32>(-1.0, -1.0) * pixel_size).rgb);
     let t  = luminance(textureSample(input_texture, input_sampler, input.uv + vec2<f32>( 0.0, -1.0) * pixel_size).rgb);
@@ -49,15 +49,15 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let bl = luminance(textureSample(input_texture, input_sampler, input.uv + vec2<f32>(-1.0,  1.0) * pixel_size).rgb);
     let b  = luminance(textureSample(input_texture, input_sampler, input.uv + vec2<f32>( 0.0,  1.0) * pixel_size).rgb);
     let br = luminance(textureSample(input_texture, input_sampler, input.uv + vec2<f32>( 1.0,  1.0) * pixel_size).rgb);
-    
+
     // Sobel operators
     let gx = -tl - 2.0 * l - bl + tr + 2.0 * r + br;
     let gy = -tl - 2.0 * t - tr + bl + 2.0 * b + br;
-    
+
     let edge = sqrt(gx * gx + gy * gy);
     let edge_color = vec4<f32>(vec3<f32>(edge), 1.0);
-    
+
     let original = textureSample(input_texture, input_sampler, input.uv);
-    
+
     return mix(original, edge_color, uniforms.intensity);
 }
