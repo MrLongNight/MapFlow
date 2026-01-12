@@ -539,13 +539,53 @@ impl ModuleCanvas {
                                             } => {
                                                 ui.label("📁 Media File");
 
-                                                // === FILE PATH ===
-                                                // Show Preview if available
+                                                // === PREVIEW ===
                                                 if let Some(tex_id) = self.node_previews.get(&part_id) {
                                                     ui.add_space(5.0);
                                                     let size = Vec2::new(240.0, 135.0); // 16:9 preview
                                                     ui.image((*tex_id, size));
-                                                    ui.add_space(5.0);
+                                                }
+
+                                                // === MINI-TIMELINE (directly under preview) ===
+                                                {
+                                                    let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
+                                                    let duration = player_info.duration.max(1.0);
+                                                    let current_pos = player_info.current_time;
+                                                    
+                                                    // Time display
+                                                    let current_min = (current_pos / 60.0) as u32;
+                                                    let current_sec = (current_pos % 60.0) as u32;
+                                                    let duration_min = (duration / 60.0) as u32;
+                                                    let duration_sec = (duration % 60.0) as u32;
+                                                    
+                                                    ui.horizontal(|ui| {
+                                                        if player_info.is_playing {
+                                                            ui.label("▶");
+                                                        } else {
+                                                            ui.label("⏸");
+                                                        }
+                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}", 
+                                                            current_min, current_sec, duration_min, duration_sec));
+                                                    });
+                                                    
+                                                    // Seek slider
+                                                    let mut seek_pos = current_pos;
+                                                    let seek_slider = ui.add(
+                                                        egui::Slider::new(&mut seek_pos, 0.0..=duration)
+                                                            .show_value(false)
+                                                            .trailing_fill(true)
+                                                    );
+                                                    if seek_slider.drag_stopped() && (seek_pos - current_pos).abs() > 0.5 {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos)));
+                                                    }
+                                                    
+                                                    // Clip markers
+                                                    if *start_time > 0.0 || *end_time > 0.0 {
+                                                        ui.horizontal(|ui| {
+                                                            ui.small(format!("[S: {:.1}s  E: {:.1}s]", start_time, if *end_time > 0.0 { *end_time } else { duration as f32 }));
+                                                        });
+                                                    }
+                                                    ui.add_space(3.0);
                                                 }
 
                                                 // === FILE PATH ===
@@ -576,33 +616,35 @@ impl ModuleCanvas {
 
                                                 ui.separator();
 
-                                                // === TRANSPORT CONTROLS (Always Visible) ===
+                                                // === TRANSPORT & PLAYBACK ===
                                                 ui.horizontal(|ui| {
-                                                    if ui.button("▶ Play").clicked() {
+                                                    if ui.button("▶").on_hover_text("Play").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
                                                     }
-                                                    if ui.button("⏸ Pause").clicked() {
+                                                    if ui.button("⏸").on_hover_text("Pause").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
                                                     }
-                                                    if ui.button("⏹ Stop").clicked() {
+                                                    if ui.button("⏹").on_hover_text("Stop").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
                                                     }
+                                                    ui.separator();
+                                                    ui.checkbox(loop_enabled, "🔁");
+                                                    if ui.checkbox(reverse_playback, "⏪").on_hover_text("Reverse").changed() {
+                                                        // Reverse playback toggle handled
+                                                    }
                                                 });
-
-                                                // === PLAYBACK SETTINGS ===
-                                                ui.collapsing("⚙️ Playback Settings", |ui| {
-                                                    let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).text("Speed").suffix("x"));
+                                                
+                                                // Speed slider (always visible)
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Speed:");
+                                                    let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).suffix("x").show_value(true));
                                                     if speed_slider.changed() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetSpeed(*speed)));
                                                     }
-                                                    let loop_checkbox = ui.checkbox(loop_enabled, "🔁 Loop");
-                                                    if loop_checkbox.changed() {
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
-                                                    }
+                                                });
 
-                                                    ui.separator();
-                                                    ui.label("Clip Region:");
-                                                    // Get actual duration from player_info
+                                                // === CLIP REGION ===
+                                                ui.collapsing("✂️ Clip Region", |ui| {
                                                     let video_duration = self.player_info.get(&part_id)
                                                         .map(|info| info.duration as f32)
                                                         .unwrap_or(300.0)
