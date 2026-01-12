@@ -44,5 +44,3 @@ repos:
         name: cargo clippy
         description: Lint Rust code
         args: ["--", "-D", "warnings"]
-
-
