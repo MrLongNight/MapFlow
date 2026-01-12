@@ -58,7 +58,7 @@ error[E0432]: unresolved import `mapmap_render::MeshBufferCache`
    ```rust
    // Falsch:
    use mapmap_render::MeshBufferCache;
-   
+
    // Richtig (wenn nicht re-exported):
    use mapmap_render::mesh_buffer_cache::MeshBufferCache;
    ```
