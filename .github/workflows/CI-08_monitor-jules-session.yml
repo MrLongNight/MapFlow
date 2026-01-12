@@ -94,15 +94,15 @@ jobs:
         with:
           script: |
             const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
-            
+
             if (!process.env.JULES_API_KEY) {
               core.info('No API key - skipping');
               return;
             }
-            
+
             core.info('🔍 Checking Jules sessions (single run - no polling)');
             core.info('');
-            
+
             // Find all open issues with jules-task label
             const { data: openIssues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -111,17 +111,17 @@ jobs:
               state: 'open',
               per_page: 100
             });
-            
+
             // Filter out PRs (issues API also returns PRs)
             const actualIssues = openIssues.filter(issue => !issue.pull_request);
-            
+
             if (actualIssues.length === 0) {
               core.info('✅ No open jules-task issues found.');
               return;
             }
-            
+
             core.info(`📋 Found ${actualIssues.length} open jules-task issues`);
-            
+
             // Get all PRs to check for existing ones
             const { data: prs } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -129,21 +129,21 @@ jobs:
               state: 'all',
               per_page: 100
             });
-            
+
             // Check each issue for session status
             for (const issue of actualIssues) {
               core.info(`\n━━━ Issue #${issue.number}: ${issue.title.substring(0, 50)}... ━━━`);
-              
+
               // Check if PR already exists
-              const hasPR = prs.some(pr => 
+              const hasPR = prs.some(pr =>
                 pr.body && pr.body.includes(`#${issue.number}`)
               );
-              
+
               if (hasPR) {
                 core.info('   ✅ PR already exists - skipping');
                 continue;
               }
-              
+
               // Get comments to find session ID
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
@@ -151,7 +151,7 @@ jobs:
                 issue_number: issue.number,
                 per_page: 50
               });
-              
+
               // Find session ID
               let sessionId = null;
               for (const comment of comments) {
@@ -164,14 +164,14 @@ jobs:
                   break;
                 }
               }
-              
+
               if (!sessionId) {
                 core.info('   ⏳ No session found yet');
                 continue;
               }
-              
+
               core.info(`   🔍 Checking session ${sessionId.substring(0, 10)}...`);
-              
+
               try {
                 const sessionUrl = `https://jules.googleapis.com/v1alpha/sessions/${sessionId}`;
                 const res = await fetch(sessionUrl, {
@@ -181,38 +181,38 @@ jobs:
                     'Accept': 'application/json'
                   }
                 });
-                
+
                 if (!res.ok) {
                   core.warning(`      API returned ${res.status}`);
                   continue;
                 }
-                
+
                 const sessionData = await res.json();
                 const status = sessionData.state || sessionData.status || 'unknown';
-                
+
                 core.info(`      Status: ${status}`);
-                
+
                 if (status === 'AWAITING_USER_FEEDBACK' || status === 'PAUSED') {
                   core.warning(`      ⏳ Wartet auf User-Eingabe (Publish PR)`);
                   continue;
                 }
-                
+
                 if (status === 'COMPLETED' || status === 'complete' || status === 'done') {
                   const outputs = sessionData.outputs || [];
                   const prOutput = outputs.find(o => o.pullRequest);
                   const prUrl = prOutput?.pullRequest?.url;
-                  const branch = sessionData.gitPush?.branch || 
-                                sessionData.branch || 
+                  const branch = sessionData.gitPush?.branch ||
+                                sessionData.branch ||
                                 prOutput?.branch ||
                                 prOutput?.pullRequest?.branch ||
                                 prOutput?.pullRequest?.head;
-                  
+
                   if (prUrl) {
                     const prMatch = prUrl.match(/\/pull\/(\d+)$/);
                     if (prMatch) {
                       const prNumber = parseInt(prMatch[1], 10);
                       core.info(`      ✅ PR #${prNumber} exists: ${prUrl}`);
-                      
+
                       try {
                         await github.rest.issues.addLabels({
                           owner: context.repo.owner,
@@ -226,7 +226,7 @@ jobs:
                     }
                   } else if (branch) {
                     core.info(`      ✅ Completed with branch: ${branch}`);
-                    
+
                     // Check if branch exists
                     try {
                       await github.rest.repos.getBranch({
@@ -234,16 +234,16 @@ jobs:
                         repo: context.repo.repo,
                         branch: branch
                       });
-                      
+
                       // Check if PR already exists for this branch
                       const existingPR = prs.find(pr => pr.head.ref === branch && pr.state === 'open');
-                      
+
                       if (!existingPR) {
                         const { data: repo } = await github.rest.repos.get({
                           owner: context.repo.owner,
                           repo: context.repo.repo
                         });
-                        
+
                         const { data: pr } = await github.rest.pulls.create({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
@@ -252,21 +252,21 @@ jobs:
                           base: repo.default_branch || 'main',
                           body: `## Jules Session Completed\n\nAutomated PR for completed Jules session.\n\n**Closes #${issue.number}**`
                         });
-                        
+
                         await github.rest.issues.addLabels({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
                           issue_number: pr.number,
                           labels: ['jules-pr', 'auto-merge']
                         });
-                        
+
                         await github.rest.issues.createComment({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
                           issue_number: issue.number,
                           body: `✅ **Jules session completed!** PR created: #${pr.number}\n\nThe PR will be automatically merged when all CI checks pass.`
                         });
-                        
+
                         core.info(`      ✅ Created PR #${pr.number}`);
                       }
                     } catch (branchError) {
@@ -278,12 +278,12 @@ jobs:
                 } else {
                   core.info(`      ⏳ In progress: ${status}`);
                 }
-                
+
               } catch (error) {
                 core.warning(`      Error: ${error.message}`);
               }
             }
-            
+
             core.info('\n✅ Session check complete');
 
       - name: Summary

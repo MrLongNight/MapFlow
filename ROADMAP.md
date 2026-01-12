@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.9
-> **Stand:** 2026-01-10 10:00
+> **Stand:** 2026-01-12 12:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -232,7 +232,7 @@
   - ✅ OSC-Address-Parser (`osc/address.rs`)
   - ✅ OSC-zu-Control-Value-Mapping (`osc/types.rs`)
   - ✅ Feature-Flag: `osc` (optional, muss aktiviert werden)
-  
+
 - ✅ **OSC-Integration (HAUPTPFAD – IMPLEMENTIERT)**
   - ✅ OSC-Command-Schema definiert und dokumentiert
   - ✅ OSC-Events an `ControlTarget`s geroutet
@@ -398,21 +398,21 @@
   - ✅ `logging_setup.rs` in Binary integriert - COMPLETED 2025-12-28
 
 - 🟡 **Ecler NUO 4 Controller Overlay Redesign** (IN PROGRESS 2025-12-27)
-  
+
   ### Grundlagen (implementiert)
   - ✅ Controller-Profil (89 MIDI-Mappings in `ecler_nuo4.rs`)
   - ✅ Element-Datenstruktur (30 Elemente in `elements.json`)
   - ✅ MIDI-Learn Modul (`midi_learn.rs`)
   - ✅ Overlay UI Panel Grundgerüst (`controller_overlay_panel.rs`)
   - ✅ Hintergrundbild (`resources/controllers/ecler_nuo4/background.jpg`)
-  
+
   ### Overlay UI Features
   - ✅ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px)
   - ✅ **Skalierbares Panel** - Zoom 30%-100% via Slider
   - ⬜ **PNG-Assets für Elemente** - Knobs, Fader, Buttons (vom User bereitgestellt)
   - ⬜ **Exakte Platzierung** - Koordinaten aus `elements.json` auf Foto mappen
   - ⬜ **Animation** - Knobs rotieren (0-270°), Fader bewegen sich
-  
+
   ### Interaktive Features
   - ✅ **Rahmen um MIDI-Elemente** mit Farbzuständen:
     - Kein Rahmen / Grau = Inaktiv
@@ -424,13 +424,13 @@
   - ✅ **Mouseover-Tooltip** pro Element:
     - Element-Name, MIDI-Typ, Channel, CC/Note, Wert
     - ✅ **Aktuelle Zuweisung** (MapFlow/Streamer.bot/Mixxx) anzeigen
-  
+
   ### MIDI Learn Buttons
   - ✅ **MapFlow MIDI Learn** - Button im Panel
   - ✅ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
   - ✅ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
   - ✅ **Toolbar Toggle** - 🎛️ Button zum Ein/Ausblenden des Overlays
-  
+
   ### Zuweisungs-Editor
   - ✅ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
   - ✅ **Filter-Ansichten**:

@@ -308,7 +308,7 @@ Nach erfolgreichem Merge (via `CI-06_update-changelog.yml`):
 1. **Klare Beschreibungen:**
    ```markdown
    Implementiere Multi-Window-Rendering für synchronized outputs.
-   
+
    Acceptance Criteria:
    - [ ] Window-per-output Architektur implementiert
    - [ ] Frame-Synchronisation funktioniert
