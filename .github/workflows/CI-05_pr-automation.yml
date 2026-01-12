@@ -33,7 +33,7 @@ jobs:
       JULES_AUTOMATION_ENABLED: "true"
       FIND_PR_NUMBER: ''
       HAS_PR: 'false'
-    if: | 
+    if: |
       github.event.pull_request != null ||
       github.event.workflow_run != null ||
       github.event_name == 'workflow_dispatch'
@@ -57,13 +57,13 @@ jobs:
             repo: context.repo.repo,
             state: 'open'
           });
-          
+
           // Find PR matching the workflow run head SHA
-          const pr = prs.find(p => 
+          const pr = prs.find(p =>
             p.head.sha === run.head_sha &&
             (p.labels.some(l => l.name === 'jules-pr') || (p.body && p.body.includes('Created by Jules')))
           );
-          
+
           if (pr) {
             core.exportVariable('FIND_PR_NUMBER', pr.number.toString());
             core.exportVariable('HAS_PR', 'true');
@@ -88,32 +88,32 @@ jobs:
           if (!prNumber && context.payload.issue) {
             prNumber = context.payload.issue.number;
           }
-          
+
           if (!prNumber) {
             console.log('⏭️ No PR to process for checks');
             return;
           }
-          
+
           prNumber = parseInt(prNumber);
           console.log(`🔍 Checking checks for PR #${prNumber}`);
-          
+
           // Get check suites for the PR
           const { data: checkSuites } = await github.rest.checks.listSuitesForRef({
             owner: context.repo.owner,
             repo: context.repo.repo,
             ref: context.payload.pull_request?.head.sha || context.payload.workflow_run?.head_sha
           });
-          
+
           let hasFailures = false;
           let failureDetails = [];
-          
+
           for (const suite of checkSuites.check_suites) {
             const { data: checks } = await github.rest.checks.listForSuite({
               owner: context.repo.owner,
               repo: context.repo.repo,
               check_suite_id: suite.id
             });
-            
+
             for (const check of checks.check_runs) {
               if (check.conclusion === 'failure' || check.conclusion === 'error') {
                 hasFailures = true;
@@ -124,7 +124,7 @@ jobs:
               }
             }
           }
-          
+
           if (hasFailures) {
             // Generate analysis using Copilot-like logic (simplified AI analysis)
             let analysis = '### 🤖 Copilot-Analyse der Check-Fehler:\n\n';
@@ -145,7 +145,7 @@ jobs:
                 analysis += `**Lösungsansatz:** Überprüfe die vollständigen Logs für weitere Details. Konsultiere die Projekt-Dokumentation in \`docs/\` oder \`AGENTS.md\` für spezifische Guidelines.\n\n`;
               }
             });
-            
+
             // Comment on PR
             const commentBody = `@jules Es wurden Check-Fehler in diesem PR entdeckt. Bitte behebe sie, um den Auto-Merge zu ermöglichen.\n\n${analysis}`;
             await github.rest.issues.createComment({
@@ -154,7 +154,7 @@ jobs:
               issue_number: prNumber,
               body: commentBody
             });
-            
+
             core.setOutput('has_failures', 'true');
           } else {
             core.setOutput('has_failures', 'false');
@@ -171,43 +171,43 @@ jobs:
           if (!prNumber && context.payload.issue) {
             prNumber = context.payload.issue.number;
           }
-          
+
           if (!prNumber) {
             console.log('⏭️ No PR to process');
             return;
           }
-          
+
           prNumber = parseInt(prNumber);
           console.log(`🤖 Jules PR Auto-Merge: #${prNumber}`);
-          
+
           // Get latest PR state
           const { data: pr } = await github.rest.pulls.get({
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: prNumber
           });
-          
+
           // Check if it's eligible for auto-merge (jules-pr, auto-merge label, or Created by Jules)
-          const isAutoMergeEligible = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'auto-merge') || 
+          const isAutoMergeEligible = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'auto-merge') ||
                            (pr.body && pr.body.includes('Created by Jules'));
           if (!isAutoMergeEligible) {
             console.log('⏭️ PR has no auto-merge label - skipping auto-merge (checks still run)');
             return;
           }
-          
+
           // Check mergeable state
           if (pr.mergeable === false) {
             console.log('❌ PR is not mergeable');
             return;
           }
-          
+
           // Get check suites
           const { data: checkSuites } = await github.rest.checks.listSuitesForRef({
             owner: context.repo.owner,
             repo: context.repo.repo,
             ref: pr.head.sha
           });
-          
+
           let allChecksPassed = true;
           for (const suite of checkSuites.check_suites) {
             if (suite.conclusion === 'failure' || suite.conclusion === 'error') {
@@ -215,12 +215,12 @@ jobs:
               break;
             }
           }
-          
+
           if (!allChecksPassed) {
             console.log('❌ Not all checks passed - cannot auto-merge');
             return;
           }
-          
+
           // Auto-merge if enabled
           if (process.env.AUTO_MERGE_ENABLED === 'true') {
             await github.rest.pulls.merge({
@@ -230,7 +230,7 @@ jobs:
               merge_method: 'squash'
             });
             console.log('✅ Auto-merged Jules PR');
-            
+
             // Update CHANGELOG.md (existing logic, assuming it's in CI-06)
             // Note: Actual changelog update is handled by CI-06_update-changelog.yml
           } else {

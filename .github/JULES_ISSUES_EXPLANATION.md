@@ -139,7 +139,7 @@ Beispiel für "Multi-Window Rendering":
 **Status:** 60% complete
 
 ### Description
-Complete multi-window rendering with synchronized output. 
+Complete multi-window rendering with synchronized output.
 This is critical for professional multi-projector setups.
 
 ### Tasks
