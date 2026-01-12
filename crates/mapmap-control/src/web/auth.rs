@@ -1,5 +1,5 @@
 //! Authentication for web API
-//!
+//! 
 //! Provides optional API key authentication for the web control interface.
 
 use serde::{Deserialize, Deserializer, Serialize};
