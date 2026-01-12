@@ -551,13 +551,13 @@ impl ModuleCanvas {
                                                     let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
                                                     let duration = player_info.duration.max(1.0);
                                                     let current_pos = player_info.current_time;
-                                                    
+
                                                     // Time display
                                                     let current_min = (current_pos / 60.0) as u32;
                                                     let current_sec = (current_pos % 60.0) as u32;
                                                     let duration_min = (duration / 60.0) as u32;
                                                     let duration_sec = (duration % 60.0) as u32;
-                                                    
+
                                                     ui.horizontal(|ui| {
                                                         if player_info.is_playing {
                                                             ui.label("▶");
@@ -567,7 +567,7 @@ impl ModuleCanvas {
                                                         ui.label(format!("{:02}:{:02} / {:02}:{:02}", 
                                                             current_min, current_sec, duration_min, duration_sec));
                                                     });
-                                                    
+
                                                     // Seek slider
                                                     let mut seek_pos = current_pos;
                                                     let seek_slider = ui.add(
@@ -578,7 +578,7 @@ impl ModuleCanvas {
                                                     if seek_slider.drag_stopped() && (seek_pos - current_pos).abs() > 0.5 {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos)));
                                                     }
-                                                    
+
                                                     // Clip markers
                                                     if *start_time > 0.0 || *end_time > 0.0 {
                                                         ui.horizontal(|ui| {
@@ -633,7 +633,7 @@ impl ModuleCanvas {
                                                         // Reverse playback toggle handled
                                                     }
                                                 });
-                                                
+
                                                 // Speed slider (always visible)
                                                 ui.horizontal(|ui| {
                                                     ui.label("Speed:");
@@ -728,14 +728,14 @@ impl ModuleCanvas {
                                                         ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
                                                         ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
                                                     });
-                                                    
+
                                                     ui.separator();
                                                     ui.label("Mirror / Flip:");
                                                     ui.horizontal(|ui| {
                                                         ui.checkbox(flip_horizontal, "↔️ Horizontal");
                                                         ui.checkbox(flip_vertical, "↕️ Vertical");
                                                     });
-                                                    
+
                                                     if ui.button("Reset Transform").clicked() {
                                                         *scale_x = 1.0;
                                                         *scale_y = 1.0;
@@ -750,20 +750,20 @@ impl ModuleCanvas {
                                                 // === MINI-TIMELINE ===
                                                 ui.collapsing("🎬 Timeline", |ui| {
                                                     ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-                                                    
+
                                                     ui.separator();
-                                                    
+
                                                     // Get player info
                                                     let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
                                                     let duration = player_info.duration.max(1.0);
                                                     let current_pos = player_info.current_time;
-                                                    
+
                                                     // Time display
                                                     let current_min = (current_pos / 60.0) as u32;
                                                     let current_sec = (current_pos % 60.0) as u32;
                                                     let duration_min = (duration / 60.0) as u32;
                                                     let duration_sec = (duration % 60.0) as u32;
-                                                    
+
                                                     ui.horizontal(|ui| {
                                                         if player_info.is_playing {
                                                             ui.label("▶");
@@ -773,7 +773,7 @@ impl ModuleCanvas {
                                                         ui.label(format!("{:02}:{:02} / {:02}:{:02}", 
                                                             current_min, current_sec, duration_min, duration_sec));
                                                     });
-                                                    
+
                                                     // Seek slider
                                                     let mut seek_pos = current_pos;
                                                     let seek_slider = ui.add(
@@ -784,7 +784,7 @@ impl ModuleCanvas {
                                                     if seek_slider.drag_stopped() && (seek_pos - current_pos).abs() > 0.5 {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos)));
                                                     }
-                                                    
+
                                                     // Clip markers (visual only for now)
                                                     if *start_time > 0.0 || *end_time > 0.0 {
                                                         ui.horizontal(|ui| {
