@@ -45,7 +45,7 @@ Implementiere tatsächliche Window-Ausgabe für Projector Output Nodes aus dem M
    ```rust
    // Render Main Window (ID 0)
    self.render(0)?;
-   
+
    // Render alle Output Windows
    for &output_id in self.window_manager.window_ids() {
        if output_id != 0 {

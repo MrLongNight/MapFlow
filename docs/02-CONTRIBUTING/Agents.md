@@ -198,7 +198,7 @@ Wenn ein Task die Architektur bricht:
 2. **MELDE** das Problem klar:
    ```
    ⚠️ ARCHITEKTUR-KONFLIKT
-   
+
    Task: XYZ
    Problem: Würde zirkuläre Dependency erzeugen
    Vorschlag: Neues Trait in mapmap-core definieren

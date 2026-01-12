@@ -35,21 +35,21 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     var color = textureSample(input_texture, input_sampler, input.uv);
-    
+
     let brightness = uniforms.param_a;
     let contrast = uniforms.param_b;
     let saturation = uniforms.param_c.x;
-    
+
     // Apply brightness
     color = vec4<f32>(color.rgb + brightness, color.a);
-    
+
     // Apply contrast
     color = vec4<f32>((color.rgb - 0.5) * contrast + 0.5, color.a);
-    
+
     // Apply saturation
     let gray = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
     color = vec4<f32>(mix(vec3<f32>(gray), color.rgb, saturation), color.a);
-    
+
     // Mix with original based on intensity
     let original = textureSample(input_texture, input_sampler, input.uv);
     return mix(original, color, uniforms.intensity);

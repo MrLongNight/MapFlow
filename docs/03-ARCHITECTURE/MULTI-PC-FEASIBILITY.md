@@ -64,7 +64,7 @@ Anstatt separate Anwendungen zu entwickeln, nutzt MapFlow **eine einzige ausfüh
 // main.rs - Mode Selection
 fn main() {
     let args = Args::parse();
-    
+
     match args.mode {
         Mode::Editor => run_editor(),           // Volles GUI + Rendering
         Mode::PlayerNdi => run_player_ndi(),    // Option A: NDI Receiver
@@ -113,7 +113,7 @@ Der Master-PC berechnet das **gesamte Rendering** (Mapping, Effekte, Compositing
 | **Latenz** | Full-Bandwidth: <100ms, NDI\|HX: ~145ms |
 | **Bandbreite** | ~250 Mbps für 1080p60 (unkomprimiert) |
 
-**Lizenz-Hinweis:** 
+**Lizenz-Hinweis:**
 Das NDI SDK ist proprietär. Die "NDI Runtime" muss vom Benutzer separat installiert werden (ähnlich wie bei OBS/vMix). MapFlow bindet nur die Library zur Laufzeit.
 
 #### 3.2.2 GStreamer Alternative (Open Source)
@@ -142,14 +142,14 @@ impl NdiSender {
     pub fn new(name: &str) -> Result<Self, NdiError> {
         let ndi_instance = NdiInstance::new()?;
         let video_sender = ndi_instance.create_video_sender(name)?;
-        
+
         Ok(Self {
             ndi_instance,
             video_sender,
             frame_buffer: Arc::new(Mutex::new(FrameBuffer::new())),
         })
     }
-    
+
     /// Zero-Copy Texture-to-NDI Transfer
     pub fn send_frame(&self, texture: &wgpu::Texture, device: &wgpu::Device) {
         // GPU Readback via staging buffer
@@ -158,10 +158,10 @@ impl NdiSender {
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             ..Default::default()
         });
-        
+
         // Copy texture to staging buffer
         encoder.copy_texture_to_buffer(texture, &staging);
-        
+
         // Map and send to NDI (async)
         staging.slice(..).map_async(wgpu::MapMode::Read, move |result| {
             if result.is_ok() {
@@ -195,7 +195,7 @@ impl NdiPlayerApp {
                 texture_size,
             );
         }
-        
+
         // Render fullscreen quad
         self.fullscreen_renderer.render(&self.texture_handle);
     }
@@ -273,7 +273,7 @@ impl TimecodeSync {
         let tc = self.master_clock.load(Ordering::SeqCst);
         osc_sender.send("/mapflow/timecode", tc);
     }
-    
+
     /// Client: Berechne Frame-Nummer aus Timecode
     pub fn current_frame(&self) -> u64 {
         let adjusted = self.master_clock.load(Ordering::SeqCst) + self.ntp_offset as u64;
@@ -298,19 +298,19 @@ Für frame-perfekte Synchronisation:
 # mapflow-project.yaml
 assets:
   distribution: hybrid  # local, network, hybrid
-  
+
   network_sources:
     - type: nfs
       path: "//nas/mapflow/assets"
-      
+
     - type: s3
       bucket: "mapflow-assets"
       region: "eu-central-1"
-      
+
   local_cache:
     path: "/tmp/mapflow-cache"
     max_size: "50GB"
-    
+
   sync_strategy:
     on_project_load: prefetch_all
     on_media_change: stream_on_demand
@@ -382,7 +382,7 @@ impl LegacyStreamEncoder {
         } else {
             self.encoder.encode(frame)  // x264 Software
         };
-        
+
         // Stream über RTSP
         self.rtsp_server.push_frame(encoded);
     }
@@ -405,13 +405,13 @@ impl LegacyPlayer {
         let decoder = FfmpegDecoder::new(rtsp_url)?
             .with_hw_acceleration(true)  // VA-API, DXVA, VideoToolbox
             .with_low_latency(true);
-            
+
         let display = SdlDisplay::new()?
             .fullscreen(true);
-            
+
         Ok(Self { decoder, display })
     }
-    
+
     pub fn run(&mut self) {
         loop {
             if let Some(frame) = self.decoder.next_frame() {
@@ -520,7 +520,7 @@ impl PiPlayer {
             wgpu::Backends::VULKAN,  // Pi 5
             wgpu::Backends::GL,      // Pi 4 Fallback
         ])?;
-        
+
         Ok(Self { backend, ndi_receiver })
     }
 }
@@ -627,15 +627,15 @@ Der Installer bietet dem Benutzer verschiedene Installationsprofile:
         <ComponentRef Id="MapFlowExecutable" />
         <ComponentRef Id="RuntimeDependencies" />
     </Feature>
-    
+
     <Feature Id="Editor" Title="MapFlow Editor" Level="1">
         <ComponentRef Id="EditorShortcut" />
     </Feature>
-    
+
     <Feature Id="PlayerNdi" Title="MapFlow Player (NDI)" Level="1">
         <ComponentRef Id="PlayerNdiShortcut" />
     </Feature>
-    
+
     <Feature Id="PlayerLegacy" Title="MapFlow Player (Legacy)" Level="2">
         <ComponentRef Id="PlayerLegacyShortcut" />
     </Feature>
@@ -644,10 +644,10 @@ Der Installer bietet dem Benutzer verschiedene Installationsprofile:
 <!-- Shortcuts -->
 <Shortcut Id="EditorShortcut" Name="MapFlow"
           Target="[INSTALLDIR]MapFlow.exe" />
-          
+
 <Shortcut Id="PlayerNdiShortcut" Name="MapFlow Player (NDI)"
           Target="[INSTALLDIR]MapFlow.exe" Arguments="--player-ndi" />
-          
+
 <Shortcut Id="PlayerLegacyShortcut" Name="MapFlow Player (Legacy)"
           Target="[INSTALLDIR]MapFlow.exe" Arguments="--player-legacy" />
 ```
