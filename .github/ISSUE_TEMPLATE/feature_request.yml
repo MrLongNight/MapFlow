@@ -10,7 +10,7 @@ body:
       value: |
         ## Feature Request
         Suggest a new feature or enhancement for MapFlow.
-        
+
   - type: textarea
     id: problem
     attributes:

@@ -36,10 +36,10 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let radius = uniforms.param_a * uniforms.intensity;
     let pixel_size = vec2<f32>(1.0) / uniforms.resolution;
-    
+
     var color = vec4<f32>(0.0);
     var samples = 0.0;
-    
+
     // 9-tap box blur
     for (var x = -1; x <= 1; x++) {
         for (var y = -1; y <= 1; y++) {
@@ -48,9 +48,9 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
             samples += 1.0;
         }
     }
-    
+
     let blurred = color / samples;
     let original = textureSample(input_texture, input_sampler, input.uv);
-    
+
     return mix(original, blurred, uniforms.intensity);
 }

@@ -14,11 +14,11 @@ jobs:
   sync-labels:
     name: "CI-ADMIN-01: Sync Labels"
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    
+
     - name: Sync labels from configuration
       uses: micnncim/action-label-syncer@v1
       with:

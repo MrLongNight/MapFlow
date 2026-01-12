@@ -17,10 +17,10 @@ hap = ["snap", "ffmpeg"]
 crossbeam-channel = { workspace = true }
 # FFmpeg is optional - we have a test pattern fallback
 ffmpeg-next = { workspace = true, optional = true }
-# libmpv2 for MPV-based playback
-libmpv2 = { workspace = true, optional = true }
 # Image decoding for still images, GIF, and sequences
 image = { workspace = true }
+# libmpv2 for MPV-based playback
+libmpv2 = { workspace = true, optional = true }
 mapmap-io = { path = "../mapmap-io" }
 parking_lot = { workspace = true }
 # HAP codec support

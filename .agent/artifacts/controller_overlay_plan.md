@@ -17,10 +17,10 @@
   - [ ] Werkzeugleiste
 
 ### 2. Controller Overlay UI
-- [ ] **Mixer-Foto als Hintergrund**
+- [ ] **Ecler Nuo4 Mixer-Foto als Hintergrund**
   - Pfad: `resources/controllers/ecler_nuo4/background.png`
   - Vom Benutzer bereitgestellt
-  
+
 - [ ] **Element-Assets** (PNG vom Benutzer):
   - Potis/Knobs
   - Tasten/Buttons
@@ -32,13 +32,13 @@
   - Knobs: Rotation basierend auf MIDI-Wert (0-127 → 0-270°)
   - Fader: Vertikale Position basierend auf Wert
   - Buttons: Aktiv/Inaktiv Zustand
-  
+
 ### 4. Interaktive Features
 - [ ] **Rahmen** um jedes MIDI-Element mit Farbanzeige:
   - 🟡 Gelb: MIDI Learn aktiv für dieses Element
   - 🟢 Grün: Bewegung erkannt (Wert ändert sich)
   - ⬜ Grau: Inaktiv
-  
+
 - [ ] **Mouseover-Tooltip** für jedes Element:
   - Element-Name (z.B. "CH2 GAIN")
   - MIDI-Typ (CC/Note)

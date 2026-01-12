@@ -235,7 +235,7 @@ gh api repos/{owner}/{repo}/actions/cache/usage
 
 # Lange laufende Workflows identifizieren
 gh run list --json workflowName,conclusion,createdAt,updatedAt \
-  | jq '.[] | select(.conclusion == "success") | 
+  | jq '.[] | select(.conclusion == "success") |
     {workflow: .workflowName, duration: (.updatedAt | fromdate) - (.createdAt | fromdate)}'
 
 # Failed Runs analysieren

@@ -31,7 +31,7 @@ try {
             $json = $line.Substring(5).Trim()
             $obj = $json | ConvertFrom-Json
             $svg = $obj.result.content[0].text
-            
+
             if ($svg -match "^<svg") {
                 $svg | Out-File -FilePath $OutputPath -Encoding UTF8
                 Write-Host "Downloaded: $OutputPath"
