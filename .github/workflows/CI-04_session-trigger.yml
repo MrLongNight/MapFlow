@@ -67,7 +67,7 @@ jobs:
           else
             echo "should_run=true" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Checkout repository
         if: steps.check-trigger.outputs.should_run == 'true'
         uses: actions/checkout@v4
@@ -158,24 +158,24 @@ jobs:
         with:
           script: |
             const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
-            
+
             // Get all comments on the issue
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber
             });
-            
+
             // Check if a Jules session was already triggered
             // Look for multiple patterns to be more robust
-            const hasSession = comments.some(comment => 
-              comment.body.includes('Jules Session Triggered') || 
+            const hasSession = comments.some(comment =>
+              comment.body.includes('Jules Session Triggered') ||
               comment.body.includes('Jules session created') ||
               comment.body.includes('🤖 **Jules Session Triggered**') ||
-              (comment.body.includes('Jules') && comment.body.includes('session') && 
+              (comment.body.includes('Jules') && comment.body.includes('session') &&
                (comment.body.includes('created') || comment.body.includes('triggered')))
             );
-            
+
             if (hasSession) {
               core.info(`⏭️ Jules session already exists for issue #${issueNumber} - skipping`);
               core.setOutput('has_existing', 'true');
@@ -311,7 +311,7 @@ jobs:
             ].filter(Boolean);
 
             const sessionBranch = possibleBranchFields.length > 0 ? possibleBranchFields[0] : null;
-            
+
             core.info(`Branch detection results: found ${possibleBranchFields.length} possible branches`);
             if (possibleBranchFields.length > 0) {
               core.info(`Possible branches: ${possibleBranchFields.join(', ')}`);
@@ -358,9 +358,9 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: issueNumber
               });
-              
+
               const prTitle = sessionName ? `Jules: ${sessionName}` : `Jules session for issue #${issueNumber}`;
-              
+
               // Enhanced PR body with proper "Closes #" reference and labels
               let prBody = '## Jules Session PR\n\n';
               prBody += 'Automated PR created for Jules session.\n\n';
@@ -388,7 +388,7 @@ jobs:
                 core.warning(`Branch '${sessionBranch}' not found yet. Will retry after waiting...`);
                 // Wait 10 seconds for branch to propagate
                 await new Promise(resolve => setTimeout(resolve, 10000));
-                
+
                 try {
                   await github.rest.repos.getBranch({
                     owner: context.repo.owner,
@@ -412,7 +412,7 @@ jobs:
               });
 
               core.info(`✅ PR created: ${pr.html_url}`);
-              
+
               // Add jules-pr label
               try {
                 await github.rest.issues.addLabels({
@@ -425,7 +425,7 @@ jobs:
               } catch (labelErr) {
                 core.warning(`Could not add 'jules-pr' label: ${labelErr.message}`);
               }
-              
+
               // Comment PR link on issue
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -438,13 +438,13 @@ jobs:
               core.setOutput('pr_number', String(pr.number));
             } catch (err) {
               core.error('Failed to create PR: ' + err.message);
-              
+
               // Provide detailed error information
               let errorDetails = `**Error:** ${err.message}`;
               if (err.message.includes('Branch')) {
                 errorDetails += '\n\n**Possible causes:**\n- Jules has not yet pushed changes to the branch\n- Branch name detection was incorrect\n- Network issues during branch creation';
               }
-              
+
               let errorBody = '⚠️ **Failed to create PR automatically**\n\n';
               errorBody += `**Detected branch:** \`${sessionBranch}\`\n`;
               if (sessionUrl) {
@@ -455,7 +455,7 @@ jobs:
               errorBody += '1. Check the Jules session to see if changes were pushed\n';
               errorBody += '2. Create a PR manually from the branch if it exists\n';
               errorBody += '3. Or wait for Jules to complete and the monitoring workflow (CI-08) will create the PR automatically';
-              
+
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -486,7 +486,7 @@ jobs:
           script: |
             const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
             core.info(`Skipping duplicate session creation for issue #${issueNumber}`);
-            
+
             // Add a comment to inform users that a session already exists
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -532,7 +532,7 @@ jobs:
         with:
           script: |
             console.log('🔄 Triggering CI-08 to monitor session...');
-            
+
             try {
               await github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
@@ -544,9 +544,8 @@ jobs:
                   issue_number: '${{ steps.get-issue.outputs.issue_number }}'
                 }
               });
-              
+
               console.log('✅ CI-08 Session Monitoring triggered');
             } catch (error) {
               console.error('⚠️ Could not trigger monitoring:', error.message);
             }
-

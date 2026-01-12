@@ -564,7 +564,7 @@ impl ModuleCanvas {
                                                         } else {
                                                             ui.label("⏸");
                                                         }
-                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}", 
+                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}",
                                                             current_min, current_sec, duration_min, duration_sec));
                                                     });
 
@@ -770,7 +770,7 @@ impl ModuleCanvas {
                                                         } else {
                                                             ui.label("⏸");
                                                         }
-                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}", 
+                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}",
                                                             current_min, current_sec, duration_min, duration_sec));
                                                     });
 
