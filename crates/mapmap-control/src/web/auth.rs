@@ -225,7 +225,8 @@ mod tests {
         }
         "#;
 
-        let config: AuthConfig = serde_json::from_str(json).expect("Failed to deserialize legacy config");
+        let config: AuthConfig =
+            serde_json::from_str(json).expect("Failed to deserialize legacy config");
 
         // Validation should work against the PLAIN TEXT key (because it was hashed on load)
         assert!(config.validate("my_secret_key"));
@@ -242,14 +243,18 @@ mod tests {
         // Simulate a config that already has hashed keys
         let secret = "my_secret_key";
         let hash = AuthConfig::hash_key(secret);
-        let json = format!(r#"
+        let json = format!(
+            r#"
         {{
             "enabled": true,
             "api_keys": ["{}"]
         }}
-        "#, hash);
+        "#,
+            hash
+        );
 
-        let config: AuthConfig = serde_json::from_str(&json).expect("Failed to deserialize hashed config");
+        let config: AuthConfig =
+            serde_json::from_str(&json).expect("Failed to deserialize hashed config");
 
         // Validation should still work
         assert!(config.validate(secret));
