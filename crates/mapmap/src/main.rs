@@ -1192,10 +1192,13 @@ impl App {
                         }
 
                         // 3. Sync output windows with evaluation result
-                        let render_ops_clone = self.render_ops.clone();
-                        if let Err(e) = self.sync_output_windows(elwt, &render_ops_clone) {
+                        // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
+                        // by temporarily taking ownership and restoring it immediately.
+                        let render_ops_temp = std::mem::take(&mut self.render_ops);
+                        if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
                             error!("Failed to sync output windows: {}", e);
                         }
+                        self.render_ops = render_ops_temp;
                     }
                 }
 
