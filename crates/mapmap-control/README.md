@@ -5,9 +5,9 @@ The control system integration layer for MapFlow, providing interfaces for exter
 ## Features
 
 - **MIDI**: Extensive MIDI support including input/output, learn mode, and clock synchronization. Includes a built-in profile for Ecler NUO 4.
-- **OSC**: Open Sound Control server and client for integration with TouchOSC, Lemur, and other creative coding tools.
+- **OSC**: Open Sound Control server and client for integration with TouchOSC, Lemur, and other creative coding tools. **This is the primary path for remote control.**
 - **Cue System**: Automated show control with cues, crossfades, and triggers.
-- **Web API**: (Optional) REST API and WebSocket interface for remote control.
+- **Web API**: (Optional) REST API for remote control. *Note: WebSocket support is deprecated in favor of OSC.*
 - **DMX**: (Planned) Art-Net and sACN support.
 
 ## Usage
