@@ -10,7 +10,7 @@ body:
       value: |
         ## Development Task
         This template is used for development tasks that can be automatically processed by Jules AI agent.
-        
+
   - type: dropdown
     id: phase
     attributes:

@@ -35,18 +35,18 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(input_texture, input_sampler, input.uv);
-    
+
     let radius = uniforms.param_a;
     let softness = max(uniforms.param_b, 0.001);
-    
+
     // Calculate distance from center
     let center = vec2<f32>(0.5);
     let dist = distance(input.uv, center);
-    
+
     // Calculate vignette factor
     let vignette = smoothstep(radius, radius - softness, dist);
-    
+
     let vignetted = vec4<f32>(color.rgb * vignette, color.a);
-    
+
     return mix(color, vignetted, uniforms.intensity);
 }

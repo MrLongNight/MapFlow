@@ -865,6 +865,81 @@ mod tests {
     }
 
     #[test]
+    fn test_transform_matrix_custom_anchor() {
+        let size = Vec2::new(100.0, 100.0);
+
+        // Test Rotation around Top-Left (0,0)
+        let mut transform = Transform::with_rotation_z(std::f32::consts::FRAC_PI_2);
+        transform.anchor = Vec2::new(0.0, 0.0); // Pivot at Top-Left
+
+        let matrix = transform.to_matrix(size);
+
+        // Point (100, 0) - Top Right
+        // Should rotate 90 deg around (0,0) -> (0, 100)
+        let point = Vec3::new(100.0, 0.0, 0.0);
+        let transformed = matrix.transform_point3(point);
+
+        assert!(
+            transformed.x.abs() < 0.001,
+            "Expected X=0.0, got {}",
+            transformed.x
+        );
+        assert!(
+            (transformed.y - 100.0).abs() < 0.001,
+            "Expected Y=100.0, got {}",
+            transformed.y
+        );
+
+        // Test Rotation around Bottom-Right (1,1)
+        transform.anchor = Vec2::new(1.0, 1.0); // Pivot at (100, 100)
+        let matrix = transform.to_matrix(size);
+
+        // Point (0, 0) - Top Left
+        // Relative to pivot (100, 100) is (-100, -100)
+        // Rotated 90 deg around pivot:
+        // x' = -y = -(-100) = 100
+        // y' = x = -100
+        // Absolute: Pivot + relative = (100+100, 100-100) = (200, 0)
+        let point = Vec3::new(0.0, 0.0, 0.0);
+        let transformed = matrix.transform_point3(point);
+
+        assert!(
+            (transformed.x - 200.0).abs() < 0.001,
+            "Expected X=200.0, got {}",
+            transformed.x
+        );
+        assert!(
+            transformed.y.abs() < 0.001,
+            "Expected Y=0.0, got {}",
+            transformed.y
+        );
+    }
+
+    #[test]
+    fn test_layer_effective_opacity() {
+        let mut manager = LayerManager::new();
+        manager.composition.set_master_opacity(0.5);
+
+        let id = manager.create_layer("Test");
+        if let Some(layer) = manager.get_layer_mut(id) {
+            layer.opacity = 0.5;
+        }
+
+        // Must drop mutable borrow before calling get_effective_opacity
+        let layer = manager.get_layer(id).unwrap();
+        // Effective = 0.5 * 0.5 = 0.25
+        assert_eq!(manager.get_effective_opacity(layer), 0.25);
+
+        manager.composition.set_master_opacity(1.0);
+        let layer = manager.get_layer(id).unwrap();
+        assert_eq!(manager.get_effective_opacity(layer), 0.5);
+
+        manager.composition.set_master_opacity(0.0);
+        let layer = manager.get_layer(id).unwrap();
+        assert_eq!(manager.get_effective_opacity(layer), 0.0);
+    }
+
+    #[test]
     fn test_composition_limits() {
         let mut comp = Composition::default();
 

@@ -10,7 +10,7 @@ body:
       value: |
         ## Bug Report
         Please provide detailed information about the bug you encountered.
-        
+
   - type: textarea
     id: description
     attributes:

@@ -1,6 +1,6 @@
 # Keyboard Shortcuts
 
-| General                                           |                    | 
+| General                                           |                    |
 | ------------------------------------------------- | ------------------ |
 | <kbd>Ctrl</kbd> + <kbd>N</kbd>                    | New project        |
 | <kbd>Ctrl</kbd> + <kbd>O</kbd>                    | Open project       |

@@ -25,4 +25,3 @@ then
 else
   ffmpeg -i $1 -vcodec $FORMAT -acodec copy $2
 fi
-
