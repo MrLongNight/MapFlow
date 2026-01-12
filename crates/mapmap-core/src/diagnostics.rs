@@ -49,7 +49,7 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
             if conn.from_socket >= src_outputs.len() {
                 issues.push(ModuleIssue {
                     severity: IssueSeverity::Error,
-                    message: format!("Connection #{} references invalid socket index {} on Source Part {} (max {})", 
+                    message: format!("Connection #{} references invalid socket index {} on Source Part {} (max {})",
                         idx, conn.from_socket, src.id, src_outputs.len().saturating_sub(1)),
                     part_id: Some(src.id),
                 });
@@ -59,7 +59,7 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
             if conn.to_socket >= dst_inputs.len() {
                 issues.push(ModuleIssue {
                     severity: IssueSeverity::Error,
-                    message: format!("Connection #{} references invalid socket index {} on Target Part {} (max {})", 
+                    message: format!("Connection #{} references invalid socket index {} on Target Part {} (max {})",
                         idx, conn.to_socket, dst.id, dst_inputs.len().saturating_sub(1)),
                     part_id: Some(dst.id),
                 });

@@ -80,7 +80,7 @@ pub struct CalibrationSession {
 /// Ergebnis der Analyse
 pub struct CalibrationResult {
     /// Mapping von Kamera-Koordinaten zu Projektor-Koordinaten (Normalisiert 0.0 - 1.0)
-    pub correspondences: Vec<(Vec2, Vec2)>, 
+    pub correspondences: Vec<(Vec2, Vec2)>,
     /// Berechnete Transformationsmatrix (für Quad-Warping)
     pub homography: Option<Mat3>,
     /// Generiertes Mesh (für Grid-Warping)
