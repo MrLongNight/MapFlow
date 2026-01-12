@@ -1910,7 +1910,7 @@ impl App {
                         // Create/Get preview texture (fixed small resolution)
                         let preview_tex_name = format!("preview_{}", part_id);
                         // Ensure it exists with correct size
-                        self.texture_pool.create(
+                        self.texture_pool.ensure_texture(
                             &preview_tex_name,
                             320,
                             180,
