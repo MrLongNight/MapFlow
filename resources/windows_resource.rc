@@ -38,4 +38,3 @@ VS_VERSION_INFO VERSIONINFO
 /* End of Version info */
 
 IDI_ICON1               ICON    DISCARDABLE     "app_icons/mapflow.ico"
-
