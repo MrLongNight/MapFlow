@@ -36,12 +36,12 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let pixel_size = max(uniforms.param_a * uniforms.intensity, 1.0);
     let pixel_count = uniforms.resolution / pixel_size;
-    
+
     // Quantize UV coordinates
     let quantized_uv = floor(input.uv * pixel_count) / pixel_count;
-    
+
     let pixelated = textureSample(input_texture, input_sampler, quantized_uv);
     let original = textureSample(input_texture, input_sampler, input.uv);
-    
+
     return mix(original, pixelated, uniforms.intensity);
 }
