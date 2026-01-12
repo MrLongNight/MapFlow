@@ -1836,121 +1836,89 @@ impl App {
 
             // --------- egui: UI separat zeichnen ---------
 
-            // Sync Texture Previews for Module Canvas
+            // ========================================================
+            // PRE-RENDER PASS: Apply ALL effects once, share result everywhere
+            // ========================================================
+            // This ensures UI preview, output window, and preview window
+            // all show 100% IDENTICAL content - same texture, same effects
             {
-                // Identify active sources and gather their properties
-                let mut active_preview_sources = Vec::new();
-                for module in self.state.module_manager.modules() {
-                    for part in &module.parts {
-                        if let mapmap_core::module::ModulePartType::Source(
-                            mapmap_core::module::SourceType::MediaFile {
-                                brightness,
-                                contrast,
-                                saturation,
-                                hue_shift,
-                                flip_horizontal,
-                                flip_vertical,
-                                rotation,
-                                scale_x,
-                                scale_y,
-                                offset_x,
-                                offset_y,
-                                ..
-                            },
-                        ) = &part.part_type
-                        {
-                            active_preview_sources.push((
-                                part.id,
-                                *brightness,
-                                *contrast,
-                                *saturation,
-                                *hue_shift,
-                                *flip_horizontal,
-                                *flip_vertical,
-                                *rotation,
-                                *scale_x,
-                                *scale_y,
-                                *offset_x,
-                                *offset_y,
-                            ));
-                        }
-                    }
-                }
-
-                // Render previews with effects
                 let mut current_frame_previews = std::collections::HashMap::new();
+                let time = self.start_time.elapsed().as_secs_f32();
 
-                // Create command encoder for preview rendering
-                let mut encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Render Encoder"),
-                        });
+                // Iterate over render_ops to get COMPLETE effect information
+                // This includes Source-Properties AND Modulizer-Effects
+                for op in &self.render_ops.clone() {
+                    if let Some(src_id) = op.source_part_id {
+                        let raw_tex_name = format!("part_{}", src_id);
+                        if !self.texture_pool.has_texture(&raw_tex_name) {
+                            continue;
+                        }
 
-                for (
-                    part_id,
-                    brightness,
-                    contrast,
-                    saturation,
-                    hue_shift,
-                    flip_h,
-                    flip_v,
-                    rotation,
-                    scale_x,
-                    scale_y,
-                    offset_x,
-                    offset_y,
-                ) in active_preview_sources
-                {
-                    let raw_tex_name = format!("part_{}", part_id);
-                    if self.texture_pool.has_texture(&raw_tex_name) {
                         let raw_view = self.texture_pool.get_view(&raw_tex_name);
+                        let (width, height) = self.texture_pool.get_dimensions(&raw_tex_name);
+                        if width == 0 || height == 0 {
+                            continue;
+                        }
 
-                        // Create/Get preview texture (fixed small resolution)
-                        let preview_tex_name = format!("preview_{}", part_id);
-                        // Ensure it exists with correct size
+                        // Create processed texture at full resolution
+                        let processed_tex_name = format!("processed_{}", src_id);
                         self.texture_pool.create(
-                            &preview_tex_name,
-                            320,
-                            180,
-                            wgpu::TextureFormat::Rgba8UnormSrgb,
+                            &processed_tex_name,
+                            width,
+                            height,
+                            wgpu::TextureFormat::Bgra8UnormSrgb,
                             wgpu::TextureUsages::RENDER_ATTACHMENT
                                 | wgpu::TextureUsages::TEXTURE_BINDING,
                         );
-                        let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-                        // Calculate Transform Matrix based on source properties
-                        // This mirrors the logic in module_eval.rs
-                        let transform_mat = glam::Mat4::from_scale_rotation_translation(
-                            glam::Vec3::new(scale_x, scale_y, 1.0),
-                            glam::Quat::from_rotation_z(rotation.to_radians()),
-                            glam::Vec3::new(offset_x, offset_y, 0.0),
+                        // Create encoder for this source
+                        let mut encoder = self.backend.device.create_command_encoder(
+                            &wgpu::CommandEncoderDescriptor {
+                                label: Some(&format!("Pre-Render Encoder {}", src_id)),
+                            },
                         );
 
-                        // Prepare Uniforms
+                        // Step 1: Apply Source-Properties (brightness, contrast, flip, transform)
+                        let source_props = &op.source_props;
+                        let transform_mat = glam::Mat4::from_scale_rotation_translation(
+                            glam::Vec3::new(source_props.scale_x, source_props.scale_y, 1.0),
+                            glam::Quat::from_rotation_z(source_props.rotation.to_radians()),
+                            glam::Vec3::new(source_props.offset_x, source_props.offset_y, 0.0),
+                        );
+
                         let uniform_bg =
                             self.mesh_renderer.get_uniform_bind_group_with_source_props(
                                 &self.backend.queue,
                                 transform_mat,
-                                1.0, // Opacity is usually handled at layer mixing, but preview should strictly show content
-                                flip_h,
-                                flip_v,
-                                brightness,
-                                contrast,
-                                saturation,
-                                hue_shift,
+                                1.0,
+                                source_props.flip_horizontal,
+                                source_props.flip_vertical,
+                                source_props.brightness,
+                                source_props.contrast,
+                                source_props.saturation,
+                                source_props.hue_shift,
                             );
-
                         let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
 
-                        // Render Pass
+                        // Intermediate texture for source-props pass
+                        let intermediate_tex_name = format!("intermediate_{}", src_id);
+                        self.texture_pool.create(
+                            &intermediate_tex_name,
+                            width,
+                            height,
+                            wgpu::TextureFormat::Bgra8UnormSrgb,
+                            wgpu::TextureUsages::RENDER_ATTACHMENT
+                                | wgpu::TextureUsages::TEXTURE_BINDING,
+                        );
+                        let intermediate_view = self.texture_pool.get_view(&intermediate_tex_name);
+
+                        // Render source with properties to intermediate
                         {
                             let mut render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some(&format!("Preview Pass {}", part_id)),
+                                    label: Some(&format!("Pre-Render Source Pass {}", src_id)),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: &preview_view,
+                                        view: &intermediate_view,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
                                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -1962,9 +1930,7 @@ impl App {
                                     occlusion_query_set: None,
                                 });
 
-                            // Use the pre-allocated quad buffers
                             let (vb, ib, index_count) = &self.preview_quad_buffers;
-
                             self.mesh_renderer.draw(
                                 &mut render_pass,
                                 vb,
@@ -1972,48 +1938,125 @@ impl App {
                                 *index_count,
                                 &uniform_bg,
                                 &texture_bg,
-                                false, // No perspective correction for flat preview
+                                false,
                             );
                         }
 
-                        // Register the PROCESSED preview texture for UI
-                        // Check cache using Entry API to avoid double borrow
-                        let texture_id = match self.preview_texture_cache.entry(part_id) {
+                        // Step 2: Apply Modulizer Effects (Blur, Pixelate, etc.)
+                        let mut final_view = intermediate_view.clone();
+
+                        if !op.effects.is_empty() {
+                            let mut chain = mapmap_core::EffectChain::new();
+
+                            for modulizer in &op.effects {
+                                if let mapmap_core::module::ModulizerType::Effect {
+                                    effect_type: mod_effect,
+                                    params,
+                                } = modulizer
+                                {
+                                    let core_effect = match mod_effect {
+                                        mapmap_core::module::EffectType::Blur => {
+                                            Some(mapmap_core::effects::EffectType::Blur)
+                                        }
+                                        mapmap_core::module::EffectType::Invert => {
+                                            Some(mapmap_core::effects::EffectType::Invert)
+                                        }
+                                        mapmap_core::module::EffectType::Pixelate => {
+                                            Some(mapmap_core::effects::EffectType::Pixelate)
+                                        }
+                                        mapmap_core::module::EffectType::Brightness
+                                        | mapmap_core::module::EffectType::Contrast
+                                        | mapmap_core::module::EffectType::Saturation
+                                        | mapmap_core::module::EffectType::HueShift
+                                        | mapmap_core::module::EffectType::Colorize => {
+                                            Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                        }
+                                        mapmap_core::module::EffectType::ChromaticAberration
+                                        | mapmap_core::module::EffectType::RgbSplit => Some(
+                                            mapmap_core::effects::EffectType::ChromaticAberration,
+                                        ),
+                                        mapmap_core::module::EffectType::EdgeDetect => {
+                                            Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                        }
+                                        mapmap_core::module::EffectType::FilmGrain
+                                        | mapmap_core::module::EffectType::VHS => {
+                                            Some(mapmap_core::effects::EffectType::FilmGrain)
+                                        }
+                                        mapmap_core::module::EffectType::Vignette => {
+                                            Some(mapmap_core::effects::EffectType::Vignette)
+                                        }
+                                        mapmap_core::module::EffectType::Kaleidoscope => {
+                                            Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                        }
+                                        _ => None, // Not yet implemented effects
+                                    };
+
+                                    if let Some(et) = core_effect {
+                                        let effect_id = chain.add_effect(et);
+                                        if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                            effect.parameters = params.clone();
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Apply effect chain if any effects were added
+                            if chain.enabled_effects().count() > 0 {
+                                let processed_view =
+                                    self.texture_pool.get_view(&processed_tex_name);
+                                self.effect_chain_renderer.apply_chain(
+                                    &mut encoder,
+                                    &intermediate_view,
+                                    &processed_view,
+                                    &chain,
+                                    time,
+                                    width,
+                                    height,
+                                );
+                                final_view = processed_view;
+                            } else {
+                                // No enabled effects, use intermediate directly
+                                final_view = intermediate_view.clone();
+                            }
+                        } else {
+                            // No effects at all, use intermediate directly
+                            final_view = intermediate_view.clone();
+                        }
+
+                        // Submit this source's rendering
+                        self.backend.queue.submit(Some(encoder.finish()));
+
+                        // Register processed texture for UI preview
+                        let texture_id = match self.preview_texture_cache.entry(src_id) {
                             std::collections::hash_map::Entry::Occupied(mut entry) => {
                                 let (cached_id, cached_view) = entry.get();
-                                if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
-                                    // Cache hit! View hasn't changed.
+                                if std::sync::Arc::ptr_eq(cached_view, &final_view) {
                                     *cached_id
                                 } else {
-                                    // View changed (e.g. resized), re-register
                                     self.egui_renderer.free_texture(cached_id);
                                     let new_id = self.egui_renderer.register_native_texture(
                                         &self.backend.device,
-                                        &preview_view,
+                                        &final_view,
                                         wgpu::FilterMode::Linear,
                                     );
-                                    entry.insert((new_id, preview_view.clone()));
+                                    entry.insert((new_id, final_view.clone()));
                                     new_id
                                 }
                             }
                             std::collections::hash_map::Entry::Vacant(entry) => {
-                                // New source
                                 let new_id = self.egui_renderer.register_native_texture(
                                     &self.backend.device,
-                                    &preview_view,
+                                    &final_view,
                                     wgpu::FilterMode::Linear,
                                 );
-                                entry.insert((new_id, preview_view.clone()));
+                                entry.insert((new_id, final_view.clone()));
                                 new_id
                             }
                         };
 
-                        current_frame_previews.insert(part_id, texture_id);
+                        current_frame_previews.insert(src_id, texture_id);
                     }
                 }
-
-                // Submit rendering commands
-                self.backend.queue.submit(Some(encoder.finish()));
 
                 // Cleanup stale cache entries
                 self.preview_texture_cache.retain(|id, (tex_id, _)| {
@@ -2848,20 +2891,33 @@ impl App {
         } else {
             // === Node-Based Rendering Pipeline ===
 
+            // Mask off PREVIEW_FLAG if present to find the base output
+            // Preview windows use output_id | PREVIEW_FLAG, but render_ops use the base ID
+            const PREVIEW_FLAG: u64 = 1u64 << 63;
+            let base_output_id = output_id & !PREVIEW_FLAG;
+
             // 1. Find the RenderOp for this output (use output_part_id, not Projector id)
             let target_op = self
                 .render_ops
                 .iter()
-                .find(|op| op.output_part_id == output_id);
+                .find(|op| op.output_part_id == base_output_id);
 
             if let Some(op) = target_op {
-                // Determine source texture view
+                // Use the PRE-RENDERED texture (effects already applied in Pre-Render Pass)
+                // This ensures UI preview and output show IDENTICAL content
                 let owned_source_view = if let Some(src_id) = op.source_part_id {
-                    let tex_name = format!("part_{}", src_id);
-                    if self.texture_pool.has_texture(&tex_name) {
-                        Some(self.texture_pool.get_view(&tex_name))
+                    // First try processed texture (has effects applied)
+                    let processed_tex_name = format!("processed_{}", src_id);
+                    if self.texture_pool.has_texture(&processed_tex_name) {
+                        Some(self.texture_pool.get_view(&processed_tex_name))
                     } else {
-                        None
+                        // Fallback to raw texture if processed not available
+                        let raw_tex_name = format!("part_{}", src_id);
+                        if self.texture_pool.has_texture(&raw_tex_name) {
+                            Some(self.texture_pool.get_view(&raw_tex_name))
+                        } else {
+                            None
+                        }
                     }
                 } else {
                     None
@@ -2870,101 +2926,9 @@ impl App {
                 let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
                 if let Some(src_view) = effective_view {
-                    // --- 1. Effect Chain Processing (Common) ---
-                    let mut final_view = src_view;
-                    let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
-
-                    if !op.effects.is_empty() {
-                        let time = self.start_time.elapsed().as_secs_f32();
-                        let mut chain = mapmap_core::EffectChain::new();
-
-                        for modulizer in &op.effects {
-                            if let mapmap_core::module::ModulizerType::Effect {
-                                effect_type: mod_effect,
-                                params,
-                            } = modulizer
-                            {
-                                let core_effect = match mod_effect {
-                                    mapmap_core::module::EffectType::Blur => {
-                                        Some(mapmap_core::effects::EffectType::Blur)
-                                    }
-                                    mapmap_core::module::EffectType::Invert => {
-                                        Some(mapmap_core::effects::EffectType::Invert)
-                                    }
-                                    mapmap_core::module::EffectType::Pixelate => {
-                                        Some(mapmap_core::effects::EffectType::Pixelate)
-                                    }
-                                    mapmap_core::module::EffectType::Brightness
-                                    | mapmap_core::module::EffectType::Contrast
-                                    | mapmap_core::module::EffectType::Saturation
-                                    | mapmap_core::module::EffectType::HueShift
-                                    | mapmap_core::module::EffectType::Colorize => {
-                                        Some(mapmap_core::effects::EffectType::ColorAdjust)
-                                    }
-                                    mapmap_core::module::EffectType::ChromaticAberration
-                                    | mapmap_core::module::EffectType::RgbSplit => {
-                                        Some(mapmap_core::effects::EffectType::ChromaticAberration)
-                                    }
-                                    mapmap_core::module::EffectType::EdgeDetect => {
-                                        Some(mapmap_core::effects::EffectType::EdgeDetect)
-                                    }
-                                    mapmap_core::module::EffectType::FilmGrain
-                                    | mapmap_core::module::EffectType::VHS => {
-                                        Some(mapmap_core::effects::EffectType::FilmGrain)
-                                    }
-                                    mapmap_core::module::EffectType::Vignette => {
-                                        Some(mapmap_core::effects::EffectType::Vignette)
-                                    }
-                                    mapmap_core::module::EffectType::Kaleidoscope => {
-                                        Some(mapmap_core::effects::EffectType::Kaleidoscope)
-                                    }
-                                    // Not yet implemented in core renderer
-                                    mapmap_core::module::EffectType::Sharpen
-                                    | mapmap_core::module::EffectType::Threshold
-                                    | mapmap_core::module::EffectType::Wave
-                                    | mapmap_core::module::EffectType::Spiral
-                                    | mapmap_core::module::EffectType::Pinch
-                                    | mapmap_core::module::EffectType::Mirror
-                                    | mapmap_core::module::EffectType::Halftone
-                                    | mapmap_core::module::EffectType::Posterize
-                                    | mapmap_core::module::EffectType::Glitch => {
-                                        tracing::warn!(
-                                            "Effect {:?} not yet implemented in renderer",
-                                            mod_effect
-                                        );
-                                        None
-                                    }
-                                };
-                                if let Some(et) = core_effect {
-                                    let effect_id = chain.add_effect(et);
-                                    if let Some(effect) = chain.get_effect_mut(effect_id) {
-                                        effect.parameters = params.clone();
-                                    }
-                                }
-                            }
-                        }
-
-                        if chain.enabled_effects().count() > 0 {
-                            let target_tex_name = &self.layer_ping_pong[0];
-                            let (w, h) = (
-                                window_context.surface_config.width,
-                                window_context.surface_config.height,
-                            );
-                            self.texture_pool.resize_if_needed(target_tex_name, w, h);
-                            let target_view = self.texture_pool.get_view(target_tex_name);
-                            self.effect_chain_renderer.apply_chain(
-                                &mut encoder,
-                                src_view,
-                                &target_view,
-                                &chain,
-                                time,
-                                w,
-                                h,
-                            );
-                            _temp_view_holder = Some(target_view);
-                            final_view = _temp_view_holder.as_ref().unwrap();
-                        }
-                    }
+                    // Effects are already applied in PRE-RENDER PASS
+                    // src_view points to processed_{id} which has all effects baked in
+                    let final_view = src_view;
 
                     // --- 2. Combined Mesh & Output Processing Pipeline ---
                     // Pipeline: Source -> [Mesh Warp] -> (Intermediate) -> [Edge Blend/Color] -> Surface

@@ -144,6 +144,15 @@ impl TexturePool {
         self.textures.read().contains_key(name)
     }
 
+    /// Get texture dimensions (width, height). Returns (0, 0) if not found.
+    pub fn get_dimensions(&self, name: &str) -> (u32, u32) {
+        self.textures
+            .read()
+            .get(name)
+            .map(|h| (h.width, h.height))
+            .unwrap_or((0, 0))
+    }
+
     /// Resize a texture if its dimensions have changed.
     pub fn resize_if_needed(&self, name: &str, new_width: u32, new_height: u32) {
         let mut textures = self.textures.write();
