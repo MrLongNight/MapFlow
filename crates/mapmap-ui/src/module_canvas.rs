@@ -645,12 +645,68 @@ impl ModuleCanvas {
 
                                                 // === CLIP REGION ===
                                                 ui.collapsing("✂️ Clip Region", |ui| {
-                                                    let video_duration = self.player_info.get(&part_id)
-                                                        .map(|info| info.duration as f32)
-                                                        .unwrap_or(300.0)
-                                                        .max(1.0);
-                                                    ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s"));
-                                                    ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s"));
+                                                    let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
+                                                    let video_duration = player_info.duration.max(1.0) as f32;
+                                                    let current_pos = player_info.current_time as f32;
+
+                                                    // Visual Region Bar
+                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 20.0), Sense::hover());
+                                                    let rect = response.rect;
+
+                                                    // Background (Full Duration)
+                                                    painter.rect_filled(rect, 2.0, Color32::from_gray(40));
+
+                                                    // Active Region
+                                                    let start_norm = (*start_time / video_duration).clamp(0.0, 1.0);
+                                                    let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                    let end_norm = (end_val / video_duration).clamp(0.0, 1.0);
+
+                                                    let region_rect = Rect::from_min_max(
+                                                        Pos2::new(rect.min.x + start_norm * rect.width(), rect.min.y),
+                                                        Pos2::new(rect.min.x + end_norm * rect.width(), rect.max.y)
+                                                    );
+                                                    painter.rect_filled(region_rect, 2.0, Color32::from_rgba_unmultiplied(100, 200, 100, 100));
+
+                                                    // Playhead Cursor
+                                                    let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
+                                                    let cursor_x = rect.min.x + cursor_norm * rect.width();
+                                                    painter.line_segment(
+                                                        [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
+                                                        Stroke::new(2.0, Color32::WHITE)
+                                                    );
+
+                                                    ui.add_space(4.0);
+
+                                                    // Controls with "Set to Playhead" buttons
+                                                    ui.horizontal(|ui| {
+                                                        ui.vertical(|ui| {
+                                                            // Start Control
+                                                            ui.horizontal(|ui| {
+                                                                 if ui.button(" [ ").on_hover_text("Set Start to current Playhead").clicked() {
+                                                                     *start_time = current_pos;
+                                                                     // Safety: Ensure start < end
+                                                                     let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                                     if *start_time > effective_end {
+                                                                         *start_time = effective_end - 0.1;
+                                                                     }
+                                                                 }
+                                                                 ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s"));
+                                                            });
+
+                                                            // End Control
+                                                            ui.horizontal(|ui| {
+                                                                 if ui.button(" ] ").on_hover_text("Set End to current Playhead").clicked() {
+                                                                     *end_time = current_pos;
+                                                                     // Safety: Ensure end > start
+                                                                     if *end_time < *start_time {
+                                                                         *end_time = *start_time + 0.1;
+                                                                     }
+                                                                 }
+                                                                 ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s"));
+                                                            });
+                                                        });
+                                                    });
+
                                                     if ui.button("Reset Clip").clicked() {
                                                         *start_time = 0.0;
                                                         *end_time = 0.0;
