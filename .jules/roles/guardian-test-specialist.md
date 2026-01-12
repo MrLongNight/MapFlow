@@ -99,14 +99,14 @@ mod tests {
     fn test_[funktion]_[szenario]_[erwartetes_ergebnis]() {
         // Arrange
         let input = ...;
-        
+
         // Act
         let result = funktion(input);
-        
+
         // Assert
         assert_eq!(result, expected);
     }
-    
+
     #[test]
     #[should_panic(expected = "error message")]
     fn test_[funktion]_invalid_input_panics() {
@@ -132,7 +132,7 @@ async fn test_async_[funktion]() {
         std::time::Duration::from_secs(5),
         async_funktion()
     ).await;
-    
+
     assert!(result.is_ok());
 }
 ```

@@ -50,7 +50,6 @@ egui_extras = { version = "0.27", features = ["image", "file", "svg"] }
 
 # Media
 ffmpeg-next = "7.0"
-libmpv2 = { version = "5.0", features = ["render"] }
 fluent = "0.16"
 fluent-langneg = "0.13"
 futures = "0.3"
@@ -63,6 +62,7 @@ image = "0.24"
 imgui = "0.12"
 imgui-wgpu = { path = "crates/vendor/imgui-wgpu" }
 imgui-winit-support = "0.12"
+libmpv2 = { version = "5.0", features = ["render"] }
 
 # Control
 midir = "0.9"

@@ -36,7 +36,7 @@
 | ImGui-kompatibel | ✅ | ✅ | ✅ |
 | Community | Aktiv | Sehr aktiv | Stabil |
 
-**Entscheidung:** `rust-i18n` v3 wegen Einfachheit und Compile-Time-Validierung. 
+**Entscheidung:** `rust-i18n` v3 wegen Einfachheit und Compile-Time-Validierung.
 
 ---
 
@@ -99,7 +99,7 @@ en:
     color_calibration: "Color Calibration"
     outputs: "Outputs"
     edge_blending: "Edge Blending"
-  
+
   # Buttons
   button:
     play: "Play"
@@ -113,7 +113,7 @@ en:
     cancel: "Cancel"
     save: "Save"
     load: "Load"
-  
+
   # Labels
   label:
     speed: "Speed"
@@ -124,7 +124,7 @@ en:
     brightness: "Brightness"
     contrast: "Contrast"
     saturation: "Saturation"
-  
+
   # Menü
   menu:
     file: "File"
@@ -141,7 +141,7 @@ en:
     redo: "Redo"
     preferences: "Preferences..."
     about: "About MapFlow"
-  
+
   # Statusmeldungen
   status:
     loading: "Loading..."
@@ -196,7 +196,7 @@ de:
     color_calibration: "Farbkalibrierung"
     outputs: "Ausgänge"
     edge_blending: "Kantenüberblendung"
-  
+
   button:
     play: "Abspielen"
     pause: "Pause"
@@ -209,7 +209,7 @@ de:
     cancel: "Abbrechen"
     save: "Speichern"
     load: "Laden"
-  
+
   label:
     speed: "Geschwindigkeit"
     opacity: "Deckkraft"
@@ -219,7 +219,7 @@ de:
     brightness: "Helligkeit"
     contrast: "Kontrast"
     saturation: "Sättigung"
-  
+
   menu:
     file: "Datei"
     edit: "Bearbeiten"
@@ -235,7 +235,7 @@ de:
     redo: "Wiederholen"
     preferences: "Einstellungen..."
     about: "Über MapFlow"
-  
+
   status:
     loading: "Wird geladen..."
     saving: "Wird gespeichert..."
@@ -253,7 +253,7 @@ de:
 // In Preferences-Dialog
 ui.combo("##language", &mut self.selected_language, &[
     "English",
-    "Deutsch", 
+    "Deutsch",
     "Français",
     "Español",
     "中文 (简体)",

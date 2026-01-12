@@ -36,6 +36,6 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(input_texture, input_sampler, input.uv);
     let inverted = vec4<f32>(1.0 - color.rgb, color.a);
-    
+
     return mix(color, inverted, uniforms.intensity);
 }
