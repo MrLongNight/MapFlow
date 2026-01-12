@@ -121,17 +121,17 @@ VjMapper/
 Get-ChildItem -Path "." -File | Format-Table Name, Length, LastWriteTime
 
 # Potentielle Temp-Dateien finden
-Get-ChildItem -Path "." -File | Where-Object { 
-    $_.Name -match "^(errors|build_errors|test_|debug_|temp_|Kopie)" -or 
-    $_.Extension -in ".tmp",".temp",".log",".bak" 
+Get-ChildItem -Path "." -File | Where-Object {
+    $_.Name -match "^(errors|build_errors|test_|debug_|temp_|Kopie)" -or
+    $_.Extension -in ".tmp",".temp",".log",".bak"
 }
 ```
 
 **SCHRITT 2: Falsch platzierte Dateien identifizieren**
 ```powershell
 # Markdown-Dateien außerhalb docs/
-Get-ChildItem -Recurse -Filter "*.md" | Where-Object { 
-    $_.DirectoryName -notmatch "(docs|\.agent|\.github|\.jules)" -and 
+Get-ChildItem -Recurse -Filter "*.md" | Where-Object {
+    $_.DirectoryName -notmatch "(docs|\.agent|\.github|\.jules)" -and
     $_.DirectoryName -eq (Get-Item ".").FullName
 }
 
@@ -142,7 +142,7 @@ Get-ChildItem -Path "." -Filter "*.json" -File
 **SCHRITT 3: Große ungenutzte Dateien finden**
 ```powershell
 # Dateien > 10MB die vielleicht unnötig sind
-Get-ChildItem -Recurse | Where-Object { $_.Length -gt 10MB } | 
+Get-ChildItem -Recurse | Where-Object { $_.Length -gt 10MB } |
     Sort-Object Length -Descending | Format-Table FullName, @{N='MB';E={[math]::Round($_.Length/1MB,2)}}
 ```
 

@@ -27,7 +27,7 @@ jobs:
   backup-main:
     name: Create Backup Tag
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
     - name: Create backup tag
       run: |
         DATE=$(date +%Y%m%d-%H%M%S)
-        
+
         # Bestimme Tag-Name
         if [ -n "${{ github.event.inputs.backup_name }}" ]; then
           TAG_NAME="backup/${{ github.event.inputs.backup_name }}-${DATE}"
@@ -48,32 +48,32 @@ jobs:
           # Push event - nach Merge
           TAG_NAME="backup/post-merge-${DATE}"
         fi
-        
+
         echo "📦 Creating backup tag: ${TAG_NAME}"
-        
+
         # Erstelle annotated tag
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git tag -a "${TAG_NAME}" -m "Automatic backup of main branch at ${DATE}"
         git push origin "${TAG_NAME}"
-        
+
         echo "✅ Backup created: ${TAG_NAME}"
         echo "BACKUP_TAG=${TAG_NAME}" >> $GITHUB_ENV
 
     - name: Cleanup old backup tags
       run: |
         echo "🧹 Cleaning up old backup tags (keeping last ${{ env.MAX_BACKUP_TAGS }})"
-        
+
         # Liste alle backup/* Tags sortiert nach Datum (älteste zuerst)
         BACKUP_TAGS=$(git tag -l 'backup/*' --sort=creatordate)
         TAG_COUNT=$(echo "$BACKUP_TAGS" | grep -c '^backup' || echo 0)
-        
+
         echo "Found ${TAG_COUNT} backup tags"
-        
+
         if [ "$TAG_COUNT" -gt "${{ env.MAX_BACKUP_TAGS }}" ]; then
           DELETE_COUNT=$((TAG_COUNT - ${{ env.MAX_BACKUP_TAGS }}))
           echo "Deleting ${DELETE_COUNT} old backup tags..."
-          
+
           # Lösche die ältesten Tags
           echo "$BACKUP_TAGS" | head -n ${DELETE_COUNT} | while read TAG; do
             if [ -n "$TAG" ]; then
