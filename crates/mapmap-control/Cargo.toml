@@ -16,7 +16,7 @@ full = ["midi", "osc", "http-api"]
 
 [dependencies]
 
-# HTTP API (optional) 
+# HTTP API (optional)
 axum = { workspace = true, optional = true, features = ["ws"] }
 futures = { version = "0.3", optional = true }
 hex = { workspace = true }
