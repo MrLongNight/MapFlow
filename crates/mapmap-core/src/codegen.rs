@@ -1,6 +1,6 @@
 //! WGSL Code Generation from Shader Graphs
 //!
-//! Phase 3: Effects Pipeline
+//! Effects Pipeline
 //! Generates WGSL shader code from node-based shader graphs
 
 use crate::shader_graph::{
