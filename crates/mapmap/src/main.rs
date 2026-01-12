@@ -999,6 +999,19 @@ impl App {
                                 debug!("Frame data is GPU-based, not CPU");
                             }
                         }
+
+                        // Sync player info to UI for timeline display
+                        self.ui_state.module_canvas.player_info.insert(
+                            part_id,
+                            mapmap_ui::MediaPlayerInfo {
+                                current_time: player.current_time().as_secs_f64(),
+                                duration: player.duration().as_secs_f64(),
+                                is_playing: matches!(
+                                    player.state(),
+                                    mapmap_media::PlaybackState::Playing
+                                ),
+                            },
+                        );
                     }
                 }
 
