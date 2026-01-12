@@ -144,6 +144,30 @@ impl TexturePool {
         self.textures.read().contains_key(name)
     }
 
+    /// Ensure a texture exists with specific properties, creating it if necessary.
+    pub fn ensure_texture(
+        &self,
+        name: &str,
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+        usage: wgpu::TextureUsages,
+    ) {
+        {
+            let textures = self.textures.read();
+            if let Some(handle) = textures.get(name) {
+                if handle.width == width
+                    && handle.height == height
+                    && handle.format == format
+                    && handle.texture.usage() == usage
+                {
+                    return;
+                }
+            }
+        }
+        self.create(name, width, height, format, usage);
+    }
+
     /// Resize a texture if its dimensions have changed.
     pub fn resize_if_needed(&self, name: &str, new_width: u32, new_height: u32) {
         let mut textures = self.textures.write();
