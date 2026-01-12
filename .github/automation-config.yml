@@ -1,7 +1,7 @@
 # ============================================================
 # MapFlow CI/CD Master Configuration
 # ============================================================
-# 
+#
 # This is the CENTRAL control file for all automation.
 # Change these values to enable/disable features across all workflows.
 #
@@ -19,13 +19,13 @@ automation:
   # Master switch for ALL Jules automation
   # Set to 'false' to completely disable Jules processing
   jules_enabled: true
-  
+
   # Auto-merge Jules PRs when all checks pass
   auto_merge_enabled: true
-  
+
   # CI/CD Build & Test
   ci_cd_enabled: true
-  
+
   # Security scanning (CodeQL)
   security_scan_enabled: true
 
@@ -44,7 +44,7 @@ workflows:
       windows: false  # Disabled by default (slower)
     run_tests: true
     run_doc_tests: true
-  
+
   # CI-02: Security Scan
   security_scan:
     enabled: true
@@ -52,13 +52,13 @@ workflows:
     scan_on_pr: true
     # Weekly scheduled scan (recommended to keep enabled)
     weekly_scan: true
-  
+
   # CI-04: Jules Session Trigger
   session_trigger:
     enabled: true
     # Process issues labeled with 'jules-task' automatically
     auto_process_issues: true
-  
+
   # CI-05: PR Auto-Merge
   pr_automation:
     enabled: true
@@ -66,11 +66,11 @@ workflows:
     auto_merge: true
     # Merge method: 'squash', 'merge', or 'rebase'
     merge_method: squash
-  
+
   # CI-06: Changelog Update
   changelog:
     enabled: true
-  
+
   # CI-07: Post-Merge Automation
   post_merge:
     enabled: true
@@ -80,7 +80,7 @@ workflows:
     update_roadmap: true
     # Trigger next Jules session
     trigger_next_session: true
-  
+
   # CI-08: Session Monitoring
   session_monitoring:
     enabled: true
@@ -88,7 +88,7 @@ workflows:
     poll_interval_seconds: 60
     # Maximum checks before giving up
     max_checks: 60
-  
+
   # CI-09B: Release Creation
   release:
     enabled: true

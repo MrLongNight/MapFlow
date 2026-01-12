@@ -86,18 +86,18 @@ use audio_processor_analysis::{
 pub struct AudioAnalyzerV2 {
     // FFT Processor
     fft: FftProcessorImpl<f32>,
-    
+
     // Peak Detector (pro Kanal)
     peak_detector: PeakDetectorImpl<f32>,
-    
+
     // Konfiguration
     sample_rate: u32,
     fft_size: usize,
-    
+
     // Output Buffer
     magnitude_buffer: Vec<f32>,
     band_energies: [f32; 9],  // 9 Bänder
-    
+
     // Metrics
     rms_volume: f32,
     peak_volume: f32,
@@ -111,7 +111,7 @@ impl AudioAnalyzerV2 {
             overlap_ratio: 0.5,
             window_function: WindowFunctionType::Hann,
         };
-        
+
         Self {
             fft: FftProcessorImpl::new(options),
             peak_detector: PeakDetectorImpl::default(),
@@ -123,43 +123,43 @@ impl AudioAnalyzerV2 {
             peak_volume: 0.0,
         }
     }
-    
+
     pub fn process(&mut self, samples: &[f32]) {
         // 1. Samples durch FFT verarbeiten
         for sample in samples {
             self.fft.s_process(*sample);
-            
+
             if self.fft.has_changed() {
                 self.update_magnitudes();
                 self.update_band_energies();
             }
         }
-        
+
         // 2. RMS berechnen
         self.rms_volume = self.calculate_rms(samples);
-        
+
         // 3. Peak aktualisieren
         self.peak_detector.accept_frame(0.9, 0.99, samples);
         self.peak_volume = self.peak_detector.value();
     }
-    
+
     fn calculate_rms(&self, samples: &[f32]) -> f32 {
         if samples.is_empty() { return 0.0; }
         let sum: f32 = samples.iter().map(|s| s * s).sum();
         (sum / samples.len() as f32).sqrt()
     }
-    
+
     fn update_magnitudes(&mut self) {
         let buffer = self.fft.buffer();
         for (i, complex) in buffer.iter().take(self.magnitude_buffer.len()).enumerate() {
             self.magnitude_buffer[i] = complex.norm();
         }
     }
-    
+
     fn update_band_energies(&mut self) {
         // Frequenzband-Berechnung basierend auf FFT-Bins
         let bin_width = self.sample_rate as f32 / self.fft_size as f32;
-        
+
         // 9 Bänder: SubBass, Bass, LowMid, Mid, HighMid, UpperMid, Presence, Brilliance, Air
         let band_ranges = [
             (20.0, 60.0),     // SubBass
@@ -172,18 +172,18 @@ impl AudioAnalyzerV2 {
             (6000.0, 12000.0),// Brilliance
             (12000.0, 20000.0),// Air
         ];
-        
+
         for (i, (min_freq, max_freq)) in band_ranges.iter().enumerate() {
             let min_bin = (*min_freq / bin_width) as usize;
             let max_bin = ((*max_freq / bin_width) as usize).min(self.magnitude_buffer.len() - 1);
-            
+
             if max_bin > min_bin {
                 let sum: f32 = self.magnitude_buffer[min_bin..=max_bin].iter().sum();
                 self.band_energies[i] = sum / (max_bin - min_bin + 1) as f32;
             }
         }
     }
-    
+
     // Getter
     pub fn rms(&self) -> f32 { self.rms_volume }
     pub fn peak(&self) -> f32 { self.peak_volume }
@@ -205,8 +205,8 @@ let samples = backend.get_samples();
 if !samples.is_empty() {
     debug!("Processing {} samples, first 5: {:?}", samples.len(), &samples[..5.min(samples.len())]);
     self.audio_analyzer_v2.process(&samples);
-    
-    debug!("RMS: {:.4}, Peak: {:.4}, Bands: {:?}", 
+
+    debug!("RMS: {:.4}, Peak: {:.4}, Bands: {:?}",
            self.audio_analyzer_v2.rms(),
            self.audio_analyzer_v2.peak(),
            self.audio_analyzer_v2.band_energies());

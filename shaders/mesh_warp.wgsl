@@ -83,24 +83,24 @@ fn hsv_to_rgb(hsv: vec3<f32>) -> vec3<f32> {
 // Apply color correction
 fn apply_color_correction(color: vec4<f32>) -> vec4<f32> {
     var rgb = color.rgb;
-    
+
     // Apply brightness
     rgb = rgb + vec3<f32>(uniforms.brightness);
-    
+
     // Apply contrast (around 0.5 midpoint)
     rgb = (rgb - 0.5) * uniforms.contrast + 0.5;
-    
+
     // Apply saturation
     let gray = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
     rgb = mix(vec3<f32>(gray), rgb, uniforms.saturation);
-    
+
     // Apply hue shift
     if abs(uniforms.hue_shift) > 0.01 {
         var hsv = rgb_to_hsv(clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.0)));
         hsv.x = fract(hsv.x + uniforms.hue_shift / 360.0);
         rgb = hsv_to_rgb(hsv);
     }
-    
+
     return vec4<f32>(clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.0)), color.a);
 }
 
@@ -164,4 +164,3 @@ fn fs_main_simple(in: VertexOutput) -> @location(0) vec4<f32> {
 
     return color;
 }
-

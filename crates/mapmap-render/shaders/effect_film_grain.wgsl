@@ -42,17 +42,17 @@ fn hash(p: vec2<f32>) -> f32 {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(input_texture, input_sampler, input.uv);
-    
+
     let amount = uniforms.param_a * uniforms.intensity;
     let speed = uniforms.param_b;
-    
+
     // Generate animated noise
     let noise_uv = input.uv * uniforms.resolution;
     let noise = hash(noise_uv + vec2<f32>(uniforms.time * speed, 0.0)) * 2.0 - 1.0;
-    
+
     // Apply grain
     let grain = color.rgb + vec3<f32>(noise * amount);
     let grained = vec4<f32>(grain, color.a);
-    
+
     return mix(color, grained, uniforms.intensity);
 }
