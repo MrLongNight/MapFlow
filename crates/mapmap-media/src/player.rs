@@ -51,6 +51,7 @@ pub enum PlaybackCommand {
     Seek(Duration),
     SetSpeed(f32),
     SetLoopMode(LoopMode),
+    SetClipRegion(Duration, Duration),
 }
 
 /// Status notifications from the player
@@ -69,6 +70,8 @@ pub struct VideoPlayer {
     current_time: Duration,
     playback_speed: f32,
     loop_mode: LoopMode,
+    clip_start: Duration,
+    clip_end: Duration,
     last_frame: Option<VideoFrame>,
 
     // Command and Status channels
@@ -95,6 +98,8 @@ impl VideoPlayer {
             current_time: Duration::ZERO,
             playback_speed: 1.0,
             loop_mode: LoopMode::default(),
+            clip_start: Duration::ZERO,
+            clip_end: Duration::ZERO,
             last_frame: None,
             command_sender,
             command_receiver,
@@ -123,24 +128,60 @@ impl VideoPlayer {
         }
 
         let duration = self.decoder.duration();
+        let effective_end = if self.clip_end > Duration::ZERO {
+            self.clip_end.min(duration)
+        } else {
+            duration
+        };
+        let effective_start = self.clip_start.min(effective_end);
 
         // Advance time
-        self.current_time += dt.mul_f32(self.playback_speed);
+        // Handle negative speed carefully with Duration
+        if self.playback_speed >= 0.0 {
+            self.current_time += dt.mul_f32(self.playback_speed);
+        } else {
+            let decrement = dt.mul_f32(-self.playback_speed);
+            if self.current_time >= decrement {
+                self.current_time -= decrement;
+            } else {
+                self.current_time = Duration::ZERO;
+            }
+        }
 
-        // Check for end of stream
-        // Only check if duration is known (non-zero)
-        if duration > Duration::ZERO && self.current_time >= duration {
+        // Check for end of stream / clip end (Forward Playback)
+        if self.playback_speed >= 0.0
+            && (effective_end > Duration::ZERO && self.current_time >= effective_end)
+        {
             match self.loop_mode {
                 LoopMode::Loop => {
-                    self.current_time = Duration::ZERO;
-                    if let Err(e) = self.seek_internal(Duration::ZERO) {
+                    self.current_time = effective_start;
+                    if let Err(e) = self.seek_internal(effective_start) {
                         self.transition_to_error(e);
                         return self.last_frame.clone();
                     }
                     let _ = self.status_sender.send(PlaybackStatus::Looped);
                 }
                 LoopMode::PlayOnce => {
-                    self.current_time = duration; // Clamp to end
+                    self.current_time = effective_end; // Clamp to end
+                    let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
+                    let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
+                    return self.last_frame.clone();
+                }
+            }
+        }
+        // Check for start of stream / clip start (Reverse Playback)
+        else if self.playback_speed < 0.0 && self.current_time <= effective_start {
+            match self.loop_mode {
+                LoopMode::Loop => {
+                    self.current_time = effective_end;
+                    if let Err(e) = self.seek_internal(effective_end) {
+                        self.transition_to_error(e);
+                        return self.last_frame.clone();
+                    }
+                    let _ = self.status_sender.send(PlaybackStatus::Looped);
+                }
+                LoopMode::PlayOnce => {
+                    self.current_time = effective_start; // Clamp to start
                     let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
                     let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
                     return self.last_frame.clone();
@@ -197,6 +238,7 @@ impl VideoPlayer {
                 PlaybackCommand::Seek(time) => self.seek(time),
                 PlaybackCommand::SetSpeed(speed) => self.set_speed(speed),
                 PlaybackCommand::SetLoopMode(mode) => self.set_loop_mode(mode),
+                PlaybackCommand::SetClipRegion(start, end) => self.set_clip_region(start, end),
             };
 
             if let Err(e) = result {
@@ -281,7 +323,26 @@ impl VideoPlayer {
     }
 
     pub fn set_speed(&mut self, speed: f32) -> Result<(), PlayerError> {
-        self.playback_speed = speed.max(0.0); // No negative speed for now
+        self.playback_speed = speed; // Allow negative speed
+        Ok(())
+    }
+
+    pub fn set_clip_region(&mut self, start: Duration, end: Duration) -> Result<(), PlayerError> {
+        self.clip_start = start;
+        self.clip_end = end;
+        // Verify current time is within bounds
+        let duration = self.decoder.duration();
+        let effective_end = if self.clip_end > Duration::ZERO {
+            self.clip_end.min(duration)
+        } else {
+            duration
+        };
+
+        if self.current_time < self.clip_start {
+            self.seek_internal(self.clip_start)?;
+        } else if effective_end > Duration::ZERO && self.current_time > effective_end {
+            self.seek_internal(effective_end)?;
+        }
         Ok(())
     }
 

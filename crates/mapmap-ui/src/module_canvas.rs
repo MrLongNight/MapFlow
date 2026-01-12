@@ -25,6 +25,8 @@ pub enum MediaPlaybackCommand {
     SetLoop(bool),
     /// Seek to position (seconds from start)
     Seek(f64),
+    /// Set clip region (start, end in seconds)
+    SetClipRegion(f64, f64),
 }
 
 /// Information about a media player's current state
@@ -627,20 +629,22 @@ impl ModuleCanvas {
                                                     if ui.button("⏹").on_hover_text("Stop").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
                                                     }
-                                                    ui.separator();
-                                                    ui.checkbox(loop_enabled, "🔁");
-                                                    if ui.checkbox(reverse_playback, "⏪").on_hover_text("Reverse").changed() {
-                                                        // Reverse playback toggle handled
-                                                    }
-                                                });
-
-                                                // Speed slider (always visible)
+                                                    // Speed slider (always visible)
                                                 ui.horizontal(|ui| {
                                                     ui.label("Speed:");
                                                     let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).suffix("x").show_value(true));
                                                     if speed_slider.changed() {
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetSpeed(*speed)));
+                                                        let final_speed = if *reverse_playback { -*speed } else { *speed };
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetSpeed(final_speed)));
                                                     }
+                                                });
+
+                                                ui.separator();
+                                                ui.checkbox(loop_enabled, "🔁");
+                                                if ui.checkbox(reverse_playback, "⏪").on_hover_text("Reverse").changed() {
+                                                    let final_speed = if *reverse_playback { -*speed } else { *speed };
+                                                    self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetSpeed(final_speed)));
+                                                }
                                                 });
 
                                                 // === CLIP REGION ===
@@ -649,11 +653,27 @@ impl ModuleCanvas {
                                                         .map(|info| info.duration as f32)
                                                         .unwrap_or(300.0)
                                                         .max(1.0);
-                                                    ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s"));
-                                                    ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s"));
+                                                    
+                                                    let mut changed_clip = false;
+                                                    if ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s")).changed() {
+                                                        changed_clip = true;
+                                                    }
+                                                    if ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s")).changed() {
+                                                        changed_clip = true;
+                                                    }
+                                                    
+                                                    if changed_clip {
+                                                        // Ensure valid range
+                                                        if *end_time > 0.0 && *end_time < *start_time {
+                                                            *end_time = *start_time;
+                                                        }
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetClipRegion(*start_time as f64, *end_time as f64)));
+                                                    }
+
                                                     if ui.button("Reset Clip").clicked() {
                                                         *start_time = 0.0;
                                                         *end_time = 0.0;
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetClipRegion(0.0, 0.0)));
                                                     }
                                                 });
 

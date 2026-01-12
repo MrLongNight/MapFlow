@@ -13,6 +13,8 @@ on:
       - 'Cargo.lock'
       - 'scripts/**'
       - 'deny.toml'
+      - '.github/workflows/**'
+      - '.agent/**'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -21,6 +23,8 @@ on:
       - 'Cargo.lock'
       - 'scripts/**'
       - 'deny.toml'
+      - '.github/workflows/**'
+      - '.agent/**'
   workflow_dispatch:
     inputs:
       skip_tests:

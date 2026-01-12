@@ -940,6 +940,17 @@ impl App {
                                     std::time::Duration::from_secs_f64(position),
                                 ));
                             }
+                            mapmap_ui::MediaPlaybackCommand::SetClipRegion(start, end) => {
+                                info!(
+                                    "Setting clip region {:.2}-{:.2}s for part_id={}",
+                                    start, end, part_id
+                                );
+                                let _ =
+                                    player.command_sender().send(PlaybackCommand::SetClipRegion(
+                                        std::time::Duration::from_secs_f64(start),
+                                        std::time::Duration::from_secs_f64(end),
+                                    ));
+                            }
                         }
                     }
                     // Handle Reload by removing player and immediately recreating
@@ -1892,7 +1903,7 @@ impl App {
                                 transform_mat,
                                 1.0,
                                 source_props.flip_horizontal,
-                                source_props.flip_vertical,
+                                !source_props.flip_vertical, // Fix: Invert vertical flip to match video coordinates
                                 source_props.brightness,
                                 source_props.contrast,
                                 source_props.saturation,
@@ -1943,7 +1954,7 @@ impl App {
                         }
 
                         // Step 2: Apply Modulizer Effects (Blur, Pixelate, etc.)
-                        let mut final_view = intermediate_view.clone();
+                        let final_view;
 
                         if !op.effects.is_empty() {
                             let mut chain = mapmap_core::EffectChain::new();
@@ -2534,6 +2545,8 @@ impl App {
                                 .iter()
                                 .map(|o| (o.id, o.name.clone()))
                                 .collect();
+
+                            // Available outputs updated above
 
                             self.ui_state.module_canvas.show(
                                 ui,
