@@ -1,6 +1,6 @@
 //! WGSL Code Generation from Shader Graphs
 //!
-//! Phase 3: Effects Pipeline
+//! Effects Pipeline
 //! Generates WGSL shader code from node-based shader graphs
 
 use crate::shader_graph::{
@@ -202,17 +202,30 @@ impl WGSLCodegen {
         writeln!(code, "// Helper Functions\n").unwrap();
 
         // Generate functions for complex node types
-        for node_id in &self.node_execution_order.clone() {
+        // Optimization: Iterate directly over node_execution_order without cloning.
+        // We pass &mut generated_functions to helper methods to avoid full &mut self borrow conflicts.
+        for node_id in &self.node_execution_order {
             if let Some(node) = self.graph.nodes.get(node_id) {
                 match node.node_type {
-                    NodeType::Blur => self.generate_blur_function(code)?,
-                    NodeType::ChromaticAberration => {
-                        self.generate_chromatic_aberration_function(code)?
+                    NodeType::Blur => {
+                        Self::generate_blur_function(&mut self.generated_functions, code)?
                     }
-                    NodeType::EdgeDetect => self.generate_edge_detect_function(code)?,
-                    NodeType::Kaleidoscope => self.generate_kaleidoscope_function(code)?,
-                    NodeType::HSVToRGB => self.generate_hsv_to_rgb_function(code)?,
-                    NodeType::RGBToHSV => self.generate_rgb_to_hsv_function(code)?,
+                    NodeType::ChromaticAberration => Self::generate_chromatic_aberration_function(
+                        &mut self.generated_functions,
+                        code,
+                    )?,
+                    NodeType::EdgeDetect => {
+                        Self::generate_edge_detect_function(&mut self.generated_functions, code)?
+                    }
+                    NodeType::Kaleidoscope => {
+                        Self::generate_kaleidoscope_function(&mut self.generated_functions, code)?
+                    }
+                    NodeType::HSVToRGB => {
+                        Self::generate_hsv_to_rgb_function(&mut self.generated_functions, code)?
+                    }
+                    NodeType::RGBToHSV => {
+                        Self::generate_rgb_to_hsv_function(&mut self.generated_functions, code)?
+                    }
                     _ => {}
                 }
             }
@@ -518,8 +531,11 @@ impl WGSLCodegen {
 
     // Helper function generators
 
-    fn generate_blur_function(&mut self, code: &mut String) -> Result<()> {
-        if self.generated_functions.contains("blur") {
+    fn generate_blur_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
+        if generated_functions.contains("blur") {
             return Ok(());
         }
 
@@ -544,12 +560,15 @@ impl WGSLCodegen {
         writeln!(code, "    return color / f32(samples);").unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions.insert("blur".to_string());
+        generated_functions.insert("blur".to_string());
         Ok(())
     }
 
-    fn generate_chromatic_aberration_function(&mut self, code: &mut String) -> Result<()> {
-        if self.generated_functions.contains("chromatic_aberration") {
+    fn generate_chromatic_aberration_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
+        if generated_functions.contains("chromatic_aberration") {
             return Ok(());
         }
 
@@ -561,13 +580,15 @@ impl WGSLCodegen {
         writeln!(code, "    return vec4<f32>(r, g, b, 1.0);").unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions
-            .insert("chromatic_aberration".to_string());
+        generated_functions.insert("chromatic_aberration".to_string());
         Ok(())
     }
 
-    fn generate_edge_detect_function(&mut self, code: &mut String) -> Result<()> {
-        if self.generated_functions.contains("edge_detect") {
+    fn generate_edge_detect_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
+        if generated_functions.contains("edge_detect") {
             return Ok(());
         }
 
@@ -606,12 +627,15 @@ impl WGSLCodegen {
         writeln!(code, "    return vec4<f32>(edge, 1.0);").unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions.insert("edge_detect".to_string());
+        generated_functions.insert("edge_detect".to_string());
         Ok(())
     }
 
-    fn generate_kaleidoscope_function(&mut self, code: &mut String) -> Result<()> {
-        if self.generated_functions.contains("kaleidoscope") {
+    fn generate_kaleidoscope_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
+        if generated_functions.contains("kaleidoscope") {
             return Ok(());
         }
 
@@ -636,12 +660,15 @@ impl WGSLCodegen {
         .unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions.insert("kaleidoscope".to_string());
+        generated_functions.insert("kaleidoscope".to_string());
         Ok(())
     }
 
-    fn generate_hsv_to_rgb_function(&mut self, code: &mut String) -> Result<()> {
-        if self.generated_functions.contains("hsv_to_rgb") {
+    fn generate_hsv_to_rgb_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
+        if generated_functions.contains("hsv_to_rgb") {
             return Ok(());
         }
 
@@ -678,12 +705,15 @@ impl WGSLCodegen {
         writeln!(code, "    return rgb + m;").unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions.insert("hsv_to_rgb".to_string());
+        generated_functions.insert("hsv_to_rgb".to_string());
         Ok(())
     }
 
-    fn generate_rgb_to_hsv_function(&mut self, code: &mut String) -> Result<()> {
-        if self.generated_functions.contains("rgb_to_hsv") {
+    fn generate_rgb_to_hsv_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
+        if generated_functions.contains("rgb_to_hsv") {
             return Ok(());
         }
 
@@ -714,7 +744,7 @@ impl WGSLCodegen {
         writeln!(code, "    return vec3<f32>(h, s, max_c);").unwrap();
         writeln!(code, "}}\n").unwrap();
 
-        self.generated_functions.insert("rgb_to_hsv".to_string());
+        generated_functions.insert("rgb_to_hsv".to_string());
         Ok(())
     }
 }
