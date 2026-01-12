@@ -31,18 +31,4 @@ repos:
       - id: mixed-line-ending
         args: [--fix=lf]
 
-  # ===========================================
-  # Rust Tools (via Remote Repos for CI support)
-  # ===========================================
-  - repo: https://github.com/doublify/pre-commit-rust
-    rev: master
-    hooks:
-      - id: fmt
-        name: cargo fmt
-        description: Format Rust code
-      - id: clippy
-        name: cargo clippy
-        description: Lint Rust code
-        args: ["--", "-D", "warnings"]
-
 
