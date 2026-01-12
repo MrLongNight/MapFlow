@@ -45,11 +45,4 @@ repos:
         description: Lint Rust code
         args: ["--", "-D", "warnings"]
 
-  # ===========================================
-  # Cargo.toml sorting
-  # ===========================================
-  - repo: https://github.com/DevinR528/cargo-sort-precommit
-    rev: v0.2.0
-    hooks:
-      - id: cargo-sort
-        args: ["--workspace"]
+
