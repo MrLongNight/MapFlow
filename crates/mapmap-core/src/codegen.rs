@@ -207,14 +207,25 @@ impl WGSLCodegen {
         for node_id in &self.node_execution_order {
             if let Some(node) = self.graph.nodes.get(node_id) {
                 match node.node_type {
-                    NodeType::Blur => Self::generate_blur_function(&mut self.generated_functions, code)?,
-                    NodeType::ChromaticAberration => {
-                        Self::generate_chromatic_aberration_function(&mut self.generated_functions, code)?
+                    NodeType::Blur => {
+                        Self::generate_blur_function(&mut self.generated_functions, code)?
                     }
-                    NodeType::EdgeDetect => Self::generate_edge_detect_function(&mut self.generated_functions, code)?,
-                    NodeType::Kaleidoscope => Self::generate_kaleidoscope_function(&mut self.generated_functions, code)?,
-                    NodeType::HSVToRGB => Self::generate_hsv_to_rgb_function(&mut self.generated_functions, code)?,
-                    NodeType::RGBToHSV => Self::generate_rgb_to_hsv_function(&mut self.generated_functions, code)?,
+                    NodeType::ChromaticAberration => Self::generate_chromatic_aberration_function(
+                        &mut self.generated_functions,
+                        code,
+                    )?,
+                    NodeType::EdgeDetect => {
+                        Self::generate_edge_detect_function(&mut self.generated_functions, code)?
+                    }
+                    NodeType::Kaleidoscope => {
+                        Self::generate_kaleidoscope_function(&mut self.generated_functions, code)?
+                    }
+                    NodeType::HSVToRGB => {
+                        Self::generate_hsv_to_rgb_function(&mut self.generated_functions, code)?
+                    }
+                    NodeType::RGBToHSV => {
+                        Self::generate_rgb_to_hsv_function(&mut self.generated_functions, code)?
+                    }
                     _ => {}
                 }
             }
@@ -520,7 +531,10 @@ impl WGSLCodegen {
 
     // Helper function generators
 
-    fn generate_blur_function(generated_functions: &mut HashSet<String>, code: &mut String) -> Result<()> {
+    fn generate_blur_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
         if generated_functions.contains("blur") {
             return Ok(());
         }
@@ -550,7 +564,10 @@ impl WGSLCodegen {
         Ok(())
     }
 
-    fn generate_chromatic_aberration_function(generated_functions: &mut HashSet<String>, code: &mut String) -> Result<()> {
+    fn generate_chromatic_aberration_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
         if generated_functions.contains("chromatic_aberration") {
             return Ok(());
         }
@@ -567,7 +584,10 @@ impl WGSLCodegen {
         Ok(())
     }
 
-    fn generate_edge_detect_function(generated_functions: &mut HashSet<String>, code: &mut String) -> Result<()> {
+    fn generate_edge_detect_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
         if generated_functions.contains("edge_detect") {
             return Ok(());
         }
@@ -611,7 +631,10 @@ impl WGSLCodegen {
         Ok(())
     }
 
-    fn generate_kaleidoscope_function(generated_functions: &mut HashSet<String>, code: &mut String) -> Result<()> {
+    fn generate_kaleidoscope_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
         if generated_functions.contains("kaleidoscope") {
             return Ok(());
         }
@@ -641,7 +664,10 @@ impl WGSLCodegen {
         Ok(())
     }
 
-    fn generate_hsv_to_rgb_function(generated_functions: &mut HashSet<String>, code: &mut String) -> Result<()> {
+    fn generate_hsv_to_rgb_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
         if generated_functions.contains("hsv_to_rgb") {
             return Ok(());
         }
@@ -683,7 +709,10 @@ impl WGSLCodegen {
         Ok(())
     }
 
-    fn generate_rgb_to_hsv_function(generated_functions: &mut HashSet<String>, code: &mut String) -> Result<()> {
+    fn generate_rgb_to_hsv_function(
+        generated_functions: &mut HashSet<String>,
+        code: &mut String,
+    ) -> Result<()> {
         if generated_functions.contains("rgb_to_hsv") {
             return Ok(());
         }
