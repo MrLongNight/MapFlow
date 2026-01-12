@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-01-12 - Shader Inconsistency Detected
+**Erkenntnis:** Inkonsistenz bei der Shader-Platzierung entdeckt. Während die meisten globalen Shader in `shaders/` liegen, befinden sich Effektspezifische Shader in `crates/mapmap-render/shaders/` und werden dort aktiv via relativen Pfaden (`include_str!("../shaders/...")`) eingebunden.
+**Aktion:** `ycocg_to_rgb.wgsl` wurde nach `shaders/` verschoben, da es laut Roadmap dort liegen soll und aktuell nicht im Code referenziert wird (Safe Move). Die anderen Effekt-Shader wurden vorerst belassen, um Build-Fehler zu vermeiden, da dies Code-Änderungen erfordern würde (Scope Violation für Archivist ohne expliziten Auftrag). Zukünftige Refactorings sollten alle Shader zentral in `shaders/` konsolidieren.
+
 ## 2026-01-09 - Routine Check
 **Erkenntnis:** Das Repository ist sauber. Keine fehlplatzierten Dateien im Root. `.gitignore` aktualisiert, um `/.temp-archive/` explizit zu ignorieren.
 **Aktion:** Keine weiteren Aktionen erforderlich. Routine-Checks beibehalten.
