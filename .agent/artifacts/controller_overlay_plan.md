@@ -17,7 +17,7 @@
   - [ ] Werkzeugleiste
 
 ### 2. Controller Overlay UI
-- [ ] **Mixer-Foto als Hintergrund**
+- [ ] **Ecler Nuo4 Mixer-Foto als Hintergrund**
   - Pfad: `resources/controllers/ecler_nuo4/background.png`
   - Vom Benutzer bereitgestellt
 
