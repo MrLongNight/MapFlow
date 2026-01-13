@@ -21,4 +21,4 @@ The UI is structured around a central `AppUI` state object which holds the state
 
 ## Themes
 
-MapFlow features a customizable theming system ("Cyber Dark") designed for low-light environments typical of live performances.
+MapFlow features a customizable theming system ("Cyber Dark") designed for low-light environments typical of live performances, offering high contrast and reduced eye strain.
