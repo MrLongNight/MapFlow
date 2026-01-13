@@ -73,17 +73,17 @@ Wenn du bestimmte Checks nicht mehr benötigst:
 - **Code Quality (Format & Lint)** - 1 Job
   - `cargo fmt --check` - Prüft Code-Formatierung
   - `cargo clippy` - Prüft Code-Qualität und häufige Fehler
-  
+
 - **Build & Test** - 3 Jobs (Linux, macOS, Windows)
   - Debug Build
   - Release Build
   - Tests ausführen
   - Doc Tests
   - Dokumentation generieren
-  
+
 - **Security Audit** - 1 Job
   - `cargo audit` - Prüft Dependencies auf Sicherheitslücken
-  
+
 - **CI Success Gate** - 1 Job
   - Fasst alle Checks zusammen
 

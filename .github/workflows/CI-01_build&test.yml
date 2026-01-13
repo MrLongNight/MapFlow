@@ -28,7 +28,7 @@ on:
         required: false
         default: 'false'
         type: choice
-        options: 
+        options:
           - 'true'
           - 'false'
       run_windows:
@@ -53,57 +53,54 @@ jobs:
   # ========================================
   # PHASE 1: Pre-Checks & Auto-Fixes
   # ========================================
-  
+
   pre-checks:
     name: "Pre-Checks (Auto-Fix)"
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-    
+
     steps:
     - name: Configure Git
       run: git config --global --add safe.directory "*"
-    
+
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt, clippy
-    
+
     - name: Install cargo-make (Task Runner)
       run: cargo install --locked cargo-make
-    
+
     - name: Check & Auto-Fix Formatting
       id: fmt
       run: |
         cargo fmt --all
         if [[ -n $(git status --porcelain) ]]; then
-          echo "formatted=true" >> $GITHUB_OUTPUT
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore: Auto-format code (cargo fmt) [skip ci]"
           git push
-        else
-          echo "formatted=false" >> $GITHUB_OUTPUT
         fi
-    
+
     - name: Check Cargo.toml formatting
       run: cargo install cargo-sort && cargo sort --workspace --check || cargo sort --workspace
-    
+
     - name: Fix common Clippy issues (Auto-Fix)
       continue-on-error: true
       run: cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
-    
-    - name:  Commit Auto-Fixes
-      if: steps.fmt.outputs.formatted == 'true'
+
+    - name: Commit Auto-Fixes (Clippy)
       run: |
         if [[ -n $(git status --porcelain) ]]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore: Auto-fix Clippy warnings [skip ci]"
           git push
@@ -113,12 +110,12 @@ jobs:
   # PHASE 2: Code Quality & Linting
   # PARALLEL with build-and-test, security
   # ========================================
-  
+
   quality:
     name: "Code Quality (Format & Lint)"
     runs-on: ubuntu-latest
     needs: pre-checks
-    permissions: 
+    permissions:
       contents: read
       pull-requests: write
       checks: write
@@ -126,11 +123,11 @@ jobs:
     steps:
     - name:  Configure Git
       run: git config --global --add safe.directory "*"
-    
+
     - uses:  actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
-    
+
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
@@ -191,7 +188,7 @@ jobs:
   # ========================================
   # PHASE 3: Build & Test (PARALLEL)
   # ========================================
-  
+
   build-and-test:
     name: "Build & Test (Ubuntu)"
     runs-on: ubuntu-latest
@@ -203,7 +200,7 @@ jobs:
     steps:
     - name: Configure Git
       run: git config --global --add safe.directory "*"
-    
+
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
@@ -314,14 +311,14 @@ jobs:
   # PHASE 4: Windows Build (OPTIONAL)
   # Only on main branch or explicit request
   # ========================================
-  
+
   build-windows:
     name: "Build (Windows)"
     runs-on: windows-latest
     needs: pre-checks
     # Only run on main branch push or explicit request
     if: |
-      github.ref == 'refs/heads/main' || 
+      github.ref == 'refs/heads/main' ||
       github.event.inputs.run_windows == 'true' ||
       contains(github.event.pull_request.labels.*.name, 'test-windows')
     permissions:
@@ -330,9 +327,9 @@ jobs:
     steps:
     - name:  Configure Git
       run: git config --global core.autocrlf false
-    
+
     - uses: actions/checkout@v4
-      with: 
+      with:
         ref: ${{ github. head_ref }}
 
     - name: Set up Rust toolchain
@@ -367,7 +364,7 @@ jobs:
   # ========================================
   # PHASE 5: Security & Supply Chain (PARALLEL)
   # ========================================
-  
+
   security:
     name: "Security Audit"
     runs-on: ubuntu-latest
@@ -380,7 +377,7 @@ jobs:
     steps:
     - name: Configure Git
       run: git config --global --add safe.directory "*"
-    
+
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
@@ -407,25 +404,25 @@ jobs:
   # ========================================
   # PHASE 6: Performance & Benchmarks
   # ========================================
-  
+
   benchmarks:
     name: "Performance Benchmarks"
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'pull_request'
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
-    
+
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
-    
+
     - name: Run benchmarks
       run: cargo bench --workspace --features "mapmap-io/ci-linux" -- --output-format bencher | tee output.txt
       continue-on-error: true
-    
+
     - name: Compare with baseline
       uses: benchmark-action/github-action-benchmark@v1
       with:
@@ -436,10 +433,10 @@ jobs:
       continue-on-error: true
 
   # ========================================
-  # PHASE 7: Success Gate 
+  # PHASE 7: Success Gate
   # ========================================
-  
-  ci-success: 
+
+  ci-success:
     name: "CI Success Gate"
     needs: [quality, build-and-test, security]
     runs-on: ubuntu-latest

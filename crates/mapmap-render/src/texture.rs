@@ -144,10 +144,50 @@ impl TexturePool {
         self.textures.read().contains_key(name)
     }
 
+    /// Ensure a texture exists with specific properties, creating it if necessary.
+    pub fn ensure_texture(
+        &self,
+        name: &str,
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+        usage: wgpu::TextureUsages,
+    ) {
+        {
+            let textures = self.textures.read();
+            if let Some(handle) = textures.get(name) {
+                if handle.width == width
+                    && handle.height == height
+                    && handle.format == format
+                    && handle.texture.usage() == usage
+                {
+                    return;
+                }
+            }
+        }
+        self.create(name, width, height, format, usage);
+    }
+
     /// Resize a texture if its dimensions have changed.
+    ///
+    /// ⚡ Bolt: Optimized with double-checked locking to avoid write locks on steady state.
     pub fn resize_if_needed(&self, name: &str, new_width: u32, new_height: u32) {
+        // Optimistic read check
+        {
+            let textures = self.textures.read();
+            if let Some(handle) = textures.get(name) {
+                if handle.width == new_width && handle.height == new_height {
+                    return;
+                }
+            } else {
+                return; // Texture doesn't exist, nothing to resize
+            }
+        }
+
+        // Needs resize
         let mut textures = self.textures.write();
         if let Some(handle) = textures.get_mut(name) {
+            // Double check in case another thread resized it while we waited
             if handle.width != new_width || handle.height != new_height {
                 let new_texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some(name),
@@ -177,6 +217,8 @@ impl TexturePool {
     }
 
     /// Upload data to a texture.
+    ///
+    /// ⚡ Bolt: Optimized to use read lock for handle retrieval.
     pub fn upload_data(
         &self,
         queue: &wgpu::Queue,
@@ -188,12 +230,16 @@ impl TexturePool {
         // Ensure texture exists and is correct size
         self.resize_if_needed(name, width, height);
 
-        let textures = self.textures.write();
-        let handle = if let Some(handle) = textures.get(name) {
-            handle.clone()
+        // Optimistic read lock to get handle
+        let handle = {
+            let textures = self.textures.read();
+            textures.get(name).cloned()
+        };
+
+        let handle = if let Some(h) = handle {
+            h
         } else {
-            // Create new
-            drop(textures);
+            // Create new (requires write lock internally)
             let _ = self.create(
                 name,
                 width,
@@ -201,6 +247,7 @@ impl TexturePool {
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             );
+            // Recursively call to get the handle again
             return self.upload_data(queue, name, data, width, height);
         };
 
