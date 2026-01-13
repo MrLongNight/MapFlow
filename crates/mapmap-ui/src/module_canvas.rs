@@ -649,30 +649,118 @@ impl ModuleCanvas {
                                                     let video_duration = player_info.duration.max(1.0) as f32;
                                                     let current_pos = player_info.current_time as f32;
 
-                                                    // Visual Region Bar
-                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 20.0), Sense::hover());
+                                                    // Interactive Visual Region Bar
+                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 24.0), Sense::click_and_drag());
                                                     let rect = response.rect;
 
-                                                    // Background (Full Duration)
-                                                    painter.rect_filled(rect, 2.0, Color32::from_gray(40));
+                                                    // Calculate screen positions
+                                                    let eff_start = *start_time;
+                                                    let eff_end = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                    let start_norm = (eff_start / video_duration).clamp(0.0, 1.0);
+                                                    let end_norm = (eff_end / video_duration).clamp(0.0, 1.0);
 
-                                                    // Active Region
-                                                    let start_norm = (*start_time / video_duration).clamp(0.0, 1.0);
-                                                    let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                    let end_norm = (end_val / video_duration).clamp(0.0, 1.0);
+                                                    let start_px = rect.min.x + start_norm * rect.width();
+                                                    let end_px = rect.min.x + end_norm * rect.width();
 
+                                                    // Define Interaction Logic
+                                                    #[derive(Clone, Copy, Debug, PartialEq, Default)]
+                                                    enum ClipDragMode { #[default] None, Start, End, Body }
+                                                    let drag_id = ui.make_persistent_id("clip_drag_state");
+
+                                                    // Handle Input
+                                                    if response.drag_started() {
+                                                        let pos = response.interact_pointer_pos().unwrap_or_default();
+                                                        let hit_tol = 10.0;
+
+                                                        let mode = if (pos.x - start_px).abs() < hit_tol {
+                                                            ClipDragMode::Start
+                                                        } else if (pos.x - end_px).abs() < hit_tol {
+                                                            ClipDragMode::End
+                                                        } else if pos.x > start_px && pos.x < end_px {
+                                                            ClipDragMode::Body
+                                                        } else {
+                                                            ClipDragMode::None
+                                                        };
+                                                        ui.memory_mut(|m| m.data.insert_temp(drag_id, mode));
+                                                    }
+
+                                                    let drag_mode = ui.memory(|m| m.data.get_temp(drag_id)).unwrap_or(ClipDragMode::None);
+
+                                                    if response.dragged() && drag_mode != ClipDragMode::None {
+                                                        let delta_x = response.drag_delta().x;
+                                                        let time_delta = (delta_x / rect.width()) * video_duration;
+
+                                                        match drag_mode {
+                                                            ClipDragMode::Start => {
+                                                                *start_time = (*start_time + time_delta).clamp(0.0, eff_end - 0.1);
+                                                            }
+                                                            ClipDragMode::End => {
+                                                                let new_end = (eff_end + time_delta).clamp(eff_start + 0.1, video_duration);
+                                                                *end_time = new_end;
+                                                            }
+                                                            ClipDragMode::Body => {
+                                                                let length = eff_end - eff_start;
+                                                                let new_start = (*start_time + time_delta).clamp(0.0, video_duration - length);
+                                                                *start_time = new_start;
+                                                                *end_time = new_start + length;
+                                                            }
+                                                            _ => {}
+                                                        }
+                                                    }
+
+                                                    if response.drag_stopped() {
+                                                        ui.memory_mut(|m| m.data.remove_temp::<ClipDragMode>(drag_id));
+                                                    }
+
+                                                    // Cursor Feedback
+                                                    if response.hovered() || drag_mode != ClipDragMode::None {
+                                                        let mode = if drag_mode != ClipDragMode::None {
+                                                            drag_mode
+                                                        } else {
+                                                            let pos = response.hover_pos().unwrap_or_default();
+                                                            let hit_tol = 10.0;
+                                                            if (pos.x - start_px).abs() < hit_tol || (pos.x - end_px).abs() < hit_tol {
+                                                                ClipDragMode::Start // Reuse Start for EastWest icon
+                                                            } else if pos.x > start_px && pos.x < end_px {
+                                                                ClipDragMode::Body
+                                                            } else {
+                                                                ClipDragMode::None
+                                                            }
+                                                        };
+
+                                                        match mode {
+                                                            ClipDragMode::Start | ClipDragMode::End => ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal),
+                                                            ClipDragMode::Body => ui.ctx().set_cursor_icon(if drag_mode != ClipDragMode::None { egui::CursorIcon::Grabbing } else { egui::CursorIcon::Grab }),
+                                                            _ => {}
+                                                        }
+                                                    }
+
+                                                    // Draw Background
+                                                    painter.rect_filled(rect, 4.0, Color32::from_gray(30));
+                                                    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_gray(60)));
+
+                                                    // Draw Active Region
                                                     let region_rect = Rect::from_min_max(
-                                                        Pos2::new(rect.min.x + start_norm * rect.width(), rect.min.y),
-                                                        Pos2::new(rect.min.x + end_norm * rect.width(), rect.max.y)
+                                                        Pos2::new(start_px, rect.min.y),
+                                                        Pos2::new(end_px, rect.max.y)
                                                     );
-                                                    painter.rect_filled(region_rect, 2.0, Color32::from_rgba_unmultiplied(100, 200, 100, 100));
+                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(100, 200, 100, 80));
+                                                    painter.rect_stroke(region_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(100, 220, 100)));
 
-                                                    // Playhead Cursor
+                                                    // Draw Handles
+                                                    let handle_width = 6.0;
+                                                    let start_handle = Rect::from_center_size(Pos2::new(start_px, rect.center().y), Vec2::new(handle_width, rect.height()));
+                                                    let end_handle = Rect::from_center_size(Pos2::new(end_px, rect.center().y), Vec2::new(handle_width, rect.height()));
+
+                                                    painter.rect_filled(start_handle, 2.0, Color32::WHITE);
+                                                    painter.rect_filled(end_handle, 2.0, Color32::WHITE);
+
+                                                    // Draw Playhead
                                                     let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
                                                     let cursor_x = rect.min.x + cursor_norm * rect.width();
                                                     painter.line_segment(
                                                         [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
-                                                        Stroke::new(2.0, Color32::WHITE)
+                                                        Stroke::new(2.0, Color32::from_rgb(255, 200, 50))
                                                     );
 
                                                     ui.add_space(4.0);
