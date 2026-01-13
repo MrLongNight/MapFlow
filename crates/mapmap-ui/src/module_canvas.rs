@@ -372,12 +372,12 @@ impl ModuleCanvas {
                                                         toggle_invert(ui, "SubBass Out", "SubBass (20-60Hz)");
                                                         toggle_invert(ui, "Bass Out", "Bass (60-250Hz)");
                                                         toggle_invert(ui, "LowMid Out", "LowMid (250-500Hz)");
-                                                        toggle_invert(ui, "Mid Out", "Mid (500-2kHz)");
-                                                        toggle_invert(ui, "HighMid Out", "HighMid (2-4kHz)");
-                                                        toggle_invert(ui, "UpperMid Out", "UpperMid (4-6kHz)");
+                                                        toggle_invert(ui, "Mid Out", "Mid (500-1kHz)");
+                                                        toggle_invert(ui, "HighMid Out", "HighMid (1-2kHz)");
+                                                        toggle_invert(ui, "UpperMid Out", "UpperMid (2-4kHz)");
                                                         toggle_invert(ui, "Presence Out", "Presence (4-6kHz)");
-                                                        toggle_invert(ui, "Brilliance Out", "Brilliance (6-14kHz)");
-                                                        toggle_invert(ui, "Air Out", "Air (14-20kHz)");
+                                                        toggle_invert(ui, "Brilliance Out", "Brilliance (6-12kHz)");
+                                                        toggle_invert(ui, "Air Out", "Air (12-20kHz)");
                                                     }
                                                 });
 
@@ -4673,20 +4673,6 @@ impl ModuleCanvas {
                     Pos2::new(threshold_x, meter_y + meter_height + 2.0),
                 ],
                 Stroke::new(2.0, Color32::RED),
-            );
-
-            // Value text
-            let value_text = format!("{:.2}", trigger_value);
-            painter.text(
-                Pos2::new(rect.center().x, meter_y + meter_height + 6.0 * self.zoom),
-                egui::Align2::CENTER_TOP,
-                value_text,
-                egui::FontId::proportional(9.0 * self.zoom),
-                if is_active {
-                    Color32::from_rgb(255, 200, 0)
-                } else {
-                    Color32::from_gray(140)
-                },
             );
         }
 
