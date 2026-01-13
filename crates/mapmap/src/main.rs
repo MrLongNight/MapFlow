@@ -152,6 +152,8 @@ struct App {
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
+    /// Last render time for each output, for FPS limiting
+    output_last_render_time: HashMap<OutputId, std::time::Instant>,
 }
 
 impl App {
@@ -426,6 +428,14 @@ impl App {
         );
         let egui_renderer = Renderer::new(&backend.device, format, None, 1);
 
+        // Enumerate monitors and store in UI state
+        let monitors: Vec<(u32, String)> = event_loop
+            .available_monitors()
+            .enumerate()
+            .map(|(i, m)| (i as u32, m.name().unwrap_or_else(|| format!("Monitor {}", i))))
+            .collect();
+        ui_state.monitors = monitors;
+
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),
@@ -573,6 +583,7 @@ impl App {
             output_temp_textures: std::collections::HashMap::new(),
             preview_texture_cache: HashMap::new(),
             preview_quad_buffers,
+            output_last_render_time: HashMap::new(),
         };
 
         // Create initial dummy texture
@@ -1591,8 +1602,15 @@ impl App {
                         // Update existing
                         let is_fullscreen = window_context.window.fullscreen().is_some();
                         if is_fullscreen != *fullscreen {
+                            let monitor = if *fullscreen {
+                                let monitors: Vec<_> = event_loop.available_monitors().collect();
+                                monitors.get(*target_screen as usize).cloned()
+                            } else {
+                                None
+                            };
+
                             window_context.window.set_fullscreen(if *fullscreen {
-                                Some(winit::window::Fullscreen::Borderless(None))
+                                Some(winit::window::Fullscreen::Borderless(monitor))
                             } else {
                                 None
                             });
@@ -1819,6 +1837,24 @@ impl App {
         }
 
         let window_context = self.window_manager.get(output_id).unwrap();
+
+        // --- FPS Limiter ---
+        if let Some(op) = self.render_ops.iter().find(|op| op.output_part_id == output_id) {
+            if let mapmap_core::module::OutputType::Projector { output_fps, .. } = &op.output_type {
+                if *output_fps > 0.0 {
+                    let frame_duration = std::time::Duration::from_secs_f32(1.0 / *output_fps);
+                    if let Some(last_time) = self.output_last_render_time.get(&output_id) {
+                        if last_time.elapsed() < frame_duration {
+                            // Skip this frame
+                            window_context.window.request_redraw(); // Ask to be redrawn again soon
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
+        self.output_last_render_time.insert(output_id, std::time::Instant::now());
+
 
         // Get surface texture and view for final output
         let surface_texture = window_context.surface.get_current_texture()?;
@@ -2500,6 +2536,7 @@ impl App {
                                 &mut self.state.module_manager,
                                 &self.ui_state.i18n,
                                 &mut self.ui_state.actions,
+                                &self.ui_state.monitors,
                             );
                         } else {
                             // Placeholder for normal canvas/viewport
@@ -2851,6 +2888,32 @@ impl App {
         } else {
             // === Node-Based Rendering Pipeline ===
 
+            // --- Custom Resolution Handling ---
+            let (custom_width, custom_height) = if let Some(op) = self.render_ops.iter().find(|op| op.output_part_id == output_id) {
+                if let mapmap_core::module::OutputType::Projector { output_width, output_height, .. } = &op.output_type {
+                    (*output_width, *output_height)
+                } else { (0, 0) }
+            } else { (0, 0) };
+            let has_custom_res = custom_width > 0 && custom_height > 0;
+
+            let mut _custom_res_texture_view_holder = None;
+            let final_pipeline_target_view = if has_custom_res {
+                let tex_name = format!("output_res_{}", output_id);
+                self.texture_pool.ensure_texture(
+                    &tex_name,
+                    custom_width,
+                    custom_height,
+                    self.backend.surface_format(),
+                    wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                );
+                let custom_view = self.texture_pool.get_view(&tex_name);
+                _custom_res_texture_view_holder = Some(custom_view);
+                _custom_res_texture_view_holder.as_ref().unwrap()
+            } else {
+                &view
+            };
+
+
             // 1. Find the RenderOp for this output (use output_part_id, not Projector id)
             let target_op = self
                 .render_ops
@@ -3002,7 +3065,7 @@ impl App {
                             Some(self.texture_pool.get_view(mesh_output_tex_name));
                         mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
                     } else {
-                        mesh_target_view_ref = &view;
+                        mesh_target_view_ref = final_pipeline_target_view;
                     }
 
                     // B. Clear Mesh Target
@@ -3155,7 +3218,7 @@ impl App {
                             let target_view = if use_color_calib {
                                 blend_output_temp_view_opt.as_ref().unwrap()
                             } else {
-                                &view
+                                final_pipeline_target_view
                             };
 
                             let bind_group = renderer.create_texture_bind_group(post_input_view);
@@ -3191,7 +3254,7 @@ impl App {
                             };
 
                             // Output is always Surface
-                            let target_view = &view;
+                            let target_view = final_pipeline_target_view;
 
                             let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
                             let uniform_buffer =
@@ -3235,6 +3298,35 @@ impl App {
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Clear Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: final_pipeline_target_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+            }
+
+            // --- Final Scaling Pass (if custom resolution was used) ---
+            if has_custom_res {
+                let quad_texture_bg = self.mesh_renderer.create_texture_bind_group(
+                    _custom_res_texture_view_holder.as_ref().unwrap()
+                );
+                let quad_uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                    &self.backend.queue,
+                    glam::Mat4::IDENTITY, // no transform
+                    1.0, // full opacity
+                    false, false, 0.0, 1.0, 1.0, 0.0 // no color correction
+                );
+                let (vb, ib, index_count) = &self.preview_quad_buffers;
+
+                let mut final_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Final Scaling Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &view,
                         resolve_target: None,
                         ops: wgpu::Operations {
@@ -3246,6 +3338,8 @@ impl App {
                     occlusion_query_set: None,
                     timestamp_writes: None,
                 });
+
+                self.mesh_renderer.draw( &mut final_pass, vb, ib, *index_count, &quad_uniform_bg, &quad_texture_bg, false);
             }
         }
 

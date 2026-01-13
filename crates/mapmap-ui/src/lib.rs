@@ -274,6 +274,8 @@ pub struct AppUI {
     pub control_panel_height: f32,
     /// Show control panel in unified sidebar
     pub show_control_panel: bool,
+    /// List of available monitors (id, name)
+    pub monitors: Vec<(u32, String)>,
 }
 
 impl Default for AppUI {
@@ -366,6 +368,7 @@ impl Default for AppUI {
             show_preview_panel: true,    // Show by default
             control_panel_height: 250.0, // Default height in pixels
             show_control_panel: true,    // Show by default
+            monitors: Vec::new(),
         }
     }
 }

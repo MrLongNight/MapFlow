@@ -267,6 +267,7 @@ impl ModuleCanvas {
         &mut self,
         ctx: &egui::Context,
         module: &mut mapmap_core::module::MapFlowModule,
+        monitors: &[(u32, String)],
     ) {
         let mut changed_part_id = None;
         if let Some(part_id) = self.editing_part_id {
@@ -1446,13 +1447,18 @@ impl ModuleCanvas {
                                                 // Target screen selection
                                                 ui.horizontal(|ui| {
                                                     ui.label("Target Screen:");
+                                                    let selected_name = monitors
+                                                        .iter()
+                                                        .find(|(id, _)| *id == *target_screen as u32)
+                                                        .map(|(_, name)| name.clone())
+                                                        .unwrap_or_else(|| "Invalid Monitor".to_string());
+
                                                     egui::ComboBox::from_id_source("target_screen_select")
-                                                        .selected_text(format!("Monitor {}", target_screen))
+                                                        .selected_text(selected_name)
                                                         .show_ui(ui, |ui| {
-                                                            for i in 0..=3u8 {
-                                                                let label = if i == 0 { "Primary".to_string() } else { format!("Monitor {}", i) };
-                                                                if ui.selectable_label(*target_screen == i, &label).clicked() {
-                                                                    *target_screen = i;
+                                                            for (id, name) in monitors {
+                                                                if ui.selectable_label(*target_screen as u32 == *id, name).clicked() {
+                                                                    *target_screen = *id as u8;
                                                                 }
                                                             }
                                                         });
@@ -1465,6 +1471,11 @@ impl ModuleCanvas {
                                                 ui.label("👁️ Preview:");
                                                 ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
                                                 ui.checkbox(extra_preview_window, "Extra Preview Window");
+
+                                                ui.separator();
+                                                ui.label("ℹ️ Status:");
+                                                ui.label(format!("Resolution: {}x{}", output.output_width, output.output_height));
+                                                ui.label(format!("FPS Limit: {:.0}", output.output_fps));
                                             }
                                             #[cfg(feature = "ndi")]
                                             OutputType::NdiOutput { name } => {
@@ -1779,6 +1790,7 @@ impl ModuleCanvas {
         manager: &mut ModuleManager,
         locale: &LocaleManager,
         _actions: &mut Vec<crate::UIAction>,
+        monitors: &[(u32, String)],
     ) {
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
@@ -2543,9 +2555,9 @@ impl ModuleCanvas {
 
         if let Some(module) = active_module {
             // Render the canvas taking up the full available space
-            self.render_canvas(ui, module, locale);
+            self.render_canvas(ui, module, locale, monitors);
             // The properties popup is now rendered at the top level
-            self.render_properties_popup(ui.ctx(), module);
+            self.render_properties_popup(ui.ctx(), module, monitors);
         } else {
             // Show a message if no module is selected
             ui.centered_and_justified(|ui| {
@@ -2560,7 +2572,13 @@ impl ModuleCanvas {
         }
     }
 
-    fn render_canvas(&mut self, ui: &mut Ui, module: &mut MapFlowModule, _locale: &LocaleManager) {
+    fn render_canvas(
+        &mut self,
+        ui: &mut Ui,
+        module: &mut MapFlowModule,
+        _locale: &LocaleManager,
+        monitors: &[(u32, String)],
+    ) {
         self.ensure_icons_loaded(ui.ctx());
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
