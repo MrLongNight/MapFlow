@@ -432,7 +432,12 @@ impl App {
         let monitors: Vec<(u32, String)> = event_loop
             .available_monitors()
             .enumerate()
-            .map(|(i, m)| (i as u32, m.name().unwrap_or_else(|| format!("Monitor {}", i))))
+            .map(|(i, m)| {
+                (
+                    i as u32,
+                    m.name().unwrap_or_else(|| format!("Monitor {}", i)),
+                )
+            })
             .collect();
         ui_state.monitors = monitors;
 
@@ -1839,7 +1844,11 @@ impl App {
         let window_context = self.window_manager.get(output_id).unwrap();
 
         // --- FPS Limiter ---
-        if let Some(op) = self.render_ops.iter().find(|op| op.output_part_id == output_id) {
+        if let Some(op) = self
+            .render_ops
+            .iter()
+            .find(|op| op.output_part_id == output_id)
+        {
             if let mapmap_core::module::OutputType::Projector { output_fps, .. } = &op.output_type {
                 if *output_fps > 0.0 {
                     let frame_duration = std::time::Duration::from_secs_f32(1.0 / *output_fps);
@@ -1853,8 +1862,8 @@ impl App {
                 }
             }
         }
-        self.output_last_render_time.insert(output_id, std::time::Instant::now());
-
+        self.output_last_render_time
+            .insert(output_id, std::time::Instant::now());
 
         // Get surface texture and view for final output
         let surface_texture = window_context.surface.get_current_texture()?;
@@ -2889,11 +2898,24 @@ impl App {
             // === Node-Based Rendering Pipeline ===
 
             // --- Custom Resolution Handling ---
-            let (custom_width, custom_height) = if let Some(op) = self.render_ops.iter().find(|op| op.output_part_id == output_id) {
-                if let mapmap_core::module::OutputType::Projector { output_width, output_height, .. } = &op.output_type {
+            let (custom_width, custom_height) = if let Some(op) = self
+                .render_ops
+                .iter()
+                .find(|op| op.output_part_id == output_id)
+            {
+                if let mapmap_core::module::OutputType::Projector {
+                    output_width,
+                    output_height,
+                    ..
+                } = &op.output_type
+                {
                     (*output_width, *output_height)
-                } else { (0, 0) }
-            } else { (0, 0) };
+                } else {
+                    (0, 0)
+                }
+            } else {
+                (0, 0)
+            };
             let has_custom_res = custom_width > 0 && custom_height > 0;
 
             let mut _custom_res_texture_view_holder = None;
@@ -2912,7 +2934,6 @@ impl App {
             } else {
                 &view
             };
-
 
             // 1. Find the RenderOp for this output (use output_part_id, not Projector id)
             let target_op = self
@@ -3313,14 +3334,19 @@ impl App {
 
             // --- Final Scaling Pass (if custom resolution was used) ---
             if has_custom_res {
-                let quad_texture_bg = self.mesh_renderer.create_texture_bind_group(
-                    _custom_res_texture_view_holder.as_ref().unwrap()
-                );
+                let quad_texture_bg = self
+                    .mesh_renderer
+                    .create_texture_bind_group(_custom_res_texture_view_holder.as_ref().unwrap());
                 let quad_uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
                     glam::Mat4::IDENTITY, // no transform
-                    1.0, // full opacity
-                    false, false, 0.0, 1.0, 1.0, 0.0 // no color correction
+                    1.0,                  // full opacity
+                    false,
+                    false,
+                    0.0,
+                    1.0,
+                    1.0,
+                    0.0, // no color correction
                 );
                 let (vb, ib, index_count) = &self.preview_quad_buffers;
 
@@ -3339,7 +3365,15 @@ impl App {
                     timestamp_writes: None,
                 });
 
-                self.mesh_renderer.draw( &mut final_pass, vb, ib, *index_count, &quad_uniform_bg, &quad_texture_bg, false);
+                self.mesh_renderer.draw(
+                    &mut final_pass,
+                    vb,
+                    ib,
+                    *index_count,
+                    &quad_uniform_bg,
+                    &quad_texture_bg,
+                    false,
+                );
             }
         }
 
