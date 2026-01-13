@@ -1687,3 +1687,83 @@ fn test_source_type_defaults() {
         panic!("Wrong source type created");
     }
 }
+
+#[test]
+fn test_audio_trigger_output_config_fallback_enforcement() {
+    let config = AudioTriggerOutputConfig {
+        frequency_bands: false,
+        volume_outputs: false,
+        beat_output: false, // Explicitly false
+        bpm_output: false,
+        inverted_outputs: Default::default(),
+    };
+    let sockets = config.generate_outputs();
+
+    // Should enforce at least one output (Beat Out)
+    assert_eq!(sockets.len(), 1);
+    assert_eq!(sockets[0].name, "Beat Out");
+}
+
+#[test]
+fn test_source_type_other_variants() {
+    let shader = SourceType::Shader {
+        name: "Test".to_string(),
+        params: vec![],
+    };
+    if let SourceType::Shader { name, .. } = shader {
+        assert_eq!(name, "Test");
+    } else {
+        panic!("Wrong type");
+    }
+
+    // Just verify we can create them
+    let live = SourceType::LiveInput { device_id: 1 };
+    assert!(matches!(live, SourceType::LiveInput { .. }));
+
+    let ndi = SourceType::NdiInput { source_name: None };
+    assert!(matches!(ndi, SourceType::NdiInput { .. }));
+}
+
+#[test]
+fn test_link_mode_sockets_with_trigger() {
+    let mut part = ModulePart {
+        id: 1,
+        part_type: ModulePartType::Trigger(TriggerType::Beat),
+        position: (0.0, 0.0),
+        size: None,
+        link_data: NodeLinkData {
+            mode: LinkMode::Master,
+            behavior: LinkBehavior::SameAsMaster,
+            trigger_input_enabled: true, // ENABLED
+        },
+        inputs: vec![],
+        outputs: vec![],
+    };
+
+    let (inputs, outputs) = part.compute_sockets();
+
+    // Master: Link Out + Trigger In (Vis)
+    assert!(outputs
+        .iter()
+        .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link Out"));
+    assert!(inputs
+        .iter()
+        .any(|s| s.socket_type == ModuleSocketType::Trigger && s.name == "Trigger In (Vis)"));
+
+    // Slave: Link In + Trigger In (Vis)
+    part.link_data.mode = LinkMode::Slave;
+    let (inputs, _) = part.compute_sockets();
+    assert!(inputs
+        .iter()
+        .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link In"));
+    assert!(inputs
+        .iter()
+        .any(|s| s.socket_type == ModuleSocketType::Trigger && s.name == "Trigger In (Vis)"));
+
+    // Off: Just Trigger In (Vis) if enabled (independent of LinkMode)
+    part.link_data.mode = LinkMode::Off;
+    let (inputs, _) = part.compute_sockets();
+    assert!(inputs
+        .iter()
+        .any(|s| s.socket_type == ModuleSocketType::Trigger && s.name == "Trigger In (Vis)"));
+}
