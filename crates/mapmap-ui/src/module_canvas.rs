@@ -651,30 +651,124 @@ impl ModuleCanvas {
                                                     let current_pos = player_info.current_time as f32;
 
                                                     // Visual Region Bar
-                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 20.0), Sense::hover());
+                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 24.0), Sense::hover());
                                                     let rect = response.rect;
 
                                                     // Background (Full Duration)
-                                                    painter.rect_filled(rect, 2.0, Color32::from_gray(40));
+                                                    painter.rect_filled(rect, 4.0, Color32::from_gray(40));
+                                                    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_gray(60)));
 
-                                                    // Active Region
-                                                    let start_norm = (*start_time / video_duration).clamp(0.0, 1.0);
+                                                    // Data normalization
                                                     let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                    let end_norm = (end_val / video_duration).clamp(0.0, 1.0);
+                                                    let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let end_x = rect.min.x + (end_val / video_duration).clamp(0.0, 1.0) * rect.width();
 
-                                                    let region_rect = Rect::from_min_max(
-                                                        Pos2::new(rect.min.x + start_norm * rect.width(), rect.min.y),
-                                                        Pos2::new(rect.min.x + end_norm * rect.width(), rect.max.y)
+                                                    // 1. Body Interaction (Move Region)
+                                                    // We define the body rect slightly shrunk so handles don't overlap too much
+                                                    let body_rect = Rect::from_min_max(
+                                                        Pos2::new(start_x + 4.0, rect.min.y),
+                                                        Pos2::new(end_x - 4.0, rect.max.y)
                                                     );
-                                                    painter.rect_filled(region_rect, 2.0, Color32::from_rgba_unmultiplied(100, 200, 100, 100));
+
+                                                    // Only interactive if wide enough
+                                                    if body_rect.width() > 10.0 {
+                                                        let body_id = response.id.with("region_body");
+                                                        let body_response = ui.interact(body_rect, body_id, Sense::drag());
+
+                                                        if body_response.dragged() {
+                                                            let delta_seconds = (body_response.drag_delta().x / rect.width()) * video_duration;
+
+                                                            // Calculate potential new times
+                                                            let new_start = *start_time + delta_seconds;
+                                                            let new_end = end_val + delta_seconds;
+
+                                                            // Bounds check
+                                                            if new_start >= 0.0 && new_end <= video_duration {
+                                                                *start_time = new_start;
+                                                                *end_time = new_end;
+                                                            }
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                                        } else if body_response.hovered() {
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+                                                        }
+                                                    }
+
+                                                    // 2. Start Handle Interaction
+                                                    let start_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(start_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let start_id = response.id.with("start_handle");
+                                                    let start_response = ui.interact(start_handle_rect, start_id, Sense::drag());
+
+                                                    if start_response.dragged() {
+                                                        let delta_seconds = (start_response.drag_delta().x / rect.width()) * video_duration;
+                                                        *start_time = (*start_time + delta_seconds).clamp(0.0, end_val - 0.1);
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if start_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // 3. End Handle Interaction
+                                                    let end_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(end_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let end_id = response.id.with("end_handle");
+                                                    let end_response = ui.interact(end_handle_rect, end_id, Sense::drag());
+
+                                                    if end_response.dragged() {
+                                                        let delta_seconds = (end_response.drag_delta().x / rect.width()) * video_duration;
+                                                        // Ensure we don't cross start
+                                                        let new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
+                                                        *end_time = new_end;
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if end_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // === DRAWING ===
+                                                    // Re-calculate positions for drawing based on updated values
+                                                    let current_start_val = *start_time;
+                                                    let current_end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+
+                                                    let draw_start_x = rect.min.x + (current_start_val / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let draw_end_x = rect.min.x + (current_end_val / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                    // Active Region Body
+                                                    let region_rect = Rect::from_min_max(
+                                                        Pos2::new(draw_start_x, rect.min.y),
+                                                        Pos2::new(draw_end_x, rect.max.y)
+                                                    );
+                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 120));
+
+                                                    // Handles
+                                                    let handle_width = 4.0;
+                                                    let start_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_start_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+                                                    let end_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_end_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+
+                                                    let start_color = if start_response.dragged() || start_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+                                                    let end_color = if end_response.dragged() || end_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+
+                                                    painter.rect_filled(start_handle_vis, 2.0, start_color);
+                                                    painter.rect_filled(end_handle_vis, 2.0, end_color);
 
                                                     // Playhead Cursor
                                                     let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
                                                     let cursor_x = rect.min.x + cursor_norm * rect.width();
+
+                                                    // Draw playhead triangle/line
                                                     painter.line_segment(
                                                         [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
-                                                        Stroke::new(2.0, Color32::WHITE)
+                                                        Stroke::new(1.5, Color32::from_rgb(255, 200, 100))
                                                     );
+                                                    painter.circle_filled(Pos2::new(cursor_x, rect.min.y), 3.0, Color32::from_rgb(255, 200, 100));
 
                                                     ui.add_space(4.0);
 
@@ -4554,31 +4648,33 @@ impl ModuleCanvas {
                 0,
                 (150.0 * glow_intensity) as u8,
             );
-            for i in 1..=4 {
-                let expand = i as f32 * 3.0 * self.zoom;
-                let alpha = (40.0 / i as f32) as u8;
-                painter.rect_stroke(
-                    rect.expand(expand),
-                    (6.0 + expand) * self.zoom,
-                    Stroke::new(
-                        2.0,
-                        Color32::from_rgba_unmultiplied(
-                            glow_color.r(),
-                            glow_color.g(),
-                            glow_color.b(),
-                            alpha,
-                        ),
-                    ),
-                );
-            }
+            // Enhanced glow using shadow-like smoothing
+            let shadow = egui::epaint::Shadow {
+                offset: Vec2::ZERO,
+                blur: 20.0 * self.zoom,
+                spread: 5.0 * self.zoom,
+                color: glow_color,
+            };
+            painter.add(shadow.tessellate(rect, egui::Rounding::same(6.0 * self.zoom)));
         }
 
-        // Draw background
-        painter.rect_filled(rect, 6.0 * self.zoom, bg_color);
+        // Draw shadow behind node
+        let shadow = egui::epaint::Shadow {
+            offset: Vec2::new(2.0, 4.0) * self.zoom,
+            blur: 12.0 * self.zoom,
+            spread: 0.0,
+            color: Color32::from_black_alpha(100),
+        };
+        painter.add(shadow.tessellate(rect, egui::Rounding::same(6.0 * self.zoom)));
+
+        // Draw background (slightly transparent/glassy)
+        painter.rect_filled(rect, 6.0 * self.zoom, bg_color.linear_multiply(0.95));
+
+        // Node border
         painter.rect_stroke(
             rect,
             6.0 * self.zoom,
-            Stroke::new(2.0, Color32::from_rgb(80, 80, 90)),
+            Stroke::new(1.0, Color32::from_rgb(60, 60, 70)),
         );
 
         // Title bar
@@ -4593,6 +4689,15 @@ impl ModuleCanvas {
                 se: 0.0,
             },
             title_color,
+        );
+
+        // Title separator line
+        painter.line_segment(
+            [
+                Pos2::new(rect.min.x, rect.min.y + title_height),
+                Pos2::new(rect.max.x, rect.min.y + title_height),
+            ],
+            Stroke::new(1.0, Color32::from_black_alpha(50)),
         );
 
         // Title text with icon and category
@@ -4633,14 +4738,14 @@ impl ModuleCanvas {
                 egui::Align2::CENTER_CENTER,
                 property_text,
                 egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(160),
+                Color32::from_gray(180), // Slightly brighter for readability
             );
         }
 
         // Draw audio trigger VU meter and live value display
         if is_audio_trigger {
             let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
-            let meter_height = 12.0 * self.zoom;
+            let meter_height = 4.0 * self.zoom; // Thinner meter
             let meter_y = rect.max.y - (offset_from_bottom * self.zoom) - meter_height;
             let meter_width = rect.width() - 20.0 * self.zoom;
             let meter_x = rect.min.x + 10.0 * self.zoom;
@@ -4650,7 +4755,7 @@ impl ModuleCanvas {
                 Pos2::new(meter_x, meter_y),
                 Vec2::new(meter_width, meter_height),
             );
-            painter.rect_filled(meter_bg, 3.0, Color32::from_gray(30));
+            painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
 
             // Value bar
             let value_width = (trigger_value.clamp(0.0, 1.0) * meter_width).max(1.0);
@@ -4663,7 +4768,7 @@ impl ModuleCanvas {
             } else {
                 Color32::from_rgb(0, 200, 100) // Green when inactive
             };
-            painter.rect_filled(value_bar, 3.0, bar_color);
+            painter.rect_filled(value_bar, 2.0, bar_color);
 
             // Threshold line
             let threshold_x = meter_x + threshold * meter_width;
@@ -4672,7 +4777,7 @@ impl ModuleCanvas {
                     Pos2::new(threshold_x, meter_y - 2.0),
                     Pos2::new(threshold_x, meter_y + meter_height + 2.0),
                 ],
-                Stroke::new(2.0, Color32::RED),
+                Stroke::new(1.5, Color32::from_rgba_unmultiplied(255, 50, 50, 200)),
             );
         }
 
@@ -4683,10 +4788,21 @@ impl ModuleCanvas {
             let socket_pos = Pos2::new(rect.min.x, socket_y);
             let socket_radius = 6.0 * self.zoom;
 
-            // Socket circle
+            // Socket "Port" style (dark hole with colored ring)
             let socket_color = Self::get_socket_color(&socket.socket_type);
-            painter.circle_filled(socket_pos, socket_radius, socket_color);
-            painter.circle_stroke(socket_pos, socket_radius, Stroke::new(1.5, Color32::WHITE));
+
+            // Outer ring (Socket Color)
+            painter.circle_stroke(
+                socket_pos,
+                socket_radius,
+                Stroke::new(2.0 * self.zoom, socket_color),
+            );
+            // Inner hole (Dark)
+            painter.circle_filled(
+                socket_pos,
+                socket_radius - 2.0 * self.zoom,
+                Color32::from_gray(20),
+            );
 
             // Socket label
             painter.text(
@@ -4694,7 +4810,7 @@ impl ModuleCanvas {
                 egui::Align2::LEFT_CENTER,
                 &socket.name,
                 egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(200),
+                Color32::from_gray(220), // Brighter text
             );
         }
 
@@ -4704,10 +4820,21 @@ impl ModuleCanvas {
             let socket_pos = Pos2::new(rect.max.x, socket_y);
             let socket_radius = 6.0 * self.zoom;
 
-            // Socket circle
+            // Socket "Port" style
             let socket_color = Self::get_socket_color(&socket.socket_type);
-            painter.circle_filled(socket_pos, socket_radius, socket_color);
-            painter.circle_stroke(socket_pos, socket_radius, Stroke::new(1.5, Color32::WHITE));
+
+            // Outer ring (Socket Color)
+            painter.circle_stroke(
+                socket_pos,
+                socket_radius,
+                Stroke::new(2.0 * self.zoom, socket_color),
+            );
+            // Inner hole (Dark)
+            painter.circle_filled(
+                socket_pos,
+                socket_radius - 2.0 * self.zoom,
+                Color32::from_gray(20),
+            );
 
             // Socket label
             painter.text(
@@ -4715,7 +4842,7 @@ impl ModuleCanvas {
                 egui::Align2::RIGHT_CENTER,
                 &socket.name,
                 egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(200),
+                Color32::from_gray(220), // Brighter text
             );
         }
     }
