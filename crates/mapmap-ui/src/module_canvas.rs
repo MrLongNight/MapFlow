@@ -650,30 +650,124 @@ impl ModuleCanvas {
                                                     let current_pos = player_info.current_time as f32;
 
                                                     // Visual Region Bar
-                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 20.0), Sense::hover());
+                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 24.0), Sense::hover());
                                                     let rect = response.rect;
 
                                                     // Background (Full Duration)
-                                                    painter.rect_filled(rect, 2.0, Color32::from_gray(40));
+                                                    painter.rect_filled(rect, 4.0, Color32::from_gray(40));
+                                                    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_gray(60)));
 
-                                                    // Active Region
-                                                    let start_norm = (*start_time / video_duration).clamp(0.0, 1.0);
+                                                    // Data normalization
                                                     let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                    let end_norm = (end_val / video_duration).clamp(0.0, 1.0);
+                                                    let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let end_x = rect.min.x + (end_val / video_duration).clamp(0.0, 1.0) * rect.width();
 
-                                                    let region_rect = Rect::from_min_max(
-                                                        Pos2::new(rect.min.x + start_norm * rect.width(), rect.min.y),
-                                                        Pos2::new(rect.min.x + end_norm * rect.width(), rect.max.y)
+                                                    // 1. Body Interaction (Move Region)
+                                                    // We define the body rect slightly shrunk so handles don't overlap too much
+                                                    let body_rect = Rect::from_min_max(
+                                                        Pos2::new(start_x + 4.0, rect.min.y),
+                                                        Pos2::new(end_x - 4.0, rect.max.y)
                                                     );
-                                                    painter.rect_filled(region_rect, 2.0, Color32::from_rgba_unmultiplied(100, 200, 100, 100));
+
+                                                    // Only interactive if wide enough
+                                                    if body_rect.width() > 10.0 {
+                                                        let body_id = response.id.with("region_body");
+                                                        let body_response = ui.interact(body_rect, body_id, Sense::drag());
+
+                                                        if body_response.dragged() {
+                                                            let delta_seconds = (body_response.drag_delta().x / rect.width()) * video_duration;
+
+                                                            // Calculate potential new times
+                                                            let new_start = *start_time + delta_seconds;
+                                                            let new_end = end_val + delta_seconds;
+
+                                                            // Bounds check
+                                                            if new_start >= 0.0 && new_end <= video_duration {
+                                                                *start_time = new_start;
+                                                                *end_time = new_end;
+                                                            }
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                                        } else if body_response.hovered() {
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+                                                        }
+                                                    }
+
+                                                    // 2. Start Handle Interaction
+                                                    let start_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(start_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let start_id = response.id.with("start_handle");
+                                                    let start_response = ui.interact(start_handle_rect, start_id, Sense::drag());
+
+                                                    if start_response.dragged() {
+                                                        let delta_seconds = (start_response.drag_delta().x / rect.width()) * video_duration;
+                                                        *start_time = (*start_time + delta_seconds).clamp(0.0, end_val - 0.1);
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if start_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // 3. End Handle Interaction
+                                                    let end_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(end_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let end_id = response.id.with("end_handle");
+                                                    let end_response = ui.interact(end_handle_rect, end_id, Sense::drag());
+
+                                                    if end_response.dragged() {
+                                                        let delta_seconds = (end_response.drag_delta().x / rect.width()) * video_duration;
+                                                        // Ensure we don't cross start
+                                                        let new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
+                                                        *end_time = new_end;
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if end_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // === DRAWING ===
+                                                    // Re-calculate positions for drawing based on updated values
+                                                    let current_start_val = *start_time;
+                                                    let current_end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+
+                                                    let draw_start_x = rect.min.x + (current_start_val / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let draw_end_x = rect.min.x + (current_end_val / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                    // Active Region Body
+                                                    let region_rect = Rect::from_min_max(
+                                                        Pos2::new(draw_start_x, rect.min.y),
+                                                        Pos2::new(draw_end_x, rect.max.y)
+                                                    );
+                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 120));
+
+                                                    // Handles
+                                                    let handle_width = 4.0;
+                                                    let start_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_start_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+                                                    let end_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_end_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+
+                                                    let start_color = if start_response.dragged() || start_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+                                                    let end_color = if end_response.dragged() || end_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+
+                                                    painter.rect_filled(start_handle_vis, 2.0, start_color);
+                                                    painter.rect_filled(end_handle_vis, 2.0, end_color);
 
                                                     // Playhead Cursor
                                                     let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
                                                     let cursor_x = rect.min.x + cursor_norm * rect.width();
+
+                                                    // Draw playhead triangle/line
                                                     painter.line_segment(
                                                         [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
-                                                        Stroke::new(2.0, Color32::WHITE)
+                                                        Stroke::new(1.5, Color32::from_rgb(255, 200, 100))
                                                     );
+                                                    painter.circle_filled(Pos2::new(cursor_x, rect.min.y), 3.0, Color32::from_rgb(255, 200, 100));
 
                                                     ui.add_space(4.0);
 
