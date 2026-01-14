@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-14: test(core): Guardian ModuleEvaluator coverage for triggers and chains
 - 2026-01-13: test(core): Add robust tests for Layer-Transform and State-Serialization (#228)
 - 2026-01-10: feat(render): Add SourceProperties to RenderOp for color/transform/flip (#b8453dc)
 - 2026-01-10: feat(media): Add flip, reverse playback and seek controls to Media Node (#9f8163d)

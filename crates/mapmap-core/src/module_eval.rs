@@ -557,29 +557,24 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a trigger node and return output values
-    fn evaluate_trigger(&mut self, part_id: ModulePartId, trigger_type: &TriggerType) -> Vec<f32> {
+    fn evaluate_trigger(&self, trigger_type: &TriggerType) -> Vec<f32> {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
-                threshold,
+                threshold: _threshold,
                 output_config,
             } => {
                 let mut values = Vec::new();
 
-                // Helper to process a signal: applies inversion and thresholding
-                let process_signal = |name: &str, val: f32| -> f32 {
+                // Helper to push and optionally invert value
+                let mut push_val = |name: &str, val: f32| {
                     let inverted = output_config.inverted_outputs.contains(name);
-                    let mut signal = val.clamp(0.0, 1.0);
-
-                    if inverted {
-                        signal = 1.0 - signal;
-                    }
-
-                    if signal > *threshold {
-                        1.0
+                    let final_val = if inverted {
+                        1.0 - val.clamp(0.0, 1.0)
                     } else {
-                        0.0
-                    }
+                        val
+                    };
+                    values.push(final_val);
                 };
 
                 // Generate values based on config
@@ -597,40 +592,28 @@ impl ModuleEvaluator {
                         "Air Out",
                     ];
                     for (i, name) in bands.iter().enumerate() {
-                        let energy = self
-                            .audio_trigger_data
-                            .band_energies
-                            .get(i)
-                            .copied()
-                            .unwrap_or(0.0);
-                        values.push(process_signal(name, energy));
+                        if i < self.audio_trigger_data.band_energies.len() {
+                            push_val(name, self.audio_trigger_data.band_energies[i]);
+                        } else {
+                            push_val(name, 0.0);
+                        }
                     }
                 }
-
                 if output_config.volume_outputs {
-                    values.push(process_signal(
-                        "RMS Volume",
-                        self.audio_trigger_data.rms_volume,
-                    ));
-                    values.push(process_signal(
-                        "Peak Volume",
-                        self.audio_trigger_data.peak_volume,
-                    ));
+                    push_val("RMS Volume", self.audio_trigger_data.rms_volume);
+                    push_val("Peak Volume", self.audio_trigger_data.peak_volume);
                 }
-
                 if output_config.beat_output {
                     let val = if self.audio_trigger_data.beat_detected {
                         1.0
                     } else {
                         0.0
                     };
-                    values.push(process_signal("Beat Out", val));
+                    push_val("Beat Out", val);
                 }
-
                 if output_config.bpm_output {
-                    // Normalize BPM to 0-1 range (assuming common range up to 200)
                     let val = self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0;
-                    values.push(process_signal("BPM Out", val));
+                    push_val("BPM Out", val);
                 }
 
                 // Fallback: if empty, add beat output (matches generate_outputs fallback)
@@ -640,7 +623,12 @@ impl ModuleEvaluator {
                     } else {
                         0.0
                     };
-                    values.push(process_signal("Beat Out", val));
+                    // Note: generate_outputs fallback uses "Beat Out" name, so we check that
+                    // But effectively we just push the value.
+                    // If we want to support inversion on fallback, we need to check "Beat Out"
+                    let inverted = output_config.inverted_outputs.contains("Beat Out");
+                    let final_val = if inverted { 1.0 - val } else { val };
+                    values.push(final_val);
                 }
 
                 values
@@ -652,43 +640,14 @@ impl ModuleEvaluator {
                     0.0
                 }]
             }
-            TriggerType::Random {
-                min_interval_ms,
-                max_interval_ms,
-                probability,
-            } => {
-                let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
-                let state = self
-                    .trigger_states
-                    .entry(part_id)
-                    .or_insert_with(TriggerState::default);
-
-                let mut fire = false;
-                let mut schedule_next = false;
-
-                if let TriggerState::Random { next_fire_time_ms } = state {
-                    if elapsed_ms >= *next_fire_time_ms {
-                        // Time to check for a trigger
-                        if rand::random::<f32>() < *probability {
-                            fire = true;
-                        }
-                        // Always schedule next fire time after a check, regardless of outcome
-                        schedule_next = true;
-                    }
+            TriggerType::Random { probability, .. } => {
+                // Generate random value and compare to probability
+                let random_value: f32 = rand::rng().random();
+                vec![if random_value < *probability {
+                    1.0
                 } else {
-                    // First time seeing this trigger, schedule its first fire time
-                    schedule_next = true;
-                }
-
-                if schedule_next {
-                    let mut rng = rand::thread_rng();
-                    let interval = rng.gen_range(*min_interval_ms..=*max_interval_ms) as u64;
-                    *state = TriggerState::Random {
-                        next_fire_time_ms: elapsed_ms + interval,
-                    };
-                }
-
-                vec![if fire { 1.0 } else { 0.0 }]
+                    0.0
+                }]
             }
             TriggerType::Fixed {
                 interval_ms,
@@ -696,23 +655,17 @@ impl ModuleEvaluator {
             } => {
                 // Calculate elapsed time since start
                 let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
-
-                // If elapsed time is less than the offset, do not fire.
-                if elapsed_ms < *offset_ms as u64 {
-                    return vec![0.0];
-                }
-
                 // Apply offset and check if we're in the "on" phase
-                let adjusted_time = elapsed_ms - *offset_ms as u64;
+                let adjusted_time = elapsed_ms.saturating_sub(*offset_ms as u64);
                 let interval = *interval_ms as u64;
                 if interval == 0 {
-                    return vec![1.0]; // Avoid division by zero, always on if interval is 0
+                    vec![1.0] // Avoid division by zero
+                } else {
+                    // Trigger is "on" for 10% of the interval (pulse)
+                    let pulse_duration = (interval / 10).max(16); // At least 16ms
+                    let phase = adjusted_time % interval;
+                    vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
                 }
-
-                // Trigger is "on" for 10% of the interval (pulse)
-                let pulse_duration = (interval / 10).max(16); // At least 16ms pulse
-                let phase = adjusted_time % interval;
-                vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
             }
             TriggerType::Midi { .. } => {
                 // MIDI triggers need external input

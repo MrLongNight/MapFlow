@@ -146,6 +146,11 @@
   - ✅ Multi-threaded Decode-Pipeline
   - ✅ Frame-Queue-Management
 
+- ✅ **libmpv Integration** (`mapmap-media/src/mpv_decoder.rs`) – **COMPLETED (2026-01-09)**
+  - ✅ `libmpv2` crate integration (optional feature `libmpv`)
+  - ✅ Alternative decoder backend
+  - ✅ Fallback strategy implementation
+
 - ✅ **Image-Decoder** (`mapmap-media/src/image_decoder.rs`)
   - ✅ PNG, JPG, BMP, TGA Support
   - ✅ Image-Crate-basierte Dekodierung
