@@ -13,6 +13,17 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::time::Instant;
 
+/// State for individual trigger nodes, stored in the evaluator
+#[derive(Debug, Clone, Default)]
+pub enum TriggerState {
+    #[default]
+    None,
+    Random {
+        /// The timestamp (in ms since start) when the next trigger is scheduled.
+        next_fire_time_ms: u64,
+    },
+}
+
 /// Source-specific rendering properties (from MediaFile)
 #[derive(Debug, Clone, Default)]
 pub struct SourceProperties {
@@ -141,6 +152,8 @@ pub struct ModuleEvaluator {
     audio_trigger_data: AudioTriggerData,
     /// Creation time for timing calculations
     start_time: Instant,
+    /// Per-node state for stateful triggers (e.g., Random)
+    trigger_states: HashMap<ModulePartId, TriggerState>,
 }
 
 impl Default for ModuleEvaluator {
@@ -155,6 +168,7 @@ impl ModuleEvaluator {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
             start_time: Instant::now(),
+            trigger_states: HashMap::new(),
         }
     }
 
@@ -168,7 +182,7 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a module for one frame
-    pub fn evaluate(&self, module: &MapFlowModule) -> ModuleEvalResult {
+    pub fn evaluate(&mut self, module: &MapFlowModule) -> ModuleEvalResult {
         let mut result = ModuleEvalResult::default();
 
         // === DIAGNOSTICS: Log module structure ===
@@ -206,7 +220,7 @@ impl ModuleEvaluator {
         // Step 1: Evaluate all trigger nodes
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
-                let values = self.evaluate_trigger(trigger_type);
+                let values = self.evaluate_trigger(part.id, trigger_type);
                 result.trigger_values.insert(part.id, values);
             }
         }
@@ -543,7 +557,7 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a trigger node and return output values
-    fn evaluate_trigger(&self, trigger_type: &TriggerType) -> Vec<f32> {
+    fn evaluate_trigger(&mut self, part_id: ModulePartId, trigger_type: &TriggerType) -> Vec<f32> {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
@@ -626,14 +640,43 @@ impl ModuleEvaluator {
                     0.0
                 }]
             }
-            TriggerType::Random { probability, .. } => {
-                // Generate random value and compare to probability
-                let random_value: f32 = rand::rng().random();
-                vec![if random_value < *probability {
-                    1.0
+            TriggerType::Random {
+                min_interval_ms,
+                max_interval_ms,
+                probability,
+            } => {
+                let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
+                let state = self
+                    .trigger_states
+                    .entry(part_id)
+                    .or_insert_with(TriggerState::default);
+
+                let mut fire = false;
+                let mut schedule_next = false;
+
+                if let TriggerState::Random { next_fire_time_ms } = state {
+                    if elapsed_ms >= *next_fire_time_ms {
+                        // Time to check for a trigger
+                        if rand::random::<f32>() < *probability {
+                            fire = true;
+                        }
+                        // Always schedule next fire time after a check, regardless of outcome
+                        schedule_next = true;
+                    }
                 } else {
-                    0.0
-                }]
+                    // First time seeing this trigger, schedule its first fire time
+                    schedule_next = true;
+                }
+
+                if schedule_next {
+                    let mut rng = rand::thread_rng();
+                    let interval = rng.gen_range(*min_interval_ms..=*max_interval_ms) as u64;
+                    *state = TriggerState::Random {
+                        next_fire_time_ms: elapsed_ms + interval,
+                    };
+                }
+
+                vec![if fire { 1.0 } else { 0.0 }]
             }
             TriggerType::Fixed {
                 interval_ms,
@@ -641,17 +684,23 @@ impl ModuleEvaluator {
             } => {
                 // Calculate elapsed time since start
                 let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
+
+                // If elapsed time is less than the offset, do not fire.
+                if elapsed_ms < *offset_ms as u64 {
+                    return vec![0.0];
+                }
+
                 // Apply offset and check if we're in the "on" phase
-                let adjusted_time = elapsed_ms.saturating_sub(*offset_ms as u64);
+                let adjusted_time = elapsed_ms - *offset_ms as u64;
                 let interval = *interval_ms as u64;
                 if interval == 0 {
-                    vec![1.0] // Avoid division by zero
-                } else {
-                    // Trigger is "on" for 10% of the interval (pulse)
-                    let pulse_duration = (interval / 10).max(16); // At least 16ms
-                    let phase = adjusted_time % interval;
-                    vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
+                    return vec![1.0]; // Avoid division by zero, always on if interval is 0
                 }
+
+                // Trigger is "on" for 10% of the interval (pulse)
+                let pulse_duration = (interval / 10).max(16); // At least 16ms pulse
+                let phase = adjusted_time % interval;
+                vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
             }
             TriggerType::Midi { .. } => {
                 // MIDI triggers need external input
