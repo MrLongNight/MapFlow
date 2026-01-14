@@ -1917,7 +1917,7 @@ impl App {
                             &preview_tex_name,
                             320,
                             180,
-                            wgpu::TextureFormat::Rgba8UnormSrgb,
+                            self.backend.surface_format(),
                             wgpu::TextureUsages::RENDER_ATTACHMENT
                                 | wgpu::TextureUsages::TEXTURE_BINDING,
                         );
