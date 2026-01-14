@@ -95,6 +95,11 @@ async fn update_layer(
         return Err(StatusCode::BAD_REQUEST);
     }
 
+    if let Err(msg) = request.validate() {
+        tracing::warn!("Invalid update layer request: {}", msg);
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     // In a real implementation, this would update the actual layer
     tracing::info!("Updating layer {}: {:?}", id, request);
 
