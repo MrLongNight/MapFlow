@@ -169,25 +169,9 @@ impl TexturePool {
     }
 
     /// Resize a texture if its dimensions have changed.
-    ///
-    /// ⚡ Bolt: Optimized with double-checked locking to avoid write locks on steady state.
     pub fn resize_if_needed(&self, name: &str, new_width: u32, new_height: u32) {
-        // Optimistic read check
-        {
-            let textures = self.textures.read();
-            if let Some(handle) = textures.get(name) {
-                if handle.width == new_width && handle.height == new_height {
-                    return;
-                }
-            } else {
-                return; // Texture doesn't exist, nothing to resize
-            }
-        }
-
-        // Needs resize
         let mut textures = self.textures.write();
         if let Some(handle) = textures.get_mut(name) {
-            // Double check in case another thread resized it while we waited
             if handle.width != new_width || handle.height != new_height {
                 let new_texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some(name),
@@ -217,8 +201,6 @@ impl TexturePool {
     }
 
     /// Upload data to a texture.
-    ///
-    /// ⚡ Bolt: Optimized to use read lock for handle retrieval.
     pub fn upload_data(
         &self,
         queue: &wgpu::Queue,
@@ -230,16 +212,12 @@ impl TexturePool {
         // Ensure texture exists and is correct size
         self.resize_if_needed(name, width, height);
 
-        // Optimistic read lock to get handle
-        let handle = {
-            let textures = self.textures.read();
-            textures.get(name).cloned()
-        };
-
-        let handle = if let Some(h) = handle {
-            h
+        let textures = self.textures.write();
+        let handle = if let Some(handle) = textures.get(name) {
+            handle.clone()
         } else {
-            // Create new (requires write lock internally)
+            // Create new
+            drop(textures);
             let _ = self.create(
                 name,
                 width,
@@ -247,7 +225,6 @@ impl TexturePool {
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             );
-            // Recursively call to get the handle again
             return self.upload_data(queue, name, data, width, height);
         };
 

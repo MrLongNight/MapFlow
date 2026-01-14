@@ -19,7 +19,6 @@ full = ["midi", "osc", "http-api"]
 # HTTP API (optional)
 axum = { workspace = true, optional = true, features = ["ws"] }
 futures = { version = "0.3", optional = true }
-hex = { workspace = true }
 http = { version = "1.1", optional = true }
 
 # MIDI (optional)
@@ -30,9 +29,6 @@ rosc = { workspace = true, optional = true }
 # Core dependencies
 serde = { workspace = true }
 serde_json = { workspace = true }
-
-# Security
-sha2 = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, optional = true, features = ["full"] }
 tower = { version = "0.4", optional = true }

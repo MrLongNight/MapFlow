@@ -15,6 +15,12 @@ on:
       - 'deny.toml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'scripts/**'
+      - 'deny.toml'
   workflow_dispatch:
     inputs:
       skip_tests:

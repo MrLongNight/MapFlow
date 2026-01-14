@@ -4,9 +4,3 @@
 Die Transform-Logik wurde korrigiert, um den Pivot basierend auf dem Anker relativ zur Top-Left-Ecke (0,0) zu berechnen: `pivot = size * anchor`.
 
 **Aktion:** Bei zukünftigen Implementierungen von Rendering-Logik immer das Koordinatensystem (Normalized vs Pixel, Centered vs Top-Left) explizit validieren. Neue Tests sollten Transformationen mit nicht-trivialen Ankern prüfen.
-
-## 2026-01-20 - [Implicit Fallback Logic Coverage]
-
-**Erkenntnis:** In `AudioTriggerOutputConfig::generate_outputs` gab es eine implizite Fallback-Logik (wenn alle Outputs deaktiviert sind, wird "Beat Out" erzwungen), die bisher nur durch Default-Tests abgedeckt war. Ein expliziter Test `test_audio_trigger_output_config_fallback_enforcement` stellt sicher, dass dieses Sicherheitsnetz auch bei bewusster Fehlkonfiguration greift.
-
-**Aktion:** Bei Konfigurationsobjekten mit `generate_...` Methoden immer gezielt den "Leeren" Zustand testen, um implizite Fallbacks zu verifizieren.
