@@ -33,14 +33,13 @@ impl GpuVertex {
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct MeshUniforms {
     transform: [[f32; 4]; 4], // 64 bytes
-    opacity: f32,             // 4 bytes
     flip_h: f32,              // 4 bytes
     flip_v: f32,              // 4 bytes
     brightness: f32,          // 4 bytes
     contrast: f32,            // 4 bytes
     saturation: f32,          // 4 bytes
     hue_shift: f32,           // 4 bytes
-    _padding: f32,            // 4 bytes (total 96 bytes)
+    _padding: [f32; 2],       // 8 bytes (total 96 bytes)
 }
 
 struct CachedMeshUniform {
@@ -260,17 +259,16 @@ impl MeshRenderer {
     }
 
     /// Create a uniform buffer
-    pub fn create_uniform_buffer(&self, transform: Mat4, opacity: f32) -> wgpu::Buffer {
+    pub fn create_uniform_buffer(&self, transform: Mat4) -> wgpu::Buffer {
         let uniforms = MeshUniforms {
             transform: transform.to_cols_array_2d(),
-            opacity,
             flip_h: 0.0,
             flip_v: 0.0,
             brightness: 0.0,
             contrast: 1.0,
             saturation: 1.0,
             hue_shift: 0.0,
-            _padding: 0.0,
+            _padding: [0.0; 2],
         };
 
         self.device
@@ -303,20 +301,18 @@ impl MeshRenderer {
         &mut self,
         queue: &wgpu::Queue,
         transform: Mat4,
-        opacity: f32,
     ) -> Arc<wgpu::BindGroup> {
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
             let uniforms = MeshUniforms {
                 transform: transform.to_cols_array_2d(),
-                opacity,
                 flip_h: 0.0,
                 flip_v: 0.0,
                 brightness: 0.0,
                 contrast: 1.0,
                 saturation: 1.0,
                 hue_shift: 0.0,
-                _padding: 0.0,
+                _padding: [0.0; 2],
             };
 
             let buffer = self
@@ -346,14 +342,13 @@ impl MeshRenderer {
         let cache_entry = &self.uniform_cache[self.current_cache_index];
         let uniforms = MeshUniforms {
             transform: transform.to_cols_array_2d(),
-            opacity,
             flip_h: 0.0,
             flip_v: 0.0,
             brightness: 0.0,
             contrast: 1.0,
             saturation: 1.0,
             hue_shift: 0.0,
-            _padding: 0.0,
+            _padding: [0.0; 2],
         };
 
         queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
@@ -371,7 +366,6 @@ impl MeshRenderer {
         &mut self,
         queue: &wgpu::Queue,
         transform: Mat4,
-        opacity: f32,
         flip_h: bool,
         flip_v: bool,
         brightness: f32,
@@ -383,14 +377,13 @@ impl MeshRenderer {
         if self.current_cache_index >= self.uniform_cache.len() {
             let uniforms = MeshUniforms {
                 transform: transform.to_cols_array_2d(),
-                opacity,
                 flip_h: if flip_h { 1.0 } else { 0.0 },
                 flip_v: if flip_v { 1.0 } else { 0.0 },
                 brightness,
                 contrast,
                 saturation,
                 hue_shift,
-                _padding: 0.0,
+                _padding: [0.0; 2],
             };
 
             let buffer = self
@@ -420,14 +413,13 @@ impl MeshRenderer {
         let cache_entry = &self.uniform_cache[self.current_cache_index];
         let uniforms = MeshUniforms {
             transform: transform.to_cols_array_2d(),
-            opacity,
             flip_h: if flip_h { 1.0 } else { 0.0 },
             flip_v: if flip_v { 1.0 } else { 0.0 },
             brightness,
             contrast,
             saturation,
             hue_shift,
-            _padding: 0.0,
+            _padding: [0.0; 2],
         };
 
         queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
