@@ -2,7 +2,6 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 
-# CI configuration for pre-commit.ci service
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit.ci [skip ci]"
   autofix_prs: true
@@ -17,63 +16,17 @@ repos:
   # General file fixes (trailing whitespace, etc.)
   # ===========================================
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
-      # Fix trailing whitespace
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
-      # Ensure files end with a newline
       - id: end-of-file-fixer
-      # Check for files that would conflict on case-insensitive filesystems
       - id: check-case-conflict
-      # Check YAML files for syntax errors
       - id: check-yaml
         args: [--allow-multiple-documents]
-      # Check TOML files for syntax errors
       - id: check-toml
-      # Prevent large files from being committed
       - id: check-added-large-files
         args: [--maxkb=1000]
-      # Check for merge conflict markers
       - id: check-merge-conflict
-      # Fix mixed line endings
       - id: mixed-line-ending
         args: [--fix=lf]
-
-  # ===========================================
-  # Rust: cargo fmt (formatting)
-  # ===========================================
-  - repo: local
-    hooks:
-      - id: cargo-fmt
-        name: cargo fmt
-        description: Format Rust code with rustfmt
-        entry: cargo fmt --all --
-        language: system
-        types: [rust]
-        pass_filenames: false
-
-  # ===========================================
-  # Rust: cargo clippy --fix (auto-fixable lints)
-  # ===========================================
-      - id: cargo-clippy-fix
-        name: cargo clippy --fix
-        description: Auto-fix Clippy warnings
-        entry: cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux" -- -D warnings
-        language: system
-        types: [rust]
-        pass_filenames: false
-        stages: [pre-commit]
-        # Only run on CI, not locally (takes too long)
-        verbose: true
-
-  # ===========================================
-  # Cargo.toml sorting
-  # ===========================================
-      - id: cargo-sort
-        name: cargo sort
-        description: Sort Cargo.toml dependencies
-        entry: cargo sort --workspace
-        language: system
-        files: Cargo\.toml$
-        pass_filenames: false

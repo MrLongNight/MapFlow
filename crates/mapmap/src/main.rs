@@ -34,7 +34,7 @@ use mapmap_render::{
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
 use tracing::{debug, error, info, warn};
@@ -106,7 +106,7 @@ struct App {
     /// Active media players for source nodes (PartID -> Player)
     media_players: HashMap<ModulePartId, VideoPlayer>,
     /// FPS calculation: accumulated frame times
-    fps_samples: Vec<f32>,
+    fps_samples: VecDeque<f32>,
     /// Current calculated FPS
     current_fps: f32,
     /// Current frame time in ms
@@ -150,6 +150,8 @@ struct App {
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
     /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
+    preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
 }
 
 impl App {
@@ -458,6 +460,31 @@ impl App {
 
         ui_state.initialize_icons(&egui_context, &assets_path);
 
+        // Initialize preview quad buffers
+        // Use manual construction to ensure -1..1 NDC range coverage for full viewport
+        let preview_mesh = mapmap_core::Mesh {
+            mesh_type: mapmap_core::MeshType::Quad,
+            vertices: vec![
+                // Top-Left (NDC -1, 1) -> UV 0,0
+                mapmap_core::MeshVertex::new(glam::Vec2::new(-1.0, 1.0), glam::Vec2::new(0.0, 0.0)),
+                // Top-Right (NDC 1, 1) -> UV 1,0
+                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 1.0), glam::Vec2::new(1.0, 0.0)),
+                // Bottom-Right (NDC 1, -1) -> UV 1,1
+                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, -1.0), glam::Vec2::new(1.0, 1.0)),
+                // Bottom-Left (NDC -1, -1) -> UV 0,1
+                mapmap_core::MeshVertex::new(
+                    glam::Vec2::new(-1.0, -1.0),
+                    glam::Vec2::new(0.0, 1.0),
+                ),
+            ],
+            indices: vec![0, 1, 2, 0, 2, 3],
+            revision: 0,
+        };
+        let preview_quad_buffers = {
+            let (vb, ib) = mesh_renderer.create_mesh_buffers(&preview_mesh);
+            (vb, ib, preview_mesh.indices.len() as u32)
+        };
+
         let mut app = Self {
             window_manager,
             ui_state,
@@ -488,7 +515,7 @@ impl App {
             dummy_view: None,
             module_evaluator: ModuleEvaluator::new(),
             media_players: HashMap::new(),
-            fps_samples: Vec::with_capacity(60),
+            fps_samples: VecDeque::with_capacity(60),
             current_fps: 60.0,
             current_frame_time_ms: 16.6,
             sys_info: sysinfo::System::new_all(),
@@ -545,6 +572,7 @@ impl App {
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
             preview_texture_cache: HashMap::new(),
+            preview_quad_buffers,
         };
 
         // Create initial dummy texture
@@ -1164,10 +1192,13 @@ impl App {
                         }
 
                         // 3. Sync output windows with evaluation result
-                        let render_ops_clone = self.render_ops.clone();
-                        if let Err(e) = self.sync_output_windows(elwt, &render_ops_clone) {
+                        // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
+                        // by temporarily taking ownership and restoring it immediately.
+                        let render_ops_temp = std::mem::take(&mut self.render_ops);
+                        if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
                             error!("Failed to sync output windows: {}", e);
                         }
+                        self.render_ops = render_ops_temp;
                     }
                 }
 
@@ -1766,9 +1797,9 @@ impl App {
 
         // Calculate FPS with smoothing (rolling average of last 60 frames)
         let frame_time_ms = delta_time * 1000.0;
-        self.fps_samples.push(frame_time_ms);
+        self.fps_samples.push_back(frame_time_ms);
         if self.fps_samples.len() > 60 {
-            self.fps_samples.remove(0);
+            self.fps_samples.pop_front();
         }
         if !self.fps_samples.is_empty() {
             let avg_frame_time: f32 =
@@ -1810,30 +1841,149 @@ impl App {
 
             // Sync Texture Previews for Module Canvas
             {
-                // Identify active sources
-                // OPTIMIZATION: Collect IDs first to avoid borrowing `self.state` during mutation
-                let mut active_source_ids = std::collections::HashSet::new();
+                // Identify active sources and gather their properties
+                let mut active_preview_sources = Vec::new();
                 for module in self.state.module_manager.modules() {
                     for part in &module.parts {
-                        if let mapmap_core::module::ModulePartType::Source(_) = part.part_type {
-                            active_source_ids.insert(part.id);
+                        if let mapmap_core::module::ModulePartType::Source(
+                            mapmap_core::module::SourceType::MediaFile {
+                                brightness,
+                                contrast,
+                                saturation,
+                                hue_shift,
+                                flip_horizontal,
+                                flip_vertical,
+                                rotation,
+                                scale_x,
+                                scale_y,
+                                offset_x,
+                                offset_y,
+                                ..
+                            },
+                        ) = &part.part_type
+                        {
+                            active_preview_sources.push((
+                                part.id,
+                                *brightness,
+                                *contrast,
+                                *saturation,
+                                *hue_shift,
+                                *flip_horizontal,
+                                *flip_vertical,
+                                *rotation,
+                                *scale_x,
+                                *scale_y,
+                                *offset_x,
+                                *offset_y,
+                            ));
                         }
                     }
                 }
 
-                // Update cache and register/free textures
+                // Render previews with effects
                 let mut current_frame_previews = std::collections::HashMap::new();
 
-                for part_id in &active_source_ids {
-                    let tex_name = format!("part_{}", part_id);
-                    if self.texture_pool.has_texture(&tex_name) {
-                        let view = self.texture_pool.get_view(&tex_name);
+                // Create command encoder for preview rendering
+                let mut encoder =
+                    self.backend
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Preview Render Encoder"),
+                        });
 
+                for (
+                    part_id,
+                    brightness,
+                    contrast,
+                    saturation,
+                    hue_shift,
+                    flip_h,
+                    flip_v,
+                    rotation,
+                    scale_x,
+                    scale_y,
+                    offset_x,
+                    offset_y,
+                ) in active_preview_sources
+                {
+                    let raw_tex_name = format!("part_{}", part_id);
+                    if self.texture_pool.has_texture(&raw_tex_name) {
+                        let raw_view = self.texture_pool.get_view(&raw_tex_name);
+
+                        // Create/Get preview texture (fixed small resolution)
+                        let preview_tex_name = format!("preview_{}", part_id);
+                        // Ensure it exists with correct size
+                        self.texture_pool.ensure_texture(
+                            &preview_tex_name,
+                            320,
+                            180,
+                            self.backend.surface_format(),
+                            wgpu::TextureUsages::RENDER_ATTACHMENT
+                                | wgpu::TextureUsages::TEXTURE_BINDING,
+                        );
+                        let preview_view = self.texture_pool.get_view(&preview_tex_name);
+
+                        // Calculate Transform Matrix based on source properties
+                        // This mirrors the logic in module_eval.rs
+                        let transform_mat = glam::Mat4::from_scale_rotation_translation(
+                            glam::Vec3::new(scale_x, scale_y, 1.0),
+                            glam::Quat::from_rotation_z(rotation.to_radians()),
+                            glam::Vec3::new(offset_x, offset_y, 0.0),
+                        );
+
+                        // Prepare Uniforms
+                        let uniform_bg =
+                            self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                                &self.backend.queue,
+                                transform_mat,
+                                flip_h,
+                                flip_v,
+                                brightness,
+                                contrast,
+                                saturation,
+                                hue_shift,
+                            );
+
+                        let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
+
+                        // Render Pass
+                        {
+                            let mut render_pass =
+                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: Some(&format!("Preview Pass {}", part_id)),
+                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                        view: &preview_view,
+                                        resolve_target: None,
+                                        ops: wgpu::Operations {
+                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                            store: wgpu::StoreOp::Store,
+                                        },
+                                    })],
+                                    depth_stencil_attachment: None,
+                                    timestamp_writes: None,
+                                    occlusion_query_set: None,
+                                });
+
+                            // Use the pre-allocated quad buffers
+                            let (vb, ib, index_count) = &self.preview_quad_buffers;
+
+                            self.mesh_renderer.draw(
+                                &mut render_pass,
+                                vb,
+                                ib,
+                                *index_count,
+                                &uniform_bg,
+                                &texture_bg,
+                                false, // No perspective correction for flat preview
+                            );
+                        }
+
+                        // Register the PROCESSED preview texture for UI
                         // Check cache using Entry API to avoid double borrow
-                        let texture_id = match self.preview_texture_cache.entry(*part_id) {
+                        let texture_id = match self.preview_texture_cache.entry(part_id) {
                             std::collections::hash_map::Entry::Occupied(mut entry) => {
                                 let (cached_id, cached_view) = entry.get();
-                                if std::sync::Arc::ptr_eq(cached_view, &view) {
+                                if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
                                     // Cache hit! View hasn't changed.
                                     *cached_id
                                 } else {
@@ -1841,10 +1991,10 @@ impl App {
                                     self.egui_renderer.free_texture(cached_id);
                                     let new_id = self.egui_renderer.register_native_texture(
                                         &self.backend.device,
-                                        &view,
+                                        &preview_view,
                                         wgpu::FilterMode::Linear,
                                     );
-                                    entry.insert((new_id, view.clone()));
+                                    entry.insert((new_id, preview_view.clone()));
                                     new_id
                                 }
                             }
@@ -1852,21 +2002,24 @@ impl App {
                                 // New source
                                 let new_id = self.egui_renderer.register_native_texture(
                                     &self.backend.device,
-                                    &view,
+                                    &preview_view,
                                     wgpu::FilterMode::Linear,
                                 );
-                                entry.insert((new_id, view.clone()));
+                                entry.insert((new_id, preview_view.clone()));
                                 new_id
                             }
                         };
 
-                        current_frame_previews.insert(*part_id, texture_id);
+                        current_frame_previews.insert(part_id, texture_id);
                     }
                 }
 
+                // Submit rendering commands
+                self.backend.queue.submit(Some(encoder.finish()));
+
                 // Cleanup stale cache entries
                 self.preview_texture_cache.retain(|id, (tex_id, _)| {
-                    if !active_source_ids.contains(id) {
+                    if !current_frame_previews.contains_key(id) {
                         self.egui_renderer.free_texture(tex_id);
                         false
                     } else {
@@ -2903,7 +3056,6 @@ impl App {
                             self.mesh_renderer.get_uniform_bind_group_with_source_props(
                                 &self.backend.queue,
                                 transform,
-                                op.opacity * op.source_props.opacity,
                                 op.source_props.flip_horizontal,
                                 op.source_props.flip_vertical,
                                 op.source_props.brightness,

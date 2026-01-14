@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-14: test(core): Guardian ModuleEvaluator coverage for triggers and chains
+- 2026-01-13: test(core): Add robust tests for Layer-Transform and State-Serialization (#228)
 - 2026-01-10: feat(render): Add SourceProperties to RenderOp for color/transform/flip (#b8453dc)
 - 2026-01-10: feat(media): Add flip, reverse playback and seek controls to Media Node (#9f8163d)
 - 2026-01-09: fix(security): Fix auth timing side-channel (#222)
@@ -172,7 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-14: fix: resolve winit/wgpu dependency conflicts in mapmap-ui (#50)
 - 2025-12-12: Fix: `mapmap-control` doc test for OSC server updated to use `poll_packet` instead of non-existent `poll_event`.
 - 2025-12-12: Fix: `test_backend_creation` now handles headless CI environments by skipping gracefully when GPU backend unavailable.
-- 2025-12-12: Fix: Corrected `VideoEncoder` keyframe logic (first frame is now keyframe) and updated `test_video_encoder_keyframe` to match.
+- 2025-12-12: Fix: `VideoEncoder` keyframe logic (first frame is now keyframe) and updated `test_video_encoder_keyframe` to match.
 - 2025-12-12: Fix: MIDI unit tests (input/output) now accept initialization failures in CI environments where MIDI devices are unavailable.
 - 2025-12-12: Fix: Alle aktuellen dead_code-Stellen mit #[allow(dead_code)] und Erklärung markiert, so dass der Build wieder erfolgreich läuft. (Siehe auch DEAD_CODE_GUIDE.md)
 - 2025-12-12: fix: CI `alsa-sys` and `ffmpeg-sys-next` build failures by installing `libasound2-dev` and FFmpeg dev libs in `quality` job.

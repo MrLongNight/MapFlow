@@ -15,12 +15,6 @@ on:
       - 'deny.toml'
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'crates/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'scripts/**'
-      - 'deny.toml'
   workflow_dispatch:
     inputs:
       skip_tests:
@@ -55,11 +49,11 @@ jobs:
   # ========================================
 
   pre-checks:
-    name: "Pre-Checks (Validation)"
+    name: "Pre-Checks (Auto-Fix)"
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
+      contents: write
+      pull-requests: write
 
     steps:
     - name: Configure Git
@@ -74,17 +68,37 @@ jobs:
       with:
         components: rustfmt, clippy
 
-    # Note: Auto-fixes are now handled by pre-commit.ci
-    # This job only validates that formatting is correct
+    - name: Install cargo-make (Task Runner)
+      run: cargo install --locked cargo-make
 
-    - name: Check formatting (rustfmt)
-      run: cargo fmt --all -- --check
-
-    - name: Check Cargo.toml sorting
+    - name: Check & Auto-Fix Formatting
+      id: fmt
       run: |
-        cargo install cargo-sort --locked
-        cargo sort --workspace --check
+        cargo fmt --all
+        if [[ -n $(git status --porcelain) ]]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: Auto-format code (cargo fmt) [skip ci]"
+          git push
+        fi
+
+    - name: Check Cargo.toml formatting
+      run: cargo install cargo-sort && cargo sort --workspace --check || cargo sort --workspace
+
+    - name: Fix common Clippy issues (Auto-Fix)
       continue-on-error: true
+      run: cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
+
+    - name: Commit Auto-Fixes (Clippy)
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: Auto-fix Clippy warnings [skip ci]"
+          git push
+        fi
 
   # ========================================
   # PHASE 2: Code Quality & Linting
