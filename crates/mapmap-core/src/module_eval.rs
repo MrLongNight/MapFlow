@@ -561,20 +561,25 @@ impl ModuleEvaluator {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
-                threshold: _threshold,
+                threshold,
                 output_config,
             } => {
                 let mut values = Vec::new();
 
-                // Helper to push and optionally invert value
-                let mut push_val = |name: &str, val: f32| {
+                // Helper to process a signal: applies inversion and thresholding
+                let process_signal = |name: &str, val: f32| -> f32 {
                     let inverted = output_config.inverted_outputs.contains(name);
-                    let final_val = if inverted {
-                        1.0 - val.clamp(0.0, 1.0)
+                    let mut signal = val.clamp(0.0, 1.0);
+
+                    if inverted {
+                        signal = 1.0 - signal;
+                    }
+
+                    if signal > *threshold {
+                        1.0
                     } else {
-                        val
-                    };
-                    values.push(final_val);
+                        0.0
+                    }
                 };
 
                 // Generate values based on config
@@ -592,28 +597,40 @@ impl ModuleEvaluator {
                         "Air Out",
                     ];
                     for (i, name) in bands.iter().enumerate() {
-                        if i < self.audio_trigger_data.band_energies.len() {
-                            push_val(name, self.audio_trigger_data.band_energies[i]);
-                        } else {
-                            push_val(name, 0.0);
-                        }
+                        let energy = self
+                            .audio_trigger_data
+                            .band_energies
+                            .get(i)
+                            .copied()
+                            .unwrap_or(0.0);
+                        values.push(process_signal(name, energy));
                     }
                 }
+
                 if output_config.volume_outputs {
-                    push_val("RMS Volume", self.audio_trigger_data.rms_volume);
-                    push_val("Peak Volume", self.audio_trigger_data.peak_volume);
+                    values.push(process_signal(
+                        "RMS Volume",
+                        self.audio_trigger_data.rms_volume,
+                    ));
+                    values.push(process_signal(
+                        "Peak Volume",
+                        self.audio_trigger_data.peak_volume,
+                    ));
                 }
+
                 if output_config.beat_output {
                     let val = if self.audio_trigger_data.beat_detected {
                         1.0
                     } else {
                         0.0
                     };
-                    push_val("Beat Out", val);
+                    values.push(process_signal("Beat Out", val));
                 }
+
                 if output_config.bpm_output {
+                    // Normalize BPM to 0-1 range (assuming common range up to 200)
                     let val = self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0;
-                    push_val("BPM Out", val);
+                    values.push(process_signal("BPM Out", val));
                 }
 
                 // Fallback: if empty, add beat output (matches generate_outputs fallback)
@@ -623,12 +640,7 @@ impl ModuleEvaluator {
                     } else {
                         0.0
                     };
-                    // Note: generate_outputs fallback uses "Beat Out" name, so we check that
-                    // But effectively we just push the value.
-                    // If we want to support inversion on fallback, we need to check "Beat Out"
-                    let inverted = output_config.inverted_outputs.contains("Beat Out");
-                    let final_val = if inverted { 1.0 - val } else { val };
-                    values.push(final_val);
+                    values.push(process_signal("Beat Out", val));
                 }
 
                 values
