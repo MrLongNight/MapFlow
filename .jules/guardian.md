@@ -10,9 +10,3 @@ Die Transform-Logik wurde korrigiert, um den Pivot basierend auf dem Anker relat
 **Erkenntnis:** `AppState` ist die Source-of-Truth und wächst schnell. Ein einfacher Roundtrip-Test (`serde_json`) fängt fehlende `Default`-Implementierungen oder invalide `serde`-Attribute sofort ab, bevor sie zur Laufzeit crashen.
 
 **Aktion:** Bei jedem neuen komplexen Struct, das in `AppState` aufgenommen wird, sicherstellen, dass `Default` und `PartialEq` derived sind, damit der Roundtrip-Test automatisch greift.
-
-## 2026-01-20 - [Implicit Fallback Logic Coverage]
-
-**Erkenntnis:** In `AudioTriggerOutputConfig::generate_outputs` gab es eine implizite Fallback-Logik (wenn alle Outputs deaktiviert sind, wird "Beat Out" erzwungen), die bisher nur durch Default-Tests abgedeckt war. Ein expliziter Test `test_audio_trigger_output_config_fallback_enforcement` stellt sicher, dass dieses Sicherheitsnetz auch bei bewusster Fehlkonfiguration greift.
-
-**Aktion:** Bei Konfigurationsobjekten mit `generate_...` Methoden immer gezielt den "Leeren" Zustand testen, um implizite Fallbacks zu verifizieren.

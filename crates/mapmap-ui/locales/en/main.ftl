@@ -59,8 +59,6 @@ media-browser-sort = Sort
 media-browser-sort-name = Name
 media-browser-sort-type = Type
 media-browser-sort-size = Size
-media-browser-empty-folder = This folder is empty.
-media-browser-no-results = No media found matching filters.
 
 panel-effect-chain = Effect Chain
 effect-name-color-adjust = Color Adjust

@@ -8,8 +8,8 @@ This document outlines the procedures and what to expect when contributing a bug
 It really helps us efficiently process your contribution!
 
 **Table Of Contents**  
-[Report a bug](#bug-reports)  
-[Request a feature](#feature-requests)  
+[Report a bug](#bug-reports)
+[Request a feature](#feature-requests)
 [Contribute code](#contributing-code)  
 
  ## <a id='bug-reports'></a>Report a bug

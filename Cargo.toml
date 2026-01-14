@@ -50,11 +50,11 @@ egui_extras = { version = "0.27", features = ["image", "file", "svg"] }
 
 # Media
 ffmpeg-next = "7.0"
+libmpv2 = { version = "5.0", features = ["render"] }
 fluent = "0.16"
 fluent-langneg = "0.13"
 futures = "0.3"
 glam = { version = "0.25", features = ["serde"] }
-hex = "0.4"
 hound = "3.5"
 hyper = "1.1"
 image = "0.24"
@@ -63,7 +63,6 @@ image = "0.24"
 imgui = "0.12"
 imgui-wgpu = { path = "crates/vendor/imgui-wgpu" }
 imgui-winit-support = "0.12"
-libmpv2 = { version = "5.0", features = ["render"] }
 
 # Control
 midir = "0.9"
@@ -88,9 +87,6 @@ rustfft = "6.2"
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# Crypto
-sha2 = "0.10"
 
 # Error handling
 thiserror = "1.0"

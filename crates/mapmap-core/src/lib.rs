@@ -41,21 +41,11 @@ pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
 
-// --- Re-exports grouped by category ---
-
-// Animation
 pub use animation::{
     AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, InterpolationMode, Keyframe,
     TimePoint,
 };
-pub use effect_animation::{
-    EffectAnimationId, EffectParameterAnimator, EffectParameterBinding, EffectParameterUpdate,
-};
-
-// Assignment & Control
 pub use assignment::{Assignment, AssignmentManager, ControlSource, ControlTarget};
-
-// Audio System
 pub use audio::{
     AudioAnalysis, AudioAnalyzer, AudioConfig, AudioMappingType, AudioReactiveMapping, AudioSource,
     FrequencyBand,
@@ -65,45 +55,34 @@ pub use audio_reactive::{
     AudioAnimationBlendMode, AudioReactiveAnimationSystem, AudioReactiveController,
     AudioReactivePreset,
 };
-
-// Effects & Processing
+pub use codegen::{CodegenError, WGSLCodegen};
+pub use effect_animation::{
+    EffectAnimationId, EffectParameterAnimator, EffectParameterBinding, EffectParameterUpdate,
+};
 pub use effects::{Effect, EffectChain, EffectType};
-pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
-pub use oscillator::{
-    ColorMode, CoordinateMode, OscillatorConfig, PhaseInitMode, RingParams, SimulationResolution,
-};
-pub use recent_effect_configs::{
-    EffectConfig, EffectParamValue, RecentConfigQueue, RecentEffectConfigs, MAX_RECENT_CONFIGS,
-};
-
-// Geometry & Meshes
-pub use mesh::{keystone, BezierPatch, Mesh, MeshType, MeshVertex, VertexId};
-pub use paint::{Paint, PaintId, PaintManager, PaintType};
-
-// Logging & Diagnostics
 pub use logging::LogConfig;
-
-// Module System & Evaluation
+pub use lut::{Lut3D, LutError, LutFormat, LutManager, LutPreset};
+pub use mapping::{Mapping, MappingId, MappingManager};
+pub use mesh::{keystone, BezierPatch, Mesh, MeshType, MeshVertex, VertexId};
 pub use module_eval::{
     ModuleEvalResult, ModuleEvaluator, RenderOp, SourceCommand, SourceProperties,
 };
-
-// Output & Display
-pub use mapping::{Mapping, MappingId, MappingManager};
 pub use monitor::{MonitorInfo, MonitorTopology};
+pub use oscillator::{
+    ColorMode, CoordinateMode, OscillatorConfig, PhaseInitMode, RingParams, SimulationResolution,
+};
 pub use output::{
     CanvasRegion, ColorCalibration, EdgeBlendConfig, EdgeBlendZone, OutputConfig, OutputId,
     OutputManager,
 };
-
-// Shader Graph & Codegen
-pub use codegen::{CodegenError, WGSLCodegen};
+pub use paint::{Paint, PaintId, PaintManager, PaintType};
+pub use recent_effect_configs::{
+    EffectConfig, EffectParamValue, RecentConfigQueue, RecentEffectConfigs, MAX_RECENT_CONFIGS,
+};
 pub use shader_graph::{
     DataType, GraphId, InputSocket, NodeId, NodeType, OutputSocket, ParameterValue, ShaderGraph,
     ShaderNode,
 };
-
-// State & Project
 pub use state::{AppSettings, AppState};
 
 /// Core error types

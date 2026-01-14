@@ -85,53 +85,6 @@ impl Default for AppState {
     }
 }
 
-impl AppState {
-    /// Create a new empty project state
-    pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            ..Default::default()
-        }
-    }
-}
-
-/// Global application settings (not strictly project, but persisted with it or separately in user config)
-/// For now, we include it in project file for simplicity, or we can split it later.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct AppSettings {
-    /// Global master volume
-    pub master_volume: f32,
-    /// Dark mode toggle
-    pub dark_mode: bool,
-    /// UI scale factor
-    pub ui_scale: f32,
-    /// UI Language code (en, de)
-    pub language: String,
-    /// Logging configuration
-    #[serde(default)]
-    pub log_config: LogConfig,
-    /// Number of output windows (projectors/beamers)
-    #[serde(default = "default_output_count")]
-    pub output_count: u8,
-}
-
-fn default_output_count() -> u8 {
-    1
-}
-
-impl Default for AppSettings {
-    fn default() -> Self {
-        Self {
-            master_volume: 1.0,
-            dark_mode: true,
-            ui_scale: 1.0,
-            language: "en".to_string(),
-            log_config: LogConfig::default(),
-            output_count: 1,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -177,5 +130,52 @@ mod tests {
         assert_eq!(original.layer_manager, deserialized.layer_manager);
         // Note: ModuleManager derived PartialEq check
         assert_eq!(original.module_manager, deserialized.module_manager);
+    }
+}
+
+impl AppState {
+    /// Create a new empty project state
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ..Default::default()
+        }
+    }
+}
+
+/// Global application settings (not strictly project, but persisted with it or separately in user config)
+/// For now, we include it in project file for simplicity, or we can split it later.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AppSettings {
+    /// Global master volume
+    pub master_volume: f32,
+    /// Dark mode toggle
+    pub dark_mode: bool,
+    /// UI scale factor
+    pub ui_scale: f32,
+    /// UI Language code (en, de)
+    pub language: String,
+    /// Logging configuration
+    #[serde(default)]
+    pub log_config: LogConfig,
+    /// Number of output windows (projectors/beamers)
+    #[serde(default = "default_output_count")]
+    pub output_count: u8,
+}
+
+fn default_output_count() -> u8 {
+    1
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            master_volume: 1.0,
+            dark_mode: true,
+            ui_scale: 1.0,
+            language: "en".to_string(),
+            log_config: LogConfig::default(),
+            output_count: 1,
+        }
     }
 }

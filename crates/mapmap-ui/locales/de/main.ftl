@@ -62,8 +62,6 @@ media-browser-sort = Sortieren
 media-browser-sort-name = Name
 media-browser-sort-type = Typ
 media-browser-sort-size = Größe
-media-browser-empty-folder = Dieser Ordner ist leer.
-media-browser-no-results = Keine passenden Medien gefunden.
 
 panel-effect-chain = Effekt-Kette
 effect-name-color-adjust = Farbanpassung
@@ -317,7 +315,7 @@ check-enable = Effekt aktivieren
 header-quick-presets = Schnell-Vorlagen
 btn-subtle = Dezent
 btn-dramatic = Dramatisch
-btn-rings = Rings
+btn-rings = Ringe
 btn-reset = Zurücksetzen
 header-distortion = Verzerrungs-Parameter
 label-amount = Stärke
