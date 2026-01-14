@@ -20,14 +20,13 @@ struct VertexOutput {
 
 struct Uniforms {
     transform: mat4x4<f32>,  // Model-View-Projection transform
-    opacity: f32,            // Layer opacity
     flip_h: f32,             // Horizontal flip (0.0 or 1.0)
     flip_v: f32,             // Vertical flip (0.0 or 1.0)
     brightness: f32,         // Brightness adjustment (-1.0 to 1.0)
     contrast: f32,           // Contrast adjustment (0.0 to 2.0, 1.0 = normal)
     saturation: f32,         // Saturation adjustment (0.0 to 2.0, 1.0 = normal)
     hue_shift: f32,          // Hue shift in degrees (-180 to 180)
-    _padding: f32,           // Padding for 16-byte alignment
+    _padding: vec2<f32>,     // Padding for 16-byte alignment
 }
 
 @group(0) @binding(0)
@@ -144,9 +143,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Apply color correction
     color = apply_color_correction(color);
 
-    // Apply opacity
-    color.a *= uniforms.opacity;
-
     return color;
 }
 
@@ -158,9 +154,6 @@ fn fs_main_simple(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Apply color correction
     color = apply_color_correction(color);
-
-    // Apply opacity
-    color.a *= uniforms.opacity;
 
     return color;
 }
