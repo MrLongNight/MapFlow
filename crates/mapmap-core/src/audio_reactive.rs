@@ -460,34 +460,56 @@ mod tests {
 
         // --- Attack Phase ---
         // Start with no volume
-        let audio_low = AudioAnalysis { rms_volume: 0.0, ..Default::default() };
+        let audio_low = AudioAnalysis {
+            rms_volume: 0.0,
+            ..Default::default()
+        };
         let values1 = controller.update(&audio_low, 0.0);
         let val1 = values1.get("node.test").unwrap();
         assert_eq!(*val1, 0.0);
 
         // Sudden high volume
-        let audio_high = AudioAnalysis { rms_volume: 1.0, ..Default::default() };
+        let audio_high = AudioAnalysis {
+            rms_volume: 1.0,
+            ..Default::default()
+        };
         // After 50ms (half of attack time), value should be around 0.5
         let values2 = controller.update(&audio_high, 0.05);
         let val2 = values2.get("node.test").unwrap();
-        assert!((val2 - 0.5).abs() < 0.1, "Attack value is {}, expected ~0.5", val2);
+        assert!(
+            (val2 - 0.5).abs() < 0.1,
+            "Attack value is {}, expected ~0.5",
+            val2
+        );
 
         // After 100ms, should be close to 1.0
         let values3 = controller.update(&audio_high, 0.1);
         let val3 = values3.get("node.test").unwrap();
-        assert!((val3 - 1.0).abs() < 0.1, "Attack value is {}, expected ~1.0", val3);
+        assert!(
+            (val3 - 1.0).abs() < 0.1,
+            "Attack value is {}, expected ~1.0",
+            val3
+        );
 
         // --- Release Phase ---
         // Sudden drop to low volume
         // After 100ms (half of release time), value should be around 0.5
         let values4 = controller.update(&audio_low, 0.2);
         let val4 = values4.get("node.test").unwrap();
-        assert!((val4 - 0.5).abs() < 0.1, "Release value is {}, expected ~0.5", val4);
+        assert!(
+            (val4 - 0.5).abs() < 0.1,
+            "Release value is {}, expected ~0.5",
+            val4
+        );
 
         // After 200ms, should be close to 0.0
         let values5 = controller.update(&audio_low, 0.3);
         let val5 = values5.get("node.test").unwrap();
-        assert!((val5 - 0.0).abs() < 0.1, "Release value is {}, expected ~0.0", val5);
+        assert!(
+            (val5 - 0.0).abs() < 0.1,
+            "Release value is {}, expected ~0.0",
+            val5
+        );
     }
 
     #[test]

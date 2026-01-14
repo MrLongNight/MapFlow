@@ -38,7 +38,11 @@ fn test_random_trigger_current_flawed_behavior() {
     let trigger_values = result.trigger_values.get(&part_id).unwrap();
     // Because the current implementation ignores time and only checks probability,
     // this should fire immediately. A correct implementation would not fire.
-    assert_eq!(trigger_values, &vec![1.0], "Random trigger with 100% probability should fire immediately (current flawed logic)");
+    assert_eq!(
+        trigger_values,
+        &vec![1.0],
+        "Random trigger with 100% probability should fire immediately (current flawed logic)"
+    );
 }
 
 #[test]
@@ -56,12 +60,15 @@ fn test_fixed_trigger_logic() {
     std::thread::sleep(std::time::Duration::from_millis(10));
     let result = evaluator.evaluate(&module);
     let trigger_values = result.trigger_values.get(&part_id).unwrap();
-    assert_eq!(trigger_values, &vec![0.0], "Fixed trigger should not fire before its offset");
+    assert_eq!(
+        trigger_values,
+        &vec![0.0],
+        "Fixed trigger should not fire before its offset"
+    );
 
     // A full test would require mocking `Instant::now()`, which is complex.
     // This basic check is sufficient for now.
 }
-
 
 #[test]
 fn test_shortcut_trigger_is_unimplemented() {
@@ -75,7 +82,11 @@ fn test_shortcut_trigger_is_unimplemented() {
 
     let trigger_values = result.trigger_values.get(&part_id).unwrap();
     // The evaluator currently has no logic for keyboard input, so this will always be 0.
-    assert_eq!(trigger_values, &vec![0.0], "Shortcut trigger is not implemented in module_eval and should return 0.0");
+    assert_eq!(
+        trigger_values,
+        &vec![0.0],
+        "Shortcut trigger is not implemented in module_eval and should return 0.0"
+    );
 }
 
 #[test]
@@ -100,12 +111,18 @@ fn test_audio_fft_trigger_receives_data() {
 
     // Default config only has "Beat Out"
     assert_eq!(trigger_values.len(), 1);
-    assert_eq!(trigger_values[0], 1.0, "AudioFFT trigger should fire when a beat is detected");
+    assert_eq!(
+        trigger_values[0], 1.0,
+        "AudioFFT trigger should fire when a beat is detected"
+    );
 
     // Simulate no beat
     analysis.beat_detected = false;
     evaluator.update_audio(&analysis);
     let result_no_beat = evaluator.evaluate(&module);
     let trigger_values_no_beat = result_no_beat.trigger_values.get(&part_id).unwrap();
-    assert_eq!(trigger_values_no_beat[0], 0.0, "AudioFFT trigger should not fire when no beat is detected");
+    assert_eq!(
+        trigger_values_no_beat[0], 0.0,
+        "AudioFFT trigger should not fire when no beat is detected"
+    );
 }
