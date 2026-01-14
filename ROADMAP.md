@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.9
-> **Stand:** 2026-01-10 10:00
+> **Stand:** 2026-01-13 14:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -145,6 +145,11 @@
   - ✅ Video-Decode mit Hardware-Acceleration-Support
   - ✅ Multi-threaded Decode-Pipeline
   - ✅ Frame-Queue-Management
+
+- ✅ **libmpv Integration** (`mapmap-media/src/mpv_decoder.rs`) – **COMPLETED (2026-01-09)**
+  - ✅ `libmpv2` crate integration (optional feature `libmpv`)
+  - ✅ Alternative decoder backend
+  - ✅ Fallback strategy implementation
 
 - ✅ **Image-Decoder** (`mapmap-media/src/image_decoder.rs`)
   - ✅ PNG, JPG, BMP, TGA Support
