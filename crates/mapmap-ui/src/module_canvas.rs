@@ -4583,9 +4583,9 @@ impl ModuleCanvas {
         painter.line_segment(
             [
                 Pos2::new(rect.min.x, rect.min.y + title_height),
-                Pos2::new(rect.max.x, rect.min.y + title_height)
+                Pos2::new(rect.max.x, rect.min.y + title_height),
             ],
-            Stroke::new(1.0, Color32::from_black_alpha(50))
+            Stroke::new(1.0, Color32::from_black_alpha(50)),
         );
 
         // Title text with icon and category
@@ -4680,9 +4680,17 @@ impl ModuleCanvas {
             let socket_color = Self::get_socket_color(&socket.socket_type);
 
             // Outer ring (Socket Color)
-            painter.circle_stroke(socket_pos, socket_radius, Stroke::new(2.0 * self.zoom, socket_color));
+            painter.circle_stroke(
+                socket_pos,
+                socket_radius,
+                Stroke::new(2.0 * self.zoom, socket_color),
+            );
             // Inner hole (Dark)
-            painter.circle_filled(socket_pos, socket_radius - 2.0 * self.zoom, Color32::from_gray(20));
+            painter.circle_filled(
+                socket_pos,
+                socket_radius - 2.0 * self.zoom,
+                Color32::from_gray(20),
+            );
 
             // Socket label
             painter.text(
@@ -4704,9 +4712,17 @@ impl ModuleCanvas {
             let socket_color = Self::get_socket_color(&socket.socket_type);
 
             // Outer ring (Socket Color)
-            painter.circle_stroke(socket_pos, socket_radius, Stroke::new(2.0 * self.zoom, socket_color));
+            painter.circle_stroke(
+                socket_pos,
+                socket_radius,
+                Stroke::new(2.0 * self.zoom, socket_color),
+            );
             // Inner hole (Dark)
-            painter.circle_filled(socket_pos, socket_radius - 2.0 * self.zoom, Color32::from_gray(20));
+            painter.circle_filled(
+                socket_pos,
+                socket_radius - 2.0 * self.zoom,
+                Color32::from_gray(20),
+            );
 
             // Socket label
             painter.text(
