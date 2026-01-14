@@ -62,6 +62,145 @@ impl SourceProperties {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::module::{AudioBand, AudioTriggerOutputConfig, ModuleManager, PartType};
+
+    fn create_test_evaluator() -> ModuleEvaluator {
+        ModuleEvaluator::new()
+    }
+
+    #[test]
+    fn test_evaluate_trigger_beat() {
+        let mut eval = create_test_evaluator();
+
+        // No beat
+        eval.audio_trigger_data.beat_detected = false;
+        let res = eval.evaluate_trigger(&TriggerType::Beat);
+        assert_eq!(res, vec![0.0]);
+
+        // Beat
+        eval.audio_trigger_data.beat_detected = true;
+        let res = eval.evaluate_trigger(&TriggerType::Beat);
+        assert_eq!(res, vec![1.0]);
+    }
+
+    #[test]
+    fn test_evaluate_trigger_audio_fft() {
+        let mut eval = create_test_evaluator();
+        eval.audio_trigger_data.band_energies = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+        eval.audio_trigger_data.rms_volume = 0.5;
+        eval.audio_trigger_data.beat_detected = true;
+        eval.audio_trigger_data.bpm = Some(120.0);
+
+        let config = AudioTriggerOutputConfig {
+            frequency_bands: true,
+            volume_outputs: true,
+            beat_output: true,
+            bpm_output: true,
+            inverted_outputs: Default::default(),
+        };
+
+        let trigger = TriggerType::AudioFFT {
+            band: AudioBand::Bass,
+            threshold: 0.15,
+            output_config: config,
+        };
+
+        let res = eval.evaluate_trigger(&trigger);
+
+        // Expected output order:
+        // 9 bands
+        // 2 volumes (RMS, Peak)
+        // 1 Beat
+        // 1 BPM
+        // Total 13
+
+        assert_eq!(res.len(), 13);
+
+        // SubBass (index 0) is 0.1 < 0.15 -> 0.0
+        assert_eq!(res[0], 0.0, "SubBass should be 0.0");
+
+        // Bass (index 1) is 0.2 > 0.15 -> 1.0
+        assert_eq!(res[1], 1.0, "Bass should be 1.0");
+
+        // Check BPM (120 / 200 = 0.6) > threshold(0.15) -> 1.0
+        assert_eq!(res[12], 1.0, "BPM should be 1.0");
+    }
+
+    #[test]
+    fn test_graph_propagation() {
+        // Create a simple module: Trigger -> Layer -> Output
+        let mut manager = ModuleManager::new();
+        let mid = manager.create_module("Test".to_string());
+        let module = manager.get_module_mut(mid).unwrap();
+
+        let t_id = module.add_part(PartType::Trigger, (0.0, 0.0)); // Beat Trigger
+        let l_id = module.add_part(PartType::Layer, (100.0, 0.0));
+        let o_id = module.add_part(PartType::Output, (200.0, 0.0));
+
+        // Connect Trigger (0) -> Layer Trigger In (1)
+        module.add_connection(t_id, 0, l_id, 1);
+
+        // Connect Layer (0) -> Output Layer In (0)
+        module.add_connection(l_id, 0, o_id, 0);
+
+        let mut eval = create_test_evaluator();
+        eval.audio_trigger_data.beat_detected = true; // Trigger sends 1.0
+
+        let result = eval.evaluate(module);
+
+        // Check Trigger Values
+        assert_eq!(
+            result.trigger_values.get(&t_id).unwrap()[0],
+            1.0,
+            "Trigger output should be 1.0"
+        );
+
+        // Check Render Ops
+        assert_eq!(result.render_ops.len(), 1, "Should have 1 render op");
+        let op = &result.render_ops[0];
+
+        assert_eq!(op.output_part_id, o_id);
+        assert_eq!(op.layer_part_id, l_id);
+        // Link opacity (1.0) * Layer opacity (1.0)
+        assert_eq!(op.opacity, 1.0);
+    }
+
+    #[test]
+    fn test_trace_chain_with_effects() {
+        let mut manager = ModuleManager::new();
+        let mid = manager.create_module("Chain Test".to_string());
+        let module = manager.get_module_mut(mid).unwrap();
+
+        let s_id = module.add_part(PartType::Source, (0.0, 0.0));
+        let e1_id = module.add_part(PartType::Modulator, (100.0, 0.0)); // Effect 1
+        let e2_id = module.add_part(PartType::Modulator, (200.0, 0.0)); // Effect 2
+        let l_id = module.add_part(PartType::Layer, (300.0, 0.0));
+        let o_id = module.add_part(PartType::Output, (400.0, 0.0));
+
+        // Connect: Source -> Effect1 -> Effect2 -> Layer -> Output
+        // Source Media Out (0) -> Effect1 Media In (0)
+        module.add_connection(s_id, 0, e1_id, 0);
+        // Effect1 Media Out (0) -> Effect2 Media In (0)
+        module.add_connection(e1_id, 0, e2_id, 0);
+        // Effect2 Media Out (0) -> Layer Input (0)
+        module.add_connection(e2_id, 0, l_id, 0);
+        // Layer Output (0) -> Output Layer In (0)
+        module.add_connection(l_id, 0, o_id, 0);
+
+        let eval = create_test_evaluator();
+        let result = eval.evaluate(module);
+
+        assert_eq!(result.render_ops.len(), 1);
+        let op = &result.render_ops[0];
+
+        assert_eq!(op.source_part_id, Some(s_id));
+        assert_eq!(op.effects.len(), 2);
+    }
+}
+
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
@@ -547,20 +686,25 @@ impl ModuleEvaluator {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
-                threshold: _threshold,
+                threshold,
                 output_config,
             } => {
                 let mut values = Vec::new();
 
-                // Helper to push and optionally invert value
-                let mut push_val = |name: &str, val: f32| {
+                // Helper to process a signal: applies inversion and thresholding
+                let process_signal = |name: &str, val: f32| -> f32 {
                     let inverted = output_config.inverted_outputs.contains(name);
-                    let final_val = if inverted {
-                        1.0 - val.clamp(0.0, 1.0)
+                    let mut signal = val.clamp(0.0, 1.0);
+
+                    if inverted {
+                        signal = 1.0 - signal;
+                    }
+
+                    if signal > *threshold {
+                        1.0
                     } else {
-                        val
-                    };
-                    values.push(final_val);
+                        0.0
+                    }
                 };
 
                 // Generate values based on config
@@ -578,28 +722,40 @@ impl ModuleEvaluator {
                         "Air Out",
                     ];
                     for (i, name) in bands.iter().enumerate() {
-                        if i < self.audio_trigger_data.band_energies.len() {
-                            push_val(name, self.audio_trigger_data.band_energies[i]);
-                        } else {
-                            push_val(name, 0.0);
-                        }
+                        let energy = self
+                            .audio_trigger_data
+                            .band_energies
+                            .get(i)
+                            .copied()
+                            .unwrap_or(0.0);
+                        values.push(process_signal(name, energy));
                     }
                 }
+
                 if output_config.volume_outputs {
-                    push_val("RMS Volume", self.audio_trigger_data.rms_volume);
-                    push_val("Peak Volume", self.audio_trigger_data.peak_volume);
+                    values.push(process_signal(
+                        "RMS Volume",
+                        self.audio_trigger_data.rms_volume,
+                    ));
+                    values.push(process_signal(
+                        "Peak Volume",
+                        self.audio_trigger_data.peak_volume,
+                    ));
                 }
+
                 if output_config.beat_output {
                     let val = if self.audio_trigger_data.beat_detected {
                         1.0
                     } else {
                         0.0
                     };
-                    push_val("Beat Out", val);
+                    values.push(process_signal("Beat Out", val));
                 }
+
                 if output_config.bpm_output {
+                    // Normalize BPM to 0-1 range (assuming common range up to 200)
                     let val = self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0;
-                    push_val("BPM Out", val);
+                    values.push(process_signal("BPM Out", val));
                 }
 
                 // Fallback: if empty, add beat output (matches generate_outputs fallback)
@@ -609,12 +765,7 @@ impl ModuleEvaluator {
                     } else {
                         0.0
                     };
-                    // Note: generate_outputs fallback uses "Beat Out" name, so we check that
-                    // But effectively we just push the value.
-                    // If we want to support inversion on fallback, we need to check "Beat Out"
-                    let inverted = output_config.inverted_outputs.contains("Beat Out");
-                    let final_val = if inverted { 1.0 - val } else { val };
-                    values.push(final_val);
+                    values.push(process_signal("Beat Out", val));
                 }
 
                 values
