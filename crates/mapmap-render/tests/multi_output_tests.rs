@@ -263,8 +263,7 @@ use mapmap_render::{ColorCalibrationRenderer, EdgeBlendRenderer, MeshRenderer};
 
 // ... (previous helper functions)
 
-use mapmap_core::{BlendMode, MeshType, MeshVertex};
-use mapmap_render::Compositor;
+use mapmap_core::{MeshType, MeshVertex};
 
 /// Helper to create a fullscreen quad mesh
 fn create_fullscreen_quad_mesh() -> Mesh {
@@ -320,7 +319,7 @@ fn test_individual_output_transforms() {
 
             // Scale the quad to half size. It should now occupy the center quadrant.
             let transform = Mat4::from_scale(glam::Vec3::new(0.5, 0.5, 1.0));
-            let uniform_buffer = mesh_renderer.create_uniform_buffer(transform);
+            let uniform_buffer = mesh_renderer.create_uniform_buffer(transform, 1.0);
             let uniform_bind_group = mesh_renderer.create_uniform_bind_group(&uniform_buffer);
 
             let mut encoder =

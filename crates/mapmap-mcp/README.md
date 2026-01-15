@@ -14,11 +14,8 @@ MapFlow MCP exposes the internal state and control surface of the application vi
 
 - **Project Management**: Save/Load projects.
 - **Layer Control**: Create layers, set opacity, blend modes, and visibility.
-- **Media Control**: Play, pause, seek, loop modes, and file management.
+- **Media Control**: Play, pause, seek, loop modes, and file loading.
 - **Effect Chain**: Add/remove effects and modify parameters.
-- **Cue System**: Trigger cues and navigate the cue list.
-- **Audio Reactivity**: Bind audio analysis parameters to visual properties.
-- **Timeline Integration**: Manipulate keyframes and timeline playback.
 - **Transport**: JSON-RPC 2.0 over Stdio or SSE (Server-Sent Events).
 
 ## Architecture

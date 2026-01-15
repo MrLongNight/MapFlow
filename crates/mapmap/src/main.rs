@@ -1936,6 +1936,7 @@ impl App {
                             self.mesh_renderer.get_uniform_bind_group_with_source_props(
                                 &self.backend.queue,
                                 transform_mat,
+                                1.0, // Opacity is usually handled at layer mixing, but preview should strictly show content
                                 flip_h,
                                 flip_v,
                                 brightness,
@@ -3056,6 +3057,7 @@ impl App {
                             self.mesh_renderer.get_uniform_bind_group_with_source_props(
                                 &self.backend.queue,
                                 transform,
+                                op.opacity * op.source_props.opacity,
                                 op.source_props.flip_horizontal,
                                 op.source_props.flip_vertical,
                                 op.source_props.brightness,
