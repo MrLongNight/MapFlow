@@ -129,7 +129,11 @@ pub struct ModuleCanvas {
     /// Discovered Hue bridges
     pub hue_bridges: Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>,
     /// Channel for Hue discovery results
-    pub hue_discovery_rx: Option<std::sync::mpsc::Receiver<Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, String>>>,
+    pub hue_discovery_rx: Option<
+        std::sync::mpsc::Receiver<
+            Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, String>,
+        >,
+    >,
     /// Status message for Hue operations
     pub hue_status_message: Option<String>,
 }
@@ -3749,31 +3753,49 @@ impl ModuleCanvas {
             let x = rect.min.x + t * rect.width();
             let y = rect.min.y + t * rect.height();
 
-            painter.line_segment([Pos2::new(x, rect.min.y), Pos2::new(x, rect.max.y)], Stroke::new(1.0, Color32::from_white_alpha(20)));
-            painter.line_segment([Pos2::new(rect.min.x, y), Pos2::new(rect.max.x, y)], Stroke::new(1.0, Color32::from_white_alpha(20)));
+            painter.line_segment(
+                [Pos2::new(x, rect.min.y), Pos2::new(x, rect.max.y)],
+                Stroke::new(1.0, Color32::from_white_alpha(20)),
+            );
+            painter.line_segment(
+                [Pos2::new(rect.min.x, y), Pos2::new(rect.max.x, y)],
+                Stroke::new(1.0, Color32::from_white_alpha(20)),
+            );
         }
 
         // Labels
-        painter.text(rect.center_top() + Vec2::new(0.0, 10.0), egui::Align2::CENTER_TOP, "Front (TV/Screen)", egui::FontId::proportional(12.0), Color32::WHITE);
+        painter.text(
+            rect.center_top() + Vec2::new(0.0, 10.0),
+            egui::Align2::CENTER_TOP,
+            "Front (TV/Screen)",
+            egui::FontId::proportional(12.0),
+            Color32::WHITE,
+        );
 
         // If empty, add dummy lamps for visualization/testing
         if lamp_positions.is_empty() {
-             painter.text(rect.center(), egui::Align2::CENTER_CENTER, "No Lamps Mapped", egui::FontId::proportional(14.0), Color32::GRAY);
-             // Typically we would populate this from the Entertainment Area config
-             if ui.button("Add Test Lamps").clicked() {
-                 lamp_positions.insert("1".to_string(), (0.2, 0.2)); // Front Left
-                 lamp_positions.insert("2".to_string(), (0.8, 0.2)); // Front Right
-                 lamp_positions.insert("3".to_string(), (0.2, 0.8)); // Rear Left
-                 lamp_positions.insert("4".to_string(), (0.8, 0.8)); // Rear Right
-             }
-             return;
+            painter.text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "No Lamps Mapped",
+                egui::FontId::proportional(14.0),
+                Color32::GRAY,
+            );
+            // Typically we would populate this from the Entertainment Area config
+            if ui.button("Add Test Lamps").clicked() {
+                lamp_positions.insert("1".to_string(), (0.2, 0.2)); // Front Left
+                lamp_positions.insert("2".to_string(), (0.8, 0.2)); // Front Right
+                lamp_positions.insert("3".to_string(), (0.2, 0.8)); // Rear Left
+                lamp_positions.insert("4".to_string(), (0.8, 0.8)); // Rear Right
+            }
+            return;
         }
 
         let to_screen = |x: f32, y: f32| -> Pos2 {
-             Pos2::new(
-                 rect.min.x + x.clamp(0.0, 1.0) * rect.width(),
-                 rect.min.y + y.clamp(0.0, 1.0) * rect.height()
-             )
+            Pos2::new(
+                rect.min.x + x.clamp(0.0, 1.0) * rect.width(),
+                rect.min.y + y.clamp(0.0, 1.0) * rect.height(),
+            )
         };
 
         // Handle lamp dragging
@@ -3793,8 +3815,8 @@ impl ModuleCanvas {
                     let lamp_pos = to_screen(*lx, *ly);
                     let dist = lamp_pos.distance(pos);
                     if dist < 20.0 && dist < min_dist {
-                         min_dist = dist;
-                         closest_id = Some(id.clone());
+                        min_dist = dist;
+                        closest_id = Some(id.clone());
                     }
                 }
 
@@ -3805,12 +3827,12 @@ impl ModuleCanvas {
         }
 
         if let Some(id) = dragged_lamp {
-             if let Some(pos) = pointer_pos {
-                 // Update position
-                 let nx = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
-                 let ny = ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0);
-                 lamp_positions.insert(id, (nx, ny));
-             }
+            if let Some(pos) = pointer_pos {
+                // Update position
+                let nx = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
+                let ny = ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0);
+                lamp_positions.insert(id, (nx, ny));
+            }
         }
 
         // Draw Lamps
@@ -3822,7 +3844,13 @@ impl ModuleCanvas {
             painter.circle_stroke(pos, 8.0, Stroke::new(2.0, Color32::WHITE));
 
             // Draw Label
-            painter.text(pos + Vec2::new(0.0, 12.0), egui::Align2::CENTER_TOP, id, egui::FontId::proportional(10.0), Color32::WHITE);
+            painter.text(
+                pos + Vec2::new(0.0, 12.0),
+                egui::Align2::CENTER_TOP,
+                id,
+                egui::FontId::proportional(10.0),
+                Color32::WHITE,
+            );
         }
     }
 
@@ -5321,12 +5349,12 @@ impl ModuleCanvas {
                 #[cfg(target_os = "windows")]
                 OutputType::Spout { name } => format!("🚰 {}", name),
                 OutputType::Hue { bridge_ip, .. } => {
-                     if bridge_ip.is_empty() {
-                         "💡 Not Connected".to_string()
-                     } else {
-                         format!("💡 {}", bridge_ip)
-                     }
-                },
+                    if bridge_ip.is_empty() {
+                        "💡 Not Connected".to_string()
+                    } else {
+                        format!("💡 {}", bridge_ip)
+                    }
+                }
             },
         }
     }

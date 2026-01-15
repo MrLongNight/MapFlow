@@ -1,6 +1,6 @@
 use super::audio_interface::AudioSpectrum;
-use super::models::LightNode;
 use super::effects::LightEffect;
+use super::models::LightNode;
 use super::stream::manager::LightState;
 use tokio::sync::mpsc;
 

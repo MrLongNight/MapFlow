@@ -303,10 +303,9 @@ impl ModuleEvaluator {
             // Generate output commands for Hue (which acts like a Sink/Output)
             if let ModulePartType::Output(OutputType::Hue { .. }) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
-                self.cached_result.source_commands.insert(
-                    part.id,
-                    SourceCommand::HueOutput { trigger_value },
-                );
+                self.cached_result
+                    .source_commands
+                    .insert(part.id, SourceCommand::HueOutput { trigger_value });
             }
         }
 

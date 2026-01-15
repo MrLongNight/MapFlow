@@ -1,3 +1,3 @@
 pub mod dtls;
-pub mod protocol;
 pub mod manager;
+pub mod protocol;
