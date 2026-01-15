@@ -323,13 +323,6 @@ impl ShaderNode {
                 },
             ],
 
-            NodeType::Sin | NodeType::Cos => vec![InputSocket {
-                name: "A".to_string(),
-                data_type: DataType::Float,
-                default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
-                connected_output: None,
-            }],
-
             NodeType::TextureSample => vec![
                 InputSocket {
                     name: "Texture".to_string(),
@@ -371,15 +364,12 @@ impl ShaderNode {
                 data_type: DataType::Vec2,
             }],
 
-            NodeType::Add
-            | NodeType::Subtract
-            | NodeType::Multiply
-            | NodeType::Divide
-            | NodeType::Sin
-            | NodeType::Cos => vec![OutputSocket {
-                name: "Result".to_string(),
-                data_type: DataType::Float,
-            }],
+            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide => {
+                vec![OutputSocket {
+                    name: "Result".to_string(),
+                    data_type: DataType::Float,
+                }]
+            }
 
             NodeType::TextureSample => vec![
                 OutputSocket {

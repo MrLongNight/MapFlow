@@ -12,34 +12,26 @@ pub fn osc_to_control_value(osc_args: &[OscType]) -> Result<ControlValue> {
         return Err(ControlError::InvalidMessage("No OSC arguments".to_string()));
     }
 
-    let value = match &osc_args[0] {
-        OscType::Float(f) => ControlValue::Float(*f),
-        OscType::Int(i) => ControlValue::Int(*i),
-        OscType::String(s) => ControlValue::String(s.clone()),
-        OscType::Bool(b) => ControlValue::Bool(*b),
+    match &osc_args[0] {
+        OscType::Float(f) => Ok(ControlValue::Float(*f)),
+        OscType::Int(i) => Ok(ControlValue::Int(*i)),
+        OscType::String(s) => Ok(ControlValue::String(s.clone())),
+        OscType::Bool(b) => Ok(ControlValue::Bool(*b)),
         OscType::Color(color) => {
             // OscColor has r, g, b, a fields (each u8)
             let rgba = ((color.red as u32) << 24)
                 | ((color.green as u32) << 16)
                 | ((color.blue as u32) << 8)
                 | (color.alpha as u32);
-            ControlValue::Color(rgba)
+            Ok(ControlValue::Color(rgba))
         }
-        OscType::Double(d) => ControlValue::Float(*d as f32),
-        OscType::Long(l) => ControlValue::Int(*l as i32),
-        _ => {
-            return Err(ControlError::InvalidMessage(format!(
-                "Unsupported OSC type: {:?}",
-                osc_args[0]
-            )))
-        }
-    };
-
-    value
-        .validate()
-        .map_err(|e| ControlError::InvalidMessage(e))?;
-
-    Ok(value)
+        OscType::Double(d) => Ok(ControlValue::Float(*d as f32)),
+        OscType::Long(l) => Ok(ControlValue::Int(*l as i32)),
+        _ => Err(ControlError::InvalidMessage(format!(
+            "Unsupported OSC type: {:?}",
+            osc_args[0]
+        ))),
+    }
 }
 
 /// Convert multiple OSC arguments to Vec2
@@ -73,12 +65,7 @@ pub fn osc_to_vec2(osc_args: &[OscType]) -> Result<ControlValue> {
         }
     };
 
-    let value = ControlValue::Vec2(x, y);
-    value
-        .validate()
-        .map_err(|e| ControlError::InvalidMessage(e))?;
-
-    Ok(value)
+    Ok(ControlValue::Vec2(x, y))
 }
 
 /// Convert multiple OSC arguments to Vec3
@@ -123,12 +110,7 @@ pub fn osc_to_vec3(osc_args: &[OscType]) -> Result<ControlValue> {
         }
     };
 
-    let value = ControlValue::Vec3(x, y, z);
-    value
-        .validate()
-        .map_err(|e| ControlError::InvalidMessage(e))?;
-
-    Ok(value)
+    Ok(ControlValue::Vec3(x, y, z))
 }
 
 /// Convert ControlValue to OSC type
@@ -176,24 +158,6 @@ mod tests {
         let args = vec![OscType::Bool(true)];
         let value = osc_to_control_value(&args).unwrap();
         assert_eq!(value, ControlValue::Bool(true));
-    }
-
-    #[test]
-    fn test_osc_validation() {
-        // Test NaN
-        let args = vec![OscType::Float(f32::NAN)];
-        let result = osc_to_control_value(&args);
-        assert!(result.is_err());
-
-        // Test Infinite
-        let args = vec![OscType::Float(f32::INFINITY)];
-        let result = osc_to_control_value(&args);
-        assert!(result.is_err());
-
-        // Test Vec2 NaN
-        let args = vec![OscType::Float(1.0), OscType::Float(f32::NAN)];
-        let result = osc_to_vec2(&args);
-        assert!(result.is_err());
     }
 
     #[test]

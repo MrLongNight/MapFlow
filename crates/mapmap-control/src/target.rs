@@ -4,12 +4,6 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Maximum length for names (targets, paints, effects)
-const MAX_NAME_LENGTH: usize = 256;
-
-/// Maximum length for string values
-const MAX_STRING_VALUE_LENGTH: usize = 4096;
-
 /// A controllable parameter in the application
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ControlTarget {
@@ -44,38 +38,6 @@ pub enum ControlTarget {
 }
 
 impl ControlTarget {
-    /// Validate the target
-    pub fn validate(&self) -> Result<(), String> {
-        match self {
-            ControlTarget::PaintParameter(_, name) => {
-                if name.len() > MAX_NAME_LENGTH {
-                    return Err(format!(
-                        "Paint parameter name exceeds {} characters",
-                        MAX_NAME_LENGTH
-                    ));
-                }
-            }
-            ControlTarget::EffectParameter(_, name) => {
-                if name.len() > MAX_NAME_LENGTH {
-                    return Err(format!(
-                        "Effect parameter name exceeds {} characters",
-                        MAX_NAME_LENGTH
-                    ));
-                }
-            }
-            ControlTarget::Custom(name) => {
-                if name.len() > MAX_NAME_LENGTH {
-                    return Err(format!(
-                        "Custom target name exceeds {} characters",
-                        MAX_NAME_LENGTH
-                    ));
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     /// Returns a human-readable name for the target
     pub fn name(&self) -> String {
         match self {
@@ -155,37 +117,6 @@ pub enum ControlValue {
 }
 
 impl ControlValue {
-    /// Validate the value
-    pub fn validate(&self) -> Result<(), String> {
-        match self {
-            ControlValue::Float(v) => {
-                if !v.is_finite() {
-                    return Err("Float value must be finite".to_string());
-                }
-            }
-            ControlValue::Vec2(x, y) => {
-                if !x.is_finite() || !y.is_finite() {
-                    return Err("Vec2 values must be finite".to_string());
-                }
-            }
-            ControlValue::Vec3(x, y, z) => {
-                if !x.is_finite() || !y.is_finite() || !z.is_finite() {
-                    return Err("Vec3 values must be finite".to_string());
-                }
-            }
-            ControlValue::String(s) => {
-                if s.len() > MAX_STRING_VALUE_LENGTH {
-                    return Err(format!(
-                        "String value exceeds {} characters",
-                        MAX_STRING_VALUE_LENGTH
-                    ));
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     /// Get as float, converting if necessary
     pub fn as_float(&self) -> Option<f32> {
         match self {
@@ -281,32 +212,5 @@ mod tests {
         let json = serde_json::to_string(&target).unwrap();
         let deserialized: ControlTarget = serde_json::from_str(&json).unwrap();
         assert_eq!(target, deserialized);
-    }
-
-    #[test]
-    fn test_control_target_validation() {
-        let valid = ControlTarget::Custom("valid".to_string());
-        assert!(valid.validate().is_ok());
-
-        let invalid = ControlTarget::Custom("a".repeat(MAX_NAME_LENGTH + 1));
-        assert!(invalid.validate().is_err());
-    }
-
-    #[test]
-    fn test_control_value_validation() {
-        let valid_float = ControlValue::Float(1.0);
-        assert!(valid_float.validate().is_ok());
-
-        let invalid_float = ControlValue::Float(f32::NAN);
-        assert!(invalid_float.validate().is_err());
-
-        let invalid_inf = ControlValue::Float(f32::INFINITY);
-        assert!(invalid_inf.validate().is_err());
-
-        let valid_string = ControlValue::String("short".to_string());
-        assert!(valid_string.validate().is_ok());
-
-        let invalid_string = ControlValue::String("a".repeat(MAX_STRING_VALUE_LENGTH + 1));
-        assert!(invalid_string.validate().is_err());
     }
 }

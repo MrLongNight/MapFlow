@@ -9,13 +9,16 @@ struct TestEnvironment {
 }
 
 async fn setup_test_environment() -> Option<TestEnvironment> {
-    WgpuBackend::new()
-        .await
-        .ok()
-        .map(|backend| TestEnvironment {
+    match WgpuBackend::new().await {
+        Ok(backend) => Some(TestEnvironment {
             device: backend.device.clone(),
             queue: backend.queue.clone(),
-        })
+        }),
+        Err(e) => {
+            println!("Test environment setup failed: {}", e);
+            None
+        }
+    }
 }
 
 /// Helper to create a texture with a solid color
