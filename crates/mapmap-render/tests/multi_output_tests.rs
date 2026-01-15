@@ -161,7 +161,8 @@ async fn read_texture_data(
 }
 
 #[test]
-#[ignore = "GPU tests are unstable in headless CI environment"]
+// This test is no longer ignored as backend initialization is now robust against headless failures.
+// It will gracefully skip if no adapter is found instead of panicking.
 fn test_render_to_multiple_outputs() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {

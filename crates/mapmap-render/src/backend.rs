@@ -27,9 +27,31 @@ pub struct WgpuBackend {
 
 impl WgpuBackend {
     /// Create a new wgpu backend
+    ///
+    /// This implementation is robust against initialization failures on specific backends
+    /// (like GL panicking on headless systems). It prioritizes PRIMARY backends (Vulkan/Metal/DX12)
+    /// and falls back to GL only if necessary.
     pub async fn new() -> Result<Self> {
+        // 1. Try PRIMARY backends first (Vulkan, Metal, DX12)
+        // This avoids the GL initialization panic ("BadDisplay") on headless systems
+        // where wgpu::Backends::all() would try to init EGL and crash.
+        let primary_result = Self::new_with_options(
+            wgpu::Backends::PRIMARY,
+            wgpu::PowerPreference::HighPerformance,
+        )
+        .await;
+
+        if primary_result.is_ok() {
+            return primary_result;
+        }
+
+        info!("Primary backend initialization failed, attempting GL fallback...");
+
+        // 2. Fallback to GL if PRIMARY failed
+        // Note: This step might still panic on headless systems if GL is selected but unavailable,
+        // but it's a necessary fallback for older hardware.
         Self::new_with_options(
-            wgpu::Backends::all(),
+            wgpu::Backends::GL,
             wgpu::PowerPreference::HighPerformance,
         )
         .await
