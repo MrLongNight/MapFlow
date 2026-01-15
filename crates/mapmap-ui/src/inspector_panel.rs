@@ -78,11 +78,14 @@ impl InspectorPanel {
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.heading(i18n.t("panel-inspector"));
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if ui.button("✕").clicked() {
-                                    self.visible = false;
-                                }
-                            });
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if ui.button("✕").clicked() {
+                                        self.visible = false;
+                                    }
+                                },
+                            );
                         });
                     });
                 ui.add_space(4.0);
