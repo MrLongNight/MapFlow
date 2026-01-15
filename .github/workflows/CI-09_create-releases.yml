@@ -50,7 +50,7 @@ jobs:
 
       # Build WITHOUT ffmpeg on Windows (ffmpeg-next 6.x is incompatible with FFmpeg 7.x)
       - name: Build Release (no ffmpeg - Windows)
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --no-default-features --features "audio midi"
         shell: pwsh
 
       - name: Check if binary exists and package
@@ -95,7 +95,7 @@ jobs:
 
       # Build WITHOUT ffmpeg on Windows (ffmpeg-next 6.x is incompatible with FFmpeg 7.x)
       - name: Build Release (no ffmpeg - Windows)
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --no-default-features --features "audio midi"
         shell: pwsh
 
       - name: Check if binary exists
