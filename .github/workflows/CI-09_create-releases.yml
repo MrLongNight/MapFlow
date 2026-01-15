@@ -48,9 +48,26 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      # Build WITHOUT ffmpeg on Windows (ffmpeg-next 6.x is incompatible with FFmpeg 7.x)
-      - name: Build Release (no ffmpeg - Windows)
-        run: cargo build --release -p mapmap --no-default-features --features "audio midi"
+      - name: Set VCPKG_ROOT
+        run: echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-ffmpeg-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-ffmpeg-
+
+      - name: Install FFmpeg via vcpkg
+        run: |
+          vcpkg install ffmpeg:x64-windows
+          vcpkg integrate install
+        shell: pwsh
+
+      - name: Build Release (Windows)
+        run: cargo build --release -p mapmap
         shell: pwsh
 
       - name: Check if binary exists and package
@@ -61,6 +78,15 @@ jobs:
           }
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target\release\MapFlow.exe dist\MapFlow.exe
+
+          # Copy FFmpeg DLLs
+          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
+          if (Test-Path $vcpkgBin) {
+            Copy-Item "$vcpkgBin\*.dll" dist\
+            Write-Host "Copied FFmpeg DLLs to dist"
+          } else {
+            Write-Host "Warning: vcpkg bin directory not found at $vcpkgBin"
+          }
         shell: pwsh
 
       - name: Prepare ZIP
@@ -93,9 +119,26 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      # Build WITHOUT ffmpeg on Windows (ffmpeg-next 6.x is incompatible with FFmpeg 7.x)
-      - name: Build Release (no ffmpeg - Windows)
-        run: cargo build --release -p mapmap --no-default-features --features "audio midi"
+      - name: Set VCPKG_ROOT
+        run: echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-ffmpeg-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-ffmpeg-
+
+      - name: Install FFmpeg via vcpkg
+        run: |
+          vcpkg install ffmpeg:x64-windows
+          vcpkg integrate install
+        shell: pwsh
+
+      - name: Build Release (Windows)
+        run: cargo build --release -p mapmap
         shell: pwsh
 
       - name: Check if binary exists
