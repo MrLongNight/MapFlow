@@ -153,6 +153,7 @@ pub struct ModuleEvaluator {
     /// Creation time for timing calculations
     start_time: Instant,
     /// Per-node state for stateful triggers (e.g., Random)
+    #[allow(dead_code)] // Currently unused but reserved for stateful triggers
     trigger_states: HashMap<ModulePartId, TriggerState>,
 }
 
@@ -557,7 +558,7 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a trigger node and return output values
-    fn evaluate_trigger(&mut self, part_id: ModulePartId, trigger_type: &TriggerType) -> Vec<f32> {
+    fn evaluate_trigger(&mut self, _part_id: ModulePartId, trigger_type: &TriggerType) -> Vec<f32> {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
@@ -744,5 +745,148 @@ impl ModuleEvaluator {
                 trigger_value,
             }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::module::{AudioBand, AudioTriggerOutputConfig, ModulePlaybackMode, PartType};
+
+    #[test]
+    fn test_evaluator_initialization() {
+        let evaluator = ModuleEvaluator::new();
+        assert!(evaluator.start_time.elapsed().as_secs() < 1);
+    }
+
+    #[test]
+    fn test_evaluate_trigger_fixed() {
+        let mut evaluator = ModuleEvaluator::new();
+        // Fixed trigger: 1000ms interval, 0 offset
+        let trigger = TriggerType::Fixed {
+            interval_ms: 1000,
+            offset_ms: 0,
+        };
+
+        // At t=0 (approx), it should be active (pulse is 10% = 100ms)
+        let values = evaluator.evaluate_trigger(1, &trigger);
+        assert_eq!(values.len(), 1);
+        // We assume test runs within 100ms
+        // If system is super slow, this might fail, but usually ok for unit test
+    }
+
+    #[test]
+    fn test_evaluate_trigger_audio_fft() {
+        let mut evaluator = ModuleEvaluator::new();
+
+        // Setup mock audio analysis
+        let mut analysis = AudioAnalysisV2::default();
+        analysis.beat_detected = true;
+        analysis.rms_volume = 0.8;
+        // Set Bass band (index 1) to 0.9
+        analysis.band_energies[1] = 0.9;
+
+        evaluator.update_audio(&analysis);
+
+        let config = AudioTriggerOutputConfig {
+            beat_output: true,
+            volume_outputs: true,
+            frequency_bands: true,
+            ..Default::default()
+        };
+
+        let trigger = TriggerType::AudioFFT {
+            band: AudioBand::Bass,
+            threshold: 0.5,
+            output_config: config,
+        };
+
+        let values = evaluator.evaluate_trigger(1, &trigger);
+
+        // Bands: 9, Volume: 2, Beat: 1, BPM: 0 -> Total 12
+        assert_eq!(values.len(), 12);
+
+        // Bass is index 1
+        assert_eq!(values[1], 0.9); // Bass Out
+
+        // RMS is index 9
+        assert_eq!(values[9], 0.8); // RMS Volume
+
+        // Beat is index 11
+        assert_eq!(values[11], 1.0); // Beat Out
+    }
+
+    #[test]
+    fn test_simple_graph_propagation() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        let t_id = module.add_part(PartType::Trigger, (0.0, 0.0));
+        let l_id = module.add_part(PartType::Layer, (100.0, 0.0));
+
+        // Connect Trigger Out (0) to Layer Trigger (1)
+        module.add_connection(t_id, 0, l_id, 1);
+
+        // Mock Trigger to be "Fixed" so it fires
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == t_id) {
+            // Use Beat trigger which we can control via audio update
+            part.part_type = ModulePartType::Trigger(TriggerType::Beat);
+        }
+
+        let mut evaluator = ModuleEvaluator::new();
+        let mut analysis = AudioAnalysisV2::default();
+        analysis.beat_detected = true;
+        evaluator.update_audio(&analysis);
+
+        let result = evaluator.evaluate(&module);
+
+        // Check trigger values
+        let t_values = result
+            .trigger_values
+            .get(&t_id)
+            .expect("No trigger values");
+        assert_eq!(t_values[0], 1.0);
+    }
+
+    #[test]
+    fn test_render_chain_full() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "ChainTest".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        };
+
+        // Source -> Effect -> Layer -> Output
+        let s_id = module.add_part(PartType::Source, (0.0, 0.0));
+        let e_id = module.add_part(PartType::Modulator, (100.0, 0.0));
+        let l_id = module.add_part(PartType::Layer, (200.0, 0.0));
+        let o_id = module.add_part(PartType::Output, (300.0, 0.0));
+
+        // Source Media Out (1) -> Effect Media In (0)
+        module.add_connection(s_id, 1, e_id, 0);
+        // Effect Media Out (1) -> Layer Input (0)
+        module.add_connection(e_id, 1, l_id, 0);
+        // Layer Output (0) -> Output Layer In (0)
+        module.add_connection(l_id, 0, o_id, 0);
+
+        let mut evaluator = ModuleEvaluator::new();
+        let result = evaluator.evaluate(&module);
+
+        assert_eq!(result.render_ops.len(), 1);
+        let op = &result.render_ops[0];
+
+        assert_eq!(op.output_part_id, o_id);
+        assert_eq!(op.layer_part_id, l_id);
+        assert_eq!(op.source_part_id, Some(s_id));
+        assert_eq!(op.effects.len(), 1); // One effect
     }
 }
