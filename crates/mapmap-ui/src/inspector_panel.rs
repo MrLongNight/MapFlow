@@ -72,15 +72,20 @@ impl InspectorPanel {
             .max_width(450.0)
             .show(ctx, |ui| {
                 // Header
-                ui.horizontal(|ui| {
-                    ui.heading(i18n.t("panel-inspector"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("✕").clicked() {
-                            self.visible = false;
-                        }
+                egui::Frame::none()
+                    .fill(ui.visuals().faint_bg_color)
+                    .inner_margin(8.0)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.heading(i18n.t("panel-inspector"));
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.button("✕").clicked() {
+                                    self.visible = false;
+                                }
+                            });
+                        });
                     });
-                });
-                ui.separator();
+                ui.add_space(4.0);
 
                 // Context-sensitive content
                 match context {
@@ -150,11 +155,8 @@ impl InspectorPanel {
         let mut action = None;
 
         // Layer header with icon
-        ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("📦").size(18.0));
-            ui.label(egui::RichText::new(&layer.name).size(14.0).strong());
-        });
-        ui.separator();
+        crate::widgets::render_header(ui, &format!("📦 {}", layer.name));
+        ui.add_space(4.0);
 
         // Transform section
         egui::CollapsingHeader::new("Transform")
@@ -243,11 +245,8 @@ impl InspectorPanel {
     /// Show output properties inspector
     fn show_output_inspector(&self, ui: &mut Ui, output: &OutputConfig, _i18n: &LocaleManager) {
         // Output header
-        ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("🖥").size(18.0));
-            ui.label(egui::RichText::new(&output.name).size(14.0).strong());
-        });
-        ui.separator();
+        crate::widgets::render_header(ui, &format!("🖥 {}", output.name));
+        ui.add_space(4.0);
 
         // Resolution section
         egui::CollapsingHeader::new("Resolution")
