@@ -240,7 +240,8 @@ impl ModuleEvaluator {
 
         // Step 2: First propagation (Triggers -> Nodes)
         // This populates inputs for Master nodes if they use Trigger Input
-        let mut trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
+        let mut trigger_inputs =
+            self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
 
         // Step 3: Process Master Links (Nodes -> Link Out)
         for part in &module.parts {
@@ -260,7 +261,11 @@ impl ModuleEvaluator {
                 if !part.outputs.is_empty() {
                     let output_count = part.outputs.len();
                     // Get/Create the buffer
-                    let values = self.cached_result.trigger_values.entry(part.id).or_default();
+                    let values = self
+                        .cached_result
+                        .trigger_values
+                        .entry(part.id)
+                        .or_default();
                     values.clear(); // Ensure clean slate even if we reused it
                     values.resize(output_count, 0.0);
                     values[output_count - 1] = activity;
@@ -502,11 +507,7 @@ impl ModuleEvaluator {
                     push_val("Peak Volume", audio_data.peak_volume, output);
                 }
                 if output_config.beat_output {
-                    let val = if audio_data.beat_detected {
-                        1.0
-                    } else {
-                        0.0
-                    };
+                    let val = if audio_data.beat_detected { 1.0 } else { 0.0 };
                     push_val("Beat Out", val, output);
                 }
                 if output_config.bpm_output {
@@ -516,22 +517,14 @@ impl ModuleEvaluator {
 
                 // Fallback
                 if output.is_empty() {
-                    let val = if audio_data.beat_detected {
-                        1.0
-                    } else {
-                        0.0
-                    };
+                    let val = if audio_data.beat_detected { 1.0 } else { 0.0 };
                     let inverted = output_config.inverted_outputs.contains("Beat Out");
                     let final_val = if inverted { 1.0 - val } else { val };
                     output.push(final_val);
                 }
             }
             TriggerType::Beat => {
-                output.push(if audio_data.beat_detected {
-                    1.0
-                } else {
-                    0.0
-                });
+                output.push(if audio_data.beat_detected { 1.0 } else { 0.0 });
             }
             TriggerType::Random { probability, .. } => {
                 let random_value: f32 = rand::rng().random();
