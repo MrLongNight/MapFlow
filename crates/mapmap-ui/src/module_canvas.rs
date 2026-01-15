@@ -677,14 +677,16 @@ impl ModuleCanvas {
                                                         if body_response.dragged() {
                                                             let delta_seconds = (body_response.drag_delta().x / rect.width()) * video_duration;
 
-                                                            // Calculate potential new times
-                                                            let new_start = *start_time + delta_seconds;
-                                                            let new_end = end_val + delta_seconds;
+                                                            // Calculate smart delta that respects bounds
+                                                            // We want to move as much as possible without going out of bounds
+                                                            let max_delta = video_duration - end_val;
+                                                            let min_delta = -*start_time;
+                                                            let valid_delta = delta_seconds.clamp(min_delta, max_delta);
 
-                                                            // Bounds check
-                                                            if new_start >= 0.0 && new_end <= video_duration {
-                                                                *start_time = new_start;
-                                                                *end_time = new_end;
+                                                            // Apply valid delta
+                                                            if valid_delta.abs() > 0.0001 {
+                                                                *start_time += valid_delta;
+                                                                *end_time = end_val + valid_delta;
                                                             }
                                                             ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
                                                         } else if body_response.hovered() {
@@ -719,7 +721,13 @@ impl ModuleCanvas {
                                                     if end_response.dragged() {
                                                         let delta_seconds = (end_response.drag_delta().x / rect.width()) * video_duration;
                                                         // Ensure we don't cross start
-                                                        let new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
+                                                        let mut new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
+
+                                                        // Snap to end (0.0) if close to duration
+                                                        if (video_duration - new_end).abs() < 0.1 {
+                                                            new_end = 0.0;
+                                                        }
+
                                                         *end_time = new_end;
                                                         ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
                                                     } else if end_response.hovered() {
@@ -778,10 +786,11 @@ impl ModuleCanvas {
                                                             ui.horizontal(|ui| {
                                                                  if ui.button(" [ ").on_hover_text("Set Start to current Playhead").clicked() {
                                                                      *start_time = current_pos;
-                                                                     // Safety: Ensure start < end
+                                                                     // Safety: if new start is past the current end, reset the end to 0.0 (End of File)
+                                                                     // This assumes the user wants to start a new region from here.
                                                                      let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                                     if *start_time > effective_end {
-                                                                         *start_time = effective_end - 0.1;
+                                                                     if *start_time >= effective_end {
+                                                                         *end_time = 0.0; // Reset end to full duration
                                                                      }
                                                                  }
                                                                  ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s"));
@@ -791,9 +800,9 @@ impl ModuleCanvas {
                                                             ui.horizontal(|ui| {
                                                                  if ui.button(" ] ").on_hover_text("Set End to current Playhead").clicked() {
                                                                      *end_time = current_pos;
-                                                                     // Safety: Ensure end > start
-                                                                     if *end_time < *start_time {
-                                                                         *end_time = *start_time + 0.1;
+                                                                     // Safety: if new end is before start, move start back
+                                                                     if *end_time <= *start_time {
+                                                                         *start_time = (*end_time - 1.0).max(0.0);
                                                                      }
                                                                  }
                                                                  ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s"));
