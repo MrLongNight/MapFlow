@@ -82,8 +82,8 @@ jobs:
           # Copy FFmpeg DLLs
           $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
+            Write-Host "Copying FFmpeg DLLs from $vcpkgBin"
             Copy-Item "$vcpkgBin\*.dll" dist\
-            Write-Host "Copied FFmpeg DLLs to dist"
           } else {
             Write-Host "Warning: vcpkg bin directory not found at $vcpkgBin"
           }
@@ -150,11 +150,18 @@ jobs:
           # Copy FFmpeg DLLs to target/release for WiX
           $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
+            Write-Host "Copying FFmpeg DLLs from $vcpkgBin"
             Copy-Item "$vcpkgBin\*.dll" target\release\
-            Write-Host "Copied FFmpeg DLLs to target\release"
           } else {
             Write-Host "Warning: vcpkg bin directory not found at $vcpkgBin"
           }
+        shell: pwsh
+
+      - name: Update WiX file with detected FFmpeg version
+        run: |
+          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
+          $wixFile = "crates\mapmap\wix\main.wxs"
+          ./scripts/update_wix_ffmpeg.ps1 -VcpkgBinDir $vcpkgBin -WixFile $wixFile
         shell: pwsh
 
       - name: Install WiX Toolset
