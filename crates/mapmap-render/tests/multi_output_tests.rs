@@ -9,13 +9,16 @@ struct TestEnvironment {
 }
 
 async fn setup_test_environment() -> Option<TestEnvironment> {
-    WgpuBackend::new()
-        .await
-        .ok()
-        .map(|backend| TestEnvironment {
+    match WgpuBackend::new().await {
+        Ok(backend) => Some(TestEnvironment {
             device: backend.device.clone(),
             queue: backend.queue.clone(),
-        })
+        }),
+        Err(e) => {
+            println!("Test environment setup failed: {}", e);
+            None
+        }
+    }
 }
 
 /// Helper to create a texture with a solid color
@@ -161,7 +164,8 @@ async fn read_texture_data(
 }
 
 #[test]
-#[ignore = "GPU tests are unstable in headless CI environment"]
+// This test is no longer ignored as backend initialization is now robust against headless failures.
+// It will gracefully skip if no adapter is found instead of panicking.
 fn test_render_to_multiple_outputs() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {

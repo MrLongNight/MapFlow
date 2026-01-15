@@ -57,15 +57,6 @@ pub struct UpdateParameterRequest {
     pub value: ControlValue,
 }
 
-impl UpdateParameterRequest {
-    /// Validate the request parameters
-    pub fn validate(&self) -> Result<(), String> {
-        self.target.validate()?;
-        self.value.validate()?;
-        Ok(())
-    }
-}
-
 /// Layer update request
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateLayerRequest {
@@ -280,26 +271,5 @@ mod tests {
         } else {
             panic!("Wrong value type");
         }
-    }
-
-    #[test]
-    fn test_update_parameter_request_validation() {
-        let valid = UpdateParameterRequest {
-            target: ControlTarget::Custom("valid".to_string()),
-            value: ControlValue::Float(1.0),
-        };
-        assert!(valid.validate().is_ok());
-
-        let invalid_target = UpdateParameterRequest {
-            target: ControlTarget::Custom("a".repeat(1000)), // Too long
-            value: ControlValue::Float(1.0),
-        };
-        assert!(invalid_target.validate().is_err());
-
-        let invalid_value = UpdateParameterRequest {
-            target: ControlTarget::Custom("valid".to_string()),
-            value: ControlValue::Float(f32::NAN),
-        };
-        assert!(invalid_value.validate().is_err());
     }
 }

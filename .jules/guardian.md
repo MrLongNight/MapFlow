@@ -7,7 +7,3 @@
 ## 2026-01-14 - GPU Testing Strategy
 **Erkenntnis:** GPU-abhängige Tests in `mapmap-render` sind in der CI instabil (flaky).
 **Aktion:** GPU-Tests immer mit `#[ignore]` markieren und bei Bedarf manuell ausführen. Mocking für Logik verwenden, die keinen strikten GPU-Kontext benötigt.
-
-## 2026-01-14 - ShaderGraph Socket Definitions
-**Erkenntnis:** Tests für `codegen.rs` schlugen fehl, weil `Sin`/`Cos` Nodes keine Sockets hatten. Tests decken Diskrepanzen zwischen Enum-Definitionen und Implementierungsdetails (Sockets) auf.
-**Aktion:** Bei neuen NodeTypes immer sicherstellen, dass `create_sockets` aktualisiert wird. Tests sollten jede Node-Variante instanziieren. `Sin`/`Cos` müssen als unäre Operatoren (nur Input "A") definiert werden.
