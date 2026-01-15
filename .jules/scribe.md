@@ -1,22 +1,14 @@
-# Scribe Journal - 2026-01-08
+# Scribe Journal
 
-## Missing Crate READMEs
+## Current State (2026-01-14)
+- **Cleanup**: Verified that `CHANGELOG.md` (root) is the superset of `docs/08-CHANGELOG/CHANGELOG.md` (which was stale, missing entries from 2026-01-13 and 2026-01-14). Safely deleted the stale duplicate to ensure a Single Source of Truth.
+- **Crate Docs**: Verified `README.md` and `lib.rs` for all major crates (`mapmap-ui`, `mapmap-render`, `mapmap-control`, `mapmap-media`, `mapmap-io`, `mapmap-core`). They are in excellent shape.
+- **Rustdoc Coverage**:
+  - Enabled `#![warn(missing_docs)]` in `mapmap-core`.
+  - Documented the public API in `lib.rs` (e.g., `Vertex`, `Quad`, `Project`).
+  - Documented `shader_graph.rs` (Node system, Enums, Structs) to resolve compiler warnings.
+- **Pattern Observation**: The `docs/XX-TOPIC/README.md` pattern linking to root documents works well.
 
-I discovered that while the root documentation and some crates were well-documented, several key crates lacked `README.md` files. This makes navigation within the `crates/` directory difficult for new developers.
-
-### Actions Taken
-- Created `crates/mapmap-control/README.md`
-- Created `crates/mapmap-io/README.md`
-- Created `crates/mapmap-render/README.md`
-- Created `crates/mapmap-media/README.md`
-- Created `crates/mapmap-ui/README.md`
-- Created `crates/mapmap/README.md`
-
-### Observations
-- The `lib.rs` documentation is generally good and serves as a solid basis for the READMEs.
-- The project structure is clean, but documentation fragmentation was a minor issue.
-- `mapmap-mcp` and `mapmap-ffi` already had some docs or were skipped/handled separately (I saw `mapmap-ffi` had one).
-
-### Future Recommendations
-- Ensure `cargo doc` output is checked in CI to prevent regression in API docs.
-- Consider generating READMEs from `lib.rs` docs automatically using tools like `cargo-readme` to avoid duplication.
+## Next Steps
+- Continue adding Rustdoc to other inner modules of `mapmap-core` (e.g. `layer.rs`, `mapping.rs`).
+- Verify `ROADMAP.md` matches the actual code implementation for "In Progress" features.

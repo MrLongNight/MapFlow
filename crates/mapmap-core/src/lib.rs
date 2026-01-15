@@ -7,6 +7,8 @@
 //! - Geometry primitives
 //! - Transform calculations
 
+#![warn(missing_docs)]
+
 use glam::{Mat4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -109,9 +111,11 @@ pub use state::{AppSettings, AppState};
 /// Core error types
 #[derive(Error, Debug)]
 pub enum CoreError {
+    /// Invalid geometry configuration
     #[error("Invalid geometry: {0}")]
     InvalidGeometry(String),
 
+    /// Transform operation failed
     #[error("Transform error: {0}")]
     TransformError(String),
 }
@@ -122,11 +126,14 @@ pub type Result<T> = std::result::Result<T, CoreError>;
 /// Represents a 2D point with texture coordinates
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Vertex {
+    /// 2D Position
     pub position: Vec2,
+    /// Texture Coordinates (UV)
     pub uv: Vec2,
 }
 
 impl Vertex {
+    /// Create a new vertex
     pub fn new(x: f32, y: f32, u: f32, v: f32) -> Self {
         Self {
             position: Vec2::new(x, y),
@@ -138,6 +145,7 @@ impl Vertex {
 /// Represents a quadrilateral mesh
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Quad {
+    /// The four vertices of the quad
     pub vertices: [Vertex; 4],
 }
 
@@ -166,17 +174,24 @@ impl Quad {
 /// Shape trait - represents any mappable geometry
 /// (Legacy - will be replaced by Mesh in Phase 2)
 pub trait Shape: Send + Sync {
+    /// Get vertices
     fn vertices(&self) -> &[Vertex];
+    /// Get indices
     fn indices(&self) -> &[u16];
+    /// Update logic
     fn update(&mut self, delta_time: f32);
 }
 
 /// Legacy shape types (Phase 0/1)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ShapeType {
+    /// Simple quad
     Quad(Quad),
+    /// Arbitrary mesh
     Mesh {
+        /// Vertices
         vertices: Vec<Vertex>,
+        /// Indices
         indices: Vec<u16>,
     },
 }
@@ -184,13 +199,18 @@ pub enum ShapeType {
 /// Project - top-level container (Phase 2+)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Project {
+    /// Project name
     pub name: String,
+    /// Paint manager containing all sources
     pub paint_manager: PaintManager,
+    /// Mapping manager containing all mappings
     pub mapping_manager: MappingManager,
+    /// Layer manager containing compositing logic
     pub layer_manager: LayerManager,
 }
 
 impl Project {
+    /// Create a new project
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
