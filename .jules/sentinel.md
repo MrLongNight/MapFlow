@@ -12,3 +12,8 @@
 **Vulnerability:** API keys were stored in plain text within the `AuthConfig` struct and serialized to configuration files. This exposed credentials to anyone with read access to the config or memory dumps.
 **Learning:** Configuration structs are often serialized directly. Adding security layers (like hashing) requires careful handling of serialization to maintain backward compatibility with legacy plaintext data. A custom deserializer can intelligently migrate legacy data.
 **Prevention:** Use SHA-256 hashing for storage of all secrets. Implement `deserialize_with` for `serde` to handle the migration from plaintext to hash transparently on load.
+
+## 2026-02-14 - Implicit Trust in Data Conversion
+**Vulnerability:** Input validation was missing for `ControlValue`s, allowing malicious actors to inject `NaN`, `Infinity`, or massive strings via OSC and WebSockets. This could lead to Denial of Service (DoS) or render engine crashes.
+**Learning:** Type conversion functions (like `osc_to_control_value`) and deserializers are ingress points. They often prioritize correctness of *format* over *content safety*. Validation logic must be explicitly invoked at these boundaries.
+**Prevention:** Implement `validate()` methods on domain data structures and call them immediately after deserialization or conversion in all ingress adapters (Web, WebSocket, OSC, MIDI).
