@@ -35,6 +35,25 @@ pub enum WsClientMessage {
     Ping,
 }
 
+impl WsClientMessage {
+    /// Validate the message
+    pub fn validate(&self) -> Result<(), String> {
+        match self {
+            WsClientMessage::SetParameter { target, value } => {
+                target.validate()?;
+                value.validate()?;
+            }
+            WsClientMessage::Subscribe { targets } | WsClientMessage::Unsubscribe { targets } => {
+                for target in targets {
+                    target.validate()?;
+                }
+            }
+            WsClientMessage::Ping => {}
+        }
+        Ok(())
+    }
+}
+
 /// WebSocket message from server to client
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -121,6 +140,12 @@ async fn handle_text_message(text: &str) -> Result<(), String> {
     let message: WsClientMessage =
         serde_json::from_str(text).map_err(|e| format!("Invalid JSON: {}", e))?;
 
+    // Validate message content before processing
+    if let Err(e) = message.validate() {
+        tracing::warn!("Invalid WebSocket message: {}", e);
+        return Err(e);
+    }
+
     match message {
         WsClientMessage::SetParameter { target, value } => {
             tracing::debug!("WebSocket set parameter: {:?} = {:?}", target, value);
@@ -174,5 +199,20 @@ mod tests {
         let json = r#"{"type":"ping"}"#;
         let msg: WsClientMessage = serde_json::from_str(json).unwrap();
         matches!(msg, WsClientMessage::Ping);
+    }
+
+    #[test]
+    fn test_ws_client_message_validation() {
+        let valid = WsClientMessage::SetParameter {
+            target: ControlTarget::Custom("valid".to_string()),
+            value: ControlValue::Float(1.0),
+        };
+        assert!(valid.validate().is_ok());
+
+        let invalid = WsClientMessage::SetParameter {
+            target: ControlTarget::Custom("a".repeat(1000)),
+            value: ControlValue::Float(1.0),
+        };
+        assert!(invalid.validate().is_err());
     }
 }
