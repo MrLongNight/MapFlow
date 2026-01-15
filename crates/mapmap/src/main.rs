@@ -1048,12 +1048,16 @@ impl App {
                         let result = self.module_evaluator.evaluate(module);
 
                         // 1. Handle Source Commands
-                        for (part_id, cmd) in result.source_commands {
+                        for (part_id, cmd) in &result.source_commands {
                             match cmd {
                                 mapmap_core::SourceCommand::PlayMedia {
                                     path,
                                     trigger_value,
                                 } => {
+                                    let path = path.clone();
+                                    let trigger_value = *trigger_value;
+                                    let part_id = *part_id;
+
                                     if path.is_empty() {
                                         continue;
                                     }
@@ -1106,6 +1110,7 @@ impl App {
                                     source_name: _source_name,
                                     trigger_value: _,
                                 } => {
+                                    let part_id = *part_id;
                                     #[cfg(feature = "ndi")]
                                     {
                                         if let Some(src_name) = _source_name {
@@ -1138,7 +1143,7 @@ impl App {
                         }
 
                         // 2. Handle Render Ops (New System)
-                        self.render_ops = result.render_ops;
+                        self.render_ops = result.render_ops.clone();
 
                         // Log render ops status once per second
                         static mut LAST_RENDER_LOG: u64 = 0;
