@@ -14,7 +14,28 @@
                             <Shortcut Id='desktopMapFlow' Directory='DesktopFolder' Name='MapFlow' WorkingDirectory='INSTALLFOLDER' Icon='MapFlowIcon.exe' IconIndex='0' Advertise='yes' />
                         </File>
                     </Component>
-                    <!-- FFmpeg DLLs removed - Windows builds without FFmpeg support -->
+                    <!-- FFmpeg DLLs (FFmpeg 7.0 / vcpkg versions) -->
+                    <Component Id='avcodec' Guid='*' Win64='yes'>
+                        <File Id='avcodec' Name='avcodec-61.dll' Source='$(var.CargoTargetBinDir)\avcodec-61.dll' KeyPath='yes' />
+                    </Component>
+                    <Component Id='avdevice' Guid='*' Win64='yes'>
+                        <File Id='avdevice' Name='avdevice-61.dll' Source='$(var.CargoTargetBinDir)\avdevice-61.dll' KeyPath='yes' />
+                    </Component>
+                    <Component Id='avfilter' Guid='*' Win64='yes'>
+                        <File Id='avfilter' Name='avfilter-10.dll' Source='$(var.CargoTargetBinDir)\avfilter-10.dll' KeyPath='yes' />
+                    </Component>
+                    <Component Id='avformat' Guid='*' Win64='yes'>
+                        <File Id='avformat' Name='avformat-61.dll' Source='$(var.CargoTargetBinDir)\avformat-61.dll' KeyPath='yes' />
+                    </Component>
+                    <Component Id='avutil' Guid='*' Win64='yes'>
+                        <File Id='avutil' Name='avutil-59.dll' Source='$(var.CargoTargetBinDir)\avutil-59.dll' KeyPath='yes' />
+                    </Component>
+                    <Component Id='swresample' Guid='*' Win64='yes'>
+                        <File Id='swresample' Name='swresample-5.dll' Source='$(var.CargoTargetBinDir)\swresample-5.dll' KeyPath='yes' />
+                    </Component>
+                    <Component Id='swscale' Guid='*' Win64='yes'>
+                        <File Id='swscale' Name='swscale-8.dll' Source='$(var.CargoTargetBinDir)\swscale-8.dll' KeyPath='yes' />
+                    </Component>
                 </Directory>
             </Directory>
             <Directory Id="ProgramMenuFolder" Name="Programs">
@@ -25,6 +46,13 @@
         <Feature Id='Complete' Level='1'>
             <ComponentRef Id='MainExecutable' />
             <ComponentRef Id='ProgramMenuDir' />
+            <ComponentRef Id='avcodec' />
+            <ComponentRef Id='avdevice' />
+            <ComponentRef Id='avfilter' />
+            <ComponentRef Id='avformat' />
+            <ComponentRef Id='avutil' />
+            <ComponentRef Id='swresample' />
+            <ComponentRef Id='swscale' />
         </Feature>
         <Component Id="ProgramMenuDir" Directory="ProgramMenuDir" Guid="*" Win64='yes'>
             <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
