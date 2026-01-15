@@ -13,6 +13,17 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::time::Instant;
 
+/// State for individual trigger nodes, stored in the evaluator
+#[derive(Debug, Clone, Default)]
+pub enum TriggerState {
+    #[default]
+    None,
+    Random {
+        /// The timestamp (in ms since start) when the next trigger is scheduled.
+        next_fire_time_ms: u64,
+    },
+}
+
 /// Source-specific rendering properties (from MediaFile)
 #[derive(Debug, Clone, Default)]
 pub struct SourceProperties {
@@ -280,6 +291,8 @@ pub struct ModuleEvaluator {
     audio_trigger_data: AudioTriggerData,
     /// Creation time for timing calculations
     start_time: Instant,
+    /// Per-node state for stateful triggers (e.g., Random)
+    trigger_states: HashMap<ModulePartId, TriggerState>,
 }
 
 impl Default for ModuleEvaluator {
@@ -294,6 +307,7 @@ impl ModuleEvaluator {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
             start_time: Instant::now(),
+            trigger_states: HashMap::new(),
         }
     }
 
@@ -307,7 +321,7 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a module for one frame
-    pub fn evaluate(&self, module: &MapFlowModule) -> ModuleEvalResult {
+    pub fn evaluate(&mut self, module: &MapFlowModule) -> ModuleEvalResult {
         let mut result = ModuleEvalResult::default();
 
         // === DIAGNOSTICS: Log module structure ===
@@ -345,7 +359,7 @@ impl ModuleEvaluator {
         // Step 1: Evaluate all trigger nodes
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
-                let values = self.evaluate_trigger(trigger_type);
+                let values = self.evaluate_trigger(part.id, trigger_type);
                 result.trigger_values.insert(part.id, values);
             }
         }
@@ -682,7 +696,7 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a trigger node and return output values
-    fn evaluate_trigger(&self, trigger_type: &TriggerType) -> Vec<f32> {
+    fn evaluate_trigger(&mut self, part_id: ModulePartId, trigger_type: &TriggerType) -> Vec<f32> {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
