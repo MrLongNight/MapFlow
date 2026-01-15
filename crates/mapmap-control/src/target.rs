@@ -49,17 +49,26 @@ impl ControlTarget {
         match self {
             ControlTarget::PaintParameter(_, name) => {
                 if name.len() > MAX_NAME_LENGTH {
-                    return Err(format!("Paint parameter name exceeds {} characters", MAX_NAME_LENGTH));
+                    return Err(format!(
+                        "Paint parameter name exceeds {} characters",
+                        MAX_NAME_LENGTH
+                    ));
                 }
             }
             ControlTarget::EffectParameter(_, name) => {
                 if name.len() > MAX_NAME_LENGTH {
-                    return Err(format!("Effect parameter name exceeds {} characters", MAX_NAME_LENGTH));
+                    return Err(format!(
+                        "Effect parameter name exceeds {} characters",
+                        MAX_NAME_LENGTH
+                    ));
                 }
             }
             ControlTarget::Custom(name) => {
                 if name.len() > MAX_NAME_LENGTH {
-                    return Err(format!("Custom target name exceeds {} characters", MAX_NAME_LENGTH));
+                    return Err(format!(
+                        "Custom target name exceeds {} characters",
+                        MAX_NAME_LENGTH
+                    ));
                 }
             }
             _ => {}
@@ -166,7 +175,10 @@ impl ControlValue {
             }
             ControlValue::String(s) => {
                 if s.len() > MAX_STRING_VALUE_LENGTH {
-                    return Err(format!("String value exceeds {} characters", MAX_STRING_VALUE_LENGTH));
+                    return Err(format!(
+                        "String value exceeds {} characters",
+                        MAX_STRING_VALUE_LENGTH
+                    ));
                 }
             }
             _ => {}
