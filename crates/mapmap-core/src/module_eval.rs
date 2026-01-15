@@ -847,10 +847,7 @@ mod tests {
         let result = evaluator.evaluate(&module);
 
         // Check trigger values
-        let t_values = result
-            .trigger_values
-            .get(&t_id)
-            .expect("No trigger values");
+        let t_values = result.trigger_values.get(&t_id).expect("No trigger values");
         assert_eq!(t_values[0], 1.0);
     }
 
