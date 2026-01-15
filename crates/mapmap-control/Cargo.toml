@@ -11,7 +11,7 @@ repository.workspace = true
 default = ["midi", "osc"]
 midi = ["midir"]
 osc = ["rosc"]
-http-api = ["axum", "tokio", "tower", "tower-http", "futures", "http"]
+http-api = ["axum", "tower", "tower-http", "futures", "http"]
 full = ["midi", "osc", "http-api"]
 
 [dependencies]
@@ -34,10 +34,16 @@ serde_json = { workspace = true }
 # Security
 sha2 = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, optional = true, features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 tower = { version = "0.4", optional = true }
 tower-http = { version = "0.5", features = ["cors"], optional = true }
 tracing = { workspace = true }
 
 # DMX dependencies
 uuid = { version = "1.10", features = ["v4"] }
+
+# Hue dependencies
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+openssl = { version = "0.10", features = ["vendored"] }
+anyhow = "1.0"
+palette = "0.7"
