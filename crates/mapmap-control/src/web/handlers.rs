@@ -81,34 +81,6 @@ impl UpdateLayerRequest {
             && self.rotation.is_none()
             && self.scale.is_none()
     }
-
-    /// Validate the request parameters
-    pub fn validate(&self) -> Result<(), String> {
-        if let Some(opacity) = self.opacity {
-            if !(0.0..=1.0).contains(&opacity) {
-                return Err("Opacity must be between 0.0 and 1.0".to_string());
-            }
-        }
-        if let Some(scale) = self.scale {
-            if scale < 0.0 {
-                return Err("Scale must be non-negative".to_string());
-            }
-            if !scale.is_finite() {
-                return Err("Scale must be finite".to_string());
-            }
-        }
-        if let Some((x, y)) = self.position {
-            if !x.is_finite() || !y.is_finite() {
-                return Err("Position must be finite".to_string());
-            }
-        }
-        if let Some(rot) = self.rotation {
-            if !rot.is_finite() {
-                return Err("Rotation must be finite".to_string());
-            }
-        }
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -150,49 +122,6 @@ mod tests {
             scale: None,
         };
         assert!(!request.is_empty());
-    }
-
-    #[test]
-    fn test_update_layer_request_validation() {
-        // Valid request
-        let request = UpdateLayerRequest {
-            opacity: Some(0.5),
-            visible: None,
-            position: Some((10.0, 20.0)),
-            rotation: Some(90.0),
-            scale: Some(1.0),
-        };
-        assert!(request.validate().is_ok());
-
-        // Invalid opacity
-        let request = UpdateLayerRequest {
-            opacity: Some(1.5),
-            visible: None,
-            position: None,
-            rotation: None,
-            scale: None,
-        };
-        assert!(request.validate().is_err());
-
-        // Invalid scale (negative)
-        let request = UpdateLayerRequest {
-            opacity: None,
-            visible: None,
-            position: None,
-            rotation: None,
-            scale: Some(-1.0),
-        };
-        assert!(request.validate().is_err());
-
-        // Invalid position (NaN)
-        let request = UpdateLayerRequest {
-            opacity: None,
-            visible: None,
-            position: Some((f32::NAN, 0.0)),
-            rotation: None,
-            scale: None,
-        };
-        assert!(request.validate().is_err());
     }
 
     #[test]

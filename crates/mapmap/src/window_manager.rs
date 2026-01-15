@@ -270,6 +270,13 @@ impl WindowManager {
             }
         }
 
+        // If not fullscreen, set position on the target monitor
+        if !fullscreen {
+            if let Some(ref monitor) = target_monitor {
+                window_builder = window_builder.with_position(monitor.position());
+            }
+        }
+
         // Build the window
         let window = Arc::new(window_builder.build(event_loop)?);
 
