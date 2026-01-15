@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-15 - Massiver PR #252 ohne Dokumentation
+**Erkenntnis:** PR #252 (feat/stateful-triggers) war mit 500+ Dateien (Icons, Scripts, Core-Features) ein massives Update, wurde aber komplett im Changelog vergessen.
+**Aktion:** Tracker hat die Einträge rekonstruiert und in Gruppen aufgeteilt (feat, assets, chore). Solche großen PRs erfordern besondere Aufmerksamkeit beim Review.
+
 ## 2026-01-13 - Fehlender Eintrag für PR #228
 **Erkenntnis:** PR #228 (Guardian Tests) war nicht im Changelog, obwohl bereits gemerged. Dies wurde beim Audit entdeckt.
 **Aktion:** Tracker hat den Eintrag manuell hinzugefügt und den Roadmap-Stand aktualisiert. Das Muster zeigt, dass PRs oft ohne Changelog-Update gemerged werden.

@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.9
-> **Stand:** 2026-01-13 14:00
+> **Stand:** 2026-01-15 06:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -52,6 +52,10 @@
 - ✅ **Paint-System** (`mapmap-core/src/paint.rs`)
   - ✅ Paint als Basis-Datenstruktur
   - ✅ Media-Source-Integration
+
+- ✅ **Trigger-System** (`mapmap-core/src/module_eval.rs`)
+  - ✅ Stateful Triggers (Random Interval)
+  - ✅ Trigger State Infrastructure
 
 ### Rendering (Compositor / Edge-Blend / Color-Calib / Mesh / Oszillator / Effekt-Chain)
 
@@ -325,7 +329,7 @@
   - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - REMOVED 2025-12-30 (use Module Canvas)
   - ✅ Layers Section removed from sidebar - COMPLETED 2025-12-30 (use Module Canvas)
   - ✅ Icon System: Fader SVG Icon added - COMPLETED 2025-12-30
-  - ⬜ Icon System (Streamline Ultimate) - Partial
+  - ✅ **Icon System** (Streamline Ultimate/Custom) - COMPLETED 2026-01-15
 
 - ✅ **Settings Persistence (COMPLETED 2025-12-30)**
   - ✅ Window size/position saved and restored
