@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-01-14 - Duplicate Documentation Cleanup
+**Erkenntnis:** Eine redundante Kopie von `CHANGELOG.md` wurde in `docs/08-CHANGELOG/` gefunden. Dies verstößt gegen das "Single Source of Truth"-Prinzip.
+**Aktion:** Datei gelöscht. `README.md` im Ordner verweist bereits korrekt auf die Root-Datei. Zukünftige Checks sollten explizit auf Dateiduplikate in `docs/` prüfen.
+
 ## 2026-01-09 - Routine Check
 **Erkenntnis:** Das Repository ist sauber. Keine fehlplatzierten Dateien im Root. `.gitignore` aktualisiert, um `/.temp-archive/` explizit zu ignorieren.
 **Aktion:** Keine weiteren Aktionen erforderlich. Routine-Checks beibehalten.
