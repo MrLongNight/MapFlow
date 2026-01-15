@@ -50,11 +50,7 @@ impl WgpuBackend {
         // 2. Fallback to GL if PRIMARY failed
         // Note: This step might still panic on headless systems if GL is selected but unavailable,
         // but it's a necessary fallback for older hardware.
-        Self::new_with_options(
-            wgpu::Backends::GL,
-            wgpu::PowerPreference::HighPerformance,
-        )
-        .await
+        Self::new_with_options(wgpu::Backends::GL, wgpu::PowerPreference::HighPerformance).await
     }
 
     /// Create a new wgpu backend with specific options
