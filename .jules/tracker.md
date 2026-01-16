@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-16 - Systematische Changelog-Lücke (PR #248-#270)
+**Erkenntnis:** Trotz des Updates am 15.01. (#252) fehlten fast alle umgebenden PRs (#248-#251, #253-#270) im CHANGELOG. Das deutet auf manuelle Merges ohne Changelog-Pflege hin.
+**Aktion:** Tracker hat 19 fehlende Einträge rekonstruiert und ROADMAP.md synchronisiert.
+
 ## 2026-01-15 - Massiver PR #252 ohne Dokumentation
 **Erkenntnis:** PR #252 (feat/stateful-triggers) war mit 500+ Dateien (Icons, Scripts, Core-Features) ein massives Update, wurde aber komplett im Changelog vergessen.
 **Aktion:** Tracker hat die Einträge rekonstruiert und in Gruppen aufgeteilt (feat, assets, chore). Solche großen PRs erfordern besondere Aufmerksamkeit beim Review.

@@ -6,9 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-16: fix(ci): Fix Windows release workflow by adding dynamic FFmpeg integration (#270)
+- 2026-01-16: fix(render): Fix headless crash in wgpu backend on CI (#269)
+- 2026-01-16: perf(core): Optimize ModuleEvaluator allocations (Bolt) (#268)
+- 2026-01-16: feat(ui): Improve Media Clip Region interaction with fluid drag and snapping (#267)
+- 2026-01-16: style(ui): Refine Inspector hierarchy and visual style (#266)
+- 2026-01-16: fix(security): Validate control inputs to prevent injection (#265)
+- 2026-01-16: docs: Update documentation (Scribe) (#262)
+- 2026-01-16: test(core): Add comprehensive ModuleEvaluator tests (Guardian) (#263)
+- 2026-01-16: chore: Clean up repository artifacts (Archivist) (#261)
 - 2026-01-15: feat(core): Implement stateful trigger infrastructure and random intervals (#252)
 - 2026-01-15: assets: Add comprehensive icon library for UI (#252)
 - 2026-01-15: chore: Add maintenance and setup scripts (#252)
+- 2026-01-15: fix(render): Fix Windows surface format crash (#260)
+- 2026-01-15: feat(ui): Media clip region editor (#258)
+- 2026-01-15: feat(ui): Node graph visual refinements (#257)
+- 2026-01-15: perf(core): Optimize FPS calculation with VecDeque (#256)
+- 2026-01-15: fix(security): Input validation for UpdateLayer (#255)
+- 2026-01-15: docs: Update libmpv documentation (#254)
+- 2026-01-15: test(core): Add more core tests (#253)
+- 2026-01-15: fix(render): Fix layer pipeline verification (#251)
+- 2026-01-15: feat(audio): Complete AudioFFT Trigger Node Implementation (#249)
+- 2026-01-15: feat(ui): Interactive clip region (#248)
 - 2026-01-14: test(core): Guardian ModuleEvaluator coverage for triggers and chains
 - 2026-01-13: test(core): Add robust tests for Layer-Transform and State-Serialization (#228)
 - 2026-01-10: feat(render): Add SourceProperties to RenderOp for color/transform/flip (#b8453dc)
