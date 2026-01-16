@@ -1224,12 +1224,33 @@ pub struct ModuleConnection {
     pub to_socket: usize,
 }
 
+fn default_color_palette() -> Vec<[f32; 4]> {
+    vec![
+        [1.0, 0.2, 0.2, 1.0],
+        [1.0, 0.5, 0.2, 1.0],
+        [1.0, 1.0, 0.2, 1.0],
+        [0.5, 1.0, 0.2, 1.0],
+        [0.2, 1.0, 0.2, 1.0],
+        [0.2, 1.0, 0.5, 1.0],
+        [0.2, 1.0, 1.0, 1.0],
+        [0.2, 0.5, 1.0, 1.0],
+        [0.2, 0.2, 1.0, 1.0],
+        [0.5, 0.2, 1.0, 1.0],
+        [1.0, 0.2, 1.0, 1.0],
+        [1.0, 0.2, 0.5, 1.0],
+        [0.5, 0.5, 0.5, 1.0],
+        [1.0, 0.5, 0.8, 1.0],
+        [0.5, 1.0, 0.8, 1.0],
+        [0.8, 0.5, 1.0, 1.0],
+    ]
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleManager {
     modules: HashMap<ModuleId, MapFlowModule>,
     next_module_id: ModuleId,
     next_part_id: ModulePartId,
-    #[serde(skip)]
+    #[serde(skip, default = "default_color_palette")]
     color_palette: Vec<[f32; 4]>,
     next_color_index: usize,
 }
@@ -1249,24 +1270,7 @@ impl ModuleManager {
             modules: HashMap::new(),
             next_module_id: 1,
             next_part_id: 1,
-            color_palette: vec![
-                [1.0, 0.2, 0.2, 1.0],
-                [1.0, 0.5, 0.2, 1.0],
-                [1.0, 1.0, 0.2, 1.0],
-                [0.5, 1.0, 0.2, 1.0],
-                [0.2, 1.0, 0.2, 1.0],
-                [0.2, 1.0, 0.5, 1.0],
-                [0.2, 1.0, 1.0, 1.0],
-                [0.2, 0.5, 1.0, 1.0],
-                [0.2, 0.2, 1.0, 1.0],
-                [0.5, 0.2, 1.0, 1.0],
-                [1.0, 0.2, 1.0, 1.0],
-                [1.0, 0.2, 0.5, 1.0],
-                [0.5, 0.5, 0.5, 1.0],
-                [1.0, 0.5, 0.8, 1.0],
-                [0.5, 1.0, 0.8, 1.0],
-                [0.8, 0.5, 1.0, 1.0],
-            ],
+            color_palette: default_color_palette(),
             next_color_index: 0,
         }
     }
