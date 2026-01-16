@@ -1917,7 +1917,7 @@ impl App {
                             &preview_tex_name,
                             320,
                             180,
-                            wgpu::TextureFormat::Rgba8UnormSrgb,
+                            wgpu::TextureFormat::Bgra8UnormSrgb,
                             wgpu::TextureUsages::RENDER_ATTACHMENT
                                 | wgpu::TextureUsages::TEXTURE_BINDING,
                         );
