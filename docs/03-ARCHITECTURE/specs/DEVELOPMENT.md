@@ -82,7 +82,7 @@ pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
     let c = v * s;
     let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
     let m = v - c;
-    
+
     let (r, g, b) = match (h / 60.0) as u8 {
         0 => (c, x, 0.0),
         1 => (x, c, 0.0),
@@ -91,7 +91,7 @@ pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
         4 => (x, 0.0, c),
         _ => (c, 0.0, x),
     };
-    
+
     (
         ((r + m) * 255.0) as u8,
         ((g + m) * 255.0) as u8,
@@ -106,17 +106,17 @@ pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
 // Kelvin to RGB approximation
 pub fn kelvin_to_rgb(kelvin: u32) -> (u8, u8, u8) {
     let temp = kelvin as f32 / 100.0;
-    
-    let r = if temp <= 66.0 { 255.0 } 
+
+    let r = if temp <= 66.0 { 255.0 }
             else { 329.698727446 * (temp - 60.0).powf(-0.1332047592) };
-    
+
     let g = if temp <= 66.0 { 99.4708025861 * temp.ln() - 161.1195681661 }
             else { 288.1221695283 * (temp - 60.0).powf(-0.0755148492) };
-    
+
     let b = if temp >= 66.0 { 255.0 }
             else if temp <= 19.0 { 0.0 }
             else { 138.5177312231 * (temp - 10.0).ln() - 305.0447927307 };
-    
+
     (r.clamp(0.0, 255.0) as u8, g.clamp(0.0, 255.0) as u8, b.clamp(0.0, 255.0) as u8)
 }
 ```
@@ -203,7 +203,7 @@ pub struct EffectMixer {
 impl EffectMixer {
     pub fn render(&mut self, audio: &AudioSpectrum, nodes: &[LightNode]) -> HashMap<u8, (u8, u8, u8)> {
         let mut result: HashMap<u8, (f32, f32, f32)> = HashMap::new();
-        
+
         for (effect, opacity) in &mut self.layers {
             let colors = effect.update(audio, nodes);
             for (id, (r, g, b)) in colors {
@@ -213,7 +213,7 @@ impl EffectMixer {
                 entry.2 = entry.2 * (1.0 - opacity) + b as f32 * opacity;
             }
         }
-        
+
         result.into_iter()
             .map(|(id, (r, g, b))| (id, (r as u8, g as u8, b as u8)))
             .collect()
@@ -238,7 +238,7 @@ impl MockStreamer {
         self.frames.push(buf.to_vec());
         Ok(())
     }
-    
+
     pub fn last_colors(&self) -> HashMap<u8, (u8, u8, u8)> {
         // Parse last frame...
     }
@@ -304,34 +304,34 @@ impl RoomPreview {
         // Isometric projection formulas
         // u = (x - y) * cos(30°)
         // v = (x + y) * sin(30°) - z
-        
+
         const COS_30: f32 = 0.866;
         const SIN_30: f32 = 0.5;
-        
+
         let u = (x as f32 - y as f32) * COS_30;
         let v = (x as f32 + y as f32) * SIN_30 - (z as f32);
-        
+
         // Scale and center
         (
             self.width / 2.0 + u * self.scale,
             self.height / 2.0 + v * self.scale
         )
     }
-    
+
     /// Draws the room floor grid for reference
     pub fn draw_grid(&self, ui: &mut egui::Ui) {
         // Draw floor boundary (-1,-1) to (1,1)
         let corners = [
             (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)
         ];
-        
+
         let points: Vec<egui::Pos2> = corners.iter()
             .map(|(x, y)| {
                 let (u, v) = self.project(*x, *y, -1.0); // Z = floor (-1.0)
                 egui::pos2(u, v)
             })
             .collect();
-            
+
         // Use ui.painter().add(egui::Shape::convex_polygon(...));
     }
 }
@@ -352,15 +352,15 @@ pub struct RadialExplosion {
 impl LightEffect for RadialExplosion {
     fn update(&mut self, _audio: &AudioSpectrum, nodes: &[LightNode]) -> HashMap<u8, (u8, u8, u8)> {
         self.radius += 0.1; // Expand
-        
+
         let mut result = HashMap::new();
         for node in nodes {
             // Calculate distance from center (0,0,0) ignoring Z height likely
             let dist = (node.x.powi(2) + node.y.powi(2)).sqrt() as f32;
-            
+
             // Gaussian bell curve peak at current radius
             let intensity = (-20.0 * (dist - self.radius).powi(2)).exp();
-            
+
             if intensity > 0.01 {
                 let r = (255.0 * intensity) as u8;
                 result.insert(node.channel_id, (r, 0, 0)); // Red explosion
@@ -383,15 +383,15 @@ pub struct LinearWave {
 impl LightEffect for LinearWave {
     fn update(&mut self, _audio: &AudioSpectrum, nodes: &[LightNode]) -> HashMap<u8, (u8, u8, u8)> {
         self.phase += 0.2;
-        
+
         let mut result = HashMap::new();
         for node in nodes {
             // Project position onto direction vector
             let metric = node.x * self.direction.0 + node.y * self.direction.1;
-            
+
             // Sine wave based on position
             let val = ((metric * 2.0 + self.phase as f64).sin() + 1.0) / 2.0;
-            
+
             let b = (255.0 * val) as u8;
             result.insert(node.channel_id, (0, 0, b)); // Blue wave
         }
