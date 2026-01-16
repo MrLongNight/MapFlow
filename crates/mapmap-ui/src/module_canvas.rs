@@ -1420,11 +1420,14 @@ impl ModuleCanvas {
                                             OutputType::Projector {
                                                 id,
                                                 name,
-                                                fullscreen,
                                                 hide_cursor,
                                                 target_screen,
                                                 show_in_preview_panel,
                                                 extra_preview_window,
+<<<<<<< HEAD
+=======
+                                                fullscreen,
+>>>>>>> fix/main-repairs
                                                 ..
                                             } => {
                                                 ui.label("📽️ Projector Output");
