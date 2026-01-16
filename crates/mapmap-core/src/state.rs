@@ -178,4 +178,80 @@ mod tests {
         // Note: ModuleManager derived PartialEq check
         assert_eq!(original.module_manager, deserialized.module_manager);
     }
+
+    #[test]
+    fn test_app_state_new_initialization() {
+        let state = AppState::new("My Cool Project");
+
+        assert_eq!(state.name, "My Cool Project");
+        assert_eq!(state.version, "0.1.0");
+        assert_eq!(state.settings.output_count, 1);
+
+        // Managers should be initialized empty but ready
+        assert_eq!(state.paint_manager.paints().len(), 0);
+        assert_eq!(state.layer_manager.len(), 0);
+        assert_eq!(state.mapping_manager.mappings().len(), 0);
+
+        // Default configs
+        assert!(!state.dirty);
+    }
+
+    #[test]
+    fn test_app_settings_custom_values() {
+        let settings = AppSettings {
+            master_volume: 0.5,
+            dark_mode: false,
+            ui_scale: 1.5,
+            language: "de".to_string(),
+            log_config: LogConfig::default(),
+            output_count: 3,
+        };
+
+        assert_eq!(settings.master_volume, 0.5);
+        assert_eq!(settings.dark_mode, false);
+        assert_eq!(settings.ui_scale, 1.5);
+        assert_eq!(settings.language, "de");
+        assert_eq!(settings.output_count, 3);
+    }
+
+    #[test]
+    fn test_app_state_serialization_skip_dirty() {
+        let mut original = AppState::new("Dirty Project");
+        original.dirty = true;
+
+        let serialized = serde_json::to_string(&original).expect("Failed to serialize");
+
+        // "dirty" field should NOT be present in JSON
+        assert!(!serialized.contains("\"dirty\""));
+
+        let deserialized: AppState =
+            serde_json::from_str(&serialized).expect("Failed to deserialize");
+
+        // Deserialized struct uses Default for skipped fields -> dirty should be false
+        assert_eq!(deserialized.dirty, false);
+    }
+
+    #[test]
+    fn test_deep_structure_serialization() {
+        let mut original = AppState::new("Complex Project");
+
+        // Add some complexity
+        original
+            .shader_graphs
+            .insert(1, crate::ShaderGraph::new(1, "Test Graph".to_string()));
+        original
+            .effect_chain
+            .add_effect(crate::effects::EffectType::Blur);
+
+        let serialized = serde_json::to_string(&original).expect("Failed to serialize");
+        let deserialized: AppState =
+            serde_json::from_str(&serialized).expect("Failed to deserialize");
+
+        assert!(deserialized.shader_graphs.contains_key(&1));
+        assert_eq!(deserialized.effect_chain.effects.len(), 1);
+        assert_eq!(
+            deserialized.effect_chain.effects[0].effect_type,
+            crate::effects::EffectType::Blur
+        );
+    }
 }
