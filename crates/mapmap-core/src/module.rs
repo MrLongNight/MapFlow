@@ -386,13 +386,28 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Layer,
                 }],
             ),
-            ModulePartType::Output(_) => (
-                vec![ModuleSocket {
-                    name: "Layer In".to_string(),
-                    socket_type: ModuleSocketType::Layer,
-                }],
-                vec![], // No outputs - outputs are sinks
-            ),
+            ModulePartType::Output(out) => match out {
+                OutputType::Hue { .. } => (
+                    vec![
+                        ModuleSocket {
+                            name: "Layer In".to_string(),
+                            socket_type: ModuleSocketType::Layer,
+                        },
+                        ModuleSocket {
+                            name: "Trigger In".to_string(),
+                            socket_type: ModuleSocketType::Trigger,
+                        },
+                    ],
+                    vec![],
+                ),
+                _ => (
+                    vec![ModuleSocket {
+                        name: "Layer In".to_string(),
+                        socket_type: ModuleSocketType::Layer,
+                    }],
+                    vec![], // No outputs - outputs are sinks
+                ),
+            },
             ModulePartType::Mesh(_) => (
                 vec![
                     ModuleSocket {
@@ -1206,6 +1221,24 @@ pub enum OutputType {
     },
     #[cfg(target_os = "windows")]
     Spout { name: String },
+    /// Philips Hue Entertainment Output
+    Hue {
+        bridge_ip: String,
+        username: String,
+        client_key: String,
+        entertainment_area: String, // Name or ID
+        /// Map of light ID (streaming ID) to normalized (X, Y) position in the virtual room (0.0-1.0)
+        lamp_positions: HashMap<String, (f32, f32)>,
+        /// Mapping mode
+        mapping_mode: HueMappingMode,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum HueMappingMode {
+    Ambient, // Average color of whole frame
+    Spatial, // Spatial sampling based on lamp position
+    Trigger, // Strobe/Pulse on trigger
 }
 
 fn default_true() -> bool {

@@ -1,10 +1,10 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
-    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType, LayerType,
-    MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager, ModulePart, ModulePartId,
-    ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData, OutputType, SourceType,
-    TriggerType,
+    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType,
+    HueMappingMode, LayerType, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager,
+    ModulePart, ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData,
+    OutputType, SourceType, TriggerType,
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -126,6 +126,18 @@ pub struct ModuleCanvas {
     show_diagnostics: bool,
     /// Media player info for timeline display (Part ID -> Info)
     pub player_info: std::collections::HashMap<ModulePartId, MediaPlayerInfo>,
+
+    // Hue Integration
+    /// Discovered Hue bridges
+    pub hue_bridges: Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>,
+    /// Channel for Hue discovery results
+    pub hue_discovery_rx: Option<
+        std::sync::mpsc::Receiver<
+            Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, String>,
+        >,
+    >,
+    /// Status message for Hue operations
+    pub hue_status_message: Option<String>,
 }
 
 /// Live audio data for trigger nodes
@@ -225,6 +237,9 @@ impl Default for ModuleCanvas {
             diagnostic_issues: Vec::new(),
             show_diagnostics: false,
             player_info: std::collections::HashMap::new(),
+            hue_bridges: Vec::new(),
+            hue_discovery_rx: None,
+            hue_status_message: None,
         }
     }
 }
@@ -1607,6 +1622,112 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(name);
                                                 });
                                             }
+                                            OutputType::Hue {
+                                                bridge_ip,
+                                                username,
+                                                client_key,
+                                                entertainment_area,
+                                                lamp_positions,
+                                                mapping_mode,
+                                            } => {
+                                                ui.label("💡 Philips Hue Entertainment");
+                                                ui.separator();
+
+                                                // --- Tabs for Hue configuration ---
+                                                ui.collapsing("⚙️ Setup (Bridge & Pairing)", |ui| {
+                                                    // Discovery status
+                                                    if let Some(msg) = &self.hue_status_message {
+                                                        ui.label(format!("Status: {}", msg));
+                                                    }
+
+                                                    // Handle discovery results
+                                                    if let Some(rx) = &self.hue_discovery_rx {
+                                                        if let Ok(result) = rx.try_recv() {
+                                                            self.hue_discovery_rx = None;
+                                                            match result {
+                                                                Ok(bridges) => {
+                                                                    self.hue_bridges = bridges;
+                                                                    self.hue_status_message = Some(format!("Found {} bridges", self.hue_bridges.len()));
+                                                                }
+                                                                Err(e) => {
+                                                                    self.hue_status_message = Some(format!("Discovery failed: {}", e));
+                                                                }
+                                                            }
+                                                        } else {
+                                                            ui.horizontal(|ui| {
+                                                                ui.spinner();
+                                                                ui.label("Searching for bridges...");
+                                                            });
+                                                        }
+                                                    }
+
+                                                    if ui.button("🔍 Discover Bridges").clicked() {
+                                                        let (tx, rx) = std::sync::mpsc::channel();
+                                                        self.hue_discovery_rx = Some(rx);
+                                                        self.hue_status_message = Some("Searching...".to_string());
+
+                                                        // Spawn async task
+                                                        #[cfg(feature = "tokio")]
+                                                        tokio::spawn(async move {
+                                                            let result = mapmap_control::hue::api::discovery::discover_bridges().await
+                                                                .map_err(|e| e.to_string());
+                                                            let _ = tx.send(result);
+                                                        });
+                                                        #[cfg(not(feature = "tokio"))]
+                                                        {
+                                                            self.hue_status_message = Some("Async runtime not available".to_string());
+                                                        }
+                                                    }
+
+                                                    if !self.hue_bridges.is_empty() {
+                                                        ui.separator();
+                                                        ui.label("Select Bridge:");
+                                                        for bridge in &self.hue_bridges {
+                                                            if ui.button(format!("{} ({})", bridge.id, bridge.ip)).clicked() {
+                                                                *bridge_ip = bridge.ip.clone();
+                                                            }
+                                                        }
+                                                    }
+
+                                                    ui.separator();
+                                                    ui.label("Manual IP:");
+                                                    ui.text_edit_singleline(bridge_ip);
+
+                                                    // Pairing (Requires bridge button press)
+                                                    if ui.button("🔗 Pair with Bridge").on_hover_text("Press button on Bridge then click this").clicked() {
+                                                        // TODO: Implement pairing logic
+                                                        // This requires async call to `register_user`
+                                                        // Similar pattern to discovery
+                                                    }
+
+                                                    if !username.is_empty() {
+                                                        ui.label("✅ Paired");
+                                                        // ui.label(format!("User: {}", username)); // Keep secret?
+                                                    } else {
+                                                        ui.label("❌ Not Paired");
+                                                    }
+                                                });
+
+                                                ui.collapsing("🎭 Area & Mode", |ui| {
+                                                     ui.label("Entertainment Area:");
+                                                     ui.text_edit_singleline(entertainment_area);
+                                                     // TODO: Fetch areas from bridge if paired
+
+                                                     ui.separator();
+                                                     ui.label("Mapping Mode:");
+                                                     ui.radio_value(mapping_mode, HueMappingMode::Ambient, "Ambient (Average Color)");
+                                                     ui.radio_value(mapping_mode, HueMappingMode::Spatial, "Spatial (2D Map)");
+                                                     ui.radio_value(mapping_mode, HueMappingMode::Trigger, "Trigger (Strobe/Pulse)");
+                                                });
+
+                                                if *mapping_mode == HueMappingMode::Spatial {
+                                                    ui.collapsing("🗺️ Spatial Editor", |ui| {
+                                                        ui.label("Position lamps in the virtual room:");
+                                                        // Render 2D room editor
+                                                        self.render_hue_spatial_editor(ui, lamp_positions);
+                                                    });
+                                                }
+                                            }
                                         }
                                     }
                                     // All part types handled above
@@ -2416,6 +2537,20 @@ impl ModuleCanvas {
                             }
                             if (show_all || "pixelate".contains(&filter)) && ui.button("Pixelate").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Pixelate, params: std::collections::HashMap::new() });
+                                self.search_filter.clear();
+                                ui.close_menu();
+                            }
+
+                            // Philips Hue Option
+                            if (show_all || "hue".contains(&filter)) && ui.button("💡 Philips Hue").clicked() {
+                                self.add_module_node(manager, ModulePartType::Output(OutputType::Hue {
+                                    bridge_ip: String::new(),
+                                    username: String::new(),
+                                    client_key: String::new(),
+                                    entertainment_area: String::new(),
+                                    lamp_positions: std::collections::HashMap::new(),
+                                    mapping_mode: HueMappingMode::Spatial,
+                                }));
                                 self.search_filter.clear();
                                 ui.close_menu();
                             }
@@ -3640,6 +3775,128 @@ impl ModuleCanvas {
         });
     }
 
+    /// Render the 2D Spatial Editor for Hue lamps
+    fn render_hue_spatial_editor(
+        &self,
+        ui: &mut Ui,
+        lamp_positions: &mut std::collections::HashMap<String, (f32, f32)>,
+    ) {
+        let editor_size = Vec2::new(300.0, 300.0);
+        let (response, painter) = ui.allocate_painter(editor_size, Sense::click_and_drag());
+        let rect = response.rect;
+
+        // Draw background (Room representation)
+        painter.rect_filled(rect, 4.0, Color32::from_gray(30));
+        painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::GRAY));
+
+        // Draw grid
+        let grid_steps = 5;
+        for i in 1..grid_steps {
+            let t = i as f32 / grid_steps as f32;
+            let x = rect.min.x + t * rect.width();
+            let y = rect.min.y + t * rect.height();
+
+            painter.line_segment(
+                [Pos2::new(x, rect.min.y), Pos2::new(x, rect.max.y)],
+                Stroke::new(1.0, Color32::from_white_alpha(20)),
+            );
+            painter.line_segment(
+                [Pos2::new(rect.min.x, y), Pos2::new(rect.max.x, y)],
+                Stroke::new(1.0, Color32::from_white_alpha(20)),
+            );
+        }
+
+        // Labels
+        painter.text(
+            rect.center_top() + Vec2::new(0.0, 10.0),
+            egui::Align2::CENTER_TOP,
+            "Front (TV/Screen)",
+            egui::FontId::proportional(12.0),
+            Color32::WHITE,
+        );
+
+        // If empty, add dummy lamps for visualization/testing
+        if lamp_positions.is_empty() {
+            painter.text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "No Lamps Mapped",
+                egui::FontId::proportional(14.0),
+                Color32::GRAY,
+            );
+            // Typically we would populate this from the Entertainment Area config
+            if ui.button("Add Test Lamps").clicked() {
+                lamp_positions.insert("1".to_string(), (0.2, 0.2)); // Front Left
+                lamp_positions.insert("2".to_string(), (0.8, 0.2)); // Front Right
+                lamp_positions.insert("3".to_string(), (0.2, 0.8)); // Rear Left
+                lamp_positions.insert("4".to_string(), (0.8, 0.8)); // Rear Right
+            }
+            return;
+        }
+
+        let to_screen = |x: f32, y: f32| -> Pos2 {
+            Pos2::new(
+                rect.min.x + x.clamp(0.0, 1.0) * rect.width(),
+                rect.min.y + y.clamp(0.0, 1.0) * rect.height(),
+            )
+        };
+
+        // Handle lamp dragging
+        let pointer_pos = ui.input(|i| i.pointer.hover_pos());
+        let is_dragging = ui.input(|i| i.pointer.primary_down());
+
+        let mut dragged_lamp = None;
+
+        // If dragging, find closest lamp
+        if response.dragged() {
+            if let Some(pos) = pointer_pos {
+                // Find closest lamp within radius
+                let mut min_dist = f32::MAX;
+                let mut closest_id = None;
+
+                for (id, (lx, ly)) in lamp_positions.iter() {
+                    let lamp_pos = to_screen(*lx, *ly);
+                    let dist = lamp_pos.distance(pos);
+                    if dist < 20.0 && dist < min_dist {
+                        min_dist = dist;
+                        closest_id = Some(id.clone());
+                    }
+                }
+
+                if let Some(id) = closest_id {
+                    dragged_lamp = Some(id);
+                }
+            }
+        }
+
+        if let Some(id) = dragged_lamp {
+            if let Some(pos) = pointer_pos {
+                // Update position
+                let nx = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
+                let ny = ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0);
+                lamp_positions.insert(id, (nx, ny));
+            }
+        }
+
+        // Draw Lamps
+        for (id, (lx, ly)) in lamp_positions.iter() {
+            let pos = to_screen(*lx, *ly);
+
+            // Draw lamp body
+            painter.circle_filled(pos, 8.0, Color32::from_rgb(255, 200, 100));
+            painter.circle_stroke(pos, 8.0, Stroke::new(2.0, Color32::WHITE));
+
+            // Draw Label
+            painter.text(
+                pos + Vec2::new(0.0, 12.0),
+                egui::Align2::CENTER_TOP,
+                id,
+                egui::FontId::proportional(10.0),
+                Color32::WHITE,
+            );
+        }
+    }
+
     /// Get default sockets for a part type
     fn get_sockets_for_part_type(
         part_type: &mapmap_core::module::ModulePartType,
@@ -4349,6 +4606,7 @@ impl ModuleCanvas {
                     OutputType::NdiOutput { .. } => "NDI Output (Disabled)",
                     #[cfg(target_os = "windows")]
                     OutputType::Spout { .. } => "Spout Output",
+                    OutputType::Hue { .. } => "Philips Hue",
                 };
                 egui::ComboBox::from_id_source("output_type")
                     .selected_text(current)
@@ -4396,6 +4654,23 @@ impl ModuleCanvas {
                         {
                             *output_type = OutputType::Spout {
                                 name: "MapFlow Output".to_string(),
+                            };
+                        }
+
+                        if ui
+                            .selectable_label(
+                                matches!(output_type, OutputType::Hue { .. }),
+                                "Philips Hue",
+                            )
+                            .clicked()
+                        {
+                            *output_type = OutputType::Hue {
+                                bridge_ip: String::new(),
+                                username: String::new(),
+                                client_key: String::new(),
+                                entertainment_area: String::new(),
+                                lamp_positions: std::collections::HashMap::new(),
+                                mapping_mode: mapmap_core::module::HueMappingMode::Spatial,
                             };
                         }
                     });
@@ -5017,6 +5292,7 @@ impl ModuleCanvas {
                     OutputType::NdiOutput { .. } => "NDI Output",
                     #[cfg(target_os = "windows")]
                     OutputType::Spout { .. } => "Spout Output",
+                    OutputType::Hue { .. } => "Philips Hue",
                 };
                 (
                     Color32::from_rgb(70, 50, 50),
@@ -5117,6 +5393,13 @@ impl ModuleCanvas {
                 OutputType::NdiOutput { name } => format!("📡 {}", name),
                 #[cfg(target_os = "windows")]
                 OutputType::Spout { name } => format!("🚰 {}", name),
+                OutputType::Hue { bridge_ip, .. } => {
+                    if bridge_ip.is_empty() {
+                        "💡 Not Connected".to_string()
+                    } else {
+                        format!("💡 {}", bridge_ip)
+                    }
+                }
             },
         }
     }

@@ -43,7 +43,7 @@ serde_json = { workspace = true }
 sysinfo = "0.29"
 thiserror = { workspace = true }
 tiny-skia = { workspace = true }
-tokio = { workspace = true, optional = true }                               # Added for NDI async
+tokio = { workspace = true, optional = true, features = ["sync", "macros", "rt-multi-thread"] }                               # Added for NDI async
 tracing = { workspace = true }
 unic-langid = { workspace = true }
 usvg = { workspace = true }
