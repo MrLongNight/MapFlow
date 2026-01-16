@@ -155,6 +155,11 @@ pub enum SourceCommand {
         sender_name: String,
         trigger_value: f32,
     },
+    /// Philips Hue output (Trigger/Effect data)
+    HueOutput {
+        trigger_value: f32,
+        // Potentially other data like color overrides
+    },
 }
 
 /// Helper struct for chain tracing results
@@ -294,6 +299,13 @@ impl ModuleEvaluator {
                 if let Some(cmd) = self.create_source_command(source_type, trigger_value) {
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
+            }
+            // Generate output commands for Hue (which acts like a Sink/Output)
+            if let ModulePartType::Output(OutputType::Hue { .. }) = &part.part_type {
+                let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
+                self.cached_result
+                    .source_commands
+                    .insert(part.id, SourceCommand::HueOutput { trigger_value });
             }
         }
 

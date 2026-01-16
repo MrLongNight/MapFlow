@@ -47,7 +47,9 @@ pub enum MeshType {
 /// Mesh - defines geometry for mapping
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Mesh {
+    /// Type of the mesh (Quad, Triangle, etc.)
     pub mesh_type: MeshType,
+    /// List of vertices defining the mesh geometry
     pub vertices: Vec<MeshVertex>,
     /// Triangle indices (3 per triangle)
     pub indices: Vec<u16>,
