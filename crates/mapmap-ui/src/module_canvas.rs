@@ -1424,10 +1424,7 @@ impl ModuleCanvas {
                                                 target_screen,
                                                 show_in_preview_panel,
                                                 extra_preview_window,
-<<<<<<< HEAD
-=======
                                                 fullscreen,
->>>>>>> fix/main-repairs
                                                 ..
                                             } => {
                                                 ui.label("📽️ Projector Output");
