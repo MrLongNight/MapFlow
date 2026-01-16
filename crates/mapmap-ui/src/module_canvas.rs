@@ -2894,7 +2894,11 @@ impl ModuleCanvas {
         }
 
         // Ctrl+V: Paste from clipboard
-        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::V)) && !self.clipboard.is_empty() && !self.locked {
+        if ctrl_held
+            && ui.input(|i| i.key_pressed(egui::Key::V))
+            && !self.clipboard.is_empty()
+            && !self.locked
+        {
             let paste_offset = (50.0, 50.0); // Offset from original position
             self.selected_parts.clear();
 
@@ -2915,7 +2919,10 @@ impl ModuleCanvas {
         }
 
         // Delete: Delete selected parts
-        if ui.input(|i| i.key_pressed(egui::Key::Delete)) && !self.selected_parts.is_empty() && !self.locked {
+        if ui.input(|i| i.key_pressed(egui::Key::Delete))
+            && !self.selected_parts.is_empty()
+            && !self.locked
+        {
             for &part_id in &self.selected_parts {
                 module
                     .connections
@@ -3099,7 +3106,11 @@ impl ModuleCanvas {
 
         // Start connection on mouse down over socket
         if let Some(pos) = pointer_pos {
-            if primary_down && self.creating_connection.is_none() && self.dragging_part.is_none() && !self.locked {
+            if primary_down
+                && self.creating_connection.is_none()
+                && self.dragging_part.is_none()
+                && !self.locked
+            {
                 for socket in &all_sockets {
                     if socket.position.distance(pos) < socket_radius {
                         // Start creating a connection
