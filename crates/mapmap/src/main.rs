@@ -1016,11 +1016,7 @@ impl App {
                         );
                         if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
                             let tex_name = format!("part_{}", part_id);
-                            debug!(
-                                "Uploading texture '{}' with {} bytes",
-                                tex_name,
-                                data.len()
-                            );
+                            debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
                             texture_pool.upload_data(
                                 queue,
                                 &tex_name,
