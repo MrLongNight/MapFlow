@@ -314,6 +314,7 @@ pub mod cpal_backend {
 pub mod mock_backend {
     use super::{AudioBackend, AudioError};
 
+    /// Mock backend that generates sine wave
     pub struct MockBackend {
         phase: f32,
         sample_rate: f32,
@@ -329,6 +330,7 @@ pub mod mock_backend {
     }
 
     impl MockBackend {
+        /// Create a new mock backend
         pub fn new() -> Self {
             Self::default()
         }

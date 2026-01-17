@@ -23,11 +23,17 @@ fn default_scale() -> f32 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MapFlowModule {
+    /// Unique identifier for the module
     pub id: ModuleId,
+    /// Name of the module
     pub name: String,
+    /// Module color for UI display
     pub color: [f32; 4],
+    /// List of module parts (nodes)
     pub parts: Vec<ModulePart>,
+    /// Connections between module parts
     pub connections: Vec<ModuleConnection>,
+    /// Playback mode for the module
     pub playback_mode: ModulePlaybackMode,
 }
 
@@ -218,22 +224,31 @@ pub enum ModulePlaybackMode {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModulePart {
+    /// Unique identifier for the part
     pub id: ModulePartId,
+    /// Type of the part (e.g. Source, Layer, Trigger)
     pub part_type: ModulePartType,
+    /// UI position (x, y)
     pub position: (f32, f32),
     /// Custom size (width, height). If None, uses default size.
     #[serde(default)]
     pub size: Option<(f32, f32)>,
+    /// Link configuration for master/slave behavior
     #[serde(default)]
     pub link_data: NodeLinkData,
+    /// Input sockets
     pub inputs: Vec<ModuleSocket>,
+    /// Output sockets
     pub outputs: Vec<ModuleSocket>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeLinkData {
+    /// Link mode (Off, Master, Slave)
     pub mode: LinkMode,
+    /// Link behavior (SameAsMaster, Inverted)
     pub behavior: LinkBehavior,
+    /// Whether trigger input is enabled
     pub trigger_input_enabled: bool,
 }
 
@@ -250,31 +265,44 @@ impl Default for NodeLinkData {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkMode {
     #[default]
+    /// No linking
     Off,
+    /// Controls other nodes
     Master,
+    /// Controlled by a master node
     Slave,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkBehavior {
     #[default]
+    /// Follow master state exactly
     SameAsMaster,
+    /// Invert master state
     Inverted,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleSocket {
+    /// Socket name
     pub name: String,
+    /// Socket data type
     pub socket_type: ModuleSocketType,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ModuleSocketType {
+    /// Trigger signal (0.0 - 1.0)
     Trigger,
+    /// Media content (texture/video)
     Media,
+    /// Effect processing chain
     Effect,
+    /// Layer composition
     Layer,
+    /// Output destination
     Output,
+    /// Link control signal
     Link,
 }
 
@@ -430,12 +458,19 @@ impl ModulePartType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePartType {
+    /// Trigger generator (e.g. Audio, Timer)
     Trigger(TriggerType),
+    /// Media source (e.g. File, Camera)
     Source(SourceType),
+    /// Mask for compositing
     Mask(MaskType),
+    /// Effect or Modifier
     Modulizer(ModulizerType),
+    /// Composition Layer
     Layer(LayerType),
+    /// Geometric Mesh
     Mesh(MeshType),
+    /// Physical Output
     Output(OutputType),
 }
 
@@ -488,15 +523,24 @@ pub enum TriggerType {
 /// Audio frequency bands for FFT trigger
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioBand {
-    SubBass,    // 20-60Hz
-    Bass,       // 60-250Hz
-    LowMid,     // 250-500Hz
-    Mid,        // 500-2kHz
-    HighMid,    // 2-4kHz
-    Presence,   // 4-6kHz
-    Brilliance, // 6-20kHz
-    Peak,       // Peak detection
-    BPM,        // Beat per minute
+    /// 20-60Hz
+    SubBass,
+    /// 60-250Hz
+    Bass,
+    /// 250-500Hz
+    LowMid,
+    /// 500-2kHz
+    Mid,
+    /// 2-4kHz
+    HighMid,
+    /// 4-6kHz
+    Presence,
+    /// 6-20kHz
+    Brilliance,
+    /// Peak detection
+    Peak,
+    /// Beat per minute
+    BPM,
 }
 
 /// Configuration for which outputs are enabled on an AudioFFT trigger

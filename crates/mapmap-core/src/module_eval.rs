@@ -17,6 +17,7 @@ use std::time::Instant;
 #[derive(Debug, Clone, Default)]
 pub enum TriggerState {
     #[default]
+    /// No active trigger state
     None,
     Random {
         /// The timestamp (in ms since start) when the next trigger is scheduled.

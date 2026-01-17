@@ -12,11 +12,17 @@ use std::collections::HashMap;
 /// Audio-reactive parameter controller
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AudioTriggerData {
+    /// Energy levels for each frequency band (0.0 - 1.0)
     pub band_energies: [f32; 9],
+    /// RMS volume level (0.0 - 1.0)
     pub rms_volume: f32,
+    /// Peak volume level (0.0 - 1.0)
     pub peak_volume: f32,
+    /// Whether a beat was detected in this frame
     pub beat_detected: bool,
+    /// Strength of the detected beat (0.0 - 1.0)
     pub beat_strength: f32,
+    /// Detected Beats Per Minute (if available)
     pub bpm: Option<f32>,
 }
 

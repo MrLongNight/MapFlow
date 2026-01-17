@@ -63,8 +63,10 @@ impl MonitorInfo {
 /// Monitor topology (arrangement of displays)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitorTopology {
+    /// List of detected monitors
     pub monitors: Vec<MonitorInfo>,
-    pub total_bounds: (i32, i32, u32, u32), // (x, y, width, height)
+    /// Total bounding rectangle of all monitors (x, y, width, height)
+    pub total_bounds: (i32, i32, u32, u32),
 }
 
 impl MonitorTopology {
