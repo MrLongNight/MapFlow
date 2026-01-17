@@ -797,30 +797,64 @@ impl ModuleCanvas {
                                                     // Controls with "Set to Playhead" buttons
                                                     ui.horizontal(|ui| {
                                                         ui.vertical(|ui| {
+                                                            let mut ui_end_time = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                            let mut ui_start_time = *start_time;
+
                                                             // Start Control
                                                             ui.horizontal(|ui| {
                                                                  if ui.button(" [ ").on_hover_text("Set Start to current Playhead").clicked() {
-                                                                     *start_time = current_pos;
-                                                                     // Safety: if new start is past the current end, reset the end to 0.0 (End of File)
-                                                                     // This assumes the user wants to start a new region from here.
-                                                                     let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                                     if *start_time >= effective_end {
-                                                                         *end_time = 0.0; // Reset end to full duration
+                                                                     ui_start_time = current_pos;
+                                                                     if ui_start_time >= ui_end_time {
+                                                                         ui_end_time = video_duration;
+                                                                         *end_time = 0.0;
                                                                      }
+                                                                     *start_time = ui_start_time;
                                                                  }
-                                                                 ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s"));
+
+                                                                 let response = ui.add(
+                                                                     egui::Slider::new(&mut ui_start_time, 0.0..=ui_end_time)
+                                                                        .text("Start")
+                                                                        .custom_formatter(|n, _| {
+                                                                            let m = (n / 60.0) as u32;
+                                                                            let s = n % 60.0;
+                                                                            format!("{:02}:{:05.2}", m, s)
+                                                                        })
+                                                                 );
+
+                                                                 if response.changed() {
+                                                                     *start_time = ui_start_time;
+                                                                 }
                                                             });
 
                                                             // End Control
                                                             ui.horizontal(|ui| {
                                                                  if ui.button(" ] ").on_hover_text("Set End to current Playhead").clicked() {
-                                                                     *end_time = current_pos;
-                                                                     // Safety: if new end is before start, move start back
-                                                                     if *end_time <= *start_time {
-                                                                         *start_time = (*end_time - 1.0).max(0.0);
+                                                                     ui_end_time = current_pos;
+                                                                     if ui_end_time <= ui_start_time {
+                                                                         ui_start_time = (ui_end_time - 1.0).max(0.0);
+                                                                         *start_time = ui_start_time;
+                                                                     }
+                                                                     *end_time = ui_end_time;
+                                                                 }
+
+                                                                 let response = ui.add(
+                                                                     egui::Slider::new(&mut ui_end_time, ui_start_time..=video_duration)
+                                                                        .text("End")
+                                                                        .custom_formatter(|n, _| {
+                                                                            let m = (n / 60.0) as u32;
+                                                                            let s = n % 60.0;
+                                                                            format!("{:02}:{:05.2}", m, s)
+                                                                        })
+                                                                 );
+
+                                                                 if response.changed() {
+                                                                     // Snap to end if close
+                                                                     if (video_duration - ui_end_time).abs() < 0.1 {
+                                                                         *end_time = 0.0;
+                                                                     } else {
+                                                                         *end_time = ui_end_time;
                                                                      }
                                                                  }
-                                                                 ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s"));
                                                             });
                                                         });
                                                     });
