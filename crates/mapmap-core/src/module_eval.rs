@@ -637,3 +637,247 @@ impl ModuleEvaluator {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::audio_reactive::AudioTriggerData;
+    use crate::module::{
+        AudioBand, AudioTriggerOutputConfig, MapFlowModule, ModuleConnection, ModulePart,
+        ModulePartId, ModulePartType, ModulePlaybackMode, SourceType, TriggerType,
+    };
+    use std::collections::HashMap;
+    use std::time::{Duration, Instant};
+
+    fn create_audio_data(beat: bool) -> AudioTriggerData {
+        let mut data = AudioTriggerData::default();
+        data.beat_detected = beat;
+        data.rms_volume = 0.5;
+        data.peak_volume = 0.8;
+        data.band_energies = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+        data
+    }
+
+    fn create_test_module() -> MapFlowModule {
+        MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        }
+    }
+
+    #[test]
+    fn test_compute_trigger_output_beat() {
+        let mut output = Vec::new();
+        let data_true = create_audio_data(true);
+        ModuleEvaluator::compute_trigger_output(
+            &TriggerType::Beat,
+            &data_true,
+            Instant::now(),
+            &mut output,
+        );
+        assert_eq!(output, vec![1.0]);
+
+        output.clear();
+        let data_false = create_audio_data(false);
+        ModuleEvaluator::compute_trigger_output(
+            &TriggerType::Beat,
+            &data_false,
+            Instant::now(),
+            &mut output,
+        );
+        assert_eq!(output, vec![0.0]);
+    }
+
+    #[test]
+    fn test_compute_trigger_output_audio_fft() {
+        let mut output = Vec::new();
+        let data = create_audio_data(true);
+
+        let config = AudioTriggerOutputConfig {
+            frequency_bands: true,
+            volume_outputs: true,
+            beat_output: true,
+            bpm_output: false,
+            inverted_outputs: vec!["Bass Out".to_string()].into_iter().collect(),
+        };
+
+        ModuleEvaluator::compute_trigger_output(
+            &TriggerType::AudioFFT {
+                band: AudioBand::Bass,
+                threshold: 0.5,
+                output_config: config,
+            },
+            &data,
+            Instant::now(),
+            &mut output,
+        );
+
+        // Expected output order:
+        // Bands (9 values):
+        // "SubBass Out" -> 0.1
+        // "Bass Out" -> 0.2 (INVERTED -> 0.8)
+        // ...
+        // "Air Out" -> 0.9
+        // Volume (2 values): RMS (0.5), Peak (0.8)
+        // Beat (1 value): 1.0
+
+        assert!(output.len() >= 9 + 2 + 1);
+        assert!((output[0] - 0.1).abs() < 1e-6); // SubBass
+        assert!((output[1] - 0.8).abs() < 1e-6); // Bass (Inverted: 1.0 - 0.2)
+        assert!((output[9] - 0.5).abs() < 1e-6); // RMS
+        assert!((output[11] - 1.0).abs() < 1e-6); // Beat
+    }
+
+    #[test]
+    fn test_compute_trigger_output_fixed() {
+        let mut output = Vec::new();
+        let data = create_audio_data(false);
+
+        // Interval 1000ms. Pulse duration 100ms.
+        // At 50ms: Phase 50 < 100 -> 1.0
+        // At 150ms: Phase 150 > 100 -> 0.0
+
+        // Emulate 50ms elapsed
+        let start_past_50 = Instant::now() - Duration::from_millis(50);
+        output.clear();
+        ModuleEvaluator::compute_trigger_output(
+            &TriggerType::Fixed {
+                interval_ms: 1000,
+                offset_ms: 0,
+            },
+            &data,
+            start_past_50,
+            &mut output,
+        );
+        assert_eq!(output[0], 1.0);
+
+        // 150ms
+        let start_past_150 = Instant::now() - Duration::from_millis(150);
+        output.clear();
+        ModuleEvaluator::compute_trigger_output(
+            &TriggerType::Fixed {
+                interval_ms: 1000,
+                offset_ms: 0,
+            },
+            &data,
+            start_past_150,
+            &mut output,
+        );
+        assert_eq!(output[0], 0.0);
+    }
+
+    #[test]
+    fn test_compute_trigger_inputs_propagation() {
+        let evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // Connection: Part 1 (Socket 0) -> Part 2
+        // Connection: Part 3 (Socket 1) -> Part 2
+
+        module.connections.push(ModuleConnection {
+            from_part: 1,
+            from_socket: 0,
+            to_part: 2,
+            to_socket: 0,
+        });
+        module.connections.push(ModuleConnection {
+            from_part: 3,
+            from_socket: 1,
+            to_part: 2,
+            to_socket: 0,
+        });
+
+        let mut trigger_values = HashMap::new();
+        trigger_values.insert(1, vec![0.5]);
+        trigger_values.insert(3, vec![0.0, 0.8]); // Socket 1 has 0.8
+
+        let inputs = evaluator.compute_trigger_inputs(&module, &trigger_values);
+
+        // Should take max(0.5, 0.8) = 0.8
+        assert_eq!(inputs.get(&2), Some(&0.8));
+    }
+
+    #[test]
+    fn test_create_source_command() {
+        let evaluator = ModuleEvaluator::new();
+
+        // Threshold check (< 0.1)
+        let cmd_low =
+            evaluator.create_source_command(&SourceType::LiveInput { device_id: 0 }, 0.05);
+        assert!(cmd_low.is_none());
+
+        // Valid command
+        let cmd_valid =
+            evaluator.create_source_command(&SourceType::LiveInput { device_id: 1 }, 0.5);
+        match cmd_valid {
+            Some(SourceCommand::LiveInput {
+                device_id,
+                trigger_value,
+            }) => {
+                assert_eq!(device_id, 1);
+                assert_eq!(trigger_value, 0.5);
+            }
+            _ => panic!("Expected LiveInput"),
+        }
+    }
+
+    #[test]
+    fn test_trace_chain_limit() {
+        let evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // Create a cycle: Part 1 -> Part 2 -> Part 1
+        module.parts.push(ModulePart {
+            id: 1,
+            part_type: ModulePartType::Modulizer(crate::module::ModulizerType::Effect {
+                effect_type: crate::module::EffectType::Blur,
+                params: HashMap::new(),
+            }),
+            position: (0.0, 0.0),
+            size: None,
+            link_data: Default::default(),
+            inputs: vec![],
+            outputs: vec![],
+        });
+        module.parts.push(ModulePart {
+            id: 2,
+            part_type: ModulePartType::Modulizer(crate::module::ModulizerType::Effect {
+                effect_type: crate::module::EffectType::Blur,
+                params: HashMap::new(),
+            }),
+            position: (0.0, 0.0),
+            size: None,
+            link_data: Default::default(),
+            inputs: vec![],
+            outputs: vec![],
+        });
+
+        module.connections.push(ModuleConnection {
+            from_part: 2,
+            from_socket: 0,
+            to_part: 1,
+            to_socket: 0,
+        });
+        module.connections.push(ModuleConnection {
+            from_part: 1,
+            from_socket: 0,
+            to_part: 2,
+            to_socket: 0,
+        });
+
+        // Start trace from 1
+        let chain = evaluator.trace_chain(&module, 1);
+
+        // Should not panic or hang, but finish with limited effects
+        // The limit is 50.
+        // It will trace 1 <- 2 <- 1 ...
+        // It should accumulate effects until break.
+        // Actually trace_chain prepends.
+        // It should just return safely.
+        assert!(chain.effects.len() <= 50);
+    }
+}
