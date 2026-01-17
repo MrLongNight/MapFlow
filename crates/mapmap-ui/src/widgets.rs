@@ -18,7 +18,11 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     painter.rect_filled(
         rect,
         0.0,
-        ui.visuals().widgets.noninteractive.bg_fill.linear_multiply(0.5),
+        ui.visuals()
+            .widgets
+            .noninteractive
+            .bg_fill
+            .linear_multiply(0.5),
     );
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
