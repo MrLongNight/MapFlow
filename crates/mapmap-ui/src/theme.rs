@@ -277,62 +277,62 @@ impl ThemeConfig {
     fn resolume_visuals() -> Visuals {
         Visuals {
             dark_mode: true,
-            override_text_color: Some(Color32::from_rgb(234, 234, 234)),
+            override_text_color: Some(Color32::from_rgb(240, 240, 240)),
             widgets: egui::style::Widgets {
                 noninteractive: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(22, 33, 62),
-                    weak_bg_fill: Color32::from_rgb(22, 33, 62),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(160, 160, 160)),
+                    bg_fill: Color32::from_rgb(18, 18, 18), // Neutral Dark Panel
+                    weak_bg_fill: Color32::from_rgb(18, 18, 18),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(35, 35, 35)),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(140, 140, 140)),
                     rounding: egui::Rounding::same(2.0),
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(26, 26, 46),
-                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(234, 234, 234)),
+                    bg_fill: Color32::from_rgb(35, 35, 35), // Neutral Grey Inputs
+                    weak_bg_fill: Color32::from_rgb(35, 35, 35),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(50, 50, 50)),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
                     rounding: egui::Rounding::same(2.0),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(26, 26, 46),
-                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
-                    fg_stroke: egui::Stroke::new(1.5, Color32::from_rgb(234, 234, 234)),
+                    bg_fill: Color32::from_rgb(45, 45, 45),
+                    weak_bg_fill: Color32::from_rgb(45, 45, 45),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0, 229, 255)), // Cyan Hover Border
+                    fg_stroke: egui::Stroke::new(1.5, Color32::WHITE),
                     rounding: egui::Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 active: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(233, 69, 96),
-                    weak_bg_fill: Color32::from_rgb(233, 69, 96),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
-                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    bg_fill: Color32::from_rgb(0, 229, 255), // Cyan Fill
+                    weak_bg_fill: Color32::from_rgb(0, 200, 230),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(0, 229, 255)),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::BLACK), // Black text on Cyan
                     rounding: egui::Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 open: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(26, 26, 46),
-                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(234, 234, 234)),
+                    bg_fill: Color32::from_rgb(18, 18, 18),
+                    weak_bg_fill: Color32::from_rgb(18, 18, 18),
+                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(50, 50, 50)),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
                     rounding: egui::Rounding::same(2.0),
                     expansion: 0.0,
                 },
             },
             selection: egui::style::Selection {
-                bg_fill: Color32::from_rgb(157, 78, 221).linear_multiply(0.4),
-                stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+                bg_fill: Color32::from_rgb(0, 229, 255).linear_multiply(0.4), // Cyan Selection
+                stroke: egui::Stroke::new(1.0, Color32::from_rgb(0, 229, 255)),
             },
-            hyperlink_color: Color32::from_rgb(233, 69, 96),
-            faint_bg_color: Color32::from_rgb(15, 15, 35),
-            extreme_bg_color: Color32::from_rgb(22, 33, 62),
-            code_bg_color: Color32::from_rgb(15, 15, 35),
+            hyperlink_color: Color32::from_rgb(0, 229, 255),
+            faint_bg_color: Color32::from_rgb(24, 24, 24),
+            extreme_bg_color: Color32::from_rgb(10, 10, 10),
+            code_bg_color: Color32::from_rgb(20, 20, 20),
             warn_fg_color: Color32::from_rgb(255, 179, 71),
-            error_fg_color: Color32::from_rgb(255, 107, 107),
-            window_fill: Color32::from_rgb(26, 26, 46),
-            panel_fill: Color32::from_rgb(15, 15, 35),
-            window_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+            error_fg_color: Color32::from_rgb(255, 80, 80),
+            window_fill: Color32::from_rgb(12, 12, 12), // Deep Black/Grey
+            panel_fill: Color32::from_rgb(18, 18, 18),
+            window_stroke: egui::Stroke::new(1.0, Color32::from_rgb(40, 40, 40)),
             ..Default::default()
         }
     }
