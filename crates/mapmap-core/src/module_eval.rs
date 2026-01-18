@@ -447,7 +447,6 @@ pub struct ModuleEvaluator {
     /// Current trigger data from audio analysis
     audio_trigger_data: AudioTriggerData,
     /// Creation time for timing calculations
-    /// Creation time for timing calculations
     start_time: Instant,
     /// Per-node state for stateful triggers (e.g., Random)
     #[allow(dead_code)]
@@ -464,7 +463,6 @@ impl Default for ModuleEvaluator {
 
 impl ModuleEvaluator {
     /// Create a new module evaluator
-    pub fn new() -> Self {
     pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
