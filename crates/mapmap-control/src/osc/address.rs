@@ -128,10 +128,7 @@ fn parse_paint_address(parts: &[&str]) -> Result<ControlTarget> {
         )));
     }
 
-    Ok(ControlTarget::PaintParameter(
-        paint_id,
-        name.to_string(),
-    ))
+    Ok(ControlTarget::PaintParameter(paint_id, name.to_string()))
 }
 
 fn parse_effect_address(parts: &[&str]) -> Result<ControlTarget> {
@@ -159,10 +156,7 @@ fn parse_effect_address(parts: &[&str]) -> Result<ControlTarget> {
         )));
     }
 
-    Ok(ControlTarget::EffectParameter(
-        effect_id,
-        name.to_string(),
-    ))
+    Ok(ControlTarget::EffectParameter(effect_id, name.to_string()))
 }
 
 fn parse_playback_address(parts: &[&str]) -> Result<ControlTarget> {
