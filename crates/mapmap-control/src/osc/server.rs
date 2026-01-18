@@ -20,13 +20,23 @@ pub struct OscServer {
 }
 
 impl OscServer {
-    /// Create a new OSC server listening on the specified port
+    /// Create a new OSC server listening on the specified port (bound to 127.0.0.1)
     ///
     /// # Arguments
     /// * `port` - UDP port to listen on (default: 8000)
     #[cfg(feature = "osc")]
     pub fn new(port: u16) -> Result<Self> {
-        let addr = format!("0.0.0.0:{}", port);
+        Self::new_with_host("127.0.0.1", port)
+    }
+
+    /// Create a new OSC server listening on the specified host and port
+    ///
+    /// # Arguments
+    /// * `host` - Host address to bind to (e.g. "127.0.0.1" or "0.0.0.0")
+    /// * `port` - UDP port to listen on
+    #[cfg(feature = "osc")]
+    pub fn new_with_host(host: &str, port: u16) -> Result<Self> {
+        let addr = format!("{}:{}", host, port);
         let socket = UdpSocket::bind(&addr)
             .map_err(|e| ControlError::OscError(format!("Failed to bind to {}: {}", addr, e)))?;
 
@@ -47,6 +57,13 @@ impl OscServer {
 
     #[cfg(not(feature = "osc"))]
     pub fn new(_port: u16) -> Result<Self> {
+        Err(ControlError::OscError(
+            "OSC feature not enabled".to_string(),
+        ))
+    }
+
+    #[cfg(not(feature = "osc"))]
+    pub fn new_with_host(_host: &str, _port: u16) -> Result<Self> {
         Err(ControlError::OscError(
             "OSC feature not enabled".to_string(),
         ))
