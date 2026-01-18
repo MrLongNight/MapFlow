@@ -61,6 +61,7 @@ jobs:
       - name: Build Release (Windows)
         env:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          PATH: ${{ github.workspace }}\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
         run: cargo build --release -p mapmap
         shell: pwsh
 
@@ -73,7 +74,6 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target\release\MapFlow.exe dist\MapFlow.exe
 
-          # Copy FFmpeg DLLs
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin\*.dll" dist\
@@ -126,6 +126,7 @@ jobs:
       - name: Build Release (Windows)
         env:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          PATH: ${{ github.workspace }}\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
         run: cargo build --release -p mapmap
         shell: pwsh
 
@@ -135,7 +136,6 @@ jobs:
             Write-Host "Build fehlgeschlagen: MapFlow.exe fehlt!"
             exit 1
           }
-          # Copy FFmpeg DLLs to target/release for WiX
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin\*.dll" target\release\
@@ -201,7 +201,6 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      # Linux uses Ubuntu's FFmpeg packages (6.x compatible with ffmpeg-next 6.x)
       - name: Build Release (with ffmpeg - Linux)
         run: cargo build --release -p mapmap --features ffmpeg
 
@@ -252,10 +251,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Delete tag if it already exists (allows re-running)
           git tag -d "${{ steps.tag.outputs.tag }}" 2>/dev/null || true
           git push origin :refs/tags/${{ steps.tag.outputs.tag }} 2>/dev/null || true
-          # Create new tag
           git tag "${{ steps.tag.outputs.tag }}"
           git push origin "${{ steps.tag.outputs.tag }}"
         env:
