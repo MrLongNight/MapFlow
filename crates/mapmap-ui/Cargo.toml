@@ -11,6 +11,7 @@ repository.workspace = true
 default = ["cpal", "midi"]
 midi = ["mapmap-control/midi"]
 ndi = ["dep:mapmap-io", "mapmap-io/ndi", "dep:tokio"]
+tokio = ["dep:tokio"]
 
 [dependencies]
 anyhow = { workspace = true }
