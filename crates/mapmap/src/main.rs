@@ -1168,7 +1168,8 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
-                                            mapmap_core::module::OutputType::Hue { .. } => "Hue".to_string(),
+                                            mapmap_core::module::OutputType::Hue { .. } =>
+                                                "Hue".to_string(),
                                         }
                                     );
                                     if let Some(sid) = op.source_part_id {
