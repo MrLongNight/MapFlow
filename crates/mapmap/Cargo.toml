@@ -74,7 +74,5 @@ tracing-subscriber = { workspace = true }
 wgpu = { workspace = true }
 winit = { workspace = true }
 
-
-
 [build-dependencies]
 winres = { workspace = true }
