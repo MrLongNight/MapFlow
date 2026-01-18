@@ -774,6 +774,212 @@ impl ModuleCanvas {
                                                     }
                                                 });
 
+                                                // === CLIP REGION ===
+                                                ui.collapsing("✂️ Clip Region", |ui| {
+                                                    let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
+                                                    let video_duration = player_info.duration.max(1.0) as f32;
+                                                    let current_pos = player_info.current_time as f32;
+
+                                                    // Visual Region Bar
+                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 24.0), Sense::hover());
+                                                    let rect = response.rect;
+
+                                                    // Background (Full Duration)
+                                                    painter.rect_filled(rect, 4.0, Color32::from_gray(40));
+                                                    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_gray(60)));
+
+                                                    // Data normalization
+                                                    let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                    let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let end_x = rect.min.x + (end_val / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                    // 1. Body Interaction (Move Region)
+                                                    // We define the body rect slightly shrunk so handles don't overlap too much
+                                                    let body_rect = Rect::from_min_max(
+                                                        Pos2::new(start_x + 4.0, rect.min.y),
+                                                        Pos2::new(end_x - 4.0, rect.max.y)
+                                                    );
+
+                                                    // Only interactive if wide enough
+                                                    if body_rect.width() > 10.0 {
+                                                        let body_id = response.id.with("region_body");
+                                                        let body_response = ui.interact(body_rect, body_id, Sense::drag());
+
+                                                        if body_response.dragged() {
+                                                            let delta_seconds = (body_response.drag_delta().x / rect.width()) * video_duration;
+
+                                                            // Calculate smart delta that respects bounds
+                                                            // We want to move as much as possible without going out of bounds
+                                                            let max_delta = video_duration - end_val;
+                                                            let min_delta = -*start_time;
+                                                            let valid_delta = delta_seconds.clamp(min_delta, max_delta);
+
+                                                            // Apply valid delta
+                                                            if valid_delta.abs() > 0.0001 {
+                                                                *start_time += valid_delta;
+                                                                *end_time = end_val + valid_delta;
+                                                            }
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                                        } else if body_response.hovered() {
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+                                                        }
+                                                    }
+
+                                                    // 2. Start Handle Interaction
+                                                    let start_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(start_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let start_id = response.id.with("start_handle");
+                                                    let start_response = ui.interact(start_handle_rect, start_id, Sense::drag());
+
+                                                    if start_response.dragged() {
+                                                        let delta_seconds = (start_response.drag_delta().x / rect.width()) * video_duration;
+                                                        *start_time = (*start_time + delta_seconds).clamp(0.0, end_val - 0.1);
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if start_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // 3. End Handle Interaction
+                                                    let end_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(end_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let end_id = response.id.with("end_handle");
+                                                    let end_response = ui.interact(end_handle_rect, end_id, Sense::drag());
+
+                                                    if end_response.dragged() {
+                                                        let delta_seconds = (end_response.drag_delta().x / rect.width()) * video_duration;
+                                                        // Ensure we don't cross start
+                                                        let mut new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
+
+                                                        // Snap to end (0.0) if close to duration
+                                                        if (video_duration - new_end).abs() < 0.1 {
+                                                            new_end = 0.0;
+                                                        }
+
+                                                        *end_time = new_end;
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if end_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // === DRAWING ===
+                                                    // Re-calculate positions for drawing based on updated values
+                                                    let current_start_val = *start_time;
+                                                    let current_end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+
+                                                    let draw_start_x = rect.min.x + (current_start_val / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let draw_end_x = rect.min.x + (current_end_val / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                    // Active Region Body
+                                                    let region_rect = Rect::from_min_max(
+                                                        Pos2::new(draw_start_x, rect.min.y),
+                                                        Pos2::new(draw_end_x, rect.max.y)
+                                                    );
+                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 120));
+
+                                                    // Handles
+                                                    let handle_width = 4.0;
+                                                    let start_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_start_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+                                                    let end_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_end_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+
+                                                    let start_color = if start_response.dragged() || start_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+                                                    let end_color = if end_response.dragged() || end_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+
+                                                    painter.rect_filled(start_handle_vis, 2.0, start_color);
+                                                    painter.rect_filled(end_handle_vis, 2.0, end_color);
+
+                                                    // Playhead Cursor
+                                                    let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
+                                                    let cursor_x = rect.min.x + cursor_norm * rect.width();
+
+                                                    // Draw playhead triangle/line
+                                                    painter.line_segment(
+                                                        [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
+                                                        Stroke::new(1.5, Color32::from_rgb(255, 200, 100))
+                                                    );
+                                                    painter.circle_filled(Pos2::new(cursor_x, rect.min.y), 3.0, Color32::from_rgb(255, 200, 100));
+
+                                                    ui.add_space(4.0);
+
+                                                    // Controls with "Set to Playhead" buttons
+                                                    ui.horizontal(|ui| {
+                                                        ui.vertical(|ui| {
+                                                            let mut ui_end_time = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                            let mut ui_start_time = *start_time;
+
+                                                            // Start Control
+                                                            ui.horizontal(|ui| {
+                                                                 if ui.button(" [ ").on_hover_text("Set Start to current Playhead").clicked() {
+                                                                     ui_start_time = current_pos;
+                                                                     if ui_start_time >= ui_end_time {
+                                                                         ui_end_time = video_duration;
+                                                                         *end_time = 0.0;
+                                                                     }
+                                                                     *start_time = ui_start_time;
+                                                                 }
+
+                                                                 let response = ui.add(
+                                                                     egui::Slider::new(&mut ui_start_time, 0.0..=ui_end_time)
+                                                                        .text("Start")
+                                                                        .custom_formatter(|n, _| {
+                                                                            let m = (n / 60.0) as u32;
+                                                                            let s = n % 60.0;
+                                                                            format!("{:02}:{:05.2}", m, s)
+                                                                        })
+                                                                 );
+
+                                                                 if response.changed() {
+                                                                     *start_time = ui_start_time;
+                                                                 }
+                                                            });
+
+                                                            // End Control
+                                                            ui.horizontal(|ui| {
+                                                                 if ui.button(" ] ").on_hover_text("Set End to current Playhead").clicked() {
+                                                                     ui_end_time = current_pos;
+                                                                     if ui_end_time <= ui_start_time {
+                                                                         ui_start_time = (ui_end_time - 1.0).max(0.0);
+                                                                         *start_time = ui_start_time;
+                                                                     }
+                                                                     *end_time = ui_end_time;
+                                                                 }
+
+                                                                 let response = ui.add(
+                                                                     egui::Slider::new(&mut ui_end_time, ui_start_time..=video_duration)
+                                                                        .text("End")
+                                                                        .custom_formatter(|n, _| {
+                                                                            let m = (n / 60.0) as u32;
+                                                                            let s = n % 60.0;
+                                                                            format!("{:02}:{:05.2}", m, s)
+                                                                        })
+                                                                 );
+
+                                                                 if response.changed() {
+                                                                     // Snap to end if close
+                                                                     if (video_duration - ui_end_time).abs() < 0.1 {
+                                                                         *end_time = 0.0;
+                                                                     } else {
+                                                                         *end_time = ui_end_time;
+                                                                     }
+                                                                 }
+                                                            });
+                                                        });
+                                                    });
+
+                                                    if ui.button("Reset Clip").clicked() {
+                                                        *start_time = 0.0;
+                                                        *end_time = 0.0;
+                                                    }
+                                                });
 
                                                 // === APPEARANCE ===
                                                 ui.collapsing("🎨 Appearance", |ui| {
@@ -1544,15 +1750,16 @@ impl ModuleCanvas {
                                                     if ui.button("🔍 Discover Bridges").clicked() {
                                                         let (tx, rx) = std::sync::mpsc::channel();
                                                         self.hue_discovery_rx = Some(rx);
-                                                        self.hue_status_message = Some("Searching...".to_string());
-
                                                         // Spawn async task
                                                         #[cfg(feature = "tokio")]
-                                                        tokio::spawn(async move {
-                                                            let result = mapmap_control::hue::api::discovery::discover_bridges().await
-                                                                .map_err(|e| e.to_string());
-                                                            let _ = tx.send(result);
-                                                        });
+                                                        {
+                                                            self.hue_status_message = Some("Searching...".to_string());
+                                                            tokio::spawn(async move {
+                                                                let result = mapmap_control::hue::api::discovery::discover_bridges().await
+                                                                    .map_err(|e| e.to_string());
+                                                                let _ = tx.send(result);
+                                                            });
+                                                        }
                                                         #[cfg(not(feature = "tokio"))]
                                                         {
                                                             let _ = tx;
@@ -1608,6 +1815,45 @@ impl ModuleCanvas {
                                                         self.render_hue_spatial_editor(ui, lamp_positions);
                                                     });
                                                 }
+                                            }
+                                        }
+                                    }
+                                    ModulePartType::Hue(hue_node) => {
+                                        ui.label("💡 Hue Node");
+                                        ui.separator();
+                                        match hue_node {
+                                            HueNodeType::SingleLamp { id, name } => {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Lamp ID:");
+                                                    ui.text_edit_singleline(id);
+                                                });
+                                                ui.label(egui::RichText::new("Use the App Settings to configure the Bridge.").weak().small());
+                                            }
+                                            HueNodeType::MultiLamp { ids, name } => {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
+                                                ui.label("Lamp IDs (comma separated):");
+                                                // Simple text parsing for now
+                                                let mut ids_str = ids.join(", ");
+                                                if ui.text_edit_singleline(&mut ids_str).changed() {
+                                                    *ids = ids_str.split(',')
+                                                        .map(|s| s.trim().to_string())
+                                                        .filter(|s| !s.is_empty())
+                                                        .collect();
+                                                }
+                                            }
+                                            HueNodeType::EntertainmentGroup { name } => {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
+                                                ui.label("Controls the Entertainment Group selected in Settings.");
                                             }
                                         }
                                     }
@@ -1892,6 +2138,16 @@ impl ModuleCanvas {
                     mapmap_core::module::ModulePartType::Modulizer(mod_type),
                     pos,
                 );
+            }
+        }
+    }
+
+    /// Add a Hue node with specified type
+    fn add_hue_node(&mut self, manager: &mut ModuleManager, hue_type: HueNodeType) {
+        if let Some(id) = self.active_module_id {
+            if let Some(module) = manager.get_module_mut(id) {
+                let pos = Self::find_free_position(&module.parts, (500.0, 100.0));
+                module.add_part_with_type(mapmap_core::module::ModulePartType::Hue(hue_type), pos);
             }
         }
     }
@@ -2422,18 +2678,26 @@ impl ModuleCanvas {
                                 ui.close_menu();
                             }
 
-                            // Philips Hue Option
-                            if (show_all || "hue".contains(&filter)) && ui.button("💡 Philips Hue").clicked() {
-                                self.add_module_node(manager, ModulePartType::Output(OutputType::Hue {
-                                    bridge_ip: String::new(),
-                                    username: String::new(),
-                                    client_key: String::new(),
-                                    entertainment_area: String::new(),
-                                    lamp_positions: std::collections::HashMap::new(),
-                                    mapping_mode: HueMappingMode::Spatial,
-                                }));
-                                self.search_filter.clear();
-                                ui.close_menu();
+                            // === HUE SUBMENU ===
+                            if show_all || "hue light lamp philips".contains(&filter) {
+                                ui.menu_button("💡 Philips Hue", |ui| {
+                                     ui.set_min_width(180.0);
+                                     if (show_all || "single lamp".contains(&filter)) && ui.button("💡 Single Lamp").clicked() {
+                                         self.add_hue_node(manager, HueNodeType::SingleLamp { id: "1".to_string(), name: "Lamp 1".to_string() });
+                                         self.search_filter.clear();
+                                         ui.close_menu();
+                                     }
+                                     if (show_all || "multi lamp".contains(&filter)) && ui.button("💡💡 Multi Lamp").clicked() {
+                                         self.add_hue_node(manager, HueNodeType::MultiLamp { ids: vec![], name: "Lamps".to_string() });
+                                         self.search_filter.clear();
+                                         ui.close_menu();
+                                     }
+                                     if (show_all || "entertainment group".contains(&filter)) && ui.button("🎭 Entertainment Group").clicked() {
+                                         self.add_hue_node(manager, HueNodeType::EntertainmentGroup { name: "Group".to_string() });
+                                         self.search_filter.clear();
+                                         ui.close_menu();
+                                     }
+                                });
                             }
                         });
                     }
@@ -5260,6 +5524,15 @@ impl ModuleCanvas {
                     }
                 }
             },
+            ModulePartType::Hue(hue) => match hue {
+                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => format!("💡 {}", name),
+                mapmap_core::module::HueNodeType::MultiLamp { name, .. } => {
+                    format!("💡💡 {}", name)
+                }
+                mapmap_core::module::HueNodeType::EntertainmentGroup { name, .. } => {
+                    format!("🎭 {}", name)
+                }
+            },
         }
     }
 
@@ -5347,6 +5620,7 @@ impl ModuleCanvas {
             ModulePartType::Mesh(_) => PartType::Mesh,
             ModulePartType::Layer(_) => PartType::Layer,
             ModulePartType::Output(_) => PartType::Output,
+            ModulePartType::Hue(_) => PartType::Hue,
         }
     }
 
@@ -5364,11 +5638,12 @@ impl ModuleCanvas {
                 ModulePartType::Mesh(_) => 4,
                 ModulePartType::Layer(_) => 5,
                 ModulePartType::Output(_) => 6,
+                ModulePartType::Hue(_) => 7,
             }
         };
 
         // Group parts by type
-        let mut columns: [Vec<usize>; 7] = Default::default();
+        let mut columns: [Vec<usize>; 8] = Default::default();
         for (i, part) in parts.iter().enumerate() {
             let col = type_order(&part.part_type);
             columns[col].push(i);

@@ -427,9 +427,16 @@ pub enum SourceCommand {
     },
     /// Philips Hue output (Trigger/Effect data)
     HueOutput {
-        /// Trigger value
-        trigger_value: f32,
-        // Potentially other data like color overrides
+        /// Brightness (0.0 - 1.0)
+        brightness: f32,
+        /// Hue (0.0 - 1.0)
+        hue: Option<f32>,
+        /// Saturation (0.0 - 1.0)
+        saturation: Option<f32>,
+        /// Strobe speed/intensity (0.0 - 1.0)
+        strobe: Option<f32>,
+        /// Target lamp/group IDs (for new Hue nodes)
+        ids: Option<Vec<String>>,
     },
 }
 
@@ -576,9 +583,52 @@ impl ModuleEvaluator {
             // Generate output commands for Hue (which acts like a Sink/Output)
             if let ModulePartType::Output(OutputType::Hue { .. }) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
-                self.cached_result
-                    .source_commands
-                    .insert(part.id, SourceCommand::HueOutput { trigger_value });
+                self.cached_result.source_commands.insert(
+                    part.id,
+                    SourceCommand::HueOutput {
+                        brightness: trigger_value,
+                        hue: None,
+                        saturation: None,
+                        strobe: None,
+                        ids: None,
+                    },
+                );
+            }
+
+            // Generate output commands for New Hue Nodes
+            if let ModulePartType::Hue(hue_node) = &part.part_type {
+                // We need per-socket inputs here
+                let socket_inputs =
+                    self.compute_socket_inputs(module, &self.cached_result.trigger_values);
+
+                let brightness = socket_inputs
+                    .get(&part.id)
+                    .and_then(|m| m.get(&0))
+                    .copied()
+                    .unwrap_or(0.0);
+                let hue = socket_inputs.get(&part.id).and_then(|m| m.get(&1)).copied(); // Socket 1: Color(Hue)
+                let strobe = socket_inputs.get(&part.id).and_then(|m| m.get(&2)).copied(); // Socket 2: Strobe
+                                                                                           // Note: If we added Saturation later it would be index 3? For now assume inputs from get_default_sockets:
+                                                                                           // 0: Brightness, 1: Color(Hue), 2: Strobe. (Wait, previous view showed 3 sockets)
+
+                // Extract IDs from node type
+                use crate::module::HueNodeType;
+                let ids = match hue_node {
+                    HueNodeType::SingleLamp { id, .. } => Some(vec![id.clone()]),
+                    HueNodeType::MultiLamp { ids, .. } => Some(ids.clone()),
+                    HueNodeType::EntertainmentGroup { .. } => None, // Broadcast to group
+                };
+
+                self.cached_result.source_commands.insert(
+                    part.id,
+                    SourceCommand::HueOutput {
+                        brightness,
+                        hue,
+                        saturation: None, // Implicit 1.0 or handled by node?
+                        strobe,
+                        ids,
+                    },
+                );
             }
         }
 
@@ -865,6 +915,26 @@ impl ModuleEvaluator {
             }
         }
 
+        inputs
+    }
+
+    /// Compute raw inputs per socket index
+    fn compute_socket_inputs(
+        &self,
+        module: &MapFlowModule,
+        trigger_values: &HashMap<ModulePartId, Vec<f32>>,
+    ) -> HashMap<ModulePartId, HashMap<usize, f32>> {
+        let mut inputs: HashMap<ModulePartId, HashMap<usize, f32>> = HashMap::new();
+
+        for conn in &module.connections {
+            if let Some(values) = trigger_values.get(&conn.from_part) {
+                if let Some(&value) = values.get(conn.from_socket) {
+                    let part_inputs = inputs.entry(conn.to_part).or_default();
+                    let current = part_inputs.entry(conn.to_socket).or_insert(0.0);
+                    *current = current.max(value);
+                }
+            }
+        }
         inputs
     }
 
