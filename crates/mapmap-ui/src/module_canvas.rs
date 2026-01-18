@@ -1544,15 +1544,16 @@ impl ModuleCanvas {
                                                     if ui.button("🔍 Discover Bridges").clicked() {
                                                         let (tx, rx) = std::sync::mpsc::channel();
                                                         self.hue_discovery_rx = Some(rx);
-                                                        self.hue_status_message = Some("Searching...".to_string());
-
                                                         // Spawn async task
                                                         #[cfg(feature = "tokio")]
-                                                        tokio::spawn(async move {
-                                                            let result = mapmap_control::hue::api::discovery::discover_bridges().await
-                                                                .map_err(|e| e.to_string());
-                                                            let _ = tx.send(result);
-                                                        });
+                                                        {
+                                                            self.hue_status_message = Some("Searching...".to_string());
+                                                            tokio::spawn(async move {
+                                                                let result = mapmap_control::hue::api::discovery::discover_bridges().await
+                                                                    .map_err(|e| e.to_string());
+                                                                let _ = tx.send(result);
+                                                            });
+                                                        }
                                                         #[cfg(not(feature = "tokio"))]
                                                         {
                                                             let _ = tx;

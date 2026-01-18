@@ -26,6 +26,7 @@ pub struct AudioTriggerData {
     pub bpm: Option<f32>,
 }
 
+/// Audio-reactive parameter controller
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioReactiveController {
     /// Parameter mappings (parameter_path -> mapping)
