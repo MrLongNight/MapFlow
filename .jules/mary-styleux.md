@@ -7,7 +7,3 @@
 ## 2025-01-22 – [Media Clip Region UX]
 **Learning:** The "Clip Region" UI for media files uses independent sliders for Start/End, which is error-prone (Start > End possible) and lacks visual feedback relative to total duration. The logic "0.0 End Time = End of File" is implicit and confusing.
 **Action:** Implementing a visual "Region Bar" with current playhead indication and "Set to Playhead" buttons ( `[` / `]` ) to allow rapid, precise trimming during playback. This aligns with the "Safer to operate" and "Faster to understand" mandate.
-
-## 2025-01-22 – [Smart Timeline Consolidation]
-**Learning:** The Media Node properties panel currently has three separate timeline-related controls: a "Mini-Timeline" slider, a hidden "Clip Region" visualizer, and a redundant "Timeline" section. This fragments the user's mental model of "Time". Users struggle to relate the playback position to the clip boundaries if they are separate.
-**Action:** Consolidate all three into a single **Smart Timeline** placed prominently below the preview. This timeline will handle Seeking (Click), Trimming (Drag Handles), and Region Sliding (Shift+Drag) in one unified control, reducing vertical space and cognitive load.
