@@ -12,11 +12,17 @@ use std::collections::HashMap;
 /// Audio-reactive parameter controller
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AudioTriggerData {
+    /// Energy levels in 9 frequency bands
     pub band_energies: [f32; 9],
+    /// RMS (average) volume level (0.0-1.0)
     pub rms_volume: f32,
+    /// Peak volume level (0.0-1.0)
     pub peak_volume: f32,
+    /// Whether a beat was detected in this frame
     pub beat_detected: bool,
+    /// Strength/confidence of the beat detection (0.0-1.0)
     pub beat_strength: f32,
+    /// Detected Beats Per Minute (if confident)
     pub bpm: Option<f32>,
 }
 
@@ -247,6 +253,7 @@ pub enum AudioReactivePreset {
 }
 
 impl AudioReactivePreset {
+    /// Get the display name of the preset
     pub fn name(&self) -> &'static str {
         match self {
             AudioReactivePreset::BassScale => "Bass Scale",
@@ -257,6 +264,7 @@ impl AudioReactivePreset {
         }
     }
 
+    /// Get the description of the preset
     pub fn description(&self) -> &'static str {
         match self {
             AudioReactivePreset::BassScale => "Scale layer based on bass frequencies",
@@ -267,6 +275,7 @@ impl AudioReactivePreset {
         }
     }
 
+    /// Get all available presets
     pub fn all() -> Vec<AudioReactivePreset> {
         vec![
             AudioReactivePreset::BassScale,
@@ -307,6 +316,7 @@ impl Default for AudioReactiveAnimationSystem {
 }
 
 impl AudioReactiveAnimationSystem {
+    /// Create a new audio-reactive animation system
     pub fn new() -> Self {
         Self::default()
     }

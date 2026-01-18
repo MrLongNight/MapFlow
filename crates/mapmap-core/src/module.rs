@@ -579,15 +579,24 @@ pub enum TriggerType {
 /// Audio frequency bands for FFT trigger
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioBand {
-    SubBass,    // 20-60Hz
-    Bass,       // 60-250Hz
-    LowMid,     // 250-500Hz
-    Mid,        // 500-2kHz
-    HighMid,    // 2-4kHz
-    Presence,   // 4-6kHz
-    Brilliance, // 6-20kHz
-    Peak,       // Peak detection
-    BPM,        // Beat per minute
+    /// Sub-bass frequencies (20-60Hz)
+    SubBass,
+    /// Bass frequencies (60-250Hz)
+    Bass,
+    /// Low-mid frequencies (250-500Hz)
+    LowMid,
+    /// Mid frequencies (500-2kHz)
+    Mid,
+    /// High-mid frequencies (2-4kHz)
+    HighMid,
+    /// Presence frequencies (4-6kHz)
+    Presence,
+    /// Brilliance frequencies (6-20kHz)
+    Brilliance,
+    /// Peak amplitude
+    Peak,
+    /// Beats per minute
+    BPM,
 }
 
 /// Configuration for which outputs are enabled on an AudioFFT trigger
@@ -869,30 +878,60 @@ pub enum MaskShape {
 pub enum MeshType {
     /// Simple quad mesh (4 corner points)
     Quad {
+        /// Top-left (x, y)
         tl: (f32, f32),
+        /// Top-right (x, y)
         tr: (f32, f32),
+        /// Bottom-right (x, y)
         br: (f32, f32),
+        /// Bottom-left (x, y)
         bl: (f32, f32),
     },
     /// Grid mesh with configurable subdivision
-    Grid { rows: u32, cols: u32 },
+    Grid {
+        /// Number of rows
+        rows: u32,
+        /// Number of columns
+        cols: u32,
+    },
     /// Bezier surface with control points
-    BezierSurface { control_points: Vec<(f32, f32)> },
+    BezierSurface {
+        /// Control points (x, y)
+        control_points: Vec<(f32, f32)>,
+    },
     /// Freeform polygon mesh
-    Polygon { vertices: Vec<(f32, f32)> },
+    Polygon {
+        /// List of vertices (x, y)
+        vertices: Vec<(f32, f32)>,
+    },
     /// Triangle mesh
     TriMesh,
     /// Circle/Arc for curved surfaces
-    Circle { segments: u32, arc_angle: f32 },
+    Circle {
+        /// Number of segments resolution
+        segments: u32,
+        /// Arc angle in radians
+        arc_angle: f32,
+    },
     /// Cylinder projection (for 3D surfaces)
-    Cylinder { segments: u32, height: f32 },
+    Cylinder {
+        /// Number of segments resolution
+        segments: u32,
+        /// Height of the cylinder
+        height: f32,
+    },
     /// Sphere segment (for dome projections)
     Sphere {
+        /// Latitude segments
         lat_segments: u32,
+        /// Longitude segments
         lon_segments: u32,
     },
     /// Custom mesh from file
-    Custom { path: String },
+    Custom {
+        /// Path to custom mesh file
+        path: String,
+    },
 }
 
 impl MeshType {
@@ -1158,33 +1197,57 @@ pub enum ModulizerType {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EffectType {
     // Basic
+    /// Blur effect
     Blur,
+    /// Sharpen effect
     Sharpen,
+    /// Color inversion
     Invert,
+    /// Luminance threshold
     Threshold,
     // Color
+    /// Brightness adjustment
     Brightness,
+    /// Contrast adjustment
     Contrast,
+    /// Saturation adjustment
     Saturation,
+    /// Hue shift
     HueShift,
+    /// Color tinting
     Colorize,
     // Distortion
+    /// Wave distortion
     Wave,
+    /// Spiral distortion
     Spiral,
+    /// Pinch distortion
     Pinch,
+    /// Mirror effect
     Mirror,
+    /// Kaleidoscope effect
     Kaleidoscope,
     // Stylize
+    /// Pixelation effect
     Pixelate,
+    /// Halftone pattern
     Halftone,
+    /// Edge detection
     EdgeDetect,
+    /// Color posterization
     Posterize,
+    /// Digital glitch effect
     Glitch,
     // Composite
+    /// RGB channel split
     RgbSplit,
+    /// Chromatic aberration
     ChromaticAberration,
+    /// VHS tape artifact simulation
     VHS,
+    /// Film grain noise
     FilmGrain,
+    /// Vignette darkening
     Vignette,
 }
 
@@ -1253,16 +1316,24 @@ impl EffectType {
 /// Blend mode types
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum BlendModeType {
+    /// Normal blending (no effect)
     Normal,
+    /// Additive blending
     Add,
+    /// Multiplicative blending
     Multiply,
+    /// Screen blending
     Screen,
+    /// Overlay blending
     Overlay,
+    /// Difference blending
     Difference,
+    /// Exclusion blending
     Exclusion,
 }
 
 impl BlendModeType {
+    /// Get all available blend modes
     pub fn all() -> &'static [BlendModeType] {
         &[
             BlendModeType::Normal,
@@ -1275,6 +1346,7 @@ impl BlendModeType {
         ]
     }
 
+    /// Get display name of blend mode
     pub fn name(&self) -> &'static str {
         match self {
             BlendModeType::Normal => "Normal",
