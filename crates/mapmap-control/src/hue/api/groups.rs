@@ -186,10 +186,7 @@ pub async fn set_stream_active(
 /// Flash a light using the v1 API (for testing connectivity)
 pub async fn flash_light(config: &HueConfig, light_id: &str) -> Result<(), HueError> {
     let client = build_client()?;
-    let url = format!(
-        "https://{}/api/lights/{}/state",
-        config.bridge_ip, light_id
-    );
+    let url = format!("https://{}/api/lights/{}/state", config.bridge_ip, light_id);
 
     let body = serde_json::json!({
         "alert": "select"
