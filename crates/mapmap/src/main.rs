@@ -150,6 +150,8 @@ struct App {
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
     /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Cache for output preview textures (OutputID -> EguiTextureId)
+    output_preview_cache: HashMap<u64, egui::TextureId>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
 }
@@ -572,6 +574,7 @@ impl App {
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
             preview_texture_cache: HashMap::new(),
+            output_preview_cache: HashMap::new(),
             preview_quad_buffers,
         };
 
@@ -2030,6 +2033,42 @@ impl App {
 
                 // Update UI state map
                 self.ui_state.module_canvas.node_previews = current_frame_previews;
+
+                // Register Output Preview Textures for the Preview Panel
+                // Build a map of OutputID -> texture_id for outputs that have assigned textures
+                let mut current_output_previews: HashMap<u64, egui::TextureId> = HashMap::new();
+                for (output_id, tex_name) in &self.output_assignments {
+                    if self.texture_pool.has_texture(tex_name) {
+                        let tex_view = self.texture_pool.get_view(tex_name);
+
+                        // Check if already cached
+                        let texture_id =
+                            if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
+                                cached_id
+                            } else {
+                                // Register new texture with egui
+                                let new_id = self.egui_renderer.register_native_texture(
+                                    &self.backend.device,
+                                    &tex_view,
+                                    wgpu::FilterMode::Linear,
+                                );
+                                self.output_preview_cache.insert(*output_id, new_id);
+                                new_id
+                            };
+
+                        current_output_previews.insert(*output_id, texture_id);
+                    }
+                }
+
+                // Cleanup stale output preview cache entries
+                self.output_preview_cache.retain(|id, tex_id| {
+                    if !current_output_previews.contains_key(id) {
+                        self.egui_renderer.free_texture(tex_id);
+                        false
+                    } else {
+                        true
+                    }
+                });
             }
 
             let dashboard_action = None;
@@ -2457,6 +2496,7 @@ impl App {
                                                                 name: name.clone(),
                                                                 show_in_panel: *show_in_preview_panel,
                                                                 texture_name: self.output_assignments.get(id).cloned(),
+                                                                texture_id: self.output_preview_cache.get(id).copied(),
                                                             })
                                                         }
                                                         _ => None,

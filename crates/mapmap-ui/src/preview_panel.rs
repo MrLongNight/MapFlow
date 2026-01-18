@@ -16,6 +16,8 @@ pub struct OutputPreviewInfo {
     pub show_in_panel: bool,
     /// Texture handle name (for looking up in texture pool)
     pub texture_name: Option<String>,
+    /// Registered egui texture ID for rendering
+    pub texture_id: Option<egui::TextureId>,
 }
 
 /// Preview Panel for displaying output thumbnails
@@ -134,27 +136,41 @@ impl PreviewPanel {
                                 .inner_margin(4.0)
                                 .show(ui, |ui| {
                                     ui.vertical(|ui| {
-                                        // Placeholder for texture preview
+                                        // Allocate space for preview
                                         let (rect, response) = ui.allocate_exact_size(
                                             Vec2::new(thumbnail_width, thumbnail_height),
                                             egui::Sense::click(),
                                         );
 
-                                        // Draw placeholder or texture
-                                        ui.painter().rect_filled(
-                                            rect,
-                                            2.0,
-                                            egui::Color32::from_gray(40),
-                                        );
+                                        // Render texture or placeholder
+                                        if let Some(tex_id) = output.texture_id {
+                                            // Render the actual GPU texture
+                                            ui.painter().image(
+                                                tex_id,
+                                                rect,
+                                                egui::Rect::from_min_max(
+                                                    egui::pos2(0.0, 0.0),
+                                                    egui::pos2(1.0, 1.0),
+                                                ),
+                                                egui::Color32::WHITE,
+                                            );
+                                        } else {
+                                            // Draw placeholder background
+                                            ui.painter().rect_filled(
+                                                rect,
+                                                2.0,
+                                                egui::Color32::from_gray(40),
+                                            );
 
-                                        // Draw "no signal" pattern
-                                        ui.painter().text(
-                                            rect.center(),
-                                            egui::Align2::CENTER_CENTER,
-                                            format!("Output {}", output.id),
-                                            egui::FontId::proportional(12.0),
-                                            egui::Color32::GRAY,
-                                        );
+                                            // Draw "no signal" text
+                                            ui.painter().text(
+                                                rect.center(),
+                                                egui::Align2::CENTER_CENTER,
+                                                "No Signal",
+                                                egui::FontId::proportional(12.0),
+                                                egui::Color32::GRAY,
+                                            );
+                                        }
 
                                         // Output label
                                         ui.label(&output.name);
