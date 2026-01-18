@@ -18,7 +18,6 @@ use mapmap_core::{
         backend::cpal_backend::CpalBackend,
         backend::AudioBackend,
     },
-    module::{ModulePartType, OutputType},
     AppState, ModuleEvaluator, OutputId, RenderOp,
 };
 
@@ -26,7 +25,7 @@ use mapmap_mcp::{McpAction, McpServer};
 // Define McpAction locally or import if we move it to core later -> Removed local definition
 
 use crossbeam_channel::{unbounded, Receiver};
-use mapmap_core::module::{ModulePartId, SourceType};
+use mapmap_core::module::{ModulePartId, ModulePartType, SourceType};
 use mapmap_io::{load_project, save_project};
 use mapmap_media::player::{PlaybackCommand, VideoPlayer};
 use mapmap_render::{
@@ -153,8 +152,6 @@ struct App {
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
-    /// Tracks the last frame render time for each output to manage FPS limiting
-    output_last_frame_times: HashMap<OutputId, std::time::Instant>,
 }
 
 impl App {
@@ -576,7 +573,6 @@ impl App {
             output_temp_textures: std::collections::HashMap::new(),
             preview_texture_cache: HashMap::new(),
             preview_quad_buffers,
-            output_last_frame_times: HashMap::new(),
         };
 
         // Create initial dummy texture
@@ -1591,42 +1587,47 @@ impl App {
                     // 1. Primary Window
                     active_window_ids.insert(output_id);
 
-                    if let Some(window_context) = self.window_manager.get_mut(output_id) {
+                    if let Some(window_context) = self.window_manager.get(output_id) {
                         // Update existing
                         let is_fullscreen = window_context.window.fullscreen().is_some();
                         if is_fullscreen != *fullscreen {
-                            let new_fullscreen = if *fullscreen {
+                            window_context.window.set_fullscreen(if *fullscreen {
                                 Some(winit::window::Fullscreen::Borderless(None))
                             } else {
                                 None
-                            };
-                            window_context.window.set_fullscreen(new_fullscreen);
+                            });
                         }
                         window_context.window.set_cursor_visible(!*hide_cursor);
 
-                        // --- DYNAMIC MONITOR SWITCHING ---
-                        // This logic is crucial for live updates. When the user changes the
-                        // target monitor in the UI, this code block ensures the window
-                        // physically moves to the new display.
-                        let monitors: Vec<_> = window_context.window.available_monitors().collect();
-                        if let Some(current_monitor) = window_context.window.current_monitor() {
-                            if let Some(current_monitor_index) =
-                                monitors.iter().position(|m| *m == current_monitor)
-                            {
-                                if current_monitor_index != *target_screen as usize {
-                                    if let Some(target_monitor) =
-                                        monitors.get(*target_screen as usize)
-                                    {
-                                        info!(
-                                            "Moving window for output {} to monitor {} ({:?})",
-                                            output_id,
-                                            target_screen,
-                                            target_monitor.name()
-                                        );
-                                        window_context
-                                            .window
-                                            .set_outer_position(target_monitor.position());
-                                    }
+                        // --- Monitor Switching Logic ---
+                        let available_monitors: Vec<_> = event_loop.available_monitors().collect();
+                        if let Some(target_monitor) =
+                            available_monitors.get(*target_screen as usize)
+                        {
+                            let current_monitor = window_context.window.current_monitor();
+                            let is_on_correct_monitor = current_monitor
+                                .as_ref()
+                                .map_or(false, |m| *m == *target_monitor);
+
+                            if !is_on_correct_monitor {
+                                info!(
+                                    "Moving window for output {} to monitor: {}",
+                                    output_id,
+                                    target_monitor
+                                        .name()
+                                        .unwrap_or_else(|| "Unknown".to_string())
+                                );
+                                // To move a window, it's often best to remove fullscreen, move, then re-apply fullscreen.
+                                window_context.window.set_fullscreen(None);
+                                window_context
+                                    .window
+                                    .set_outer_position(target_monitor.position());
+                                if *fullscreen {
+                                    window_context.window.set_fullscreen(Some(
+                                        winit::window::Fullscreen::Borderless(Some(
+                                            target_monitor.clone(),
+                                        )),
+                                    ));
                                 }
                             }
                         }
@@ -1823,22 +1824,6 @@ impl App {
         let delta_time = now.duration_since(self.last_update).as_secs_f32();
         self.last_update = now;
 
-        // FPS Limiter Logic
-        if output_id != 0 {
-            if let Some(op) = self.render_ops.iter().find(|op| op.output_part_id == output_id) {
-                if let OutputType::Projector { output_fps, .. } = &op.output_type {
-                    if *output_fps > 0.0 {
-                        let last_frame_time = self.output_last_frame_times.entry(output_id).or_insert(now);
-                        let target_frame_duration = std::time::Duration::from_secs_f32(1.0 / *output_fps);
-                        if now.duration_since(*last_frame_time) < target_frame_duration {
-                            return Ok(()); // Skip frame
-                        }
-                        *last_frame_time = now;
-                    }
-                }
-            }
-        }
-
         // --- Media Player Update ---
         self.sync_media_players();
         self.update_media_players(delta_time);
@@ -1881,26 +1866,6 @@ impl App {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Render Encoder"),
                 });
-
-        // If this is a projector output, check for resolution override
-        if output_id != 0 {
-            if let Some(op) = self.render_ops.iter().find(|op| op.output_part_id == output_id) {
-                if let OutputType::Projector { output_width, output_height, .. } = &op.output_type {
-                    if *output_width > 0 && *output_height > 0 {
-                        // Ensure a texture exists for this output with the correct size
-                        let tex_name = format!("output_{}", output_id);
-                        self.texture_pool.ensure_texture(
-                            &tex_name,
-                            *output_width,
-                            *output_height,
-                            self.backend.surface_format(),
-                            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-                        );
-                    }
-                }
-            }
-        }
-
 
         if output_id == 0 {
             // --------- ImGui removed (Phase 6 Complete) ----------
@@ -2104,6 +2069,13 @@ impl App {
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
+                    // Update available monitors for the UI
+                    self.ui_state.module_canvas.available_monitors = self.window_manager.get(0).map_or_else(Vec::new, |w| {
+                        w.window.available_monitors().map(|m| {
+                            m.name().unwrap_or_else(|| "Unknown Monitor".to_string())
+                        }).collect()
+                    });
+
                     // Apply the theme at the beginning of each UI render pass
                     self.ui_state.user_config.theme.apply(ctx);
 
@@ -2613,22 +2585,6 @@ impl App {
 
                                 ui.separator();
 
-        // Monitor Enumeration for UI
-        if let Some(main_window_id) = self.window_manager.main_window_id() {
-            if let Some(main_window) = self.window_manager.get(main_window_id) {
-                self.ui_state.module_canvas.monitors = main_window
-                    .window
-                    .available_monitors()
-                    .enumerate()
-                    .map(|(i, m)| {
-                        (
-                            format!("Monitor {}", i),
-                            m.name().unwrap_or_else(|| "Unknown".to_string()),
-                        )
-                    })
-                    .collect();
-            }
-        }
                                 // App Settings
                                 egui::CollapsingHeader::new(format!("⚙️ {}", self.ui_state.i18n.t("settings-app")))
                                     .default_open(true)
@@ -2941,6 +2897,50 @@ impl App {
                 .find(|op| op.output_part_id == output_id);
 
             if let Some(op) = target_op {
+                // --- 0. Determine Resolution & Final Target ---
+                let (use_custom_res, target_width, target_height) =
+                    if let mapmap_core::module::OutputType::Projector {
+                        output_width,
+                        output_height,
+                        ..
+                    } = &op.output_type
+                    {
+                        if *output_width > 0 && *output_height > 0 {
+                            (true, *output_width, *output_height)
+                        } else {
+                            (
+                                false,
+                                window_context.surface_config.width,
+                                window_context.surface_config.height,
+                            )
+                        }
+                    } else {
+                        (
+                            false,
+                            window_context.surface_config.width,
+                            window_context.surface_config.height,
+                        )
+                    };
+
+                let mut _intermediate_view_holder = None;
+                let pipeline_target_view = if use_custom_res {
+                    let tex_name = format!("output_{}_intermediate", output_id);
+                    self.texture_pool.ensure_texture(
+                        &tex_name,
+                        target_width,
+                        target_height,
+                        self.backend.surface_format(),
+                        wgpu::TextureUsages::RENDER_ATTACHMENT
+                            | wgpu::TextureUsages::TEXTURE_BINDING,
+                    );
+                    let view_arc = self.texture_pool.get_view(&tex_name);
+                    _intermediate_view_holder = Some(view_arc);
+                    _intermediate_view_holder.as_ref().unwrap()
+                } else {
+                    &view
+                };
+
+                // Determine source texture view
                 let owned_source_view = if let Some(src_id) = op.source_part_id {
                     let tex_name = format!("part_{}", src_id);
                     if self.texture_pool.has_texture(&tex_name) {
@@ -2956,28 +2956,102 @@ impl App {
 
                 if let Some(src_view) = effective_view {
                     // --- 1. Effect Chain Processing (Common) ---
-                    let final_view = src_view;
+                    let mut final_view = src_view;
                     let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
-                    // Note: This currently runs at window resolution, not custom output resolution.
-                    // A full fix would involve another render target here. For now, we accept this.
+
                     if !op.effects.is_empty() {
-                        // ... existing effect chain logic ...
+                        let time = self.start_time.elapsed().as_secs_f32();
+                        let mut chain = mapmap_core::EffectChain::new();
+
+                        for modulizer in &op.effects {
+                            if let mapmap_core::module::ModulizerType::Effect {
+                                effect_type: mod_effect,
+                                params,
+                            } = modulizer
+                            {
+                                let core_effect = match mod_effect {
+                                    mapmap_core::module::EffectType::Blur => {
+                                        Some(mapmap_core::effects::EffectType::Blur)
+                                    }
+                                    mapmap_core::module::EffectType::Invert => {
+                                        Some(mapmap_core::effects::EffectType::Invert)
+                                    }
+                                    mapmap_core::module::EffectType::Pixelate => {
+                                        Some(mapmap_core::effects::EffectType::Pixelate)
+                                    }
+                                    mapmap_core::module::EffectType::Brightness
+                                    | mapmap_core::module::EffectType::Contrast
+                                    | mapmap_core::module::EffectType::Saturation
+                                    | mapmap_core::module::EffectType::HueShift
+                                    | mapmap_core::module::EffectType::Colorize => {
+                                        Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                    }
+                                    mapmap_core::module::EffectType::ChromaticAberration
+                                    | mapmap_core::module::EffectType::RgbSplit => {
+                                        Some(mapmap_core::effects::EffectType::ChromaticAberration)
+                                    }
+                                    mapmap_core::module::EffectType::EdgeDetect => {
+                                        Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                    }
+                                    mapmap_core::module::EffectType::FilmGrain
+                                    | mapmap_core::module::EffectType::VHS => {
+                                        Some(mapmap_core::effects::EffectType::FilmGrain)
+                                    }
+                                    mapmap_core::module::EffectType::Vignette => {
+                                        Some(mapmap_core::effects::EffectType::Vignette)
+                                    }
+                                    mapmap_core::module::EffectType::Kaleidoscope => {
+                                        Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                    }
+                                    // Not yet implemented in core renderer
+                                    mapmap_core::module::EffectType::Sharpen
+                                    | mapmap_core::module::EffectType::Threshold
+                                    | mapmap_core::module::EffectType::Wave
+                                    | mapmap_core::module::EffectType::Spiral
+                                    | mapmap_core::module::EffectType::Pinch
+                                    | mapmap_core::module::EffectType::Mirror
+                                    | mapmap_core::module::EffectType::Halftone
+                                    | mapmap_core::module::EffectType::Posterize
+                                    | mapmap_core::module::EffectType::Glitch => {
+                                        tracing::warn!(
+                                            "Effect {:?} not yet implemented in renderer",
+                                            mod_effect
+                                        );
+                                        None
+                                    }
+                                };
+                                if let Some(et) = core_effect {
+                                    let effect_id = chain.add_effect(et);
+                                    if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                        effect.parameters = params.clone();
+                                    }
+                                }
+                            }
+                        }
+
+                        if chain.enabled_effects().count() > 0 {
+                            let target_tex_name = &self.layer_ping_pong[0];
+                            self.texture_pool.resize_if_needed(
+                                target_tex_name,
+                                target_width,
+                                target_height,
+                            );
+                            let target_view = self.texture_pool.get_view(target_tex_name);
+                            self.effect_chain_renderer.apply_chain(
+                                &mut encoder,
+                                src_view,
+                                &target_view,
+                                &chain,
+                                time,
+                                target_width,
+                                target_height,
+                            );
+                            _temp_view_holder = Some(target_view);
+                            final_view = _temp_view_holder.as_ref().unwrap();
+                        }
                     }
 
-                    // --- 2. Custom Resolution & Mesh Warping ---
-                    let (custom_width, custom_height) =
-                        if let mapmap_core::module::OutputType::Projector {
-                            output_width,
-                            output_height,
-                            ..
-                        } = &op.output_type
-                        {
-                            (*output_width, *output_height)
-                        } else {
-                            (0, 0)
-                        };
-                    let has_custom_res = custom_width > 0 && custom_height > 0;
-
+                    // --- 2. Combined Mesh & Output Processing Pipeline ---
                     let output_config_opt = self.state.output_manager.get_output(output_id);
                     let use_edge_blend =
                         output_config_opt.is_some() && self.edge_blend_renderer.is_some();
@@ -2985,55 +3059,28 @@ impl App {
                         output_config_opt.is_some() && self.color_calibration_renderer.is_some();
                     let needs_post_processing = use_edge_blend || use_color_calib;
 
-                    // Determine the target for the mesh rendering pass.
-                    let mesh_target_view: &wgpu::TextureView;
-                    // This will hold the result of the mesh pass, to be used as input for subsequent passes.
-                    let post_mesh_source_view: &wgpu::TextureView;
-
-                    // Holders to keep the Arcs for our temporary textures alive during the render pass.
-                    let mut _custom_res_view_holder: Option<std::sync::Arc<wgpu::TextureView>> =
-                        None;
-                    let mut _intermediate_view_holder: Option<std::sync::Arc<wgpu::TextureView>> =
+                    let mesh_output_tex_name = &self.layer_ping_pong[1];
+                    let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> =
                         None;
 
-                    if has_custom_res {
-                        // We have a custom resolution. The mesh must render to a texture of this size.
-                        let tex_name = format!("output_custom_res_{}", output_id);
-                        self.texture_pool.ensure_texture(
-                            &tex_name,
-                            custom_width,
-                            custom_height,
-                            self.backend.surface_format(),
-                            wgpu::TextureUsages::RENDER_ATTACHMENT
-                                | wgpu::TextureUsages::TEXTURE_BINDING,
-                        );
-                        _custom_res_view_holder = Some(self.texture_pool.get_view(&tex_name));
-                        mesh_target_view = _custom_res_view_holder.as_ref().unwrap();
-                        post_mesh_source_view = _custom_res_view_holder.as_ref().unwrap();
-                    } else if needs_post_processing {
-                        // No custom res, but we need an intermediate texture for the post-processing chain.
-                        let tex_name = &self.layer_ping_pong[1];
+                    let mesh_target_view_ref = if needs_post_processing {
                         self.texture_pool.resize_if_needed(
-                            tex_name,
-                            window_context.surface_config.width,
-                            window_context.surface_config.height,
+                            mesh_output_tex_name,
+                            target_width,
+                            target_height,
                         );
-                        _intermediate_view_holder = Some(self.texture_pool.get_view(tex_name));
-                        mesh_target_view = _intermediate_view_holder.as_ref().unwrap();
-                        post_mesh_source_view = _intermediate_view_holder.as_ref().unwrap();
+                        _mesh_intermediate_view =
+                            Some(self.texture_pool.get_view(mesh_output_tex_name));
+                        _mesh_intermediate_view.as_deref().unwrap()
                     } else {
-                        // Simplest case: no custom res, no post-processing. Render mesh directly to the window's surface.
-                        mesh_target_view = &view;
-                        post_mesh_source_view = &view; // Not actually used, but must be assigned.
-                    }
+                        pipeline_target_view
+                    };
 
-                    // Render the mesh (warping) from `final_view` (source) to `mesh_target_view`.
                     {
-                        // Clear the target first.
                         let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: Some("Mesh Target Clear Pass"),
                             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: mesh_target_view,
+                                view: mesh_target_view_ref,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
                                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3045,15 +3092,16 @@ impl App {
                             timestamp_writes: None,
                         });
                     }
+
                     {
                         self.mesh_renderer.begin_frame();
-                        let (vertex_buffer, index_buffer, index_count) = self
-                            .mesh_buffer_cache
-                            .get_buffers(
+                        let (vertex_buffer, index_buffer, index_count) =
+                            self.mesh_buffer_cache.get_buffers(
                                 &self.backend.device,
                                 op.layer_part_id,
                                 &op.mesh.to_mesh(),
                             );
+
                         let transform = glam::Mat4::IDENTITY;
                         let uniform_bind_group =
                             self.mesh_renderer.get_uniform_bind_group_with_source_props(
@@ -3070,53 +3118,43 @@ impl App {
                         let texture_bind_group =
                             self.mesh_renderer.create_texture_bind_group(final_view);
 
-                        let mut render_pass =
-                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                label: Some("Mesh Render Pass"),
-                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: mesh_target_view,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Load,
-                                        store: wgpu::StoreOp::Store,
-                                    },
-                                })],
-                                depth_stencil_attachment: None,
-                                occlusion_query_set: None,
-                                timestamp_writes: None,
-                            });
-                        self.mesh_renderer.draw(
-                            &mut render_pass,
-                            vertex_buffer,
-                            index_buffer,
-                            index_count,
-                            &uniform_bind_group,
-                            &texture_bind_group,
-                            true,
-                        );
+                        {
+                            let mut render_pass =
+                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: Some("Mesh Render Pass"),
+                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                        view: mesh_target_view_ref,
+                                        resolve_target: None,
+                                        ops: wgpu::Operations {
+                                            load: wgpu::LoadOp::Load,
+                                            store: wgpu::StoreOp::Store,
+                                        },
+                                    })],
+                                    depth_stencil_attachment: None,
+                                    occlusion_query_set: None,
+                                    timestamp_writes: None,
+                                });
+                            self.mesh_renderer.draw(
+                                &mut render_pass,
+                                vertex_buffer,
+                                index_buffer,
+                                index_count,
+                                &uniform_bind_group,
+                                &texture_bind_group,
+                                true,
+                            );
+                        }
                     }
 
-                    // --- 3. Post-Processing or Final Blit ---
                     if needs_post_processing {
-                        // Input for post-processing is the result of the mesh pass
-                        let post_input_view = post_mesh_source_view;
-
-                        // Setup intermediate for EdgeBlend -> ColorCalib chain if both are active
+                        let post_input_view = mesh_target_view_ref;
                         let need_double_pass = use_edge_blend && use_color_calib;
                         let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
 
                         if need_double_pass {
-                            let (width, height) = if has_custom_res {
-                                (custom_width, custom_height)
-                            } else {
-                                (
-                                    window_context.surface_config.width,
-                                    window_context.surface_config.height,
-                                )
-                            };
                             let recreate =
                                 if let Some(tex) = self.output_temp_textures.get(&output_id) {
-                                    tex.width() != width || tex.height() != height
+                                    tex.width() != target_width || tex.height() != target_height
                                 } else {
                                     true
                                 };
@@ -3131,8 +3169,8 @@ impl App {
                                                 output_id
                                             )),
                                             size: wgpu::Extent3d {
-                                                width,
-                                                height,
+                                                width: target_width,
+                                                height: target_height,
                                                 depth_or_array_layers: 1,
                                             },
                                             mip_level_count: 1,
@@ -3157,16 +3195,13 @@ impl App {
 
                         if use_edge_blend {
                             let renderer = self.edge_blend_renderer.as_ref().unwrap();
-                            // If Color Calib follows, render to BlendTemp. Else render to Surface.
                             let target_view = if use_color_calib {
                                 blend_output_temp_view_opt.as_ref().unwrap()
                             } else {
-                                &view
+                                pipeline_target_view
                             };
-
                             let bind_group = renderer.create_texture_bind_group(post_input_view);
-                            let uniform_buffer =
-                                renderer.create_uniform_buffer(&config.edge_blend);
+                            let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
                             let uniform_bind_group =
                                 renderer.create_uniform_bind_group(&uniform_buffer);
 
@@ -3190,15 +3225,11 @@ impl App {
 
                         if use_color_calib {
                             let renderer = self.color_calibration_renderer.as_ref().unwrap();
-                            // Input is BlendTemp (if Blend ran) or MeshOutput (if Blend didn't run)
                             let input_view_for_cc = if use_edge_blend {
                                 blend_output_temp_view_opt.as_ref().unwrap()
                             } else {
                                 post_input_view
                             };
-
-                            // Output is always Surface
-                            let target_view = &view;
 
                             let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
                             let uniform_buffer =
@@ -3210,7 +3241,7 @@ impl App {
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Color Calibration Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: target_view,
+                                        view: pipeline_target_view,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
                                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3223,38 +3254,35 @@ impl App {
                                 });
                             renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
                         }
-                    } else if has_custom_res {
-                        // We rendered to a custom texture, but there's no post-processing.
-                        // We must blit the custom texture to the window's surface.
-                        // We can achieve a passthrough/blit by using an empty effect chain.
-                        let empty_chain = mapmap_core::EffectChain::new();
-                        let (width, height) = (
-                            window_context.surface_config.width,
-                            window_context.surface_config.height,
-                        );
-                        self.effect_chain_renderer.apply_chain(
-                            &mut encoder,
-                            post_mesh_source_view,
-                            &view,
-                            &empty_chain,
-                            0.0, // time is irrelevant for an empty chain
-                            width,
-                            height,
-                        );
                     }
-                    // If neither of the above is true, we already rendered directly to the surface, so we're done.
                 } else {
-                    static MISSING_VIEW: std::sync::atomic::AtomicU64 =
-                        std::sync::atomic::AtomicU64::new(0);
-                    if MISSING_VIEW
-                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-                        .is_multiple_of(120)
-                    {
-                        tracing::warn!(
-                            "Render: No effective view for output {} (Texture logic failed)",
-                            output_id
-                        );
-                    }
+                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Clear Pipeline Target Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: pipeline_target_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+                }
+
+                if use_custom_res {
+                    let intermediate_view = _intermediate_view_holder.as_ref().unwrap();
+                    self.effect_chain_renderer.apply_chain(
+                        &mut encoder,
+                        intermediate_view,
+                        &view,                                // Final surface
+                        &mapmap_core::EffectChain::default(), // Empty chain = passthrough
+                        0.0,
+                        window_context.surface_config.width,
+                        window_context.surface_config.height,
+                    );
                 }
             } else {
                 // No op for this output - Clear to Black

@@ -112,6 +112,8 @@ pub struct ModuleCanvas {
     pending_ndi_connect: Option<(ModulePartId, NdiSource)>,
     /// Available outputs (id, name) for output node selection
     pub available_outputs: Vec<(u64, String)>,
+    /// Available monitors for output node selection
+    pub available_monitors: Vec<String>,
     /// ID of the part being edited in a popup
     editing_part_id: Option<ModulePartId>,
     /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
@@ -124,8 +126,6 @@ pub struct ModuleCanvas {
     show_diagnostics: bool,
     /// Media player info for timeline display (Part ID -> Info)
     pub player_info: std::collections::HashMap<ModulePartId, MediaPlayerInfo>,
-    /// Available monitors for output selection (ID, Name)
-    pub monitors: Vec<(String, String)>,
 }
 
 /// Live audio data for trigger nodes
@@ -218,13 +218,13 @@ impl Default for ModuleCanvas {
             #[cfg(feature = "ndi")]
             pending_ndi_connect: None,
             available_outputs: Vec::new(),
+            available_monitors: Vec::new(),
             editing_part_id: None,
             node_previews: std::collections::HashMap::new(),
             pending_playback_commands: Vec::new(),
             diagnostic_issues: Vec::new(),
             show_diagnostics: false,
             player_info: std::collections::HashMap::new(),
-            monitors: Vec::new(),
         }
     }
 }
@@ -1428,9 +1428,7 @@ impl ModuleCanvas {
                                                 target_screen,
                                                 show_in_preview_panel,
                                                 extra_preview_window,
-                                                output_width,
-                                                output_height,
-                                                output_fps,
+                                                ..
                                             } => {
                                                 ui.label("📽️ Projector Output");
 
@@ -1451,34 +1449,37 @@ impl ModuleCanvas {
                                                 // Target screen selection
                                                 ui.horizontal(|ui| {
                                                     ui.label("Target Screen:");
-                                                    let selected_text = self.monitors.get(*target_screen as usize)
-                                                        .map(|(_, name)| name.clone())
-                                                        .unwrap_or_else(|| format!("Monitor {}", *target_screen));
+                                                    let selected_text = self
+                                                        .available_monitors
+                                                        .get(*target_screen as usize)
+                                                        .cloned()
+                                                        .unwrap_or_else(|| "Primary".to_string());
 
-                                                    egui::ComboBox::from_id_source("target_screen_select")
-                                                        .selected_text(selected_text)
-                                                        .show_ui(ui, |ui| {
-                                                            for (i, (_, name)) in self.monitors.iter().enumerate() {
-                                                                if ui.selectable_label(*target_screen == i as u8, name).clicked() {
-                                                                    *target_screen = i as u8;
-                                                                }
+                                                    egui::ComboBox::from_id_source(
+                                                        "target_screen_select",
+                                                    )
+                                                    .selected_text(selected_text)
+                                                    .show_ui(ui, |ui| {
+                                                        for (i, monitor_name) in self
+                                                            .available_monitors
+                                                            .iter()
+                                                            .enumerate()
+                                                        {
+                                                            if ui
+                                                                .selectable_label(
+                                                                    *target_screen as usize == i,
+                                                                    monitor_name,
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                *target_screen = i as u8;
                                                             }
-                                                        });
+                                                        }
+                                                    });
                                                 });
 
                                                 ui.checkbox(fullscreen, "🖼️ Fullscreen");
                                                 ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
-
-                                                ui.separator();
-                                                ui.label("📐 Resolution & Performance:");
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Resolution (0=Auto):");
-                                                    ui.add(egui::DragValue::new(output_width).speed(1.0).suffix("px"));
-                                                    ui.label("x");
-                                                    ui.add(egui::DragValue::new(output_height).speed(1.0).suffix("px"));
-                                                });
-                                                ui.add(egui::Slider::new(output_fps, 0.0..=120.0).text("FPS Limit (0=VSync)"));
-
 
                                                 ui.separator();
                                                 ui.label("👁️ Preview:");
