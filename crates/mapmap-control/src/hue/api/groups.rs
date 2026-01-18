@@ -187,15 +187,20 @@ pub async fn set_stream_active(
 pub async fn flash_light(config: &HueConfig, light_id: &str) -> Result<(), HueError> {
     let client = build_client()?;
     let url = format!(
-        "https://{}/api/{}/lights/{}/state",
-        config.bridge_ip, config.username, light_id
+        "https://{}/api/lights/{}/state",
+        config.bridge_ip, light_id
     );
 
     let body = serde_json::json!({
         "alert": "select"
     });
 
-    let resp = client.put(&url).json(&body).send().await?;
+    let resp = client
+        .put(&url)
+        .header("X-Hue-Username", &config.username)
+        .json(&body)
+        .send()
+        .await?;
 
     if resp.status().is_success() {
         Ok(())
