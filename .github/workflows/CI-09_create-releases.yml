@@ -48,22 +48,18 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
         shell: pwsh
 
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-ffmpeg-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-ffmpeg-
+      - name: Install ffmpeg via vcpkg
+        run: .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
+        shell: pwsh
 
-      - name: Install FFmpeg via vcpkg
-        run: |
-          vcpkg install ffmpeg:x64-windows
-          vcpkg integrate install
+      - name: Set VCPKG_ROOT env
+        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Build Release (Windows)
@@ -80,7 +76,7 @@ jobs:
           Copy-Item target\release\MapFlow.exe dist\MapFlow.exe
 
           # Copy FFmpeg DLLs
-          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin\*.dll" dist\
             Write-Host "Copied FFmpeg DLLs to dist"
@@ -119,22 +115,18 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
         shell: pwsh
 
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-ffmpeg-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-ffmpeg-
+      - name: Install ffmpeg via vcpkg
+        run: .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
+        shell: pwsh
 
-      - name: Install FFmpeg via vcpkg
-        run: |
-          vcpkg install ffmpeg:x64-windows
-          vcpkg integrate install
+      - name: Set VCPKG_ROOT env
+        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Build Release (Windows)
@@ -148,7 +140,7 @@ jobs:
             exit 1
           }
           # Copy FFmpeg DLLs to target/release for WiX
-          $vcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin\*.dll" target\release\
             Write-Host "Copied FFmpeg DLLs to target\release"
