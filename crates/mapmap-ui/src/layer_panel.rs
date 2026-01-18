@@ -45,46 +45,54 @@ impl LayerPanel {
             .default_size([380.0, 400.0])
             .show(ctx, |ui| {
                 // --- Toolbar ---
-                ui.horizontal(|ui| {
-                    if ui.button(i18n.t("btn-add-layer")).clicked() {
-                        actions.push(UIAction::AddLayer);
-                    }
-                    if ui
-                        .add_enabled(
-                            selected_layer_id.is_some(),
-                            egui::Button::new(i18n.t("btn-remove")),
-                        )
-                        .on_hover_text(i18n.t("tooltip-remove-layer"))
-                        .clicked()
-                    {
-                        if let Some(id) = *selected_layer_id {
-                            actions.push(UIAction::RemoveLayer(id));
-                            *selected_layer_id = None;
-                        }
-                    }
-                    if ui
-                        .add_enabled(
-                            selected_layer_id.is_some(),
-                            egui::Button::new(i18n.t("btn-duplicate")),
-                        )
-                        .on_hover_text(i18n.t("tooltip-duplicate-layer"))
-                        .clicked()
-                    {
-                        if let Some(id) = *selected_layer_id {
-                            actions.push(UIAction::DuplicateLayer(id));
-                        }
-                    }
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui
-                            .button(i18n.t("btn-eject-all"))
-                            .on_hover_text(i18n.t("tooltip-eject-all"))
-                            .clicked()
-                        {
-                            actions.push(UIAction::EjectAllLayers);
-                        }
+                egui::Frame::none()
+                    .inner_margin(egui::Margin::same(4.0))
+                    .fill(ui.visuals().faint_bg_color)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui.button(i18n.t("btn-add-layer")).clicked() {
+                                actions.push(UIAction::AddLayer);
+                            }
+                            if ui
+                                .add_enabled(
+                                    selected_layer_id.is_some(),
+                                    egui::Button::new(i18n.t("btn-remove")),
+                                )
+                                .on_hover_text(i18n.t("tooltip-remove-layer"))
+                                .clicked()
+                            {
+                                if let Some(id) = *selected_layer_id {
+                                    actions.push(UIAction::RemoveLayer(id));
+                                    *selected_layer_id = None;
+                                }
+                            }
+                            if ui
+                                .add_enabled(
+                                    selected_layer_id.is_some(),
+                                    egui::Button::new(i18n.t("btn-duplicate")),
+                                )
+                                .on_hover_text(i18n.t("tooltip-duplicate-layer"))
+                                .clicked()
+                            {
+                                if let Some(id) = *selected_layer_id {
+                                    actions.push(UIAction::DuplicateLayer(id));
+                                }
+                            }
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if ui
+                                        .button(i18n.t("btn-eject-all"))
+                                        .on_hover_text(i18n.t("tooltip-eject-all"))
+                                        .clicked()
+                                    {
+                                        actions.push(UIAction::EjectAllLayers);
+                                    }
+                                },
+                            );
+                        });
                     });
-                });
-                ui.separator();
+                // Separator removed as the faint background provides division
 
                 // --- Layer List ---
                 let mut move_layer = None;
@@ -119,11 +127,16 @@ impl LayerPanel {
                             let is_selected = *selected_layer_id == Some(*layer_id);
 
                             let frame = Frame::group(ui.style())
-                                .inner_margin(Margin::same(4.0))
+                                .inner_margin(Margin::symmetric(8.0, 6.0))
                                 .fill(if is_selected {
                                     ui.style().visuals.selection.bg_fill
                                 } else {
                                     Color32::TRANSPARENT
+                                })
+                                .stroke(if is_selected {
+                                    ui.style().visuals.selection.stroke
+                                } else {
+                                    Stroke::NONE
                                 });
 
                             let response = frame
@@ -163,13 +176,12 @@ impl LayerPanel {
                                             Layout::right_to_left(Align::Center),
                                             |ui| {
                                                 // Opacity Slider
-                                                let slider =
-                                                    Slider::new(&mut layer.opacity, 0.0..=1.0)
-                                                        .show_value(false)
-                                                        .min_decimals(2)
-                                                        .max_decimals(2);
-                                                ui.add(slider)
-                                                    .on_hover_text(i18n.t("tooltip-layer-opacity"));
+                                                crate::widgets::styled_slider(
+                                                    ui,
+                                                    &mut layer.opacity,
+                                                    0.0..=1.0,
+                                                )
+                                                .on_hover_text(i18n.t("tooltip-layer-opacity"));
 
                                                 // Blend Mode
                                                 egui::ComboBox::from_id_source(format!(

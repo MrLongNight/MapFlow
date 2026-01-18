@@ -12,7 +12,9 @@ pub type MappingId = u64;
 /// Mapping - connects a Paint to an output Mesh
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Mapping {
+    /// Unique identifier for the mapping
     pub id: MappingId,
+    /// Display name of the mapping
     pub name: String,
 
     /// The paint (media source) to map
@@ -72,7 +74,9 @@ impl Mapping {
 /// Manages all mappings in the project
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct MappingManager {
+    /// List of mappings
     mappings: Vec<Mapping>,
+    /// Next available mapping ID
     next_id: MappingId,
 }
 
