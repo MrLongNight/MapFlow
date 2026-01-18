@@ -774,6 +774,212 @@ impl ModuleCanvas {
                                                     }
                                                 });
 
+                                                // === CLIP REGION ===
+                                                ui.collapsing("✂️ Clip Region", |ui| {
+                                                    let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
+                                                    let video_duration = player_info.duration.max(1.0) as f32;
+                                                    let current_pos = player_info.current_time as f32;
+
+                                                    // Visual Region Bar
+                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 24.0), Sense::hover());
+                                                    let rect = response.rect;
+
+                                                    // Background (Full Duration)
+                                                    painter.rect_filled(rect, 4.0, Color32::from_gray(40));
+                                                    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::from_gray(60)));
+
+                                                    // Data normalization
+                                                    let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                    let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let end_x = rect.min.x + (end_val / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                    // 1. Body Interaction (Move Region)
+                                                    // We define the body rect slightly shrunk so handles don't overlap too much
+                                                    let body_rect = Rect::from_min_max(
+                                                        Pos2::new(start_x + 4.0, rect.min.y),
+                                                        Pos2::new(end_x - 4.0, rect.max.y)
+                                                    );
+
+                                                    // Only interactive if wide enough
+                                                    if body_rect.width() > 10.0 {
+                                                        let body_id = response.id.with("region_body");
+                                                        let body_response = ui.interact(body_rect, body_id, Sense::drag());
+
+                                                        if body_response.dragged() {
+                                                            let delta_seconds = (body_response.drag_delta().x / rect.width()) * video_duration;
+
+                                                            // Calculate smart delta that respects bounds
+                                                            // We want to move as much as possible without going out of bounds
+                                                            let max_delta = video_duration - end_val;
+                                                            let min_delta = -*start_time;
+                                                            let valid_delta = delta_seconds.clamp(min_delta, max_delta);
+
+                                                            // Apply valid delta
+                                                            if valid_delta.abs() > 0.0001 {
+                                                                *start_time += valid_delta;
+                                                                *end_time = end_val + valid_delta;
+                                                            }
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                                        } else if body_response.hovered() {
+                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+                                                        }
+                                                    }
+
+                                                    // 2. Start Handle Interaction
+                                                    let start_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(start_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let start_id = response.id.with("start_handle");
+                                                    let start_response = ui.interact(start_handle_rect, start_id, Sense::drag());
+
+                                                    if start_response.dragged() {
+                                                        let delta_seconds = (start_response.drag_delta().x / rect.width()) * video_duration;
+                                                        *start_time = (*start_time + delta_seconds).clamp(0.0, end_val - 0.1);
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if start_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // 3. End Handle Interaction
+                                                    let end_handle_rect = Rect::from_center_size(
+                                                        Pos2::new(end_x, rect.center().y),
+                                                        Vec2::new(12.0, rect.height())
+                                                    );
+                                                    let end_id = response.id.with("end_handle");
+                                                    let end_response = ui.interact(end_handle_rect, end_id, Sense::drag());
+
+                                                    if end_response.dragged() {
+                                                        let delta_seconds = (end_response.drag_delta().x / rect.width()) * video_duration;
+                                                        // Ensure we don't cross start
+                                                        let mut new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
+
+                                                        // Snap to end (0.0) if close to duration
+                                                        if (video_duration - new_end).abs() < 0.1 {
+                                                            new_end = 0.0;
+                                                        }
+
+                                                        *end_time = new_end;
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    } else if end_response.hovered() {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                    }
+
+                                                    // === DRAWING ===
+                                                    // Re-calculate positions for drawing based on updated values
+                                                    let current_start_val = *start_time;
+                                                    let current_end_val = if *end_time > 0.0 { *end_time } else { video_duration };
+
+                                                    let draw_start_x = rect.min.x + (current_start_val / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                    let draw_end_x = rect.min.x + (current_end_val / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                    // Active Region Body
+                                                    let region_rect = Rect::from_min_max(
+                                                        Pos2::new(draw_start_x, rect.min.y),
+                                                        Pos2::new(draw_end_x, rect.max.y)
+                                                    );
+                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 120));
+
+                                                    // Handles
+                                                    let handle_width = 4.0;
+                                                    let start_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_start_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+                                                    let end_handle_vis = Rect::from_center_size(
+                                                        Pos2::new(draw_end_x, rect.center().y),
+                                                        Vec2::new(handle_width, rect.height() - 4.0)
+                                                    );
+
+                                                    let start_color = if start_response.dragged() || start_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+                                                    let end_color = if end_response.dragged() || end_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
+
+                                                    painter.rect_filled(start_handle_vis, 2.0, start_color);
+                                                    painter.rect_filled(end_handle_vis, 2.0, end_color);
+
+                                                    // Playhead Cursor
+                                                    let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
+                                                    let cursor_x = rect.min.x + cursor_norm * rect.width();
+
+                                                    // Draw playhead triangle/line
+                                                    painter.line_segment(
+                                                        [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
+                                                        Stroke::new(1.5, Color32::from_rgb(255, 200, 100))
+                                                    );
+                                                    painter.circle_filled(Pos2::new(cursor_x, rect.min.y), 3.0, Color32::from_rgb(255, 200, 100));
+
+                                                    ui.add_space(4.0);
+
+                                                    // Controls with "Set to Playhead" buttons
+                                                    ui.horizontal(|ui| {
+                                                        ui.vertical(|ui| {
+                                                            let mut ui_end_time = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                            let mut ui_start_time = *start_time;
+
+                                                            // Start Control
+                                                            ui.horizontal(|ui| {
+                                                                 if ui.button(" [ ").on_hover_text("Set Start to current Playhead").clicked() {
+                                                                     ui_start_time = current_pos;
+                                                                     if ui_start_time >= ui_end_time {
+                                                                         ui_end_time = video_duration;
+                                                                         *end_time = 0.0;
+                                                                     }
+                                                                     *start_time = ui_start_time;
+                                                                 }
+
+                                                                 let response = ui.add(
+                                                                     egui::Slider::new(&mut ui_start_time, 0.0..=ui_end_time)
+                                                                        .text("Start")
+                                                                        .custom_formatter(|n, _| {
+                                                                            let m = (n / 60.0) as u32;
+                                                                            let s = n % 60.0;
+                                                                            format!("{:02}:{:05.2}", m, s)
+                                                                        })
+                                                                 );
+
+                                                                 if response.changed() {
+                                                                     *start_time = ui_start_time;
+                                                                 }
+                                                            });
+
+                                                            // End Control
+                                                            ui.horizontal(|ui| {
+                                                                 if ui.button(" ] ").on_hover_text("Set End to current Playhead").clicked() {
+                                                                     ui_end_time = current_pos;
+                                                                     if ui_end_time <= ui_start_time {
+                                                                         ui_start_time = (ui_end_time - 1.0).max(0.0);
+                                                                         *start_time = ui_start_time;
+                                                                     }
+                                                                     *end_time = ui_end_time;
+                                                                 }
+
+                                                                 let response = ui.add(
+                                                                     egui::Slider::new(&mut ui_end_time, ui_start_time..=video_duration)
+                                                                        .text("End")
+                                                                        .custom_formatter(|n, _| {
+                                                                            let m = (n / 60.0) as u32;
+                                                                            let s = n % 60.0;
+                                                                            format!("{:02}:{:05.2}", m, s)
+                                                                        })
+                                                                 );
+
+                                                                 if response.changed() {
+                                                                     // Snap to end if close
+                                                                     if (video_duration - ui_end_time).abs() < 0.1 {
+                                                                         *end_time = 0.0;
+                                                                     } else {
+                                                                         *end_time = ui_end_time;
+                                                                     }
+                                                                 }
+                                                            });
+                                                        });
+                                                    });
+
+                                                    if ui.button("Reset Clip").clicked() {
+                                                        *start_time = 0.0;
+                                                        *end_time = 0.0;
+                                                    }
+                                                });
 
                                                 // === APPEARANCE ===
                                                 ui.collapsing("🎨 Appearance", |ui| {
