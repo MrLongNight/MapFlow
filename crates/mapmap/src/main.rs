@@ -1110,7 +1110,7 @@ impl App {
                                     source_name: _source_name,
                                     trigger_value: _,
                                 } => {
-                                    let part_id = *part_id;
+                                    let _part_id = *part_id;
                                     #[cfg(feature = "ndi")]
                                     {
                                         if let Some(src_name) = _source_name {
@@ -1168,6 +1168,8 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
+                                            mapmap_core::module::OutputType::Hue { .. } =>
+                                                "Hue".to_string(),
                                         }
                                     );
                                     if let Some(sid) = op.source_part_id {
@@ -1675,6 +1677,9 @@ impl App {
                 #[cfg(target_os = "windows")]
                 OutputType::Spout { .. } => {
                     // TODO: Spout Sender
+                }
+                OutputType::Hue { .. } => {
+                    // Hue integration handled via separate controller, no window needed
                 }
             }
         }

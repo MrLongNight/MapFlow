@@ -1505,7 +1505,7 @@ impl ModuleCanvas {
                                             OutputType::Hue {
                                                 bridge_ip,
                                                 username,
-                                                client_key,
+                                                client_key: _client_key,
                                                 entertainment_area,
                                                 lamp_positions,
                                                 mapping_mode,
@@ -1555,6 +1555,7 @@ impl ModuleCanvas {
                                                         });
                                                         #[cfg(not(feature = "tokio"))]
                                                         {
+                                                            let _ = tx;
                                                             self.hue_status_message = Some("Async runtime not available".to_string());
                                                         }
                                                     }
@@ -3698,7 +3699,7 @@ impl ModuleCanvas {
 
         // Handle lamp dragging
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
-        let is_dragging = ui.input(|i| i.pointer.primary_down());
+        let _is_dragging = ui.input(|i| i.pointer.primary_down());
 
         let mut dragged_lamp = None;
 
@@ -4796,7 +4797,7 @@ impl ModuleCanvas {
 
     fn draw_part_with_delete(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
         // Get part color and name based on type
-        let (bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
+        let (_bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
         let category = Self::get_part_category(&part.part_type);
 
         // Check if this is an audio trigger and if it's active
@@ -4831,19 +4832,24 @@ impl ModuleCanvas {
         };
         painter.add(shadow.tessellate(rect, egui::Rounding::same(6.0 * self.zoom)));
 
-        // Draw background (slightly transparent/glassy)
-        painter.rect_filled(rect, 6.0 * self.zoom, bg_color.linear_multiply(0.95));
+        // Draw background (Dark Neutral for high contrast)
+        // We use a very dark grey/black to make the content pop
+        let neutral_bg = Color32::from_rgb(20, 20, 25);
+        painter.rect_filled(rect, 6.0 * self.zoom, neutral_bg);
 
-        // Node border
+        // Node border - colored by type for quick identification
+        // This replaces the generic gray border
         painter.rect_stroke(
             rect,
             6.0 * self.zoom,
-            Stroke::new(1.0, Color32::from_rgb(60, 60, 70)),
+            Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
         );
 
         // Title bar
         let title_height = 28.0 * self.zoom;
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), title_height));
+
+        // Title bar with subtle gradient or solid color
         painter.rect_filled(
             title_rect,
             egui::Rounding {
@@ -4855,13 +4861,13 @@ impl ModuleCanvas {
             title_color,
         );
 
-        // Title separator line
+        // Title separator line - make it sharper
         painter.line_segment(
             [
                 Pos2::new(rect.min.x, rect.min.y + title_height),
                 Pos2::new(rect.max.x, rect.min.y + title_height),
             ],
-            Stroke::new(1.0, Color32::from_black_alpha(50)),
+            Stroke::new(1.0, Color32::from_black_alpha(80)),
         );
 
         // Title text with icon and category
