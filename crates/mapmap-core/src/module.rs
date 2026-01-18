@@ -97,6 +97,11 @@ impl MapFlowModule {
                 blend_mode: None,
                 mesh: default_mesh_quad(),
             }),
+
+            PartType::Hue => ModulePartType::Hue(HueNodeType::SingleLamp {
+                id: String::new(),
+                name: "New Lamp".to_string(),
+            }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 0,
                 name: "Output".to_string(),
@@ -481,6 +486,23 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media, // simplified
                 }],
             ),
+            ModulePartType::Hue(_) => (
+                vec![
+                    ModuleSocket {
+                        name: "Brightness".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Color (RGB)".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Strobe".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
+                vec![], // Hue is a sink (Output)
+            ),
         }
     }
 }
@@ -500,6 +522,8 @@ pub enum ModulePartType {
     Layer(LayerType),
     /// Geometry definition
     Mesh(MeshType),
+    /// Philips Hue Integration
+    Hue(HueNodeType),
     /// Final output (Projector, Network)
     Output(OutputType),
 }
@@ -519,8 +543,34 @@ pub enum PartType {
     Mesh,
     /// Layers
     Layer,
+    /// Philips Hue
+    Hue,
     /// Outputs
     Output,
+}
+
+/// Types of Philips Hue Nodes
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum HueNodeType {
+    /// Controls a single lamp
+    SingleLamp {
+        /// Lamp ID (from bridge)
+        id: String,
+        /// Display Name
+        name: String,
+    },
+    /// Controls multiple specific lamps together
+    MultiLamp {
+        /// List of Lamp IDs
+        ids: Vec<String>,
+        /// Display Name
+        name: String,
+    },
+    /// Controls a whole entertainment group
+    EntertainmentGroup {
+        /// Group Name/ID
+        name: String,
+    },
 }
 
 /// Types of logic triggers

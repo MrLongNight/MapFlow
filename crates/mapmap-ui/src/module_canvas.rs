@@ -1818,6 +1818,45 @@ impl ModuleCanvas {
                                             }
                                         }
                                     }
+                                    ModulePartType::Hue(hue_node) => {
+                                        ui.label("💡 Hue Node");
+                                        ui.separator();
+                                        match hue_node {
+                                            HueNodeType::SingleLamp { id, name } => {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Lamp ID:");
+                                                    ui.text_edit_singleline(id);
+                                                });
+                                                ui.label(egui::RichText::new("Use the App Settings to configure the Bridge.").weak().small());
+                                            }
+                                            HueNodeType::MultiLamp { ids, name } => {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
+                                                ui.label("Lamp IDs (comma separated):");
+                                                // Simple text parsing for now
+                                                let mut ids_str = ids.join(", ");
+                                                if ui.text_edit_singleline(&mut ids_str).changed() {
+                                                    *ids = ids_str.split(',')
+                                                        .map(|s| s.trim().to_string())
+                                                        .filter(|s| !s.is_empty())
+                                                        .collect();
+                                                }
+                                            }
+                                            HueNodeType::EntertainmentGroup { name } => {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Name:");
+                                                    ui.text_edit_singleline(name);
+                                                });
+                                                ui.label("Controls the Entertainment Group selected in Settings.");
+                                            }
+                                        }
+                                    }
                                     // All part types handled above
                                 }
 
@@ -2099,6 +2138,16 @@ impl ModuleCanvas {
                     mapmap_core::module::ModulePartType::Modulizer(mod_type),
                     pos,
                 );
+            }
+        }
+    }
+
+    /// Add a Hue node with specified type
+    fn add_hue_node(&mut self, manager: &mut ModuleManager, hue_type: HueNodeType) {
+        if let Some(id) = self.active_module_id {
+            if let Some(module) = manager.get_module_mut(id) {
+                let pos = Self::find_free_position(&module.parts, (500.0, 100.0));
+                module.add_part_with_type(mapmap_core::module::ModulePartType::Hue(hue_type), pos);
             }
         }
     }
@@ -2629,18 +2678,26 @@ impl ModuleCanvas {
                                 ui.close_menu();
                             }
 
-                            // Philips Hue Option
-                            if (show_all || "hue".contains(&filter)) && ui.button("💡 Philips Hue").clicked() {
-                                self.add_module_node(manager, ModulePartType::Output(OutputType::Hue {
-                                    bridge_ip: String::new(),
-                                    username: String::new(),
-                                    client_key: String::new(),
-                                    entertainment_area: String::new(),
-                                    lamp_positions: std::collections::HashMap::new(),
-                                    mapping_mode: HueMappingMode::Spatial,
-                                }));
-                                self.search_filter.clear();
-                                ui.close_menu();
+                            // === HUE SUBMENU ===
+                            if show_all || "hue light lamp philips".contains(&filter) {
+                                ui.menu_button("💡 Philips Hue", |ui| {
+                                     ui.set_min_width(180.0);
+                                     if (show_all || "single lamp".contains(&filter)) && ui.button("💡 Single Lamp").clicked() {
+                                         self.add_hue_node(manager, HueNodeType::SingleLamp { id: "1".to_string(), name: "Lamp 1".to_string() });
+                                         self.search_filter.clear();
+                                         ui.close_menu();
+                                     }
+                                     if (show_all || "multi lamp".contains(&filter)) && ui.button("💡💡 Multi Lamp").clicked() {
+                                         self.add_hue_node(manager, HueNodeType::MultiLamp { ids: vec![], name: "Lamps".to_string() });
+                                         self.search_filter.clear();
+                                         ui.close_menu();
+                                     }
+                                     if (show_all || "entertainment group".contains(&filter)) && ui.button("🎭 Entertainment Group").clicked() {
+                                         self.add_hue_node(manager, HueNodeType::EntertainmentGroup { name: "Group".to_string() });
+                                         self.search_filter.clear();
+                                         ui.close_menu();
+                                     }
+                                });
                             }
                         });
                     }
@@ -5467,6 +5524,15 @@ impl ModuleCanvas {
                     }
                 }
             },
+            ModulePartType::Hue(hue) => match hue {
+                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => format!("💡 {}", name),
+                mapmap_core::module::HueNodeType::MultiLamp { name, .. } => {
+                    format!("💡💡 {}", name)
+                }
+                mapmap_core::module::HueNodeType::EntertainmentGroup { name, .. } => {
+                    format!("🎭 {}", name)
+                }
+            },
         }
     }
 
@@ -5554,6 +5620,7 @@ impl ModuleCanvas {
             ModulePartType::Mesh(_) => PartType::Mesh,
             ModulePartType::Layer(_) => PartType::Layer,
             ModulePartType::Output(_) => PartType::Output,
+            ModulePartType::Hue(_) => PartType::Hue,
         }
     }
 
@@ -5571,11 +5638,12 @@ impl ModuleCanvas {
                 ModulePartType::Mesh(_) => 4,
                 ModulePartType::Layer(_) => 5,
                 ModulePartType::Output(_) => 6,
+                ModulePartType::Hue(_) => 7,
             }
         };
 
         // Group parts by type
-        let mut columns: [Vec<usize>; 7] = Default::default();
+        let mut columns: [Vec<usize>; 8] = Default::default();
         for (i, part) in parts.iter().enumerate() {
             let col = type_order(&part.part_type);
             columns[col].push(i);
