@@ -244,18 +244,25 @@ impl Transform {
 /// A single layer in the composition
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Layer {
+    /// Unique identifier for the layer
     pub id: u64,
+    /// Display name of the layer
     pub name: String,
+    /// Optional paint (media source) ID assigned to this layer
     pub paint_id: Option<u64>,
+    /// List of mapping IDs associated with this layer
     pub mapping_ids: Vec<u64>,
+    /// Blend mode for compositing
     pub blend_mode: BlendMode,
     /// Opacity/video fader (V) - 0.0 = transparent, 1.0 = opaque (Phase 1, Month 4)
     pub opacity: f32,
+    /// Visibility state of the layer
     pub visible: bool,
     /// Solo mode (S) - isolate this layer (Phase 1, Month 4)
     pub solo: bool,
     /// Bypass mode (B) - skip layer in render pipeline (Phase 1, Month 4)
     pub bypass: bool,
+    /// Lock state to prevent accidental changes
     pub locked: bool,
     /// Layer transform - position, scale, rotation, anchor (Phase 1, Month 4)
     pub transform: Transform,
@@ -364,9 +371,9 @@ pub struct Composition {
     pub master_opacity: f32,
     /// Master speed (S) - global speed multiplier (Phase 1, Month 5)
     pub master_speed: f32,
-    /// Composition size in pixels
+    /// Composition size in pixels (width, height)
     pub size: (u32, u32),
-    /// Frame rate (FPS)
+    /// Frame rate (FPS) for playback
     pub frame_rate: f32,
 }
 
@@ -416,7 +423,9 @@ impl Composition {
 /// Layer manager for organizing and rendering layers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LayerManager {
+    /// List of layers managed by this manager
     layers: Vec<Layer>,
+    /// Next available layer ID
     next_id: u64,
     /// Composition metadata and master controls
     pub composition: Composition,

@@ -27,12 +27,29 @@ pub struct WgpuBackend {
 
 impl WgpuBackend {
     /// Create a new wgpu backend
+    ///
+    /// This implementation is robust against initialization failures on specific backends
+    /// (like GL panicking on headless systems). It prioritizes modern backends (Vulkan, Metal, DX12, DX11)
+    /// and falls back to GL only if necessary.
     pub async fn new() -> Result<Self> {
-        Self::new_with_options(
-            wgpu::Backends::all(),
-            wgpu::PowerPreference::HighPerformance,
-        )
-        .await
+        // 1. Try all backends EXCEPT GL first.
+        // This includes Vulkan, Metal, DX12, and DX11.
+        // We explicitly exclude GL to avoid the "BadDisplay" panic on headless systems
+        // where wgpu tries to initialize EGL/GLX eagerly.
+        let safe_backends = wgpu::Backends::all() & !wgpu::Backends::GL;
+        let primary_result =
+            Self::new_with_options(safe_backends, wgpu::PowerPreference::HighPerformance).await;
+
+        if primary_result.is_ok() {
+            return primary_result;
+        }
+
+        info!("Primary backend initialization failed, attempting GL fallback...");
+
+        // 2. Fallback to GL if PRIMARY failed
+        // Note: This step might still panic on headless systems if GL is selected but unavailable,
+        // but it's a necessary fallback for older hardware.
+        Self::new_with_options(wgpu::Backends::GL, wgpu::PowerPreference::HighPerformance).await
     }
 
     /// Create a new wgpu backend with specific options
@@ -269,6 +286,19 @@ mod tests {
 
             if let Ok(backend) = backend {
                 println!("Backend: {:?}", backend.adapter_info);
+            }
+        });
+    }
+
+    #[test]
+    fn test_initialization_robustness() {
+        pollster::block_on(async {
+            // This test ensures that trying to create a backend doesn't panic,
+            // even if it fails.
+            let result = WgpuBackend::new().await;
+            match result {
+                Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
+                Err(e) => println!("Backend init failed gracefully: {}", e),
             }
         });
     }

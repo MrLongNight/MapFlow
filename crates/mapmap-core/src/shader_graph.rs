@@ -16,12 +16,19 @@ pub type GraphId = u64;
 /// Data type for shader graph connections
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DataType {
+    /// Single floating point value
     Float,
+    /// 2D vector
     Vec2,
+    /// 3D vector
     Vec3,
+    /// 4D vector
     Vec4,
+    /// RGB(A) color
     Color,
+    /// 2D Texture
     Texture,
+    /// Texture Sampler
     Sampler,
 }
 
@@ -43,16 +50,22 @@ impl DataType {
 /// Input socket on a shader graph node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InputSocket {
+    /// Name of the socket
     pub name: String,
+    /// Expected data type
     pub data_type: DataType,
-    pub default_value: Option<Vec4>, // For numeric inputs
-    pub connected_output: Option<(NodeId, String)>, // (source_node, output_name)
+    /// Default value if nothing is connected (for numeric inputs)
+    pub default_value: Option<Vec4>,
+    /// Connected output source: (node_id, output_socket_name)
+    pub connected_output: Option<(NodeId, String)>,
 }
 
 /// Output socket on a shader graph node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OutputSocket {
+    /// Name of the socket
     pub name: String,
+    /// Output data type
     pub data_type: DataType,
 }
 
@@ -60,54 +73,91 @@ pub struct OutputSocket {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NodeType {
     // Input nodes
+    /// Texture input node
     TextureInput,
+    /// Time input node (seconds)
     TimeInput,
+    /// UV Coordinate input
     UVInput,
+    /// Parameter input (float, vec, color)
     ParameterInput,
+    /// Audio analysis input
     AudioInput,
 
     // Math nodes
+    /// Addition
     Add,
+    /// Subtraction
     Subtract,
+    /// Multiplication
     Multiply,
+    /// Division
     Divide,
+    /// Power function
     Power,
+    /// Sine function
     Sin,
+    /// Cosine function
     Cos,
+    /// Clamp value to range
     Clamp,
+    /// Linear interpolation (Mix)
     Mix,
+    /// Smoothstep interpolation
     Smoothstep,
 
     // Color nodes
+    /// Color ramp / Gradient
     ColorRamp,
+    /// HSV to RGB conversion
     HSVToRGB,
+    /// RGB to HSV conversion
     RGBToHSV,
+    /// Desaturate color
     Desaturate,
+    /// Adjust brightness
     Brightness,
+    /// Adjust contrast
     Contrast,
 
     // Texture operations
+    /// Sample a texture
     TextureSample,
+    /// Sample a texture with LOD
     TextureSampleLod,
+    /// Combine multiple textures
     TextureCombine,
+    /// Transform UV coordinates
     UVTransform,
+    /// Distort UV coordinates
     UVDistort,
 
     // Effects
+    /// Gaussian Blur
     Blur,
+    /// Glow / Bloom effect
     Glow,
+    /// Chromatic Aberration
     ChromaticAberration,
+    /// Kaleidoscope effect
     Kaleidoscope,
+    /// Pixel Sort / Glitch
     PixelSort,
+    /// Edge Detection
     EdgeDetect,
+    /// Displacement Mapping
     Displacement,
 
     // Utility
+    /// Split vector/color into components
     Split,
+    /// Combine components into vector/color
     Combine,
+    /// Remap value range
     Remap,
 
     // Output
+    /// Final Output Node
     Output,
 }
 
@@ -206,21 +256,32 @@ impl NodeType {
 /// Parameter value for animatable properties
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ParameterValue {
+    /// Single float value
     Float(f32),
+    /// 2D Vector
     Vec2([f32; 2]),
+    /// 3D Vector
     Vec3([f32; 3]),
+    /// 4D Vector
     Vec4([f32; 4]),
+    /// Color value (RGBA)
     Color([f32; 4]),
 }
 
 /// Shader graph node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ShaderNode {
+    /// Unique Node ID
     pub id: NodeId,
+    /// Type of node
     pub node_type: NodeType,
-    pub position: (f32, f32), // For visual editor
+    /// Visual position in editor (x, y)
+    pub position: (f32, f32),
+    /// Input sockets
     pub inputs: Vec<InputSocket>,
+    /// Output sockets
     pub outputs: Vec<OutputSocket>,
+    /// Internal parameters (not exposed as sockets)
     pub parameters: HashMap<String, ParameterValue>,
 }
 
@@ -354,8 +415,11 @@ impl ShaderNode {
 /// Shader graph - collection of connected nodes
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ShaderGraph {
+    /// Unique Graph ID
     pub id: GraphId,
+    /// Graph Name
     pub name: String,
+    /// Collection of nodes mapped by ID
     pub nodes: HashMap<NodeId, ShaderNode>,
     next_node_id: NodeId,
 }

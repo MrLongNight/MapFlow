@@ -22,6 +22,7 @@ pub struct MeshVertex {
 }
 
 impl MeshVertex {
+    /// Create a new vertex with position and texture coordinates
     pub fn new(position: Vec2, tex_coords: Vec2) -> Self {
         Self {
             position,
@@ -47,7 +48,9 @@ pub enum MeshType {
 /// Mesh - defines geometry for mapping
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Mesh {
+    /// Type of the mesh (Quad, Triangle, etc.)
     pub mesh_type: MeshType,
+    /// List of vertices defining the mesh geometry
     pub vertices: Vec<MeshVertex>,
     /// Triangle indices (3 per triangle)
     pub indices: Vec<u16>,
@@ -458,8 +461,11 @@ pub mod keystone {
     /// Keystone correction presets
     #[derive(Debug, Clone, Copy)]
     pub enum KeystonePreset {
+        /// Squeeze horizontally (trapezoid)
         Horizontal,
+        /// Squeeze vertically (trapezoid)
         Vertical,
+        /// Rotate the content
         Rotate,
     }
 }

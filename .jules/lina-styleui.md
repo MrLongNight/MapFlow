@@ -7,3 +7,7 @@
 ## 2026-01-24 – Egui 0.27 Slider Constraints
 **Learning:** `egui::Slider` in v0.27 does not support a fluent `.width()` builder method. Layout sizing for sliders must be handled by the parent container (e.g., `ui.add_sized` or `ui.with_layout`) or by accepting default sizing behavior.
 **Action:** Avoid `.width()` on Sliders; rely on layout containers or `ui.add_sized` if precise width is critical.
+
+## 2026-02-07 – Shadow Rendering in Egui
+**Learning:** `egui::epaint::Shadow` does not implement `Shape` directly in some versions. Use `.tessellate(rect, rounding)` to generate the shape primitive for the painter.
+**Action:** Use `painter.add(shadow.tessellate(...))` for custom node shadows.

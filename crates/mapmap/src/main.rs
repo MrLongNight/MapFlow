@@ -34,7 +34,7 @@ use mapmap_render::{
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
 use tracing::{debug, error, info, warn};
@@ -106,7 +106,7 @@ struct App {
     /// Active media players for source nodes (PartID -> Player)
     media_players: HashMap<ModulePartId, VideoPlayer>,
     /// FPS calculation: accumulated frame times
-    fps_samples: Vec<f32>,
+    fps_samples: VecDeque<f32>,
     /// Current calculated FPS
     current_fps: f32,
     /// Current frame time in ms
@@ -517,7 +517,7 @@ impl App {
             dummy_view: None,
             module_evaluator: ModuleEvaluator::new(),
             media_players: HashMap::new(),
-            fps_samples: Vec::with_capacity(60),
+            fps_samples: VecDeque::with_capacity(60),
             current_fps: 60.0,
             current_frame_time_ms: 16.6,
             sys_info: sysinfo::System::new_all(),
@@ -1051,12 +1051,16 @@ impl App {
                         let result = self.module_evaluator.evaluate(module);
 
                         // 1. Handle Source Commands
-                        for (part_id, cmd) in result.source_commands {
+                        for (part_id, cmd) in &result.source_commands {
                             match cmd {
                                 mapmap_core::SourceCommand::PlayMedia {
                                     path,
                                     trigger_value,
                                 } => {
+                                    let path = path.clone();
+                                    let trigger_value = *trigger_value;
+                                    let part_id = *part_id;
+
                                     if path.is_empty() {
                                         continue;
                                     }
@@ -1109,6 +1113,7 @@ impl App {
                                     source_name: _source_name,
                                     trigger_value: _,
                                 } => {
+                                    let _part_id = *part_id;
                                     #[cfg(feature = "ndi")]
                                     {
                                         if let Some(src_name) = _source_name {
@@ -1141,7 +1146,7 @@ impl App {
                         }
 
                         // 2. Handle Render Ops (New System)
-                        self.render_ops = result.render_ops;
+                        self.render_ops = result.render_ops.clone();
 
                         // Log render ops status once per second
                         static mut LAST_RENDER_LOG: u64 = 0;
@@ -1166,6 +1171,8 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
+                                            mapmap_core::module::OutputType::Hue { .. } =>
+                                                "Hue".to_string(),
                                         }
                                     );
                                     if let Some(sid) = op.source_part_id {
@@ -1674,6 +1681,9 @@ impl App {
                 OutputType::Spout { .. } => {
                     // TODO: Spout Sender
                 }
+                OutputType::Hue { .. } => {
+                    // Hue integration handled via separate controller, no window needed
+                }
             }
         }
 
@@ -1800,9 +1810,9 @@ impl App {
 
         // Calculate FPS with smoothing (rolling average of last 60 frames)
         let frame_time_ms = delta_time * 1000.0;
-        self.fps_samples.push(frame_time_ms);
+        self.fps_samples.push_back(frame_time_ms);
         if self.fps_samples.len() > 60 {
-            self.fps_samples.remove(0);
+            self.fps_samples.pop_front();
         }
         if !self.fps_samples.is_empty() {
             let avg_frame_time: f32 =
@@ -1920,7 +1930,7 @@ impl App {
                             &preview_tex_name,
                             320,
                             180,
-                            wgpu::TextureFormat::Bgra8UnormSrgb,
+                            self.backend.surface_format(),
                             wgpu::TextureUsages::RENDER_ATTACHMENT
                                 | wgpu::TextureUsages::TEXTURE_BINDING,
                         );

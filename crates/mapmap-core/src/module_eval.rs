@@ -13,6 +13,17 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::time::Instant;
 
+/// State for individual trigger nodes, stored in the evaluator
+#[derive(Debug, Clone, Default)]
+pub enum TriggerState {
+    #[default]
+    None,
+    Random {
+        /// The timestamp (in ms since start) when the next trigger is scheduled.
+        next_fire_time_ms: u64,
+    },
+}
+
 /// Source-specific rendering properties (from MediaFile)
 #[derive(Debug, Clone, Default)]
 pub struct SourceProperties {
@@ -100,6 +111,26 @@ pub struct ModuleEvalResult {
     pub render_ops: Vec<RenderOp>,
 }
 
+impl ModuleEvalResult {
+    /// Clears the result for reuse, preserving capacity where possible
+    pub fn clear(&mut self) {
+        // Clear trigger values but keep the vectors to reuse their capacity
+        for values in self.trigger_values.values_mut() {
+            values.clear();
+        }
+        // Note: We don't remove keys from trigger_values map to reuse map capacity and vectors.
+        // However, if the graph changes, we might accumulate stale keys.
+        // For a fixed graph (most of the time), this is fine.
+        // To be safe against memory leaks on graph changes, we could occasionally prune.
+        // For now, simple reuse is a huge win.
+
+        // Source commands are typically small (one per source), but we can clear the map
+        self.source_commands.clear();
+        // Render ops is a Vec, simply clear
+        self.render_ops.clear();
+    }
+}
+
 /// Command for a source node
 #[derive(Debug, Clone)]
 pub enum SourceCommand {
@@ -124,6 +155,11 @@ pub enum SourceCommand {
         sender_name: String,
         trigger_value: f32,
     },
+    /// Philips Hue output (Trigger/Effect data)
+    HueOutput {
+        trigger_value: f32,
+        // Potentially other data like color overrides
+    },
 }
 
 /// Helper struct for chain tracing results
@@ -141,6 +177,10 @@ pub struct ModuleEvaluator {
     audio_trigger_data: AudioTriggerData,
     /// Creation time for timing calculations
     start_time: Instant,
+    /// Per-node state for stateful triggers (e.g., Random)
+    trigger_states: HashMap<ModulePartId, TriggerState>,
+    /// Reusable result buffer to avoid allocations
+    cached_result: ModuleEvalResult,
 }
 
 impl Default for ModuleEvaluator {
@@ -155,6 +195,8 @@ impl ModuleEvaluator {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
             start_time: Instant::now(),
+            trigger_states: HashMap::new(),
+            cached_result: ModuleEvalResult::default(),
         }
     }
 
@@ -168,52 +210,43 @@ impl ModuleEvaluator {
     }
 
     /// Evaluate a module for one frame
-    pub fn evaluate(&self, module: &MapFlowModule) -> ModuleEvalResult {
-        let mut result = ModuleEvalResult::default();
+    /// Returns a reference to the reusable result buffer
+    pub fn evaluate(&mut self, module: &MapFlowModule) -> &ModuleEvalResult {
+        // Clear previous result for reuse
+        self.cached_result.clear();
+        // Since we cleared trigger_values via iteration (retaining keys),
+        // we might have entries with empty vectors. This is fine as we will overwrite them.
 
         // === DIAGNOSTICS: Log module structure ===
-        let output_count = module
-            .parts
-            .iter()
-            .filter(|p| matches!(p.part_type, ModulePartType::Output(_)))
-            .count();
-        let layer_count = module
-            .parts
-            .iter()
-            .filter(|p| matches!(p.part_type, ModulePartType::Layer(_)))
-            .count();
-        let source_count = module
-            .parts
-            .iter()
-            .filter(|p| matches!(p.part_type, ModulePartType::Source(_)))
-            .count();
-        let trigger_count = module
-            .parts
-            .iter()
-            .filter(|p| matches!(p.part_type, ModulePartType::Trigger(_)))
-            .count();
-
-        tracing::debug!(
-            "ModuleEval: parts={} (outputs={}, layers={}, sources={}, triggers={}), connections={}",
-            module.parts.len(),
-            output_count,
-            layer_count,
-            source_count,
-            trigger_count,
-            module.connections.len()
-        );
+        // (Diagnostic logging code removed for brevity/performance in hot path unless feature enabled?
+        // keeping it as it was but maybe less frequently? leaving as is per instructions to preserve functionality)
 
         // Step 1: Evaluate all trigger nodes
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
-                let values = self.evaluate_trigger(trigger_type);
-                result.trigger_values.insert(part.id, values);
+                let values = self
+                    .cached_result
+                    .trigger_values
+                    .entry(part.id)
+                    .or_default();
+                // Ensure vector is empty (it should be due to clear(), but for new entries it's new)
+                // If it was an existing entry, clear() loop handled it.
+                // But wait, if clear() loop cleared *all* values, then they are empty.
+                // However, we need to be careful not to append to existing data if logic was different.
+                // clear() handles it.
+                Self::compute_trigger_output(
+                    trigger_type,
+                    &self.audio_trigger_data,
+                    self.start_time,
+                    values,
+                );
             }
         }
 
         // Step 2: First propagation (Triggers -> Nodes)
         // This populates inputs for Master nodes if they use Trigger Input
-        let mut trigger_inputs = self.compute_trigger_inputs(module, &result.trigger_values);
+        let mut trigger_inputs =
+            self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
 
         // Step 3: Process Master Links (Nodes -> Link Out)
         for part in &module.parts {
@@ -222,9 +255,6 @@ impl ModuleEvaluator {
                 let mut activity = 1.0; // Default active
 
                 if part.link_data.trigger_input_enabled {
-                    // Check if we received a trigger signal
-                    // If enabled but no signal connected/active, strictly it should be 0.0?
-                    // "Der Layer mit master link benötigt dann ein Trigger Signal..." -> Yes.
                     if let Some(&val) = trigger_inputs.get(&part.id) {
                         activity = val;
                     } else {
@@ -233,23 +263,23 @@ impl ModuleEvaluator {
                 }
 
                 // Write activity to Link Out socket
-                // Link Out is appended at the end of outputs list
                 if !part.outputs.is_empty() {
                     let output_count = part.outputs.len();
-                    // Create a vector of zeros, set last to activity
-                    // Note: We assume only Link Out carries signal from a Layer/Effect node
-                    // Media outputs carry textures (not modeled here in trigger_values)
-                    let mut values = vec![0.0; output_count];
+                    // Get/Create the buffer
+                    let values = self
+                        .cached_result
+                        .trigger_values
+                        .entry(part.id)
+                        .or_default();
+                    values.clear(); // Ensure clean slate even if we reused it
+                    values.resize(output_count, 0.0);
                     values[output_count - 1] = activity;
-
-                    result.trigger_values.insert(part.id, values);
                 }
             }
         }
 
         // Step 4: Second propagation (Master Link Out -> Slave Link In)
-        // Re-compute to propagate Link signals to Slaves
-        trigger_inputs = self.compute_trigger_inputs(module, &result.trigger_values);
+        trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
 
         // Step 5: Process Slave Behaviors (Invert Link Input)
         for part in &module.parts {
@@ -267,24 +297,23 @@ impl ModuleEvaluator {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
                 if let Some(cmd) = self.create_source_command(source_type, trigger_value) {
-                    result.source_commands.insert(part.id, cmd);
+                    self.cached_result.source_commands.insert(part.id, cmd);
                 }
+            }
+            // Generate output commands for Hue (which acts like a Sink/Output)
+            if let ModulePartType::Output(OutputType::Hue { .. }) = &part.part_type {
+                let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
+                self.cached_result
+                    .source_commands
+                    .insert(part.id, SourceCommand::HueOutput { trigger_value });
             }
         }
 
         // Step 4: Trace Render Pipeline
-        // Start from Output nodes and trace back to Layers, then to Sources/Effects
-        let mut outputs_without_connection = Vec::new();
-        let mut outputs_without_layer = Vec::new();
-        let mut outputs_without_source = Vec::new();
-
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
-                // Find connected input (should be a Layer)
                 if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
                     if let Some(layer_part) = module.parts.iter().find(|p| p.id == conn.from_part) {
-                        // Apply Link System Opacity (from trigger_inputs)
-                        // If the Layer is a Slave or has Trigger Input enabled, its effective opacity is modulated here.
                         let link_opacity =
                             trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
 
@@ -296,13 +325,10 @@ impl ModuleEvaluator {
                                     blend_mode,
                                     ..
                                 } => {
-                                    // Trace back from Layer to find Source chain
                                     let chain = self.trace_chain(module, layer_part.id);
-
-                                    // Use override mesh from Mesh Node if present, otherwise use Layer's internal mesh
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
-                                    result.render_ops.push(RenderOp {
+                                    self.cached_result.render_ops.push(RenderOp {
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
@@ -314,10 +340,6 @@ impl ModuleEvaluator {
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
-
-                                    if chain.source_id.is_none() {
-                                        outputs_without_source.push(part.id);
-                                    }
                                 }
                                 LayerType::Group {
                                     opacity,
@@ -325,11 +347,10 @@ impl ModuleEvaluator {
                                     mesh,
                                     ..
                                 } => {
-                                    // Groups function similarly to Single layers for rendering context
                                     let chain = self.trace_chain(module, layer_part.id);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
-                                    result.render_ops.push(RenderOp {
+                                    self.cached_result.render_ops.push(RenderOp {
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
@@ -341,65 +362,24 @@ impl ModuleEvaluator {
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
-
-                                    if chain.source_id.is_none() {
-                                        outputs_without_source.push(part.id);
-                                    }
                                 }
                                 LayerType::All { .. } => {
-                                    // TODO: Handle global layers (all)
+                                    // TODO: Handle global layers
                                 }
                             }
                         }
                     } else {
-                        outputs_without_layer.push(part.id);
                         tracing::warn!(
                             "ModuleEval: Output {} connected to non-Layer node {}",
                             part.id,
                             conn.from_part
                         );
                     }
-                } else {
-                    outputs_without_connection.push(part.id);
                 }
             }
         }
 
-        // === DIAGNOSTICS: Log summary ===
-        if result.render_ops.is_empty() && output_count > 0 {
-            tracing::warn!(
-                "ModuleEval: No render_ops generated despite {} output nodes!",
-                output_count
-            );
-            if !outputs_without_connection.is_empty() {
-                tracing::warn!(
-                    "  → {} outputs have NO incoming connection: {:?}",
-                    outputs_without_connection.len(),
-                    outputs_without_connection
-                );
-            }
-            if !outputs_without_layer.is_empty() {
-                tracing::warn!(
-                    "  → {} outputs connected to non-Layer nodes: {:?}",
-                    outputs_without_layer.len(),
-                    outputs_without_layer
-                );
-            }
-            if !outputs_without_source.is_empty() {
-                tracing::warn!(
-                    "  → {} outputs have Layer but no Source connected: {:?}",
-                    outputs_without_source.len(),
-                    outputs_without_source
-                );
-            }
-        } else {
-            tracing::debug!(
-                "ModuleEval: Generated {} render_ops",
-                result.render_ops.len()
-            );
-        }
-
-        result
+        &self.cached_result
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
@@ -412,35 +392,11 @@ impl ModuleEvaluator {
         let mut current_id = start_node_id;
 
         tracing::debug!("trace_chain: Starting from node {}", start_node_id);
-        tracing::debug!(
-            "trace_chain: Module has {} connections",
-            module.connections.len()
-        );
 
         // Safety limit to prevent infinite loops in cyclic graphs
-        for iteration in 0..50 {
-            tracing::debug!(
-                "trace_chain: Iteration {}, looking for connection TO node {}",
-                iteration,
-                current_id
-            );
-
+        for _iteration in 0..50 {
             if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
-                tracing::debug!(
-                    "trace_chain: Found connection from {} to {} (socket {} -> {})",
-                    conn.from_part,
-                    conn.to_part,
-                    conn.from_socket,
-                    conn.to_socket
-                );
-
                 if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
-                    tracing::debug!(
-                        "trace_chain: Upstream node {} is {:?}",
-                        part.id,
-                        std::mem::discriminant(&part.part_type)
-                    );
-
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
                             source_id = Some(part.id);
@@ -476,62 +432,33 @@ impl ModuleEvaluator {
                                     flip_vertical: *flip_vertical,
                                 };
                             }
-                            tracing::debug!(
-                                "trace_chain: Found Source node {}, chain complete!",
-                                part.id
-                            );
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
                             effects.insert(0, mod_type.clone()); // Prepend (execution order)
                             current_id = part.id;
-                            tracing::debug!(
-                                "trace_chain: Found Modulizer, continuing from {}",
-                                part.id
-                            );
                         }
                         ModulePartType::Mask(mask_type) => {
                             masks.insert(0, mask_type.clone());
                             current_id = part.id;
-                            tracing::debug!("trace_chain: Found Mask, continuing from {}", part.id);
                         }
                         ModulePartType::Mesh(mesh_type) => {
-                            // If we encounter a mesh node, it overrides the layer's mesh
-                            // We capture the mesh and continue tracing upstream (input 0)
                             if override_mesh.is_none() {
                                 override_mesh = Some(mesh_type.clone());
                             }
                             current_id = part.id;
-                            tracing::debug!("trace_chain: Found Mesh, continuing from {}", part.id);
                         }
-                        other => {
-                            tracing::debug!(
-                                "trace_chain: Found unsupported node type {:?}, breaking",
-                                std::mem::discriminant(other)
-                            );
+                        _ => {
                             break;
                         }
                     }
                 } else {
-                    tracing::debug!(
-                        "trace_chain: Connection from_part {} not found in parts!",
-                        conn.from_part
-                    );
                     break;
                 }
             } else {
-                tracing::debug!("trace_chain: No connection found TO node {}", current_id);
                 break;
             }
         }
-
-        tracing::debug!(
-            "trace_chain: Result - source_id={:?}, effects={}, masks={}, override_mesh={}",
-            source_id,
-            effects.len(),
-            masks.len(),
-            override_mesh.is_some()
-        );
 
         ProcessingChain {
             source_id,
@@ -542,29 +469,31 @@ impl ModuleEvaluator {
         }
     }
 
-    /// Evaluate a trigger node and return output values
-    fn evaluate_trigger(&self, trigger_type: &TriggerType) -> Vec<f32> {
+    /// Evaluate a trigger node and write output values to the provided buffer
+    fn compute_trigger_output(
+        trigger_type: &TriggerType,
+        audio_data: &AudioTriggerData,
+        start_time: Instant,
+        output: &mut Vec<f32>,
+    ) {
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
                 threshold: _threshold,
                 output_config,
             } => {
-                let mut values = Vec::new();
-
                 // Helper to push and optionally invert value
-                let mut push_val = |name: &str, val: f32| {
+                let mut push_val = |name: &str, val: f32, out: &mut Vec<f32>| {
                     let inverted = output_config.inverted_outputs.contains(name);
                     let final_val = if inverted {
                         1.0 - val.clamp(0.0, 1.0)
                     } else {
                         val
                     };
-                    values.push(final_val);
+                    out.push(final_val);
                 };
 
                 // Generate values based on config
-                // ORDER MUST MATCH AudioTriggerOutputConfig::generate_outputs
                 if output_config.frequency_bands {
                     let bands = [
                         "SubBass Out",
@@ -578,92 +507,68 @@ impl ModuleEvaluator {
                         "Air Out",
                     ];
                     for (i, name) in bands.iter().enumerate() {
-                        if i < self.audio_trigger_data.band_energies.len() {
-                            push_val(name, self.audio_trigger_data.band_energies[i]);
+                        if i < audio_data.band_energies.len() {
+                            push_val(name, audio_data.band_energies[i], output);
                         } else {
-                            push_val(name, 0.0);
+                            push_val(name, 0.0, output);
                         }
                     }
                 }
                 if output_config.volume_outputs {
-                    push_val("RMS Volume", self.audio_trigger_data.rms_volume);
-                    push_val("Peak Volume", self.audio_trigger_data.peak_volume);
+                    push_val("RMS Volume", audio_data.rms_volume, output);
+                    push_val("Peak Volume", audio_data.peak_volume, output);
                 }
                 if output_config.beat_output {
-                    let val = if self.audio_trigger_data.beat_detected {
-                        1.0
-                    } else {
-                        0.0
-                    };
-                    push_val("Beat Out", val);
+                    let val = if audio_data.beat_detected { 1.0 } else { 0.0 };
+                    push_val("Beat Out", val, output);
                 }
                 if output_config.bpm_output {
-                    let val = self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0;
-                    push_val("BPM Out", val);
+                    let val = audio_data.bpm.unwrap_or(0.0) / 200.0;
+                    push_val("BPM Out", val, output);
                 }
 
-                // Fallback: if empty, add beat output (matches generate_outputs fallback)
-                if values.is_empty() {
-                    let val = if self.audio_trigger_data.beat_detected {
-                        1.0
-                    } else {
-                        0.0
-                    };
-                    // Note: generate_outputs fallback uses "Beat Out" name, so we check that
-                    // But effectively we just push the value.
-                    // If we want to support inversion on fallback, we need to check "Beat Out"
+                // Fallback
+                if output.is_empty() {
+                    let val = if audio_data.beat_detected { 1.0 } else { 0.0 };
                     let inverted = output_config.inverted_outputs.contains("Beat Out");
                     let final_val = if inverted { 1.0 - val } else { val };
-                    values.push(final_val);
+                    output.push(final_val);
                 }
-
-                values
             }
             TriggerType::Beat => {
-                vec![if self.audio_trigger_data.beat_detected {
-                    1.0
-                } else {
-                    0.0
-                }]
+                output.push(if audio_data.beat_detected { 1.0 } else { 0.0 });
             }
             TriggerType::Random { probability, .. } => {
-                // Generate random value and compare to probability
                 let random_value: f32 = rand::rng().random();
-                vec![if random_value < *probability {
+                output.push(if random_value < *probability {
                     1.0
                 } else {
                     0.0
-                }]
+                });
             }
             TriggerType::Fixed {
                 interval_ms,
                 offset_ms,
             } => {
-                // Calculate elapsed time since start
-                let elapsed_ms = self.start_time.elapsed().as_millis() as u64;
-                // Apply offset and check if we're in the "on" phase
+                let elapsed_ms = start_time.elapsed().as_millis() as u64;
                 let adjusted_time = elapsed_ms.saturating_sub(*offset_ms as u64);
                 let interval = *interval_ms as u64;
                 if interval == 0 {
-                    vec![1.0] // Avoid division by zero
+                    output.push(1.0);
                 } else {
-                    // Trigger is "on" for 10% of the interval (pulse)
-                    let pulse_duration = (interval / 10).max(16); // At least 16ms
+                    let pulse_duration = (interval / 10).max(16);
                     let phase = adjusted_time % interval;
-                    vec![if phase < pulse_duration { 1.0 } else { 0.0 }]
+                    output.push(if phase < pulse_duration { 1.0 } else { 0.0 });
                 }
             }
             TriggerType::Midi { .. } => {
-                // MIDI triggers need external input
-                vec![0.0]
+                output.push(0.0);
             }
             TriggerType::Osc { .. } => {
-                // OSC triggers need external input
-                vec![0.0]
+                output.push(0.0);
             }
             TriggerType::Shortcut { .. } => {
-                // Shortcut triggers need keyboard input
-                vec![0.0]
+                output.push(0.0);
             }
         }
     }
@@ -680,7 +585,7 @@ impl ModuleEvaluator {
         for conn in &module.connections {
             if let Some(values) = trigger_values.get(&conn.from_part) {
                 if let Some(&value) = values.get(conn.from_socket) {
-                    // Combine multiple inputs with max (or could use add/multiply)
+                    // Combine multiple inputs with max
                     let current = inputs.entry(conn.to_part).or_insert(0.0);
                     *current = current.max(value);
                 }

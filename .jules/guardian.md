@@ -1,8 +1,10 @@
-## 2026-01-20 - [Transform/Mesh Coordinate Mismatch]
+# Guardian's Journal 🧪
 
-**Erkenntnis:** Eine Diskrepanz zwischen der Mesh-Definition (0..1 Top-Left origin) und der `Transform::to_matrix` Logik (die ein zentriertes Mesh annahm) führte dazu, dass Rotationen um den Ankerpunkt (default 0.5) fälschlicherweise um die Ecke (0,0) stattfanden.
-Die Transform-Logik wurde korrigiert, um den Pivot basierend auf dem Anker relativ zur Top-Left-Ecke (0,0) zu berechnen: `pivot = size * anchor`.
+## 2026-01-14 - Untested Core Logic
+**Erkenntnis:** `crates/mapmap-core/src/module_eval.rs` enthält die Kernlogik für Evaluation (Triggers, Signal Propagation, Render Ops), hat aber **KEINE** Unit-Tests. Das ist ein kritisches Risiko, da es die gesamte Show-Ausführung steuert.
+**Aktion:** Umfassende Tests für `ModuleEvaluator` implementieren, die Trigger-Evaluation, Signal-Propagation und Chain-Tracing abdecken.
 
+<<<<<<< HEAD
 **Aktion:** Bei zukünftigen Implementierungen von Rendering-Logik immer das Koordinatensystem (Normalized vs Pixel, Centered vs Top-Left) explizit validieren. Neue Tests sollten Transformationen mit nicht-trivialen Ankern prüfen.
 
 ## 2026-01-24 - [AppState Serialization Guard]
@@ -16,3 +18,8 @@ Die Transform-Logik wurde korrigiert, um den Pivot basierend auf dem Anker relat
 **Erkenntnis:** In `AudioTriggerOutputConfig::generate_outputs` gab es eine implizite Fallback-Logik (wenn alle Outputs deaktiviert sind, wird "Beat Out" erzwungen), die bisher nur durch Default-Tests abgedeckt war. Ein expliziter Test `test_audio_trigger_output_config_fallback_enforcement` stellt sicher, dass dieses Sicherheitsnetz auch bei bewusster Fehlkonfiguration greift.
 
 **Aktion:** Bei Konfigurationsobjekten mit `generate_...` Methoden immer gezielt den "Leeren" Zustand testen, um implizite Fallbacks zu verifizieren.
+=======
+## 2026-01-14 - GPU Testing Strategy
+**Erkenntnis:** GPU-abhängige Tests in `mapmap-render` sind in der CI instabil (flaky).
+**Aktion:** GPU-Tests immer mit `#[ignore]` markieren und bei Bedarf manuell ausführen. Mocking für Logik verwenden, die keinen strikten GPU-Kontext benötigt.
+>>>>>>> 6a1b46cd0e04349658dccce881be081e36de5325
