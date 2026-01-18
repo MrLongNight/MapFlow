@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-16 - Undokumentierter UI-Change (PR #277)
+**Erkenntnis:** PR #277 (Layer Panel Visuals) wurde ohne Changelog-Eintrag gemerged. Dies bestätigt das Muster von fehlenden Dokumentationen bei UI-Polishing-Tasks.
+**Aktion:** Eintrag wurde nachträglich hinzugefügt. Zukünftige UI-PRs müssen explizit auf Changelog-Einträge geprüft werden, auch wenn sie "nur" Styling betreffen.
+
 ## 2026-01-16 - Systematische Changelog-Lücke (PR #248-#270)
 **Erkenntnis:** Trotz des Updates am 15.01. (#252) fehlten fast alle umgebenden PRs (#248-#251, #253-#270) im CHANGELOG. Das deutet auf manuelle Merges ohne Changelog-Pflege hin.
 **Aktion:** Tracker hat 19 fehlende Einträge rekonstruiert und ROADMAP.md synchronisiert.

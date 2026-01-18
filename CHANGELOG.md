@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-16: style(ui): Enhance Layer Panel visuals and consistency (#277)
 - 2026-01-16: fix(ci): Fix Windows release workflow by adding dynamic FFmpeg integration (#270)
 - 2026-01-16: fix(render): Fix headless crash in wgpu backend on CI (#269)
 - 2026-01-16: perf(core): Optimize ModuleEvaluator allocations (Bolt) (#268)
