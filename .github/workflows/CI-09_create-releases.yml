@@ -58,11 +58,9 @@ jobs:
         run: .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
         shell: pwsh
 
-      - name: Set VCPKG_ROOT env
-        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
-        shell: pwsh
-
       - name: Build Release (Windows)
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
         run: cargo build --release -p mapmap
         shell: pwsh
 
@@ -125,11 +123,9 @@ jobs:
         run: .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
         shell: pwsh
 
-      - name: Set VCPKG_ROOT env
-        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
-        shell: pwsh
-
       - name: Build Release (Windows)
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
         run: cargo build --release -p mapmap
         shell: pwsh
 
