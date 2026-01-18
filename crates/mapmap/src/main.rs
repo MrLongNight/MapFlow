@@ -2518,6 +2518,10 @@ impl App {
                                         })
                                         .collect();
                                     self.ui_state.preview_panel.update_outputs(output_infos);
+                                    // Ensure continuous repaint for live preview
+                                    if self.ui_state.show_preview_panel {
+                                        ctx.request_repaint();
+                                    }
                                     self.ui_state.preview_panel.show(ui);
                                 }
                             });

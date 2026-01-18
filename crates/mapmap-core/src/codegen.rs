@@ -12,21 +12,27 @@ use std::fmt::Write;
 /// WGSL code generator error
 #[derive(Debug, thiserror::Error)]
 pub enum CodegenError {
+    /// Shader graph validation failed
     #[error("Graph validation failed: {0}")]
     ValidationError(String),
 
+    /// Graph contains no output node
     #[error("No output node found in graph")]
     NoOutputNode,
 
+    /// Referenced node was not found in the graph
     #[error("Node {0} not found")]
     NodeNotFound(NodeId),
 
+    /// Graph contains a cyclic dependency
     #[error("Cyclic dependency detected")]
     CyclicDependency,
 
+    /// Invalid connection between incompatible types
     #[error("Type mismatch: cannot connect {0} to {1}")]
     TypeMismatch(String, String),
 
+    /// General code generation error
     #[error("Code generation failed: {0}")]
     GenerationError(String),
 }

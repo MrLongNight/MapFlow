@@ -4,14 +4,19 @@ use thiserror::Error;
 /// Errors that can occur in the audio backend
 #[derive(Debug, Error)]
 pub enum AudioError {
+    /// No audio input devices were found on the system
     #[error("No audio devices found: {0}")]
     NoDevicesFound(String),
+    /// The default audio input device could not be determined
     #[error("Default device not found")]
     DefaultDeviceNotFound,
+    /// The audio device supports no compatible format
     #[error("Unsupported stream format")]
     UnsupportedFormat,
+    /// Failed to build the audio input stream
     #[error("Failed to build audio stream: {0}")]
     StreamBuildError(String),
+    /// Operation timed out
     #[error("Device initialization timed out")]
     Timeout,
 }
@@ -249,6 +254,7 @@ pub mod cpal_backend {
             }
         }
 
+        /// List all available audio input devices
         pub fn list_devices() -> Result<Option<Vec<String>>, AudioError> {
             let host = cpal::default_host();
 
@@ -314,6 +320,7 @@ pub mod cpal_backend {
 pub mod mock_backend {
     use super::{AudioBackend, AudioError};
 
+    /// Mock backend that generates a sine wave
     pub struct MockBackend {
         phase: f32,
         sample_rate: f32,
@@ -329,6 +336,7 @@ pub mod mock_backend {
     }
 
     impl MockBackend {
+        /// Create a new mock backend
         pub fn new() -> Self {
             Self::default()
         }
