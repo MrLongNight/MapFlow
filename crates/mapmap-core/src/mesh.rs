@@ -22,6 +22,7 @@ pub struct MeshVertex {
 }
 
 impl MeshVertex {
+    /// Create a new vertex with position and texture coordinates
     pub fn new(position: Vec2, tex_coords: Vec2) -> Self {
         Self {
             position,
@@ -460,8 +461,11 @@ pub mod keystone {
     /// Keystone correction presets
     #[derive(Debug, Clone, Copy)]
     pub enum KeystonePreset {
+        /// Squeeze horizontally (trapezoid)
         Horizontal,
+        /// Squeeze vertically (trapezoid)
         Vertical,
+        /// Rotate the content
         Rotate,
     }
 }
