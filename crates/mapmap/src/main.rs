@@ -993,54 +993,54 @@ impl App {
 
                 // Update all active media players and upload frames to texture pool
                 // This ensures previews work even without triggers connected
-                let player_ids: Vec<u64> = self.media_players.keys().cloned().collect();
-                if !player_ids.is_empty() {
-                    debug!("Updating {} active media players", player_ids.len());
-                }
-                for part_id in player_ids {
-                    if let Some(player) = self.media_players.get_mut(&part_id) {
-                        debug!(
-                            "Updating player for part_id={}, state={:?}",
-                            part_id,
-                            player.state()
-                        );
-                        if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                            debug!(
-                                "Got frame for part_id={}, size={}x{}",
-                                part_id, frame.format.width, frame.format.height
-                            );
-                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                                let tex_name = format!("part_{}", part_id);
-                                debug!(
-                                    "Uploading texture '{}' with {} bytes",
-                                    tex_name,
-                                    data.len()
-                                );
-                                self.texture_pool.upload_data(
-                                    &self.backend.queue,
-                                    &tex_name,
-                                    data,
-                                    frame.format.width,
-                                    frame.format.height,
-                                );
-                            } else {
-                                debug!("Frame data is GPU-based, not CPU");
-                            }
-                        }
 
-                        // Sync player info to UI for timeline display
-                        self.ui_state.module_canvas.player_info.insert(
-                            part_id,
-                            mapmap_ui::MediaPlayerInfo {
-                                current_time: player.current_time().as_secs_f64(),
-                                duration: player.duration().as_secs_f64(),
-                                is_playing: matches!(
-                                    player.state(),
-                                    mapmap_media::PlaybackState::Playing
-                                ),
-                            },
+                // OPTIMIZATION: Use disjoint field borrowing to avoid allocating a Vec<u64> of IDs every frame
+                if !self.media_players.is_empty() {
+                    debug!("Updating {} active media players", self.media_players.len());
+                }
+
+                let texture_pool = &mut self.texture_pool;
+                let queue = &self.backend.queue;
+                let ui_state = &mut self.ui_state;
+
+                for (part_id, player) in &mut self.media_players {
+                    debug!(
+                        "Updating player for part_id={}, state={:?}",
+                        part_id,
+                        player.state()
+                    );
+                    if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
+                        debug!(
+                            "Got frame for part_id={}, size={}x{}",
+                            part_id, frame.format.width, frame.format.height
                         );
+                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
+                            let tex_name = format!("part_{}", part_id);
+                            debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
+                            texture_pool.upload_data(
+                                queue,
+                                &tex_name,
+                                data,
+                                frame.format.width,
+                                frame.format.height,
+                            );
+                        } else {
+                            debug!("Frame data is GPU-based, not CPU");
+                        }
                     }
+
+                    // Sync player info to UI for timeline display
+                    ui_state.module_canvas.player_info.insert(
+                        *part_id,
+                        mapmap_ui::MediaPlayerInfo {
+                            current_time: player.current_time().as_secs_f64(),
+                            duration: player.duration().as_secs_f64(),
+                            is_playing: matches!(
+                                player.state(),
+                                mapmap_media::PlaybackState::Playing
+                            ),
+                        },
+                    );
                 }
 
                 if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
@@ -1168,6 +1168,8 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
+                                            mapmap_core::module::OutputType::Hue { .. } =>
+                                                "Hue".to_string(),
                                         }
                                     );
                                     if let Some(sid) = op.source_part_id {
@@ -1675,6 +1677,9 @@ impl App {
                 #[cfg(target_os = "windows")]
                 OutputType::Spout { .. } => {
                     // TODO: Spout Sender
+                }
+                OutputType::Hue { .. } => {
+                    // Handled by Hue Renderer, not window manager
                 }
             }
         }
