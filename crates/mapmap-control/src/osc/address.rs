@@ -4,6 +4,11 @@
 
 use crate::{error::ControlError, ControlTarget, Result};
 
+/// Maximum length of an OSC address string
+const MAX_OSC_ADDRESS_LENGTH: usize = 1024;
+/// Maximum length of a parameter name (e.g. paint/effect parameter)
+const MAX_NAME_LENGTH: usize = 256;
+
 /// Parse an OSC address to a control target
 ///
 /// Supported address patterns:
@@ -18,6 +23,13 @@ use crate::{error::ControlError, ControlTarget, Result};
 /// - `/mapmap/playback/position` - Playback position
 /// - `/mapmap/output/{id}/brightness` - Output brightness
 pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
+    if address.len() > MAX_OSC_ADDRESS_LENGTH {
+        return Err(ControlError::InvalidMessage(format!(
+            "OSC address too long (max {} chars)",
+            MAX_OSC_ADDRESS_LENGTH
+        )));
+    }
+
     let parts: Vec<&str> = address.trim_start_matches('/').split('/').collect();
 
     if parts.is_empty() || parts[0] != "mapmap" {
@@ -108,9 +120,17 @@ fn parse_paint_address(parts: &[&str]) -> Result<ControlTarget> {
         ));
     }
 
+    let name = parts[2];
+    if name.len() > MAX_NAME_LENGTH {
+        return Err(ControlError::InvalidMessage(format!(
+            "Parameter name too long (max {} chars)",
+            MAX_NAME_LENGTH
+        )));
+    }
+
     Ok(ControlTarget::PaintParameter(
         paint_id,
-        parts[2].to_string(),
+        name.to_string(),
     ))
 }
 
@@ -131,9 +151,17 @@ fn parse_effect_address(parts: &[&str]) -> Result<ControlTarget> {
         ));
     }
 
+    let name = parts[2];
+    if name.len() > MAX_NAME_LENGTH {
+        return Err(ControlError::InvalidMessage(format!(
+            "Parameter name too long (max {} chars)",
+            MAX_NAME_LENGTH
+        )));
+    }
+
     Ok(ControlTarget::EffectParameter(
         effect_id,
-        parts[2].to_string(),
+        name.to_string(),
     ))
 }
 
@@ -371,5 +399,21 @@ mod tests {
     fn test_invalid_master_address() {
         assert!(parse_osc_address("/mapmap/master").is_err());
         assert!(parse_osc_address("/mapmap/master/unknown").is_err());
+    }
+
+    #[test]
+    fn test_parse_huge_address() {
+        // Construct a valid address with a very long parameter name
+        let huge_name = "a".repeat(10000);
+        let address = format!("/mapmap/paint/0/parameter/{}", huge_name);
+
+        // This should now fail due to length limits
+        let result = parse_osc_address(&address);
+        assert!(result.is_err());
+
+        // Also verify the total address limit
+        let huge_address = format!("/mapmap/{}", "a".repeat(2000));
+        let result_total = parse_osc_address(&huge_address);
+        assert!(result_total.is_err());
     }
 }
