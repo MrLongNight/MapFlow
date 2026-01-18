@@ -17,7 +17,9 @@ use std::time::Instant;
 #[derive(Debug, Clone, Default)]
 pub enum TriggerState {
     #[default]
+    /// No state
     None,
+    /// Random trigger state
     Random {
         /// The timestamp (in ms since start) when the next trigger is scheduled.
         next_fire_time_ms: u64,
@@ -184,7 +186,7 @@ mod tests {
         let s_id = module.add_part(PartType::Source, (200.0, 0.0));
         module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
-        let result = evaluator.evaluate(&module);
+        let _result = evaluator.evaluate(&module);
 
         // Should produce a SourceCommand because trigger > 0.1
         // (Source defaults to "MediaFile" with empty path, create_source_command checks empty path)
@@ -386,28 +388,46 @@ impl ModuleEvalResult {
 #[derive(Debug, Clone)]
 pub enum SourceCommand {
     /// Load and play a media file
-    PlayMedia { path: String, trigger_value: f32 },
+    PlayMedia {
+        /// Path to media file
+        path: String,
+        /// Trigger value (opacity/intensity)
+        trigger_value: f32,
+    },
     /// Play a shader with parameters
     PlayShader {
+        /// Shader name/ID
         name: String,
+        /// Shader parameters
         params: Vec<(String, f32)>,
+        /// Trigger value
         trigger_value: f32,
     },
     /// NDI input source
     NdiInput {
+        /// NDI source name
         source_name: Option<String>,
+        /// Trigger value
         trigger_value: f32,
     },
     /// Live camera input
-    LiveInput { device_id: u32, trigger_value: f32 },
+    LiveInput {
+        /// Device ID
+        device_id: u32,
+        /// Trigger value
+        trigger_value: f32,
+    },
     #[cfg(target_os = "windows")]
     /// Spout input (Windows only)
     SpoutInput {
+        /// Sender name
         sender_name: String,
+        /// Trigger value
         trigger_value: f32,
     },
     /// Philips Hue output (Trigger/Effect data)
     HueOutput {
+        /// Trigger value
         trigger_value: f32,
         // Potentially other data like color overrides
     },
@@ -427,8 +447,10 @@ pub struct ModuleEvaluator {
     /// Current trigger data from audio analysis
     audio_trigger_data: AudioTriggerData,
     /// Creation time for timing calculations
+    /// Creation time for timing calculations
     start_time: Instant,
     /// Per-node state for stateful triggers (e.g., Random)
+    #[allow(dead_code)]
     trigger_states: HashMap<ModulePartId, TriggerState>,
     /// Reusable result buffer to avoid allocations
     cached_result: ModuleEvalResult,
@@ -443,6 +465,7 @@ impl Default for ModuleEvaluator {
 impl ModuleEvaluator {
     /// Create a new module evaluator
     pub fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
             start_time: Instant::now(),
@@ -451,6 +474,7 @@ impl ModuleEvaluator {
         }
     }
 
+    /// Update audio trigger data from analysis
     pub fn update_audio(&mut self, analysis: &AudioAnalysisV2) {
         self.audio_trigger_data.band_energies = analysis.band_energies;
         self.audio_trigger_data.rms_volume = analysis.rms_volume;
@@ -734,7 +758,7 @@ impl ModuleEvaluator {
                 output_config,
             } => {
                 // Helper to push and optionally invert value
-                let mut push_val = |name: &str, val: f32, out: &mut Vec<f32>| {
+                let push_val = |name: &str, val: f32, out: &mut Vec<f32>| {
                     let inverted = output_config.inverted_outputs.contains(name);
                     let final_val = if inverted {
                         1.0 - val.clamp(0.0, 1.0)
