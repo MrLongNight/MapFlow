@@ -1463,6 +1463,14 @@ impl App {
                         );
                     }
                 }
+                mapmap_ui::UIAction::ConnectHue => {
+                    info!("Connecting to Philips Hue Bridge...");
+                    if let Err(e) = pollster::block_on(self.hue_controller.connect()) {
+                        error!("Failed to connect to Hue Bridge: {}", e);
+                    } else {
+                        info!("Successfully connected to Hue Bridge");
+                    }
+                }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
                 _ => {}
             }
