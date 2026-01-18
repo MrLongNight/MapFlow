@@ -1004,6 +1004,7 @@ impl MeshType {
         hasher.finish()
     }
 
+    /// Convert to runtime mesh
     pub fn to_mesh(&self) -> crate::mesh::Mesh {
         use crate::mesh::Mesh;
         use glam::Vec2;

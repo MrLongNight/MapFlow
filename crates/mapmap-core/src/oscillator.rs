@@ -17,6 +17,7 @@ pub enum SimulationResolution {
 }
 
 impl SimulationResolution {
+    /// Get the dimensions of the simulation grid
     pub fn dimensions(&self) -> (u32, u32) {
         match self {
             SimulationResolution::Low => (128, 128),
@@ -55,6 +56,7 @@ pub enum ColorMode {
 }
 
 impl ColorMode {
+    /// Convert to u32 representation
     pub fn to_u32(&self) -> u32 {
         match self {
             ColorMode::Off => 0,
