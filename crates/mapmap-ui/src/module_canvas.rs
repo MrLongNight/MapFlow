@@ -52,8 +52,6 @@ struct SocketInfo {
 pub struct ModuleCanvas {
     /// The ID of the currently active/edited module
     pub active_module_id: Option<u64>,
-    /// Whether the canvas is locked (Live Mode) - prevents structural changes
-    pub locked: bool,
     /// Canvas pan offset
     pan_offset: Vec2,
     /// Canvas zoom level
@@ -199,7 +197,6 @@ impl Default for ModuleCanvas {
     fn default() -> Self {
         Self {
             active_module_id: None,
-            locked: false,
             pan_offset: Vec2::ZERO,
             zoom: 1.0,
             dragging_part: None,
@@ -811,12 +808,7 @@ impl ModuleCanvas {
                                                                          *end_time = 0.0; // Reset end to full duration
                                                                      }
                                                                  }
-
-                                                                 let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                                 let mut safe_start = *start_time;
-                                                                 if ui.add(egui::Slider::new(&mut safe_start, 0.0..=video_duration).text("Start").suffix("s")).changed() {
-                                                                     *start_time = safe_start.min(effective_end - 0.1).max(0.0);
-                                                                 }
+                                                                 ui.add(egui::Slider::new(start_time, 0.0..=video_duration).text("Start").suffix("s"));
                                                             });
 
                                                             // End Control
@@ -828,17 +820,7 @@ impl ModuleCanvas {
                                                                          *start_time = (*end_time - 1.0).max(0.0);
                                                                      }
                                                                  }
-
-                                                                 // Show effective end time instead of raw 0.0
-                                                                 let mut safe_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                                 if ui.add(egui::Slider::new(&mut safe_end, 0.0..=video_duration).text("End").suffix("s")).changed() {
-                                                                     // Snap to end (0.0) if close to duration
-                                                                     if (video_duration - safe_end).abs() < 0.1 {
-                                                                         *end_time = 0.0;
-                                                                     } else {
-                                                                         *end_time = safe_end.max(*start_time + 0.1);
-                                                                     }
-                                                                 }
+                                                                 ui.add(egui::Slider::new(end_time, 0.0..=video_duration).text("End").suffix("s"));
                                                             });
                                                         });
                                                     });
@@ -1625,7 +1607,7 @@ impl ModuleCanvas {
                                             OutputType::Hue {
                                                 bridge_ip,
                                                 username,
-                                                client_key,
+                                                client_key: _client_key,
                                                 entertainment_area,
                                                 lamp_positions,
                                                 mapping_mode,
@@ -1675,6 +1657,7 @@ impl ModuleCanvas {
                                                         });
                                                         #[cfg(not(feature = "tokio"))]
                                                         {
+                                                            let _ = tx;
                                                             self.hue_status_message = Some("Async runtime not available".to_string());
                                                         }
                                                     }
@@ -2756,23 +2739,6 @@ impl ModuleCanvas {
                         }
                     }
 
-                    ui.separator();
-
-                    // Live Mode Toggle
-                    let lock_icon = if self.locked { "🔒" } else { "🔓" };
-                    let lock_tooltip = if self.locked {
-                        "Unlock Canvas (Enable Editing)"
-                    } else {
-                        "Lock Canvas (Live Mode - Safe)"
-                    };
-                    if ui
-                        .selectable_label(self.locked, lock_icon)
-                        .on_hover_text(lock_tooltip)
-                        .clicked()
-                    {
-                        self.locked = !self.locked;
-                    }
-
                     // --- RIGHT: View Controls ---
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // Fit
@@ -2894,11 +2860,7 @@ impl ModuleCanvas {
         }
 
         // Ctrl+V: Paste from clipboard
-        if ctrl_held
-            && ui.input(|i| i.key_pressed(egui::Key::V))
-            && !self.clipboard.is_empty()
-            && !self.locked
-        {
+        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::V)) && !self.clipboard.is_empty() {
             let paste_offset = (50.0, 50.0); // Offset from original position
             self.selected_parts.clear();
 
@@ -2919,10 +2881,7 @@ impl ModuleCanvas {
         }
 
         // Delete: Delete selected parts
-        if ui.input(|i| i.key_pressed(egui::Key::Delete))
-            && !self.selected_parts.is_empty()
-            && !self.locked
-        {
+        if ui.input(|i| i.key_pressed(egui::Key::Delete)) && !self.selected_parts.is_empty() {
             for &part_id in &self.selected_parts {
                 module
                     .connections
@@ -3106,11 +3065,7 @@ impl ModuleCanvas {
 
         // Start connection on mouse down over socket
         if let Some(pos) = pointer_pos {
-            if primary_down
-                && self.creating_connection.is_none()
-                && self.dragging_part.is_none()
-                && !self.locked
-            {
+            if primary_down && self.creating_connection.is_none() && self.dragging_part.is_none() {
                 for socket in &all_sockets {
                     if socket.position.distance(pos) < socket_radius {
                         // Start creating a connection
@@ -3293,12 +3248,8 @@ impl ModuleCanvas {
         let mut delete_part_id: Option<ModulePartId> = None;
 
         for (part_id, rect) in &part_rects {
-            let sense = if self.locked {
-                Sense::click()
-            } else {
-                Sense::click_and_drag()
-            };
-            let part_response = ui.interact(*rect, egui::Id::new(*part_id), sense);
+            let part_response =
+                ui.interact(*rect, egui::Id::new(*part_id), Sense::click_and_drag());
 
             // Handle double-click to open property editor popup
             if part_response.double_clicked() {
@@ -3386,19 +3337,17 @@ impl ModuleCanvas {
             }
 
             // Check for delete button click (× in top-right corner of title bar)
-            if !self.locked {
-                let delete_button_rect = Rect::from_min_size(
-                    Pos2::new(rect.max.x - 20.0 * self.zoom, rect.min.y),
-                    Vec2::splat(20.0 * self.zoom),
-                );
-                let delete_response = ui.interact(
-                    delete_button_rect,
-                    egui::Id::new((*part_id, "delete")),
-                    Sense::click(),
-                );
-                if delete_response.clicked() {
-                    delete_part_id = Some(*part_id);
-                }
+            let delete_button_rect = Rect::from_min_size(
+                Pos2::new(rect.max.x - 20.0 * self.zoom, rect.min.y),
+                Vec2::splat(20.0 * self.zoom),
+            );
+            let delete_response = ui.interact(
+                delete_button_rect,
+                egui::Id::new((*part_id, "delete")),
+                Sense::click(),
+            );
+            if delete_response.clicked() {
+                delete_part_id = Some(*part_id);
             }
         }
 
@@ -3585,16 +3534,14 @@ impl ModuleCanvas {
                         self.context_menu_part = None;
                         self.context_menu_pos = None;
                     }
-                    if !self.locked {
-                        if ui.button("🗑 Delete").clicked() {
-                            // Remove connections and part
-                            module
-                                .connections
-                                .retain(|c| c.from_part != part_id && c.to_part != part_id);
-                            module.parts.retain(|p| p.id != part_id);
-                            self.context_menu_part = None;
-                            self.context_menu_pos = None;
-                        }
+                    if ui.button("🗑 Delete").clicked() {
+                        // Remove connections and part
+                        module
+                            .connections
+                            .retain(|c| c.from_part != part_id && c.to_part != part_id);
+                        module.parts.retain(|p| p.id != part_id);
+                        self.context_menu_part = None;
+                        self.context_menu_pos = None;
                     }
                 });
             });
@@ -3854,7 +3801,7 @@ impl ModuleCanvas {
 
         // Handle lamp dragging
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
-        let is_dragging = ui.input(|i| i.pointer.primary_down());
+        let _is_dragging = ui.input(|i| i.pointer.primary_down());
 
         let mut dragged_lamp = None;
 
@@ -4952,7 +4899,7 @@ impl ModuleCanvas {
 
     fn draw_part_with_delete(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
         // Get part color and name based on type
-        let (bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
+        let (_bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
         let category = Self::get_part_category(&part.part_type);
 
         // Check if this is an audio trigger and if it's active
@@ -4987,19 +4934,24 @@ impl ModuleCanvas {
         };
         painter.add(shadow.tessellate(rect, egui::Rounding::same(6.0 * self.zoom)));
 
-        // Draw background (slightly transparent/glassy)
-        painter.rect_filled(rect, 6.0 * self.zoom, bg_color.linear_multiply(0.95));
+        // Draw background (Dark Neutral for high contrast)
+        // We use a very dark grey/black to make the content pop
+        let neutral_bg = Color32::from_rgb(20, 20, 25);
+        painter.rect_filled(rect, 6.0 * self.zoom, neutral_bg);
 
-        // Node border
+        // Node border - colored by type for quick identification
+        // This replaces the generic gray border
         painter.rect_stroke(
             rect,
             6.0 * self.zoom,
-            Stroke::new(1.0, Color32::from_rgb(60, 60, 70)),
+            Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
         );
 
         // Title bar
         let title_height = 28.0 * self.zoom;
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), title_height));
+
+        // Title bar with subtle gradient or solid color
         painter.rect_filled(
             title_rect,
             egui::Rounding {
@@ -5011,13 +4963,13 @@ impl ModuleCanvas {
             title_color,
         );
 
-        // Title separator line
+        // Title separator line - make it sharper
         painter.line_segment(
             [
                 Pos2::new(rect.min.x, rect.min.y + title_height),
                 Pos2::new(rect.max.x, rect.min.y + title_height),
             ],
-            Stroke::new(1.0, Color32::from_black_alpha(50)),
+            Stroke::new(1.0, Color32::from_black_alpha(80)),
         );
 
         // Title text with icon and category
@@ -5034,19 +4986,17 @@ impl ModuleCanvas {
         );
 
         // Delete button (× in top-right corner)
-        if !self.locked {
-            let delete_button_pos = Pos2::new(
-                rect.max.x - 12.0 * self.zoom,
-                rect.min.y + title_height * 0.5,
-            );
-            painter.text(
-                delete_button_pos,
-                egui::Align2::CENTER_CENTER,
-                "×",
-                egui::FontId::proportional(16.0 * self.zoom),
-                Color32::from_rgba_unmultiplied(255, 100, 100, 200),
-            );
-        }
+        let delete_button_pos = Pos2::new(
+            rect.max.x - 12.0 * self.zoom,
+            rect.min.y + title_height * 0.5,
+        );
+        painter.text(
+            delete_button_pos,
+            egui::Align2::CENTER_CENTER,
+            "×",
+            egui::FontId::proportional(16.0 * self.zoom),
+            Color32::from_rgba_unmultiplied(255, 100, 100, 200),
+        );
 
         // Draw property display based on part type
         let property_text = Self::get_part_property_text(&part.part_type);

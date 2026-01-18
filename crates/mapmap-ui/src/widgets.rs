@@ -9,21 +9,8 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
 
     let painter = ui.painter();
-    // Use widget active color for the stripe (Theme aware)
-    let stripe_color = ui.visuals().widgets.active.bg_fill;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(stripe_rect, 0.0, stripe_color);
-
-    // Optional: Add a subtle background to the header for better separation
-    painter.rect_filled(
-        rect,
-        0.0,
-        ui.visuals()
-            .widgets
-            .noninteractive
-            .bg_fill
-            .linear_multiply(0.5),
-    );
+    painter.rect_filled(stripe_rect, 0.0, Color32::from_rgb(157, 78, 221));
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -91,7 +78,7 @@ pub fn styled_slider(
     ui.painter().rect(
         fill_rect,
         visuals.rounding,
-        ui.visuals().selection.bg_fill, // Theme-aware selection color
+        Color32::from_rgb(157, 78, 221),
         Stroke::new(0.0, Color32::TRANSPARENT),
     );
 
@@ -138,7 +125,7 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
 
     painter.add(egui::epaint::Shape::line(
         points,
-        Stroke::new(2.0, ui.visuals().selection.bg_fill), // Theme-aware knob arc
+        Stroke::new(2.0, Color32::from_rgb(157, 78, 221)),
     ));
 
     response
@@ -151,7 +138,7 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
 
     let visuals = ui.style().interact(&response);
     let bg_fill = if active {
-        ui.visuals().widgets.active.bg_fill // Theme-aware active color
+        Color32::from_rgb(157, 78, 221)
     } else {
         visuals.bg_fill
     };
@@ -180,7 +167,7 @@ pub fn param_button(ui: &mut Ui) -> Response {
 
     let visuals = ui.style().interact(&response);
     let bg_fill = if response.hovered() {
-        ui.visuals().warn_fg_color // Theme-aware warn/active
+        Color32::from_rgb(233, 69, 96)
     } else {
         visuals.bg_fill
     };
@@ -209,7 +196,7 @@ pub fn delete_button(ui: &mut Ui) -> Response {
 
     let visuals = ui.style().interact(&response);
     let bg_fill = if response.hovered() {
-        ui.visuals().error_fg_color // Theme-aware error
+        Color32::from_rgb(255, 107, 107)
     } else {
         visuals.bg_fill
     };
