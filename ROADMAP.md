@@ -1,12 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-<<<<<<< HEAD
-> **Version:** 1.9
-> **Stand:** 2026-01-18 10:00
-=======
-> **Version:** 1.9.1
-> **Stand:** 2026-01-09 09:42
->>>>>>> pr-217-branch
+> **Version:** 1.9.2
+> **Stand:** 2026-01-19 12:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -786,7 +781,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ Toolchain-Updates (stable verwendet, dtolnay/rust-toolchain@stable)
   - ✅ Windows-Build-Fixes (vcpkg-Pfade, git-ownership)
   - ✅ Audio-Feature in CI aktiviert
-  - ⬜ FFmpeg in CI-Builds aktivieren fehlt
+  - ✅ FFmpeg in CI-Builds aktivieren (via vcpkg)
   - ✅ Windows-CI-Builds (COMPLETED 2025-12-21, non-blocking)
   - ⬜ macOS-CI-Builds fehlen (optional)
 
@@ -810,12 +805,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Audio-reaktive DMX-Werte generieren
   - ⬜ UI: DMX-Channel-Mapper in Module Canvas
 
-- ⬜ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
-  - ⬜ `hueclient` für Bridge-Discovery und API-Zugriff
-  - ⬜ `udp-dtls` für Entertainment-Streaming
-  - ⬜ Audio-reaktive Farb-Synchronisation
-  - ⬜ Latenz-Ziel: <100ms
-  - ⬜ UI: Hue-Lampen-Auswahl und Zonen-Mapping
+- ✅ **Philips Hue Entertainment Integration** (`mapmap-control/src/hue/`)
+  - ✅ `hueclient` für Bridge-Discovery und API-Zugriff
+  - ✅ `udp-dtls` für Entertainment-Streaming
+  - ✅ Audio-reaktive Farb-Synchronisation
+  - ✅ Latenz-Ziel: <100ms
+  - ✅ UI: Hue-Lampen-Auswahl und Zonen-Mapping
 
 ### 🔬 Evaluierte Libraries für Core-Funktionen
 
