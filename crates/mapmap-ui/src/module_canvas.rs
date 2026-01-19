@@ -414,7 +414,7 @@ impl ModuleCanvas {
 
             egui::Window::new(format!("{} {} Properties", icon, type_name))
                 .open(&mut is_open)
-                .default_pos(ctx.screen_rect().center())
+                .default_pos(ctx.content_rect().center())
                 .resizable(true)
                 .vscroll(true)
                 .show(ctx, |ui| {
@@ -543,7 +543,7 @@ impl ModuleCanvas {
                                                             if ports.is_empty() {
                                                                 ui.label("No MIDI devices");
                                                             } else {
-                                                                egui::ComboBox::from_id_source(
+                                                                egui::ComboBox::from_id_salt(
                                                                     "midi_device",
                                                                 )
                                                                 .selected_text(
@@ -1091,7 +1091,7 @@ impl ModuleCanvas {
                                                     // Blend Mode selector
                                                     ui.horizontal(|ui| {
                                                         ui.label("Blend Mode:");
-                                                        egui::ComboBox::from_id_source("blend_mode_selector")
+                                                        egui::ComboBox::from_id_salt("blend_mode_selector")
                                                             .selected_text(match blend_mode {
                                                                 Some(BlendModeType::Normal) => "Normal",
                                                                 Some(BlendModeType::Add) => "Add",
@@ -1252,7 +1252,7 @@ impl ModuleCanvas {
                                                     ui.separator();
                                                     ui.label("Available Sources:");
 
-                                                    egui::ComboBox::from_id_source("ndi_source_select")
+                                                    egui::ComboBox::from_id_salt("ndi_source_select")
                                                         .selected_text(display_name.clone())
                                                         .show_ui(ui, |ui| {
                                                             // Option to disconnect
@@ -1319,7 +1319,7 @@ impl ModuleCanvas {
                                             }
                                             MaskType::Shape(shape) => {
                                                 ui.label("🔷 Shape Mask");
-                                                egui::ComboBox::from_id_source("mask_shape")
+                                                egui::ComboBox::from_id_salt("mask_shape")
                                                     .selected_text(format!("{:?}", shape))
                                                     .show_ui(ui, |ui| {
                                                         if ui
@@ -1395,7 +1395,7 @@ impl ModuleCanvas {
                                                 ui.label("✨ Effect");
                                                 let mut changed_type = None;
 
-                                                egui::ComboBox::from_id_source(format!("{}_effect", part_id))
+                                                egui::ComboBox::from_id_salt(format!("{}_effect", part_id))
                                                     .selected_text(format!("{:?}", effect))
                                                     .show_ui(ui, |ui| {
                                                         ui.label("--- Basic ---");
@@ -1503,7 +1503,7 @@ impl ModuleCanvas {
                                             }
                                             ModulizerType::BlendMode(blend) => {
                                                 ui.label("🎨 Blend Mode");
-                                                egui::ComboBox::from_id_source("blend_mode")
+                                                egui::ComboBox::from_id_salt("blend_mode")
                                                     .selected_text(format!("{:?}", blend))
                                                     .show_ui(ui, |ui| {
                                                         if ui.selectable_label(matches!(blend, BlendModeType::Normal), "Normal").clicked() { *blend = BlendModeType::Normal; }
@@ -1523,7 +1523,7 @@ impl ModuleCanvas {
                                                 ui.label("🔊 Audio Reactive");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Source:");
-                                                    egui::ComboBox::from_id_source("audio_source")
+                                                    egui::ComboBox::from_id_salt("audio_source")
                                                         .selected_text(source.as_str())
                                                         .show_ui(ui, |ui| {
                                                             if ui.selectable_label(source == "SubBass", "SubBass").clicked() { *source = "SubBass".to_string(); }
@@ -1559,7 +1559,7 @@ impl ModuleCanvas {
                                                 ui.label(egui::RichText::new("🕸️ Mesh/Geometry").strong());
                                                 ui.separator();
 
-                                            egui::ComboBox::from_id_source(format!("mesh_type_{}", id_salt))
+                                            egui::ComboBox::from_id_salt(format!("mesh_type_{}", id_salt))
                                                 .selected_text(match mesh {
                                                     MeshType::Quad { .. } => "Quad",
                                                     MeshType::Grid { .. } => "Grid",
@@ -1587,8 +1587,8 @@ impl ModuleCanvas {
                                                     let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
                                                         ui.horizontal(|ui| {
                                                             ui.label(name);
-                                                            ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).clamp_range(0.0..=1.0).prefix("X: "));
-                                                            ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).clamp_range(0.0..=1.0).prefix("Y: "));
+                                                            ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).range(0.0..=1.0).prefix("X: "));
+                                                            ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).range(0.0..=1.0).prefix("Y: "));
                                                         });
                                                     };
                                                     coord_ui("Top Left:", tl);
@@ -1653,7 +1653,7 @@ impl ModuleCanvas {
 
                                                 // Blend mode
                                                 let blend_text = blend_mode.as_ref().map(|b| format!("{:?}", b)).unwrap_or_else(|| "None".to_string());
-                                                egui::ComboBox::from_id_source("layer_blend").selected_text(blend_text).show_ui(ui, |ui| {
+                                                egui::ComboBox::from_id_salt("layer_blend").selected_text(blend_text).show_ui(ui, |ui| {
                                                     if ui.selectable_label(blend_mode.is_none(), "None").clicked() { *blend_mode = None; }
                                                     if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Normal)), "Normal").clicked() { *blend_mode = Some(BlendModeType::Normal); }
                                                     if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Add)), "Add").clicked() { *blend_mode = Some(BlendModeType::Add); }
@@ -1681,7 +1681,7 @@ impl ModuleCanvas {
                                         // Duplicated mesh editor logic (refactor later)
                                         ui.label("Mesh Configuration:");
 
-                                        egui::ComboBox::from_id_source(format!("mesh_type_{}", part_id))
+                                        egui::ComboBox::from_id_salt(format!("mesh_type_{}", part_id))
                                             .selected_text(match mesh {
                                                 MeshType::Quad { .. } => "Quad",
                                                 MeshType::Grid { .. } => "Grid",
@@ -1708,8 +1708,8 @@ impl ModuleCanvas {
                                                 let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
                                                     ui.horizontal(|ui| {
                                                         ui.label(name);
-                                                        ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).clamp_range(0.0..=1.0).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).clamp_range(0.0..=1.0).prefix("Y: "));
+                                                        ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).range(0.0..=1.0).prefix("X: "));
+                                                        ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).range(0.0..=1.0).prefix("Y: "));
                                                     });
                                                 };
                                                 coord_ui("Top Left:", tl);
@@ -1781,7 +1781,7 @@ impl ModuleCanvas {
                                                 // Output ID selection
                                                 ui.horizontal(|ui| {
                                                     ui.label("Output #:");
-                                                    ui.add(egui::DragValue::new(id).clamp_range(1..=8));
+                                                    ui.add(egui::DragValue::new(id).range(1..=8));
                                                 });
 
                                                 ui.horizontal(|ui| {
@@ -1795,7 +1795,7 @@ impl ModuleCanvas {
                                                 // Target screen selection
                                                 ui.horizontal(|ui| {
                                                     ui.label("Target Screen:");
-                                                    egui::ComboBox::from_id_source("target_screen_select")
+                                                    egui::ComboBox::from_id_salt("target_screen_select")
                                                         .selected_text(format!("Monitor {}", target_screen))
                                                         .show_ui(ui, |ui| {
                                                             for i in 0..=3u8 {
@@ -1967,7 +1967,7 @@ impl ModuleCanvas {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Effect:");
                                                     let current_effect = effect.as_deref().unwrap_or("None");
-                                                    egui::ComboBox::from_id_source("hue_effect_popup")
+                                                    egui::ComboBox::from_id_salt("hue_effect_popup")
                                                         .selected_text(current_effect)
                                                         .show_ui(ui, |ui| {
                                                             if ui.selectable_label(effect.is_none(), "None").clicked() {
@@ -2045,7 +2045,7 @@ impl ModuleCanvas {
 
                                             ui.horizontal(|ui| {
                                                 ui.label("Link Mode:");
-                                                egui::ComboBox::from_id_source(format!("link_mode_{}", part_id))
+                                                egui::ComboBox::from_id_salt(format!("link_mode_{}", part_id))
                                                     .selected_text(format!("{:?}", link_data.mode))
                                                     .show_ui(ui, |ui| {
                                                         if ui.selectable_label(link_data.mode == LinkMode::Off, "Off").clicked() {
@@ -2066,7 +2066,7 @@ impl ModuleCanvas {
                                             if link_data.mode == LinkMode::Slave {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Behavior:");
-                                                    egui::ComboBox::from_id_source(format!("link_behavior_{}", part_id))
+                                                    egui::ComboBox::from_id_salt(format!("link_behavior_{}", part_id))
                                                         .selected_text(format!("{:?}", link_data.behavior))
                                                         .show_ui(ui, |ui| {
                                                             if ui.selectable_label(link_data.behavior == LinkBehavior::SameAsMaster, "Same as Master").clicked() {
@@ -2422,7 +2422,7 @@ impl ModuleCanvas {
         }
 
         // === CANVAS TOOLBAR ===
-        egui::Frame::none()
+        egui::Frame::NONE
             .inner_margin(egui::Margin::symmetric(8, 6))
             .fill(ui.visuals().panel_fill)
             .show(ui, |ui| {
@@ -2451,7 +2451,7 @@ impl ModuleCanvas {
                             .map(|m| m.name.clone())
                             .unwrap_or_else(|| "— Select Module —".to_string());
 
-                        egui::ComboBox::from_id_source("module_selector")
+                        egui::ComboBox::from_id_salt("module_selector")
                             .selected_text(current_name)
                             .width(160.0)
                             .show_ui(ui, |ui| {
@@ -2546,7 +2546,7 @@ impl ModuleCanvas {
 
                     ui.add_enabled_ui(has_module, |ui| {
                         // === UNIFIED "ADD NODE" MENU with Search ===
-                        egui::menu::menu_button(ui, "➕ Add Node", |ui| {
+                        ui.menu_button("➕ Add Node", |ui| {
                             ui.set_min_width(240.0);
 
                             // Search bar at top
@@ -2583,14 +2583,14 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "beat".contains(&filter))
                                         && ui.button("🥁 Beat Detection").clicked()
                                     {
                                         self.add_trigger_node(manager, TriggerType::Beat);
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if show_all {
                                         ui.separator();
@@ -2608,7 +2608,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "osc".contains(&filter))
                                         && ui.button("📡 OSC").clicked()
@@ -2620,7 +2620,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "keyboard shortcut".contains(&filter))
                                         && ui.button("⌨️ Shortcut").clicked()
@@ -2633,7 +2633,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if show_all {
                                         ui.separator();
@@ -2651,7 +2651,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "timer fixed".contains(&filter))
                                         && ui.button("⏱️ Fixed Timer").clicked()
@@ -2664,7 +2664,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                 });
                             }
@@ -2684,7 +2684,7 @@ impl ModuleCanvas {
                                             SourceType::new_media_file(String::new()),
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "shader".contains(&filter))
                                         && ui.button("🎨 Shader").clicked()
@@ -2697,7 +2697,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "live input camera".contains(&filter))
                                         && ui.button("📷 Live Input").clicked()
@@ -2707,7 +2707,7 @@ impl ModuleCanvas {
                                             SourceType::LiveInput { device_id: 0 },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     #[cfg(feature = "ndi")]
                                     if (show_all || "ndi".contains(&filter))
@@ -2718,7 +2718,7 @@ impl ModuleCanvas {
                                             SourceType::NdiInput { source_name: None },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                 });
                             }
@@ -2738,7 +2738,7 @@ impl ModuleCanvas {
                                             MaskType::Shape(MaskShape::Rectangle),
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "circle".contains(&filter))
                                         && ui.button("⭕ Circle").clicked()
@@ -2748,7 +2748,7 @@ impl ModuleCanvas {
                                             MaskType::Shape(MaskShape::Circle),
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "triangle".contains(&filter))
                                         && ui.button("🔺 Triangle").clicked()
@@ -2758,7 +2758,7 @@ impl ModuleCanvas {
                                             MaskType::Shape(MaskShape::Triangle),
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "star".contains(&filter))
                                         && ui.button("⭐ Star").clicked()
@@ -2768,7 +2768,7 @@ impl ModuleCanvas {
                                             MaskType::Shape(MaskShape::Star),
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "ellipse".contains(&filter))
                                         && ui.button("⬭ Ellipse").clicked()
@@ -2778,7 +2778,7 @@ impl ModuleCanvas {
                                             MaskType::Shape(MaskShape::Ellipse),
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     ui.separator();
                                     if (show_all || "file".contains(&filter))
@@ -2789,7 +2789,7 @@ impl ModuleCanvas {
                                             MaskType::File { path: String::new() },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "gradient".contains(&filter))
                                         && ui.button("🌈 Gradient").clicked()
@@ -2802,7 +2802,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                 });
                             }
@@ -2828,7 +2828,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "sharpen".contains(&filter))
                                         && ui.button("Sharpen").clicked()
@@ -2841,7 +2841,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "invert".contains(&filter))
                                         && ui.button("Invert").clicked()
@@ -2854,7 +2854,7 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if show_all {
                                         ui.separator();
@@ -2871,56 +2871,56 @@ impl ModuleCanvas {
                                             },
                                         );
                                         self.search_filter.clear();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                     if (show_all || "contrast".contains(&filter))
                                         && ui.button("Contrast").clicked()
                                     {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Contrast, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "saturation".contains(&filter)) && ui.button("Saturation").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Saturation, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "hue".contains(&filter)) && ui.button("Hue Shift").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::HueShift, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if show_all { ui.separator(); ui.label(egui::RichText::new("Distort").weak()); }
                             if (show_all || "kaleidoscope".contains(&filter)) && ui.button("Kaleidoscope").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Kaleidoscope, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "mirror".contains(&filter)) && ui.button("Mirror").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Mirror, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "wave".contains(&filter)) && ui.button("Wave").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Wave, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if show_all { ui.separator(); ui.label(egui::RichText::new("Stylize").weak()); }
                             if (show_all || "glitch".contains(&filter)) && ui.button("Glitch").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Glitch, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "vhs".contains(&filter)) && ui.button("VHS").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::VHS, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "pixelate".contains(&filter)) && ui.button("Pixelate").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::Effect { effect_type: ModuleEffectType::Pixelate, params: std::collections::HashMap::new() });
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
 
                             // === HUE SUBMENU ===
@@ -2937,7 +2937,7 @@ impl ModuleCanvas {
                                              effect_active: false,
                                          });
                                          self.search_filter.clear();
-                                         ui.close_menu();
+                                         ui.close();
                                      }
                                      if (show_all || "multi lamp".contains(&filter)) && ui.button("💡💡 Multi Lamp").clicked() {
                                          self.add_hue_node(manager, HueNodeType::MultiLamp {
@@ -2949,7 +2949,7 @@ impl ModuleCanvas {
                                              effect_active: false,
                                          });
                                          self.search_filter.clear();
-                                         ui.close_menu();
+                                         ui.close();
                                      }
                                      if (show_all || "entertainment group".contains(&filter)) && ui.button("🎭 Entertainment Group").clicked() {
                                          self.add_hue_node(manager, HueNodeType::EntertainmentGroup {
@@ -2960,7 +2960,7 @@ impl ModuleCanvas {
                                              effect_active: false,
                                          });
                                          self.search_filter.clear();
-                                         ui.close_menu();
+                                         ui.close();
                                      }
                                 });
                             }
@@ -2974,22 +2974,22 @@ impl ModuleCanvas {
                             if (show_all || "add".contains(&filter)) && ui.button("Add").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Add));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "multiply".contains(&filter)) && ui.button("Multiply").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Multiply));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "screen".contains(&filter)) && ui.button("Screen").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Screen));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "overlay".contains(&filter)) && ui.button("Overlay").clicked() {
                                 self.add_modulator_node(manager, ModulizerType::BlendMode(BlendModeType::Overlay));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                         });
                     }
@@ -3010,7 +3010,7 @@ impl ModuleCanvas {
                                     }));
                                 }
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "group".contains(&filter)) && ui.button("📂 Layer Group").clicked() {
                                 self.add_module_node(manager, ModulePartType::Layer(LayerType::Group {
@@ -3020,12 +3020,12 @@ impl ModuleCanvas {
                                     mesh: MeshType::Quad { tl: (0.0, 0.0), tr: (1.0, 0.0), br: (1.0, 1.0), bl: (0.0, 1.0) }
                                 }));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                             if (show_all || "all master".contains(&filter)) && ui.button("🎚️ All Layers").clicked() {
                                 self.add_module_node(manager, ModulePartType::Layer(LayerType::All { opacity: 1.0, blend_mode: None }));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                         });
                     }
@@ -3048,7 +3048,7 @@ impl ModuleCanvas {
                                     }));
                                 }
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             };
 
                             if show_all { ui.label(egui::RichText::new("Basic").weak()); }
@@ -3102,7 +3102,7 @@ impl ModuleCanvas {
                                     output_fps: 60.0,
                                 }));
                                 self.search_filter.clear();
-                                ui.close_menu();
+                                ui.close();
                             }
                         });
                     }
@@ -3113,7 +3113,7 @@ impl ModuleCanvas {
                         if ui.button("🔊 Audio Reactive").clicked() {
                             self.add_module_node(manager, ModulePartType::Modulizer(ModulizerType::AudioReactive { source: "Bass".to_string() }));
                             self.search_filter.clear();
-                            ui.close_menu();
+                            ui.close();
                         }
                     }
                     #[cfg(feature = "ndi")]
@@ -3121,7 +3121,7 @@ impl ModuleCanvas {
                         self.add_module_node(manager, ModulePartType::Output(OutputType::NdiOutput {
                             name: "MapFlow".to_string(),
                         }));
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
             });
@@ -3956,7 +3956,7 @@ impl ModuleCanvas {
 
             // Menu items
             let inner_rect = menu_rect.shrink(4.0);
-            ui.allocate_ui_at_rect(inner_rect, |ui| {
+            ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
                 ui.vertical(|ui| {
                     if ui.button("⚙ Open Properties").clicked() {
                         self.editing_part_id = Some(part_id);
@@ -4013,7 +4013,7 @@ impl ModuleCanvas {
 
         // Popup content
         let inner_rect = popup_rect.shrink(10.0);
-        ui.allocate_ui_at_rect(inner_rect, |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("🔍");
@@ -4094,7 +4094,7 @@ impl ModuleCanvas {
 
         // Popup content
         let inner_rect = popup_rect.shrink(12.0);
-        ui.allocate_ui_at_rect(inner_rect, |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
                 ui.heading("📋 Presets / Templates");
                 ui.add_space(8.0);
@@ -4505,7 +4505,7 @@ impl ModuleCanvas {
                     TriggerType::Osc { .. } => "OSC",
                     TriggerType::Shortcut { .. } => "Shortcut",
                 };
-                egui::ComboBox::from_id_source("trigger_type")
+                egui::ComboBox::from_id_salt("trigger_type")
                     .selected_text(current)
                     .show_ui(ui, |ui| {
                         if ui
@@ -4568,7 +4568,7 @@ impl ModuleCanvas {
                     #[cfg(target_os = "windows")]
                     SourceType::SpoutInput { .. } => "Spout Input",
                 };
-                egui::ComboBox::from_id_source("source_type")
+                egui::ComboBox::from_id_salt("source_type")
                     .selected_text(current)
                     .show_ui(ui, |ui| {
                         if ui
@@ -4658,11 +4658,7 @@ impl ModuleCanvas {
                         if let Some(w) = target_width {
                             let mut val = *w as i32;
                             if ui
-                                .add(
-                                    egui::DragValue::new(&mut val)
-                                        .clamp_range(1..=7680)
-                                        .speed(10),
-                                )
+                                .add(egui::DragValue::new(&mut val).range(1..=7680).speed(10))
                                 .changed()
                             {
                                 *w = val.max(1) as u32;
@@ -4681,11 +4677,7 @@ impl ModuleCanvas {
                         if let Some(h) = target_height {
                             let mut val = *h as i32;
                             if ui
-                                .add(
-                                    egui::DragValue::new(&mut val)
-                                        .clamp_range(1..=4320)
-                                        .speed(10),
-                                )
+                                .add(egui::DragValue::new(&mut val).range(1..=4320).speed(10))
                                 .changed()
                             {
                                 *h = val.max(1) as u32;
@@ -4734,7 +4726,7 @@ impl ModuleCanvas {
                     MaskType::Shape(_) => "Shape",
                     MaskType::Gradient { .. } => "Gradient",
                 };
-                egui::ComboBox::from_id_source("mask_type")
+                egui::ComboBox::from_id_salt("mask_type")
                     .selected_text(current)
                     .show_ui(ui, |ui| {
                         if ui
@@ -4783,7 +4775,7 @@ impl ModuleCanvas {
                 if let MaskType::Shape(shape) = mask_type {
                     ui.add_space(4.0);
                     ui.label("Shape:");
-                    egui::ComboBox::from_id_source("shape_type")
+                    egui::ComboBox::from_id_salt("shape_type")
                         .selected_text(format!("{:?}", shape))
                         .show_ui(ui, |ui| {
                             if ui
@@ -4829,7 +4821,7 @@ impl ModuleCanvas {
                     ModulizerType::BlendMode(_) => "Blend Mode",
                     ModulizerType::AudioReactive { .. } => "Audio Reactive",
                 };
-                egui::ComboBox::from_id_source("modulator_type")
+                egui::ComboBox::from_id_salt("modulator_type")
                     .selected_text(current)
                     .show_ui(ui, |ui| {
                         if ui
@@ -4863,7 +4855,7 @@ impl ModuleCanvas {
                 {
                     ui.add_space(4.0);
                     ui.label("Effect:");
-                    egui::ComboBox::from_id_source("effect_type")
+                    egui::ComboBox::from_id_salt("effect_type")
                         .selected_text(effect.name())
                         .show_ui(ui, |ui| {
                             for e in EffectType::all() {
@@ -4878,7 +4870,7 @@ impl ModuleCanvas {
                 if let ModulizerType::BlendMode(blend) = modulizer_type {
                     ui.add_space(4.0);
                     ui.label("Blend Mode:");
-                    egui::ComboBox::from_id_source("blend_type")
+                    egui::ComboBox::from_id_salt("blend_type")
                         .selected_text(blend.name())
                         .show_ui(ui, |ui| {
                             for b in BlendModeType::all() {
@@ -4898,7 +4890,7 @@ impl ModuleCanvas {
                 };
 
                 // Type Selector
-                egui::ComboBox::from_id_source("layer_type")
+                egui::ComboBox::from_id_salt("layer_type")
                     .selected_text(current_type_name)
                     .show_ui(ui, |ui| {
                         if ui
@@ -4983,7 +4975,7 @@ impl ModuleCanvas {
 
                 ui.label("Blend Mode:");
                 let current_blend = blend_mode.map(|b| b.name()).unwrap_or("Keep Original");
-                egui::ComboBox::from_id_source("layer_blend")
+                egui::ComboBox::from_id_salt("layer_blend")
                     .selected_text(current_blend)
                     .show_ui(ui, |ui| {
                         if ui
@@ -5029,7 +5021,7 @@ impl ModuleCanvas {
                     OutputType::Spout { .. } => "Spout Output",
                     OutputType::Hue { .. } => "Philips Hue",
                 };
-                egui::ComboBox::from_id_source("output_type")
+                egui::ComboBox::from_id_salt("output_type")
                     .selected_text(current)
                     .show_ui(ui, |ui| {
                         if ui
@@ -5126,7 +5118,7 @@ impl ModuleCanvas {
                         if ui
                             .add(
                                 egui::DragValue::new(&mut width_val)
-                                    .clamp_range(0..=7680)
+                                    .range(0..=7680)
                                     .speed(10),
                             )
                             .changed()
@@ -5138,7 +5130,7 @@ impl ModuleCanvas {
                         if ui
                             .add(
                                 egui::DragValue::new(&mut height_val)
-                                    .clamp_range(0..=4320)
+                                    .range(0..=4320)
                                     .speed(10),
                             )
                             .changed()
@@ -5179,7 +5171,7 @@ impl ModuleCanvas {
                     ui.label("Target Screen:");
                     let mut screen_val = *target_screen as i32;
                     if ui
-                        .add(egui::DragValue::new(&mut screen_val).clamp_range(0..=8))
+                        .add(egui::DragValue::new(&mut screen_val).range(0..=8))
                         .changed()
                     {
                         *target_screen = screen_val.max(0) as u8;
@@ -5229,7 +5221,7 @@ impl ModuleCanvas {
                             ui.horizontal(|ui| {
                                 ui.label("Effect:");
                                 let current_effect = effect.as_deref().unwrap_or("None");
-                                egui::ComboBox::from_id_source("hue_effect")
+                                egui::ComboBox::from_id_salt("hue_effect")
                                     .selected_text(current_effect)
                                     .show_ui(ui, |ui| {
                                         if ui.selectable_label(effect.is_none(), "None").clicked() {
@@ -5487,7 +5479,7 @@ impl ModuleCanvas {
                 (150.0 * glow_intensity) as u8,
             );
             // Enhanced glow using shadow-like smoothing
-            let shadow = Shadow {
+            let _shadow = Shadow {
                 offset: [0, 0],
                 blur: (20.0 * self.zoom).min(255.0) as u8,
                 spread: (5.0 * self.zoom).min(255.0) as u8,
@@ -5498,7 +5490,7 @@ impl ModuleCanvas {
         }
 
         // Draw shadow behind node
-        let shadow = Shadow {
+        let _shadow = Shadow {
             offset: [(2.0 * self.zoom) as i8, (4.0 * self.zoom) as i8],
             blur: (12.0 * self.zoom).min(255.0) as u8,
             spread: 0,
@@ -5528,7 +5520,7 @@ impl ModuleCanvas {
         // Title bar with subtle gradient or solid color
         painter.rect_filled(
             title_rect,
-            egui::Rounding {
+            egui::CornerRadius {
                 nw: (6.0 * self.zoom) as u8,
                 ne: (6.0 * self.zoom) as u8,
                 sw: 0,
@@ -6013,7 +6005,7 @@ impl ModuleCanvas {
         );
 
         let inner_rect = popup_rect.shrink(12.0);
-        ui.allocate_ui_at_rect(inner_rect, |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
                 ui.heading(if self.diagnostic_issues.is_empty() {
                     "✓ Module Check: OK"

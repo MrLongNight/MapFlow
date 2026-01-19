@@ -86,7 +86,7 @@ impl PaintPanel {
                             if let Some(mgr) = icon_manager {
                                 if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
                                     if ui
-                                        .add(egui::ImageButton::new(img))
+                                        .add(egui::Button::image(img))
                                         .on_hover_text(i18n.t("btn-remove"))
                                         .clicked()
                                     {
@@ -105,7 +105,7 @@ impl PaintPanel {
                 if let Some(mgr) = icon_manager {
                     if let Some(img) = mgr.image(AppIcon::Add, 16.0) {
                         if ui
-                            .add(egui::ImageButton::new(img))
+                            .add(egui::Button::image(img))
                             .on_hover_text(i18n.t("btn-add-paint"))
                             .clicked()
                         {

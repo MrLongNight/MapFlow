@@ -135,7 +135,7 @@ impl TransformPanel {
                             .add(
                                 egui::DragValue::new(&mut self.current_transform.scale.0)
                                     .speed(0.01)
-                                    .clamp_range(0.01..=5.0)
+                                    .range(0.01..=5.0)
                                     .prefix("W: "),
                             )
                             .changed();
@@ -143,7 +143,7 @@ impl TransformPanel {
                             .add(
                                 egui::DragValue::new(&mut self.current_transform.scale.1)
                                     .speed(0.01)
-                                    .clamp_range(0.01..=5.0)
+                                    .range(0.01..=5.0)
                                     .prefix("H: "),
                             )
                             .changed();

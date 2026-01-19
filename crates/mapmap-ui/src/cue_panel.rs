@@ -1,7 +1,7 @@
 //! Cue System UI Panel
 use std::time::Duration;
 
-use egui::{self, Button, ComboBox, ImageButton, RichText, ScrollArea, Slider, Ui};
+use egui::{self, Button, ComboBox, RichText, ScrollArea, Slider, Ui};
 use mapmap_control::{
     cue::{triggers::*, Cue, CueList},
     ControlManager,
@@ -300,7 +300,7 @@ impl CuePanel {
     ) -> bool {
         if let Some(mgr) = icon_manager {
             if let Some(img) = mgr.image(icon, 24.0) {
-                let button = ImageButton::new(img);
+                let button = egui::Button::image(img);
                 return ui
                     .add_enabled(enabled, button)
                     .on_hover_text(i18n.t(tooltip_key))

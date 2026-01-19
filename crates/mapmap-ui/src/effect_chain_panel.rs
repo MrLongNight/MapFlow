@@ -357,7 +357,7 @@ impl EffectChainPanel {
                 if let Some(mgr) = icon_manager {
                     if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
                         if ui
-                            .add(egui::ImageButton::new(img))
+                            .add(egui::Button::image(img))
                             .on_hover_text(locale.t("effect-clear"))
                             .clicked()
                         {
@@ -412,7 +412,7 @@ impl EffectChainPanel {
                                                      }
 
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close_menu();
+                                                     ui.close();
                                                      self.show_add_menu = false;
                                                 }
                                             }
@@ -564,9 +564,9 @@ impl EffectChainPanel {
             Color32::from_rgba_premultiplied(60, 60, 60, 150)
         };
 
-        egui::Frame::none()
+        egui::Frame::NONE
             .fill(frame_color)
-            .rounding(8.0)
+            .corner_radius(8.0)
             .inner_margin(8.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -595,7 +595,7 @@ impl EffectChainPanel {
                         // Delete button
                         if let Some(mgr) = icon_manager {
                             if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
-                                if ui.add(egui::ImageButton::new(img)).clicked() {
+                                if ui.add(egui::Button::image(img)).clicked() {
                                     remove = true;
                                 }
                             }
@@ -844,7 +844,7 @@ impl EffectChainPanel {
                 if let Some(mgr) = icon_manager {
                     if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
                         if ui
-                            .add(egui::ImageButton::new(img))
+                            .add(egui::Button::image(img))
                             .on_hover_text(locale.t("effect-save"))
                             .clicked()
                         {
@@ -922,7 +922,7 @@ impl EffectChainPanel {
                     if let Some(mgr) = icon_manager {
                         if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
                             if ui
-                                .add(egui::ImageButton::new(img))
+                                .add(egui::Button::image(img))
                                 .on_hover_text(locale.t("effect-save"))
                                 .clicked()
                                 && !self.save_preset_name.is_empty()

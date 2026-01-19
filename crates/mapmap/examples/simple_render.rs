@@ -54,6 +54,7 @@ fn main() {
 
     event_loop.set_control_flow(ControlFlow::Poll);
 
+    #[allow(deprecated)]
     event_loop
         .run(move |event, elwt| match event {
             Event::WindowEvent {

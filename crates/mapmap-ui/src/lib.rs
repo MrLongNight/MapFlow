@@ -525,7 +525,7 @@ impl AppUI {
             .show(ctx, |ui| {
                 egui::Frame::popup(ui.style())
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .rounding(4.0)
+                    .corner_radius(4.0)
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {

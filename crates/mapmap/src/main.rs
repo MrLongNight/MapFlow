@@ -40,15 +40,9 @@ use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
 use tracing::{debug, error, info, warn};
-use wgpu::{
-    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
-    TextureDescriptor, TextureUsages,
-};
+
 use window_manager::WindowManager;
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::EventLoop,
-};
+use winit::{event::WindowEvent, event_loop::EventLoop};
 
 /// The main application state.
 struct App {
@@ -675,74 +669,6 @@ impl App {
         self.dummy_view = Some(texture.create_view(&wgpu::TextureViewDescriptor::default()));
         self.dummy_texture = Some(texture);
     }
-
-    /// Runs the application loop.
-    pub fn run(mut self, event_loop: EventLoop<()>) -> Result<()> {
-        info!("Entering event loop");
-
-        event_loop.run(move |event, elwt| {
-            // Check if exit was requested
-            if self.exit_requested {
-                info!("Exiting application...");
-
-                // Save window geometry and settings before exit
-                if let Some(main_window) = self.window_manager.get(0) {
-                    let window = &main_window.window;
-
-                    // Get window size
-                    let size = window.inner_size();
-                    self.ui_state.user_config.window_width = Some(size.width);
-                    self.ui_state.user_config.window_height = Some(size.height);
-
-                    // Get window position
-                    if let Ok(pos) = window.outer_position() {
-                        self.ui_state.user_config.window_x = Some(pos.x);
-                        self.ui_state.user_config.window_y = Some(pos.y);
-                    }
-
-                    // Check if maximized
-                    self.ui_state.user_config.window_maximized = window.is_maximized();
-                }
-
-                // Save panel visibility states
-                self.ui_state.user_config.show_left_sidebar = self.ui_state.show_left_sidebar;
-                self.ui_state.user_config.show_inspector = self.ui_state.show_inspector;
-                self.ui_state.user_config.show_timeline = self.ui_state.show_timeline;
-                self.ui_state.user_config.show_media_browser = self.ui_state.show_media_browser;
-                self.ui_state.user_config.show_module_canvas = self.ui_state.show_module_canvas;
-                self.ui_state.user_config.show_controller_overlay =
-                    self.ui_state.show_controller_overlay;
-
-                // Save audio device selection
-                self.ui_state.user_config.selected_audio_device =
-                    self.ui_state.selected_audio_device.clone();
-
-                // Save target FPS
-                self.ui_state.user_config.target_fps = Some(self.ui_state.target_fps);
-
-                // Save the config
-                if let Err(e) = self.ui_state.user_config.save() {
-                    error!("Failed to save user config on exit: {}", e);
-                } else {
-                    info!("User settings saved successfully");
-                }
-
-                if let Err(e) = self.recent_effect_configs.save() {
-                    error!("Failed to save recent configs: {}", e);
-                }
-
-                elwt.exit();
-                return;
-            }
-
-            if let Err(e) = self.handle_event(event, elwt) {
-                error!("Error handling event: {}", e);
-            }
-        })?;
-
-        Ok(())
-    }
-
     /// Handles a window event.
     pub fn handle_event(
         &mut self,
@@ -1954,6 +1880,226 @@ impl App {
         }
     }
 
+    fn prepare_texture_previews(&mut self) {
+        // Sync Texture Previews for Module Canvas
+        // Identify active sources and gather their properties
+        let mut active_preview_sources = Vec::new();
+        for module in self.state.module_manager.modules() {
+            for part in &module.parts {
+                if let mapmap_core::module::ModulePartType::Source(
+                    mapmap_core::module::SourceType::MediaFile {
+                        brightness,
+                        contrast,
+                        saturation,
+                        hue_shift,
+                        flip_horizontal,
+                        flip_vertical,
+                        rotation,
+                        scale_x,
+                        scale_y,
+                        offset_x,
+                        offset_y,
+                        ..
+                    },
+                ) = &part.part_type
+                {
+                    active_preview_sources.push((
+                        part.id,
+                        *brightness,
+                        *contrast,
+                        *saturation,
+                        *hue_shift,
+                        *flip_horizontal,
+                        *flip_vertical,
+                        *rotation,
+                        *scale_x,
+                        *scale_y,
+                        *offset_x,
+                        *offset_y,
+                    ));
+                }
+            }
+        }
+
+        // Render previews with effects
+        let mut current_frame_previews = std::collections::HashMap::new();
+
+        for (
+            part_id,
+            brightness,
+            contrast,
+            saturation,
+            hue_shift,
+            flip_h,
+            flip_v,
+            rotation,
+            scale_x,
+            scale_y,
+            offset_x,
+            offset_y,
+        ) in active_preview_sources
+        {
+            let raw_tex_name = format!("part_{}", part_id);
+            if self.texture_pool.has_texture(&raw_tex_name) {
+                let raw_view = self.texture_pool.get_view(&raw_tex_name);
+
+                // Create/Get preview texture (fixed small resolution)
+                let preview_tex_name = format!("preview_{}", part_id);
+                // Ensure it exists with correct size
+                self.texture_pool.ensure_texture(
+                    &preview_tex_name,
+                    320,
+                    180,
+                    self.backend.surface_format(),
+                    wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                );
+                let preview_view = self.texture_pool.get_view(&preview_tex_name);
+
+                // Use a fresh encoder for each preview
+                let mut preview_encoder =
+                    self.backend
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Preview Encoder"),
+                        });
+
+                // Calculate Transform Matrix based on source properties
+                let transform_mat = glam::Mat4::from_scale_rotation_translation(
+                    glam::Vec3::new(scale_x, scale_y, 1.0),
+                    glam::Quat::from_rotation_z(rotation.to_radians()),
+                    glam::Vec3::new(offset_x, offset_y, 0.0),
+                );
+
+                // Prepare Uniforms
+                let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                    &self.backend.queue,
+                    transform_mat,
+                    1.0,
+                    flip_h,
+                    flip_v,
+                    brightness,
+                    contrast,
+                    saturation,
+                    hue_shift,
+                );
+
+                let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
+
+                // Render Pass
+                {
+                    let mut render_pass =
+                        preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Preview Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: &preview_view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                                depth_slice: None,
+                            })],
+                            depth_stencil_attachment: None,
+                            timestamp_writes: None,
+                            occlusion_query_set: None,
+                        });
+
+                    // Use the pre-allocated quad buffers
+                    let (vb, ib, index_count) = &self.preview_quad_buffers;
+
+                    self.mesh_renderer.draw(
+                        &mut render_pass,
+                        vb,
+                        ib,
+                        *index_count,
+                        &uniform_bg,
+                        &texture_bg,
+                        false,
+                    );
+                }
+
+                // Submit the preview encoder work!
+                self.backend.queue.submit(Some(preview_encoder.finish()));
+
+                // Register the PROCESSED preview texture for UI
+                let texture_id = match self.preview_texture_cache.entry(part_id) {
+                    std::collections::hash_map::Entry::Occupied(mut entry) => {
+                        let (cached_id, cached_view) = entry.get();
+                        if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
+                            *cached_id
+                        } else {
+                            self.egui_renderer.free_texture(cached_id);
+                            let new_id = self.egui_renderer.register_native_texture(
+                                &self.backend.device,
+                                &preview_view,
+                                wgpu::FilterMode::Linear,
+                            );
+                            entry.insert((new_id, preview_view.clone()));
+                            new_id
+                        }
+                    }
+                    std::collections::hash_map::Entry::Vacant(entry) => {
+                        let new_id = self.egui_renderer.register_native_texture(
+                            &self.backend.device,
+                            &preview_view,
+                            wgpu::FilterMode::Linear,
+                        );
+                        entry.insert((new_id, preview_view.clone()));
+                        new_id
+                    }
+                };
+
+                current_frame_previews.insert(part_id, texture_id);
+            }
+        }
+
+        // Cleanup stale cache entries
+        self.preview_texture_cache.retain(|id, (tex_id, _)| {
+            if !current_frame_previews.contains_key(id) {
+                self.egui_renderer.free_texture(tex_id);
+                false
+            } else {
+                true
+            }
+        });
+
+        // Update UI state map
+        self.ui_state.module_canvas.node_previews = current_frame_previews;
+
+        // Register Output Preview Textures
+        let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
+            std::collections::HashMap::new();
+        for (output_id, tex_name) in &self.output_assignments {
+            if self.texture_pool.has_texture(tex_name) {
+                let tex_view = self.texture_pool.get_view(tex_name);
+
+                let texture_id = if let Some(&cached_id) = self.output_preview_cache.get(output_id)
+                {
+                    cached_id
+                } else {
+                    let new_id = self.egui_renderer.register_native_texture(
+                        &self.backend.device,
+                        &tex_view,
+                        wgpu::FilterMode::Linear,
+                    );
+                    self.output_preview_cache.insert(*output_id, new_id);
+                    new_id
+                };
+
+                current_output_previews.insert(*output_id, texture_id);
+            }
+        }
+
+        self.output_preview_cache.retain(|id, tex_id| {
+            if !current_output_previews.contains_key(id) {
+                self.egui_renderer.free_texture(tex_id);
+                false
+            } else {
+                true
+            }
+        });
+    }
+
     /// Renders a single frame for a given output.
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         let now = std::time::Instant::now();
@@ -1987,6 +2133,11 @@ impl App {
             }
         }
 
+        if output_id == 0 {
+            // Sync Texture Previews for Module Canvas
+            self.prepare_texture_previews();
+        }
+
         let window_context = self.window_manager.get(output_id).unwrap();
 
         // Get surface texture and view for final output
@@ -2003,247 +2154,12 @@ impl App {
                     label: Some("Render Encoder"),
                 });
 
+        let mut egui_render_data = None;
+
         if output_id == 0 {
             // --------- ImGui removed (Phase 6 Complete) ----------
 
             // --------- egui: UI separat zeichnen ---------
-
-            // Sync Texture Previews for Module Canvas
-            {
-                // Identify active sources and gather their properties
-                let mut active_preview_sources = Vec::new();
-                for module in self.state.module_manager.modules() {
-                    for part in &module.parts {
-                        if let mapmap_core::module::ModulePartType::Source(
-                            mapmap_core::module::SourceType::MediaFile {
-                                brightness,
-                                contrast,
-                                saturation,
-                                hue_shift,
-                                flip_horizontal,
-                                flip_vertical,
-                                rotation,
-                                scale_x,
-                                scale_y,
-                                offset_x,
-                                offset_y,
-                                ..
-                            },
-                        ) = &part.part_type
-                        {
-                            active_preview_sources.push((
-                                part.id,
-                                *brightness,
-                                *contrast,
-                                *saturation,
-                                *hue_shift,
-                                *flip_horizontal,
-                                *flip_vertical,
-                                *rotation,
-                                *scale_x,
-                                *scale_y,
-                                *offset_x,
-                                *offset_y,
-                            ));
-                        }
-                    }
-                }
-
-                // Render previews with effects
-                let mut current_frame_previews = std::collections::HashMap::new();
-
-                for (
-                    part_id,
-                    brightness,
-                    contrast,
-                    saturation,
-                    hue_shift,
-                    flip_h,
-                    flip_v,
-                    rotation,
-                    scale_x,
-                    scale_y,
-                    offset_x,
-                    offset_y,
-                ) in active_preview_sources
-                {
-                    let raw_tex_name = format!("part_{}", part_id);
-                    if self.texture_pool.has_texture(&raw_tex_name) {
-                        let raw_view = self.texture_pool.get_view(&raw_tex_name);
-
-                        // Create/Get preview texture (fixed small resolution)
-                        let preview_tex_name = format!("preview_{}", part_id);
-                        // Ensure it exists with correct size
-                        self.texture_pool.ensure_texture(
-                            &preview_tex_name,
-                            320,
-                            180,
-                            self.backend.surface_format(),
-                            wgpu::TextureUsages::RENDER_ATTACHMENT
-                                | wgpu::TextureUsages::TEXTURE_BINDING,
-                        );
-                        let preview_view = self.texture_pool.get_view(&preview_tex_name);
-
-                        // Use a fresh encoder for each preview to avoid lifetime issues with local references in RenderPassDescriptor
-                        let mut preview_encoder = self.backend.device.create_command_encoder(
-                            &wgpu::CommandEncoderDescriptor {
-                                label: Some("Preview Encoder"),
-                            },
-                        );
-
-                        // Calculate Transform Matrix based on source properties
-                        // This mirrors the logic in module_eval.rs
-                        let transform_mat = glam::Mat4::from_scale_rotation_translation(
-                            glam::Vec3::new(scale_x, scale_y, 1.0),
-                            glam::Quat::from_rotation_z(rotation.to_radians()),
-                            glam::Vec3::new(offset_x, offset_y, 0.0),
-                        );
-
-                        // Prepare Uniforms
-                        let uniform_bg =
-                            self.mesh_renderer.get_uniform_bind_group_with_source_props(
-                                &self.backend.queue,
-                                transform_mat,
-                                1.0, // Opacity is usually handled at layer mixing, but preview should strictly show content
-                                flip_h,
-                                flip_v,
-                                brightness,
-                                contrast,
-                                saturation,
-                                hue_shift,
-                            );
-
-                        let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
-
-                        // Render Pass
-                        {
-                            let mut render_pass =
-                                preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Preview Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: &preview_view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                        depth_slice: None,
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    timestamp_writes: None,
-                                    occlusion_query_set: None,
-                                });
-
-                            // Use the pre-allocated quad buffers
-                            let (vb, ib, index_count) = &self.preview_quad_buffers;
-
-                            self.mesh_renderer.draw(
-                                &mut render_pass,
-                                vb,
-                                ib,
-                                *index_count,
-                                &uniform_bg,
-                                &texture_bg,
-                                false, // No perspective correction for flat preview
-                            );
-                        }
-
-                        // Register the PROCESSED preview texture for UI
-                        // Check cache using Entry API to avoid double borrow
-                        let texture_id = match self.preview_texture_cache.entry(part_id) {
-                            std::collections::hash_map::Entry::Occupied(mut entry) => {
-                                let (cached_id, cached_view) = entry.get();
-                                if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
-                                    // Cache hit! View hasn't changed.
-                                    *cached_id
-                                } else {
-                                    // View changed (e.g. resized), re-register
-                                    self.egui_renderer.free_texture(cached_id);
-                                    let new_id = self.egui_renderer.register_native_texture(
-                                        &self.backend.device,
-                                        &preview_view,
-                                        wgpu::FilterMode::Linear,
-                                    );
-                                    entry.insert((new_id, preview_view.clone()));
-                                    new_id
-                                }
-                            }
-                            std::collections::hash_map::Entry::Vacant(entry) => {
-                                // New source
-                                let new_id = self.egui_renderer.register_native_texture(
-                                    &self.backend.device,
-                                    &preview_view,
-                                    wgpu::FilterMode::Linear,
-                                );
-                                entry.insert((new_id, preview_view.clone()));
-                                new_id
-                            }
-                        };
-
-                        current_frame_previews.insert(part_id, texture_id);
-                    }
-                }
-
-                // Submit preview rendering commands
-                // We finish the OLD encoder here, so any LATER code that uses 'encoder' will fail.
-                // Re-creating the encoder for the rest of the frame.
-                self.backend.queue.submit(Some(encoder.finish()));
-                encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Main Render Encoder"),
-                        });
-
-                // Cleanup stale cache entries
-                self.preview_texture_cache.retain(|id, (tex_id, _)| {
-                    if !current_frame_previews.contains_key(id) {
-                        self.egui_renderer.free_texture(tex_id);
-                        false
-                    } else {
-                        true
-                    }
-                });
-
-                // Update UI state map
-                self.ui_state.module_canvas.node_previews = current_frame_previews;
-
-                // Register Output Preview Textures for the Preview Panel
-                // Build a map of OutputID -> texture_id for outputs that have assigned textures
-                let mut current_output_previews: HashMap<u64, egui::TextureId> = HashMap::new();
-                for (output_id, tex_name) in &self.output_assignments {
-                    if self.texture_pool.has_texture(tex_name) {
-                        let tex_view = self.texture_pool.get_view(tex_name);
-
-                        // Check if already cached
-                        let texture_id =
-                            if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
-                                cached_id
-                            } else {
-                                // Register new texture with egui
-                                let new_id = self.egui_renderer.register_native_texture(
-                                    &self.backend.device,
-                                    &tex_view,
-                                    wgpu::FilterMode::Linear,
-                                );
-                                self.output_preview_cache.insert(*output_id, new_id);
-                                new_id
-                            };
-
-                        current_output_previews.insert(*output_id, texture_id);
-                    }
-                }
-
-                // Cleanup stale output preview cache entries
-                self.output_preview_cache.retain(|id, tex_id| {
-                    if !current_output_previews.contains_key(id) {
-                        self.egui_renderer.free_texture(tex_id);
-                        false
-                    } else {
-                        true
-                    }
-                });
-            }
 
             let dashboard_action = None;
             let (tris, screen_descriptor) = {
@@ -2455,7 +2371,7 @@ impl App {
                                             egui::vec2(ui.available_width(), self.ui_state.control_panel_height),
                                             egui::Layout::top_down(egui::Align::LEFT),
                                             |ui| {
-                                                egui::ScrollArea::vertical().id_source("controls_scroll").show(ui, |ui| {
+                                                egui::ScrollArea::vertical().id_salt("controls_scroll").show(ui, |ui| {
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
@@ -2555,7 +2471,7 @@ impl App {
                                         }
                                     } else {
                                         // Controls only - full height
-                                        egui::ScrollArea::vertical().id_source("controls_scroll_full").show(ui, |ui| {
+                                        egui::ScrollArea::vertical().id_salt("inspector_scroll_full").show(ui, |ui| {
                                             // Media Browser Section
                                             egui::CollapsingHeader::new("📁 Media")
                                                 .default_open(false)
@@ -3139,6 +3055,9 @@ impl App {
                 (tris, screen_descriptor)
             };
 
+            // Store for final rendering
+            egui_render_data = Some((tris, screen_descriptor));
+
             // Handle Dashboard actions
             if let Some(action) = dashboard_action {
                 match action {
@@ -3187,28 +3106,6 @@ impl App {
                         }
                     }
                 }
-            }
-
-            // Egui Render Pass - ensure it's dropped before encoder.finish()
-            {
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Egui Render Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                        depth_slice: None,
-                    })],
-                    depth_stencil_attachment: None,
-                    occlusion_query_set: None,
-                    timestamp_writes: None,
-                });
-
-                self.egui_renderer
-                    .render(&mut render_pass, &tris, &screen_descriptor);
             }
 
             // Post-render logic for egui actions
@@ -3625,8 +3522,56 @@ impl App {
             }
         }
 
+        // 1. Submit Main Rendering Commands
         let command_buffer = encoder.finish();
         self.backend.queue.submit(Some(command_buffer));
+
+        // 2. Egui Render Pass (Sequential)
+        if let Some((tris, screen_descriptor)) = egui_render_data {
+            let backend = &self.backend;
+            let egui_renderer = &self.egui_renderer;
+
+            let mut egui_encoder =
+                backend
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Egui Render Encoder"),
+                    });
+
+            {
+                let mut render_pass = egui_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Egui Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+
+                // SAFETY: We transmute BOTH the renderer and the render pass reference to break
+                // the lifetime dependency inferred by the compiler.
+                // 1. We treat the renderer as 'static to satisfy the 'rp requirement on self.
+                // 2. We treat the render_pass as having a matching 'static lifetime.
+                // This prevents the compiler from extending the borrow of egui_encoder beyond the block.
+                let renderer_static: &'static egui_wgpu::Renderer =
+                    unsafe { std::mem::transmute(egui_renderer) };
+
+                let render_pass_static: &mut wgpu::RenderPass<'static> =
+                    unsafe { std::mem::transmute(&mut render_pass) };
+
+                renderer_static.render(render_pass_static, &tris, &screen_descriptor);
+            }
+
+            backend.queue.submit(Some(egui_encoder.finish()));
+        }
+
         surface_texture.present();
 
         Ok(())
@@ -3649,6 +3594,7 @@ fn main() -> Result<()> {
     let event_loop = EventLoop::new().unwrap();
     let mut app: Option<App> = None;
 
+    #[allow(deprecated)]
     event_loop.run(move |event, elwt| {
         if app.is_none() {
             app = Some(pollster::block_on(App::new(elwt)).expect("Failed to create App"));
