@@ -19,8 +19,8 @@ use mapmap_core::{
         backend::cpal_backend::CpalBackend,
         backend::AudioBackend,
     },
-    AppState, ModuleEvaluator, OutputId, RenderOp,
     audio_reactive::AudioTriggerData,
+    AppState, ModuleEvaluator, OutputId, RenderOp,
 };
 
 use mapmap_mcp::{McpAction, McpServer};
@@ -160,7 +160,6 @@ struct App {
     hue_controller: HueController,
     /// Tokio runtime for async operations
     tokio_runtime: tokio::runtime::Runtime,
-
 }
 
 impl App {
@@ -1340,7 +1339,6 @@ impl App {
                 for window_context in self.window_manager.iter() {
                     window_context.window.request_redraw();
                 }
-
             }
             _ => (),
         }
@@ -1464,11 +1462,15 @@ impl App {
                     if ip.is_empty() {
                         error!("Cannot link: No Bridge IP specified.");
                     } else {
-                        match self.tokio_runtime.block_on(self.hue_controller.register(&ip)) {
+                        match self
+                            .tokio_runtime
+                            .block_on(self.hue_controller.register(&ip))
+                        {
                             Ok(new_config) => {
                                 info!("Successfully linked with Hue Bridge!");
                                 self.ui_state.user_config.hue_config.username = new_config.username;
-                                self.ui_state.user_config.hue_config.client_key = new_config.client_key;
+                                self.ui_state.user_config.hue_config.client_key =
+                                    new_config.client_key;
                                 let _ = self.ui_state.user_config.save();
                             }
                             Err(e) => {
@@ -1479,7 +1481,7 @@ impl App {
                 }
                 mapmap_ui::UIAction::ConnectHue => {
                     info!("Connecting to Philips Hue Bridge...");
-                    
+
                     // Sync configuration from UI to Controller
                     let ui_hue = &self.ui_state.user_config.hue_config;
                     let control_hue = mapmap_control::hue::models::HueConfig {
@@ -1499,12 +1501,16 @@ impl App {
                 }
                 mapmap_ui::UIAction::DisconnectHue => {
                     info!("Disconnecting from Philips Hue Bridge...");
-                    self.tokio_runtime.block_on(self.hue_controller.disconnect());
+                    self.tokio_runtime
+                        .block_on(self.hue_controller.disconnect());
                 }
                 mapmap_ui::UIAction::DiscoverHueBridges => {
                     info!("Discovering Philips Hue Bridges...");
                     // Discovery is async but meethue.com is usually fast.
-                    match self.tokio_runtime.block_on(mapmap_control::hue::api::discovery::discover_bridges()) {
+                    match self
+                        .tokio_runtime
+                        .block_on(mapmap_control::hue::api::discovery::discover_bridges())
+                    {
                         Ok(bridges) => {
                             info!("Discovered {} bridges", bridges.len());
                             self.ui_state.discovered_hue_bridges = bridges;
@@ -2857,7 +2863,7 @@ impl App {
                                             if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
                                                 changed = true;
                                             }
-                                            
+
                                             if ui.button("Discover").clicked() {
                                                 discover_clicked = true;
                                             }
@@ -2905,7 +2911,7 @@ impl App {
                                             if ui.button("Verbinden (Sync)").clicked() {
                                                 connect_clicked = true;
                                             }
-                                            
+
                                             // Link Bridge Button
                                             if ui.button("Link Bridge").on_hover_text("Press the button on your Hue Bridge, then click this to link.").clicked() {
                                                 register_clicked = true;
@@ -2936,7 +2942,7 @@ impl App {
                                                 bridge_ip: ui_hue.bridge_ip.clone(),
                                                 username: ui_hue.username.clone(),
                                                 client_key: ui_hue.client_key.clone(),
-                                                application_id: String::new(), 
+                                                application_id: String::new(),
                                                 entertainment_group_id: ui_hue.entertainment_area.clone(),
                                             };
                                             self.hue_controller.update_config(control_hue);

@@ -1044,7 +1044,6 @@ impl ModuleCanvas {
                                                 // === VIDEO OPTIONS ===
                                                 ui.collapsing("🎬 Video Options", |ui| {
                                                     ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-                                                    
                                                     ui.separator();
                                                     ui.label("Seek Position:");
                                                     // Note: Actual seek requires video duration from player
@@ -2075,17 +2074,64 @@ impl ModuleCanvas {
                 band, threshold, ..
             }) => {
                 let value = match band {
-                    mapmap_core::module::AudioBand::SubBass => self.audio_trigger_data.band_energies.get(0).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::Bass => self.audio_trigger_data.band_energies.get(1).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::LowMid => self.audio_trigger_data.band_energies.get(2).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::Mid => self.audio_trigger_data.band_energies.get(3).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::HighMid => self.audio_trigger_data.band_energies.get(4).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::UpperMid => self.audio_trigger_data.band_energies.get(5).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::Presence => self.audio_trigger_data.band_energies.get(6).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::Brilliance => self.audio_trigger_data.band_energies.get(7).copied().unwrap_or(0.0),
-                    mapmap_core::module::AudioBand::Air => self.audio_trigger_data.band_energies.get(8).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::SubBass => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(0)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Bass => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(1)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::LowMid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(2)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Mid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(3)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::HighMid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(4)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::UpperMid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(5)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Presence => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(6)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Brilliance => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(7)
+                        .copied()
+                        .unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Air => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(8)
+                        .copied()
+                        .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Peak => self.audio_trigger_data.peak_volume,
-                    mapmap_core::module::AudioBand::BPM => self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0,
+                    mapmap_core::module::AudioBand::BPM => {
+                        self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0
+                    }
                 };
                 let is_active = value > *threshold;
                 (true, value, *threshold, is_active)

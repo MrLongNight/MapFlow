@@ -64,14 +64,12 @@ impl OscillatorPanel {
             .on_hover_text("Intensity of the distortion effect");
 
         ui.add(
-            Slider::new(&mut config.distortion_scale, 0.0..=0.1)
-                .text(i18n.t("label-dist-scale")),
+            Slider::new(&mut config.distortion_scale, 0.0..=0.1).text(i18n.t("label-dist-scale")),
         )
         .on_hover_text("Spatial scale of distortion");
 
         ui.add(
-            Slider::new(&mut config.distortion_speed, 0.0..=5.0)
-                .text(i18n.t("label-dist-speed")),
+            Slider::new(&mut config.distortion_speed, 0.0..=5.0).text(i18n.t("label-dist-speed")),
         )
         .on_hover_text("Animation speed");
 
@@ -140,22 +138,15 @@ impl OscillatorPanel {
             .on_hover_text("Higher resolution = more detail but slower");
 
         ui.add(
-            Slider::new(&mut config.kernel_radius, 1.0..=64.0)
-                .text(i18n.t("label-kernel-radius")),
+            Slider::new(&mut config.kernel_radius, 1.0..=64.0).text(i18n.t("label-kernel-radius")),
         )
         .on_hover_text("Coupling interaction distance");
 
-        ui.add(
-            Slider::new(&mut config.noise_amount, 0.0..=1.0).text(i18n.t("label-noise-amount")),
-        )
-        .on_hover_text("Random variation in oscillation");
+        ui.add(Slider::new(&mut config.noise_amount, 0.0..=1.0).text(i18n.t("label-noise-amount")))
+            .on_hover_text("Random variation in oscillation");
 
-        ui.add(
-            Slider::new(&mut config.frequency_min, 0.0..=10.0).text(i18n.t("label-freq-min")),
-        );
-        ui.add(
-            Slider::new(&mut config.frequency_max, 0.0..=10.0).text(i18n.t("label-freq-max")),
-        );
+        ui.add(Slider::new(&mut config.frequency_min, 0.0..=10.0).text(i18n.t("label-freq-min")));
+        ui.add(Slider::new(&mut config.frequency_max, 0.0..=10.0).text(i18n.t("label-freq-max")));
 
         ui.separator();
 
@@ -190,11 +181,7 @@ impl OscillatorPanel {
                 PhaseInitMode::PlaneDiagonal => "Diagonal",
             })
             .show_ui(ui, |ui| {
-                ui.selectable_value(
-                    &mut config.phase_init_mode,
-                    PhaseInitMode::Random,
-                    "Random",
-                );
+                ui.selectable_value(&mut config.phase_init_mode, PhaseInitMode::Random, "Random");
                 ui.selectable_value(
                     &mut config.phase_init_mode,
                     PhaseInitMode::Uniform,
