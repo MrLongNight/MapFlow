@@ -1241,13 +1241,19 @@ impl App {
                     }
 
                     // Update Output Assignments for Preview
+                    // NOTE: We need to insert with BOTH IDs:
+                    // - Internal Projector ID (*id): Used by UI preview panel (line 2651)
+                    // - output_part_id: Used by window_manager and render function
                     self.output_assignments.clear();
                     for op in &self.render_ops {
-                        // Use output_part_id (the part ID) as key, not the internal OutputType id
-                        if let mapmap_core::module::OutputType::Projector { .. } = &op.output_type {
+                        if let mapmap_core::module::OutputType::Projector { id, .. } =
+                            &op.output_type
+                        {
                             if let Some(source_id) = op.source_part_id {
                                 let tex_name = format!("part_{}", source_id);
-                                // FIX: Use output_part_id which matches window_manager keys
+                                // Insert with internal projector ID (for UI preview panel)
+                                self.output_assignments.insert(*id, tex_name.clone());
+                                // Also insert with output_part_id (for window rendering)
                                 self.output_assignments.insert(op.output_part_id, tex_name);
                             }
                         }
