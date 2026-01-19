@@ -15,7 +15,7 @@ futures = "0.3"
 mapmap-control = { path = "../mapmap-control", features = ["osc"] }
 mapmap-core = { path = "../mapmap-core" }
 
-rosc = "0.10"
+rosc = "0.11"
 
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
