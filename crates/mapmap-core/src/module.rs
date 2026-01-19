@@ -317,7 +317,7 @@ pub enum TriggerMappingMode {
     Smoothed {
         /// Attack time in seconds
         attack: f32,
-        /// Release time in seconds  
+        /// Release time in seconds
         release: f32,
     },
 }
