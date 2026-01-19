@@ -18,6 +18,12 @@ use crate::{ControlTarget, ControlValue};
 #[cfg(feature = "http-api")]
 use super::server::AppState;
 
+/// Maximum WebSocket message size (16 KB)
+///
+/// This limit prevents Denial of Service (DoS) attacks where a client sends massive messages
+/// that consume excessive memory or CPU during parsing.
+const MAX_MESSAGE_SIZE: usize = 16 * 1024;
+
 /// WebSocket message from client to server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -96,6 +102,16 @@ async fn handle_socket(socket: WebSocket, _state: AppState) {
     while let Some(msg) = receiver.next().await {
         match msg {
             Ok(Message::Text(text)) => {
+                if text.len() > MAX_MESSAGE_SIZE {
+                    tracing::warn!(
+                        "WebSocket message too large: {} bytes (max {})",
+                        text.len(),
+                        MAX_MESSAGE_SIZE
+                    );
+                    // Close connection on violation
+                    break;
+                }
+
                 if let Err(e) = handle_text_message(&text).await {
                     tracing::warn!("Error handling WebSocket message: {}", e);
                 }
@@ -144,6 +160,12 @@ async fn handle_text_message(text: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_max_message_size_constant() {
+        // Verify the constant is set to a reasonable value (16KB)
+        assert_eq!(MAX_MESSAGE_SIZE, 16384);
+    }
 
     #[test]
     fn test_ws_client_message_serialization() {
