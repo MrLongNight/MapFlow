@@ -33,3 +33,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-09 - Dokumentationslücke entdeckt
 **Erkenntnis:** Zwischen dem 2026-01-02 und 2026-01-09 wurden ~8 wichtige Änderungen (PRs #205, #207, #210, #212, #213, #215 sowie direkte UI-Features) gemerged, aber nicht im CHANGELOG.md verzeichnet.
 **Aktion:** Tracker hat einen Audit durchgeführt und die fehlenden Einträge basierend auf der Git-Historie rekonstruiert. Zukünftige PRs müssen strikter auf CHANGELOG-Updates geprüft werden.
+
+## 2026-01-19 - Conflict Resolution & Missing Features Audit
+**Erkenntnis:** Merge-Konflikt in `ROADMAP.md` entdeckt und behoben (Version 1.9.2). Zwei bedeutende Features (Hue Integration, Node Module System) fehlten im Changelog.
+**Aktion:** ROADMAP-Status für FFmpeg/CI und Hue aktualisiert. Fehlende Changelog-Einträge für Commits #b8dd83b und #484c78e nachgetragen.

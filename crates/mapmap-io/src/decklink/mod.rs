@@ -9,7 +9,7 @@
 //! This is currently a stub implementation showing the intended API.
 //!
 //! To enable full DeckLink support:
-//! 1. Download the DeckLink SDK from https://www.blackmagicdesign.com/developer/
+//! 1. Download the DeckLink SDK from <https://www.blackmagicdesign.com/developer/>
 //! 2. Install the SDK on your system
 //! 3. Create FFI bindings (COM on Windows, Objective-C on macOS)
 //! 4. Implement the input and output classes

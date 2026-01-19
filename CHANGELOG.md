@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-19: fix(ci): Ensure VCPKG_ROOT is set and vcpkg integrated in release workflow
 - 2026-01-18: fix(ci): Fix CI-09 workflow build error by explicitly installing vcpkg and ffmpeg (#287)
 - 2026-01-18: chore: Clean up documentation structure and move audit reports (Archivist) (#286)
+- 2026-01-18: feat(hue): Philips Hue Integration Overhaul & Merge Resolution (#b8dd83b)
+- 2026-01-18: feat(core): Implement node-based module system with Media/Audio/NDI/Hue support (#484c78e)
 - 2026-01-16: fix(ci): Fix Windows release workflow by adding dynamic FFmpeg integration (#270)
 - 2026-01-16: fix(render): Fix headless crash in wgpu backend on CI (#269)
 - 2026-01-16: perf(core): Optimize ModuleEvaluator allocations (Bolt) (#268)
