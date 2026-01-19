@@ -31,7 +31,7 @@
 //! - [`osc`] - OSC server and client
 //! - [`dmx`] - DMX output via Art-Net and sACN
 //! - [`hue`] - Philips Hue integration
-//! - [`web`] - Web API and WebSocket
+//! - `web` - Web API and WebSocket (requires `http-api` feature)
 //! - [`cue`] - Cue system for show automation
 //! - [`shortcuts`] - Keyboard shortcuts and macros
 //! - [`target`] - Control target abstraction

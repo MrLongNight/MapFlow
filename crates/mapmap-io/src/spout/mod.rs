@@ -9,7 +9,7 @@
 //! This is currently a stub implementation showing the intended API.
 //!
 //! To enable full Spout support:
-//! 1. Download the Spout SDK from https://spout.zeal.co/
+//! 1. Download the Spout SDK from <https://spout.zeal.co/>
 //! 2. Create FFI bindings for the Spout library
 //! 3. Integrate with wgpu's DirectX 11 backend
 //! 4. Implement sender and receiver

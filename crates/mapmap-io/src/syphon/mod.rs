@@ -9,7 +9,7 @@
 //! This is currently a stub implementation showing the intended API.
 //!
 //! To enable full Syphon support:
-//! 1. Download the Syphon framework from http://syphon.v002.info/
+//! 1. Download the Syphon framework from <http://syphon.v002.info/>
 //! 2. Create FFI bindings using Objective-C interop
 //! 3. Integrate with wgpu's Metal backend
 //! 4. Implement server and client
