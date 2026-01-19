@@ -101,6 +101,10 @@ impl MapFlowModule {
             PartType::Hue => ModulePartType::Hue(HueNodeType::SingleLamp {
                 id: String::new(),
                 name: "New Lamp".to_string(),
+                brightness: 1.0,
+                color: [1.0, 1.0, 1.0],
+                effect: None,
+                effect_active: false,
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 0,
@@ -558,6 +562,18 @@ pub enum HueNodeType {
         id: String,
         /// Display Name
         name: String,
+        /// Brightness (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        brightness: f32,
+        /// Color (RGB)
+        #[serde(default = "default_hue_color")]
+        color: [f32; 3],
+        /// Active effect (e.g. "colorloop")
+        #[serde(default)]
+        effect: Option<String>,
+        /// Whether the effect is currently running
+        #[serde(default)]
+        effect_active: bool,
     },
     /// Controls multiple specific lamps together
     MultiLamp {
@@ -565,12 +581,40 @@ pub enum HueNodeType {
         ids: Vec<String>,
         /// Display Name
         name: String,
+        /// Brightness (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        brightness: f32,
+        /// Color (RGB)
+        #[serde(default = "default_hue_color")]
+        color: [f32; 3],
+        /// Active effect (e.g. "colorloop")
+        #[serde(default)]
+        effect: Option<String>,
+        /// Whether the effect is currently running
+        #[serde(default)]
+        effect_active: bool,
     },
     /// Controls a whole entertainment group
     EntertainmentGroup {
         /// Group Name/ID
         name: String,
+        /// Brightness (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        brightness: f32,
+        /// Color (RGB)
+        #[serde(default = "default_hue_color")]
+        color: [f32; 3],
+        /// Active effect (e.g. "colorloop")
+        #[serde(default)]
+        effect: Option<String>,
+        /// Whether the effect is currently running
+        #[serde(default)]
+        effect_active: bool,
     },
+}
+
+fn default_hue_color() -> [f32; 3] {
+    [1.0, 1.0, 1.0]
 }
 
 /// Types of logic triggers

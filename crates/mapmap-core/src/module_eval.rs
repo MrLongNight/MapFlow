@@ -76,7 +76,7 @@ impl SourceProperties {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_evaluator {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
@@ -982,12 +982,12 @@ impl ModuleEvaluator {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_logic {
     use super::*;
     use crate::audio_reactive::AudioTriggerData;
     use crate::module::{
         AudioBand, AudioTriggerOutputConfig, MapFlowModule, ModuleConnection, ModulePart,
-        ModulePartId, ModulePartType, ModulePlaybackMode, SourceType, TriggerType,
+        ModulePartType, ModulePlaybackMode, SourceType, TriggerType,
     };
     use std::collections::HashMap;
     use std::time::{Duration, Instant};

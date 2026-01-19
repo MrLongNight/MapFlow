@@ -15,9 +15,9 @@ pub fn osc_to_control_value(osc_args: &[OscType]) -> Result<ControlValue> {
         return Err(ControlError::InvalidMessage("No OSC arguments".to_string()));
     }
 
-    match &osc_args[0] {
-        OscType::Float(f) => Ok(ControlValue::Float(*f)),
-        OscType::Int(i) => Ok(ControlValue::Int(*i)),
+    let val = match &osc_args[0] {
+        OscType::Float(f) => ControlValue::Float(*f),
+        OscType::Int(i) => ControlValue::Int(*i),
         OscType::String(s) => {
             if s.len() > MAX_STRING_VALUE_LENGTH {
                 return Err(ControlError::InvalidMessage(format!(
@@ -25,9 +25,9 @@ pub fn osc_to_control_value(osc_args: &[OscType]) -> Result<ControlValue> {
                     MAX_STRING_VALUE_LENGTH
                 )));
             }
-            Ok(ControlValue::String(s.clone()))
+            ControlValue::String(s.clone())
         }
-        OscType::Bool(b) => Ok(ControlValue::Bool(*b)),
+        OscType::Bool(b) => ControlValue::Bool(*b),
         OscType::Color(color) => {
             // OscColor has r, g, b, a fields (each u8)
             let rgba = ((color.red as u32) << 24)

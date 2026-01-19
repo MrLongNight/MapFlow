@@ -1465,10 +1465,39 @@ impl App {
                 }
                 mapmap_ui::UIAction::ConnectHue => {
                     info!("Connecting to Philips Hue Bridge...");
+
+                    // Sync configuration from UI to Controller
+                    let ui_hue = &self.ui_state.user_config.hue_config;
+                    let control_hue = mapmap_control::hue::models::HueConfig {
+                        bridge_ip: ui_hue.bridge_ip.clone(),
+                        username: ui_hue.username.clone(),
+                        client_key: ui_hue.client_key.clone(),
+                        application_id: String::new(), // TODO: This should be retrieved from bridge during pairing
+                        entertainment_group_id: ui_hue.entertainment_area.clone(),
+                    };
+                    self.hue_controller.update_config(control_hue);
+
                     if let Err(e) = pollster::block_on(self.hue_controller.connect()) {
                         error!("Failed to connect to Hue Bridge: {}", e);
                     } else {
                         info!("Successfully connected to Hue Bridge");
+                    }
+                }
+                mapmap_ui::UIAction::DisconnectHue => {
+                    info!("Disconnecting from Philips Hue Bridge...");
+                    pollster::block_on(self.hue_controller.disconnect());
+                }
+                mapmap_ui::UIAction::DiscoverHueBridges => {
+                    info!("Discovering Philips Hue Bridges...");
+                    // Discovery is async but meethue.com is usually fast.
+                    match pollster::block_on(mapmap_control::hue::api::discovery::discover_bridges()) {
+                        Ok(bridges) => {
+                            info!("Discovered {} bridges", bridges.len());
+                            self.ui_state.discovered_hue_bridges = bridges;
+                        }
+                        Err(e) => {
+                            error!("Bridge discovery failed: {}", e);
+                        }
                     }
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
@@ -2804,6 +2833,8 @@ impl App {
                                     .show(ui, |ui| {
                                         let mut changed = false;
                                         let mut connect_clicked = false;
+                                        let disconnect_clicked = false;
+                                        let mut discover_clicked = false;
                                         let hue_conf = &mut self.ui_state.user_config.hue_config;
 
                                         ui.horizontal(|ui| {
@@ -2811,7 +2842,24 @@ impl App {
                                             if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
                                                 changed = true;
                                             }
+
+                                            if ui.button("Discover").clicked() {
+                                                discover_clicked = true;
+                                            }
                                         });
+
+                                        if !self.ui_state.discovered_hue_bridges.is_empty() {
+                                            egui::ComboBox::from_id_source("discovered_bridges")
+                                                .selected_text("Select Discovered Bridge...")
+                                                .show_ui(ui, |ui| {
+                                                    for bridge in &self.ui_state.discovered_hue_bridges {
+                                                        if ui.selectable_label(hue_conf.bridge_ip == bridge.ip, format!("{} ({})", bridge.ip, bridge.id)).clicked() {
+                                                            hue_conf.bridge_ip = bridge.ip.clone();
+                                                            changed = true;
+                                                        }
+                                                    }
+                                                });
+                                        }
 
                                         ui.horizontal(|ui| {
                                             ui.label("App Key (User):");
@@ -2853,16 +2901,31 @@ impl App {
                                         });
 
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
-
-                                        (changed, connect_clicked)
+                                        (changed, connect_clicked, disconnect_clicked, discover_clicked)
                                     })
                                     .body_returned
-                                    .map(|(changed, connect)| {
+                                    .map(|(changed, connect, disconnect, discover)| {
                                         if changed {
                                             let _ = self.ui_state.user_config.save();
+                                            // Update controller config with correct types
+                                            let ui_hue = &self.ui_state.user_config.hue_config;
+                                            let control_hue = mapmap_control::hue::models::HueConfig {
+                                                bridge_ip: ui_hue.bridge_ip.clone(),
+                                                username: ui_hue.username.clone(),
+                                                client_key: ui_hue.client_key.clone(),
+                                                application_id: String::new(),
+                                                entertainment_group_id: ui_hue.entertainment_area.clone(),
+                                            };
+                                            self.hue_controller.update_config(control_hue);
                                         }
                                         if connect {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
+                                        }
+                                        if disconnect {
+                                            self.ui_state.actions.push(mapmap_ui::UIAction::DisconnectHue);
+                                        }
+                                        if discover {
+                                            self.ui_state.actions.push(mapmap_ui::UIAction::DiscoverHueBridges);
                                         }
                                     });
 

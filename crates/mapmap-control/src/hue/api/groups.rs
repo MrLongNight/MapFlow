@@ -63,10 +63,10 @@ struct StreamAction {
     action: String,
 }
 
-// Helper to build a client with insecure certs (Hue Bridge standard)
+// Helper to build a client with default TLS certificate validation
 fn build_client() -> Result<reqwest::Client, HueError> {
     reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
+        .danger_accept_invalid_certs(false)
         .build()
         .map_err(HueError::Network)
 }
