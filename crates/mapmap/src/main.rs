@@ -3189,6 +3189,7 @@ impl App {
                 }
             }
 
+            // Egui Render Pass - ensure it's dropped before encoder.finish()
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Egui Render Pass"),
@@ -3196,7 +3197,7 @@ impl App {
                         view: &view,
                         resolve_target: None,
                         ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            load: wgpu::LoadOp::Load,
                             store: wgpu::StoreOp::Store,
                         },
                         depth_slice: None,
