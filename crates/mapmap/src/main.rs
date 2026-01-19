@@ -515,7 +515,7 @@ impl App {
         // Try to connect if IP is set
         if !ui_state.user_config.hue_config.bridge_ip.is_empty() {
             info!("Initializing Hue Controller...");
-            if let Err(e) = hue_controller.connect().await {
+            if let Err(e) = tokio_runtime.block_on(hue_controller.connect()) {
                 warn!("Hue Controller initial connection failed: {}", e);
             }
         }
