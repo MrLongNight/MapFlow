@@ -5,6 +5,9 @@ use crate::{error::ControlError, ControlValue, Result};
 #[cfg(feature = "osc")]
 use rosc::OscType;
 
+/// Maximum length of a string value in an OSC message
+const MAX_STRING_VALUE_LENGTH: usize = 4096;
+
 /// Convert OSC arguments to ControlValue
 #[cfg(feature = "osc")]
 pub fn osc_to_control_value(osc_args: &[OscType]) -> Result<ControlValue> {
@@ -12,11 +15,19 @@ pub fn osc_to_control_value(osc_args: &[OscType]) -> Result<ControlValue> {
         return Err(ControlError::InvalidMessage("No OSC arguments".to_string()));
     }
 
-    let val = match &osc_args[0] {
-        OscType::Float(f) => ControlValue::Float(*f),
-        OscType::Int(i) => ControlValue::Int(*i),
-        OscType::String(s) => ControlValue::String(s.clone()),
-        OscType::Bool(b) => ControlValue::Bool(*b),
+    match &osc_args[0] {
+        OscType::Float(f) => Ok(ControlValue::Float(*f)),
+        OscType::Int(i) => Ok(ControlValue::Int(*i)),
+        OscType::String(s) => {
+            if s.len() > MAX_STRING_VALUE_LENGTH {
+                return Err(ControlError::InvalidMessage(format!(
+                    "String value too long (max {} chars)",
+                    MAX_STRING_VALUE_LENGTH
+                )));
+            }
+            Ok(ControlValue::String(s.clone()))
+        }
+        OscType::Bool(b) => Ok(ControlValue::Bool(*b)),
         OscType::Color(color) => {
             // OscColor has r, g, b, a fields (each u8)
             let rgba = ((color.red as u32) << 24)
@@ -208,5 +219,16 @@ mod tests {
         let value = ControlValue::Vec2(1.0, 2.0);
         let osc = control_value_to_osc(&value);
         assert_eq!(osc, vec![OscType::Float(1.0), OscType::Float(2.0)]);
+    }
+
+    #[test]
+    fn test_huge_string_value() {
+        // Construct a huge string value
+        let huge_string = "a".repeat(10000);
+        let args = vec![OscType::String(huge_string.clone())];
+
+        // This should now fail due to length limits
+        let result = osc_to_control_value(&args);
+        assert!(result.is_err());
     }
 }

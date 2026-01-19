@@ -158,6 +158,7 @@ pub enum UIAction {
 
     // Settings
     SetLanguage(String),
+    ConnectHue,
 
     // Help actions
     OpenDocs,

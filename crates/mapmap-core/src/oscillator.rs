@@ -8,12 +8,16 @@ use serde::{Deserialize, Serialize};
 /// Simulation resolution presets
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SimulationResolution {
-    Low,    // 128x128
-    Medium, // 256x256
-    High,   // 512x512
+    /// Low resolution (128x128)
+    Low,
+    /// Medium resolution (256x256)
+    Medium,
+    /// High resolution (512x512)
+    High,
 }
 
 impl SimulationResolution {
+    /// Get the dimensions of the simulation grid
     pub fn dimensions(&self) -> (u32, u32) {
         match self {
             SimulationResolution::Low => (128, 128),
@@ -26,23 +30,33 @@ impl SimulationResolution {
 /// Phase initialization modes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhaseInitMode {
+    /// Random phase
     Random,
+    /// Uniform phase
     Uniform,
+    /// Plane wave horizontal
     PlaneHorizontal,
+    /// Plane wave vertical
     PlaneVertical,
+    /// Plane wave diagonal
     PlaneDiagonal,
 }
 
 /// Color overlay modes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ColorMode {
+    /// No color overlay
     Off,
+    /// Rainbow color cycle
     Rainbow,
+    /// Black and white
     BlackWhite,
+    /// Complementary colors
     Complementary,
 }
 
 impl ColorMode {
+    /// Convert to u32 representation
     pub fn to_u32(&self) -> u32 {
         match self {
             ColorMode::Off => 0,
@@ -56,7 +70,9 @@ impl ColorMode {
 /// Coordinate system modes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CoordinateMode {
+    /// Cartesian coordinates
     Cartesian,
+    /// Log-polar coordinates
     LogPolar,
 }
 
@@ -85,25 +101,39 @@ impl Default for RingParams {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OscillatorConfig {
     // Simulation parameters
+    /// Resolution of the simulation grid
     pub simulation_resolution: SimulationResolution,
+    /// Radius of the coupling kernel
     pub kernel_radius: f32,
+    /// Coupling ring parameters
     pub rings: [RingParams; 4],
-    pub frequency_min: f32, // Hz
-    pub frequency_max: f32, // Hz
+    /// Minimum frequency in Hz
+    pub frequency_min: f32,
+    /// Maximum frequency in Hz
+    pub frequency_max: f32,
+    /// Amount of noise to add to phase
     pub noise_amount: f32,
+    /// Coordinate system for simulation
     pub coordinate_mode: CoordinateMode,
+    /// Initial phase configuration
     pub phase_init_mode: PhaseInitMode,
 
     // Distortion parameters
+    /// Amount of distortion applied to UVs
     pub distortion_amount: f32,
+    /// Scale of the distortion texture
     pub distortion_scale: f32,
+    /// Speed global multiplier
     pub distortion_speed: f32,
 
     // Visual parameters
+    /// Opacity of the debug color overlay
     pub overlay_opacity: f32,
+    /// Color mapping mode for overlay
     pub color_mode: ColorMode,
 
     // Runtime state
+    /// Whether the simulation is active
     pub enabled: bool,
 }
 

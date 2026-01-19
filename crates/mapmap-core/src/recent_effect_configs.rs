@@ -25,13 +25,21 @@ pub struct EffectConfig {
 /// Parameter value types for effects
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EffectParamValue {
+    /// Float value
     Float(f32),
+    /// Integer value
     Int(i32),
+    /// Boolean value
     Bool(bool),
+    /// vector2 value
     Vec2([f32; 2]),
+    /// vector3 value
     Vec3([f32; 3]),
+    /// vector4 value
     Vec4([f32; 4]),
+    /// Color value (RGBA)
     Color([f32; 4]),
+    /// String value
     String(String),
 }
 
@@ -302,6 +310,7 @@ pub fn create_blur_config(radius: f32, sigma: f32) -> EffectConfig {
     EffectConfig::new(params)
 }
 
+/// Helper to create a color config
 pub fn create_color_config(hue: f32, saturation: f32, brightness: f32) -> EffectConfig {
     let mut params = HashMap::new();
     params.insert("hue".to_string(), EffectParamValue::Float(hue));

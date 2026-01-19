@@ -9,6 +9,7 @@ mod window_manager;
 use anyhow::Result;
 use egui_wgpu::Renderer;
 use egui_winit::State;
+use mapmap_control::hue::controller::HueController;
 #[cfg(feature = "midi")]
 use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::{shortcuts::Action, ControlManager};
@@ -150,8 +151,12 @@ struct App {
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
     /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Cache for output preview textures (OutputID -> EguiTextureId)
+    output_preview_cache: HashMap<u64, egui::TextureId>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
+    /// Philips Hue Controller
+    hue_controller: HueController,
 }
 
 impl App {
@@ -485,7 +490,74 @@ impl App {
             (vb, ib, preview_mesh.indices.len() as u32)
         };
 
-        let mut app = Self {
+        // Initialize Hue Controller
+        let ui_hue_conf = &ui_state.user_config.hue_config;
+        let control_hue_conf = mapmap_control::hue::models::HueConfig {
+            bridge_ip: ui_hue_conf.bridge_ip.clone(),
+            username: ui_hue_conf.username.clone(),
+            client_key: ui_hue_conf.client_key.clone(),
+            application_id: String::new(), // Will be fetched if needed
+            entertainment_group_id: ui_hue_conf.entertainment_area.clone(),
+        };
+
+        let mut hue_controller = HueController::new(control_hue_conf);
+
+        // Try to connect if IP is set
+        if !ui_state.user_config.hue_config.bridge_ip.is_empty() {
+            info!("Initializing Hue Controller...");
+            if let Err(e) = hue_controller.connect().await {
+                warn!("Hue Controller initial connection failed: {}", e);
+            }
+        }
+
+        let control_manager = ControlManager::new();
+        let sys_info = sysinfo::System::new_all();
+        let (dummy_texture, dummy_view) = {
+            let texture = backend.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("Dummy Input Texture"),
+                size: wgpu::Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            });
+            let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+            (texture, view)
+        };
+
+        #[cfg(feature = "midi")]
+        let midi_handler = {
+            match MidiInputHandler::new() {
+                Ok(mut handler) => {
+                    info!("MIDI initialized");
+                    if let Ok(ports) = MidiInputHandler::list_ports() {
+                        info!("Available MIDI ports: {:?}", ports);
+                        // Auto-connect to first port if available
+                        if !ports.is_empty() {
+                            if let Err(e) = handler.connect(0) {
+                                error!("Failed to auto-connect MIDI: {}", e);
+                            } else {
+                                info!("Auto-connected to MIDI port: {}", ports[0]);
+                            }
+                        }
+                    }
+                    Some(handler)
+                }
+                Err(e) => {
+                    error!("Failed to init MIDI: {}", e);
+                    None
+                }
+            }
+        };
+
+        let app = Self {
             window_manager,
             ui_state,
             backend,
@@ -508,42 +580,20 @@ impl App {
             last_update: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
             mcp_receiver,
-            control_manager: ControlManager::new(),
+            control_manager,
             exit_requested: false,
             oscillator_renderer,
-            dummy_texture: None,
-            dummy_view: None,
+            dummy_texture: Some(dummy_texture),
+            dummy_view: Some(dummy_view),
             module_evaluator: ModuleEvaluator::new(),
             media_players: HashMap::new(),
-            fps_samples: VecDeque::with_capacity(60),
-            current_fps: 60.0,
-            current_frame_time_ms: 16.6,
-            sys_info: sysinfo::System::new_all(),
+            fps_samples: VecDeque::new(),
+            current_fps: 0.0,
+            current_frame_time_ms: 0.0,
+            sys_info,
             last_sysinfo_refresh: std::time::Instant::now(),
             #[cfg(feature = "midi")]
-            midi_handler: {
-                match MidiInputHandler::new() {
-                    Ok(mut handler) => {
-                        info!("MIDI initialized");
-                        if let Ok(ports) = MidiInputHandler::list_ports() {
-                            info!("Available MIDI ports: {:?}", ports);
-                            // Auto-connect to first port if available
-                            if !ports.is_empty() {
-                                if let Err(e) = handler.connect(0) {
-                                    error!("Failed to auto-connect MIDI: {}", e);
-                                } else {
-                                    info!("Auto-connected to MIDI port: {}", ports[0]);
-                                }
-                            }
-                        }
-                        Some(handler)
-                    }
-                    Err(e) => {
-                        error!("Failed to init MIDI: {}", e);
-                        None
-                    }
-                }
-            },
+            midi_handler,
             #[cfg(feature = "midi")]
             midi_ports: MidiInputHandler::list_ports().unwrap_or_default(),
             #[cfg(feature = "midi")]
@@ -553,13 +603,14 @@ impl App {
             {
                 None
             } else {
-                Some(0)
+                Some(0) // Assuming auto-connect to first port succeeded
             },
             #[cfg(feature = "ndi")]
             ndi_receivers: std::collections::HashMap::new(),
             #[cfg(feature = "ndi")]
             ndi_senders: std::collections::HashMap::new(),
-            output_assignments: HashMap::new(),
+
+            output_assignments: std::collections::HashMap::new(),
             shader_graph_manager: mapmap_render::ShaderGraphManager::new(),
             recent_effect_configs: mapmap_core::RecentEffectConfigs::with_persistence(
                 dirs::data_dir()
@@ -572,7 +623,9 @@ impl App {
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
             preview_texture_cache: HashMap::new(),
+            output_preview_cache: HashMap::new(),
             preview_quad_buffers,
+            hue_controller,
         };
 
         // Create initial dummy texture
@@ -993,54 +1046,56 @@ impl App {
 
                 // Update all active media players and upload frames to texture pool
                 // This ensures previews work even without triggers connected
-                let player_ids: Vec<u64> = self.media_players.keys().cloned().collect();
-                if !player_ids.is_empty() {
-                    debug!("Updating {} active media players", player_ids.len());
-                }
-                for part_id in player_ids {
-                    if let Some(player) = self.media_players.get_mut(&part_id) {
-                        debug!(
-                            "Updating player for part_id={}, state={:?}",
-                            part_id,
-                            player.state()
-                        );
-                        if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                            debug!(
-                                "Got frame for part_id={}, size={}x{}",
-                                part_id, frame.format.width, frame.format.height
-                            );
-                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                                let tex_name = format!("part_{}", part_id);
-                                debug!(
-                                    "Uploading texture '{}' with {} bytes",
-                                    tex_name,
-                                    data.len()
-                                );
-                                self.texture_pool.upload_data(
-                                    &self.backend.queue,
-                                    &tex_name,
-                                    data,
-                                    frame.format.width,
-                                    frame.format.height,
-                                );
-                            } else {
-                                debug!("Frame data is GPU-based, not CPU");
-                            }
-                        }
 
-                        // Sync player info to UI for timeline display
-                        self.ui_state.module_canvas.player_info.insert(
-                            part_id,
-                            mapmap_ui::MediaPlayerInfo {
-                                current_time: player.current_time().as_secs_f64(),
-                                duration: player.duration().as_secs_f64(),
-                                is_playing: matches!(
-                                    player.state(),
-                                    mapmap_media::PlaybackState::Playing
-                                ),
-                            },
+                // ⚡ Bolt Optimization: Use disjoint borrowing to avoid collecting keys and re-looking up players
+                // This removes N heap allocations and N hash lookups per frame.
+                let texture_pool = &mut self.texture_pool;
+                let queue = &self.backend.queue;
+                let ui_state = &mut self.ui_state;
+                let media_players = &mut self.media_players;
+
+                if !media_players.is_empty() {
+                    debug!("Updating {} active media players", media_players.len());
+                }
+
+                for (part_id, player) in media_players {
+                    debug!(
+                        "Updating player for part_id={}, state={:?}",
+                        part_id,
+                        player.state()
+                    );
+                    if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
+                        debug!(
+                            "Got frame for part_id={}, size={}x{}",
+                            part_id, frame.format.width, frame.format.height
                         );
+                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
+                            let tex_name = format!("part_{}", part_id);
+                            debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
+                            texture_pool.upload_data(
+                                queue,
+                                &tex_name,
+                                data,
+                                frame.format.width,
+                                frame.format.height,
+                            );
+                        } else {
+                            debug!("Frame data is GPU-based, not CPU");
+                        }
                     }
+
+                    // Sync player info to UI for timeline display
+                    ui_state.module_canvas.player_info.insert(
+                        *part_id,
+                        mapmap_ui::MediaPlayerInfo {
+                            current_time: player.current_time().as_secs_f64(),
+                            duration: player.duration().as_secs_f64(),
+                            is_playing: matches!(
+                                player.state(),
+                                mapmap_media::PlaybackState::Playing
+                            ),
+                        },
+                    );
                 }
 
                 if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
@@ -1138,6 +1193,22 @@ impl App {
                                         }
                                     }
                                 }
+
+                                mapmap_core::SourceCommand::HueOutput {
+                                    brightness,
+                                    hue,
+                                    saturation,
+                                    strobe,
+                                    ids,
+                                } => {
+                                    self.hue_controller.update_from_command(
+                                        ids.as_deref(),
+                                        *brightness,
+                                        *hue,
+                                        *saturation,
+                                        *strobe,
+                                    );
+                                }
                                 _ => {}
                             }
                         }
@@ -1168,6 +1239,9 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
+                                            mapmap_core::module::OutputType::Oscillator {
+                                                ..
+                                            } => "Oscillator".to_string(),
                                             mapmap_core::module::OutputType::Hue { .. } =>
                                                 "Hue".to_string(),
                                         }
@@ -1389,6 +1463,14 @@ impl App {
                             element_id,
                             target_id
                         );
+                    }
+                }
+                mapmap_ui::UIAction::ConnectHue => {
+                    info!("Connecting to Philips Hue Bridge...");
+                    if let Err(e) = pollster::block_on(self.hue_controller.connect()) {
+                        error!("Failed to connect to Hue Bridge: {}", e);
+                    } else {
+                        info!("Successfully connected to Hue Bridge");
                     }
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
@@ -2040,6 +2122,42 @@ impl App {
 
                 // Update UI state map
                 self.ui_state.module_canvas.node_previews = current_frame_previews;
+
+                // Register Output Preview Textures for the Preview Panel
+                // Build a map of OutputID -> texture_id for outputs that have assigned textures
+                let mut current_output_previews: HashMap<u64, egui::TextureId> = HashMap::new();
+                for (output_id, tex_name) in &self.output_assignments {
+                    if self.texture_pool.has_texture(tex_name) {
+                        let tex_view = self.texture_pool.get_view(tex_name);
+
+                        // Check if already cached
+                        let texture_id =
+                            if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
+                                cached_id
+                            } else {
+                                // Register new texture with egui
+                                let new_id = self.egui_renderer.register_native_texture(
+                                    &self.backend.device,
+                                    &tex_view,
+                                    wgpu::FilterMode::Linear,
+                                );
+                                self.output_preview_cache.insert(*output_id, new_id);
+                                new_id
+                            };
+
+                        current_output_previews.insert(*output_id, texture_id);
+                    }
+                }
+
+                // Cleanup stale output preview cache entries
+                self.output_preview_cache.retain(|id, tex_id| {
+                    if !current_output_previews.contains_key(id) {
+                        self.egui_renderer.free_texture(tex_id);
+                        false
+                    } else {
+                        true
+                    }
+                });
             }
 
             let dashboard_action = None;
@@ -2467,6 +2585,7 @@ impl App {
                                                                 name: name.clone(),
                                                                 show_in_panel: *show_in_preview_panel,
                                                                 texture_name: self.output_assignments.get(id).cloned(),
+                                                                texture_id: self.output_preview_cache.get(id).copied(),
                                                             })
                                                         }
                                                         _ => None,
@@ -2478,6 +2597,10 @@ impl App {
                                         })
                                         .collect();
                                     self.ui_state.preview_panel.update_outputs(output_infos);
+                                    // Ensure continuous repaint for live preview
+                                    if self.ui_state.show_preview_panel {
+                                        ctx.request_repaint();
+                                    }
                                     self.ui_state.preview_panel.show(ui);
                                 }
                             });
@@ -2673,6 +2796,63 @@ impl App {
                                                 self.state.dirty = true;
                                             }
                                         });
+                                    });
+
+                                ui.separator();
+
+                                // Philips Hue Settings
+                                egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        let hue_conf = &mut self.ui_state.user_config.hue_config;
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Bridge IP:");
+                                            if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
+                                                // Sync to controller config if possible, or just wait for connect
+                                                let _ = self.ui_state.user_config.save();
+                                            }
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("App Key (User):");
+                                            ui.add_enabled(false, egui::TextEdit::singleline(&mut hue_conf.username));
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Client Key:");
+                                            ui.add_enabled(false, egui::TextEdit::singleline(&mut hue_conf.client_key).password(true));
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Entertainment Area:");
+                                            if ui.text_edit_singleline(&mut hue_conf.entertainment_area).changed() {
+                                                let _ = self.ui_state.user_config.save();
+                                            }
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            if ui.checkbox(&mut hue_conf.auto_connect, "Auto Connect via Main Settings").changed() {
+                                                let _ = self.ui_state.user_config.save();
+                                            }
+                                        });
+
+                                        ui.add_space(5.0);
+
+                                        ui.horizontal(|ui| {
+                                            if ui.button("Verbinden (Sync)").clicked() {
+                                                self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
+                                            }
+
+                                            // Connection Status Display
+                                            if self.hue_controller.is_connected() {
+                                                 ui.colored_label(egui::Color32::GREEN, "Connected");
+                                            } else {
+                                                 ui.colored_label(egui::Color32::RED, "Disconnected");
+                                            }
+                                        });
+
+                                        ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
                                     });
 
                                 ui.separator();
