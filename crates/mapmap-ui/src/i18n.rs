@@ -36,13 +36,18 @@ impl LocaleManager {
         let available_locales: Vec<LanguageIdentifier> =
             vec!["en".parse().unwrap(), "de".parse().unwrap()];
 
-        // Negotiate
-        let requested = vec![lang_id.clone()];
-        let default = "en".parse().unwrap();
+        // Negotiate - fluent_langneg 0.14 uses its own LanguageIdentifier
+        let requested: Vec<fluent_langneg::LanguageIdentifier> =
+            vec![lang_id.to_string().parse().unwrap()];
+        let available_fl: Vec<fluent_langneg::LanguageIdentifier> = available_locales
+            .iter()
+            .map(|l| l.to_string().parse().unwrap())
+            .collect();
+        let default_fl: fluent_langneg::LanguageIdentifier = "en".parse().unwrap();
         let supported = negotiate_languages(
             &requested,
-            &available_locales,
-            Some(&default),
+            &available_fl,
+            Some(&default_fl),
             NegotiationStrategy::Filtering,
         );
 
