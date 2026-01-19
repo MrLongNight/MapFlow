@@ -303,6 +303,100 @@ pub enum TriggerTarget {
     Param(String),
 }
 
+/// Mapping mode for trigger value transformation
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub enum TriggerMappingMode {
+    /// Direct mapping: output = lerp(min, max, trigger_value)
+    #[default]
+    Direct,
+    /// Fixed value when triggered: output = max_value when trigger > threshold
+    Fixed,
+    /// Random value in [min, max] range when triggered
+    RandomInRange,
+    /// Smoothed with attack/release
+    Smoothed {
+        /// Attack time in seconds
+        attack: f32,
+        /// Release time in seconds  
+        release: f32,
+    },
+}
+
+/// Configuration for how a trigger input maps to a target parameter
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TriggerConfig {
+    /// Target parameter to control
+    pub target: TriggerTarget,
+    /// Mapping mode
+    pub mode: TriggerMappingMode,
+    /// Minimum output value
+    pub min_value: f32,
+    /// Maximum output value
+    pub max_value: f32,
+    /// Invert the trigger value (1 - value)
+    pub invert: bool,
+    /// Threshold for Fixed mode (trigger activates when value > threshold)
+    pub threshold: f32,
+}
+
+impl Default for TriggerConfig {
+    fn default() -> Self {
+        Self {
+            target: TriggerTarget::None,
+            mode: TriggerMappingMode::Direct,
+            min_value: 0.0,
+            max_value: 1.0,
+            invert: false,
+            threshold: 0.5,
+        }
+    }
+}
+
+impl TriggerConfig {
+    /// Create a config for a specific target with default mapping
+    pub fn for_target(target: TriggerTarget) -> Self {
+        Self {
+            target,
+            ..Default::default()
+        }
+    }
+
+    /// Apply the mapping mode to transform the raw trigger value
+    pub fn apply(&self, raw_value: f32) -> f32 {
+        let value = if self.invert {
+            1.0 - raw_value
+        } else {
+            raw_value
+        };
+
+        match &self.mode {
+            TriggerMappingMode::Direct => {
+                self.min_value + (self.max_value - self.min_value) * value
+            }
+            TriggerMappingMode::Fixed => {
+                if value > self.threshold {
+                    self.max_value
+                } else {
+                    self.min_value
+                }
+            }
+            TriggerMappingMode::RandomInRange => {
+                if value > 0.0 {
+                    use rand::Rng;
+                    let mut rng = rand::rng();
+                    rng.random_range(self.min_value..=self.max_value)
+                } else {
+                    self.min_value
+                }
+            }
+            TriggerMappingMode::Smoothed { .. } => {
+                // TODO: Implement stateful smoothing
+                self.min_value + (self.max_value - self.min_value) * value
+            }
+        }
+    }
+}
+
 /// Configuration for the Link System (Master/Slave nodes)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeLinkData {

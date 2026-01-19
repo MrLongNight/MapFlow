@@ -845,6 +845,10 @@ impl ModuleEvaluator {
                                     }
 
                                     if trigger_val > 0.0 {
+                                        tracing::debug!(
+                                            "Trigger applying: part={}, socket={}, target={:?}, value={}",
+                                            part.id, socket_idx, target, trigger_val
+                                        );
                                         match target {
                                             crate::module::TriggerTarget::Opacity => {
                                                 props.opacity = trigger_val
