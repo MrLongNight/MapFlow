@@ -1030,61 +1030,107 @@ impl App {
                     );
                 }
 
-                if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
-                    if let Some(module) = self.state.module_manager.get_module(active_module_id) {
-                        let result = self.module_evaluator.evaluate(module);
+                // Determine module to evaluate: either active from UI, or root_module
+                let module_to_evaluate = self
+                    .ui_state
+                    .module_canvas
+                    .active_module_id
+                    .and_then(|id| self.state.module_manager.get_module(id))
+                    .or_else(|| self.state.module_manager.list_modules().first().map(|m| *m));
 
-                        // Update UI Trigger Visualization
-                        self.ui_state.module_canvas.last_trigger_values = result
-                            .trigger_values
-                            .iter()
-                            .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
-                            .collect();
+                if let Some(module) = module_to_evaluate {
+                    let result = self.module_evaluator.evaluate(module);
 
-                        // 1. Handle Source Commands
-                        for (part_id, cmd) in &result.source_commands {
-                            match cmd {
-                                mapmap_core::SourceCommand::PlayMedia {
-                                    path,
-                                    trigger_value,
-                                } => {
-                                    let path = path.clone();
-                                    let trigger_value = *trigger_value;
-                                    let part_id = *part_id;
+                    // Assign Render Ops for next frame!
+                    self.render_ops = result.render_ops.clone();
 
-                                    if path.is_empty() {
-                                        continue;
-                                    }
+                    // Update UI Trigger Visualization
+                    self.ui_state.module_canvas.last_trigger_values = result
+                        .trigger_values
+                        .iter()
+                        .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
+                        .collect();
 
-                                    // Check if player exists or needs creation
-                                    let player_exists = self.media_players.contains_key(&part_id);
+                    // 1. Handle Source Commands
+                    for (part_id, cmd) in &result.source_commands {
+                        match cmd {
+                            mapmap_core::SourceCommand::PlayMedia {
+                                path,
+                                trigger_value,
+                            } => {
+                                let path = path.clone();
+                                let trigger_value = *trigger_value;
+                                let part_id = *part_id;
 
-                                    if !player_exists {
-                                        match mapmap_media::open_path(&path) {
-                                            Ok(player) => {
-                                                self.media_players.insert(part_id, player);
-                                            }
-                                            Err(e) => {
-                                                // Log error only once per failure to avoid spam?
-                                                // For now just error
-                                                error!("Failed to load media '{}': {}", path, e);
-                                                continue;
-                                            }
+                                if path.is_empty() {
+                                    continue;
+                                }
+
+                                // Check if player exists or needs creation
+                                let player_exists = self.media_players.contains_key(&part_id);
+
+                                if !player_exists {
+                                    match mapmap_media::open_path(&path) {
+                                        Ok(player) => {
+                                            self.media_players.insert(part_id, player);
+                                        }
+                                        Err(e) => {
+                                            // Log error only once per failure to avoid spam?
+                                            // For now just error
+                                            error!("Failed to load media '{}': {}", path, e);
+                                            continue;
                                         }
                                     }
+                                }
 
-                                    if let Some(player) = self.media_players.get_mut(&part_id) {
-                                        // Trigger update
-                                        if trigger_value > 0.1 {
-                                            let _ =
-                                                player.command_sender().send(PlaybackCommand::Play);
-                                        }
+                                if let Some(player) = self.media_players.get_mut(&part_id) {
+                                    // Trigger update
+                                    if trigger_value > 0.1 {
+                                        let _ = player.command_sender().send(PlaybackCommand::Play);
+                                    }
 
-                                        // Update player with fixed DT for now (should use real DT)
-                                        if let Some(frame) =
-                                            player.update(std::time::Duration::from_millis(16))
+                                    // Update player with fixed DT for now (should use real DT)
+                                    if let Some(frame) =
+                                        player.update(std::time::Duration::from_millis(16))
+                                    {
+                                        // Upload to texture pool
+                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
                                         {
-                                            // Upload to texture pool
+                                            let tex_name = format!("part_{}", part_id);
+                                            self.texture_pool.upload_data(
+                                                &self.backend.queue,
+                                                &tex_name,
+                                                data,
+                                                frame.format.width,
+                                                frame.format.height,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                            mapmap_core::SourceCommand::NdiInput {
+                                source_name: _source_name,
+                                trigger_value: _,
+                            } => {
+                                let _part_id = *part_id;
+                                #[cfg(feature = "ndi")]
+                                {
+                                    if let Some(src_name) = _source_name {
+                                        let receiver = self
+                                            .ndi_receivers
+                                            .entry(part_id)
+                                            .or_insert_with(|| {
+                                                info!(
+                                                    "Creating NDI receiver for part {} source {}",
+                                                    part_id, src_name
+                                                );
+                                                mapmap_io::ndi::NdiReceiver::new()
+                                                    .expect("Failed to create NDI receiver")
+                                            });
+
+                                        if let Ok(Some(frame)) =
+                                            receiver.receive(std::time::Duration::from_millis(0))
+                                        {
                                             if let mapmap_io::format::FrameData::Cpu(data) =
                                                 &frame.data
                                             {
@@ -1100,122 +1146,89 @@ impl App {
                                         }
                                     }
                                 }
-                                mapmap_core::SourceCommand::NdiInput {
-                                    source_name: _source_name,
-                                    trigger_value: _,
-                                } => {
-                                    let _part_id = *part_id;
-                                    #[cfg(feature = "ndi")]
-                                    {
-                                        if let Some(src_name) = _source_name {
-                                            let receiver = self.ndi_receivers.entry(part_id).or_insert_with(|| {
-                                                info!("Creating NDI receiver for part {} source {}", part_id, src_name);
-                                                 mapmap_io::ndi::NdiReceiver::new().expect("Failed to create NDI receiver")
-                                            });
-
-                                            if let Ok(Some(frame)) = receiver
-                                                .receive(std::time::Duration::from_millis(0))
-                                            {
-                                                if let mapmap_io::format::FrameData::Cpu(data) =
-                                                    &frame.data
-                                                {
-                                                    let tex_name = format!("part_{}", part_id);
-                                                    self.texture_pool.upload_data(
-                                                        &self.backend.queue,
-                                                        &tex_name,
-                                                        data,
-                                                        frame.format.width,
-                                                        frame.format.height,
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                mapmap_core::SourceCommand::HueOutput {
-                                    brightness,
-                                    hue,
-                                    saturation,
-                                    strobe,
-                                    ids,
-                                } => {
-                                    self.hue_controller.update_from_command(
-                                        ids.as_deref(),
-                                        *brightness,
-                                        *hue,
-                                        *saturation,
-                                        *strobe,
-                                    );
-                                }
-                                _ => {}
                             }
-                        }
 
-                        // 2. Handle Render Ops (New System)
-                        self.render_ops = result.render_ops.clone();
-                        static mut LAST_RENDER_LOG: u64 = 0;
-                        let now_ms = (timestamp * 1000.0) as u64;
-                        unsafe {
-                            if now_ms / 1000 > LAST_RENDER_LOG {
-                                LAST_RENDER_LOG = now_ms / 1000;
-                                info!("=== Render Pipeline Status ===");
-                                info!("  render_ops count: {}", self.render_ops.len());
-                                for (i, op) in self.render_ops.iter().enumerate() {
-                                    info!(
-                                        "  Op[{}]: source_part_id={:?}, output={:?}",
-                                        i,
-                                        op.source_part_id,
-                                        match &op.output_type {
-                                            mapmap_core::module::OutputType::Projector {
-                                                id,
-                                                ..
-                                            } => format!("Projector({})", id),
-                                            mapmap_core::module::OutputType::NdiOutput { name } =>
-                                                format!("NDI({})", name),
-                                            #[cfg(target_os = "windows")]
-                                            mapmap_core::module::OutputType::Spout { name } =>
-                                                format!("Spout({})", name),
-
-                                            mapmap_core::module::OutputType::Hue { .. } =>
-                                                "Hue".to_string(),
-                                        }
-                                    );
-                                    if let Some(sid) = op.source_part_id {
-                                        let tex_name = format!("part_{}", sid);
-                                        let has_tex = self.texture_pool.has_texture(&tex_name);
-                                        info!("    -> Texture '{}' exists: {}", tex_name, has_tex);
-                                    }
-                                }
-                                info!("  media_players count: {}", self.media_players.len());
-                                for id in self.media_players.keys() {
-                                    info!("    -> Player for part_id={}", id);
-                                }
+                            mapmap_core::SourceCommand::HueOutput {
+                                brightness,
+                                hue,
+                                saturation,
+                                strobe,
+                                ids,
+                            } => {
+                                self.hue_controller.update_from_command(
+                                    ids.as_deref(),
+                                    *brightness,
+                                    *hue,
+                                    *saturation,
+                                    *strobe,
+                                );
                             }
+                            _ => {}
                         }
-
-                        // Update Output Assignments for Preview
-                        self.output_assignments.clear();
-                        for op in &self.render_ops {
-                            if let mapmap_core::module::OutputType::Projector { id, .. } =
-                                &op.output_type
-                            {
-                                if let Some(source_id) = op.source_part_id {
-                                    let tex_name = format!("part_{}", source_id);
-                                    self.output_assignments.insert(*id, tex_name);
-                                }
-                            }
-                        }
-
-                        // 3. Sync output windows with evaluation result
-                        // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
-                        // by temporarily taking ownership and restoring it immediately.
-                        let render_ops_temp = std::mem::take(&mut self.render_ops);
-                        if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
-                            error!("Failed to sync output windows: {}", e);
-                        }
-                        self.render_ops = render_ops_temp;
                     }
+
+                    // 2. Handle Render Ops (New System)
+                    self.render_ops = result.render_ops.clone();
+                    static mut LAST_RENDER_LOG: u64 = 0;
+                    let now_ms = (timestamp * 1000.0) as u64;
+                    unsafe {
+                        if now_ms / 1000 > LAST_RENDER_LOG {
+                            LAST_RENDER_LOG = now_ms / 1000;
+                            info!("=== Render Pipeline Status ===");
+                            info!("  render_ops count: {}", self.render_ops.len());
+                            for (i, op) in self.render_ops.iter().enumerate() {
+                                info!(
+                                    "  Op[{}]: source_part_id={:?}, output={:?}",
+                                    i,
+                                    op.source_part_id,
+                                    match &op.output_type {
+                                        mapmap_core::module::OutputType::Projector {
+                                            id, ..
+                                        } => format!("Projector({})", id),
+                                        mapmap_core::module::OutputType::NdiOutput { name } =>
+                                            format!("NDI({})", name),
+                                        #[cfg(target_os = "windows")]
+                                        mapmap_core::module::OutputType::Spout { name } =>
+                                            format!("Spout({})", name),
+
+                                        mapmap_core::module::OutputType::Hue { .. } =>
+                                            "Hue".to_string(),
+                                    }
+                                );
+                                if let Some(sid) = op.source_part_id {
+                                    let tex_name = format!("part_{}", sid);
+                                    let has_tex = self.texture_pool.has_texture(&tex_name);
+                                    info!("    -> Texture '{}' exists: {}", tex_name, has_tex);
+                                }
+                            }
+                            info!("  media_players count: {}", self.media_players.len());
+                            for id in self.media_players.keys() {
+                                info!("    -> Player for part_id={}", id);
+                            }
+                        }
+                    }
+
+                    // Update Output Assignments for Preview
+                    self.output_assignments.clear();
+                    for op in &self.render_ops {
+                        if let mapmap_core::module::OutputType::Projector { id, .. } =
+                            &op.output_type
+                        {
+                            if let Some(source_id) = op.source_part_id {
+                                let tex_name = format!("part_{}", source_id);
+                                self.output_assignments.insert(*id, tex_name);
+                            }
+                        }
+                    }
+
+                    // 3. Sync output windows with evaluation result
+                    // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
+                    // by temporarily taking ownership and restoring it immediately.
+                    let render_ops_temp = std::mem::take(&mut self.render_ops);
+                    if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+                        error!("Failed to sync output windows: {}", e);
+                    }
+                    self.render_ops = render_ops_temp;
                 }
 
                 // Convert V2 analysis to legacy format for UI compatibility
