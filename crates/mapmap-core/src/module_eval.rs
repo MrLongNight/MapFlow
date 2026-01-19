@@ -13,6 +13,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::time::Instant;
 
+<<<<<<< HEAD
 /// State for individual trigger nodes, stored in the evaluator
 #[derive(Debug, Clone, Default)]
 pub enum TriggerState {
@@ -26,6 +27,8 @@ pub enum TriggerState {
     },
 }
 
+=======
+>>>>>>> feature/libmpv2-integration
 /// Source-specific rendering properties (from MediaFile)
 #[derive(Debug, Clone, Default)]
 pub struct SourceProperties {
@@ -75,6 +78,7 @@ impl SourceProperties {
     }
 }
 
+<<<<<<< HEAD
 #[cfg(test)]
 mod tests_evaluator {
     use super::*;
@@ -326,6 +330,8 @@ mod tests_evaluator {
     }
 }
 
+=======
+>>>>>>> feature/libmpv2-integration
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
@@ -659,7 +665,11 @@ impl ModuleEvaluator {
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
+<<<<<<< HEAD
                                         source_props: chain.source_props,
+=======
+                                        source_props: SourceProperties::default_identity(),
+>>>>>>> feature/libmpv2-integration
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
@@ -681,7 +691,11 @@ impl ModuleEvaluator {
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
+<<<<<<< HEAD
                                         source_props: chain.source_props.clone(),
+=======
+                                        source_props: SourceProperties::default_identity(),
+>>>>>>> feature/libmpv2-integration
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
