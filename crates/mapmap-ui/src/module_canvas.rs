@@ -5561,11 +5561,19 @@ impl ModuleCanvas {
             self.get_audio_trigger_state(&part.part_type);
 
         // Check generic trigger value from evaluator
-        let generic_trigger_value = self.last_trigger_values.get(&part.id).copied().unwrap_or(0.0);
+        let generic_trigger_value = self
+            .last_trigger_values
+            .get(&part.id)
+            .copied()
+            .unwrap_or(0.0);
         let is_generic_active = generic_trigger_value > 0.1;
 
         // Combine
-        let trigger_value = if is_generic_active { generic_trigger_value } else { audio_trigger_value };
+        let trigger_value = if is_generic_active {
+            generic_trigger_value
+        } else {
+            audio_trigger_value
+        };
         let is_active = is_audio_active || is_generic_active;
 
         // Draw glow effect if active
@@ -5579,7 +5587,7 @@ impl ModuleCanvas {
             );
 
             // Draw a thick stroke as a glow replacement since Shadow is deprecated/removed
-             painter.rect_stroke(
+            painter.rect_stroke(
                 rect.expand(2.0 * self.zoom),
                 (8.0 * self.zoom) as u8,
                 Stroke::new(3.0 * self.zoom, glow_color.linear_multiply(0.5)),
