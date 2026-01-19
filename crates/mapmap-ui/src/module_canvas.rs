@@ -4983,46 +4983,68 @@ impl ModuleCanvas {
                 ui.label("Philips Hue Configuration");
 
                 // Helper to render common Hue controls
-                let draw_hue_controls = |ui: &mut Ui, brightness: &mut f32, color: &mut [f32; 3], effect: &mut Option<String>, effect_active: &mut bool| {
-                    ui.add_space(8.0);
-                    ui.group(|ui| {
-                        ui.label("Light Control");
-                        ui.horizontal(|ui| {
-                            ui.label("Brightness:");
-                            ui.add(egui::Slider::new(brightness, 0.0..=1.0).text("%"));
-                        });
+                let draw_hue_controls =
+                    |ui: &mut Ui,
+                     brightness: &mut f32,
+                     color: &mut [f32; 3],
+                     effect: &mut Option<String>,
+                     effect_active: &mut bool| {
+                        ui.add_space(8.0);
+                        ui.group(|ui| {
+                            ui.label("Light Control");
+                            ui.horizontal(|ui| {
+                                ui.label("Brightness:");
+                                ui.add(egui::Slider::new(brightness, 0.0..=1.0).text("%"));
+                            });
 
-                        ui.horizontal(|ui| {
-                            ui.label("Color:");
-                            ui.color_edit_button_rgb(color);
-                        });
+                            ui.horizontal(|ui| {
+                                ui.label("Color:");
+                                ui.color_edit_button_rgb(color);
+                            });
 
-                        ui.horizontal(|ui| {
-                            ui.label("Effect:");
-                            let current_effect = effect.as_deref().unwrap_or("None");
-                            egui::ComboBox::from_id_source("hue_effect")
-                                .selected_text(current_effect)
-                                .show_ui(ui, |ui| {
-                                    if ui.selectable_label(effect.is_none(), "None").clicked() {
-                                        *effect = None;
-                                    }
-                                    if ui.selectable_label(effect.as_deref() == Some("colorloop"), "Colorloop").clicked() {
-                                        *effect = Some("colorloop".to_string());
-                                    }
-                                });
-                        });
+                            ui.horizontal(|ui| {
+                                ui.label("Effect:");
+                                let current_effect = effect.as_deref().unwrap_or("None");
+                                egui::ComboBox::from_id_source("hue_effect")
+                                    .selected_text(current_effect)
+                                    .show_ui(ui, |ui| {
+                                        if ui.selectable_label(effect.is_none(), "None").clicked() {
+                                            *effect = None;
+                                        }
+                                        if ui
+                                            .selectable_label(
+                                                effect.as_deref() == Some("colorloop"),
+                                                "Colorloop",
+                                            )
+                                            .clicked()
+                                        {
+                                            *effect = Some("colorloop".to_string());
+                                        }
+                                    });
+                            });
 
-                        if effect.is_some() {
-                            let btn_text = if *effect_active { "Stop Effect" } else { "Start Effect" };
-                            if ui.button(btn_text).clicked() {
-                                *effect_active = !*effect_active;
+                            if effect.is_some() {
+                                let btn_text = if *effect_active {
+                                    "Stop Effect"
+                                } else {
+                                    "Start Effect"
+                                };
+                                if ui.button(btn_text).clicked() {
+                                    *effect_active = !*effect_active;
+                                }
                             }
-                        }
-                    });
-                };
+                        });
+                    };
 
                 match hue_node {
-                    HueNodeType::SingleLamp { id, name, brightness, color, effect, effect_active } => {
+                    HueNodeType::SingleLamp {
+                        id,
+                        name,
+                        brightness,
+                        color,
+                        effect,
+                        effect_active,
+                    } => {
                         ui.horizontal(|ui| {
                             ui.label("Name:");
                             ui.text_edit_singleline(name);
@@ -5033,7 +5055,14 @@ impl ModuleCanvas {
                         });
                         draw_hue_controls(ui, brightness, color, effect, effect_active);
                     }
-                    HueNodeType::MultiLamp { ids, name, brightness, color, effect, effect_active } => {
+                    HueNodeType::MultiLamp {
+                        ids,
+                        name,
+                        brightness,
+                        color,
+                        effect,
+                        effect_active,
+                    } => {
                         ui.horizontal(|ui| {
                             ui.label("Name:");
                             ui.text_edit_singleline(name);
@@ -5042,7 +5071,13 @@ impl ModuleCanvas {
                         ui.label("(Edit IDs in code/JSON for now)");
                         draw_hue_controls(ui, brightness, color, effect, effect_active);
                     }
-                    HueNodeType::EntertainmentGroup { name, brightness, color, effect, effect_active } => {
+                    HueNodeType::EntertainmentGroup {
+                        name,
+                        brightness,
+                        color,
+                        effect,
+                        effect_active,
+                    } => {
                         ui.horizontal(|ui| {
                             ui.label("Name:");
                             ui.text_edit_singleline(name);

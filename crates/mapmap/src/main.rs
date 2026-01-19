@@ -1490,7 +1490,8 @@ impl App {
                 mapmap_ui::UIAction::DiscoverHueBridges => {
                     info!("Discovering Philips Hue Bridges...");
                     // Discovery is async but meethue.com is usually fast.
-                    match pollster::block_on(mapmap_control::hue::api::discovery::discover_bridges()) {
+                    match pollster::block_on(mapmap_control::hue::api::discovery::discover_bridges())
+                    {
                         Ok(bridges) => {
                             info!("Discovered {} bridges", bridges.len());
                             self.ui_state.discovered_hue_bridges = bridges;
