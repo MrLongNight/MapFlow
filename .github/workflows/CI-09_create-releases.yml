@@ -53,17 +53,22 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
         shell: pwsh
+
       - name: Install ffmpeg via vcpkg
         run: |
-          .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
-          .\vcpkg\vcpkg.exe integrate install
+          .\vcpkg\vcpkg.exe install ffmpeg[core]:x64-windows
         shell: pwsh
 
-      - name: Build Release (Windows)
+      - name: Set VCPKG environment variables
+        run: |
+          echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $GITHUB_ENV
+          echo "${{ github.workspace }}\vcpkg\installed\x64-windows\bin" >> $GITHUB_PATH
+        shell: pwsh
+
+      - name: Build Release (mit FFMpeg)
         env:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          PATH: ${{ github.workspace }}\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
 
       - name: Check if binary exists and package
@@ -122,15 +127,19 @@ jobs:
 
       - name: Install ffmpeg via vcpkg
         run: |
-          .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
-          .\vcpkg\vcpkg.exe integrate install
+          .\vcpkg\vcpkg.exe install ffmpeg[core]:x64-windows
         shell: pwsh
 
-      - name: Build Release (Windows)
+      - name: Set VCPKG environment variables
+        run: |
+          echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $GITHUB_ENV
+          echo "${{ github.workspace }}\vcpkg\installed\x64-windows\bin" >> $GITHUB_PATH
+        shell: pwsh
+
+      - name: Build Release (mit FFMpeg)
         env:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          PATH: ${{ github.workspace }}\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
-        run: cargo build --release -p mapmap
+        run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
 
       - name: Check if binary exists
