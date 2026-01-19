@@ -2723,8 +2723,8 @@ impl ModuleCanvas {
                                 ui.menu_button("💡 Philips Hue", |ui| {
                                      ui.set_min_width(180.0);
                                      if (show_all || "single lamp".contains(&filter)) && ui.button("💡 Single Lamp").clicked() {
-                                         self.add_hue_node(manager, HueNodeType::SingleLamp { 
-                                             id: "1".to_string(), 
+                                         self.add_hue_node(manager, HueNodeType::SingleLamp {
+                                             id: "1".to_string(),
                                              name: "Lamp 1".to_string(),
                                              brightness: 1.0,
                                              color: [1.0, 1.0, 1.0],
@@ -2735,8 +2735,8 @@ impl ModuleCanvas {
                                          ui.close_menu();
                                      }
                                      if (show_all || "multi lamp".contains(&filter)) && ui.button("💡💡 Multi Lamp").clicked() {
-                                         self.add_hue_node(manager, HueNodeType::MultiLamp { 
-                                             ids: vec![], 
+                                         self.add_hue_node(manager, HueNodeType::MultiLamp {
+                                             ids: vec![],
                                              name: "Lamps".to_string(),
                                              brightness: 1.0,
                                              color: [1.0, 1.0, 1.0],
@@ -2747,7 +2747,7 @@ impl ModuleCanvas {
                                          ui.close_menu();
                                      }
                                      if (show_all || "entertainment group".contains(&filter)) && ui.button("🎭 Entertainment Group").clicked() {
-                                         self.add_hue_node(manager, HueNodeType::EntertainmentGroup { 
+                                         self.add_hue_node(manager, HueNodeType::EntertainmentGroup {
                                              name: "Group".to_string(),
                                              brightness: 1.0,
                                              color: [1.0, 1.0, 1.0],
@@ -4981,7 +4981,7 @@ impl ModuleCanvas {
             }
             ModulePartType::Hue(hue_node) => {
                 ui.label("Philips Hue Configuration");
-                
+
                 // Helper to render common Hue controls
                 let draw_hue_controls = |ui: &mut Ui, brightness: &mut f32, color: &mut [f32; 3], effect: &mut Option<String>, effect_active: &mut bool| {
                     ui.add_space(8.0);
