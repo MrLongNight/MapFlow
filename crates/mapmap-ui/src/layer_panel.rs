@@ -33,7 +33,6 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
-        icon_manager: Option<&crate::icons::IconManager>,
     ) {
         if !self.visible {
             return;
@@ -44,234 +43,203 @@ impl LayerPanel {
             .open(&mut open)
             .default_size([380.0, 400.0])
             .show(ctx, |ui| {
-                // --- Toolbar ---
-                egui::Frame::none()
-                    .inner_margin(egui::Margin::same(4.0))
-                    .fill(ui.visuals().faint_bg_color)
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            if ui.button(i18n.t("btn-add-layer")).clicked() {
-                                actions.push(UIAction::AddLayer);
-                            }
-                            if ui
-                                .add_enabled(
-                                    selected_layer_id.is_some(),
-                                    egui::Button::new(i18n.t("btn-remove")),
-                                )
-                                .on_hover_text(i18n.t("tooltip-remove-layer"))
-                                .clicked()
-                            {
-                                if let Some(id) = *selected_layer_id {
-                                    actions.push(UIAction::RemoveLayer(id));
-                                    *selected_layer_id = None;
-                                }
-                            }
-                            if ui
-                                .add_enabled(
-                                    selected_layer_id.is_some(),
-                                    egui::Button::new(i18n.t("btn-duplicate")),
-                                )
-                                .on_hover_text(i18n.t("tooltip-duplicate-layer"))
-                                .clicked()
-                            {
-                                if let Some(id) = *selected_layer_id {
-                                    actions.push(UIAction::DuplicateLayer(id));
-                                }
-                            }
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if ui
-                                        .button(i18n.t("btn-eject-all"))
-                                        .on_hover_text(i18n.t("tooltip-eject-all"))
-                                        .clicked()
-                                    {
-                                        actions.push(UIAction::EjectAllLayers);
-                                    }
-                                },
-                            );
-                        });
-                    });
-                // Separator removed as the faint background provides division
-
-                // --- Layer List ---
-                let mut move_layer = None;
-                let id_source = "layer_dnd_source";
-                let layer_ids: Vec<u64> = layer_manager.layers().iter().map(|l| l.id).collect();
-
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    let dragged_item_id =
-                        ctx.memory(|mem| mem.data.get_temp::<u64>(Id::new(id_source)));
-
-                    let mut drop_target_index = None;
-
-                    for (i, layer_id) in layer_ids.iter().enumerate() {
-                        // --- Render Drop Target ---
-                        if dragged_item_id.is_some() && dragged_item_id != Some(*layer_id) {
-                            let (_rect, response) = ui.allocate_exact_size(
-                                vec2(ui.available_width(), 4.0),
-                                Sense::hover(),
-                            );
-                            if response.hovered() {
-                                drop_target_index = Some(i);
-                                ui.painter().rect_filled(
-                                    response.rect,
-                                    Rounding::same(2.0),
-                                    ctx.style().visuals.selection.bg_fill,
-                                );
-                            }
+                ui.horizontal(|ui| {
+                    ui.label(i18n.t_args(
+                        "label-total-layers",
+                        &[("count", &layer_manager.layers().len().to_string())],
+                    ));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button(i18n.t("btn-eject-all")).clicked() {
+                            actions.push(UIAction::EjectAllLayers);
                         }
+                    });
+                });
+                ui.separator();
 
-                        // --- Render Layer Item ---
-                        if let Some(layer) = layer_manager.get_layer_mut(*layer_id) {
-                            let is_selected = *selected_layer_id == Some(*layer_id);
+                // Layer list area
+                let mut move_up_id = None;
+                let mut move_down_id = None;
 
-                            let frame = Frame::group(ui.style())
-                                .inner_margin(Margin::symmetric(8.0, 6.0))
-                                .fill(if is_selected {
-                                    ui.style().visuals.selection.bg_fill
-                                } else {
-                                    Color32::TRANSPARENT
-                                })
-                                .stroke(if is_selected {
-                                    ui.style().visuals.selection.stroke
-                                } else {
-                                    Stroke::NONE
-                                });
+                egui::ScrollArea::vertical()
+                    .max_height(300.0) // Limit height to leave room for bottom buttons
+                    .show(ui, |ui| {
+                        // Iterate over layer IDs to avoid borrow issues while mutating
+                        // We need indices to determine if move up/down is possible
+                        let layer_ids: Vec<u64> =
+                            layer_manager.layers().iter().map(|l| l.id).collect();
+                        let total_layers = layer_ids.len();
 
-                            let response = frame
-                                .show(ui, |ui| {
-                                    ui.horizontal(|ui| {
-                                        // Visibility Toggle
-                                        let mut icon_processed = false;
-                                        if let Some(mgr) = icon_manager {
-                                            let icon = if layer.visible {
-                                                crate::icons::AppIcon::Eye
-                                            } else {
-                                                crate::icons::AppIcon::EyeSlash
-                                            };
-                                            if let Some(img) = mgr.image(icon, 16.0) {
-                                                let btn = egui::ImageButton::new(img);
+                        for (index, layer_id) in layer_ids.iter().enumerate() {
+                            let is_first = index == 0;
+                            let is_last = index == total_layers - 1;
+
+                            if let Some(layer) = layer_manager.get_layer_mut(*layer_id) {
+                                ui.push_id(layer.id, |ui| {
+                                    // Layer Row
+                                    ui.group(|ui| {
+                                        ui.horizontal(|ui| {
+                                            // Reorder buttons
+                                            ui.vertical(|ui| {
                                                 if ui
-                                                    .add(btn)
-                                                    .on_hover_text(
-                                                        i18n.t("tooltip-toggle-visibility"),
-                                                    )
+                                                    .add_enabled(!is_first, egui::Button::new("⬆"))
                                                     .clicked()
                                                 {
-                                                    layer.visible = !layer.visible;
+                                                    move_up_id = Some(layer.id);
                                                 }
-                                                icon_processed = true;
+                                                if ui
+                                                    .add_enabled(!is_last, egui::Button::new("⬇"))
+                                                    .clicked()
+                                                {
+                                                    move_down_id = Some(layer.id);
+                                                }
+                                            });
+
+                                            // Visibility
+                                            let mut visible = layer.visible;
+                                            if ui.checkbox(&mut visible, "").changed() {
+                                                layer.visible = visible;
                                             }
-                                        }
-                                        if !icon_processed {
-                                            ui.checkbox(&mut layer.visible, "")
-                                                .on_hover_text(i18n.t("tooltip-toggle-visibility"));
-                                        }
 
-                                        // Layer Name
-                                        ui.label(&layer.name);
+                                            // Name and Selection
+                                            let is_selected = *selected_layer_id == Some(layer.id);
+                                            if ui
+                                                .selectable_label(is_selected, &layer.name)
+                                                .clicked()
+                                            {
+                                                *selected_layer_id = Some(layer.id);
+                                            }
 
-                                        ui.with_layout(
-                                            Layout::right_to_left(Align::Center),
-                                            |ui| {
-                                                // Opacity Slider
-                                                crate::widgets::styled_slider(
-                                                    ui,
-                                                    &mut layer.opacity,
-                                                    0.0..=1.0,
+                                            ui.with_layout(
+                                                egui::Layout::right_to_left(egui::Align::Center),
+                                                |ui| {
+                                                    // Phase 1: Layer management buttons (Duplicate, Remove)
+                                                    if ui
+                                                        .small_button("🗑")
+                                                        .on_hover_text(i18n.t("btn-remove"))
+                                                        .clicked()
+                                                    {
+                                                        actions
+                                                            .push(UIAction::RemoveLayer(layer.id));
+                                                    }
+                                                    if ui
+                                                        .small_button("📄")
+                                                        .on_hover_text(i18n.t("btn-duplicate"))
+                                                        .clicked()
+                                                    {
+                                                        actions.push(UIAction::DuplicateLayer(
+                                                            layer.id,
+                                                        ));
+                                                    }
+                                                },
+                                            );
+                                        });
+
+                                        // Indented properties
+                                        ui.indent("layer_props", |ui| {
+                                            ui.horizontal(|ui| {
+                                                // Phase 1: Bypass, Solo
+                                                let mut bypass = layer.bypass;
+                                                if ui
+                                                    .checkbox(&mut bypass, i18n.t("check-bypass"))
+                                                    .changed()
+                                                {
+                                                    // Direct modification plus action for undo/consistency if needed
+                                                    // But UIAction handles ToggleLayerBypass which might toggle it back if we modify it here?
+                                                    // Standard pattern in ImGui code was: direct modify AND push action.
+                                                    // UIAction processing logic in main.rs toggles it. So if we set it here, then toggle it, it reverts.
+                                                    // We should only push action OR modify.
+                                                    // ImGui code: `if ui.checkbox(...) { layer.bypass = bypass; actions.push(...) }`
+                                                    // Main.rs logic: `ToggleLayerBypass(id) => if let Some(l) = ... { l.toggle_bypass() }`
+                                                    // If we set `layer.bypass = bypass` (new value) here, and then push `Toggle`, `Toggle` will flip it back to old value.
+                                                    // So we should NOT modify here if we push action. Or push `SetBypass` (if it existed).
+                                                    // `ToggleLayerBypass` implies we just fire the action.
+                                                    // But Checkbox expects a `&mut bool`.
+                                                    // If we pass `&mut layer.bypass`, it updates immediately. Then we push Toggle -> it flips back.
+                                                    // FIX: Don't push action for simple bool toggles if we have direct mutable access, OR don't update mutable access.
+                                                    // But egui Checkbox requires `&mut bool`.
+                                                    // So we update it. We should NOT push `ToggleLayerBypass` if we already updated it.
+                                                    // UNLESS the action is for other systems (Undo).
+                                                    // Let's check `lib.rs` ImGui implementation again.
+                                                    /*
+                                                    if ui.checkbox(self.i18n.t("check-bypass"), &mut bypass) {
+                                                        layer.bypass = bypass;
+                                                        self.actions.push(UIAction::ToggleLayerBypass(layer.id));
+                                                    }
+                                                    */
+                                                    // This ImGui code seems buggy if ToggleLayerBypass flips it.
+                                                    // Let's assume we just modify state directly here for now as we have mutable access.
+                                                    layer.bypass = bypass;
+                                                }
+
+                                                let mut solo = layer.solo;
+                                                if ui
+                                                    .checkbox(&mut solo, i18n.t("check-solo"))
+                                                    .changed()
+                                                {
+                                                    layer.solo = solo;
+                                                }
+                                            });
+
+                                            // Opacity
+                                            let mut opacity = layer.opacity;
+                                            if ui
+                                                .add(
+                                                    Slider::new(&mut opacity, 0.0..=1.0)
+                                                        .text(i18n.t("label-master-opacity")),
                                                 )
-                                                .on_hover_text(i18n.t("tooltip-layer-opacity"));
+                                                .changed()
+                                            {
+                                                layer.opacity = opacity;
+                                                // For sliders, we might want to push action only on release, but for now direct update is fine.
+                                                // If we need to record for Undo, we'd need a "drag ended" event.
+                                            }
 
-                                                // Blend Mode
-                                                egui::ComboBox::from_id_source(format!(
-                                                    "blend_{}",
-                                                    layer.id
-                                                ))
-                                                .selected_text(format!("{:?}", layer.blend_mode))
-                                                .width(80.0)
-                                                .show_ui(ui, |ui| {
-                                                    for mode in BlendMode::all() {
+                                            // Blend Mode
+                                            let blend_modes = BlendMode::all();
+                                            let current_mode = layer.blend_mode;
+                                            let mut selected_mode = current_mode;
+
+                                            egui::ComboBox::from_id_source(format!(
+                                                "blend_{}",
+                                                layer.id
+                                            ))
+                                            .selected_text(format!("{:?}", current_mode))
+                                            .show_ui(
+                                                ui,
+                                                |ui| {
+                                                    for mode in blend_modes {
                                                         ui.selectable_value(
-                                                            &mut layer.blend_mode,
+                                                            &mut selected_mode,
                                                             *mode,
                                                             format!("{:?}", mode),
                                                         );
                                                     }
-                                                });
+                                                },
+                                            );
 
-                                                // Solo Button
-                                                if let Some(mgr) = icon_manager {
-                                                    if let Some(img) =
-                                                        mgr.image(crate::icons::AppIcon::Solo, 16.0)
-                                                    {
-                                                        if ui
-                                                            .add(egui::ImageButton::new(img))
-                                                            .on_hover_text(i18n.t("tooltip-solo"))
-                                                            .clicked()
-                                                        {
-                                                            layer.solo = !layer.solo;
-                                                        }
-                                                    }
-                                                }
-
-                                                // Bypass Button
-                                                if let Some(mgr) = icon_manager {
-                                                    if let Some(img) = mgr
-                                                        .image(crate::icons::AppIcon::Bypass, 16.0)
-                                                    {
-                                                        if ui
-                                                            .add(egui::ImageButton::new(img))
-                                                            .on_hover_text(i18n.t("tooltip-bypass"))
-                                                            .clicked()
-                                                        {
-                                                            layer.bypass = !layer.bypass;
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                        );
+                                            if selected_mode != current_mode {
+                                                layer.blend_mode = selected_mode;
+                                            }
+                                        });
                                     });
-                                })
-                                .response;
-
-                            if response.clicked() {
-                                *selected_layer_id = Some(*layer_id);
-                            }
-
-                            if response.drag_started() {
-                                ctx.memory_mut(|mem| {
-                                    mem.data.insert_temp(Id::new(id_source), *layer_id)
                                 });
                             }
                         }
-                    }
+                    });
 
-                    // --- Handle Drop ---
-                    if ctx.input(|i| i.pointer.any_released()) {
-                        if let Some(dragged_id) = dragged_item_id {
-                            if let Some(target_idx) = drop_target_index {
-                                if let Some(dragged_idx) =
-                                    layer_ids.iter().position(|id| *id == dragged_id)
-                                {
-                                    // Adjust target index if moving an item downwards
-                                    let final_target_idx = if dragged_idx < target_idx {
-                                        target_idx - 1
-                                    } else {
-                                        target_idx
-                                    };
-                                    move_layer = Some((dragged_idx, final_target_idx));
-                                }
-                            }
-                        }
-                        ctx.memory_mut(|mem| mem.data.remove::<u64>(Id::new(id_source)));
-                    }
-                });
+                // Apply reordering
+                if let Some(id) = move_up_id {
+                    layer_manager.move_layer_up(id);
+                }
+                if let Some(id) = move_down_id {
+                    layer_manager.move_layer_down(id);
+                }
 
-                if let Some((old_index, new_index)) = move_layer {
-                    if let Some(layer_id) = layer_ids.get(old_index) {
-                        layer_manager.move_layer_to(*layer_id, new_index);
-                    }
+                ui.separator();
+
+                // Add Layer Button
+                if ui.button(i18n.t("btn-add-layer")).clicked() {
+                    actions.push(UIAction::AddLayer);
                 }
             });
 
