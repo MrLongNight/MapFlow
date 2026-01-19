@@ -1459,30 +1459,41 @@ impl App {
                     let bridge_ip = self.ui_state.user_config.hue_config.bridge_ip.clone();
                     let username = self.ui_state.user_config.hue_config.username.clone();
 
+                    info!(
+                        "Bridge IP: '{}', Username: '{}'",
+                        bridge_ip,
+                        if username.is_empty() {
+                            "(empty)"
+                        } else {
+                            "(set)"
+                        }
+                    );
+
                     if bridge_ip.is_empty() || username.is_empty() {
                         error!("Cannot fetch groups: Bridge IP or Username missing");
                     } else {
                         // Construct a temp config to fetch groups
                         let config = mapmap_control::hue::models::HueConfig {
-                            bridge_ip,
-                            username,
+                            bridge_ip: bridge_ip.clone(),
+                            username: username.clone(),
                             ..Default::default()
                         };
 
+                        info!("Calling get_entertainment_groups API...");
                         // Blocking call
                         match self.tokio_runtime.block_on(
                             mapmap_control::hue::api::groups::get_entertainment_groups(&config),
                         ) {
                             Ok(groups) => {
+                                info!("Successfully fetched {} entertainment groups", groups.len());
+                                for g in &groups {
+                                    info!("  - Group: id='{}', name='{}'", g.id, g.name);
+                                }
                                 self.ui_state.available_hue_groups =
                                     groups.into_iter().map(|g| (g.id, g.name)).collect();
-                                info!(
-                                    "Fetched {} groups",
-                                    self.ui_state.available_hue_groups.len()
-                                );
                             }
                             Err(e) => {
-                                error!("Failed to fetch groups: {}", e);
+                                error!("Failed to fetch groups: {:?}", e);
                             }
                         }
                     }
