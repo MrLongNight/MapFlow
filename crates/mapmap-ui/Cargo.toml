@@ -42,7 +42,7 @@ rfd = "0.14"
 rust-embed = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-sysinfo = "0.29"
+sysinfo = "0.33"
 thiserror = { workspace = true }
 tiny-skia = { workspace = true }
 tokio = { workspace = true, optional = true, features = ["sync", "macros", "rt-multi-thread"] }                               # Added for NDI async
