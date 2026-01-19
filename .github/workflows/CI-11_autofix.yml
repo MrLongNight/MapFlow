@@ -1,0 +1,35 @@
+name: "CI-11: Autofix PRs"
+
+# Automatically fix trivial issues like code formatting
+# Uses autofix.ci to push fixes directly to PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    name: Autofix Code Style
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Run cargo fmt
+      run: cargo fmt --all
+
+    - name: Run clippy --fix (allow changes)
+      run: cargo clippy --fix --allow-dirty --allow-staged --workspace --no-default-features --features audio -- -A warnings
+      continue-on-error: true
+
+    - name: Apply autofix
+      uses: autofix-ci/action@8bc06253bec489732e5f9c52884c7cace15c0160

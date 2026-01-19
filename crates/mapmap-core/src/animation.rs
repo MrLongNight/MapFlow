@@ -25,11 +25,17 @@ pub enum InterpolationMode {
 /// Animatable value types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AnimValue {
+    /// Floating point value
     Float(f32),
+    /// 2D Vector
     Vec2([f32; 2]),
+    /// 3D Vector
     Vec3([f32; 3]),
+    /// 4D Vector
     Vec4([f32; 4]),
+    /// RGBA Color
     Color([f32; 4]),
+    /// Boolean value
     Bool(bool),
 }
 
@@ -77,11 +83,16 @@ impl AnimValue {
 /// Keyframe - a value at a specific time
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Keyframe {
+    /// Time of the keyframe in seconds
     pub time: TimePoint,
+    /// Value at this keyframe
     pub value: AnimValue,
+    /// Interpolation mode to next keyframe
     pub interpolation: InterpolationMode,
     // For Bezier interpolation
+    /// Tangent for incoming curve (time_offset, value_offset)
     pub in_tangent: Option<[f32; 2]>, // (time_offset, value_offset)
+    /// Tangent for outgoing curve (time_offset, value_offset)
     pub out_tangent: Option<[f32; 2]>,
 }
 
@@ -123,9 +134,13 @@ impl Keyframe {
 /// Animation track - series of keyframes for a single property
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AnimationTrack {
+    /// Name of the property being animated
     pub name: String,
+    /// Ordered keyframes mapped by time (microseconds)
     pub keyframes: BTreeMap<u64, Keyframe>, // Key is time in microseconds for ordering
+    /// Default value when no animation is applied
     pub default_value: AnimValue,
+    /// Whether this track is active
     pub enabled: bool,
 }
 
@@ -221,9 +236,13 @@ impl AnimationTrack {
 /// Animation clip - collection of tracks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AnimationClip {
+    /// Name of the clip
     pub name: String,
+    /// Collection of animation tracks
     pub tracks: Vec<AnimationTrack>,
+    /// Total duration of the clip in seconds
     pub duration: TimePoint,
+    /// Whether the animation loops
     pub looping: bool,
 }
 
@@ -285,9 +304,13 @@ impl AnimationClip {
 /// Animation player state
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AnimationPlayer {
+    /// The animation clip being played
     pub clip: AnimationClip,
+    /// Current playback time in seconds
     pub current_time: TimePoint,
+    /// Whether playback is active
     pub playing: bool,
+    /// Playback speed multiplier (1.0 = normal)
     pub speed: f32,
 }
 

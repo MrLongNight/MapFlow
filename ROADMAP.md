@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.9
-> **Stand:** 2026-01-15 06:00
+> **Stand:** 2026-01-18 10:00
 > **Zielgruppe:** @jules und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -56,6 +56,7 @@
 - ✅ **Trigger-System** (`mapmap-core/src/module_eval.rs`)
   - ✅ Stateful Triggers (Random Interval)
   - ✅ Trigger State Infrastructure
+  - ✅ AudioFFT Trigger Completion (2026-01-15)
 
 ### Rendering (Compositor / Edge-Blend / Color-Calib / Mesh / Oszillator / Effekt-Chain)
 
@@ -169,6 +170,7 @@
   - ✅ Frame-Seeking & Timestamp-Management
   - ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   - ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
+  - ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
 
 - ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
   - ✅ Media-Pipeline-Abstraktion
@@ -360,6 +362,7 @@
   - ⬜ Mesh Editor für Layer
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
+  - ✅ Node Graph Visual Refinements (COMPLETED 2026-01-15)
 
 - 🟡 **Advanced Layer Triggering & Linking** (PLANNED)
   - [ ] **Audio Trigger Node Enhancements**
@@ -760,6 +763,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ OSC-Integration-Tests (COMPLETED 2025-12-21, 19 Tests)
   - ✅ Project-Save/Load-Tests (COMPLETED PR #68, 2025-12-22)
   - ✅ Multi-Output-Rendering-Tests (COMPLETED 2025-12-22)
+  - ✅ ModuleEvaluator Tests (COMPLETED 2026-01-16)
   - ⬜ Effect-Chain-Tests
   - ⬜ End-to-End-Tests
 

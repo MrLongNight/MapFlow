@@ -24,7 +24,7 @@ syphon = [
 stream = ["ffmpeg-next", "dep:tokio"] # RTMP/SRT streaming
 virtual-camera = [] # Virtual camera output
 
-# Platform-specific features
+# Platform-specific Features 
 texture-sharing = [] # Enable on platforms that support it
 
 # Convenience features
