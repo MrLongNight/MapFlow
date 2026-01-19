@@ -1818,11 +1818,51 @@ impl ModuleCanvas {
                                             }
                                         }
                                     }
-                                    ModulePartType::Hue(hue_node) => {
+                                     ModulePartType::Hue(hue_node) => {
                                         ui.label("💡 Hue Node");
                                         ui.separator();
+
+                                        // Helper to render common Hue controls (duplicate of the one in render_node_inspector for now)
+                                        let draw_hue_controls = |ui: &mut Ui, brightness: &mut f32, color: &mut [f32; 3], effect: &mut Option<String>, effect_active: &mut bool| {
+                                            ui.add_space(8.0);
+                                            ui.group(|ui| {
+                                                ui.label("Light Control");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Brightness:");
+                                                    ui.add(egui::Slider::new(brightness, 0.0..=1.0).text("%"));
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Color:");
+                                                    ui.color_edit_button_rgb(color);
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Effect:");
+                                                    let current_effect = effect.as_deref().unwrap_or("None");
+                                                    egui::ComboBox::from_id_source("hue_effect_popup")
+                                                        .selected_text(current_effect)
+                                                        .show_ui(ui, |ui| {
+                                                            if ui.selectable_label(effect.is_none(), "None").clicked() {
+                                                                *effect = None;
+                                                            }
+                                                            if ui.selectable_label(effect.as_deref() == Some("colorloop"), "Colorloop").clicked() {
+                                                                *effect = Some("colorloop".to_string());
+                                                            }
+                                                        });
+                                                });
+
+                                                if effect.is_some() {
+                                                    let btn_text = if *effect_active { "Stop Effect" } else { "Start Effect" };
+                                                    if ui.button(btn_text).clicked() {
+                                                        *effect_active = !*effect_active;
+                                                    }
+                                                }
+                                            });
+                                        };
+
                                         match hue_node {
-                                            HueNodeType::SingleLamp { id, name } => {
+                                            HueNodeType::SingleLamp { id, name, brightness, color, effect, effect_active } => {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Name:");
                                                     ui.text_edit_singleline(name);
@@ -1831,15 +1871,14 @@ impl ModuleCanvas {
                                                     ui.label("Lamp ID:");
                                                     ui.text_edit_singleline(id);
                                                 });
-                                                ui.label(egui::RichText::new("Use the App Settings to configure the Bridge.").weak().small());
+                                                draw_hue_controls(ui, brightness, color, effect, effect_active);
                                             }
-                                            HueNodeType::MultiLamp { ids, name } => {
+                                            HueNodeType::MultiLamp { ids, name, brightness, color, effect, effect_active } => {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Name:");
                                                     ui.text_edit_singleline(name);
                                                 });
                                                 ui.label("Lamp IDs (comma separated):");
-                                                // Simple text parsing for now
                                                 let mut ids_str = ids.join(", ");
                                                 if ui.text_edit_singleline(&mut ids_str).changed() {
                                                     *ids = ids_str.split(',')
@@ -1847,13 +1886,14 @@ impl ModuleCanvas {
                                                         .filter(|s| !s.is_empty())
                                                         .collect();
                                                 }
+                                                draw_hue_controls(ui, brightness, color, effect, effect_active);
                                             }
-                                            HueNodeType::EntertainmentGroup { name } => {
+                                            HueNodeType::EntertainmentGroup { name, brightness, color, effect, effect_active } => {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Name:");
                                                     ui.text_edit_singleline(name);
                                                 });
-                                                ui.label("Controls the Entertainment Group selected in Settings.");
+                                                draw_hue_controls(ui, brightness, color, effect, effect_active);
                                             }
                                         }
                                     }
@@ -2683,17 +2723,37 @@ impl ModuleCanvas {
                                 ui.menu_button("💡 Philips Hue", |ui| {
                                      ui.set_min_width(180.0);
                                      if (show_all || "single lamp".contains(&filter)) && ui.button("💡 Single Lamp").clicked() {
-                                         self.add_hue_node(manager, HueNodeType::SingleLamp { id: "1".to_string(), name: "Lamp 1".to_string() });
+                                         self.add_hue_node(manager, HueNodeType::SingleLamp { 
+                                             id: "1".to_string(), 
+                                             name: "Lamp 1".to_string(),
+                                             brightness: 1.0,
+                                             color: [1.0, 1.0, 1.0],
+                                             effect: None,
+                                             effect_active: false,
+                                         });
                                          self.search_filter.clear();
                                          ui.close_menu();
                                      }
                                      if (show_all || "multi lamp".contains(&filter)) && ui.button("💡💡 Multi Lamp").clicked() {
-                                         self.add_hue_node(manager, HueNodeType::MultiLamp { ids: vec![], name: "Lamps".to_string() });
+                                         self.add_hue_node(manager, HueNodeType::MultiLamp { 
+                                             ids: vec![], 
+                                             name: "Lamps".to_string(),
+                                             brightness: 1.0,
+                                             color: [1.0, 1.0, 1.0],
+                                             effect: None,
+                                             effect_active: false,
+                                         });
                                          self.search_filter.clear();
                                          ui.close_menu();
                                      }
                                      if (show_all || "entertainment group".contains(&filter)) && ui.button("🎭 Entertainment Group").clicked() {
-                                         self.add_hue_node(manager, HueNodeType::EntertainmentGroup { name: "Group".to_string() });
+                                         self.add_hue_node(manager, HueNodeType::EntertainmentGroup { 
+                                             name: "Group".to_string(),
+                                             brightness: 1.0,
+                                             color: [1.0, 1.0, 1.0],
+                                             effect: None,
+                                             effect_active: false,
+                                         });
                                          self.search_filter.clear();
                                          ui.close_menu();
                                      }
@@ -4921,8 +4981,48 @@ impl ModuleCanvas {
             }
             ModulePartType::Hue(hue_node) => {
                 ui.label("Philips Hue Configuration");
+                
+                // Helper to render common Hue controls
+                let draw_hue_controls = |ui: &mut Ui, brightness: &mut f32, color: &mut [f32; 3], effect: &mut Option<String>, effect_active: &mut bool| {
+                    ui.add_space(8.0);
+                    ui.group(|ui| {
+                        ui.label("Light Control");
+                        ui.horizontal(|ui| {
+                            ui.label("Brightness:");
+                            ui.add(egui::Slider::new(brightness, 0.0..=1.0).text("%"));
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Color:");
+                            ui.color_edit_button_rgb(color);
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Effect:");
+                            let current_effect = effect.as_deref().unwrap_or("None");
+                            egui::ComboBox::from_id_source("hue_effect")
+                                .selected_text(current_effect)
+                                .show_ui(ui, |ui| {
+                                    if ui.selectable_label(effect.is_none(), "None").clicked() {
+                                        *effect = None;
+                                    }
+                                    if ui.selectable_label(effect.as_deref() == Some("colorloop"), "Colorloop").clicked() {
+                                        *effect = Some("colorloop".to_string());
+                                    }
+                                });
+                        });
+
+                        if effect.is_some() {
+                            let btn_text = if *effect_active { "Stop Effect" } else { "Start Effect" };
+                            if ui.button(btn_text).clicked() {
+                                *effect_active = !*effect_active;
+                            }
+                        }
+                    });
+                };
+
                 match hue_node {
-                    HueNodeType::SingleLamp { id, name } => {
+                    HueNodeType::SingleLamp { id, name, brightness, color, effect, effect_active } => {
                         ui.horizontal(|ui| {
                             ui.label("Name:");
                             ui.text_edit_singleline(name);
@@ -4931,21 +5031,24 @@ impl ModuleCanvas {
                             ui.label("Lamp ID:");
                             ui.text_edit_singleline(id);
                         });
+                        draw_hue_controls(ui, brightness, color, effect, effect_active);
                     }
-                    HueNodeType::MultiLamp { ids, name } => {
+                    HueNodeType::MultiLamp { ids, name, brightness, color, effect, effect_active } => {
                         ui.horizontal(|ui| {
                             ui.label("Name:");
                             ui.text_edit_singleline(name);
                         });
                         ui.label(format!("Lamps: {:?}", ids));
                         ui.label("(Edit IDs in code/JSON for now)");
+                        draw_hue_controls(ui, brightness, color, effect, effect_active);
                     }
-                    HueNodeType::EntertainmentGroup { name } => {
+                    HueNodeType::EntertainmentGroup { name, brightness, color, effect, effect_active } => {
                         ui.horizontal(|ui| {
                             ui.label("Name:");
                             ui.text_edit_singleline(name);
                         });
                         ui.label("Controls entire entertainment area");
+                        draw_hue_controls(ui, brightness, color, effect, effect_active);
                     }
                 }
             }
