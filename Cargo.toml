@@ -80,7 +80,7 @@ rayon = "1.8"
 # SVG rendering for icons
 resvg = "0.40"
 ron = "0.8"
-rosc = "0.10"
+rosc = "0.11"
 rust-embed = "8.0"
 rustfft = "6.2"
 
@@ -105,7 +105,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unic-langid = "0.9"
 usvg = "0.40"
 # Core dependencies
-wgpu = "27.0.1" 
+wgpu = "27.0.1"
 winit = { version = "0.30", features = ["x11", "wayland"] }
 winres = "0.1"
 
