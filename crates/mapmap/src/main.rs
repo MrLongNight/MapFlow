@@ -33,7 +33,7 @@ use mapmap_render::{
     ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, EffectChainRenderer, MeshBufferCache,
     MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
 };
-use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
+use mapmap_ui::{menu_bar, AppUI, AudioTriggerData, EdgeBlendAction};
 use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
@@ -159,6 +159,7 @@ struct App {
     hue_controller: HueController,
     /// Tokio runtime for async operations
     tokio_runtime: tokio::runtime::Runtime,
+
 }
 
 impl App {
@@ -1290,6 +1291,7 @@ impl App {
                     }
                 }
 
+<<<<<<< HEAD
                 // Log every second for debugging
                 static mut LAST_LOG_SEC: i64 = 0;
                 let current_sec = timestamp as i64;

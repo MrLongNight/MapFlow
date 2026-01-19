@@ -1,10 +1,13 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
-use mapmap_core::module::{
-    AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType,
-    HueNodeType, LayerType, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager,
-    ModulePart, ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData,
-    OutputType, SourceType, TriggerType,
+use mapmap_core::{
+    audio_reactive::AudioTriggerData,
+    module::{
+        AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType,
+        HueNodeType, LayerType, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager,
+        ModulePart, ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData,
+        OutputType, SourceType, TriggerType,
+    },
 };
 #[cfg(feature = "ndi")]
 use mapmap_io::ndi::NdiSource;
@@ -136,23 +139,6 @@ pub struct ModuleCanvas {
     >,
     /// Status message for Hue operations
     pub hue_status_message: Option<String>,
-}
-
-/// Live audio data for trigger nodes
-#[derive(Debug, Clone, Default)]
-pub struct AudioTriggerData {
-    /// 9 frequency band energies [SubBass, Bass, LowMid, Mid, HighMid, UpperMid, Presence, Brilliance, Air]
-    pub band_energies: [f32; 9],
-    /// RMS volume (0.0 - 1.0)
-    pub rms_volume: f32,
-    /// Peak volume (0.0 - 1.0)
-    pub peak_volume: f32,
-    /// Beat detected this frame
-    pub beat_detected: bool,
-    /// Beat strength (0.0 - 1.0)
-    pub beat_strength: f32,
-    /// Estimated BPM (optional)
-    pub bpm: Option<f32>,
 }
 
 pub type PresetPart = (
@@ -320,29 +306,7 @@ impl ModuleCanvas {
                                             }
                                             TriggerType::AudioFFT { band, threshold, output_config } => {
                                                 ui.label("🔊 Audio FFT");
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Band:");
-                                                    egui::ComboBox::from_id_source("audio_band")
-                                                        .selected_text(format!("{:?}", band))
-                                                        .show_ui(ui, |ui| {
-                                                            let bands = [
-                                                                ("SubBass (20-60Hz)", AudioBand::SubBass),
-                                                                ("Bass (60-250Hz)", AudioBand::Bass),
-                                                                ("LowMid (250-500Hz)", AudioBand::LowMid),
-                                                                ("Mid (500-2kHz)", AudioBand::Mid),
-                                                                ("HighMid (2-4kHz)", AudioBand::HighMid),
-                                                                ("Presence (4-6kHz)", AudioBand::Presence),
-                                                                ("Brilliance (6-20kHz)", AudioBand::Brilliance),
-                                                                ("Peak Detection", AudioBand::Peak),
-                                                                ("BPM", AudioBand::BPM),
-                                                            ];
-                                                            for (label, b) in bands {
-                                                                if ui.selectable_label(*band == b, label).clicked() {
-                                                                    *band = b;
-                                                                }
-                                                            }
-                                                        });
-                                                });
+                                                ui.label("Outputs 9 frequency bands, plus volume and beat.");
                                                 ui.add(
                                                     egui::Slider::new(threshold, 0.0..=1.0)
                                                         .text("Threshold"),
@@ -397,6 +361,11 @@ impl ModuleCanvas {
 
                                                 // Note: Changing output config requires regenerating sockets
                                                 // This will be handled when the part is updated
+=======
+                                                ui.label(
+                                                    "Threshold is used for the node's visual glow effect.",
+                                                );
+>>>>>>> fix/multi-band-audio
                                             }
                                             TriggerType::Random {
                                                 min_interval_ms,
@@ -2036,19 +2005,29 @@ impl ModuleCanvas {
         self.audio_trigger_data = data;
     }
 
-    /// Get trigger value for a specific audio band
-    pub fn get_trigger_value(&self, band: &AudioBand) -> f32 {
-        match band {
-            AudioBand::SubBass => self.audio_trigger_data.band_energies[0],
-            AudioBand::Bass => self.audio_trigger_data.band_energies[1],
-            AudioBand::LowMid => self.audio_trigger_data.band_energies[2],
-            AudioBand::Mid => self.audio_trigger_data.band_energies[3],
-            AudioBand::HighMid => self.audio_trigger_data.band_energies[4],
-            AudioBand::Presence => self.audio_trigger_data.band_energies[5],
-            AudioBand::Brilliance => self.audio_trigger_data.band_energies[6],
-            AudioBand::Peak => self.audio_trigger_data.peak_volume,
-            AudioBand::BPM => self.audio_trigger_data.bpm.unwrap_or(0.0),
+    /// Get a reference to the live audio data.
+    pub fn get_audio_trigger_data(&self) -> Option<&AudioTriggerData> {
+        Some(&self.audio_trigger_data)
+    }
+
+    /// Get the live value of a specific output socket on a part.
+    /// This is used to draw live data visualizations on the nodes.
+    fn get_socket_live_value(&self, part: &ModulePart, socket_idx: usize) -> Option<f32> {
+        if let ModulePartType::Trigger(TriggerType::AudioFFT { .. }) = &part.part_type {
+            // The 9 frequency bands are the first 9 outputs
+            if socket_idx < 9 {
+                return Some(self.audio_trigger_data.band_energies[socket_idx]);
+            }
+            // After the bands, we have RMS, Peak, Beat, BPM
+            match socket_idx {
+                9 => return Some(self.audio_trigger_data.rms_volume),
+                10 => return Some(self.audio_trigger_data.peak_volume),
+                11 => return Some(self.audio_trigger_data.beat_strength),
+                12 => return self.audio_trigger_data.bpm,
+                _ => return None,
+            }
         }
+        None
     }
 
     /// Get current RMS volume
@@ -2073,7 +2052,19 @@ impl ModuleCanvas {
             ModulePartType::Trigger(TriggerType::AudioFFT {
                 band, threshold, ..
             }) => {
-                let value = self.get_trigger_value(band);
+                let value = match band {
+                    mapmap_core::module::AudioBand::SubBass => self.audio_trigger_data.band_energies.get(0).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Bass => self.audio_trigger_data.band_energies.get(1).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::LowMid => self.audio_trigger_data.band_energies.get(2).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Mid => self.audio_trigger_data.band_energies.get(3).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::HighMid => self.audio_trigger_data.band_energies.get(4).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::UpperMid => self.audio_trigger_data.band_energies.get(5).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Presence => self.audio_trigger_data.band_energies.get(6).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Brilliance => self.audio_trigger_data.band_energies.get(7).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Air => self.audio_trigger_data.band_energies.get(8).copied().unwrap_or(0.0),
+                    mapmap_core::module::AudioBand::Peak => self.audio_trigger_data.peak_volume,
+                    mapmap_core::module::AudioBand::BPM => self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0,
+                };
                 let is_active = value > *threshold;
                 (true, value, *threshold, is_active)
             }
@@ -5429,6 +5420,26 @@ impl ModuleCanvas {
                 egui::FontId::proportional(10.0 * self.zoom),
                 Color32::from_gray(220), // Brighter text
             );
+
+            // Draw live value meter for output sockets
+            if let Some(value) = self.get_socket_live_value(part, i) {
+                let meter_width = 30.0 * self.zoom;
+                let meter_height = 8.0 * self.zoom;
+                let meter_x = rect.max.x - 12.0 * self.zoom - meter_width;
+
+                let meter_bg = Rect::from_min_size(
+                    Pos2::new(meter_x, socket_y - meter_height / 2.0),
+                    Vec2::new(meter_width, meter_height),
+                );
+                painter.rect_filled(meter_bg, 2.0, Color32::from_gray(40));
+
+                let value_width = (value.clamp(0.0, 1.0) * meter_width).max(1.0);
+                let value_bar = Rect::from_min_size(
+                    Pos2::new(meter_x, socket_y - meter_height / 2.0),
+                    Vec2::new(value_width, meter_height),
+                );
+                painter.rect_filled(value_bar, 2.0, Color32::from_rgb(100, 180, 220));
+            }
         }
     }
 

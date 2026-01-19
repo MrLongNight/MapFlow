@@ -679,14 +679,18 @@ pub enum AudioBand {
     Bass,
     /// Low-mid frequencies (250-500Hz)
     LowMid,
-    /// Mid frequencies (500-2kHz)
+    /// Mid frequencies (500-1kHz)
     Mid,
-    /// High-mid frequencies (2-4kHz)
+    /// High-mid frequencies (1-2kHz)
     HighMid,
+    /// Upper-mid frequencies (2-4kHz)
+    UpperMid,
     /// Presence frequencies (4-6kHz)
     Presence,
-    /// Brilliance frequencies (6-20kHz)
+    /// Brilliance frequencies (6-12kHz)
     Brilliance,
+    /// Air frequencies (12-20kHz)
+    Air,
     /// Peak amplitude
     Peak,
     /// Beats per minute

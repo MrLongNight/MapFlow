@@ -42,6 +42,7 @@ pub mod oscillator;
 pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
+pub mod trigger_system;
 
 // --- Re-exports grouped by category ---
 
@@ -65,7 +66,7 @@ pub use audio::{
 pub use audio_media_pipeline::AudioMediaPipeline;
 pub use audio_reactive::{
     AudioAnimationBlendMode, AudioReactiveAnimationSystem, AudioReactiveController,
-    AudioReactivePreset,
+    AudioReactivePreset, AudioTriggerData,
 };
 
 // Effects & Processing

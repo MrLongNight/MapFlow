@@ -1,7 +1,4 @@
-//! Audio-Reactive Shader Parameter Integration
-//!
-//! Phase 3: Effects Pipeline
-//! Connects audio analysis to shader graph parameters for audio-reactive effects
+//! Data structures for audio-reactive components.
 
 use crate::animation::{AnimValue, AnimationClip, AnimationPlayer};
 use crate::audio::{AudioAnalysis, AudioMappingType, AudioReactiveMapping, FrequencyBand};

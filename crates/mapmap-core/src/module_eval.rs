@@ -1217,9 +1217,6 @@ mod tests_logic {
 
         // Should not panic or hang, but finish with limited effects
         // The limit is 50.
-        // It will trace 1 <- 2 <- 1 ...
-        // It should accumulate effects until break.
-        // Actually trace_chain prepends.
         // It should just return safely.
         assert!(chain.effects.len() <= 50);
     }
