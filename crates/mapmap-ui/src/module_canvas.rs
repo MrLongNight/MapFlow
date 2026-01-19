@@ -2,7 +2,7 @@ use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::module::{
     AudioBand, AudioTriggerOutputConfig, BlendModeType, EffectType as ModuleEffectType,
-    HueMappingMode, LayerType, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager,
+    HueNodeType, LayerType, MapFlowModule, MaskShape, MaskType, MeshType, ModuleManager,
     ModulePart, ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, NodeLinkData,
     OutputType, SourceType, TriggerType,
 };
@@ -4094,6 +4094,23 @@ impl ModuleCanvas {
                 }],
                 vec![],
             ),
+            ModulePartType::Hue(_) => (
+                vec![
+                    ModuleSocket {
+                        name: "Brightness".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Color (RGB)".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Strobe".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
+                vec![],
+            ),
         }
     }
 
@@ -4902,6 +4919,36 @@ impl ModuleCanvas {
                     ui.text_edit_singleline(name);
                 }
             }
+            ModulePartType::Hue(hue_node) => {
+                ui.label("Philips Hue Configuration");
+                match hue_node {
+                    HueNodeType::SingleLamp { id, name } => {
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(name);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Lamp ID:");
+                            ui.text_edit_singleline(id);
+                        });
+                    }
+                    HueNodeType::MultiLamp { ids, name } => {
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(name);
+                        });
+                        ui.label(format!("Lamps: {:?}", ids));
+                        ui.label("(Edit IDs in code/JSON for now)");
+                    }
+                    HueNodeType::EntertainmentGroup { name } => {
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(name);
+                        });
+                        ui.label("Controls entire entertainment area");
+                    }
+                }
+            }
         }
 
         ui.add_space(10.0);
@@ -5424,6 +5471,21 @@ impl ModuleCanvas {
                     name,
                 )
             }
+            ModulePartType::Hue(hue) => {
+                let name = match hue {
+                    mapmap_core::module::HueNodeType::SingleLamp { .. } => "Single Lamp",
+                    mapmap_core::module::HueNodeType::MultiLamp { .. } => "Multi Lamp",
+                    mapmap_core::module::HueNodeType::EntertainmentGroup { .. } => {
+                        "Entertainment Group"
+                    }
+                };
+                (
+                    Color32::from_rgb(60, 60, 40),
+                    Color32::from_rgb(200, 200, 100),
+                    "💡",
+                    name,
+                )
+            }
         }
     }
 
@@ -5438,6 +5500,7 @@ impl ModuleCanvas {
             ModulePartType::Mesh(_) => "Mesh",
             ModulePartType::Layer(_) => "Layer",
             ModulePartType::Output(_) => "Output",
+            ModulePartType::Hue(_) => "Hue",
         }
     }
 
