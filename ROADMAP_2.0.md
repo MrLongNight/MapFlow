@@ -1,9 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-<<<<<<< HEAD
 > **Version:** 2.0
 > **Stand:** 2026-01-19 11:00
-=======
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -11,14 +9,48 @@
 
 ## 📋 Inhaltsverzeichnis
 
-1. [Feature-Status-Übersicht](#feature-status-übersicht)
-2. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
-3. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8)
-4. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
-5. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
-6. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
-7. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
-8. [Build- und Test-Strategie](#build--und-test-strategie)
+1. [Fokus & Ziele für Release 1.0](#fokus--ziele-für-release-10)
+2. [Feature-Status-Übersicht](#feature-status-übersicht)
+3. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
+4. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8)
+5. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
+6. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
+7. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
+8. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
+9. [Build- und Test-Strategie](#build--und-test-strategie)
+
+---
+
+## Fokus & Ziele für Release 1.0
+
+Basierend auf dem aktuellen Status und den Projektzielen für die erste produktive Version (v1.0):
+
+### A) Render Pipeline & Module Logic
+*   **Priorität:** 🔥 **CRITICAL**
+*   **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
+*   **Status:** Aktuell startet die App aufgrund eines größeren Refactorings nicht. Dies muss zuerst behoben werden.
+*   **Maßnahme:** "Broken Nodes" reparieren. Experimentelle Features (wie NDI/Multi-PC) ggf. ausklammern oder verstecken, falls sie die Stabilität gefährden.
+
+### B) Timeline Integration (V3)
+*   **Priorität:** 🚀 **HIGH**
+*   **Ziel:** Vollständige Integration der Module in die Timeline.
+*   **Funktionalität:**
+    *   Jeder Parameter eines Nodes (z.B. "Blur Amount") soll via Trigger-Nodes und Verbindungen definiert werden können.
+    *   Arrangement der konfigurierten Module in der Timeline.
+    *   Unterstützung für **Manuelle**, **Hybride** und **Vollautomatische** Steuerung.
+    *   Möglichkeit, Parameter bei Bedarf manuell zu triggern.
+
+### C) Stabilität & Performance
+*   **Priorität:** 🛡️ **HIGH**
+*   **Ziel:** Fixen von Fehlern und Problemen, Verbesserung der Performance.
+*   **Cleanup:** Entfernen von UI-Elementen, die keine Funktion haben.
+
+### D) Release-Artefakte
+*   **Priorität:** 📦 **REQUIRED**
+*   **Lieferumfang:**
+    *   Produktive Version von MapFlow (v1.0).
+    *   Fertiger Installer für **Windows** (.msi/.exe) und **Linux** (.deb/AppImage).
+    *   Handbuch in Form von **GitHub Wiki**-Beiträgen.
 
 ---
 
@@ -829,7 +861,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 | Library | Version | Core-Funktion | Mehrwert |
 |---------|---------|---------------|----------|
--⬜ das wird gerade implementiert | `egui_node_editor` | 0.9.0 | Node-Konzept | Ersetzt eigenen Canvas (5k LOC), Auto-Wire-Routing, MiniMap |
+| `egui_node_editor` | 0.9.0 | Node-Konzept | Ersetzt eigenen Canvas (5k LOC), Auto-Wire-Routing, MiniMap |
 | `playa` | 0.1.142 | Timeline | Multi-Track, Frame-Cache (LRU+Epoch), Compositing-Patterns |
 
 #### 🔄 Mittlere Priorität (optional)
@@ -861,3 +893,88 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 ## Architektur und Crate-Übersicht
 
 ### Workspace-Struktur
+
+| Crate | Funktion | Abhängigkeiten | Status |
+|-------|----------|----------------|--------|
+| `mapmap` | Haupt-Applikation (Binary) | alle Crates | ✅ Stable |
+| `mapmap-core` | Datenstrukturen & Logik | `serde`, `nalgebra` | ✅ Stable |
+| `mapmap-ui` | Benutzeroberfläche | `egui`, `wgpu` | ✅ Stable |
+| `mapmap-render` | Rendering-Engine | `wgpu` | ✅ Stable |
+| `mapmap-media` | Medien-Handling | `ffmpeg-next`, `image` | ✅ Beta |
+| `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
+| `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
+| `mapmap-mcp` | MCP-Server Integration | `serde_json` | ✅ Beta |
+
+### Modul-Abhängigkeiten
+
+```mermaid
+graph TD
+    App[mapmap] --> UI[mapmap-ui]
+    App --> Render[mapmap-render]
+    App --> Control[mapmap-control]
+    App --> MCP[mapmap-mcp]
+    UI --> Core[mapmap-core]
+    Render --> Core
+    Control --> Core
+    UI --> Media[mapmap-media]
+    Render --> Media
+    Media --> Core
+    IO[mapmap-io] --> Core
+    Render --> IO
+```
+
+## Arbeitspakete für @jules
+
+1.  **Refactorings (Priorität: Hoch)**
+    *   `MapFlowModule` in `mapmap-core` aufräumen (nicht verwendete Felder entfernen).
+    *   `MediaPlayer` State-Machine stabilisieren.
+
+2.  **Testing (Priorität: Mittel)**
+    *   Property-Based Tests für `MeshWarp` hinzufügen.
+    *   Integration-Tests für `OSC` -> `Parameter` Mapping.
+
+3.  **Documentation (Priorität: Niedrig)**
+    *   Rustdoc für alle `pub` Structs in `mapmap-core`.
+    *   Tutorial "Wie erstelle ich einen neuen Node-Typ?".
+
+## Task-Gruppen (Adaptiert für Rust)
+
+*   **T0:** Architektur & Datenmodell (`structs`, `enums`, `traits`)
+*   **T1:** Core-Logik & Algorithmen (No-std compatible logic)
+*   **T2:** Rendering & GPU (`wgpu`, Shader)
+*   **T3:** UI & Interaktion (`egui`)
+*   **T4:** IO & Hardware (Disk, Network, USB)
+
+## Implementierungsdetails nach Crate
+
+### `mapmap-core`
+*   Enthält keine Abhängigkeiten zu Rendering oder UI.
+*   Definiert das Datenmodell (`Layer`, `Mapping`, `Project`).
+*   Implementiert die Business-Logik (z.B. `overlaps(layer1, layer2)`).
+
+### `mapmap-render`
+*   Managt die `wgpu` Instanz, Adapter, Device und Queue.
+*   Implementiert `Renderer` Traits für verschiedene Zeichendienste.
+*   Hält Shader-Code als Strings oder Dateien.
+
+### `mapmap-ui`
+*   Implementiert `egui::App`.
+*   Handhabt Input-Events.
+*   Visualisiert den State aus `mapmap-core`.
+
+## Technologie-Stack und Entscheidungen
+
+*   **Sprache:** Rust 2021 (wegen Sicherheit und Performance).
+*   **GUI:** `egui` (Immediate Mode, einfach zu integrieren, wgpu-basiert).
+*   **Grafik:** `wgpu` (WebGPU-Standard, Cross-Platform, Zukunftssicher).
+*   **Video:** `ffmpeg-next` (Bindings für FFmpeg).
+*   **Audio:** `cpal` (Low-Level Audio API).
+*   **Build-System:** Cargo (Standard).
+
+## Build- und Test-Strategie
+
+*   **Unit Tests:** In jedem Modul (`#[test]`).
+*   **Integration Tests:** In `tests/` Ordner.
+*   **CI:** GitHub Actions (Build, Test, Lint).
+*   **Linter:** `clippy` (Strikt).
+*   **Formatter:** `rustfmt`.
