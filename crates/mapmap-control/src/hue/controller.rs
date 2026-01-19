@@ -29,6 +29,15 @@ impl HueController {
         }
     }
 
+    /// Register a new user with the bridge.
+    /// This requires the link button on the bridge to be pressed.
+    pub async fn register(&mut self, ip: &str) -> Result<HueConfig, String> {
+        info!("Starting Bridge registration at {}...", ip);
+        api::client::HueClient::register_user(ip, "MapFlow")
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     /// Update the configuration (e.g. if settings change)
     pub fn update_config(&mut self, config: HueConfig) {
         self.config = config;

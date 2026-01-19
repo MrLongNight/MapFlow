@@ -1472,6 +1472,25 @@ impl App {
                         );
                     }
                 }
+                mapmap_ui::UIAction::RegisterHue => {
+                    info!("Linking with Philips Hue Bridge...");
+                    let ip = self.ui_state.user_config.hue_config.bridge_ip.clone();
+                    if ip.is_empty() {
+                        error!("Cannot link: No Bridge IP specified.");
+                    } else {
+                        match self.tokio_runtime.block_on(self.hue_controller.register(&ip)) {
+                            Ok(new_config) => {
+                                info!("Successfully linked with Hue Bridge!");
+                                self.ui_state.user_config.hue_config.username = new_config.username;
+                                self.ui_state.user_config.hue_config.client_key = new_config.client_key;
+                                let _ = self.ui_state.user_config.save();
+                            }
+                            Err(e) => {
+                                error!("Failed to link with Hue Bridge: {}", e);
+                            }
+                        }
+                    }
+                }
                 mapmap_ui::UIAction::ConnectHue => {
                     info!("Connecting to Philips Hue Bridge...");
                     
@@ -2842,6 +2861,7 @@ impl App {
                                     .show(ui, |ui| {
                                         let mut changed = false;
                                         let mut connect_clicked = false;
+                                        let mut register_clicked = false;
                                         let disconnect_clicked = false;
                                         let mut discover_clicked = false;
                                         let hue_conf = &mut self.ui_state.user_config.hue_config;
@@ -2899,6 +2919,11 @@ impl App {
                                             if ui.button("Verbinden (Sync)").clicked() {
                                                 connect_clicked = true;
                                             }
+                                            
+                                            // Link Bridge Button
+                                            if ui.button("Link Bridge").on_hover_text("Press the button on your Hue Bridge, then click this to link.").clicked() {
+                                                register_clicked = true;
+                                            }
 
                                             // Connection Status Display
                                             // Using self.hue_controller is disjoint from self.ui_state (hue_conf)
@@ -2909,11 +2934,14 @@ impl App {
                                             }
                                         });
 
-                                        ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
-                                        (changed, connect_clicked, disconnect_clicked, discover_clicked)
+                                        ui.label(egui::RichText::new("Note: Press Link Button on Bridge before linking/connecting for the first time.").small());
+                                        (changed, connect_clicked, disconnect_clicked, discover_clicked, register_clicked)
                                     })
                                     .body_returned
-                                    .map(|(changed, connect, disconnect, discover)| {
+                                    .map(|(changed, connect, disconnect, discover, register)| {
+                                        if register {
+                                            self.ui_state.actions.push(mapmap_ui::UIAction::RegisterHue);
+                                        }
                                         if changed {
                                             let _ = self.ui_state.user_config.save();
                                             // Update controller config with correct types

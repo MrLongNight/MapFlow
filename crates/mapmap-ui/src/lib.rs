@@ -161,6 +161,7 @@ pub enum UIAction {
     ConnectHue,
     DisconnectHue,
     DiscoverHueBridges,
+    RegisterHue,
 
     // Help actions
     OpenDocs,
