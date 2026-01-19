@@ -1243,12 +1243,12 @@ impl App {
                     // Update Output Assignments for Preview
                     self.output_assignments.clear();
                     for op in &self.render_ops {
-                        if let mapmap_core::module::OutputType::Projector { id, .. } =
-                            &op.output_type
-                        {
+                        // Use output_part_id (the part ID) as key, not the internal OutputType id
+                        if let mapmap_core::module::OutputType::Projector { .. } = &op.output_type {
                             if let Some(source_id) = op.source_part_id {
                                 let tex_name = format!("part_{}", source_id);
-                                self.output_assignments.insert(*id, tex_name);
+                                // FIX: Use output_part_id which matches window_manager keys
+                                self.output_assignments.insert(op.output_part_id, tex_name);
                             }
                         }
                     }
