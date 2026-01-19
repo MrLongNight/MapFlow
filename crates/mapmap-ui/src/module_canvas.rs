@@ -440,7 +440,7 @@ impl ModuleCanvas {
                                             if socket.socket_type == ModuleSocketType::Trigger {
                                                 ui.horizontal(|ui| {
                                                     ui.label(format!("{}:", socket.name));
-                                                    
+
                                                     let current_target = part.trigger_targets.get(&idx).cloned().unwrap_or(TriggerTarget::None);
                                                     let mut selected = current_target.clone();
 
@@ -5534,7 +5534,7 @@ impl ModuleCanvas {
                 0,
                 (150.0 * glow_intensity) as u8,
             );
-            
+
             // Draw a thick stroke as a glow replacement since Shadow is deprecated/removed
              painter.rect_stroke(
                 rect.expand(2.0 * self.zoom),
