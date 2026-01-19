@@ -1,19 +1,42 @@
+//! Diagnostics - Module Integrity Checking
+//!
+//! This module provides tools to validate module connections, detect broken links,
+//! and report issues (errors/warnings) to the user.
+//!
+//! # Features
+//!
+//! - **ModuleIssue**: Represents a detected problem (Error, Warning, Info).
+//! - **check_module_integrity**: Main function to validate a `MapFlowModule`.
+
 use crate::module::{MapFlowModule, ModulePartType};
 
+/// Represents an issue found within a module
 #[derive(Debug, Clone)]
 pub struct ModuleIssue {
+    /// Severity level of the issue
     pub severity: IssueSeverity,
+    /// Human-readable description
     pub message: String,
+    /// ID of the part related to the issue (if any)
     pub part_id: Option<u64>,
 }
 
+/// Severity level of a diagnostic issue
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum IssueSeverity {
+    /// Critical error that prevents proper functioning
     Error,
+    /// Potential issue or suboptimal configuration
     Warning,
+    /// Informational message
     Info,
 }
 
+/// Check a module for structural integrity and logical errors
+///
+/// This performs multiple checks:
+/// 1. Connection validity (dangling references, out-of-bounds sockets)
+/// 2. Part configuration (missing files, disconnected outputs)
 pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
     let mut issues = Vec::new();
 

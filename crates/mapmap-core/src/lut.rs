@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 /// LUT size (standard is 32x32x32 or 64x64x64)
 pub const LUT_SIZE_32: usize = 32;
+/// Larger LUT size (64x64x64) for higher precision
 pub const LUT_SIZE_64: usize = 64;
 
 /// LUT format
@@ -353,16 +354,24 @@ impl Lut3D {
 /// LUT preset types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LutPreset {
+    /// No color modification
     Identity,
+    /// Convert to grayscale
     Grayscale,
+    /// Sepia tone effect
     Sepia,
+    /// Cool/Blue tone
     CoolTone,
+    /// Warm/Orange tone
     WarmTone,
+    /// Increased contrast
     HighContrast,
+    /// Invert colors
     Inverted,
 }
 
 impl LutPreset {
+    /// Get the display name of the preset
     pub fn name(&self) -> &'static str {
         match self {
             LutPreset::Identity => "Identity",
@@ -375,6 +384,7 @@ impl LutPreset {
         }
     }
 
+    /// Get all available presets
     pub fn all() -> Vec<LutPreset> {
         vec![
             LutPreset::Identity,
@@ -396,6 +406,7 @@ pub struct LutManager {
 }
 
 impl LutManager {
+    /// Create a new LUT manager
     pub fn new() -> Self {
         let mut manager = Self {
             luts: Vec::new(),
@@ -408,11 +419,13 @@ impl LutManager {
         manager
     }
 
+    /// Add a LUT to the manager and return its index
     pub fn add_lut(&mut self, lut: Lut3D) -> usize {
         self.luts.push(lut);
         self.luts.len() - 1
     }
 
+    /// Remove a LUT by index
     pub fn remove_lut(&mut self, index: usize) -> Option<Lut3D> {
         if index < self.luts.len() {
             let lut = self.luts.remove(index);
@@ -425,24 +438,29 @@ impl LutManager {
         }
     }
 
+    /// Get a LUT by index
     pub fn get_lut(&self, index: usize) -> Option<&Lut3D> {
         self.luts.get(index)
     }
 
+    /// Get the currently active LUT
     pub fn active_lut(&self) -> Option<&Lut3D> {
         self.active_lut_index.and_then(|i| self.luts.get(i))
     }
 
+    /// Set the active LUT index
     pub fn set_active_lut(&mut self, index: usize) {
         if index < self.luts.len() {
             self.active_lut_index = Some(index);
         }
     }
 
+    /// Get all available LUTs
     pub fn luts(&self) -> &[Lut3D] {
         &self.luts
     }
 
+    /// Load a LUT from file and add it to the manager
     pub fn load_from_file(&mut self, path: impl AsRef<Path>) -> Result<usize, LutError> {
         let lut = Lut3D::from_cube_file(path)?;
         Ok(self.add_lut(lut))
@@ -458,15 +476,19 @@ impl Default for LutManager {
 /// LUT error types
 #[derive(Debug, thiserror::Error)]
 pub enum LutError {
+    /// File I/O error
     #[error("IO error: {0}")]
     IoError(String),
 
+    /// File parsing error
     #[error("Parse error: {0}")]
     ParseError(String),
 
+    /// Invalid LUT dimension
     #[error("Invalid LUT size: {0}")]
     InvalidSize(usize),
 
+    /// LUT file or entry not found
     #[error("LUT not found")]
     NotFound,
 }

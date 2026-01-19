@@ -11,9 +11,13 @@ pub type OutputId = u64;
 /// Rectangular region in normalized canvas coordinates (0.0-1.0)
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct CanvasRegion {
+    /// X coordinate (0.0=left)
     pub x: f32,
+    /// Y coordinate (0.0=top)
     pub y: f32,
+    /// Width (0.0-1.0)
     pub width: f32,
+    /// Height (0.0-1.0)
     pub height: f32,
 }
 
@@ -63,11 +67,16 @@ impl CanvasRegion {
 /// Edge blending configuration for seamless projector overlap
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EdgeBlendConfig {
+    /// Left edge configuration
     pub left: EdgeBlendZone,
+    /// Right edge configuration
     pub right: EdgeBlendZone,
+    /// Top edge configuration
     pub top: EdgeBlendZone,
+    /// Bottom edge configuration
     pub bottom: EdgeBlendZone,
-    pub gamma: f32, // Blend curve gamma (typically 2.2)
+    /// Blend curve gamma (typically 2.2)
+    pub gamma: f32,
 }
 
 impl Default for EdgeBlendConfig {
@@ -85,9 +94,12 @@ impl Default for EdgeBlendConfig {
 /// Configuration for one edge of the blend zone
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EdgeBlendZone {
+    /// Whether blending is enabled for this edge
     pub enabled: bool,
-    pub width: f32,  // 0.0-0.5 (percentage of output width/height)
-    pub offset: f32, // Shift blend zone inward/outward (-0.1 to 0.1)
+    /// Width of the blend zone (0.0-0.5, percentage of dimension)
+    pub width: f32,
+    /// Shift blend zone inward/outward (-0.1 to 0.1)
+    pub offset: f32,
 }
 
 impl Default for EdgeBlendZone {
@@ -103,12 +115,18 @@ impl Default for EdgeBlendZone {
 /// Color calibration for per-output color correction
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ColorCalibration {
-    pub brightness: f32, // -1.0 to 1.0
-    pub contrast: f32,   // 0.0 to 2.0
-    pub gamma: Vec2,     // Per-channel gamma (R, G, B) - using Vec3 requires glam feature
-    pub gamma_b: f32,    // Blue gamma (separate due to Vec2)
-    pub color_temp: f32, // 2000K to 10000K
-    pub saturation: f32, // 0.0 to 2.0
+    /// Brightness offset (-1.0 to 1.0)
+    pub brightness: f32,
+    /// Contrast multiplier (0.0 to 2.0)
+    pub contrast: f32,
+    /// Per-channel gamma (R, G, B)
+    pub gamma: Vec2,
+    /// Blue gamma component (separate due to Vec2)
+    pub gamma_b: f32,
+    /// Color temperature in Kelvin (2000K to 10000K)
+    pub color_temp: f32,
+    /// Saturation multiplier (0.0 to 2.0)
+    pub saturation: f32,
 }
 
 impl Default for ColorCalibration {
@@ -127,12 +145,19 @@ impl Default for ColorCalibration {
 /// Configuration for a single output window (projector)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OutputConfig {
+    /// Unique Output ID
     pub id: OutputId,
+    /// User-friendly name
     pub name: String,
+    /// Region of the master canvas covered by this output
     pub canvas_region: CanvasRegion,
+    /// Physical resolution of the output
     pub resolution: (u32, u32),
+    /// Edge blending settings
     pub edge_blend: EdgeBlendConfig,
+    /// Color calibration settings
     pub color_calibration: ColorCalibration,
+    /// Whether to run in fullscreen exclusive mode
     pub fullscreen: bool,
 }
 

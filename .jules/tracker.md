@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-18 - Missing Documentation for PR #286
+**Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
+**Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
+
 ## 2026-01-16 - Systematische Changelog-Lücke (PR #248-#270)
 **Erkenntnis:** Trotz des Updates am 15.01. (#252) fehlten fast alle umgebenden PRs (#248-#251, #253-#270) im CHANGELOG. Das deutet auf manuelle Merges ohne Changelog-Pflege hin.
 **Aktion:** Tracker hat 19 fehlende Einträge rekonstruiert und ROADMAP.md synchronisiert.

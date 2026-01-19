@@ -6,6 +6,7 @@
 use crossbeam_channel::{bounded, Receiver, Sender};
 use num_complex::Complex;
 use rustfft::{Fft, FftPlanner};
+use std::collections::VecDeque;
 use std::sync::Arc;
 use tracing::{debug, trace};
 
@@ -123,7 +124,7 @@ pub struct AudioAnalyzerV2 {
     peak_volume: f32,
 
     /// Beat detection: energy history
-    energy_history: Vec<f32>,
+    energy_history: VecDeque<f32>,
 
     /// Current timestamp
     current_time: f64,
@@ -148,7 +149,7 @@ pub struct AudioAnalyzerV2 {
 
     // === BPM Tracking ===
     /// Timestamps of detected beats (for BPM calculation)
-    beat_timestamps: Vec<f64>,
+    beat_timestamps: VecDeque<f64>,
 
     /// Current estimated BPM
     estimated_bpm: Option<f32>,
@@ -206,7 +207,7 @@ impl AudioAnalyzerV2 {
             rms_volume: 0.0,
             smoothed_rms: 0.0,
             peak_volume: 0.0,
-            energy_history: Vec::with_capacity(64),
+            energy_history: VecDeque::with_capacity(64),
             current_time: 0.0,
             waveform_buffer: Vec::with_capacity(2048),
             analysis_sender: tx,
@@ -215,7 +216,7 @@ impl AudioAnalyzerV2 {
             total_samples: 0,
             fft_count: 0,
             // BPM Tracking
-            beat_timestamps: Vec::with_capacity(32),
+            beat_timestamps: VecDeque::with_capacity(32),
             estimated_bpm: None,
             time_since_last_beat: 1.0, // Start ready for beat
             min_beat_interval: 0.2,    // 300 BPM max
@@ -386,16 +387,16 @@ impl AudioAnalyzerV2 {
         let bass_energy = self.smoothed_bands[1];
 
         // Add current energy to history
-        self.energy_history.push(bass_energy);
+        self.energy_history.push_back(bass_energy);
 
         // Keep last 32 values
         if self.energy_history.len() > 32 {
-            self.energy_history.remove(0);
+            self.energy_history.pop_front();
         }
 
         // Update time since last beat
         if !self.beat_timestamps.is_empty() {
-            self.time_since_last_beat = timestamp - self.beat_timestamps.last().unwrap_or(&0.0);
+            self.time_since_last_beat = timestamp - self.beat_timestamps.back().unwrap_or(&0.0);
         }
 
         // Need at least 16 samples for detection
@@ -421,11 +422,11 @@ impl AudioAnalyzerV2 {
 
         if is_beat {
             // Record beat timestamp
-            self.beat_timestamps.push(timestamp);
+            self.beat_timestamps.push_back(timestamp);
 
             // Keep only last 16 beats for BPM calculation
             if self.beat_timestamps.len() > 16 {
-                self.beat_timestamps.remove(0);
+                self.beat_timestamps.pop_front();
             }
 
             // Calculate BPM from beat intervals
@@ -447,8 +448,9 @@ impl AudioAnalyzerV2 {
         // Calculate intervals between consecutive beats
         let mut intervals: Vec<f64> = self
             .beat_timestamps
-            .windows(2)
-            .map(|w| w[1] - w[0])
+            .iter()
+            .zip(self.beat_timestamps.iter().skip(1))
+            .map(|(a, b)| b - a)
             .collect();
 
         if intervals.is_empty() {
