@@ -1,0 +1,3 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+   Compiling mapmap v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.31s

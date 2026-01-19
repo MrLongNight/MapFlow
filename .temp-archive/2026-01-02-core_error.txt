@@ -1,0 +1,21 @@
+    Checking mapmap-core v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-core)
+error[E0599]: no variant or associated item named `Mesh` found for enum `ModulePartType` in the current scope
+   --> crates\mapmap-core\src\module.rs:195:29
+    |
+195 |             ModulePartType::Mesh(_) => (
+    |                             ^^^^ variant or associated item not found in `ModulePartType`
+...
+334 | pub enum ModulePartType {
+    | ----------------------- variant or associated item `Mesh` not found for this enum
+
+error[E0599]: no variant or associated item named `LayerAssignment` found for enum `ModulePartType` in the current scope
+   --> crates\mapmap-core\src\module.rs:205:29
+    |
+205 |             ModulePartType::LayerAssignment(_) => (
+    |                             ^^^^^^^^^^^^^^^ variant or associated item not found in `ModulePartType`
+...
+334 | pub enum ModulePartType {
+    | ----------------------- variant or associated item `LayerAssignment` not found for this enum
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mapmap-core` (lib) due to 2 previous errors
