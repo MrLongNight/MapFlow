@@ -7,12 +7,14 @@ use std::collections::HashSet;
 /// A set of active trigger outputs. Each entry is (part_id, socket_idx).
 pub type ActiveTriggers = HashSet<(u64, usize)>;
 
+/// System for processing and tracking active trigger states
 #[derive(Default)]
 pub struct TriggerSystem {
     active_triggers: ActiveTriggers,
 }
 
 impl TriggerSystem {
+    /// Create a new trigger system
     pub fn new() -> Self {
         Self::default()
     }
@@ -23,8 +25,11 @@ impl TriggerSystem {
 
         for module in module_manager.modules() {
             for part in &module.parts {
-                if let ModulePartType::Trigger(TriggerType::AudioFFT { threshold }) =
-                    &part.part_type
+                if let ModulePartType::Trigger(TriggerType::AudioFFT {
+                    band: _,
+                    threshold,
+                    output_config: _,
+                }) = &part.part_type
                 {
                     // Check each of the 9 frequency bands
                     for i in 0..9 {

@@ -399,6 +399,7 @@ impl WindowManager {
     ///
     /// This avoids the need for the caller to collect window IDs and iterate manually,
     /// preventing unnecessary allocations in the hot loop.
+    #[allow(dead_code)] // Helper for cleaner main loop
     pub fn request_redraw_all(&self) {
         for context in self.windows.values() {
             context.window.request_redraw();

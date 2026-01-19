@@ -20,6 +20,7 @@ use mapmap_core::{
         backend::AudioBackend,
     },
     AppState, ModuleEvaluator, OutputId, RenderOp,
+    audio_reactive::AudioTriggerData,
 };
 
 use mapmap_mcp::{McpAction, McpServer};
@@ -33,7 +34,7 @@ use mapmap_render::{
     ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, EffectChainRenderer, MeshBufferCache,
     MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
 };
-use mapmap_ui::{menu_bar, AppUI, AudioTriggerData, EdgeBlendAction};
+use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
 use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
@@ -888,11 +889,8 @@ impl App {
                 // Process audio
                 // Process audio
                 let timestamp = self.start_time.elapsed().as_secs_f64();
-                let mut samples_len = 0;
-
                 if let Some(backend) = &mut self.audio_backend {
                     let samples = backend.get_samples();
-                    samples_len = samples.len();
                     if !samples.is_empty() {
                         self.audio_analyzer.process_samples(&samples, timestamp);
                     }
@@ -1318,7 +1316,7 @@ impl App {
                 // Update module canvas with audio trigger data
                 self.ui_state
                     .module_canvas
-                    .set_audio_data(mapmap_ui::AudioTriggerData {
+                    .set_audio_data(AudioTriggerData {
                         band_energies: analysis_v2.band_energies,
                         rms_volume: analysis_v2.rms_volume,
                         peak_volume: analysis_v2.peak_volume,

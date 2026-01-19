@@ -660,7 +660,6 @@ impl ModuleEvaluator {
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props,
-                                        source_props: SourceProperties::default_identity(),
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });
@@ -683,7 +682,6 @@ impl ModuleEvaluator {
                                         blend_mode: *blend_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props.clone(),
-                                        source_props: SourceProperties::default_identity(),
                                         effects: chain.effects,
                                         masks: chain.masks,
                                     });

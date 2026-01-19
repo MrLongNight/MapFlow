@@ -32,7 +32,7 @@ impl OutputPanel {
         ctx: &egui::Context,
         i18n: &LocaleManager,
         output_manager: &mut mapmap_core::OutputManager,
-        monitors: &[mapmap_core::monitor::MonitorInfo],
+        _monitors: &[mapmap_core::monitor::MonitorInfo],
     ) {
         if !self.visible {
             return;
@@ -102,26 +102,8 @@ impl OutputPanel {
                             ui.text_edit_singleline(&mut updated_config.name);
                         });
 
-                        ui.checkbox(&mut updated_config.enabled, i18n.t("check-enabled"));
-                        ui.checkbox(&mut updated_config.fullscreen, i18n.t("check-fullscreen"));
-
-                        egui::ComboBox::from_label("Monitor")
-                            .selected_text(
-                                updated_config
-                                    .monitor_id
-                                    .as_deref()
-                                    .unwrap_or("None"),
-                            )
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut updated_config.monitor_id, None, "None");
-                                for monitor in monitors {
-                                    ui.selectable_value(
-                                        &mut updated_config.monitor_id,
-                                        Some(monitor.name.clone()),
-                                        &monitor.name,
-                                    );
-                                }
-                            });
+                        // Note: enabled, fullscreen, and monitor_id fields are not available in OutputConfig
+                        // These would need to be added to the OutputConfig struct in mapmap-core
 
                         ui.label(i18n.t("label-resolution"));
                         ui.horizontal(|ui| {
@@ -139,19 +121,28 @@ impl OutputPanel {
 
                         ui.label(i18n.t("label-canvas-region"));
                         ui.horizontal(|ui| {
-                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.x).speed(0.01));
-                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.y).speed(0.01));
+                            ui.add(
+                                egui::DragValue::new(&mut updated_config.canvas_region.x)
+                                    .speed(0.01),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut updated_config.canvas_region.y)
+                                    .speed(0.01),
+                            );
                         });
                         ui.horizontal(|ui| {
-                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.width).speed(0.01));
-                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.height).speed(0.01));
+                            ui.add(
+                                egui::DragValue::new(&mut updated_config.canvas_region.width)
+                                    .speed(0.01),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut updated_config.canvas_region.height)
+                                    .speed(0.01),
+                            );
                         });
 
                         ui.collapsing("Edge Blend", |ui| {
-                            ui.label(format!(
-                                "Left: {}",
-                                updated_config.edge_blend.left.enabled
-                            ));
+                            ui.label(format!("Left: {}", updated_config.edge_blend.left.enabled));
                             ui.label(format!(
                                 "Right: {}",
                                 updated_config.edge_blend.right.enabled
@@ -180,10 +171,8 @@ impl OutputPanel {
 
                         if updated_config != *output {
                             *output = updated_config;
-                            self.actions.push(UIAction::ConfigureOutput(
-                                output_id,
-                                output.clone(),
-                            ));
+                            self.actions
+                                .push(UIAction::ConfigureOutput(output_id, output.clone()));
                         }
 
                         ui.separator();

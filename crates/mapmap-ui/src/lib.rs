@@ -66,7 +66,7 @@ pub use mapmap_io::ndi::NdiSource;
 pub use mapping_panel::MappingPanel;
 pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
 pub use mesh_editor::{MeshEditor, MeshEditorAction};
-pub use module_canvas::{AudioTriggerData, MediaPlaybackCommand, MediaPlayerInfo, ModuleCanvas};
+pub use module_canvas::{MediaPlaybackCommand, MediaPlayerInfo, ModuleCanvas};
 pub use module_sidebar::ModuleSidebar;
 pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
 pub use oscillator_panel::OscillatorPanel;
@@ -317,7 +317,11 @@ impl Default for AppUI {
             show_transforms: false,     // Hide - will move to Inspector
             show_master_controls: true, // Keep visible
             show_outputs: false,        // Hide by default
-            output_panel: output_panel::OutputPanel { visible: false },
+            output_panel: {
+                let mut panel = output_panel::OutputPanel::default();
+                panel.visible = false;
+                panel
+            },
             edge_blend_panel: EdgeBlendPanel::default(),
             oscillator_panel: OscillatorPanel { visible: false }, // Hide by default
             show_audio: false, // Hide by default - use Dashboard toggle

@@ -304,7 +304,7 @@ impl ModuleCanvas {
                                                 ui.label("🥁 Beat Sync");
                                                 ui.label("Triggers on BPM beat.");
                                             }
-                                            TriggerType::AudioFFT { band, threshold, output_config } => {
+                                            TriggerType::AudioFFT { band: _band, threshold, output_config } => {
                                                 ui.label("🔊 Audio FFT");
                                                 ui.label("Outputs 9 frequency bands, plus volume and beat.");
                                                 ui.add(
@@ -361,11 +361,9 @@ impl ModuleCanvas {
 
                                                 // Note: Changing output config requires regenerating sockets
                                                 // This will be handled when the part is updated
-=======
                                                 ui.label(
                                                     "Threshold is used for the node's visual glow effect.",
                                                 );
->>>>>>> fix/multi-band-audio
                                             }
                                             TriggerType::Random {
                                                 min_interval_ms,
@@ -1062,7 +1060,6 @@ impl ModuleCanvas {
                                                         // Convert percentage to duration-based seek
                                                         // This will need actual video duration from player
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
->>>>>>> fix-pr-216
                                                     }
                                                 });
 
