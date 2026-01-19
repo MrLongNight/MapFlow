@@ -2545,8 +2545,13 @@ impl ModuleCanvas {
                     let has_module = self.active_module_id.is_some();
 
                     ui.add_enabled_ui(has_module, |ui| {
+                        // Style the "Add Node" button to be prominent (Primary Action)
+                        ui.visuals_mut().widgets.inactive.weak_bg_fill = Color32::from_rgb(40, 60, 100);
+                        ui.visuals_mut().widgets.hovered.weak_bg_fill = Color32::from_rgb(60, 80, 140);
+                        ui.visuals_mut().widgets.inactive.fg_stroke = Stroke::new(1.0, Color32::WHITE);
+
                         // === UNIFIED "ADD NODE" MENU with Search ===
-                        egui::menu::menu_button(ui, "➕ Add Node", |ui| {
+                        egui::menu::menu_button(ui, egui::RichText::new("➕ Add Node").strong().size(14.0), |ui| {
                             ui.set_min_width(240.0);
 
                             // Search bar at top
@@ -5493,8 +5498,13 @@ impl ModuleCanvas {
                 spread: (5.0 * self.zoom).min(255.0) as u8,
                 color: glow_color,
             };
-            // TODO: Shadow::tessellate was removed in egui 0.33
-            // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
+            // Manual glow rendering (approximation for egui 0.33+)
+            let glow_rect = rect.expand(shadow.spread as f32 + (shadow.blur as f32 * 0.5));
+            painter.rect_filled(
+                glow_rect,
+                (12.0 * self.zoom) as u8,
+                shadow.color.linear_multiply(0.5), // Reduce opacity since it's solid
+            );
         }
 
         // Draw shadow behind node
@@ -5504,8 +5514,15 @@ impl ModuleCanvas {
             spread: 0,
             color: Color32::from_black_alpha(100),
         };
-        // TODO: Shadow::tessellate was removed in egui 0.33
-        // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
+        // Manual shadow rendering (approximation for egui 0.33+)
+        let shadow_rect = rect
+            .translate(Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32))
+            .expand(shadow.spread as f32 + (shadow.blur as f32 * 0.25));
+        painter.rect_filled(
+            shadow_rect,
+            (8.0 * self.zoom) as u8,
+            shadow.color.linear_multiply(0.5), // Reduce opacity for softer look
+        );
 
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
