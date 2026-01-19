@@ -950,8 +950,22 @@ impl ModuleEvaluator {
                     break;
                 }
             } else {
+                tracing::warn!(
+                    "trace_chain: Node {} not found in part_index, stopping traversal",
+                    current_id
+                );
                 break;
             }
+        }
+
+        // Warn if we hit the iteration limit (possible cycle in graph)
+        // Note: We can't easily detect this inside the loop, but if source_id is still None
+        // after 50 iterations, something may be wrong.
+        if source_id.is_none() && !effects.is_empty() {
+            tracing::warn!(
+                "trace_chain: Completed 50 iterations starting from {} but found no source. Possible cycle or broken chain.",
+                start_node_id
+            );
         }
 
         ProcessingChain {

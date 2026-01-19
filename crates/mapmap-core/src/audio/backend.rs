@@ -124,7 +124,7 @@ pub mod cpal_backend {
 
             // Log device info for debugging
             let device_name_str = device.name().unwrap_or_else(|_| "Unknown".to_string());
-            eprintln!(
+            tracing::info!(
                 "Audio: Using device '{}', format={:?}, sample_rate={}, channels={}",
                 device_name_str,
                 config.sample_format(),
@@ -132,7 +132,7 @@ pub mod cpal_backend {
                 config.channels()
             );
 
-            let err_fn = |err| eprintln!("Audio stream error: {}", err);
+            let err_fn = |err| tracing::error!("Audio stream error: {}", err);
 
             // Build stream
             let stream = match config.sample_format() {
@@ -149,7 +149,7 @@ pub mod cpal_backend {
 
                             if !LOGGED_OK.load(Ordering::Relaxed) {
                                 let non_zero = data.iter().filter(|&&s| s != 0.0).count();
-                                eprintln!(
+                                tracing::debug!(
                                     "Audio: First callback OK - {} samples, non_zero={}",
                                     data.len(),
                                     non_zero
@@ -259,8 +259,8 @@ pub mod cpal_backend {
             let host = cpal::default_host();
 
             // Log available hosts for debugging
-            eprintln!("Audio: Available hosts: {:?}", cpal::available_hosts());
-            eprintln!("Audio: Using host: {:?}", host.id());
+            tracing::debug!("Audio: Available hosts: {:?}", cpal::available_hosts());
+            tracing::debug!("Audio: Using host: {:?}", host.id());
 
             // List all input devices with their configs
             match host.input_devices() {
@@ -270,7 +270,7 @@ pub mod cpal_backend {
                         if let Ok(name) = device.name() {
                             // Try to get default config for debugging
                             if let Ok(config) = device.default_input_config() {
-                                eprintln!(
+                                tracing::debug!(
                                     "Audio Input: '{}' - format={:?}, rate={}, channels={}",
                                     name,
                                     config.sample_format(),
@@ -278,7 +278,7 @@ pub mod cpal_backend {
                                     config.channels()
                                 );
                             } else {
-                                eprintln!("Audio Input: '{}' - no config available", name);
+                                tracing::warn!("Audio Input: '{}' - no config available", name);
                             }
                             device_names.push(name);
                         }
