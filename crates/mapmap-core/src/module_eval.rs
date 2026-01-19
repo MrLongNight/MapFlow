@@ -750,6 +750,13 @@ impl ModuleEvaluator {
                 // Or we re-compute or access cached values.
                 // Let's assume we can access per-socket inputs or just iterate connections to this part.
 
+                if !part.trigger_targets.is_empty() {
+                    tracing::info!(
+                        "Part {} has {} trigger targets",
+                        part.id,
+                        part.trigger_targets.len()
+                    );
+                }
                 for (socket_idx, config) in &part.trigger_targets {
                     // Find connection to this socket
                     let mut trigger_val = 0.0;
