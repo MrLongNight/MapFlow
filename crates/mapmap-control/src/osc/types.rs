@@ -34,15 +34,26 @@ pub fn osc_to_control_value(osc_args: &[OscType]) -> Result<ControlValue> {
                 | ((color.green as u32) << 16)
                 | ((color.blue as u32) << 8)
                 | (color.alpha as u32);
-            Ok(ControlValue::Color(rgba))
+            ControlValue::Color(rgba)
         }
-        OscType::Double(d) => Ok(ControlValue::Float(*d as f32)),
-        OscType::Long(l) => Ok(ControlValue::Int(*l as i32)),
-        _ => Err(ControlError::InvalidMessage(format!(
-            "Unsupported OSC type: {:?}",
-            osc_args[0]
-        ))),
+        OscType::Double(d) => ControlValue::Float(*d as f32),
+        OscType::Long(l) => ControlValue::Int(*l as i32),
+        _ => {
+            return Err(ControlError::InvalidMessage(format!(
+                "Unsupported OSC type: {:?}",
+                osc_args[0]
+            )))
+        }
+    };
+
+    if let Err(e) = val.validate() {
+        return Err(ControlError::InvalidMessage(format!(
+            "Invalid OSC value: {}",
+            e
+        )));
     }
+
+    Ok(val)
 }
 
 /// Convert multiple OSC arguments to Vec2
@@ -76,7 +87,15 @@ pub fn osc_to_vec2(osc_args: &[OscType]) -> Result<ControlValue> {
         }
     };
 
-    Ok(ControlValue::Vec2(x, y))
+    let val = ControlValue::Vec2(x, y);
+    if let Err(e) = val.validate() {
+        return Err(ControlError::InvalidMessage(format!(
+            "Invalid OSC Vec2: {}",
+            e
+        )));
+    }
+
+    Ok(val)
 }
 
 /// Convert multiple OSC arguments to Vec3
@@ -121,7 +140,15 @@ pub fn osc_to_vec3(osc_args: &[OscType]) -> Result<ControlValue> {
         }
     };
 
-    Ok(ControlValue::Vec3(x, y, z))
+    let val = ControlValue::Vec3(x, y, z);
+    if let Err(e) = val.validate() {
+        return Err(ControlError::InvalidMessage(format!(
+            "Invalid OSC Vec3: {}",
+            e
+        )));
+    }
+
+    Ok(val)
 }
 
 /// Convert ControlValue to OSC type
