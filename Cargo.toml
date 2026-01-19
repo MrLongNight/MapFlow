@@ -103,7 +103,7 @@ tower = "0.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unic-langid = "0.9"
-usvg = "0.40"
+usvg = "0.45"
 # Core dependencies
 wgpu = "27.0.1"
 winit = { version = "0.30", features = ["x11", "wayland"] }
