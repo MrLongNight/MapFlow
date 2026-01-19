@@ -1,5 +1,5 @@
 
-app-title = MapFlow - VJ Projection Mapping
+app-title = MapMap - VJ Projection Mapping
 menu-file = File
 menu-file-load-video = Load Video
 menu-file-save-project = Save Project
@@ -59,8 +59,6 @@ media-browser-sort = Sort
 media-browser-sort-name = Name
 media-browser-sort-type = Type
 media-browser-sort-size = Size
-media-browser-empty-folder = This folder is empty.
-media-browser-no-results = No media found matching filters.
 
 panel-effect-chain = Effect Chain
 effect-name-color-adjust = Color Adjust
@@ -178,7 +176,7 @@ mode-play-once = Play Once
 panel-performance = Performance
 label-fps = FPS
 label-frame-time = Frame Time
-perf-demo = MapFlow Phase 0 Demo
+perf-demo = MapMap Phase 0 Demo
 
 # Layers
 panel-layers = Layers
@@ -196,7 +194,6 @@ btn-eject-all = Eject All (X)
 panel-paints = Paints
 label-total-paints = Total Paints: { $count }
 check-playing = Playing
-paints-color = Color
 mode-loop = Loop
 label-speed = Speed
 label-composition = Composition
@@ -274,10 +271,6 @@ label-name = Name
 label-resolution = Resolution
 label-x = X
 label-y = Y
-label-width = Width
-label-height = Height
-check-fullscreen = Fullscreen
-check-enabled = Enabled
 
 # Edge Blend (Harmonized with User edits)
 panel-edge-blend = Edge Blending
@@ -328,50 +321,11 @@ label-diff-coupling = Coupling
 btn-reset-ring = Reset Ring
 btn-clear-ring = Clear Ring
 
-#
-# Main Menu & Toolbar (egui)
-#
-menu-edit = Edit
-menu-file-new-project = New Project...
-menu-file-open-project = Open Project...
-menu-file-save-as = Save As...
-menu-file-export = Export...
-menu-file-settings = Settings...
-menu-edit-undo = Undo
-menu-edit-redo = Redo
-menu-edit-cut = Cut
-menu-edit-copy = Copy
-menu-edit-paste = Paste
-menu-edit-delete = Delete
-menu-edit-select-all = Select All
-view-toolbar = Show Toolbar
-view-egui-panels = Egui Panels
-panel-dashboard = Dashboard
-panel-media-browser = Media Browser
-panel-asset-manager = Asset Manager
-panel-mesh-editor = Mesh Editor
-panel-node-editor = Node Editor
-panel-timeline = Timeline
-view-legacy-panels = Legacy Panels
-view-reset-layout = Reset Layout
-menu-help-docs = Documentation
-menu-help-license = License
-toolbar-save = Save
-toolbar-undo = Undo
-toolbar-redo = Redo
-
 # Audio (Harmonized with User edits)
 panel-audio = Audio Analysis
 header-audio-input = Audio Input
 label-device = Device
 audio-spectrum = Frequency Spectrum
-audio-panel-title = Audio Analysis
-audio-panel-device = Input Device
-audio-panel-no-device = No device
-audio-panel-no-data = Waiting for audio data...
-audio-panel-rms = RMS Volume
-audio-panel-beat = Beat
-audio-panel-bands = Frequency Bands
 
 # OSC Panel
 panel-osc-title = OSC Control
@@ -389,25 +343,14 @@ header-address-mappings = Address Mappings
 text-osc-edit-tip = (Edit osc_mappings.json for now)
 check-show-cues = Show Cues
 
-# Edge Blend & Color Calibration Panel
-panel-edge-blend-color = Edge Blend & Color Calibration
-edge-blend-no-output = Select an output from the Output panel to configure its edge blend and color settings.
-header-edge-blend = Edge Blending
-header-color-calibration = Color Calibration
-
-# Module System
-panel-modules = Modules
-btn-add-module = Add Module
-panel-module-canvas = Module Canvas
-menu-rename = Rename
-menu-duplicate = Duplicate
-menu-delete = Delete
-
-# Settings
-settings-project = Project Settings
-settings-frame-rate = Frame Rate
-settings-app = App Settings
-settings-language = Language
-settings-logging = Logging
-tooltip-toggle-visibility = Toggle Visibility
-tooltip-layer-opacity = Layer Opacity
+# Shortcuts
+shortcuts-panel-title = Keyboard Shortcuts
+shortcuts-reset-defaults = Reset to Defaults
+shortcuts-header-action = Action
+shortcuts-header-shortcut = Shortcut
+shortcuts-edit = Edit
+check-show-shortcuts = Show Shortcuts
+shortcuts-edit-dialog-title = Edit Shortcut
+shortcuts-edit-dialog-prompt = Press a new key combination for the shortcut.
+shortcuts-edit-dialog-cancel = Press Esc to cancel.
+shortcuts-edit-dialog-conflict-warning = This key combination is already in use.

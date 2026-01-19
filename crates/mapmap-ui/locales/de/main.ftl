@@ -1,5 +1,5 @@
 
-app-title = MapFlow - VJ Projection Mapping
+app-title = MapMap - VJ Projection Mapping
 menu-file = Datei
 menu-file-load-video = Video laden
 menu-file-save-project = Projekt speichern
@@ -27,23 +27,20 @@ dashboard-layout-grid = Raster
 dashboard-layout-freeform = Freiform
 dashboard-columns = Spalten:
 dashboard-add-widget = ➕ Widget hinzufügen
-dashboard-add-widget-tooltip = Neues Steuerelement hinzufügen
+dashboard-add-widget-tooltip = Ein neues Widget zum Dashboard hinzufügen
 dashboard-state = Status:
-dashboard-speed = Tempo:
-dashboard-loop = Wiederholen
-dashboard-audio-analysis = Audio-Steuerung
-dashboard-device = Eingabegerät
-dashboard-no-device = Kein Gerät
-dashboard-volume = Pegel
-dashboard-spectrum = Spektrum
-dashboard-no-audio-data = Kein Signal
-dashboard-remove-widget = Entfernen
-dashboard-trigger = Trigger
-dashboard-rms = Pegel (RMS)
-dashboard-peak = Spitze
-dashboard-toggle-audio = Audio-Panel umschalten
-dashboard-open-audio-panel = 🔊 Audio-Einstellungen öffnen
-dashboard-audio-section = Audio-Input
+dashboard-speed = Geschwindigkeit:
+dashboard-loop = Schleife
+dashboard-audio-analysis = Audio-Analyse
+dashboard-device = Gerät
+dashboard-no-device = Kein Gerät ausgewählt
+dashboard-volume = Lautstärke
+dashboard-spectrum = Frequenzspektrum
+dashboard-no-audio-data = Keine Audio-Analysedaten verfügbar.
+dashboard-remove-widget = Widget entfernen
+dashboard-trigger = Auslösen
+dashboard-rms = RMS
+dashboard-peak = Peak
 
 media-browser-title = Medien-Browser
 media-browser-back = Zurück
@@ -62,8 +59,6 @@ media-browser-sort = Sortieren
 media-browser-sort-name = Name
 media-browser-sort-type = Typ
 media-browser-sort-size = Größe
-media-browser-empty-folder = Dieser Ordner ist leer.
-media-browser-no-results = Keine passenden Medien gefunden.
 
 panel-effect-chain = Effekt-Kette
 effect-name-color-adjust = Farbanpassung
@@ -194,7 +189,7 @@ mode-play-once = Einmal abspielen
 panel-performance = Leistung
 label-fps = FPS
 label-frame-time = Frame-Zeit
-perf-demo = MapFlow Phase 0 Demo
+perf-demo = MapMap Phase 0 Demo
 
 # Layers
 panel-layers = Ebenen
@@ -207,17 +202,11 @@ btn-duplicate = Duplizieren
 btn-remove = Entfernen
 btn-add-layer = Ebene hinzufügen
 btn-eject-all = Alle auswerfen (X)
-tooltip-remove-layer = Ausgewählte Ebene entfernen
-tooltip-duplicate-layer = Ausgewählte Ebene duplizieren
-tooltip-eject-all = Alle Ebenen löschen
-tooltip-solo = Solo (Nur diese Ebene anzeigen)
-tooltip-bypass = Bypass (Ebene deaktivieren)
 
 # Paints
 panel-paints = Farben/Medien
 label-total-paints = Paints insgesamt: { $count }
 check-playing = Wiedergabe
-paints-color = Farbe
 mode-loop = Schleife
 label-speed = Geschwindigkeit
 label-composition = Komposition
@@ -237,7 +226,7 @@ btn-add-quad = Quad-Mapping hinzufügen
 
 # Transform
 panel-transforms = Transformations-Steuerung
-header-transform-sys = Transformations-System
+header-transform-sys = Phase 1: Transformations-System
 label-editing = Bearbeite
 transform-position = Position:
 transform-position-x = X
@@ -245,22 +234,21 @@ transform-position-y = Y
 transform-scale = Skalierung:
 transform-width = Breite
 transform-height = Höhe
-btn-reset-scale = Skalierung zurücksetzen
-transform-rotation = Rotation
+btn-reset-scale = Skalierung zurücksetzen (1:1)
+transform-rotation = Rotation (Grad):
 btn-reset-rotation = Rotation zurücksetzen
-label-anchor = Ankerpunkt
+label-anchor = Ankerpunkt (0-1)
 transform-anchor-x = Anker X
 transform-anchor-y = Anker Y
-btn-center-anchor = Anker zentrieren
-transform-presets = Größen-Voreinstellungen
-transform-fill = Füllen
-btn-resize-fit = Einpassen
-btn-resize-stretch = Strecken
-btn-resize-original = Original
-btn-reset-defaults = Auf Standard zurücksetzen
+btn-center-anchor = Anker zentrieren (0.5, 0.5)
+transform-presets = Größe-Presets:
+transform-fill = Füllen (Cover)
+btn-resize-fit = Einpassen (Contain)
+btn-resize-stretch = Strecken (Distort)
+btn-resize-original = Original (1:1)
 transform-no-selection = Ausgewählte Ebene nicht gefunden.
 transform-no-layer = Keine Ebene ausgewählt.
-transform-select-tip = Klicke auf eine Ebene im Ebenen-Panel, um sie auszuwählen.
+transform-select-tip = Klicken Sie auf einen Ebenennamen im\nEbenen-Panel, um ihn auszuwählen.
 
 # Master
 panel-master = Master-Steuerung
@@ -289,10 +277,6 @@ btn-remove-output = Ausgang entfernen
 msg-multi-window-active = Multi-Fenster-Rendering: AKTIV
 msg-output-windows-tip = Ausgabefenster werden automatisch erstellt und synchronisiert
 label-saturation = Sättigung
-label-width = Breite
-label-height = Höhe
-check-fullscreen = Vollbild
-check-enabled = Aktiviert
 
 # Edge Blend (Harmonized with User edits)
 panel-edge-blend = Kantenüberblendung
@@ -321,7 +305,7 @@ check-enable = Effekt aktivieren
 header-quick-presets = Schnell-Vorlagen
 btn-subtle = Dezent
 btn-dramatic = Dramatisch
-btn-rings = Rings
+btn-rings = Ringe
 btn-reset = Zurücksetzen
 header-distortion = Verzerrungs-Parameter
 label-amount = Stärke
@@ -343,51 +327,11 @@ label-diff-coupling = Kopplung
 btn-reset-ring = Ring zurücksetzen
 btn-clear-ring = Ring leeren
 
-#
-# Main Menu & Toolbar (egui)
-#
-menu-edit = Bearbeiten
-menu-file-new-project = Neues Projekt...
-menu-file-open-project = Projekt öffnen...
-menu-file-save-as = Speichern unter...
-menu-file-export = Exportieren...
-menu-file-settings = Einstellungen...
-menu-edit-undo = Rückgängig
-menu-edit-redo = Wiederherstellen
-menu-edit-cut = Ausschneiden
-menu-edit-copy = Kopieren
-menu-edit-paste = Einfügen
-menu-edit-delete = Löschen
-menu-edit-select-all = Alles auswählen
-view-toolbar = Werkzeugleiste anzeigen
-view-egui-panels = Egui-Bedienfelder
-panel-dashboard = Dashboard
-panel-media-browser = Medienbrowser
-panel-asset-manager = Asset-Manager
-panel-mesh-editor = Mesh-Editor
-panel-node-editor = Node-Editor
-panel-timeline = Zeitleiste
-view-legacy-panels = Legacy-Bedienfelder
-view-reset-layout = Layout zurücksetzen
-menu-help-docs = Dokumentation
-menu-help-license = Lizenz
-toolbar-save = Speichern
-toolbar-undo = Rückgängig
-toolbar-redo = Wiederherstellen
-
 # Audio (Harmonized with User edits)
 panel-audio = Audio-Analyse
 header-audio-input = Audio-Eingang
-label-device = Eingabegerät
-audio-spectrum = Spektrum
-audio-panel-title = Audio-Einstellungen
-audio-panel-settings = Signalverarbeitung
-audio-panel-device = Eingabegerät
-audio-panel-no-device = Kein Gerät
-audio-panel-no-data = Kein Audiosignal
-audio-panel-rms = Pegel
-audio-panel-beat = Beat
-audio-panel-bands = Frequenzbänder
+label-device = Gerät
+audio-spectrum = Frequenzspektrum
 
 # OSC Panel
 panel-osc-title = OSC-Steuerung
@@ -405,25 +349,14 @@ header-address-mappings = Adress-Zuweisungen
 text-osc-edit-tip = (Bearbeite vorerst die osc_mappings.json)
 check-show-cues = Cues anzeigen
 
-# Edge Blend & Color Calibration Panel
-panel-edge-blend-color = Kantenüberblendung & Farbkalibrierung
-edge-blend-no-output = Wählen Sie einen Ausgang im Ausgabe-Panel, um dessen Kantenüberblendungs- und Farbeinstellungen zu konfigurieren.
-header-edge-blend = Kantenüberblendung
-header-color-calibration = Farbkalibrierung
-
-# Module System
-panel-modules = Module
-btn-add-module = Modul hinzufügen
-panel-module-canvas = Modul-Editor
-menu-rename = Umbenennen
-menu-duplicate = Duplizieren
-menu-delete = Löschen
-
-# Settings
-settings-project = Projekteinstellungen
-settings-frame-rate = Bildrate
-settings-app = App-Einstellungen
-settings-language = Sprache
-settings-logging = Protokollierung
-tooltip-toggle-visibility = Sichtbarkeit umschalten
-tooltip-layer-opacity = Ebenen-Deckkraft
+# Shortcuts
+shortcuts-panel-title = Tastenkürzel
+shortcuts-reset-defaults = Auf Standard zurücksetzen
+shortcuts-header-action = Aktion
+shortcuts-header-shortcut = Kürzel
+shortcuts-edit = Bearbeiten
+check-show-shortcuts = Tastenkürzel anzeigen
+shortcuts-edit-dialog-title = Tastenkürzel bearbeiten
+shortcuts-edit-dialog-prompt = Drücken Sie eine neue Tastenkombination für das Kürzel.
+shortcuts-edit-dialog-cancel = Drücken Sie Esc zum Abbrechen.
+shortcuts-edit-dialog-conflict-warning = Diese Tastenkombination wird bereits verwendet.
