@@ -157,6 +157,8 @@ struct App {
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
     /// Philips Hue Controller
     hue_controller: HueController,
+    /// Tokio runtime for async operations
+    tokio_runtime: tokio::runtime::Runtime,
 }
 
 impl App {
@@ -197,6 +199,12 @@ impl App {
                 .ok();
 
         let mut window_manager = WindowManager::new();
+
+        // Create Tokio runtime
+        let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create Tokio runtime");
 
         // Load user config to get saved window geometry
         let saved_config = mapmap_ui::config::UserConfig::load();
@@ -626,6 +634,7 @@ impl App {
             output_preview_cache: HashMap::new(),
             preview_quad_buffers,
             hue_controller,
+            tokio_runtime,
         };
 
         // Create initial dummy texture
@@ -1477,7 +1486,7 @@ impl App {
                     };
                     self.hue_controller.update_config(control_hue);
 
-                    if let Err(e) = pollster::block_on(self.hue_controller.connect()) {
+                    if let Err(e) = self.tokio_runtime.block_on(self.hue_controller.connect()) {
                         error!("Failed to connect to Hue Bridge: {}", e);
                     } else {
                         info!("Successfully connected to Hue Bridge");
@@ -1485,12 +1494,12 @@ impl App {
                 }
                 mapmap_ui::UIAction::DisconnectHue => {
                     info!("Disconnecting from Philips Hue Bridge...");
-                    pollster::block_on(self.hue_controller.disconnect());
+                    self.tokio_runtime.block_on(self.hue_controller.disconnect());
                 }
                 mapmap_ui::UIAction::DiscoverHueBridges => {
                     info!("Discovering Philips Hue Bridges...");
                     // Discovery is async but meethue.com is usually fast.
-                    match pollster::block_on(mapmap_control::hue::api::discovery::discover_bridges()) {
+                    match self.tokio_runtime.block_on(mapmap_control::hue::api::discovery::discover_bridges()) {
                         Ok(bridges) => {
                             info!("Discovered {} bridges", bridges.len());
                             self.ui_state.discovered_hue_bridges = bridges;
