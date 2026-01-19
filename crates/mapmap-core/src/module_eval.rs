@@ -657,11 +657,8 @@ impl ModuleEvaluator {
                                     blend_mode,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(
-                                        layer_part.id,
-                                        &part_index,
-                                        &conn_index,
-                                    );
+                                    let chain =
+                                        self.trace_chain(layer_part.id, &part_index, &conn_index);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -683,11 +680,8 @@ impl ModuleEvaluator {
                                     mesh,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(
-                                        layer_part.id,
-                                        &part_index,
-                                        &conn_index,
-                                    );
+                                    let chain =
+                                        self.trace_chain(layer_part.id, &part_index, &conn_index);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -862,8 +856,7 @@ impl ModuleEvaluator {
                                             if let Some(from_values) =
                                                 trigger_values.get(&conn.from_part)
                                             {
-                                                if let Some(val) =
-                                                    from_values.get(conn.from_socket)
+                                                if let Some(val) = from_values.get(conn.from_socket)
                                                 {
                                                     trigger_val = *val;
                                                 }
@@ -1367,7 +1360,8 @@ mod tests_logic {
         // trace_chain is private. But the test calls it directly.
         // I need to update the test to pass indices.
 
-        let part_index: HashMap<ModulePartId, &ModulePart> = module.parts.iter().map(|p| (p.id, p)).collect();
+        let part_index: HashMap<ModulePartId, &ModulePart> =
+            module.parts.iter().map(|p| (p.id, p)).collect();
         let mut conn_index: HashMap<ModulePartId, Vec<&ModuleConnection>> = HashMap::new();
         for conn in &module.connections {
             conn_index.entry(conn.to_part).or_default().push(conn);
