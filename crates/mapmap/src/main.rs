@@ -1039,7 +1039,39 @@ impl App {
                     .or_else(|| self.state.module_manager.list_modules().first().map(|m| *m));
 
                 if let Some(module) = module_to_evaluate {
+                    // DEBUG: Log which module we're evaluating
+                    info!(
+                        "Evaluating module: name='{}', parts={}, connections={}",
+                        module.name,
+                        module.parts.len(),
+                        module.connections.len()
+                    );
+
                     let result = self.module_evaluator.evaluate(module);
+
+                    // DEBUG: Log evaluation result details
+                    info!(
+                        "Evaluation result: render_ops={}, source_commands={}, trigger_values={}",
+                        result.render_ops.len(),
+                        result.source_commands.len(),
+                        result.trigger_values.len()
+                    );
+
+                    // DEBUG: Log part types in module
+                    for part in &module.parts {
+                        use mapmap_core::module::ModulePartType;
+                        let type_name = match &part.part_type {
+                            ModulePartType::Trigger(_) => "Trigger",
+                            ModulePartType::Source(_) => "Source",
+                            ModulePartType::Mask(_) => "Mask",
+                            ModulePartType::Modulizer(_) => "Modulizer",
+                            ModulePartType::Layer(_) => "Layer",
+                            ModulePartType::Mesh(_) => "Mesh",
+                            ModulePartType::Output(_) => "Output",
+                            ModulePartType::Hue(_) => "Hue",
+                        };
+                        info!("  Part {}: {}", part.id, type_name);
+                    }
 
                     // Assign Render Ops for next frame!
                     self.render_ops = result.render_ops.clone();
