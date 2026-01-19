@@ -121,7 +121,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::wait());
+    // device.poll(wgpu::Maintain::wait());
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);

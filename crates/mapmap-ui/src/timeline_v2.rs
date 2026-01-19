@@ -90,7 +90,7 @@ impl TimelineV2 {
                         .prefix("Snap: ")
                         .suffix("s")
                         .speed(0.01)
-                        .clamp_range(0.01..=10.0),
+                        .range(0.01..=10.0),
                 );
             }
 

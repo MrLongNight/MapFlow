@@ -716,8 +716,76 @@ impl ModuleEvaluator {
 
         tracing::debug!("trace_chain: Starting from node {}", start_node_id);
 
+        let trigger_values = &self.cached_result.trigger_values;
+
         // Safety limit to prevent infinite loops in cyclic graphs
         for _iteration in 0..50 {
+            // Apply Trigger Targets for the current node
+            // We need to find if any input sockets have triggers active and targets mapped
+            if let Some(part) = module.parts.iter().find(|p| p.id == current_id) {
+                // Check if any *incoming* connection determines the value?
+                // Wait, trigger targets are on this part's inputs.
+                // We need the input values for this part trigger sockets.
+                // But inputs are pull-based or pushed?
+                // We have `trigger_inputs` map computed in `evaluate` but it's not passed here.
+                // `compute_trigger_inputs` returns a map part_id -> float.
+                // But that's a single value per part (consolidated).
+                // We need per-socket values if we want specific mapping.
+                // Or we re-compute or access cached values.
+                // Let's assume we can access per-socket inputs or just iterate connections to this part.
+
+                for (socket_idx, target) in &part.trigger_targets {
+                    // Find connection to this socket
+                    let mut trigger_val = 0.0;
+                    if let Some(conn) = module
+                        .connections
+                        .iter()
+                        .find(|c| c.to_part == current_id && c.to_socket == *socket_idx)
+                    {
+                        if let Some(from_values) = trigger_values.get(&conn.from_part) {
+                            if let Some(val) = from_values.get(conn.from_socket) {
+                                trigger_val = *val;
+                            }
+                        }
+                    }
+
+                    if trigger_val > 0.0 {
+                        match target {
+                            crate::module::TriggerTarget::Opacity => {
+                                source_props.opacity = trigger_val
+                            } // Override
+                            crate::module::TriggerTarget::Brightness => {
+                                source_props.brightness = trigger_val * 2.0 - 1.0
+                            } // 0..1 -> -1..1
+                            crate::module::TriggerTarget::Contrast => {
+                                source_props.contrast = trigger_val * 2.0
+                            } // 0..1 -> 0..2
+                            crate::module::TriggerTarget::Saturation => {
+                                source_props.saturation = trigger_val * 2.0
+                            } // 0..1 -> 0..2
+                            crate::module::TriggerTarget::HueShift => {
+                                source_props.hue_shift = (trigger_val * 360.0) - 180.0
+                            }
+                            crate::module::TriggerTarget::ScaleX => {
+                                source_props.scale_x = trigger_val * 2.0
+                            } // 0..1 -> 0..2
+                            crate::module::TriggerTarget::ScaleY => {
+                                source_props.scale_y = trigger_val * 2.0
+                            }
+                            crate::module::TriggerTarget::Rotation => {
+                                source_props.rotation = trigger_val * 360.0
+                            } // Degrees
+                            crate::module::TriggerTarget::Param(name) => {
+                                // Handle effect params? They are in `effects`.
+                                // This is tricky as effects are added later in the loop.
+                                // We might need to store pending param overrides.
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+
             if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
                 if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
                     match &part.part_type {
@@ -740,7 +808,8 @@ impl ModuleEvaluator {
                                 ..
                             } = source_type
                             {
-                                source_props = SourceProperties {
+                                // Apply defaults first
+                                let mut props = SourceProperties {
                                     opacity: *opacity,
                                     brightness: *brightness,
                                     contrast: *contrast,
@@ -754,6 +823,59 @@ impl ModuleEvaluator {
                                     flip_horizontal: *flip_horizontal,
                                     flip_vertical: *flip_vertical,
                                 };
+
+                                // Re-apply overrides since we just replaced with defaults
+                                // (This structure is slightly inefficient, re-doing logic)
+                                // Better: Apply overrides TO props.
+
+                                // .. Re-run target logic ..
+                                for (socket_idx, target) in &part.trigger_targets {
+                                    // Find connection to this socket
+                                    let mut trigger_val = 0.0;
+                                    if let Some(conn) = module.connections.iter().find(|c| {
+                                        c.to_part == part.id && c.to_socket == *socket_idx
+                                    }) {
+                                        if let Some(from_values) =
+                                            trigger_values.get(&conn.from_part)
+                                        {
+                                            if let Some(val) = from_values.get(conn.from_socket) {
+                                                trigger_val = *val;
+                                            }
+                                        }
+                                    }
+
+                                    if trigger_val > 0.0 {
+                                        match target {
+                                            crate::module::TriggerTarget::Opacity => {
+                                                props.opacity = trigger_val
+                                            }
+                                            crate::module::TriggerTarget::Brightness => {
+                                                props.brightness = trigger_val * 2.0 - 1.0
+                                            }
+                                            crate::module::TriggerTarget::Contrast => {
+                                                props.contrast = trigger_val * 2.0
+                                            }
+                                            crate::module::TriggerTarget::Saturation => {
+                                                props.saturation = trigger_val * 2.0
+                                            }
+                                            crate::module::TriggerTarget::HueShift => {
+                                                props.hue_shift = (trigger_val * 360.0) - 180.0
+                                            }
+                                            crate::module::TriggerTarget::ScaleX => {
+                                                props.scale_x = trigger_val * 2.0
+                                            }
+                                            crate::module::TriggerTarget::ScaleY => {
+                                                props.scale_y = trigger_val * 2.0
+                                            }
+                                            crate::module::TriggerTarget::Rotation => {
+                                                props.rotation = trigger_val * 360.0
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                }
+
+                                source_props = props;
                             }
                             break;
                         }
@@ -1185,6 +1307,7 @@ mod tests_logic {
             link_data: Default::default(),
             inputs: vec![],
             outputs: vec![],
+            trigger_targets: HashMap::new(),
         });
         module.parts.push(ModulePart {
             id: 2,
@@ -1197,6 +1320,7 @@ mod tests_logic {
             link_data: Default::default(),
             inputs: vec![],
             outputs: vec![],
+            trigger_targets: HashMap::new(),
         });
 
         module.connections.push(ModuleConnection {

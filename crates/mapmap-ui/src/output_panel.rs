@@ -110,12 +110,12 @@ impl OutputPanel {
                             ui.add(
                                 egui::DragValue::new(&mut updated_config.resolution.0)
                                     .speed(1.0)
-                                    .clamp_range(1..=8192),
+                                    .range(1..=8192),
                             );
                             ui.add(
                                 egui::DragValue::new(&mut updated_config.resolution.1)
                                     .speed(1.0)
-                                    .clamp_range(1..=8192),
+                                    .range(1..=8192),
                             );
                         });
 

@@ -116,7 +116,7 @@ impl AudioPanel {
                 .add(
                     egui::Slider::new(&mut config.noise_gate, 0.0..=0.2)
                         .text("Noise Gate")
-                        .clamp_to_range(true),
+                        .clamping(egui::SliderClamping::Always),
                 )
                 .changed()
             {

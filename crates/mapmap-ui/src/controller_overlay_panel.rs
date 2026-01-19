@@ -1067,11 +1067,12 @@ impl ControllerOverlayPanel {
 
         // Show tooltip on hover
         if is_hovered {
-            egui::show_tooltip_at_pointer(
+            #[allow(deprecated)]
+            egui::show_tooltip(
                 painter.ctx(),
                 egui::LayerId::background(),
                 egui::Id::new(&element.id),
-                |ui: &mut egui::Ui| {
+                |ui| {
                     ui.strong(&element.label);
                     ui.label(format!("ID: {}", element.id));
                     ui.label(format!("Typ: {:?}", element.element_type));

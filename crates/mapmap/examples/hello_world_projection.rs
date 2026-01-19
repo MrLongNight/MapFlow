@@ -14,7 +14,7 @@ use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
-    window::{Window, WindowAttributes},
+    window::WindowAttributes,
 };
 
 fn main() {
@@ -106,6 +106,7 @@ fn main() {
     // Step 9: Render loop
     event_loop.set_control_flow(ControlFlow::Poll);
 
+    #[allow(deprecated)]
     event_loop
         .run(move |event, elwt| {
             match event {

@@ -199,7 +199,7 @@ impl LayerPanel {
                                             let current_mode = layer.blend_mode;
                                             let mut selected_mode = current_mode;
 
-                                            egui::ComboBox::from_id_source(format!(
+                                            egui::ComboBox::from_id_salt(format!(
                                                 "blend_{}",
                                                 layer.id
                                             ))

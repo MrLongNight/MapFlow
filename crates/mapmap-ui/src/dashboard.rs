@@ -116,7 +116,7 @@ impl Dashboard {
                     if let (Some(mgr), Some(ic)) = (icon_manager, icon) {
                         if let Some(img) = mgr.image(ic, icon_size) {
                             return ui
-                                .add(egui::ImageButton::new(img))
+                                .add(egui::Button::image(img))
                                 .on_hover_text(text)
                                 .clicked();
                         }

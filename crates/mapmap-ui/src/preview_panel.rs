@@ -89,10 +89,10 @@ impl PreviewPanel {
             ui.add_space(4.0);
 
             // Preview content area
-            let preview_area = egui::Frame::none()
+            let preview_area = egui::Frame::NONE
                 .fill(ui.style().visuals.extreme_bg_color)
                 .inner_margin(8.0)
-                .rounding(4.0);
+                .corner_radius(4.0);
 
             preview_area.show(ui, |ui| {
                 ui.set_min_height(self.panel_height - 40.0);
@@ -121,7 +121,7 @@ impl PreviewPanel {
                             let is_selected = self.selected_output == Some(output.id);
 
                             // Preview thumbnail frame
-                            let response = egui::Frame::none()
+                            let response = egui::Frame::NONE
                                 .fill(if is_selected {
                                     ui.style().visuals.selection.bg_fill
                                 } else {
@@ -132,7 +132,7 @@ impl PreviewPanel {
                                 } else {
                                     egui::Stroke::NONE
                                 })
-                                .rounding(4.0)
+                                .corner_radius(4.0)
                                 .inner_margin(4.0)
                                 .show(ui, |ui| {
                                     ui.vertical(|ui| {
