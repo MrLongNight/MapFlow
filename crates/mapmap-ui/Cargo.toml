@@ -16,7 +16,7 @@ tokio = ["dep:tokio"]
 [dependencies]
 anyhow = { workspace = true }
 cpal = { workspace = true, optional = true }
-dirs = "5.0"
+dirs = "6.0"
 
 # Phase 6: egui migration
 egui = { workspace = true, features = ["serde"] }
