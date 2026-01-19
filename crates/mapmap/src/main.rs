@@ -557,7 +557,7 @@ impl App {
             }
         };
 
-        let app = Self {
+        let mut app = Self {
             window_manager,
             ui_state,
             backend,
@@ -1046,54 +1046,56 @@ impl App {
 
                 // Update all active media players and upload frames to texture pool
                 // This ensures previews work even without triggers connected
-                let player_ids: Vec<u64> = self.media_players.keys().cloned().collect();
-                if !player_ids.is_empty() {
-                    debug!("Updating {} active media players", player_ids.len());
-                }
-                for part_id in player_ids {
-                    if let Some(player) = self.media_players.get_mut(&part_id) {
-                        debug!(
-                            "Updating player for part_id={}, state={:?}",
-                            part_id,
-                            player.state()
-                        );
-                        if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                            debug!(
-                                "Got frame for part_id={}, size={}x{}",
-                                part_id, frame.format.width, frame.format.height
-                            );
-                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                                let tex_name = format!("part_{}", part_id);
-                                debug!(
-                                    "Uploading texture '{}' with {} bytes",
-                                    tex_name,
-                                    data.len()
-                                );
-                                self.texture_pool.upload_data(
-                                    &self.backend.queue,
-                                    &tex_name,
-                                    data,
-                                    frame.format.width,
-                                    frame.format.height,
-                                );
-                            } else {
-                                debug!("Frame data is GPU-based, not CPU");
-                            }
-                        }
 
-                        // Sync player info to UI for timeline display
-                        self.ui_state.module_canvas.player_info.insert(
-                            part_id,
-                            mapmap_ui::MediaPlayerInfo {
-                                current_time: player.current_time().as_secs_f64(),
-                                duration: player.duration().as_secs_f64(),
-                                is_playing: matches!(
-                                    player.state(),
-                                    mapmap_media::PlaybackState::Playing
-                                ),
-                            },
+                // ⚡ Bolt Optimization: Use disjoint borrowing to avoid collecting keys and re-looking up players
+                // This removes N heap allocations and N hash lookups per frame.
+                let texture_pool = &mut self.texture_pool;
+                let queue = &self.backend.queue;
+                let ui_state = &mut self.ui_state;
+                let media_players = &mut self.media_players;
+
+                if !media_players.is_empty() {
+                    debug!("Updating {} active media players", media_players.len());
+                }
+
+                for (part_id, player) in media_players {
+                    debug!(
+                        "Updating player for part_id={}, state={:?}",
+                        part_id,
+                        player.state()
+                    );
+                    if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
+                        debug!(
+                            "Got frame for part_id={}, size={}x{}",
+                            part_id, frame.format.width, frame.format.height
                         );
+                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
+                            let tex_name = format!("part_{}", part_id);
+                            debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
+                            texture_pool.upload_data(
+                                queue,
+                                &tex_name,
+                                data,
+                                frame.format.width,
+                                frame.format.height,
+                            );
+                        } else {
+                            debug!("Frame data is GPU-based, not CPU");
+                        }
                     }
+
+                    // Sync player info to UI for timeline display
+                    ui_state.module_canvas.player_info.insert(
+                        *part_id,
+                        mapmap_ui::MediaPlayerInfo {
+                            current_time: player.current_time().as_secs_f64(),
+                            duration: player.duration().as_secs_f64(),
+                            is_playing: matches!(
+                                player.state(),
+                                mapmap_media::PlaybackState::Playing
+                            ),
+                        },
+                    );
                 }
 
                 if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id {
@@ -1237,9 +1239,7 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
-                                            mapmap_core::module::OutputType::Oscillator {
-                                                ..
-                                            } => "Oscillator".to_string(),
+
                                             mapmap_core::module::OutputType::Hue { .. } =>
                                                 "Hue".to_string(),
                                         }
@@ -1461,6 +1461,14 @@ impl App {
                             element_id,
                             target_id
                         );
+                    }
+                }
+                mapmap_ui::UIAction::ConnectHue => {
+                    info!("Connecting to Philips Hue Bridge...");
+                    if let Err(e) = pollster::block_on(self.hue_controller.connect()) {
+                        error!("Failed to connect to Hue Bridge: {}", e);
+                    } else {
+                        info!("Successfully connected to Hue Bridge");
                     }
                 }
                 // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
@@ -2794,13 +2802,14 @@ impl App {
                                 egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
                                     .default_open(true)
                                     .show(ui, |ui| {
+                                        let mut changed = false;
+                                        let mut connect_clicked = false;
                                         let hue_conf = &mut self.ui_state.user_config.hue_config;
 
                                         ui.horizontal(|ui| {
                                             ui.label("Bridge IP:");
                                             if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
-                                                // Sync to controller config if possible, or just wait for connect
-                                                let _ = self.ui_state.user_config.save();
+                                                changed = true;
                                             }
                                         });
 
@@ -2817,13 +2826,13 @@ impl App {
                                         ui.horizontal(|ui| {
                                             ui.label("Entertainment Area:");
                                             if ui.text_edit_singleline(&mut hue_conf.entertainment_area).changed() {
-                                                let _ = self.ui_state.user_config.save();
+                                                changed = true;
                                             }
                                         });
 
                                         ui.horizontal(|ui| {
                                             if ui.checkbox(&mut hue_conf.auto_connect, "Auto Connect via Main Settings").changed() {
-                                                let _ = self.ui_state.user_config.save();
+                                                changed = true;
                                             }
                                         });
 
@@ -2831,10 +2840,11 @@ impl App {
 
                                         ui.horizontal(|ui| {
                                             if ui.button("Verbinden (Sync)").clicked() {
-                                                self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
+                                                connect_clicked = true;
                                             }
 
                                             // Connection Status Display
+                                            // Using self.hue_controller is disjoint from self.ui_state (hue_conf)
                                             if self.hue_controller.is_connected() {
                                                  ui.colored_label(egui::Color32::GREEN, "Connected");
                                             } else {
@@ -2843,6 +2853,17 @@ impl App {
                                         });
 
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
+
+                                        (changed, connect_clicked)
+                                    })
+                                    .body_returned
+                                    .map(|(changed, connect)| {
+                                        if changed {
+                                            let _ = self.ui_state.user_config.save();
+                                        }
+                                        if connect {
+                                            self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
+                                        }
                                     });
 
                                 ui.separator();

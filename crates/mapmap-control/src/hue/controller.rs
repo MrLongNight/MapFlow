@@ -35,6 +35,11 @@ impl HueController {
         // If connected, we might need to reconnect? For now just update struct.
     }
 
+    /// Check if currently connected
+    pub fn is_connected(&self) -> bool {
+        self.is_connected
+    }
+
     /// Connect to the bridge and start the entertainment stream.
     pub async fn connect(&mut self) -> Result<(), String> {
         if self.is_connected {
