@@ -497,6 +497,15 @@ impl ModuleEvaluator {
         // Since we cleared trigger_values via iteration (retaining keys),
         // we might have entries with empty vectors. This is fine as we will overwrite them.
 
+        // Build acceleration indices
+        let part_index: HashMap<ModulePartId, &crate::module::ModulePart> =
+            module.parts.iter().map(|p| (p.id, p)).collect();
+        let mut conn_index: HashMap<ModulePartId, Vec<&crate::module::ModuleConnection>> =
+            HashMap::new();
+        for conn in &module.connections {
+            conn_index.entry(conn.to_part).or_default().push(conn);
+        }
+
         // === DIAGNOSTICS: Log module structure ===
         // (Diagnostic logging code removed for brevity/performance in hot path unless feature enabled?
         // keeping it as it was but maybe less frequently? leaving as is per instructions to preserve functionality)
@@ -635,8 +644,8 @@ impl ModuleEvaluator {
         // Step 4: Trace Render Pipeline
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
-                if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
-                    if let Some(layer_part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                if let Some(conn) = conn_index.get(&part.id).and_then(|v| v.first()) {
+                    if let Some(layer_part) = part_index.get(&conn.from_part) {
                         let link_opacity =
                             trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
 
@@ -648,7 +657,11 @@ impl ModuleEvaluator {
                                     blend_mode,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(module, layer_part.id);
+                                    let chain = self.trace_chain(
+                                        layer_part.id,
+                                        &part_index,
+                                        &conn_index,
+                                    );
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -670,7 +683,11 @@ impl ModuleEvaluator {
                                     mesh,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(module, layer_part.id);
+                                    let chain = self.trace_chain(
+                                        layer_part.id,
+                                        &part_index,
+                                        &conn_index,
+                                    );
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -706,7 +723,12 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain(&self, module: &MapFlowModule, start_node_id: ModulePartId) -> ProcessingChain {
+    fn trace_chain<'a>(
+        &self,
+        start_node_id: ModulePartId,
+        part_index: &HashMap<ModulePartId, &'a crate::module::ModulePart>,
+        conn_index: &HashMap<ModulePartId, Vec<&'a crate::module::ModuleConnection>>,
+    ) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
         let mut override_mesh = None;
@@ -722,7 +744,7 @@ impl ModuleEvaluator {
         for _iteration in 0..50 {
             // Apply Trigger Targets for the current node
             // We need to find if any input sockets have triggers active and targets mapped
-            if let Some(part) = module.parts.iter().find(|p| p.id == current_id) {
+            if let Some(part) = part_index.get(&current_id) {
                 // Check if any *incoming* connection determines the value?
                 // Wait, trigger targets are on this part's inputs.
                 // We need the input values for this part trigger sockets.
@@ -737,14 +759,12 @@ impl ModuleEvaluator {
                 for (socket_idx, target) in &part.trigger_targets {
                     // Find connection to this socket
                     let mut trigger_val = 0.0;
-                    if let Some(conn) = module
-                        .connections
-                        .iter()
-                        .find(|c| c.to_part == current_id && c.to_socket == *socket_idx)
-                    {
-                        if let Some(from_values) = trigger_values.get(&conn.from_part) {
-                            if let Some(val) = from_values.get(conn.from_socket) {
-                                trigger_val = *val;
+                    if let Some(conns) = conn_index.get(&current_id) {
+                        if let Some(conn) = conns.iter().find(|c| c.to_socket == *socket_idx) {
+                            if let Some(from_values) = trigger_values.get(&conn.from_part) {
+                                if let Some(val) = from_values.get(conn.from_socket) {
+                                    trigger_val = *val;
+                                }
                             }
                         }
                     }
@@ -786,8 +806,10 @@ impl ModuleEvaluator {
                 }
             }
 
-            if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
-                if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+            // Find main input connection (to ANY socket - usually socket 0)
+            // L522 replacement
+            if let Some(conn) = conn_index.get(&current_id).and_then(|v| v.first()) {
+                if let Some(part) = part_index.get(&conn.from_part) {
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
                             source_id = Some(part.id);
@@ -832,14 +854,19 @@ impl ModuleEvaluator {
                                 for (socket_idx, target) in &part.trigger_targets {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
-                                    if let Some(conn) = module.connections.iter().find(|c| {
-                                        c.to_part == part.id && c.to_socket == *socket_idx
-                                    }) {
-                                        if let Some(from_values) =
-                                            trigger_values.get(&conn.from_part)
+                                    // L556 replacement
+                                    if let Some(conns) = conn_index.get(&part.id) {
+                                        if let Some(conn) =
+                                            conns.iter().find(|c| c.to_socket == *socket_idx)
                                         {
-                                            if let Some(val) = from_values.get(conn.from_socket) {
-                                                trigger_val = *val;
+                                            if let Some(from_values) =
+                                                trigger_values.get(&conn.from_part)
+                                            {
+                                                if let Some(val) =
+                                                    from_values.get(conn.from_socket)
+                                                {
+                                                    trigger_val = *val;
+                                                }
                                             }
                                         }
                                     }
@@ -1292,7 +1319,7 @@ mod tests_logic {
 
     #[test]
     fn test_trace_chain_limit() {
-        let evaluator = ModuleEvaluator::new();
+        let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
         // Create a cycle: Part 1 -> Part 2 -> Part 1
@@ -1336,8 +1363,18 @@ mod tests_logic {
             to_socket: 0,
         });
 
+        // Need indices to test trace_chain now, or just call evaluate?
+        // trace_chain is private. But the test calls it directly.
+        // I need to update the test to pass indices.
+
+        let part_index: HashMap<ModulePartId, &ModulePart> = module.parts.iter().map(|p| (p.id, p)).collect();
+        let mut conn_index: HashMap<ModulePartId, Vec<&ModuleConnection>> = HashMap::new();
+        for conn in &module.connections {
+            conn_index.entry(conn.to_part).or_default().push(conn);
+        }
+
         // Start trace from 1
-        let chain = evaluator.trace_chain(&module, 1);
+        let chain = evaluator.trace_chain(1, &part_index, &conn_index);
 
         // Should not panic or hang, but finish with limited effects
         // The limit is 50.
