@@ -420,6 +420,7 @@ impl ModuleCanvas {
                                             TriggerType::Fixed {
                                                 interval_ms,
                                                 offset_ms,
+                                                ..
                                             } => {
                                                 ui.label("⏱️ Fixed Timer");
                                                 ui.add(

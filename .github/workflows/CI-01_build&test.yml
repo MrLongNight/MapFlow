@@ -39,6 +39,7 @@ env:
   FREETYPE_SYS_USE_PKG_CONFIG: 1
   RUST_BACKTRACE: 1
   RUST_TOOLCHAIN: stable
+  # Optimierungen für schnellere Builds
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
@@ -103,36 +104,38 @@ jobs:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt, clippy
 
-    - name: Install cargo-make (Task Runner)
-      run: cargo install --locked cargo-make
+    - name: Install cargo-make & cargo-sort
+      run: |
+        cargo install --locked cargo-make
+        cargo install cargo-sort
 
     - name: Check & Auto-Fix Formatting
       id: fmt
       run: |
         cargo fmt --all
+        cargo sort --workspace
         if [[ -n $(git status --porcelain) ]]; then
+          echo "formatted=true" >> $GITHUB_OUTPUT
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "chore: Auto-format code (cargo fmt) [skip ci]"
+          git commit -m "chore: Auto-format and sort code [skip ci]"
           git push
+        else
+          echo "formatted=false" >> $GITHUB_OUTPUT
         fi
-
-    - name: Check Cargo.toml formatting
-      run: cargo install cargo-sort && cargo sort --workspace --check || cargo sort --workspace
 
     - name: Fix common Clippy issues (Auto-Fix)
       continue-on-error: true
-      run: cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
-
-    - name: Commit Auto-Fixes (Clippy)
       run: |
+        cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
         if [[ -n $(git status --porcelain) ]]; then
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -156,10 +159,10 @@ jobs:
       checks: write
 
     steps:
-    - name:  Configure Git
+    - name: Configure Git
       run: git config --global --add safe.directory "*"
 
-    - uses:  actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
 
@@ -178,7 +181,7 @@ jobs:
         bash scripts/install-ffmpeg-dev.sh
 
     - name: Cache Rust dependencies
-      uses:  Swatinem/rust-cache@v2
+      uses: Swatinem/rust-cache@v2
       with:
         shared-key: "quality-cache"
         save-if: ${{ github.ref == 'refs/heads/main' }}
@@ -225,7 +228,7 @@ jobs:
   # ========================================
 
   build-and-test:
-    name: "Build & Test (Ubuntu)"
+    name: "Build & Test (Ubuntu with Audio)"
     runs-on: ubuntu-latest
     needs: pre-checks
     permissions:
@@ -235,7 +238,7 @@ jobs:
     steps:
     - name: Configure Git
       run: git config --global --add safe.directory "*"
-
+    
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
@@ -255,7 +258,7 @@ jobs:
       with:
         components: rustfmt, clippy, llvm-tools-preview
 
-    - name:  Rust Cache
+    - name: Rust Cache
       uses: Swatinem/rust-cache@v2
       with:
         shared-key: "build-cache"
@@ -278,11 +281,9 @@ jobs:
         wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
         tar xzf Install_NDI_SDK_v5_Linux.tar.gz
         yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo "::warning::NDI SDK installation may require manual acceptance"
-        # Set NDI SDK paths for grafton-ndi build
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
         echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        # Verify NDI installation
+        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         ls -la "$NDI_SDK_DIR" 2>/dev/null || echo "::warning::NDI SDK directory not found at $NDI_SDK_DIR"
 
     - name: Run FFmpeg setup script
@@ -308,7 +309,7 @@ jobs:
     - name: Run tests with nextest
       if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
-        RUST_BACKTRACE:  full
+        RUST_BACKTRACE: full
       run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
 
     - name: Run doc tests
@@ -316,7 +317,7 @@ jobs:
       run: cargo test --release --doc --verbose --features "mapmap-io/ci-linux"
 
     - name: Generate code coverage (tarpaulin)
-      if: ${{ github.event.inputs. skip_tests != 'true' }}
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
       run: |
         cargo install cargo-tarpaulin --locked
         cargo tarpaulin --workspace --features "mapmap-io/ci-linux" --out Xml --output-dir coverage
@@ -335,7 +336,7 @@ jobs:
     - name: Check documentation coverage
       run: |
         RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --features "mapmap-io/ci-linux"
-      continue-on-error:  true
+      continue-on-error: true
 
     - name: Upload artifacts (Release binary)
       uses: actions/upload-artifact@v4
@@ -353,7 +354,6 @@ jobs:
     name: "Build (Windows)"
     runs-on: windows-latest
     needs: pre-checks
-    # Only run on main branch push or explicit request
     if: |
       github.ref == 'refs/heads/main' ||
       github.event.inputs.run_windows == 'true' ||
@@ -362,34 +362,34 @@ jobs:
       contents: read
 
     steps:
-    - name:  Configure Git
+    - name: Configure Git
       run: git config --global core.autocrlf false
 
     - uses: actions/checkout@v4
       with:
-        ref: ${{ github. head_ref }}
+        ref: ${{ github.head_ref }}
 
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt, clippy
 
-    - name:  Rust Cache
+    - name: Rust Cache
       uses: Swatinem/rust-cache@v2
       with:
         shared-key: "windows-cache"
         save-if: ${{ github.ref == 'refs/heads/main' }}
 
-    - name:  Build (Release, Windows - without NDI)
+    - name: Build (Release, Windows - without NDI)
       env:
         RUST_BACKTRACE: full
       run: cargo build --release --verbose --no-default-features --features "audio"
 
     - name: Run tests (Release, without NDI)
-      if: ${{ github. event.inputs.skip_tests != 'true' }}
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
-      run:  cargo test --release --workspace --verbose --no-default-features --features audio
+      run: cargo test --release --workspace --verbose --no-default-features --features audio
 
     - name: Upload artifacts (Windows binary)
       uses: actions/upload-artifact@v4
@@ -408,7 +408,7 @@ jobs:
     needs: pre-checks
     permissions:
       security-events: write
-      contents:  read
+      contents: read
       checks: write
 
     steps:
@@ -420,7 +420,7 @@ jobs:
         ref: ${{ github.head_ref }}
 
     - name: Set up Rust toolchain
-      uses:  dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Run cargo audit (RustSec)
       run: |
@@ -431,10 +431,10 @@ jobs:
     - name: Check supply chain security (cargo-vet)
       run: |
         cargo install cargo-vet --locked
-        cargo vet || echo ":: warning::cargo-vet check failed"
+        cargo vet || echo "::warning::cargo-vet check failed"
       continue-on-error: true
 
-    - name:  Dependency review
+    - name: Dependency review
       uses: actions/dependency-review-action@v3
       if: github.event_name == 'pull_request'
 
@@ -447,7 +447,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'pull_request'
-
     steps:
     - uses: actions/checkout@v4
       with:
@@ -465,7 +464,7 @@ jobs:
       with:
         tool: 'cargo'
         output-file-path: output.txt
-        github-token: ${{ secrets. GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: false
       continue-on-error: true
 
@@ -475,7 +474,7 @@ jobs:
 
   ci-success:
     name: "CI Success Gate"
-    needs: [quality, build-and-test, security]
+    needs: [quality, build-and-test, build-windows, security]
     runs-on: ubuntu-latest
     if: always()
     permissions:
@@ -485,16 +484,15 @@ jobs:
     - name: Fail if any job failed or was cancelled
       if: always()
       run: |
-        # Check results of dependent jobs and fail if any are not "success"
+        # Check results of dependent jobs and fail if any are not "success" (Windows non-blocking)
         if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
           echo "::error::One or more required jobs failed or were cancelled."
           echo "quality: ${{ needs.quality.result }}"
           echo "build-and-test: ${{ needs.build-and-test.result }}"
-          echo "build-windows: ${{ needs.build-windows.result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
-        if [ "${{ needs.build-windows.result }}" != "success" ]; then
+        if [ "${{ needs.build-windows.result }}" != "success" ] && [ "${{ needs.build-windows.result }}" != "skipped" ]; then
           echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
-        echo "✓ All CI checks passed successfully"
+        echo "✓ All critical CI checks passed successfully"
