@@ -25,3 +25,13 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `VjMapper.code-workspace` archiviert (Legacy-Name, nicht erlaubt im Root).
 
 **Zusatz:** Merge-Konflikte in `module.rs`, `main.rs`, `module_eval.rs` behoben (HEAD priorisiert). Syntaxfehler in `module_canvas.rs` korrigiert.
+
+## 2025-01-19 - WGSL Shader Cleanup
+
+**Erkenntnis:** `crates/mapmap-render/shaders/` enthielt 10 `.wgsl` Dateien, die gegen die Projektstruktur verstoßen, da alle Shader in `shaders/` liegen sollten. Dies führte zu einer Inkonsistenz in der Shader-Verwaltung.
+
+**Aktion:**
+- Alle `.wgsl` Dateien aus `crates/mapmap-render/shaders/` nach `shaders/` verschoben.
+- `crates/mapmap-render/src/effect_chain_renderer.rs` aktualisiert, um die Shader aus dem neuen Pfad (`../../../shaders/`) zu laden.
+- `crates/mapmap-render/shaders/` Verzeichnis gelöscht.
+- Build mit `cargo check` verifiziert.
