@@ -1465,7 +1465,7 @@ impl App {
                 }
                 mapmap_ui::UIAction::ConnectHue => {
                     info!("Connecting to Philips Hue Bridge...");
-                    
+
                     // Sync configuration from UI to Controller
                     let ui_hue = &self.ui_state.user_config.hue_config;
                     let control_hue = mapmap_control::hue::models::HueConfig {
@@ -2842,7 +2842,7 @@ impl App {
                                             if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
                                                 changed = true;
                                             }
-                                            
+
                                             if ui.button("Discover").clicked() {
                                                 discover_clicked = true;
                                             }
@@ -2913,7 +2913,7 @@ impl App {
                                                 bridge_ip: ui_hue.bridge_ip.clone(),
                                                 username: ui_hue.username.clone(),
                                                 client_key: ui_hue.client_key.clone(),
-                                                application_id: String::new(), 
+                                                application_id: String::new(),
                                                 entertainment_group_id: ui_hue.entertainment_area.clone(),
                                             };
                                             self.hue_controller.update_config(control_hue);
