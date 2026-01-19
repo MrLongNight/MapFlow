@@ -1291,23 +1291,6 @@ impl App {
                     }
                 }
 
-<<<<<<< HEAD
-                // Log every second for debugging
-                static mut LAST_LOG_SEC: i64 = 0;
-                let current_sec = timestamp as i64;
-                unsafe {
-                    if current_sec != LAST_LOG_SEC {
-                        LAST_LOG_SEC = current_sec;
-                        tracing::debug!(
-                            "AudioV2: {} samples, RMS={:.4}, Peak={:.4}, Bands[0..3]={:?}",
-                            samples_len,
-                            analysis_v2.rms_volume,
-                            analysis_v2.peak_volume,
-                            &analysis_v2.band_energies[..3]
-                        );
-                    }
-                }
-
                 // Convert V2 analysis to legacy format for UI compatibility
                 let legacy_analysis = mapmap_core::audio::AudioAnalysis {
                     timestamp: analysis_v2.timestamp,
@@ -1355,8 +1338,11 @@ impl App {
                 let _param_updates = self.state.effect_animator.update(delta_time);
                 // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
 
-                // Redraw all windows
-                self.window_manager.request_redraw_all();
+                // Redraw all windows - Optimized to avoid allocation
+                for window_context in self.window_manager.iter() {
+                    window_context.window.request_redraw();
+                }
+
             }
             _ => (),
         }
@@ -3563,7 +3549,7 @@ mod logging_setup;
 
 /// The main entry point for the application.
 fn main() -> Result<()> {
-    // Initialize logging with default configuration
+    // Initialize logging with default configuration.
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
 
