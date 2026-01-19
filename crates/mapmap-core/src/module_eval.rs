@@ -766,42 +766,34 @@ impl ModuleEvaluator {
                     // Apply mapping
                     let final_val = config.apply(trigger_val);
 
-                    if trigger_val > 0.0 {
-                        // Keep this check for now, or should we use final_val?
-                        // If fixed mode, final_val might be > 0 even if trigger_val is 0 (if valid range is non-zero).
-                        // But usually we only apply if triggered?
-                        // Actually, for "Fixed" mode, it might be weird if it only applies when trigger > 0.
-                        // But let's stick to "active" trigger logic for now.
-                        match &config.target {
-                            crate::module::TriggerTarget::Opacity => {
-                                source_props.opacity = final_val
-                            } // Override
-                            crate::module::TriggerTarget::Brightness => {
-                                source_props.brightness = final_val
-                            }
-                            crate::module::TriggerTarget::Contrast => {
-                                source_props.contrast = final_val
-                            }
-                            crate::module::TriggerTarget::Saturation => {
-                                source_props.saturation = final_val
-                            }
-                            crate::module::TriggerTarget::HueShift => {
-                                source_props.hue_shift = final_val
-                            }
-                            crate::module::TriggerTarget::ScaleX => {
-                                source_props.scale_x = final_val
-                            }
-                            crate::module::TriggerTarget::ScaleY => {
-                                source_props.scale_y = final_val
-                            }
-                            crate::module::TriggerTarget::Rotation => {
-                                source_props.rotation = final_val
-                            }
-                            crate::module::TriggerTarget::Param(_name) => {
-                                // Handle effect params?
-                            }
-                            _ => {}
+                    tracing::info!(
+                        "Trigger applying: part={}, socket={}, target={:?}, raw={}, final={}",
+                        part.id,
+                        socket_idx,
+                        config.target,
+                        trigger_val,
+                        final_val
+                    );
+
+                    match &config.target {
+                        crate::module::TriggerTarget::Opacity => source_props.opacity = final_val, // Override
+                        crate::module::TriggerTarget::Brightness => {
+                            source_props.brightness = final_val
                         }
+                        crate::module::TriggerTarget::Contrast => source_props.contrast = final_val,
+                        crate::module::TriggerTarget::Saturation => {
+                            source_props.saturation = final_val
+                        }
+                        crate::module::TriggerTarget::HueShift => {
+                            source_props.hue_shift = final_val
+                        }
+                        crate::module::TriggerTarget::ScaleX => source_props.scale_x = final_val,
+                        crate::module::TriggerTarget::ScaleY => source_props.scale_y = final_val,
+                        crate::module::TriggerTarget::Rotation => source_props.rotation = final_val,
+                        crate::module::TriggerTarget::Param(_name) => {
+                            // Handle effect params?
+                        }
+                        _ => {}
                     }
                 }
             }
