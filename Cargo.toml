@@ -49,7 +49,7 @@ egui-winit = "0.27"
 egui_extras = { version = "0.27", features = ["image", "file", "svg"] }
 
 # Media
-ffmpeg-next = "7.0"
+ffmpeg-next = { version = "7.0", default-features = false, features = ["codec", "format", "software-resampling", "software-scaling"] }
 fluent = "0.16"
 fluent-langneg = "0.13"
 futures = "0.3"
