@@ -1257,7 +1257,10 @@ mod tests_logic {
             evaluator.part_indices.insert(part.id, i);
         }
         for (i, conn) in module.connections.iter().enumerate() {
-            evaluator.connection_indices.entry(conn.to_part).or_insert(i);
+            evaluator
+                .connection_indices
+                .entry(conn.to_part)
+                .or_insert(i);
         }
 
         // Start trace from 1
