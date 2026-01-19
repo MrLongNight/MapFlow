@@ -2805,7 +2805,7 @@ impl App {
                                     .default_open(true)
                                     .show(ui, |ui| {
                                         let hue_conf = &mut self.ui_state.user_config.hue_config;
-                                        
+
                                         ui.horizontal(|ui| {
                                             ui.label("Bridge IP:");
                                             if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
@@ -2838,12 +2838,12 @@ impl App {
                                         });
 
                                         ui.add_space(5.0);
-                                        
+
                                         ui.horizontal(|ui| {
                                             if ui.button("Verbinden (Sync)").clicked() {
                                                 self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
                                             }
-                                            
+
                                             // Connection Status Display
                                             if self.hue_controller.is_connected() {
                                                  ui.colored_label(egui::Color32::GREEN, "Connected");
@@ -2851,7 +2851,7 @@ impl App {
                                                  ui.colored_label(egui::Color32::RED, "Disconnected");
                                             }
                                         });
-                                        
+
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
                                     });
 
