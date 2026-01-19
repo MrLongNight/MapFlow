@@ -529,7 +529,6 @@ impl ModuleEvaluator {
                     self.start_time,
                     values,
                 );
-                tracing::info!("Trigger part {}: output_values={:?}", part.id, values);
             }
         }
 
@@ -586,12 +585,6 @@ impl ModuleEvaluator {
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
-                tracing::info!(
-                    "Source part {}: trigger_value={:.3}, has_trigger_input={}",
-                    part.id,
-                    trigger_value,
-                    trigger_inputs.contains_key(&part.id)
-                );
                 if let Some(cmd) = self.create_source_command(source_type, trigger_value) {
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
@@ -1103,18 +1096,10 @@ impl ModuleEvaluator {
                     // Combine multiple inputs with max
                     let current = inputs.entry(conn.to_part).or_insert(0.0);
                     *current = current.max(value);
-                    tracing::info!(
-                        "Connection {}->{}: socket={}, value={:.3}",
-                        conn.from_part,
-                        conn.to_part,
-                        conn.from_socket,
-                        value
-                    );
                 }
             }
         }
 
-        tracing::info!("trigger_inputs after propagation: {:?}", inputs);
         inputs
     }
 

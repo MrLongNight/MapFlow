@@ -1309,17 +1309,13 @@ impl App {
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update Effect Automation
-                let now = std::time::Instant::now();
-                let delta_time = now.duration_since(self.last_update).as_secs_f64();
-                self.last_update = now;
-
-                let _param_updates = self.state.effect_animator.update(delta_time);
-                // TODO: Apply param_updates to renderer (EffectChainRenderer needs update_params method)
-
                 // Redraw all windows - Optimized to avoid allocation
                 for window_context in self.window_manager.iter() {
                     window_context.window.request_redraw();
                 }
+
+                // Also ensure egui updates for previews
+                self.egui_context.request_repaint();
             }
             _ => (),
         }
@@ -2178,6 +2174,11 @@ impl App {
         // --- Media Player Update ---
         self.sync_media_players();
         self.update_media_players(delta_time);
+
+        // --- Effect Animator Update ---
+        // Moved from about_to_wait to ensure consistent delta_time with rendering
+        let _param_updates = self.state.effect_animator.update(delta_time as f64);
+        // TODO: Apply param_updates to renderer
 
         // Calculate FPS with smoothing (rolling average of last 60 frames)
         let frame_time_ms = delta_time * 1000.0;
