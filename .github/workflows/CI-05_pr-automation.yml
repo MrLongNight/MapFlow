@@ -6,7 +6,7 @@ on:
   check_suite:
     types: [completed]
   workflow_run:
-    workflows: ["CI-01:Build&Test"]
+    workflows: ["CI-01: Build&Test"]
     types: [completed]
   workflow_dispatch:
 
@@ -187,8 +187,8 @@ jobs:
             pull_number: prNumber
           });
 
-          // Check if it's eligible for auto-merge (jules-pr, auto-merge label, or Created by Jules)
-          const isAutoMergeEligible = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'auto-merge') ||
+          // Check if it's eligible for auto-merge (jules-pr, auto-merge, dependencies label, or Created by Jules)
+          const isAutoMergeEligible = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'auto-merge' || l.name === 'dependencies') ||
                            (pr.body && pr.body.includes('Created by Jules'));
           if (!isAutoMergeEligible) {
             console.log('⏭️ PR has no auto-merge label - skipping auto-merge (checks still run)');
