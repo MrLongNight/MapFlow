@@ -6,6 +6,14 @@ The main entry point and binary crate for the MapFlow projection mapping suite.
 
 This crate glues together all the specialized crates (`mapmap-core`, `mapmap-render`, `mapmap-ui`, etc.) to form the complete application. It initializes the engine, sets up the windowing system, and runs the main event loop.
 
+## Documentation
+
+Full project documentation is available in the [`docs/`](../../docs/) directory.
+
+- [Getting Started](../../docs/01-GETTING-STARTED/)
+- [User Guide](../../docs/04-USER-GUIDE/)
+- [Architecture](../../docs/03-ARCHITECTURE/)
+
 ## Running MapFlow
 
 ### Prerequisites
