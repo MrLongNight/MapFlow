@@ -1,11 +1,24 @@
 
 app-title = MapMap - VJ Projection Mapping
 menu-file = Datei
+menu-file-new-project = Neues Projekt...
+menu-file-open-project = Projekt öffnen...
 menu-file-load-video = Video laden
 menu-file-save-project = Projekt speichern
+menu-file-save-as = Projekt speichern unter...
 menu-file-load-project = Projekt laden
 menu-file-open-recent = Zuletzt geöffnet
+menu-file-export = Exportieren...
+menu-file-settings = Einstellungen...
 menu-file-exit = Beenden
+menu-edit = Bearbeiten
+menu-edit-undo = Rückgängig
+menu-edit-redo = Wiederholen
+menu-edit-cut = Ausschneiden
+menu-edit-copy = Kopieren
+menu-edit-paste = Einfügen
+menu-edit-delete = Löschen
+menu-edit-select-all = Alles auswählen
 menu-view = Ansicht
 check-show-osc = OSC-Panel anzeigen
 check-show-controls = Steuerung anzeigen
