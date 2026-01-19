@@ -31,11 +31,36 @@ impl HueController {
 
     /// Register a new user with the bridge.
     /// This requires the link button on the bridge to be pressed.
+    /// This method polls the bridge for 60 seconds to give the user time.
     pub async fn register(&mut self, ip: &str) -> Result<HueConfig, String> {
-        info!("Starting Bridge registration at {}...", ip);
-        api::client::HueClient::register_user(ip, "MapFlow")
-            .await
-            .map_err(|e| e.to_string())
+        info!("Starting Bridge registration at {} (60s timeout)...", ip);
+
+        let start_time = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(60);
+        let poll_interval = std::time::Duration::from_secs(2);
+
+        while start_time.elapsed() < timeout {
+            match api::client::HueClient::register_user(ip, "MapFlow").await {
+                Ok(config) => {
+                    info!("Successfully registered with Hue Bridge!");
+                    return Ok(config);
+                }
+                Err(api::error::HueError::LinkButtonNotPressed) => {
+                    let elapsed = start_time.elapsed().as_secs();
+                    info!(
+                        "Link button not pressed yet ({}s/60s). Retrying...",
+                        elapsed
+                    );
+                }
+                Err(e) => {
+                    // Other errors (network, etc) should fail immediately
+                    return Err(e.to_string());
+                }
+            }
+            tokio::time::sleep(poll_interval).await;
+        }
+
+        Err("Timeout: Link button was not pressed within 60 seconds.".to_string())
     }
 
     /// Update the configuration (e.g. if settings change)
