@@ -51,7 +51,7 @@ egui_extras = { version = "0.33", features = ["image", "file", "svg"] }
 # Media
 ffmpeg-next = { version = "7.0", default-features = false, features = ["codec", "format", "software-resampling", "software-scaling"] }
 fluent = "0.16"
-fluent-langneg = "0.13"
+fluent-langneg = "0.14"
 futures = "0.3"
 glam = { version = "0.25", features = ["serde"] }
 hex = "0.4"
