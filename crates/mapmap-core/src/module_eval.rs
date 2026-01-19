@@ -460,6 +460,10 @@ pub struct ModuleEvaluator {
     trigger_states: HashMap<ModulePartId, TriggerState>,
     /// Reusable result buffer to avoid allocations
     cached_result: ModuleEvalResult,
+    /// Cache for part indices to avoid linear scans
+    part_indices: HashMap<ModulePartId, usize>,
+    /// Cache for connection indices (to_part -> index) to avoid linear scans
+    connection_indices: HashMap<ModulePartId, usize>,
 }
 
 impl Default for ModuleEvaluator {
@@ -476,6 +480,8 @@ impl ModuleEvaluator {
             start_time: Instant::now(),
             trigger_states: HashMap::new(),
             cached_result: ModuleEvalResult::default(),
+            part_indices: HashMap::new(),
+            connection_indices: HashMap::new(),
         }
     }
 
@@ -494,6 +500,19 @@ impl ModuleEvaluator {
     pub fn evaluate(&mut self, module: &MapFlowModule) -> &ModuleEvalResult {
         // Clear previous result for reuse
         self.cached_result.clear();
+
+        // Rebuild lookup indices
+        self.part_indices.clear();
+        for (i, part) in module.parts.iter().enumerate() {
+            self.part_indices.insert(part.id, i);
+        }
+
+        self.connection_indices.clear();
+        for (i, conn) in module.connections.iter().enumerate() {
+            // Only store the first connection to a part, preserving existing behavior
+            self.connection_indices.entry(conn.to_part).or_insert(i);
+        }
+
         // Since we cleared trigger_values via iteration (retaining keys),
         // we might have entries with empty vectors. This is fine as we will overwrite them.
 
@@ -635,8 +654,10 @@ impl ModuleEvaluator {
         // Step 4: Trace Render Pipeline
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
-                if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
-                    if let Some(layer_part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+                if let Some(&conn_idx) = self.connection_indices.get(&part.id) {
+                    let conn = &module.connections[conn_idx];
+                    if let Some(&part_idx) = self.part_indices.get(&conn.from_part) {
+                        let layer_part = &module.parts[part_idx];
                         let link_opacity =
                             trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
 
@@ -648,7 +669,12 @@ impl ModuleEvaluator {
                                     blend_mode,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(module, layer_part.id);
+                                    let chain = Self::trace_chain(
+                                        module,
+                                        &self.part_indices,
+                                        &self.connection_indices,
+                                        layer_part.id,
+                                    );
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -670,7 +696,12 @@ impl ModuleEvaluator {
                                     mesh,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(module, layer_part.id);
+                                    let chain = Self::trace_chain(
+                                        module,
+                                        &self.part_indices,
+                                        &self.connection_indices,
+                                        layer_part.id,
+                                    );
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -706,7 +737,12 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain(&self, module: &MapFlowModule, start_node_id: ModulePartId) -> ProcessingChain {
+    fn trace_chain(
+        module: &MapFlowModule,
+        part_indices: &HashMap<ModulePartId, usize>,
+        connection_indices: &HashMap<ModulePartId, usize>,
+        start_node_id: ModulePartId,
+    ) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
         let mut override_mesh = None;
@@ -718,8 +754,10 @@ impl ModuleEvaluator {
 
         // Safety limit to prevent infinite loops in cyclic graphs
         for _iteration in 0..50 {
-            if let Some(conn) = module.connections.iter().find(|c| c.to_part == current_id) {
-                if let Some(part) = module.parts.iter().find(|p| p.id == conn.from_part) {
+            if let Some(&conn_idx) = connection_indices.get(&current_id) {
+                let conn = &module.connections[conn_idx];
+                if let Some(&part_idx) = part_indices.get(&conn.from_part) {
+                    let part = &module.parts[part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
                             source_id = Some(part.id);
@@ -1170,7 +1208,7 @@ mod tests_logic {
 
     #[test]
     fn test_trace_chain_limit() {
-        let evaluator = ModuleEvaluator::new();
+        let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
         // Create a cycle: Part 1 -> Part 2 -> Part 1
@@ -1212,8 +1250,23 @@ mod tests_logic {
             to_socket: 0,
         });
 
+        // We need to call evaluate to populate indices, or manually populate them
+        // evaluator.evaluate calls trace_chain internally.
+        // Let's manually populate the indices to test trace_chain directly
+        for (i, part) in module.parts.iter().enumerate() {
+            evaluator.part_indices.insert(part.id, i);
+        }
+        for (i, conn) in module.connections.iter().enumerate() {
+            evaluator.connection_indices.entry(conn.to_part).or_insert(i);
+        }
+
         // Start trace from 1
-        let chain = evaluator.trace_chain(&module, 1);
+        let chain = ModuleEvaluator::trace_chain(
+            &module,
+            &evaluator.part_indices,
+            &evaluator.connection_indices,
+            1,
+        );
 
         // Should not panic or hang, but finish with limited effects
         // The limit is 50.
