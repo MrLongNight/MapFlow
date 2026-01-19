@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-<<<<<<< HEAD
+- 2026-01-19: fix(ci): Ensure VCPKG_ROOT is set and vcpkg integrated in release workflow
 - 2026-01-18: fix(ci): Fix CI-09 workflow build error by explicitly installing vcpkg and ffmpeg (#287)
 - 2026-01-18: chore: Clean up documentation structure and move audit reports (Archivist) (#286)
 - 2026-01-16: fix(ci): Fix Windows release workflow by adding dynamic FFmpeg integration (#270)
@@ -56,9 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-07: perf(ci): optimize GitHub Actions to reduce minutes usage
 - 2026-01-07: test(core): Guardian Module Tests - socket, mesh, CRUD (#205)
 - 2026-01-07: docs: Add crate READMEs (#196)
-=======
 - 2026-01-09: docs: 📚 Scribe: Add mapmap-mcp README and update ROADMAP/CHANGELOG
->>>>>>> pr-217-branch
 - 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
 - 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)
 - 2026-01-02: fix: Remove build artifact files from repository (#156)

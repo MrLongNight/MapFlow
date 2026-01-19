@@ -17,7 +17,7 @@ dependencies = ["format", "lint", "test"]
 description = "Run full CI pipeline locally"
 dependencies = [
     "format",
-    "lint", 
+    "lint",
     "test",
     "audit",
     "doc"
