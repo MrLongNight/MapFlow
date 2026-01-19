@@ -40,6 +40,10 @@ use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
 use tracing::{debug, error, info, warn};
+use wgpu::{
+    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    TextureDescriptor, TextureUsages,
+};
 use window_manager::WindowManager;
 use winit::{
     event::{Event, WindowEvent},
@@ -164,7 +168,7 @@ struct App {
 
 impl App {
     /// Creates a new `App`.
-    async fn new(event_loop: &EventLoop<()>) -> Result<Self> {
+    pub async fn new(elwt: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
         let backend = WgpuBackend::new().await?;
 
         // Version marker to confirm correct build is running
@@ -212,7 +216,7 @@ impl App {
 
         // Create main window with saved geometry
         let main_window_id = window_manager.create_main_window_with_geometry(
-            event_loop,
+            elwt,
             &backend,
             saved_config.window_width,
             saved_config.window_height,
@@ -433,13 +437,17 @@ impl App {
         let egui_context = egui::Context::default();
         let egui_state = State::new(
             egui_context.clone(),
-            egui::ViewportId::default(),
+            egui::viewport::ViewportId::ROOT,
             &main_window_for_egui,
             None,
             None,
+            None,
         );
-        let egui_renderer = Renderer::new(&backend.device, format, None, 1);
-
+        let egui_renderer = Renderer::new(
+            &backend.device,
+            format,
+            egui_wgpu::RendererOptions::default(),
+        );
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),
@@ -511,8 +519,10 @@ impl App {
 
         let mut hue_controller = HueController::new(control_hue_conf);
 
-        // Try to connect if IP is set
-        if !ui_state.user_config.hue_config.bridge_ip.is_empty() {
+        // Try to connect if IP is set and auto-connect is enabled
+        if !ui_state.user_config.hue_config.bridge_ip.is_empty()
+            && ui_state.user_config.hue_config.auto_connect
+        {
             info!("Initializing Hue Controller...");
             if let Err(e) = tokio_runtime.block_on(hue_controller.connect()) {
                 warn!("Hue Controller initial connection failed: {}", e);
@@ -552,8 +562,6 @@ impl App {
                         if !ports.is_empty() {
                             if let Err(e) = handler.connect(0) {
                                 error!("Failed to auto-connect MIDI: {}", e);
-                            } else {
-                                info!("Auto-connected to MIDI port: {}", ports[0]);
                             }
                         }
                     }
@@ -669,12 +677,10 @@ impl App {
     }
 
     /// Runs the application loop.
-    pub fn run(mut self, event_loop: EventLoop<()>) {
+    pub fn run(mut self, event_loop: EventLoop<()>) -> Result<()> {
         info!("Entering event loop");
 
-        event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
-
-        let _ = event_loop.run(move |event, elwt| {
+        event_loop.run(move |event, elwt| {
             // Check if exit was requested
             if self.exit_requested {
                 info!("Exiting application...");
@@ -732,32 +738,28 @@ impl App {
             if let Err(e) = self.handle_event(event, elwt) {
                 error!("Error handling event: {}", e);
             }
-        });
+        })?;
+
+        Ok(())
     }
 
-    /// Handles a single event.
-    fn handle_event(
+    /// Handles a window event.
+    pub fn handle_event(
         &mut self,
-        event: Event<()>,
-        elwt: &winit::event_loop::EventLoopWindowTarget<()>,
+        event: winit::event::Event<()>,
+        elwt: &winit::event_loop::ActiveEventLoop,
     ) -> Result<()> {
-        // Pass event to UI first (needs reference to full event)
-
-        if let Event::WindowEvent { event, window_id } = &event {
-            if let Some(main_window) = self.window_manager.get(0) {
-                if *window_id == main_window.window.id() {
-                    let _ = self.egui_state.on_window_event(&main_window.window, event);
+        match &event {
+            winit::event::Event::WindowEvent { event, window_id } => {
+                if let Some(main_window) = self.window_manager.get(0) {
+                    if *window_id == main_window.window.id() {
+                        let _ = self.egui_state.on_window_event(&main_window.window, event);
+                    }
                 }
-            }
-        }
 
-        match event {
-            Event::WindowEvent {
-                event, window_id, ..
-            } => {
                 let output_id = self
                     .window_manager
-                    .get_output_id_from_window_id(window_id)
+                    .get_output_id_from_window_id(*window_id)
                     .unwrap_or(0);
 
                 match event {
@@ -807,7 +809,7 @@ impl App {
                     _ => (),
                 }
             }
-            Event::LoopExiting => {
+            winit::event::Event::LoopExiting => {
                 info!("Application exiting, saving autosave and config...");
 
                 // 1. Save User Config (UI State)
@@ -822,9 +824,6 @@ impl App {
                 // Get main window maximization state
                 if let Some(main_window) = self.window_manager.get(0) {
                     self.ui_state.user_config.window_maximized = main_window.window.is_maximized();
-                    // Note: Width/Height/X/Y are typically tracked during move/resize, not just at exit,
-                    // but we could explicitly query inner_size here if needed.
-                    // For now, maximization and flags are key.
                 }
 
                 if let Err(e) = self.ui_state.user_config.save() {
@@ -849,7 +848,7 @@ impl App {
                     info!("Exit autosave successful to {:?}", autosave_path);
                 }
             }
-            Event::AboutToWait => {
+            winit::event::Event::AboutToWait => {
                 // Poll MIDI
                 #[cfg(feature = "midi")]
                 if let Some(handler) = &mut self.midi_handler {
@@ -1222,8 +1221,6 @@ impl App {
 
                         // 2. Handle Render Ops (New System)
                         self.render_ops = result.render_ops.clone();
-
-                        // Log render ops status once per second
                         static mut LAST_RENDER_LOG: u64 = 0;
                         let now_ms = (timestamp * 1000.0) as u64;
                         unsafe {
@@ -1479,6 +1476,39 @@ impl App {
                         }
                     }
                 }
+                mapmap_ui::UIAction::FetchHueGroups => {
+                    info!("Fetching Hue Entertainment Groups...");
+                    let bridge_ip = self.ui_state.user_config.hue_config.bridge_ip.clone();
+                    let username = self.ui_state.user_config.hue_config.username.clone();
+
+                    if bridge_ip.is_empty() || username.is_empty() {
+                        error!("Cannot fetch groups: Bridge IP or Username missing");
+                    } else {
+                        // Construct a temp config to fetch groups
+                        let config = mapmap_control::hue::models::HueConfig {
+                            bridge_ip,
+                            username,
+                            ..Default::default()
+                        };
+
+                        // Blocking call
+                        match self.tokio_runtime.block_on(
+                            mapmap_control::hue::api::groups::get_entertainment_groups(&config),
+                        ) {
+                            Ok(groups) => {
+                                self.ui_state.available_hue_groups =
+                                    groups.into_iter().map(|g| (g.id, g.name)).collect();
+                                info!(
+                                    "Fetched {} groups",
+                                    self.ui_state.available_hue_groups.len()
+                                );
+                            }
+                            Err(e) => {
+                                error!("Failed to fetch groups: {}", e);
+                            }
+                        }
+                    }
+                }
                 mapmap_ui::UIAction::ConnectHue => {
                     info!("Connecting to Philips Hue Bridge...");
 
@@ -1692,9 +1722,9 @@ impl App {
     ///
     /// Creates windows for new output assignments and removes windows that are no longer needed.
     /// Synchronizes output windows and NDI senders with the current module graph output nodes.
-    fn sync_output_windows<T>(
+    fn sync_output_windows(
         &mut self,
-        event_loop: &winit::event_loop::EventLoopWindowTarget<T>,
+        elwt: &winit::event_loop::ActiveEventLoop,
         render_ops: &[mapmap_core::module_eval::RenderOp],
     ) -> Result<()> {
         use mapmap_core::module::OutputType;
@@ -1737,7 +1767,7 @@ impl App {
                     } else {
                         // Create new
                         self.window_manager.create_projector_window(
-                            event_loop,
+                            elwt,
                             &self.backend,
                             output_id,
                             name,
@@ -1763,7 +1793,7 @@ impl App {
 
                         if self.window_manager.get(preview_id).is_none() {
                             self.window_manager.create_projector_window(
-                                event_loop,
+                                elwt,
                                 &self.backend,
                                 preview_id,
                                 &format!("Preview: {}", name),
@@ -2022,14 +2052,6 @@ impl App {
                 // Render previews with effects
                 let mut current_frame_previews = std::collections::HashMap::new();
 
-                // Create command encoder for preview rendering
-                let mut encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Render Encoder"),
-                        });
-
                 for (
                     part_id,
                     brightness,
@@ -2062,6 +2084,13 @@ impl App {
                         );
                         let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
+                        // Use a fresh encoder for each preview to avoid lifetime issues with local references in RenderPassDescriptor
+                        let mut preview_encoder = self.backend.device.create_command_encoder(
+                            &wgpu::CommandEncoderDescriptor {
+                                label: Some("Preview Encoder"),
+                            },
+                        );
+
                         // Calculate Transform Matrix based on source properties
                         // This mirrors the logic in module_eval.rs
                         let transform_mat = glam::Mat4::from_scale_rotation_translation(
@@ -2089,8 +2118,8 @@ impl App {
                         // Render Pass
                         {
                             let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some(&format!("Preview Pass {}", part_id)),
+                                preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: Some("Preview Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                                         view: &preview_view,
                                         resolve_target: None,
@@ -2098,6 +2127,7 @@ impl App {
                                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                             store: wgpu::StoreOp::Store,
                                         },
+                                        depth_slice: None,
                                     })],
                                     depth_stencil_attachment: None,
                                     timestamp_writes: None,
@@ -2154,8 +2184,16 @@ impl App {
                     }
                 }
 
-                // Submit rendering commands
+                // Submit preview rendering commands
+                // We finish the OLD encoder here, so any LATER code that uses 'encoder' will fail.
+                // Re-creating the encoder for the rest of the frame.
                 self.backend.queue.submit(Some(encoder.finish()));
+                encoder =
+                    self.backend
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Main Render Encoder"),
+                        });
 
                 // Cleanup stale cache entries
                 self.preview_texture_cache.retain(|id, (tex_id, _)| {
@@ -2710,7 +2748,7 @@ impl App {
                                             ui.label(format!("{}:", self.ui_state.i18n.t("settings-frame-rate")));
                                             let fps_options = [(24.0, "24"), (25.0, "25"), (30.0, "30"), (50.0, "50"), (60.0, "60"), (120.0, "120")];
                                             let current = self.ui_state.user_config.target_fps.unwrap_or(60.0);
-                                            egui::ComboBox::from_id_source("fps_select")
+                                            egui::ComboBox::from_id_salt("fps_select")
                                                 .selected_text(format!("{:.0} FPS", current))
                                                 .show_ui(ui, |ui| {
                                                     for (fps, label) in fps_options {
@@ -2742,7 +2780,7 @@ impl App {
                                         ui.horizontal(|ui| {
                                             ui.label("Audio Meter:");
                                             let current = self.ui_state.user_config.meter_style;
-                                            egui::ComboBox::from_id_source("meter_style_select")
+                                            egui::ComboBox::from_id_salt("meter_style_select")
                                                 .selected_text(format!("{}", current))
                                                 .show_ui(ui, |ui| {
                                                     let styles = [
@@ -2767,7 +2805,7 @@ impl App {
                                         ui.horizontal(|ui| {
                                             ui.label("Number of Outputs (Projectors):");
                                             let mut output_count = self.state.settings.output_count;
-                                            if ui.add(egui::DragValue::new(&mut output_count).clamp_range(1..=8)).changed() {
+                                            if ui.add(egui::DragValue::new(&mut output_count).speed(1).range(1..=8)).changed() {
                                                 self.state.settings.output_count = output_count;
                                                 self.state.dirty = true;
                                             }
@@ -2800,7 +2838,7 @@ impl App {
                                         ui.horizontal(|ui| {
                                             ui.label("Log Level:");
                                             let levels = ["trace", "debug", "info", "warn", "error"];
-                                            egui::ComboBox::from_id_source("log_level_select")
+                                            egui::ComboBox::from_id_salt("log_level_select")
                                                 .selected_text(&log_config.level)
                                                 .show_ui(ui, |ui| {
                                                     for level in levels {
@@ -2830,7 +2868,7 @@ impl App {
 
                                         ui.horizontal(|ui| {
                                             ui.label("Max Log Files:");
-                                            if ui.add(egui::DragValue::new(&mut log_config.max_files).speed(1).clamp_range(1..=100)).changed() {
+                                            if ui.add(egui::DragValue::new(&mut log_config.max_files).speed(1).range(1..=100)).changed() {
                                                 self.state.dirty = true;
                                             }
                                         });
@@ -2870,7 +2908,7 @@ impl App {
                                         });
 
                                         if !self.ui_state.discovered_hue_bridges.is_empty() {
-                                            egui::ComboBox::from_id_source("discovered_bridges")
+                                            egui::ComboBox::from_id_salt("discovered_bridges")
                                                 .selected_text("Select Discovered Bridge...")
                                                 .show_ui(ui, |ui| {
                                                     for bridge in &self.ui_state.discovered_hue_bridges {
@@ -2893,9 +2931,40 @@ impl App {
                                         });
 
                                         ui.horizontal(|ui| {
-                                            ui.label("Entertainment Area:");
-                                            if ui.text_edit_singleline(&mut hue_conf.entertainment_area).changed() {
-                                                changed = true;
+                                            ui.label("Entertainment Group:");
+                                            let current_id = &mut hue_conf.entertainment_area;
+
+                                            // ComboBox for Group Selection
+                                            let selected_text = self
+                                                .ui_state
+                                                .available_hue_groups
+                                                .iter()
+                                                .find(|(id, _)| id == current_id)
+                                                .map(|(_, name)| name.as_str())
+                                                .unwrap_or(current_id.as_str());
+
+                                            egui::ComboBox::from_id_salt("hue_group_select")
+                                                .selected_text(selected_text)
+                                                .show_ui(ui, |ui| {
+                                                    for (id, name) in
+                                                        &self.ui_state.available_hue_groups
+                                                    {
+                                                        if ui
+                                                            .selectable_label(current_id == id, name)
+                                                            .clicked()
+                                                        {
+                                                            *current_id = id.clone();
+                                                            changed = true;
+                                                        }
+                                                    }
+                                                });
+
+                                            // Refresh Button
+                                            if ui.button("🔄").on_hover_text("Refresh Groups").clicked()
+                                            {
+                                                self.ui_state
+                                                    .actions
+                                                    .push(mapmap_ui::UIAction::FetchHueGroups);
                                             }
                                         });
 
@@ -2984,7 +3053,7 @@ impl App {
                                                 .cloned()
                                                 .unwrap_or_else(|| "None".to_string());
 
-                                            egui::ComboBox::from_id_source("midi_port_select")
+                                            egui::ComboBox::from_id_salt("midi_port_select")
                                                 .selected_text(&current_port)
                                                 .show_ui(ui, |ui| {
                                                     for (i, port) in self.midi_ports.iter().enumerate() {
@@ -3130,6 +3199,7 @@ impl App {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
                     occlusion_query_set: None,
@@ -3303,12 +3373,18 @@ impl App {
                         let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: Some("Mesh Target Clear Pass"),
                             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: mesh_target_view_ref,
+                                view: &view,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                                        r: 0.0,
+                                        g: 0.0,
+                                        b: 0.0,
+                                        a: 1.0,
+                                    }),
                                     store: wgpu::StoreOp::Store,
                                 },
+                                depth_slice: None,
                             })],
                             depth_stencil_attachment: None,
                             occlusion_query_set: None,
@@ -3372,6 +3448,7 @@ impl App {
                                             load: wgpu::LoadOp::Load,
                                             store: wgpu::StoreOp::Store,
                                         },
+                                        depth_slice: None,
                                     })],
                                     depth_stencil_attachment: None,
                                     occlusion_query_set: None,
@@ -3466,6 +3543,7 @@ impl App {
                                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                             store: wgpu::StoreOp::Store,
                                         },
+                                        depth_slice: None,
                                     })],
                                     depth_stencil_attachment: None,
                                     occlusion_query_set: None,
@@ -3502,6 +3580,7 @@ impl App {
                                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                             store: wgpu::StoreOp::Store,
                                         },
+                                        depth_slice: None,
                                     })],
                                     depth_stencil_attachment: None,
                                     occlusion_query_set: None,
@@ -3525,24 +3604,28 @@ impl App {
                 }
             } else {
                 // No op for this output - Clear to Black
-                let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Clear Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                    occlusion_query_set: None,
-                    timestamp_writes: None,
-                });
+                {
+                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Clear Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+                }
             }
         }
 
-        self.backend.queue.submit(Some(encoder.finish()));
+        let command_buffer = encoder.finish();
+        self.backend.queue.submit(Some(command_buffer));
         surface_texture.present();
 
         Ok(())
@@ -3561,19 +3644,23 @@ fn main() -> Result<()> {
     info!("===      MapFlow Session Started       ===");
     info!("==========================================");
 
-    // Create the event loop
-    let event_loop = EventLoop::new()?;
+    // Start the application loop
+    let event_loop = EventLoop::new().unwrap();
+    let mut app: Option<App> = None;
 
-    // Create the app
-    let app = pollster::block_on(App::new(&event_loop))?;
+    event_loop.run(move |event, elwt| {
+        if app.is_none() {
+            app = Some(pollster::block_on(App::new(elwt)).expect("Failed to create App"));
+            info!("--- Entering Main Event Loop ---");
+        }
 
-    // Run the app
-    info!("--- Entering Main Event Loop ---");
-    app.run(event_loop);
-
-    info!("==========================================");
-    info!("===       MapFlow Session Ended        ===");
-    info!("==========================================");
+        if let Some(app_ref) = &mut app {
+            if let Err(e) = app_ref.handle_event(event, elwt) {
+                error!("Application error: {}", e);
+                elwt.exit();
+            }
+        }
+    })?;
 
     Ok(())
 }

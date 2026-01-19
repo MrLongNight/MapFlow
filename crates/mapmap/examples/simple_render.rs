@@ -8,7 +8,7 @@ use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
-    window::WindowBuilder,
+    window::WindowAttributes,
 };
 
 fn main() {
@@ -16,13 +16,10 @@ fn main() {
     println!("==============================\n");
 
     let event_loop = EventLoop::new().unwrap();
-    let window = Arc::new(
-        WindowBuilder::new()
-            .with_title("MapFlow - Simple Render")
-            .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))
-            .build(&event_loop)
-            .unwrap(),
-    );
+    let window_attributes = WindowAttributes::default()
+        .with_title("MapFlow - Simple Render")
+        .with_inner_size(winit::dpi::PhysicalSize::new(800, 600));
+    let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 
     let mut backend = pollster::block_on(WgpuBackend::new()).unwrap();
     let surface = backend.create_surface(window.clone()).unwrap();
@@ -120,6 +117,7 @@ fn main() {
                                 }),
                                 store: wgpu::StoreOp::Store,
                             },
+                            depth_slice: None,
                         })],
                         depth_stencil_attachment: None,
                         occlusion_query_set: None,

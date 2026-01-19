@@ -14,7 +14,7 @@ use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
-    window::WindowBuilder,
+    window::{Window, WindowAttributes},
 };
 
 fn main() {
@@ -23,13 +23,10 @@ fn main() {
 
     // Step 1: Create the window
     let event_loop = EventLoop::new().unwrap();
-    let window = Arc::new(
-        WindowBuilder::new()
-            .with_title("MapFlow - Hello World Projection")
-            .with_inner_size(winit::dpi::PhysicalSize::new(1280, 720))
-            .build(&event_loop)
-            .unwrap(),
-    );
+    let window_attributes = WindowAttributes::default()
+        .with_title("Hello World Projection")
+        .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0));
+    let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 
     println!("✓ Window created (1280x720)");
 
@@ -169,14 +166,10 @@ fn main() {
                                     view: &view,
                                     resolve_target: None,
                                     ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.1,
-                                            g: 0.1,
-                                            b: 0.1,
-                                            a: 1.0,
-                                        }),
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                         store: wgpu::StoreOp::Store,
                                     },
+                                    depth_slice: None,
                                 })],
                                 depth_stencil_attachment: None,
                                 occlusion_query_set: None,

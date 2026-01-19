@@ -4,8 +4,8 @@ use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use wgpu::util::DeviceExt;
 use wgpu::{
-    CommandEncoderDescriptor, Extent3d, ImageCopyBuffer, ImageDataLayout, TextureDescriptor,
-    TextureUsages,
+    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    TextureDescriptor, TextureUsages,
 };
 
 // Helper function to run a test with a given texture setup
@@ -91,9 +91,9 @@ where
 
     encoder.copy_texture_to_buffer(
         output_texture.as_image_copy(),
-        ImageCopyBuffer {
+        TexelCopyBufferInfo {
             buffer: &output_buffer,
-            layout: ImageDataLayout {
+            layout: TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(height),
@@ -115,6 +115,7 @@ where
     // Map the buffer and get the data
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
+    // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
     device.poll(wgpu::Maintain::Wait);
     let data = {
         let view = slice.get_mapped_range();

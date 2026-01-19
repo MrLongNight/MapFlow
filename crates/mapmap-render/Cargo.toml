@@ -21,8 +21,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-wgpu = { workspace = true, features = ["hal"] }
-wgpu-hal = "0.19"
+wgpu = { workspace = true }
 winit = { workspace = true }
 
 [dev-dependencies]

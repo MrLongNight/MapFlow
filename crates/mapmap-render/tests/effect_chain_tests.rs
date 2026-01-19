@@ -1,7 +1,7 @@
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
-use wgpu::{Device, Queue};
+use wgpu::{util::DeviceExt, Device, Maintain, Queue};
 
 // --- Test Setup Boilerplate (adapted from multi_output_tests.rs) ---
 
@@ -48,7 +48,7 @@ fn create_solid_color_texture(
     queue.write_texture(
         texture.as_image_copy(),
         &data,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -91,9 +91,9 @@ async fn read_texture_data(
 
     encoder.copy_texture_to_buffer(
         texture.as_image_copy(),
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &buffer,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -114,7 +114,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(Maintain::Poll);
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.

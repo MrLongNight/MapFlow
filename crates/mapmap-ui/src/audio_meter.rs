@@ -78,7 +78,7 @@ fn draw_rack_frame(painter: &egui::Painter, rect: Rect) {
     let frame_shadow = Color32::from_rgb(25, 25, 30);
 
     // Main frame
-    painter.rect_filled(rect, 4.0, frame_color);
+    painter.rect_filled(rect, 4, frame_color);
 
     // Beveled edges (highlight top-left, shadow bottom-right)
     painter.line_segment(
@@ -155,7 +155,7 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
     let painter = ui.painter();
 
     // Dark background behind glass
-    painter.rect_filled(rect, 4.0, Color32::from_rgb(20, 20, 22));
+    painter.rect_filled(rect, 2, Color32::from_rgb(230, 225, 210)); // Cream/vintage color
 
     // Split into left and right meters
     let meter_width = (rect.width() - 4.0) / 2.0;
@@ -185,14 +185,15 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
     // Glass edge highlight
     painter.rect_stroke(
         glass_rect,
-        4.0,
+        4,
         Stroke::new(1.0, Color32::from_white_alpha(30)),
+        egui::StrokeKind::Inside,
     );
 }
 
 fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: &str) {
     // Meter face background
-    painter.rect_filled(rect, 2.0, Color32::from_rgb(230, 225, 210)); // Cream/vintage color
+    painter.rect_filled(rect, 2, Color32::from_rgb(230, 225, 210)); // Cream/vintage color
 
     // Calculate geometry
     // We want the pivot to be well below the rect
@@ -299,7 +300,7 @@ fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f3
     let painter = ui.painter();
 
     // Dark background
-    painter.rect_filled(rect, 2.0, Color32::from_rgb(10, 10, 12));
+    painter.rect_filled(rect, 2, Color32::from_rgb(10, 10, 12));
 
     // Layout:
     // Top: L
@@ -380,7 +381,7 @@ fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
         let x = rect.min.x + i as f32 * (seg_w + 1.0);
         painter.rect_filled(
             Rect::from_min_size(Pos2::new(x, rect.min.y), Vec2::new(seg_w, rect.height())),
-            1.0,
+            1,
             final_color,
         );
     }

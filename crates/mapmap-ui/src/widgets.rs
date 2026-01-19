@@ -10,7 +10,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(stripe_rect, 0.0, Color32::from_rgb(157, 78, 221));
+    painter.rect_filled(stripe_rect, 0, Color32::from_rgb(157, 78, 221));
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -59,9 +59,10 @@ pub fn styled_slider(
 
     ui.painter().rect(
         rect,
-        visuals.rounding,
+        visuals.corner_radius,
         ui.visuals().widgets.inactive.bg_fill,
         visuals.bg_stroke,
+        egui::StrokeKind::Inside,
     );
 
     let fill_rect = Rect::from_min_max(
@@ -77,9 +78,10 @@ pub fn styled_slider(
 
     ui.painter().rect(
         fill_rect,
-        visuals.rounding,
+        visuals.corner_radius,
         Color32::from_rgb(157, 78, 221),
         Stroke::new(0.0, Color32::TRANSPARENT),
+        egui::StrokeKind::Inside,
     );
 
     response
@@ -143,8 +145,13 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
         visuals.bg_fill
     };
 
-    ui.painter()
-        .rect(rect, visuals.rounding, bg_fill, visuals.bg_stroke);
+    ui.painter().rect(
+        rect,
+        visuals.corner_radius,
+        bg_fill,
+        visuals.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
 
     let text_pos = rect.center();
     ui.painter().text(
@@ -172,8 +179,13 @@ pub fn param_button(ui: &mut Ui) -> Response {
         visuals.bg_fill
     };
 
-    ui.painter()
-        .rect(rect, visuals.rounding, bg_fill, visuals.bg_stroke);
+    ui.painter().rect(
+        rect,
+        visuals.corner_radius,
+        bg_fill,
+        visuals.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
 
     let text_pos = rect.center();
     ui.painter().text(
@@ -201,8 +213,13 @@ pub fn delete_button(ui: &mut Ui) -> Response {
         visuals.bg_fill
     };
 
-    ui.painter()
-        .rect(rect, visuals.rounding, bg_fill, visuals.bg_stroke);
+    ui.painter().rect(
+        rect,
+        visuals.corner_radius,
+        bg_fill,
+        visuals.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
 
     let text_pos = rect.center();
     ui.painter().text(

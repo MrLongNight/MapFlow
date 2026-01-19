@@ -59,7 +59,7 @@ impl WgpuBackend {
     ) -> Result<Self> {
         info!("Initializing wgpu backend");
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
             ..Default::default()
         });
@@ -71,7 +71,7 @@ impl WgpuBackend {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or_else(|| RenderError::DeviceError("No suitable adapter found".to_string()))?;
+            .map_err(|e| RenderError::DeviceError(e.to_string()))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -80,20 +80,18 @@ impl WgpuBackend {
         );
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("MapFlow Device"),
-                    required_features: wgpu::Features::TIMESTAMP_QUERY
-                        | wgpu::Features::PUSH_CONSTANTS,
-                    required_limits: wgpu::Limits {
-                        max_push_constant_size: 128,
-                        ..Default::default()
-                    },
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("MapFlow Device"),
+                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
+                required_limits: wgpu::Limits {
+                    max_push_constant_size: 128,
+                    ..Default::default()
                 },
-                None,
-            )
+                memory_hints: Default::default(),
+                ..Default::default()
+            })
             .await
-            .map_err(|e| RenderError::DeviceError(e.to_string()))?;
+            .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;
 
         info!("Device created successfully");
 
@@ -217,14 +215,14 @@ impl RenderBackend for WgpuBackend {
 
         // Use direct write for all textures (queue.write_texture is efficient)
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(handle.height),

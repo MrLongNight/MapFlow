@@ -144,6 +144,7 @@ impl ControllerOverlayPanel {
             last_active_time: None,
             streamerbot_function: String::new(),
             mixxx_function: String::new(),
+
             show_labels: true,
             show_values: true,
             show_midi_info: true,
@@ -727,7 +728,14 @@ impl ControllerOverlayPanel {
             );
         } else {
             // Fallback: dark background
-            painter.rect_filled(rect, 0.0, Color32::from_rgb(30, 30, 35));
+            let bg_color = Color32::from_rgb(30, 30, 35);
+            painter.rect_filled(rect, 4, bg_color);
+            painter.rect_stroke(
+                rect,
+                4,
+                Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+                egui::StrokeKind::Inside,
+            );
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -933,7 +941,7 @@ impl ControllerOverlayPanel {
                             painter.circle_stroke(elem_rect.center(), radius, stroke);
                         }
                         _ => {
-                            painter.rect_stroke(elem_rect, 0.0, stroke);
+                            painter.rect_stroke(elem_rect, 0, stroke, egui::StrokeKind::Inside);
                         }
                     }
 
@@ -1033,7 +1041,7 @@ impl ControllerOverlayPanel {
                     painter.circle_stroke(elem_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4.0, stroke);
+                    painter.rect_stroke(elem_rect, 4, stroke, egui::StrokeKind::Inside);
                 }
             }
         }
@@ -1059,35 +1067,40 @@ impl ControllerOverlayPanel {
 
         // Show tooltip on hover
         if is_hovered {
-            egui::show_tooltip_at_pointer(painter.ctx(), egui::Id::new(&element.id), |ui| {
-                ui.strong(&element.label);
-                ui.label(format!("ID: {}", element.id));
-                ui.label(format!("Typ: {:?}", element.element_type));
-                if let Some(midi) = &element.midi {
-                    ui.label(format!("MIDI: {:?}", midi));
-                }
-                if let Some(state) = state {
-                    ui.label(format!("Wert: {:.2}", state.value));
-                }
+            egui::show_tooltip_at_pointer(
+                painter.ctx(),
+                egui::LayerId::background(),
+                egui::Id::new(&element.id),
+                |ui: &mut egui::Ui| {
+                    ui.strong(&element.label);
+                    ui.label(format!("ID: {}", element.id));
+                    ui.label(format!("Typ: {:?}", element.element_type));
+                    if let Some(midi) = &element.midi {
+                        ui.label(format!("MIDI: {:?}", midi));
+                    }
+                    if let Some(state) = state {
+                        ui.label(format!("Wert: {:.2}", state.value));
+                    }
 
-                // Show assignment info
-                let assignment = assignments.iter().find(|a| a.element_id == element.id);
-                if let Some(assign) = assignment {
-                    ui.separator();
-                    ui.horizontal(|ui| {
-                        ui.label("Zuweisung:");
-                        ui.colored_label(Color32::YELLOW, assign.target.to_string());
-                    });
-                    ui.label(
-                        egui::RichText::new("(Klick für Details in Liste)")
-                            .italics()
-                            .size(10.0),
-                    );
-                } else {
-                    ui.separator();
-                    ui.label(egui::RichText::new("Nicht zugewiesen").italics().weak());
-                }
-            });
+                    // Show assignment info
+                    let assignment = assignments.iter().find(|a| a.element_id == element.id);
+                    if let Some(assign) = assignment {
+                        ui.separator();
+                        ui.horizontal(|ui| {
+                            ui.label("Zuweisung:");
+                            ui.colored_label(Color32::YELLOW, assign.target.to_string());
+                        });
+                        ui.label(
+                            egui::RichText::new("(Klick für Details in Liste)")
+                                .italics()
+                                .size(10.0),
+                        );
+                    } else {
+                        ui.separator();
+                        ui.label(egui::RichText::new("Nicht zugewiesen").italics().weak());
+                    }
+                },
+            );
         }
     }
 

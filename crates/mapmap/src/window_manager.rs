@@ -11,8 +11,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
 use winit::{
-    event_loop::EventLoopWindowTarget,
-    window::{Fullscreen, Window, WindowBuilder, WindowId},
+    event_loop::ActiveEventLoop,
+    window::{Fullscreen, Window, WindowAttributes, WindowId},
 };
 
 /// Context for a single window, containing the `winit` window, `wgpu` surface,
@@ -51,9 +51,9 @@ impl WindowManager {
     /// This is the primary window for the application, where the UI is displayed.
     /// It is assigned a reserved `OutputId` of `0`.
     #[allow(dead_code)] // Used for tests and as simple API wrapper
-    pub fn create_main_window<T>(
+    pub fn create_main_window(
         &mut self,
-        event_loop: &EventLoopWindowTarget<T>,
+        event_loop: &ActiveEventLoop,
         backend: &WgpuBackend,
     ) -> Result<OutputId> {
         // Use default size
@@ -62,9 +62,9 @@ impl WindowManager {
 
     /// Creates the main control window with optional saved geometry.
     #[allow(clippy::too_many_arguments)]
-    pub fn create_main_window_with_geometry<T>(
+    pub fn create_main_window_with_geometry(
         &mut self,
-        event_loop: &EventLoopWindowTarget<T>,
+        event_loop: &ActiveEventLoop,
         backend: &WgpuBackend,
         width: Option<u32>,
         height: Option<u32>,
@@ -75,7 +75,7 @@ impl WindowManager {
         let default_width = width.unwrap_or(1920);
         let default_height = height.unwrap_or(1080);
 
-        let mut window_builder = WindowBuilder::new()
+        let mut window_attributes = WindowAttributes::default()
             .with_title("MapFlow - Main Control")
             .with_window_icon(load_app_icon())
             .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height))
@@ -83,11 +83,11 @@ impl WindowManager {
 
         // Set position if provided
         if let (Some(pos_x), Some(pos_y)) = (x, y) {
-            window_builder =
-                window_builder.with_position(winit::dpi::PhysicalPosition::new(pos_x, pos_y));
+            window_attributes =
+                window_attributes.with_position(winit::dpi::PhysicalPosition::new(pos_x, pos_y));
         }
 
-        let window = Arc::new(window_builder.build(event_loop)?);
+        let window = Arc::new(event_loop.create_window(window_attributes)?);
 
         // Re-apply icon explicitly to be sure
         if let Some(icon) = load_app_icon() {
@@ -128,9 +128,9 @@ impl WindowManager {
     ///
     /// If a window for the given `OutputId` already exists, this function does nothing.
     #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
-    pub fn create_output_window<T>(
+    pub fn create_output_window(
         &mut self,
-        event_loop: &EventLoopWindowTarget<T>,
+        event_loop: &ActiveEventLoop,
         backend: &WgpuBackend,
         output_config: &mapmap_core::OutputConfig,
     ) -> Result<()> {
@@ -147,19 +147,20 @@ impl WindowManager {
         );
 
         let window = Arc::new(
-            WindowBuilder::new()
-                .with_title(format!("MapFlow Output - {}", output_config.name))
-                .with_window_icon(load_app_icon())
-                .with_inner_size(winit::dpi::PhysicalSize::new(
-                    output_config.resolution.0,
-                    output_config.resolution.1,
-                ))
-                .with_fullscreen(if output_config.fullscreen {
-                    Some(Fullscreen::Borderless(None))
-                } else {
-                    None
-                })
-                .build(event_loop)?,
+            event_loop.create_window(
+                WindowAttributes::default()
+                    .with_title(format!("MapFlow Output - {}", output_config.name))
+                    .with_window_icon(load_app_icon())
+                    .with_inner_size(winit::dpi::PhysicalSize::new(
+                        output_config.resolution.0,
+                        output_config.resolution.1,
+                    ))
+                    .with_fullscreen(if output_config.fullscreen {
+                        Some(Fullscreen::Borderless(None))
+                    } else {
+                        None
+                    }),
+            )?,
         );
 
         // Re-apply icon explicitly to be sure
@@ -207,9 +208,9 @@ impl WindowManager {
     ///
     /// If a window for the given `output_id` already exists, this function does nothing.
     #[allow(clippy::too_many_arguments)]
-    pub fn create_projector_window<T>(
+    pub fn create_projector_window(
         &mut self,
-        event_loop: &EventLoopWindowTarget<T>,
+        event_loop: &ActiveEventLoop,
         backend: &WgpuBackend,
         output_id: OutputId,
         name: &str,
@@ -255,7 +256,7 @@ impl WindowManager {
             (1920, 1080)
         };
 
-        let mut window_builder = WindowBuilder::new()
+        let mut window_attributes = WindowAttributes::default()
             .with_title(format!("MapFlow - {}", name))
             .with_window_icon(load_app_icon())
             .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height));
@@ -263,15 +264,16 @@ impl WindowManager {
         // Set fullscreen if requested
         if fullscreen {
             if let Some(monitor) = target_monitor.clone() {
-                window_builder =
-                    window_builder.with_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                window_attributes =
+                    window_attributes.with_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
             } else {
-                window_builder = window_builder.with_fullscreen(Some(Fullscreen::Borderless(None)));
+                window_attributes =
+                    window_attributes.with_fullscreen(Some(Fullscreen::Borderless(None)));
             }
         }
 
         // Build the window
-        let window = Arc::new(window_builder.build(event_loop)?);
+        let window = Arc::new(event_loop.create_window(window_attributes)?);
 
         // Re-apply icon explicitly to be sure
         if let Some(icon) = load_app_icon() {
@@ -322,9 +324,9 @@ impl WindowManager {
     /// This function will create windows for new outputs and remove windows for outputs
     /// that no longer exist.
     #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
-    pub fn sync_windows<T>(
+    pub fn sync_windows(
         &mut self,
-        event_loop: &EventLoopWindowTarget<T>,
+        event_loop: &ActiveEventLoop,
         backend: &WgpuBackend,
         output_manager: &OutputManager,
     ) -> Result<()> {

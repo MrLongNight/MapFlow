@@ -676,17 +676,22 @@ impl NodeEditor {
         };
 
         // Node background
-        painter.rect_filled(rect, 4.0, bg_color);
-        painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
+        painter.rect_filled(rect, 4, bg_color);
+        painter.rect_stroke(
+            rect,
+            4,
+            Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+            egui::StrokeKind::Inside,
+        );
 
         // Title bar
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 24.0 * self.zoom));
-        painter.rect_filled(title_rect, 4.0, Color32::from_rgb(30, 30, 30));
+        painter.rect_filled(title_rect, 4, Color32::from_rgb(30, 30, 30));
         painter.text(
             title_rect.center(),
             egui::Align2::CENTER_CENTER,
             node.node_type.name(locale),
-            egui::FontId::proportional(14.0 * self.zoom),
+            egui::FontId::proportional(14.0 * self.zoom.clamp(0.1, 10.0)),
             Color32::WHITE,
         );
 
@@ -713,7 +718,7 @@ impl NodeEditor {
         socket_type: SocketType,
         _is_input: bool,
     ) {
-        let radius = 6.0 * self.zoom;
+        let radius = 6.0 * self.zoom.clamp(0.1, 10.0);
         painter.circle_filled(pos, radius, socket_type.color());
         painter.circle_stroke(pos, radius, Stroke::new(2.0, Color32::WHITE));
     }

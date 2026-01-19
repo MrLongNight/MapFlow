@@ -10,6 +10,7 @@
 //! - Controller Overlay Panel (MIDI visualization)
 
 // Phase 6: Advanced Authoring UI (egui-based)
+use sysinfo::SystemExt;
 pub mod asset_manager;
 pub mod assignment_panel;
 pub mod audio_meter;
@@ -161,6 +162,7 @@ pub enum UIAction {
     ConnectHue,
     DisconnectHue,
     DiscoverHueBridges,
+    FetchHueGroups,
     RegisterHue,
 
     // Help actions
@@ -278,8 +280,12 @@ pub struct AppUI {
     pub control_panel_height: f32,
     /// Show control panel in unified sidebar
     pub show_control_panel: bool,
-    /// List of discovered Hue bridges
+    /// Discovered Hue Bridges
     pub discovered_hue_bridges: Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>,
+    /// Available Hue Entertainment Groups (ID, Name)
+    pub available_hue_groups: Vec<(String, String)>,
+    /// System Info
+    pub sys_info: sysinfo::System,
 }
 
 impl Default for AppUI {
@@ -377,6 +383,8 @@ impl Default for AppUI {
             control_panel_height: 250.0, // Default height in pixels
             show_control_panel: true,    // Show by default
             discovered_hue_bridges: Vec::new(),
+            available_hue_groups: Vec::new(),
+            sys_info: sysinfo::System::new_all(),
         }
     }
 }
@@ -519,7 +527,7 @@ impl AppUI {
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
                     .rounding(4.0)
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
-                    .inner_margin(8.0)
+                    .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.label(
@@ -558,6 +566,8 @@ impl AppUI {
             .show(ctx, |ui| {
                 // Determine learning state (capture values to avoid borrow conflict)
                 let is_learning = self.is_midi_learn_mode;
+                // TODO: Shadow::tessellate was removed in egui 0.33, find replacement
+                // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
                 let last_active_element = self.controller_overlay.last_active_element.clone();
                 let last_active_time = self.controller_overlay.last_active_time;
 
@@ -644,8 +654,12 @@ impl AppUI {
             let time = ui.input(|i| i.time);
             let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
-            ui.painter()
-                .rect_stroke(rect.expand(2.0), 4.0, egui::Stroke::new(2.0, color));
+            ui.painter().rect_stroke(
+                rect.expand(2.0),
+                4,
+                egui::Stroke::new(2.0, color),
+                egui::StrokeKind::Inside,
+            );
 
             // Check for recent MIDI activity (last 0.5s)
             if let Some(last_time) = last_active_time {
@@ -661,7 +675,7 @@ impl AppUI {
                         // Feedback: Flash Green
                         ui.painter().rect_filled(
                             rect.expand(2.0),
-                            4.0,
+                            4,
                             egui::Color32::GREEN.linear_multiply(0.5),
                         );
 

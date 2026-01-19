@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HueConfig {
     pub bridge_ip: String,
     pub username: String,       // Used as "hue-application-key" in REST headers
