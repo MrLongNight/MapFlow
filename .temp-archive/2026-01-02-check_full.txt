@@ -9,13 +9,13 @@ error[E0425]: cannot find value `module` in this scope
 error[E0425]: cannot find value `module` in this scope
     --> crates\mapmap-ui\src\module_canvas.rs:1472:54
      |
-1472 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Single { 
+1472 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Single {
      |                                            ^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `module` in this scope
     --> crates\mapmap-ui\src\module_canvas.rs:1483:54
      |
-1483 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Group { 
+1483 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Group {
      |                                            ^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `module` in this scope
