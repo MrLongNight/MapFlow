@@ -1023,12 +1023,14 @@ impl ModuleCanvas {
                                                         ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
                                                     });
 
+
                                                     ui.separator();
                                                     ui.label("Mirror / Flip:");
                                                     ui.horizontal(|ui| {
                                                         ui.checkbox(flip_horizontal, "↔️ Horizontal");
                                                         ui.checkbox(flip_vertical, "↕️ Vertical");
                                                     });
+
 
                                                     if ui.button("Reset Transform").clicked() {
                                                         *scale_x = 1.0;
@@ -1038,6 +1040,29 @@ impl ModuleCanvas {
                                                         *offset_y = 0.0;
                                                         *flip_horizontal = false;
                                                         *flip_vertical = false;
+                                                    }
+                                                });
+
+                                                // === VIDEO OPTIONS ===
+                                                ui.collapsing("🎬 Video Options", |ui| {
+                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
+                                                    
+                                                    ui.separator();
+                                                    ui.label("Seek Position:");
+                                                    // Note: Actual seek requires video duration from player
+                                                    // For now, just show the control - needs integration with player state
+                                                    let mut seek_pos: f64 = 0.0;
+                                                    let seek_slider = ui.add(
+                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
+                                                            .text("Position")
+                                                            .suffix("%")
+                                                            .show_value(true)
+                                                    );
+                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
+                                                        // Convert percentage to duration-based seek
+                                                        // This will need actual video duration from player
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
+>>>>>>> fix-pr-216
                                                     }
                                                 });
 
