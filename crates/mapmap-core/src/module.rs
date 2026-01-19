@@ -2186,3 +2186,130 @@ fn test_link_mode_sockets_with_trigger() {
         .iter()
         .any(|s| s.socket_type == ModuleSocketType::Trigger && s.name == "Trigger In (Vis)"));
 }
+
+#[test]
+fn test_effect_type_variants() {
+    let all = EffectType::all();
+    assert!(!all.is_empty());
+    assert_eq!(all.len(), 24); // Based on the manual list
+
+    for effect in all {
+        let name = effect.name();
+        assert!(!name.is_empty(), "Effect name should not be empty");
+
+        // Check specific mappings
+        match effect {
+            EffectType::Blur => assert_eq!(name, "Blur"),
+            EffectType::VHS => assert_eq!(name, "VHS"),
+            _ => {}
+        }
+    }
+}
+
+#[test]
+fn test_blend_mode_type_variants() {
+    let all = BlendModeType::all();
+    assert!(!all.is_empty());
+    assert_eq!(all.len(), 7); // Based on the manual list
+
+    for mode in all {
+        let name = mode.name();
+        assert!(!name.is_empty(), "Blend mode name should not be empty");
+
+        match mode {
+            BlendModeType::Normal => assert_eq!(name, "Normal"),
+            BlendModeType::Add => assert_eq!(name, "Add"),
+            _ => {}
+        }
+    }
+}
+
+#[test]
+fn test_default_hue_color_val() {
+    let color = default_hue_color();
+    assert_eq!(color, [1.0, 1.0, 1.0]);
+}
+
+#[test]
+fn test_hue_node_serialization() {
+    // Test SingleLamp
+    let single = HueNodeType::SingleLamp {
+        id: "1".to_string(),
+        name: "Lamp 1".to_string(),
+        brightness: 0.8,
+        color: [1.0, 0.0, 0.0],
+        effect: Some("colorloop".to_string()),
+        effect_active: true,
+    };
+
+    let serialized = serde_json::to_string(&single).unwrap();
+    let deserialized: HueNodeType = serde_json::from_str(&serialized).unwrap();
+
+    if let HueNodeType::SingleLamp {
+        id,
+        name,
+        brightness,
+        color,
+        effect,
+        effect_active,
+    } = deserialized
+    {
+        assert_eq!(id, "1");
+        assert_eq!(name, "Lamp 1");
+        assert_eq!(brightness, 0.8);
+        assert_eq!(color, [1.0, 0.0, 0.0]);
+        assert_eq!(effect, Some("colorloop".to_string()));
+        assert!(effect_active);
+    } else {
+        panic!("Wrong variant deserialized");
+    }
+
+    // Test EntertainmentGroup
+    let group = HueNodeType::EntertainmentGroup {
+        name: "TV Area".to_string(),
+        brightness: 1.0,
+        color: [1.0, 1.0, 1.0],
+        effect: None,
+        effect_active: false,
+    };
+
+    let serialized_group = serde_json::to_string(&group).unwrap();
+    let deserialized_group: HueNodeType = serde_json::from_str(&serialized_group).unwrap();
+
+    assert!(matches!(
+        deserialized_group,
+        HueNodeType::EntertainmentGroup { .. }
+    ));
+}
+
+#[test]
+fn test_output_type_hue_serialization() {
+    let mut positions = std::collections::HashMap::new();
+    positions.insert("1".to_string(), (0.5, 0.5));
+
+    let hue_output = OutputType::Hue {
+        bridge_ip: "192.168.1.50".to_string(),
+        username: "user123".to_string(),
+        client_key: "key123".to_string(),
+        entertainment_area: "area1".to_string(),
+        lamp_positions: positions,
+        mapping_mode: HueMappingMode::Spatial,
+    };
+
+    let serialized = serde_json::to_string(&hue_output).unwrap();
+    let deserialized: OutputType = serde_json::from_str(&serialized).unwrap();
+
+    if let OutputType::Hue {
+        bridge_ip,
+        lamp_positions,
+        mapping_mode,
+        ..
+    } = deserialized
+    {
+        assert_eq!(bridge_ip, "192.168.1.50");
+        assert_eq!(lamp_positions.get("1"), Some(&(0.5, 0.5)));
+        assert_eq!(mapping_mode, HueMappingMode::Spatial);
+    } else {
+        panic!("Wrong output variant");
+    }
+}
