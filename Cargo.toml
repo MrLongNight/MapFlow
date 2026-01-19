@@ -28,7 +28,7 @@ arc-swap = "1.6"
 axum = "0.7"
 
 # Build dependencies
-bindgen = "0.69"
+bindgen = "0.72"
 
 # Graphics utilities
 bytemuck = { version = "1.14", features = ["derive"] }
