@@ -27,8 +27,11 @@ pub enum PaintType {
 /// Paint - represents a media source
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Paint {
+    /// Unique identifier
     pub id: PaintId,
+    /// User-friendly name
     pub name: String,
+    /// Type of media source
     pub paint_type: PaintType,
 
     /// Source path (for Video/Image types)

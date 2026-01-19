@@ -1,7 +1,21 @@
+//! Module - Core Data Structure
+//!
+//! Defines the graph structure of a MapFlow project, including Parts (nodes),
+//! Connections (edges), and their types (Source, Layer, Output, etc.).
+//!
+//! # Core Structures
+//!
+//! - [`MapFlowModule`]: The top-level container for a visual programming graph.
+//! - [`ModulePart`]: A node in the graph (Source, Filter, Output).
+//! - [`ModuleConnection`]: A wire connecting two sockets.
+//! - [`ModuleManager`]: Manages multiple modules (scenes).
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Unique identifier for a Module
 pub type ModuleId = u64;
+/// Unique identifier for a Part within a Module
 pub type ModulePartId = u64;
 
 // Default value helpers for serde
@@ -21,13 +35,20 @@ fn default_scale() -> f32 {
     1.0
 }
 
+/// Represents a complete visual programming graph (Scene/Module)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MapFlowModule {
+    /// Unique ID
     pub id: ModuleId,
+    /// Display name
     pub name: String,
+    /// UI color for the module button
     pub color: [f32; 4],
+    /// List of nodes (parts)
     pub parts: Vec<ModulePart>,
+    /// List of wires (connections)
     pub connections: Vec<ModuleConnection>,
+    /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
 }
 
@@ -75,6 +96,11 @@ impl MapFlowModule {
                 opacity: 1.0,
                 blend_mode: None,
                 mesh: default_mesh_quad(),
+            }),
+
+            PartType::Hue => ModulePartType::Hue(HueNodeType::SingleLamp {
+                id: String::new(),
+                name: "New Lamp".to_string(),
             }),
             PartType::Output => ModulePartType::Output(OutputType::Projector {
                 id: 0,
@@ -210,30 +236,47 @@ impl MapFlowModule {
     }
 }
 
+/// Defines how the module handles time and looping
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePlaybackMode {
-    TimelineDuration { duration_ms: u64 },
+    /// Play for a fixed duration (Phase 7)
+    TimelineDuration {
+        /// Duration in milliseconds
+        duration_ms: u64,
+    },
+    /// Loop indefinitely until user switches module
     LoopUntilManualSwitch,
 }
 
+/// A node in the visual graph
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModulePart {
+    /// Unique ID
     pub id: ModulePartId,
+    /// Type and configuration data
     pub part_type: ModulePartType,
+    /// 2D Position on canvas
     pub position: (f32, f32),
     /// Custom size (width, height). If None, uses default size.
     #[serde(default)]
     pub size: Option<(f32, f32)>,
+    /// Link system configuration
     #[serde(default)]
     pub link_data: NodeLinkData,
+    /// Input sockets
     pub inputs: Vec<ModuleSocket>,
+    /// Output sockets
     pub outputs: Vec<ModuleSocket>,
 }
 
+/// Configuration for the Link System (Master/Slave nodes)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeLinkData {
+    /// Link mode (Off, Master, Slave)
     pub mode: LinkMode,
+    /// Behavior when linked
     pub behavior: LinkBehavior,
+    /// Whether the Trigger Input socket is enabled
     pub trigger_input_enabled: bool,
 }
 
@@ -247,38 +290,56 @@ impl Default for NodeLinkData {
     }
 }
 
+/// Link mode for a node
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkMode {
+    /// Not linked
     #[default]
     Off,
+    /// Controls other nodes
     Master,
+    /// Controlled by another node
     Slave,
 }
 
+/// Behavior of a slave node relative to its master
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkBehavior {
+    /// Same visibility/state as master
     #[default]
     SameAsMaster,
+    /// Inverted visibility/state
     Inverted,
 }
 
+/// A connection point on a node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleSocket {
+    /// Label for the socket
     pub name: String,
+    /// Data type accepted/provided
     pub socket_type: ModuleSocketType,
 }
 
+/// Type of data carried by a connection
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ModuleSocketType {
+    /// Logic signal (0.0-1.0)
     Trigger,
+    /// Video/Image stream
     Media,
+    /// GPU shader effect
     Effect,
+    /// Compositing layer
     Layer,
+    /// Physical output
     Output,
+    /// Link signal
     Link,
 }
 
 impl ModulePart {
+    /// Calculate the current sockets based on configuration
     pub fn compute_sockets(&self) -> (Vec<ModuleSocket>, Vec<ModuleSocket>) {
         let (mut inputs, mut outputs) = self.part_type.get_default_sockets();
 
@@ -316,6 +377,7 @@ impl ModulePart {
 }
 
 impl ModulePartType {
+    /// Get the default input/output sockets for this part type
     pub fn get_default_sockets(&self) -> (Vec<ModuleSocket>, Vec<ModuleSocket>) {
         match self {
             ModulePartType::Trigger(trigger_type) => {
@@ -424,61 +486,140 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media, // simplified
                 }],
             ),
+            ModulePartType::Hue(_) => (
+                vec![
+                    ModuleSocket {
+                        name: "Brightness".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                    ModuleSocket {
+                        name: "Color (RGB)".to_string(),
+                        socket_type: ModuleSocketType::Media,
+                    },
+                    ModuleSocket {
+                        name: "Strobe".to_string(),
+                        socket_type: ModuleSocketType::Trigger,
+                    },
+                ],
+                vec![], // Hue is a sink (Output)
+            ),
         }
     }
 }
 
+/// Comprehensive enum of all node types and their specific configuration
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePartType {
+    /// Generates logic signals (Beat, MIDI, etc.)
     Trigger(TriggerType),
+    /// Generates video content (File, Camera, Shader)
     Source(SourceType),
+    /// Generates grayscale masks
     Mask(MaskType),
+    /// Modifies content (Effects, Blending)
     Modulizer(ModulizerType),
+    /// Compositing layer
     Layer(LayerType),
+    /// Geometry definition
     Mesh(MeshType),
+    /// Philips Hue Integration
+    Hue(HueNodeType),
+    /// Final output (Projector, Network)
     Output(OutputType),
 }
 
-/// Simplified part type for UI creation
+/// Simplified part type for UI creation (categories)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartType {
+    /// Logic triggers
     Trigger,
+    /// Video sources
     Source,
+    /// Masks
     Mask,
+    /// Effects and modifiers
     Modulator,
+    /// Warping meshes
     Mesh,
+    /// Layers
     Layer,
+    /// Philips Hue
+    Hue,
+    /// Outputs
     Output,
 }
 
+/// Types of Philips Hue Nodes
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum HueNodeType {
+    /// Controls a single lamp
+    SingleLamp {
+        /// Lamp ID (from bridge)
+        id: String,
+        /// Display Name
+        name: String,
+    },
+    /// Controls multiple specific lamps together
+    MultiLamp {
+        /// List of Lamp IDs
+        ids: Vec<String>,
+        /// Display Name
+        name: String,
+    },
+    /// Controls a whole entertainment group
+    EntertainmentGroup {
+        /// Group Name/ID
+        name: String,
+    },
+}
+
+/// Types of logic triggers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TriggerType {
     /// Audio FFT analysis with configurable outputs
     AudioFFT {
+        /// Frequency band selection (primary)
         band: AudioBand,
+        /// Activation threshold (0.0-1.0)
         threshold: f32,
         /// Which outputs are enabled
         output_config: AudioTriggerOutputConfig,
     },
     /// Random trigger with configurable interval and probability
     Random {
+        /// Minimum time between triggers
         min_interval_ms: u32,
+        /// Maximum time between triggers
         max_interval_ms: u32,
+        /// Probability of firing (0.0-1.0)
         probability: f32,
     },
     /// Fixed time-based trigger
-    Fixed { interval_ms: u32, offset_ms: u32 },
+    Fixed {
+        /// Interval in milliseconds
+        interval_ms: u32,
+        /// Initial delay/offset
+        offset_ms: u32,
+    },
     /// MIDI note/CC trigger
     Midi {
+        /// Device name
         device: String,
+        /// MIDI Channel
         channel: u8,
+        /// Note number
         note: u8,
     },
     /// OSC message trigger
-    Osc { address: String },
+    Osc {
+        /// OSC Address
+        address: String,
+    },
     /// Keyboard shortcut trigger
     Shortcut {
+        /// Key code
         key_code: String,
+        /// Modifiers bitmask
         modifiers: u8, // Ctrl=1, Shift=2, Alt=4
     },
     /// Beat detection (legacy)
@@ -488,15 +629,24 @@ pub enum TriggerType {
 /// Audio frequency bands for FFT trigger
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioBand {
-    SubBass,    // 20-60Hz
-    Bass,       // 60-250Hz
-    LowMid,     // 250-500Hz
-    Mid,        // 500-2kHz
-    HighMid,    // 2-4kHz
-    Presence,   // 4-6kHz
-    Brilliance, // 6-20kHz
-    Peak,       // Peak detection
-    BPM,        // Beat per minute
+    /// Sub-bass frequencies (20-60Hz)
+    SubBass,
+    /// Bass frequencies (60-250Hz)
+    Bass,
+    /// Low-mid frequencies (250-500Hz)
+    LowMid,
+    /// Mid frequencies (500-2kHz)
+    Mid,
+    /// High-mid frequencies (2-4kHz)
+    HighMid,
+    /// Presence frequencies (4-6kHz)
+    Presence,
+    /// Brilliance frequencies (6-20kHz)
+    Brilliance,
+    /// Peak amplitude
+    Peak,
+    /// Beats per minute
+    BPM,
 }
 
 /// Configuration for which outputs are enabled on an AudioFFT trigger
@@ -612,9 +762,12 @@ impl AudioTriggerOutputConfig {
     }
 }
 
+/// Types of media sources
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SourceType {
+    /// Video or Image file
     MediaFile {
+        /// File path
         path: String,
         /// Playback speed multiplier (1.0 = normal)
         #[serde(default = "default_speed")]
@@ -680,11 +833,16 @@ pub enum SourceType {
         #[serde(default)]
         reverse_playback: bool,
     },
+    /// Procedural Shader
     Shader {
+        /// Shader name
         name: String,
+        /// Shader parameters
         params: Vec<(String, f32)>,
     },
+    /// Live Camera/Capture input
     LiveInput {
+        /// Device index
         device_id: u32,
     },
     /// NDI network video source
@@ -693,8 +851,10 @@ pub enum SourceType {
         /// If None, the first available source will be used.
         source_name: Option<String>,
     },
+    /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
+        /// Sender name
         sender_name: String,
     },
 }
@@ -729,19 +889,37 @@ impl SourceType {
     }
 }
 
+/// Types of masks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MaskType {
-    File { path: String },
+    /// Image file mask
+    File {
+        /// Path to file
+        path: String,
+    },
+    /// Procedural shape mask
     Shape(MaskShape),
-    Gradient { angle: f32, softness: f32 },
+    /// Gradient mask
+    Gradient {
+        /// Angle in degrees
+        angle: f32,
+        /// Edge softness
+        softness: f32,
+    },
 }
 
+/// Procedural mask shapes
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum MaskShape {
+    /// Circle
     Circle,
+    /// Rectangle
     Rectangle,
+    /// Triangle
     Triangle,
+    /// Star
     Star,
+    /// Ellipse
     Ellipse,
 }
 
@@ -750,30 +928,60 @@ pub enum MaskShape {
 pub enum MeshType {
     /// Simple quad mesh (4 corner points)
     Quad {
+        /// Top-left (x, y)
         tl: (f32, f32),
+        /// Top-right (x, y)
         tr: (f32, f32),
+        /// Bottom-right (x, y)
         br: (f32, f32),
+        /// Bottom-left (x, y)
         bl: (f32, f32),
     },
     /// Grid mesh with configurable subdivision
-    Grid { rows: u32, cols: u32 },
+    Grid {
+        /// Number of rows
+        rows: u32,
+        /// Number of columns
+        cols: u32,
+    },
     /// Bezier surface with control points
-    BezierSurface { control_points: Vec<(f32, f32)> },
+    BezierSurface {
+        /// Control points (x, y)
+        control_points: Vec<(f32, f32)>,
+    },
     /// Freeform polygon mesh
-    Polygon { vertices: Vec<(f32, f32)> },
+    Polygon {
+        /// List of vertices (x, y)
+        vertices: Vec<(f32, f32)>,
+    },
     /// Triangle mesh
     TriMesh,
     /// Circle/Arc for curved surfaces
-    Circle { segments: u32, arc_angle: f32 },
+    Circle {
+        /// Number of segments resolution
+        segments: u32,
+        /// Arc angle in radians
+        arc_angle: f32,
+    },
     /// Cylinder projection (for 3D surfaces)
-    Cylinder { segments: u32, height: f32 },
+    Cylinder {
+        /// Number of segments resolution
+        segments: u32,
+        /// Height of the cylinder
+        height: f32,
+    },
     /// Sphere segment (for dome projections)
     Sphere {
+        /// Latitude segments
         lat_segments: u32,
+        /// Longitude segments
         lon_segments: u32,
     },
     /// Custom mesh from file
-    Custom { path: String },
+    Custom {
+        /// Path to custom mesh file
+        path: String,
+    },
 }
 
 impl MeshType {
@@ -846,6 +1054,7 @@ impl MeshType {
         hasher.finish()
     }
 
+    /// Convert to runtime mesh
     pub fn to_mesh(&self) -> crate::mesh::Mesh {
         use crate::mesh::Mesh;
         use glam::Vec2;
@@ -995,22 +1204,42 @@ impl MeshType {
     }
 }
 
+/// Resource definition for serialization
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ResourceType {
-    MediaFile { path: String },
-    Shader { path: String },
-    LiveInput { source: String },
+    /// Media file
+    MediaFile {
+        /// File path
+        path: String,
+    },
+    /// Shader file
+    Shader {
+        /// File path
+        path: String,
+    },
+    /// Live input source
+    LiveInput {
+        /// Source identifier
+        source: String,
+    },
 }
 
+/// Types of modulizers (modifiers)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulizerType {
+    /// Effect instance
     Effect {
+        /// Type of effect
         effect_type: EffectType,
+        /// Parameters
         #[serde(default)]
         params: HashMap<String, f32>,
     },
+    /// Blend mode modifier
     BlendMode(BlendModeType),
+    /// Audio reactive modifier
     AudioReactive {
+        /// Audio source identifier
         source: String,
     },
 }
@@ -1019,33 +1248,57 @@ pub enum ModulizerType {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EffectType {
     // Basic
+    /// Blur effect
     Blur,
+    /// Sharpen effect
     Sharpen,
+    /// Color inversion
     Invert,
+    /// Luminance threshold
     Threshold,
     // Color
+    /// Brightness adjustment
     Brightness,
+    /// Contrast adjustment
     Contrast,
+    /// Saturation adjustment
     Saturation,
+    /// Hue shift
     HueShift,
+    /// Color tinting
     Colorize,
     // Distortion
+    /// Wave distortion
     Wave,
+    /// Spiral distortion
     Spiral,
+    /// Pinch distortion
     Pinch,
+    /// Mirror effect
     Mirror,
+    /// Kaleidoscope effect
     Kaleidoscope,
     // Stylize
+    /// Pixelation effect
     Pixelate,
+    /// Halftone pattern
     Halftone,
+    /// Edge detection
     EdgeDetect,
+    /// Color posterization
     Posterize,
+    /// Digital glitch effect
     Glitch,
     // Composite
+    /// RGB channel split
     RgbSplit,
+    /// Chromatic aberration
     ChromaticAberration,
+    /// VHS tape artifact simulation
     VHS,
+    /// Film grain noise
     FilmGrain,
+    /// Vignette darkening
     Vignette,
 }
 
@@ -1114,16 +1367,24 @@ impl EffectType {
 /// Blend mode types
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum BlendModeType {
+    /// Normal blending (no effect)
     Normal,
+    /// Additive blending
     Add,
+    /// Multiplicative blending
     Multiply,
+    /// Screen blending
     Screen,
+    /// Overlay blending
     Overlay,
+    /// Difference blending
     Difference,
+    /// Exclusion blending
     Exclusion,
 }
 
 impl BlendModeType {
+    /// Get all available blend modes
     pub fn all() -> &'static [BlendModeType] {
         &[
             BlendModeType::Normal,
@@ -1136,6 +1397,7 @@ impl BlendModeType {
         ]
     }
 
+    /// Get display name of blend mode
     pub fn name(&self) -> &'static str {
         match self {
             BlendModeType::Normal => "Normal",
@@ -1158,29 +1420,45 @@ fn default_mesh_quad() -> MeshType {
     }
 }
 
+/// Types of compositing layers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum LayerType {
+    /// A single layer with content
     Single {
+        /// Unique ID
         id: u64,
+        /// Display name
         name: String,
+        /// Opacity
         opacity: f32,
+        /// Blend mode
         blend_mode: Option<BlendModeType>,
+        /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
     },
+    /// A group of layers
     Group {
+        /// Display name
         name: String,
+        /// Group opacity
         opacity: f32,
+        /// Group blend mode
         blend_mode: Option<BlendModeType>,
+        /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
     },
+    /// Special layer representing "All Layers"
     All {
+        /// Master opacity
         opacity: f32,
+        /// Master blend mode
         blend_mode: Option<BlendModeType>,
     },
 }
 
+/// Types of final outputs
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OutputType {
     /// Projector/Beamer output window
@@ -1219,13 +1497,21 @@ pub enum OutputType {
         /// The broadcast name of this NDI source.
         name: String,
     },
+    /// Spout shared texture output (Windows only)
     #[cfg(target_os = "windows")]
-    Spout { name: String },
+    Spout {
+        /// Sender name
+        name: String,
+    },
     /// Philips Hue Entertainment Output
     Hue {
+        /// Bridge IP address
         bridge_ip: String,
+        /// Whitelisted username
         username: String,
+        /// DTLS Client Key
         client_key: String,
+        /// Entertainment Area ID/Name
         entertainment_area: String, // Name or ID
         /// Map of light ID (streaming ID) to normalized (X, Y) position in the virtual room (0.0-1.0)
         lamp_positions: HashMap<String, (f32, f32)>,
@@ -1234,11 +1520,15 @@ pub enum OutputType {
     },
 }
 
+/// Mapping mode for Hue Entertainment
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum HueMappingMode {
-    Ambient, // Average color of whole frame
-    Spatial, // Spatial sampling based on lamp position
-    Trigger, // Strobe/Pulse on trigger
+    /// Average color of whole frame
+    Ambient,
+    /// Spatial sampling based on lamp position
+    Spatial,
+    /// Strobe/Pulse on trigger
+    Trigger,
 }
 
 fn default_true() -> bool {
@@ -1249,20 +1539,47 @@ fn default_output_fps() -> f32 {
     60.0
 }
 
+/// Represents a connection between two modules/parts
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleConnection {
+    /// Source part ID
     pub from_part: ModulePartId,
+    /// Source socket index
     pub from_socket: usize,
+    /// Target part ID
     pub to_part: ModulePartId,
+    /// Target socket index
     pub to_socket: usize,
 }
 
+fn default_color_palette() -> Vec<[f32; 4]> {
+    vec![
+        [1.0, 0.2, 0.2, 1.0],
+        [1.0, 0.5, 0.2, 1.0],
+        [1.0, 1.0, 0.2, 1.0],
+        [0.5, 1.0, 0.2, 1.0],
+        [0.2, 1.0, 0.2, 1.0],
+        [0.2, 1.0, 0.5, 1.0],
+        [0.2, 1.0, 1.0, 1.0],
+        [0.2, 0.5, 1.0, 1.0],
+        [0.2, 0.2, 1.0, 1.0],
+        [0.5, 0.2, 1.0, 1.0],
+        [1.0, 0.2, 1.0, 1.0],
+        [1.0, 0.2, 0.5, 1.0],
+        [0.5, 0.5, 0.5, 1.0],
+        [1.0, 0.5, 0.8, 1.0],
+        [0.5, 1.0, 0.8, 1.0],
+        [0.8, 0.5, 1.0, 1.0],
+    ]
+}
+
+/// Manages multiple modules (Scenes)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleManager {
     modules: HashMap<ModuleId, MapFlowModule>,
     next_module_id: ModuleId,
     next_part_id: ModulePartId,
-    #[serde(skip)]
+    #[serde(skip, default = "default_color_palette")]
     color_palette: Vec<[f32; 4]>,
     next_color_index: usize,
 }
@@ -1277,33 +1594,18 @@ impl PartialEq for ModuleManager {
 }
 
 impl ModuleManager {
+    /// Create a new module manager
     pub fn new() -> Self {
         Self {
             modules: HashMap::new(),
             next_module_id: 1,
             next_part_id: 1,
-            color_palette: vec![
-                [1.0, 0.2, 0.2, 1.0],
-                [1.0, 0.5, 0.2, 1.0],
-                [1.0, 1.0, 0.2, 1.0],
-                [0.5, 1.0, 0.2, 1.0],
-                [0.2, 1.0, 0.2, 1.0],
-                [0.2, 1.0, 0.5, 1.0],
-                [0.2, 1.0, 1.0, 1.0],
-                [0.2, 0.5, 1.0, 1.0],
-                [0.2, 0.2, 1.0, 1.0],
-                [0.5, 0.2, 1.0, 1.0],
-                [1.0, 0.2, 1.0, 1.0],
-                [1.0, 0.2, 0.5, 1.0],
-                [0.5, 0.5, 0.5, 1.0],
-                [1.0, 0.5, 0.8, 1.0],
-                [0.5, 1.0, 0.8, 1.0],
-                [0.8, 0.5, 1.0, 1.0],
-            ],
+            color_palette: default_color_palette(),
             next_color_index: 0,
         }
     }
 
+    /// Create a new module
     pub fn create_module(&mut self, name: String) -> ModuleId {
         let id = self.next_module_id;
         self.next_module_id += 1;
@@ -1324,20 +1626,24 @@ impl ModuleManager {
         id
     }
 
+    /// Delete a module
     pub fn delete_module(&mut self, id: ModuleId) {
         self.modules.remove(&id);
     }
 
+    /// List all modules
     pub fn list_modules(&self) -> Vec<&MapFlowModule> {
         self.modules.values().collect()
     }
 
+    /// Set module color
     pub fn set_module_color(&mut self, id: ModuleId, color: [f32; 4]) {
         if let Some(module) = self.modules.get_mut(&id) {
             module.color = color;
         }
     }
 
+    /// Get module by ID (mutable)
     pub fn get_module_mut(&mut self, id: ModuleId) -> Option<&mut MapFlowModule> {
         self.modules.get_mut(&id)
     }
