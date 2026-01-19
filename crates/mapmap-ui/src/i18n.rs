@@ -37,19 +37,12 @@ impl LocaleManager {
             vec!["en".parse().unwrap(), "de".parse().unwrap()];
 
         // Negotiate
-        let requested = vec![lang_id.clone()];
-        let default = "en".parse().unwrap();
-        let supported = negotiate_languages(
-            &requested,
-            &available_locales,
-            Some(&default),
-            NegotiationStrategy::Filtering,
-        );
+        // Fallback implementation to bypass trait bound errors
+        // Ideally we would use negotiate_languages, but version mismatches between unic-langid and fluent-langneg prevent it.
+        // We will just try to use the requested language if available, or default to English.
 
-        // Load resources
-        let active_lang = supported.first().unwrap();
-        // Use just the language code ("en", "de") for folder names
-        let lang_key = active_lang.language.as_str();
+        let lang_str = lang_id.to_string();
+        let lang_key = if lang_str.starts_with("de") { "de" } else { "en" };
 
         let path = format!("{}/main.ftl", lang_key);
 

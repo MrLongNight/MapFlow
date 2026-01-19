@@ -10,7 +10,7 @@
 //! - Controller Overlay Panel (MIDI visualization)
 
 // Phase 6: Advanced Authoring UI (egui-based)
-use sysinfo::SystemExt;
+use sysinfo::System;
 pub mod asset_manager;
 pub mod assignment_panel;
 pub mod audio_meter;

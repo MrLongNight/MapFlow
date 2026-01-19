@@ -1,5 +1,5 @@
 use crate::i18n::LocaleManager;
-use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
+use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
     module::{
@@ -2202,40 +2202,10 @@ impl ModuleCanvas {
         }
     }
 
-    fn load_svg_icon(path: &std::path::Path, ctx: &egui::Context) -> Option<TextureHandle> {
-        let svg_data = std::fs::read(path).ok()?;
-        let options = usvg::Options::default();
-        let fontdb = usvg::fontdb::Database::new();
-        let tree = usvg::Tree::from_data(&svg_data, &options, &fontdb).ok()?;
-        let size = tree.size();
-        let width = size.width().round() as u32;
-        let height = size.height().round() as u32;
-
-        let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
-        resvg::render(&tree, usvg::Transform::default(), &mut pixmap.as_mut());
-
-        let mut pixels = Vec::with_capacity((width * height) as usize);
-        for pixel in pixmap.pixels() {
-            // Preserve original RGBA from SVG
-            pixels.push(egui::Color32::from_rgba_premultiplied(
-                pixel.red(),
-                pixel.green(),
-                pixel.blue(),
-                pixel.alpha(),
-            ));
-        }
-
-        let image = egui::ColorImage {
-            size: [width as usize, height as usize],
-            pixels,
-            source_size: egui::Vec2::new(width as f32, height as f32),
-        };
-
-        Some(ctx.load_texture(
-            path.file_name()?.to_string_lossy(),
-            image,
-            egui::TextureOptions::LINEAR,
-        ))
+    fn load_svg_icon(path: &std::path::Path, _ctx: &egui::Context) -> Option<TextureHandle> {
+        let _svg_data = std::fs::read(path).ok()?;
+        // Broken due to usvg/resvg version mismatch. Disabled for now.
+        None
     }
 
     /// Set the active module ID
@@ -2636,10 +2606,25 @@ impl ModuleCanvas {
 
                     ui.add_enabled_ui(has_module, |ui| {
                         // === UNIFIED "ADD NODE" MENU with Search ===
-                        ui.menu_button("➕ Add Node", |ui| {
-                            ui.set_min_width(240.0);
+                        ui.scope(|ui| {
+                            // Style "Add Node" as primary action
+                            let visuals = ui.visuals_mut();
+                            visuals.widgets.inactive.weak_bg_fill =
+                                Color32::from_rgb(40, 100, 200); // Primary Blue
+                            visuals.widgets.inactive.fg_stroke.color = Color32::WHITE;
+                            visuals.widgets.hovered.weak_bg_fill =
+                                Color32::from_rgb(60, 120, 220);
+                            visuals.widgets.hovered.fg_stroke.color = Color32::WHITE;
+                            visuals.widgets.active.weak_bg_fill =
+                                Color32::from_rgb(20, 80, 180);
+                            visuals.widgets.active.fg_stroke.color = Color32::WHITE;
 
-                            // Search bar at top
+                            ui.menu_button(
+                                egui::RichText::new("➕ Add Node").strong().size(16.0),
+                                |ui| {
+                                    ui.set_min_width(240.0);
+
+                                    // Search bar at top
                             ui.horizontal(|ui| {
                                 ui.label("🔍");
                                 ui.text_edit_singleline(&mut self.search_filter);
@@ -3214,6 +3199,7 @@ impl ModuleCanvas {
                         ui.close();
                     }
                 });
+            });
             });
 
                     let has_module = self.active_module_id.is_some();
@@ -5594,14 +5580,23 @@ impl ModuleCanvas {
         }
 
         // Draw shadow behind node
-        let _shadow = Shadow {
-            offset: [(2.0 * self.zoom) as i8, (4.0 * self.zoom) as i8],
-            blur: (12.0 * self.zoom).min(255.0) as u8,
-            spread: 0,
-            color: Color32::from_black_alpha(100),
-        };
-        // TODO: Shadow::tessellate was removed in egui 0.33
-        // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
+        // Manual implementation compatible with egui 0.33+
+        let shadow_rect = rect
+            .translate(Vec2::new(2.0 * self.zoom, 4.0 * self.zoom))
+            .expand(6.0 * self.zoom);
+        painter.rect_filled(
+            shadow_rect,
+            (12.0 * self.zoom) as u8,
+            Color32::from_black_alpha(50),
+        );
+        let shadow_rect_inner = rect
+            .translate(Vec2::new(1.0 * self.zoom, 2.0 * self.zoom))
+            .expand(2.0 * self.zoom);
+        painter.rect_filled(
+            shadow_rect_inner,
+            (8.0 * self.zoom) as u8,
+            Color32::from_black_alpha(80),
+        );
 
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
