@@ -673,6 +673,7 @@ impl ModuleCanvas {
                                         }
                                     }
                                     ModulePartType::Source(source) => {
+                                        self.render_trigger_config_ui(ui, part);
                                         ui.label("Source Type:");
                                         match source {
                                             SourceType::MediaFile {

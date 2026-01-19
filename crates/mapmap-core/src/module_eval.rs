@@ -734,7 +734,7 @@ impl ModuleEvaluator {
                 // Or we re-compute or access cached values.
                 // Let's assume we can access per-socket inputs or just iterate connections to this part.
 
-                for (socket_idx, target) in &part.trigger_targets {
+                for (socket_idx, config) in &part.trigger_targets {
                     // Find connection to this socket
                     let mut trigger_val = 0.0;
                     if let Some(conn) = module
@@ -749,36 +749,42 @@ impl ModuleEvaluator {
                         }
                     }
 
+                    // Apply mapping
+                    let final_val = config.apply(trigger_val);
+
                     if trigger_val > 0.0 {
-                        match target {
+                        // Keep this check for now, or should we use final_val?
+                        // If fixed mode, final_val might be > 0 even if trigger_val is 0 (if valid range is non-zero).
+                        // But usually we only apply if triggered?
+                        // Actually, for "Fixed" mode, it might be weird if it only applies when trigger > 0.
+                        // But let's stick to "active" trigger logic for now.
+                        match &config.target {
                             crate::module::TriggerTarget::Opacity => {
-                                source_props.opacity = trigger_val
+                                source_props.opacity = final_val
                             } // Override
                             crate::module::TriggerTarget::Brightness => {
-                                source_props.brightness = trigger_val * 2.0 - 1.0
-                            } // 0..1 -> -1..1
+                                source_props.brightness = final_val
+                            }
                             crate::module::TriggerTarget::Contrast => {
-                                source_props.contrast = trigger_val * 2.0
-                            } // 0..1 -> 0..2
+                                source_props.contrast = final_val
+                            }
                             crate::module::TriggerTarget::Saturation => {
-                                source_props.saturation = trigger_val * 2.0
-                            } // 0..1 -> 0..2
+                                source_props.saturation = final_val
+                            }
                             crate::module::TriggerTarget::HueShift => {
-                                source_props.hue_shift = (trigger_val * 360.0) - 180.0
+                                source_props.hue_shift = final_val
                             }
                             crate::module::TriggerTarget::ScaleX => {
-                                source_props.scale_x = trigger_val * 2.0
-                            } // 0..1 -> 0..2
+                                source_props.scale_x = final_val
+                            }
                             crate::module::TriggerTarget::ScaleY => {
-                                source_props.scale_y = trigger_val * 2.0
+                                source_props.scale_y = final_val
                             }
                             crate::module::TriggerTarget::Rotation => {
-                                source_props.rotation = trigger_val * 360.0
-                            } // Degrees
+                                source_props.rotation = final_val
+                            }
                             crate::module::TriggerTarget::Param(_name) => {
-                                // Handle effect params? They are in `effects`.
-                                // This is tricky as effects are added later in the loop.
-                                // We might need to store pending param overrides.
+                                // Handle effect params?
                             }
                             _ => {}
                         }
@@ -829,7 +835,7 @@ impl ModuleEvaluator {
                                 // Better: Apply overrides TO props.
 
                                 // .. Re-run target logic ..
-                                for (socket_idx, target) in &part.trigger_targets {
+                                for (socket_idx, config) in &part.trigger_targets {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
                                     if let Some(conn) = module.connections.iter().find(|c| {
@@ -844,37 +850,57 @@ impl ModuleEvaluator {
                                         }
                                     }
 
-                                    if trigger_val > 0.0 {
-                                        tracing::debug!(
-                                            "Trigger applying: part={}, socket={}, target={:?}, value={}",
-                                            part.id, socket_idx, target, trigger_val
-                                        );
-                                        match target {
-                                            crate::module::TriggerTarget::Opacity => {
-                                                props.opacity = trigger_val
+                                    // Apply config if value is significant (or if fixed/random mode which might trigger on 0?)
+                                    // Actually we just apply the mapping.
+                                    match &config.target {
+                                        crate::module::TriggerTarget::None => {}
+                                        target => {
+                                            // Apply mapping
+                                            let final_val = config.apply(trigger_val);
+
+                                            tracing::debug!(
+                                                "Trigger applying: part={}, socket={}, target={:?}, raw={}, final={}",
+                                                part.id, socket_idx, target, trigger_val, final_val
+                                            );
+
+                                            match target {
+                                                crate::module::TriggerTarget::Opacity => {
+                                                    props.opacity = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Brightness => {
+                                                    // Map 0..1 to -1..1 for brightness if direct, or use configured range
+                                                    // With TriggerConfig, the user sets min/max.
+                                                    // If user wants -1..1, they set min=-1, max=1.
+                                                    // So we just assign the final_val directly if it's calibrated.
+                                                    // BUT: Historical behavior was 0..1 -> -1..1.
+                                                    // If we just use final_val which defaults to 0..1, brightness will be positive only.
+                                                    // Let's assume the user configures the range in the UI.
+                                                    // However, legacy projects might rely on the hardcoded mapping.
+                                                    // To support legacy, we could check if config is default?
+                                                    // But we want to empower the user.
+                                                    // For now, let's trust the configured min/max.
+                                                    props.brightness = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Contrast => {
+                                                    props.contrast = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Saturation => {
+                                                    props.saturation = final_val;
+                                                }
+                                                crate::module::TriggerTarget::HueShift => {
+                                                    props.hue_shift = final_val;
+                                                }
+                                                crate::module::TriggerTarget::ScaleX => {
+                                                    props.scale_x = final_val;
+                                                }
+                                                crate::module::TriggerTarget::ScaleY => {
+                                                    props.scale_y = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Rotation => {
+                                                    props.rotation = final_val;
+                                                }
+                                                _ => {}
                                             }
-                                            crate::module::TriggerTarget::Brightness => {
-                                                props.brightness = trigger_val * 2.0 - 1.0
-                                            }
-                                            crate::module::TriggerTarget::Contrast => {
-                                                props.contrast = trigger_val * 2.0
-                                            }
-                                            crate::module::TriggerTarget::Saturation => {
-                                                props.saturation = trigger_val * 2.0
-                                            }
-                                            crate::module::TriggerTarget::HueShift => {
-                                                props.hue_shift = (trigger_val * 360.0) - 180.0
-                                            }
-                                            crate::module::TriggerTarget::ScaleX => {
-                                                props.scale_x = trigger_val * 2.0
-                                            }
-                                            crate::module::TriggerTarget::ScaleY => {
-                                                props.scale_y = trigger_val * 2.0
-                                            }
-                                            crate::module::TriggerTarget::Rotation => {
-                                                props.rotation = trigger_val * 360.0
-                                            }
-                                            _ => {}
                                         }
                                     }
                                 }
