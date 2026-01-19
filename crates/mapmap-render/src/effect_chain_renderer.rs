@@ -353,17 +353,17 @@ impl EffectChainRenderer {
     /// Get the WGSL shader source for an effect type
     fn get_effect_shader_source(effect_type: EffectType) -> &'static str {
         match effect_type {
-            EffectType::ColorAdjust => include_str!("../shaders/effect_color_adjust.wgsl"),
-            EffectType::Blur => include_str!("../shaders/effect_blur.wgsl"),
+            EffectType::ColorAdjust => include_str!("../../../shaders/effect_color_adjust.wgsl"),
+            EffectType::Blur => include_str!("../../../shaders/effect_blur.wgsl"),
             EffectType::ChromaticAberration => {
-                include_str!("../shaders/effect_chromatic_aberration.wgsl")
+                include_str!("../../../shaders/effect_chromatic_aberration.wgsl")
             }
-            EffectType::EdgeDetect => include_str!("../shaders/effect_edge_detect.wgsl"),
-            EffectType::Invert => include_str!("../shaders/effect_invert.wgsl"),
-            EffectType::Pixelate => include_str!("../shaders/effect_pixelate.wgsl"),
-            EffectType::Vignette => include_str!("../shaders/effect_vignette.wgsl"),
-            EffectType::FilmGrain => include_str!("../shaders/effect_film_grain.wgsl"),
-            _ => include_str!("../shaders/effect_passthrough.wgsl"),
+            EffectType::EdgeDetect => include_str!("../../../shaders/effect_edge_detect.wgsl"),
+            EffectType::Invert => include_str!("../../../shaders/effect_invert.wgsl"),
+            EffectType::Pixelate => include_str!("../../../shaders/effect_pixelate.wgsl"),
+            EffectType::Vignette => include_str!("../../../shaders/effect_vignette.wgsl"),
+            EffectType::FilmGrain => include_str!("../../../shaders/effect_film_grain.wgsl"),
+            _ => include_str!("../../../shaders/effect_passthrough.wgsl"),
         }
     }
 
