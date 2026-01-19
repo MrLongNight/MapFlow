@@ -52,15 +52,17 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
+          "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Install ffmpeg via vcpkg
-        run: .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
+        run: |
+          .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
+          .\vcpkg\vcpkg.exe integrate install
         shell: pwsh
 
       - name: Build Release (Windows)
         env:
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           PATH: ${{ github.workspace }}\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
         run: cargo build --release -p mapmap
         shell: pwsh
@@ -117,15 +119,17 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
+          "VCPKG_ROOT=${{ github.workspace }}\vcpkg" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Install ffmpeg via vcpkg
-        run: .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
+        run: |
+          .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
+          .\vcpkg\vcpkg.exe integrate install
         shell: pwsh
 
       - name: Build Release (Windows)
         env:
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           PATH: ${{ github.workspace }}\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
         run: cargo build --release -p mapmap
         shell: pwsh
