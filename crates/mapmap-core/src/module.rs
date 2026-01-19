@@ -128,6 +128,7 @@ impl MapFlowModule {
             link_data: NodeLinkData::default(),
             inputs: vec![],
             outputs: vec![],
+            trigger_targets: HashMap::new(),
         };
 
         // Compute initial sockets
@@ -157,6 +158,7 @@ impl MapFlowModule {
             link_data: NodeLinkData::default(),
             inputs: vec![],
             outputs: vec![],
+            trigger_targets: HashMap::new(),
         };
 
         // Compute initial sockets
@@ -271,6 +273,34 @@ pub struct ModulePart {
     pub inputs: Vec<ModuleSocket>,
     /// Output sockets
     pub outputs: Vec<ModuleSocket>,
+    /// Trigger target configuration (Input Socket Index -> Target Parameter)
+    #[serde(default)]
+    pub trigger_targets: HashMap<usize, TriggerTarget>,
+}
+
+/// Target parameter for a trigger input
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum TriggerTarget {
+    /// No target (default)
+    None,
+    /// Opacity/Transparency
+    Opacity,
+    /// Brightness
+    Brightness,
+    /// Contrast
+    Contrast,
+    /// Saturation
+    Saturation,
+    /// Hue Shift
+    HueShift,
+    /// Scale X
+    ScaleX,
+    /// Scale Y
+    ScaleY,
+    /// Rotation
+    Rotation,
+    /// Specific Effect Parameter (by name)
+    Param(String),
 }
 
 /// Configuration for the Link System (Master/Slave nodes)
@@ -1867,6 +1897,7 @@ mod tests {
             },
             inputs: vec![],
             outputs: vec![],
+            trigger_targets: HashMap::new(),
         };
 
         // Case 1: Off (default)
@@ -2125,6 +2156,7 @@ fn test_link_mode_sockets_with_trigger() {
         },
         inputs: vec![],
         outputs: vec![],
+        trigger_targets: HashMap::new(),
     };
 
     let (inputs, outputs) = part.compute_sockets();

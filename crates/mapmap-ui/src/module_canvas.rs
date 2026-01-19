@@ -42,7 +42,9 @@ pub struct MyNodeTemplate {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct MyUserState;
+pub struct MyUserState {
+    pub trigger_values: std::collections::HashMap<ModulePartId, f32>,
+}
 
 impl DataTypeTrait<MyUserState> for MyDataType {
     fn data_type_color(&self, _user_state: &mut MyUserState) -> Color32 {
@@ -269,6 +271,8 @@ pub struct ModuleCanvas {
     >,
     /// Status message for Hue operations
     pub hue_status_message: Option<String>,
+    /// Last known trigger values for visualization (Part ID -> Value 0.0-1.0)
+    pub last_trigger_values: std::collections::HashMap<ModulePartId, f32>,
 }
 
 pub type PresetPart = (
@@ -353,6 +357,7 @@ impl Default for ModuleCanvas {
             hue_bridges: Vec::new(),
             hue_discovery_rx: None,
             hue_status_message: None,
+            last_trigger_values: std::collections::HashMap::new(),
         }
     }
 }
@@ -426,6 +431,48 @@ impl ModuleCanvas {
                         egui::ScrollArea::vertical()
                             .auto_shrink([false, false])
                             .show(ui, |ui| {
+                                // --- Input Configuration ---
+                                if part.inputs.iter().any(|s| s.socket_type == ModuleSocketType::Trigger) {
+                                    ui.collapsing("🔌 Trigger Input Configuration", |ui| {
+                                        let mut inputs_to_update = Vec::new();
+
+                                        for (idx, socket) in part.inputs.iter().enumerate() {
+                                            if socket.socket_type == ModuleSocketType::Trigger {
+                                                ui.horizontal(|ui| {
+                                                    ui.label(format!("{}:", socket.name));
+                                                    
+                                                    let current_target = part.trigger_targets.get(&idx).cloned().unwrap_or(TriggerTarget::None);
+                                                    let mut selected = current_target.clone();
+
+                                                    egui::ComboBox::from_id_salt(format!("trigger_target_{}", idx))
+                                                        .selected_text(format!("{:?}", selected))
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut selected, TriggerTarget::None, "None (Default)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::Opacity, "Opacity");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::Brightness, "Brightness (-1..1)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::Contrast, "Contrast (0..2)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::Saturation, "Saturation (0..2)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::HueShift, "Hue Shift (-180..180)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::ScaleX, "Scale X (0..2)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::ScaleY, "Scale Y (0..2)");
+                                                            ui.selectable_value(&mut selected, TriggerTarget::Rotation, "Rotation (0..360)");
+                                                            // TODO: Add Effect Params dynamically if needed
+                                                        });
+
+                                                    if selected != current_target {
+                                                        inputs_to_update.push((idx, selected));
+                                                    }
+                                                });
+                                            }
+                                        }
+
+                                        for (idx, target) in inputs_to_update {
+                                            part.trigger_targets.insert(idx, target);
+                                        }
+                                    });
+                                    ui.separator();
+                                }
+
                                 match &mut part.part_type {
                                     ModulePartType::Trigger(trigger) => {
                                         ui.label("Trigger Type:");
@@ -4129,6 +4176,7 @@ impl ModuleCanvas {
                                             inputs,
                                             outputs,
                                             link_data: NodeLinkData::default(),
+                                            trigger_targets: std::collections::HashMap::new(),
                                         });
                                         part_ids.push(id);
                                     }
@@ -5466,10 +5514,18 @@ impl ModuleCanvas {
         let category = Self::get_part_category(&part.part_type);
 
         // Check if this is an audio trigger and if it's active
-        let (is_audio_trigger, trigger_value, threshold, is_active) =
+        let (is_audio_trigger, audio_trigger_value, threshold, is_audio_active) =
             self.get_audio_trigger_state(&part.part_type);
 
-        // Draw glow effect if audio trigger is active
+        // Check generic trigger value from evaluator
+        let generic_trigger_value = self.last_trigger_values.get(&part.id).copied().unwrap_or(0.0);
+        let is_generic_active = generic_trigger_value > 0.1;
+
+        // Combine
+        let trigger_value = if is_generic_active { generic_trigger_value } else { audio_trigger_value };
+        let is_active = is_audio_active || is_generic_active;
+
+        // Draw glow effect if active
         if is_active {
             let glow_intensity = (trigger_value * 2.0).min(1.0);
             let glow_color = Color32::from_rgba_unmultiplied(
@@ -5478,15 +5534,20 @@ impl ModuleCanvas {
                 0,
                 (150.0 * glow_intensity) as u8,
             );
-            // Enhanced glow using shadow-like smoothing
-            let _shadow = Shadow {
-                offset: [0, 0],
-                blur: (20.0 * self.zoom).min(255.0) as u8,
-                spread: (5.0 * self.zoom).min(255.0) as u8,
-                color: glow_color,
-            };
-            // TODO: Shadow::tessellate was removed in egui 0.33
-            // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
+            
+            // Draw a thick stroke as a glow replacement since Shadow is deprecated/removed
+             painter.rect_stroke(
+                rect.expand(2.0 * self.zoom),
+                (8.0 * self.zoom) as u8,
+                Stroke::new(3.0 * self.zoom, glow_color.linear_multiply(0.5)),
+                egui::StrokeKind::Outside,
+            );
+            painter.rect_stroke(
+                rect.expand(1.0 * self.zoom),
+                (8.0 * self.zoom) as u8,
+                Stroke::new(1.0 * self.zoom, glow_color),
+                egui::StrokeKind::Outside,
+            );
         }
 
         // Draw shadow behind node
@@ -6208,10 +6269,11 @@ impl ModuleCanvas {
                     id,
                     part_type,
                     position: pos,
-                    size: None,
+                    size: None, // Sizes are re-calculated
                     inputs,
                     outputs,
                     link_data: mapmap_core::module::NodeLinkData::default(),
+                    trigger_targets: std::collections::HashMap::new(),
                 });
             }
         }
