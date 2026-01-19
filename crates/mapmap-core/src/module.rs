@@ -303,6 +303,12 @@ pub enum TriggerTarget {
     Param(String),
 }
 
+impl Default for TriggerTarget {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
 /// Mapping mode for trigger value transformation
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum TriggerMappingMode {

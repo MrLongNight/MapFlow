@@ -432,46 +432,8 @@ impl ModuleCanvas {
                             .auto_shrink([false, false])
                             .show(ui, |ui| {
                                 // --- Input Configuration ---
-                                if part.inputs.iter().any(|s| s.socket_type == ModuleSocketType::Trigger) {
-                                    ui.collapsing("🔌 Trigger Input Configuration", |ui| {
-                                        let mut inputs_to_update = Vec::new();
-
-                                        for (idx, socket) in part.inputs.iter().enumerate() {
-                                            if socket.socket_type == ModuleSocketType::Trigger {
-                                                ui.horizontal(|ui| {
-                                                    ui.label(format!("{}:", socket.name));
-
-                                                    let current_target = part.trigger_targets.get(&idx).cloned().unwrap_or(TriggerTarget::None);
-                                                    let mut selected = current_target.clone();
-
-                                                    egui::ComboBox::from_id_salt(format!("trigger_target_{}", idx))
-                                                        .selected_text(format!("{:?}", selected))
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut selected, TriggerTarget::None, "None (Default)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::Opacity, "Opacity");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::Brightness, "Brightness (-1..1)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::Contrast, "Contrast (0..2)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::Saturation, "Saturation (0..2)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::HueShift, "Hue Shift (-180..180)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::ScaleX, "Scale X (0..2)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::ScaleY, "Scale Y (0..2)");
-                                                            ui.selectable_value(&mut selected, TriggerTarget::Rotation, "Rotation (0..360)");
-                                                            // TODO: Add Effect Params dynamically if needed
-                                                        });
-
-                                                    if selected != current_target {
-                                                        inputs_to_update.push((idx, selected));
-                                                    }
-                                                });
-                                            }
-                                        }
-
-                                        for (idx, target) in inputs_to_update {
-                                            part.trigger_targets.insert(idx, target);
-                                        }
-                                    });
-                                    ui.separator();
-                                }
+                                self.render_trigger_config_ui(ui, part);
+                                ui.separator();
 
                                 match &mut part.part_type {
                                     ModulePartType::Trigger(trigger) => {
@@ -673,7 +635,6 @@ impl ModuleCanvas {
                                         }
                                     }
                                     ModulePartType::Source(source) => {
-                                        self.render_trigger_config_ui(ui, part);
                                         ui.label("Source Type:");
                                         match source {
                                             SourceType::MediaFile {
@@ -6644,5 +6605,217 @@ impl ModuleCanvas {
                 ],
             },
         ]
+    }
+}
+
+impl ModuleCanvas {
+    fn render_trigger_config_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        part: &mut mapmap_core::module::ModulePart,
+    ) {
+        // Only show for parts with input sockets
+        if part.inputs.is_empty() {
+            return;
+        }
+
+        ui.add_space(5.0);
+        egui::CollapsingHeader::new("⚡ Trigger & Automation")
+            .default_open(false)
+            .show(ui, |ui| {
+                // Iterate over inputs
+                for (idx, socket) in part.inputs.iter().enumerate() {
+                    ui.push_id(idx, |ui| {
+                        ui.separator();
+                        ui.label(format!("Input {}: {}", idx, socket.name));
+
+                        // Get config
+                        let mut config = part.trigger_targets.entry(idx).or_default().clone();
+                        let original_config = config.clone();
+
+                        // Target Selector
+                        egui::ComboBox::from_id_salt("target")
+                            .selected_text(format!("{:?}", config.target))
+                            .show_ui(ui, |ui| {
+                                use mapmap_core::module::TriggerTarget;
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::None,
+                                    "None",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::Opacity,
+                                    "Opacity",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::Brightness,
+                                    "Brightness",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::Contrast,
+                                    "Contrast",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::Saturation,
+                                    "Saturation",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::HueShift,
+                                    "Hue Shift",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::ScaleX,
+                                    "Scale X",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::ScaleY,
+                                    "Scale Y",
+                                );
+                                ui.selectable_value(
+                                    &mut config.target,
+                                    TriggerTarget::Rotation,
+                                    "Rotation",
+                                );
+                            });
+
+                        // Only show options if target is not None
+                        if config.target != mapmap_core::module::TriggerTarget::None {
+                            // Mode Selector
+                            ui.horizontal(|ui| {
+                                ui.label("Mode:");
+                                // Helper to display mode name without fields
+                                let mode_name = match config.mode {
+                                    mapmap_core::module::TriggerMappingMode::Direct => "Direct",
+                                    mapmap_core::module::TriggerMappingMode::Fixed => "Fixed",
+                                    mapmap_core::module::TriggerMappingMode::RandomInRange => {
+                                        "Random"
+                                    }
+                                    mapmap_core::module::TriggerMappingMode::Smoothed {
+                                        ..
+                                    } => "Smoothed",
+                                };
+
+                                egui::ComboBox::from_id_salt("mode")
+                                    .selected_text(mode_name)
+                                    .show_ui(ui, |ui| {
+                                        use mapmap_core::module::TriggerMappingMode;
+                                        ui.selectable_value(
+                                            &mut config.mode,
+                                            TriggerMappingMode::Direct,
+                                            "Direct",
+                                        );
+                                        ui.selectable_value(
+                                            &mut config.mode,
+                                            TriggerMappingMode::Fixed,
+                                            "Fixed",
+                                        );
+                                        ui.selectable_value(
+                                            &mut config.mode,
+                                            TriggerMappingMode::RandomInRange,
+                                            "Random",
+                                        );
+                                        // For smoothed, we preserve existing params if already smoothed, else default
+                                        let default_smoothed = TriggerMappingMode::Smoothed {
+                                            attack: 0.1,
+                                            release: 0.1,
+                                        };
+                                        ui.selectable_value(
+                                            &mut config.mode,
+                                            default_smoothed,
+                                            "Smoothed",
+                                        );
+                                    });
+                            });
+
+                            // Params based on Mode
+                            match &mut config.mode {
+                                mapmap_core::module::TriggerMappingMode::Fixed => {
+                                    ui.horizontal(|ui| {
+                                        ui.label("Threshold:");
+                                        ui.add(egui::Slider::new(&mut config.threshold, 0.0..=1.0));
+                                    });
+                                    ui.horizontal(|ui| {
+                                        ui.label("Off:");
+                                        ui.add(egui::Slider::new(
+                                            &mut config.min_value,
+                                            -5.0..=5.0,
+                                        ));
+                                        ui.label("On:");
+                                        ui.add(egui::Slider::new(
+                                            &mut config.max_value,
+                                            -5.0..=5.0,
+                                        ));
+                                    });
+                                }
+                                mapmap_core::module::TriggerMappingMode::RandomInRange => {
+                                    ui.horizontal(|ui| {
+                                        ui.label("Range:");
+                                        ui.add(
+                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
+                                                .text("Min"),
+                                        );
+                                        ui.add(
+                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
+                                                .text("Max"),
+                                        );
+                                    });
+                                }
+                                mapmap_core::module::TriggerMappingMode::Smoothed {
+                                    attack,
+                                    release,
+                                } => {
+                                    ui.horizontal(|ui| {
+                                        ui.label("Range:");
+                                        ui.add(
+                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
+                                                .text("Min"),
+                                        );
+                                        ui.add(
+                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
+                                                .text("Max"),
+                                        );
+                                    });
+                                    ui.horizontal(|ui| {
+                                        ui.label("Attack:");
+                                        ui.add(egui::Slider::new(attack, 0.0..=2.0).text("s"));
+                                    });
+                                    ui.horizontal(|ui| {
+                                        ui.label("Release:");
+                                        ui.add(egui::Slider::new(release, 0.0..=2.0).text("s"));
+                                    });
+                                }
+                                _ => {
+                                    // Direct
+                                    ui.horizontal(|ui| {
+                                        ui.label("Range:");
+                                        ui.add(
+                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
+                                                .text("Min"),
+                                        );
+                                        ui.add(
+                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
+                                                .text("Max"),
+                                        );
+                                    });
+                                }
+                            }
+
+                            ui.checkbox(&mut config.invert, "Invert Input");
+                        }
+
+                        // Save back if changed
+                        if config != original_config {
+                            part.trigger_targets.insert(idx, config);
+                        }
+                    });
+                }
+            });
     }
 }
