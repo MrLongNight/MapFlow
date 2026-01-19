@@ -1034,6 +1034,13 @@ impl App {
                     if let Some(module) = self.state.module_manager.get_module(active_module_id) {
                         let result = self.module_evaluator.evaluate(module);
 
+                        // Update UI Trigger Visualization
+                        self.ui_state.module_canvas.last_trigger_values = result
+                            .trigger_values
+                            .iter()
+                            .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
+                            .collect();
+
                         // 1. Handle Source Commands
                         for (part_id, cmd) in &result.source_commands {
                             match cmd {
