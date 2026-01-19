@@ -82,6 +82,25 @@ impl ControlTarget {
             ControlTarget::Custom(name) => format!("custom/{}", name),
         }
     }
+
+    /// Validate the target (e.g. check string lengths)
+    pub fn validate(&self) -> Result<(), String> {
+        const MAX_NAME_LEN: usize = 256;
+        match self {
+            ControlTarget::PaintParameter(_, name)
+            | ControlTarget::EffectParameter(_, name)
+            | ControlTarget::Custom(name) => {
+                if name.len() > MAX_NAME_LEN {
+                    return Err(format!("Name exceeds maximum length of {}", MAX_NAME_LEN));
+                }
+                if name.chars().any(|c| c.is_control()) {
+                    return Err("Name contains control characters".to_string());
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
 }
 
 /// Edge sides for edge blending
@@ -154,6 +173,38 @@ impl ControlValue {
             _ => None,
         }
     }
+
+    /// Validate the value (check string length, finite floats)
+    pub fn validate(&self) -> Result<(), String> {
+        const MAX_STRING_LEN: usize = 4096;
+        match self {
+            ControlValue::String(s) => {
+                if s.len() > MAX_STRING_LEN {
+                    return Err(format!(
+                        "String value exceeds maximum length of {}",
+                        MAX_STRING_LEN
+                    ));
+                }
+            }
+            ControlValue::Float(f) => {
+                if !f.is_finite() {
+                    return Err("Float value must be finite".to_string());
+                }
+            }
+            ControlValue::Vec2(x, y) => {
+                if !x.is_finite() || !y.is_finite() {
+                    return Err("Vec2 components must be finite".to_string());
+                }
+            }
+            ControlValue::Vec3(x, y, z) => {
+                if !x.is_finite() || !y.is_finite() || !z.is_finite() {
+                    return Err("Vec3 components must be finite".to_string());
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
 }
 
 impl From<f32> for ControlValue {
@@ -212,5 +263,34 @@ mod tests {
         let json = serde_json::to_string(&target).unwrap();
         let deserialized: ControlTarget = serde_json::from_str(&json).unwrap();
         assert_eq!(target, deserialized);
+    }
+
+    #[test]
+    fn test_control_target_validation() {
+        let valid = ControlTarget::Custom("Valid Name".to_string());
+        assert!(valid.validate().is_ok());
+
+        let long_name = "a".repeat(300);
+        let invalid = ControlTarget::Custom(long_name);
+        assert!(invalid.validate().is_err());
+
+        let control_char = ControlTarget::Custom("Name\nWith\tControl".to_string());
+        assert!(control_char.validate().is_err());
+    }
+
+    #[test]
+    fn test_control_value_validation() {
+        let valid = ControlValue::String("Valid".to_string());
+        assert!(valid.validate().is_ok());
+
+        let long_string = "a".repeat(5000);
+        let invalid = ControlValue::String(long_string);
+        assert!(invalid.validate().is_err());
+
+        let inf_float = ControlValue::Float(f32::INFINITY);
+        assert!(inf_float.validate().is_err());
+
+        let nan_vec = ControlValue::Vec2(0.0, f32::NAN);
+        assert!(nan_vec.validate().is_err());
     }
 }

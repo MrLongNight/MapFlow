@@ -2901,7 +2901,6 @@ impl App {
                                         });
 
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
-                                        
                                         (changed, connect_clicked, disconnect_clicked, discover_clicked)
                                     })
                                     .body_returned
