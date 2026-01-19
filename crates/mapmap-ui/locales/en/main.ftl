@@ -274,6 +274,10 @@ label-name = Name
 label-resolution = Resolution
 label-x = X
 label-y = Y
+label-width = Width
+label-height = Height
+check-fullscreen = Fullscreen
+check-enabled = Enabled
 
 # Edge Blend (Harmonized with User edits)
 panel-edge-blend = Edge Blending

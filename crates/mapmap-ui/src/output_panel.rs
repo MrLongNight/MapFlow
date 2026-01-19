@@ -1,37 +1,49 @@
-use crate::i18n::LocaleManager;
-use crate::icons::{AppIcon, IconManager};
-use crate::UIAction;
-use egui::*;
-use mapmap_core::OutputManager;
+use crate::{i18n::LocaleManager, UIAction};
 
-#[derive(Debug, Default)]
+/// Represents the UI panel for configuring render outputs.
 pub struct OutputPanel {
+    /// The ID of the currently selected output for configuration.
+    pub selected_output_id: Option<u64>,
+    /// Flag to control the visibility of the panel.
     pub visible: bool,
+    /// A list of actions to be processed by the main application.
+    actions: Vec<UIAction>,
+}
+
+impl Default for OutputPanel {
+    fn default() -> Self {
+        Self {
+            selected_output_id: None,
+            visible: true,
+            actions: Vec::new(),
+        }
+    }
 }
 
 impl OutputPanel {
-    pub fn show(
+    /// Takes all pending actions, clearing the internal list.
+    pub fn take_actions(&mut self) -> Vec<UIAction> {
+        std::mem::take(&mut self.actions)
+    }
+
+    /// Renders the output configuration panel using `egui`.
+    pub fn render(
         &mut self,
         ctx: &egui::Context,
-        output_manager: &mut OutputManager,
-        selected_output_id: &mut Option<u64>,
-        actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
-        icon_manager: Option<&IconManager>,
+        output_manager: &mut mapmap_core::OutputManager,
+        monitors: &[mapmap_core::monitor::MonitorInfo],
     ) {
         if !self.visible {
             return;
         }
 
-        let mut open = self.visible;
         egui::Window::new(i18n.t("panel-outputs"))
-            .open(&mut open)
             .default_size([420.0, 500.0])
             .show(ctx, |ui| {
-                ui.heading(i18n.t("header-outputs"));
+                ui.heading(i18n.t("header-multi-output"));
                 ui.separator();
 
-                // Canvas size display
                 let canvas_size = output_manager.canvas_size();
                 ui.label(format!(
                     "{}: {}x{}",
@@ -41,54 +53,34 @@ impl OutputPanel {
                 ));
                 ui.separator();
 
-                // Output list
                 ui.label(format!(
                     "{}: {}",
                     i18n.t("panel-outputs"),
                     output_manager.outputs().len()
                 ));
 
-                egui::ScrollArea::vertical()
-                    .max_height(150.0)
-                    .show(ui, |ui| {
-                        for output in output_manager.outputs() {
-                            let is_selected = *selected_output_id == Some(output.id);
-
-                            ui.horizontal(|ui| {
-                                if let Some(mgr) = icon_manager {
-                                    let icon = if output.fullscreen {
-                                        AppIcon::Screen
-                                    } else {
-                                        AppIcon::AppWindow
-                                    };
-                                    mgr.show(ui, icon, 16.0);
-                                }
-
-                                if ui.selectable_label(is_selected, &output.name).clicked() {
-                                    *selected_output_id = Some(output.id);
-                                }
-
-                                ui.label(format!(
-                                    "{}x{}",
-                                    output.resolution.0, output.resolution.1
-                                ));
-                            });
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    let outputs = output_manager.outputs().to_vec();
+                    for output in outputs {
+                        let is_selected = self.selected_output_id == Some(output.id);
+                        if ui.selectable_label(is_selected, &output.name).clicked() {
+                            self.selected_output_id = Some(output.id);
                         }
-                    });
+                    }
+                });
 
                 ui.separator();
 
-                // Quick setup buttons
                 ui.horizontal(|ui| {
                     if ui.button(i18n.t("btn-projector-array")).clicked() {
-                        actions.push(UIAction::CreateProjectorArray2x2(
+                        self.actions.push(UIAction::CreateProjectorArray2x2(
                             (1920, 1080),
                             0.1, // 10% overlap
                         ));
                     }
 
                     if ui.button(i18n.t("btn-add-output")).clicked() {
-                        actions.push(UIAction::AddOutput(
+                        self.actions.push(UIAction::AddOutput(
                             "New Output".to_string(),
                             mapmap_core::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
                             (1920, 1080),
@@ -98,130 +90,110 @@ impl OutputPanel {
 
                 ui.separator();
 
-                // Edit selected output
-                if let Some(output_id) = *selected_output_id {
-                    let output_opt = output_manager.outputs().iter().find(|o| o.id == output_id);
-                    if let Some(output) = output_opt {
-                        ui.group(|ui| {
-                            ui.heading(i18n.t("header-selected-output"));
+                if let Some(output_id) = self.selected_output_id {
+                    if let Some(output) = output_manager.get_output_mut(output_id) {
+                        ui.heading(i18n.t("header-selected-output"));
+                        ui.separator();
 
-                            ui.horizontal(|ui| {
-                                ui.label(format!("{}:", i18n.t("label-name")));
-                                ui.label(&output.name); // Editable later?
-                            });
+                        let mut updated_config = output.clone();
 
-                            ui.label(format!(
-                                "{}: {}x{}",
-                                i18n.t("label-resolution"),
-                                output.resolution.0,
-                                output.resolution.1
-                            ));
-
-                            ui.separator();
-                            ui.label(i18n.t("label-canvas-region"));
-                            ui.indent("region", |ui| {
-                                ui.label(format!(
-                                    "{}: {:.2}, {}: {:.2}",
-                                    i18n.t("label-x"),
-                                    output.canvas_region.x,
-                                    i18n.t("label-y"),
-                                    output.canvas_region.y
-                                ));
-                                ui.label(format!(
-                                    "{}: {:.2}, {}: {:.2}",
-                                    i18n.t("label-width"),
-                                    output.canvas_region.width,
-                                    i18n.t("label-height"),
-                                    output.canvas_region.height
-                                ));
-                            });
-
-                            ui.separator();
-
-                            // Edge blending status
-                            ui.label(format!("{}:", i18n.t("panel-edge-blend")));
-                            ui.indent("blend", |ui| {
-                                let blend = &output.edge_blend;
-                                if blend.left.enabled {
-                                    ui.label(format!("• {}", i18n.t("check-left")));
-                                }
-                                if blend.right.enabled {
-                                    ui.label(format!("• {}", i18n.t("check-right")));
-                                }
-                                if blend.top.enabled {
-                                    ui.label(format!("• {}", i18n.t("check-top")));
-                                }
-                                if blend.bottom.enabled {
-                                    ui.label(format!("• {}", i18n.t("check-bottom")));
-                                }
-                                if !blend.left.enabled
-                                    && !blend.right.enabled
-                                    && !blend.top.enabled
-                                    && !blend.bottom.enabled
-                                {
-                                    ui.weak(i18n.t("label-none"));
-                                }
-                            });
-
-                            ui.separator();
-
-                            // Color calibration status
-                            ui.label(format!("{}:", i18n.t("panel-color-cal")));
-                            ui.indent("cal", |ui| {
-                                let cal = &output.color_calibration;
-                                let mut any = false;
-                                if cal.brightness != 0.0 {
-                                    ui.label(format!(
-                                        "• {}: {:.2}",
-                                        i18n.t("label-brightness"),
-                                        cal.brightness
-                                    ));
-                                    any = true;
-                                }
-                                if cal.contrast != 1.0 {
-                                    ui.label(format!(
-                                        "• {}: {:.2}",
-                                        i18n.t("label-contrast"),
-                                        cal.contrast
-                                    ));
-                                    any = true;
-                                }
-                                if cal.saturation != 1.0 {
-                                    ui.label(format!(
-                                        "• {}: {:.2}",
-                                        i18n.t("label-saturation"),
-                                        cal.saturation
-                                    ));
-                                    any = true;
-                                }
-                                if !any {
-                                    ui.weak(format!("({})", i18n.t("label-none")));
-                                }
-                            });
-
-                            ui.separator();
-
-                            ui.colored_label(
-                                Color32::from_rgb(128, 200, 255),
-                                format!("{}:", i18n.t("output-tip")),
-                            );
-                            ui.label(i18n.t("tip-panels-auto-open"));
-
-                            ui.separator();
-
-                            if ui.button(i18n.t("btn-remove-output")).clicked() {
-                                actions.push(UIAction::RemoveOutput(output_id));
-                                *selected_output_id = None;
-                            }
+                        ui.horizontal(|ui| {
+                            ui.label(format!("{}:", i18n.t("label-name")));
+                            ui.text_edit_singleline(&mut updated_config.name);
                         });
+
+                        ui.checkbox(&mut updated_config.enabled, i18n.t("check-enabled"));
+                        ui.checkbox(&mut updated_config.fullscreen, i18n.t("check-fullscreen"));
+
+                        egui::ComboBox::from_label("Monitor")
+                            .selected_text(
+                                updated_config
+                                    .monitor_id
+                                    .as_deref()
+                                    .unwrap_or("None"),
+                            )
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut updated_config.monitor_id, None, "None");
+                                for monitor in monitors {
+                                    ui.selectable_value(
+                                        &mut updated_config.monitor_id,
+                                        Some(monitor.name.clone()),
+                                        &monitor.name,
+                                    );
+                                }
+                            });
+
+                        ui.label(i18n.t("label-resolution"));
+                        ui.horizontal(|ui| {
+                            ui.add(
+                                egui::DragValue::new(&mut updated_config.resolution.0)
+                                    .speed(1.0)
+                                    .clamp_range(1..=8192),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut updated_config.resolution.1)
+                                    .speed(1.0)
+                                    .clamp_range(1..=8192),
+                            );
+                        });
+
+                        ui.label(i18n.t("label-canvas-region"));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.x).speed(0.01));
+                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.y).speed(0.01));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.width).speed(0.01));
+                            ui.add(egui::DragValue::new(&mut updated_config.canvas_region.height).speed(0.01));
+                        });
+
+                        ui.collapsing("Edge Blend", |ui| {
+                            ui.label(format!(
+                                "Left: {}",
+                                updated_config.edge_blend.left.enabled
+                            ));
+                            ui.label(format!(
+                                "Right: {}",
+                                updated_config.edge_blend.right.enabled
+                            ));
+                            ui.label(format!("Top: {}", updated_config.edge_blend.top.enabled));
+                            ui.label(format!(
+                                "Bottom: {}",
+                                updated_config.edge_blend.bottom.enabled
+                            ));
+                        });
+
+                        ui.collapsing("Color Calibration", |ui| {
+                            ui.label(format!(
+                                "Brightness: {}",
+                                updated_config.color_calibration.brightness
+                            ));
+                            ui.label(format!(
+                                "Contrast: {}",
+                                updated_config.color_calibration.contrast
+                            ));
+                            ui.label(format!(
+                                "Saturation: {}",
+                                updated_config.color_calibration.saturation
+                            ));
+                        });
+
+                        if updated_config != *output {
+                            *output = updated_config;
+                            self.actions.push(UIAction::ConfigureOutput(
+                                output_id,
+                                output.clone(),
+                            ));
+                        }
+
+                        ui.separator();
+
+                        if ui.button(i18n.t("btn-remove-output")).clicked() {
+                            self.actions.push(UIAction::RemoveOutput(output_id));
+                            self.selected_output_id = None;
+                        }
                     }
                 }
-
-                ui.separator();
-                ui.colored_label(Color32::GREEN, i18n.t("msg-multi-window-active"));
-                ui.weak(i18n.t("msg-output-windows-tip"));
             });
-
-        self.visible = open;
     }
 }
