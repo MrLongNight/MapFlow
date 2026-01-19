@@ -183,7 +183,6 @@ impl Default for UserConfig {
             show_timeline: true,
             show_media_browser: true,
             show_module_canvas: false,
-            show_module_canvas: false,
             show_controller_overlay: false,
             hue_config: HueConfig::default(),
         }

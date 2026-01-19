@@ -557,7 +557,7 @@ impl App {
             }
         };
 
-        let app = Self {
+        let mut app = Self {
             window_manager,
             ui_state,
             backend,
@@ -1239,9 +1239,7 @@ impl App {
                                             #[cfg(target_os = "windows")]
                                             mapmap_core::module::OutputType::Spout { name } =>
                                                 format!("Spout({})", name),
-                                            mapmap_core::module::OutputType::Oscillator {
-                                                ..
-                                            } => "Oscillator".to_string(),
+
                                             mapmap_core::module::OutputType::Hue { .. } =>
                                                 "Hue".to_string(),
                                         }
@@ -2804,13 +2802,14 @@ impl App {
                                 egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
                                     .default_open(true)
                                     .show(ui, |ui| {
+                                        let mut changed = false;
+                                        let mut connect_clicked = false;
                                         let hue_conf = &mut self.ui_state.user_config.hue_config;
 
                                         ui.horizontal(|ui| {
                                             ui.label("Bridge IP:");
                                             if ui.text_edit_singleline(&mut hue_conf.bridge_ip).changed() {
-                                                // Sync to controller config if possible, or just wait for connect
-                                                let _ = self.ui_state.user_config.save();
+                                                changed = true;
                                             }
                                         });
 
@@ -2827,13 +2826,13 @@ impl App {
                                         ui.horizontal(|ui| {
                                             ui.label("Entertainment Area:");
                                             if ui.text_edit_singleline(&mut hue_conf.entertainment_area).changed() {
-                                                let _ = self.ui_state.user_config.save();
+                                                changed = true;
                                             }
                                         });
 
                                         ui.horizontal(|ui| {
                                             if ui.checkbox(&mut hue_conf.auto_connect, "Auto Connect via Main Settings").changed() {
-                                                let _ = self.ui_state.user_config.save();
+                                                changed = true;
                                             }
                                         });
 
@@ -2841,10 +2840,11 @@ impl App {
 
                                         ui.horizontal(|ui| {
                                             if ui.button("Verbinden (Sync)").clicked() {
-                                                self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
+                                                connect_clicked = true;
                                             }
 
                                             // Connection Status Display
+                                            // Using self.hue_controller is disjoint from self.ui_state (hue_conf)
                                             if self.hue_controller.is_connected() {
                                                  ui.colored_label(egui::Color32::GREEN, "Connected");
                                             } else {
@@ -2853,6 +2853,17 @@ impl App {
                                         });
 
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before connecting for the first time.").small());
+                                        
+                                        (changed, connect_clicked)
+                                    })
+                                    .body_returned
+                                    .map(|(changed, connect)| {
+                                        if changed {
+                                            let _ = self.ui_state.user_config.save();
+                                        }
+                                        if connect {
+                                            self.ui_state.actions.push(mapmap_ui::UIAction::ConnectHue);
+                                        }
                                     });
 
                                 ui.separator();
