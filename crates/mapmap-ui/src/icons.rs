@@ -165,7 +165,7 @@ impl IconManager {
         // Read SVG file
         let svg_data = std::fs::read_to_string(path).ok()?;
 
-        // Parse SVG using resvg
+        // Parse SVG using resvg (usvg 0.40 API)
         let opt = usvg::Options::default();
         let fontdb = usvg::fontdb::Database::new();
         let tree = usvg::Tree::from_str(&svg_data, &opt, &fontdb).ok()?;

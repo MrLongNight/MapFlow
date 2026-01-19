@@ -775,7 +775,7 @@ impl ModuleEvaluator {
                             crate::module::TriggerTarget::Rotation => {
                                 source_props.rotation = trigger_val * 360.0
                             } // Degrees
-                            crate::module::TriggerTarget::Param(name) => {
+                            crate::module::TriggerTarget::Param(_name) => {
                                 // Handle effect params? They are in `effects`.
                                 // This is tricky as effects are added later in the loop.
                                 // We might need to store pending param overrides.
