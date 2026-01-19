@@ -21,7 +21,7 @@ audio-processor-traits = "4.3"
 chrono = "0.4"
 cpal = { workspace = true, optional = true }
 crossbeam-channel = { workspace = true }
-dirs = "5.0"
+dirs = "6.0"
 glam = { workspace = true }
 hound = { workspace = true }
 num-complex = "0.4"
