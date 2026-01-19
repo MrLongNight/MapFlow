@@ -1646,7 +1646,10 @@ impl ModuleCanvas {
                                                 target_screen,
                                                 show_in_preview_panel,
                                                 extra_preview_window,
+<<<<<<< HEAD
                                                 fullscreen,
+=======
+>>>>>>> fix/ci-struct-fields-and-syntax
                                                 ..
                                             } => {
                                                 ui.label("📽️ Projector Output");
@@ -2894,7 +2897,11 @@ impl ModuleCanvas {
                                     extra_preview_window: false,
                                     output_width: 0,
                                     output_height: 0,
+<<<<<<< HEAD
                                     output_fps: 60.0,
+=======
+                                    output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                                 }));
                                 self.search_filter.clear();
                                 ui.close_menu();
@@ -4825,7 +4832,11 @@ impl ModuleCanvas {
                                 extra_preview_window: false,
                                 output_width: 0,
                                 output_height: 0,
+<<<<<<< HEAD
                                 output_fps: 60.0,
+=======
+                                output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                             };
                         }
 
@@ -5971,7 +5982,11 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
+<<<<<<< HEAD
                             output_fps: 60.0,
+=======
+                            output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                         }),
                         (650.0, 100.0), // Increased from 450 to 650
                         None,
@@ -6014,7 +6029,11 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
+<<<<<<< HEAD
                             output_fps: 60.0,
+=======
+                            output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -6070,7 +6089,11 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
+<<<<<<< HEAD
                             output_fps: 60.0,
+=======
+                            output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                         }),
                         (1250.0, 100.0), // Increased spacing
                         None,
@@ -6112,7 +6135,11 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
+<<<<<<< HEAD
                             output_fps: 60.0,
+=======
+                            output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -6149,7 +6176,11 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
+<<<<<<< HEAD
                             output_fps: 60.0,
+=======
+                            output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                         }),
                         (650.0, 100.0),
                         None,
@@ -6215,7 +6246,11 @@ impl ModuleCanvas {
                             extra_preview_window: false,
                             output_width: 0,
                             output_height: 0,
+<<<<<<< HEAD
                             output_fps: 60.0,
+=======
+                            output_fps: 0.0,
+>>>>>>> fix/ci-struct-fields-and-syntax
                         }),
                         (650.0, 100.0),
                         None,

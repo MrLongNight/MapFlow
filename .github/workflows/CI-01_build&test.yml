@@ -56,6 +56,47 @@ jobs:
       pull-requests: write
 
     steps:
+    - name: Check if PR branch is up-to-date
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const pr = context.payload.pull_request;
+          const { data: mainBranch } = await github.rest.repos.getBranch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            branch: 'main'
+          });
+          const { data: comparison } = await github.rest.repos.compareCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            base: mainBranch.commit.sha,
+            head: pr.head.sha
+          });
+          if (comparison.behind_by > 0) {
+            const message = `⚠️ **Branch nicht aktuell**\n\n` +
+              `Dieser PR-Branch ist **${comparison.behind_by} Commit(s)** hinter \`main\`.\n\n` +
+              `**Bitte aktualisiere den Branch vor dem Merge:**\n` +
+              `\`\`\`bash\n` +
+              `git checkout ${pr.head.ref}\n` +
+              `git fetch origin\n` +
+              `git merge origin/main\n` +
+              `# oder\n` +
+              `git rebase origin/main\n` +
+              `\`\`\`\n\n` +
+              `Oder nutze den **"Update branch"**-Button oben im PR. `;
+            core.warning(`Branch ist ${comparison.behind_by} Commit(s) hinter main`);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: message
+            });
+            core.setFailed(`PR branch ist nicht auf dem aktuellen Stand von main (${comparison.behind_by} commits behind)`);
+          } else {
+            core.info('✓ PR branch ist auf dem aktuellen Stand');
+          }
+
     - name: Configure Git
       run: git config --global --add safe.directory "*"
 
@@ -236,11 +277,13 @@ jobs:
       run: |
         wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
         tar xzf Install_NDI_SDK_v5_Linux.tar.gz
-        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo ":: warning::NDI SDK installation may require manual acceptance"
+        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo "::warning::NDI SDK installation may require manual acceptance"
+        # Set NDI SDK paths for grafton-ndi build
         export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
         echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        ls -la "$NDI_SDK_DIR" 2>/dev/null || echo ":: warning::NDI SDK directory not found at $NDI_SDK_DIR"
+        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        # Verify NDI installation
+        ls -la "$NDI_SDK_DIR" 2>/dev/null || echo "::warning::NDI SDK directory not found at $NDI_SDK_DIR"
 
     - name: Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
@@ -442,13 +485,16 @@ jobs:
     - name: Fail if any job failed or was cancelled
       if: always()
       run: |
-        if [ "${{ needs.quality.result }}" != "success" ] || \
-           [ "${{ needs.build-and-test.result }}" != "success" ] || \
-           [ "${{ needs.security.result }}" != "success" ]; then
-          echo ":: error::One or more required jobs failed or were cancelled."
-          echo "quality:  ${{ needs.quality.result }}"
+        # Check results of dependent jobs and fail if any are not "success"
+        if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
+          echo "::error::One or more required jobs failed or were cancelled."
+          echo "quality: ${{ needs.quality.result }}"
           echo "build-and-test: ${{ needs.build-and-test.result }}"
+          echo "build-windows: ${{ needs.build-windows.result }}"
           echo "security: ${{ needs.security.result }}"
           exit 1
+        fi
+        if [ "${{ needs.build-windows.result }}" != "success" ]; then
+          echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All CI checks passed successfully"
