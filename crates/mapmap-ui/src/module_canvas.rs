@@ -1044,7 +1044,7 @@ impl ModuleCanvas {
                                                 // === VIDEO OPTIONS ===
                                                 ui.collapsing("🎬 Video Options", |ui| {
                                                     ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-                                                    
+
                                                     ui.separator();
                                                     ui.label("Seek Position:");
                                                     // Note: Actual seek requires video duration from player

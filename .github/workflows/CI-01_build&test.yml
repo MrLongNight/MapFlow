@@ -238,7 +238,7 @@ jobs:
     steps:
     - name: Configure Git
       run: git config --global --add safe.directory "*"
-    
+
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
