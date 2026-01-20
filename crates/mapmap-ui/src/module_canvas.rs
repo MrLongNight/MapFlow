@@ -674,31 +674,163 @@ impl ModuleCanvas {
                                                     let video_duration = player_info.duration.max(1.0) as f32;
                                                     let current_pos = player_info.current_time as f32;
 
-                                                    // Time Display
+                                                    // === LIVE PERFORMANCE HEADER ===
+                                                    // Timecode Display
                                                     let current_min = (current_pos / 60.0) as u32;
                                                     let current_sec = (current_pos % 60.0) as u32;
                                                     let duration_min = (video_duration / 60.0) as u32;
                                                     let duration_sec = (video_duration % 60.0) as u32;
 
-                                                    ui.horizontal(|ui| {
-                                                        if player_info.is_playing {
-                                                            ui.label("▶");
-                                                        } else {
-                                                            ui.label("⏸");
-                                                        }
-                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}",
-                                                            current_min, current_sec, duration_min, duration_sec));
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(4.0);
+                                                        ui.label(
+                                                            egui::RichText::new(format!(
+                                                                "{:02}:{:02} / {:02}:{:02}",
+                                                                current_min, current_sec, duration_min, duration_sec
+                                                            ))
+                                                            .monospace()
+                                                            .size(24.0)
+                                                            .strong()
+                                                            .color(if player_info.is_playing {
+                                                                Color32::WHITE
+                                                            } else {
+                                                                Color32::from_gray(180)
+                                                            }),
+                                                        );
 
-                                                        // Active Region Text
+                                                        // Region Status
                                                         if *start_time > 0.0 || *end_time > 0.0 {
                                                             ui.label(
-                                                                egui::RichText::new(format!(" [Region: {:.1}s - {:.1}s]",
+                                                                egui::RichText::new(format!(
+                                                                    "Loop Region: {:.1}s - {:.1}s",
                                                                     start_time,
-                                                                    if *end_time > 0.0 { *end_time } else { video_duration }
-                                                                )).color(Color32::from_rgb(100, 200, 150))
+                                                                    if *end_time > 0.0 {
+                                                                        *end_time
+                                                                    } else {
+                                                                        video_duration
+                                                                    }
+                                                                ))
+                                                                .color(Color32::from_rgb(100, 200, 150)),
                                                             );
                                                         }
+                                                        ui.add_space(4.0);
                                                     });
+
+                                                    // Transport Bar (Moved from bottom)
+                                                    ui.horizontal(|ui| {
+                                                        ui.spacing_mut().item_spacing.x = 8.0;
+                                                        ui.columns(1, |cols| {
+                                                            cols[0].vertical_centered(|ui| {
+                                                                ui.horizontal(|ui| {
+                                                                    let btn_size = Vec2::new(40.0, 32.0);
+                                                                    let play_size =
+                                                                        Vec2::new(60.0, 32.0);
+
+                                                                    // Reverse Toggle
+                                                                    let rev_btn = egui::Button::new("⏪")
+                                                                        .min_size(btn_size)
+                                                                        .fill(if *reverse_playback {
+                                                                            Color32::from_rgb(100, 100, 180)
+                                                                        } else {
+                                                                            Color32::from_gray(40)
+                                                                        });
+                                                                    if ui
+                                                                        .add(rev_btn)
+                                                                        .on_hover_text("Reverse Playback")
+                                                                        .clicked()
+                                                                    {
+                                                                        *reverse_playback =
+                                                                            !*reverse_playback;
+                                                                    }
+
+                                                                    // Stop
+                                                                    if ui
+                                                                        .add(
+                                                                            egui::Button::new("⏹")
+                                                                                .min_size(btn_size),
+                                                                        )
+                                                                        .on_hover_text("Stop")
+                                                                        .clicked()
+                                                                    {
+                                                                        self.pending_playback_commands
+                                                                            .push((
+                                                                                part_id,
+                                                                                MediaPlaybackCommand::Stop,
+                                                                            ));
+                                                                    }
+
+                                                                    // Play/Pause (Toggle)
+                                                                    let is_playing =
+                                                                        player_info.is_playing;
+                                                                    let pp_icon = if is_playing {
+                                                                        "⏸"
+                                                                    } else {
+                                                                        "▶"
+                                                                    };
+                                                                    let pp_color = if is_playing {
+                                                                        Color32::from_rgb(200, 180, 50)
+                                                                    } else {
+                                                                        Color32::from_rgb(40, 150, 60)
+                                                                    };
+
+                                                                    let pp_btn = egui::Button::new(
+                                                                        egui::RichText::new(pp_icon)
+                                                                            .size(20.0),
+                                                                    )
+                                                                    .min_size(play_size)
+                                                                    .fill(pp_color);
+
+                                                                    if ui
+                                                                        .add(pp_btn)
+                                                                        .on_hover_text(if is_playing {
+                                                                            "Pause"
+                                                                        } else {
+                                                                            "Play"
+                                                                        })
+                                                                        .clicked()
+                                                                    {
+                                                                        if is_playing {
+                                                                            self.pending_playback_commands
+                                                                                .push((
+                                                                                    part_id,
+                                                                                    MediaPlaybackCommand::Pause,
+                                                                                ));
+                                                                        } else {
+                                                                            self.pending_playback_commands
+                                                                                .push((
+                                                                                    part_id,
+                                                                                    MediaPlaybackCommand::Play,
+                                                                                ));
+                                                                        }
+                                                                    }
+
+                                                                    // Loop Toggle
+                                                                    let loop_btn = egui::Button::new("🔁")
+                                                                        .min_size(btn_size)
+                                                                        .fill(if *loop_enabled {
+                                                                            Color32::from_rgb(40, 120, 40)
+                                                                        } else {
+                                                                            Color32::from_gray(40)
+                                                                        });
+                                                                    if ui
+                                                                        .add(loop_btn)
+                                                                        .on_hover_text("Loop Mode")
+                                                                        .clicked()
+                                                                    {
+                                                                        *loop_enabled = !*loop_enabled;
+                                                                        self.pending_playback_commands
+                                                                            .push((
+                                                                                part_id,
+                                                                                MediaPlaybackCommand::SetLoop(
+                                                                                    *loop_enabled,
+                                                                                ),
+                                                                            ));
+                                                                    }
+                                                                });
+                                                            });
+                                                        });
+                                                    });
+                                                    ui.add_space(8.0);
 
                                                     // Visual Timeline
                                                     let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 32.0), Sense::click_and_drag());
@@ -804,38 +936,81 @@ impl ModuleCanvas {
 
                                                     ui.add_space(4.0);
 
-                                                    // Buttons for quick region setting
+                                                    // Buttons for quick region setting (Expanded for Live Use)
                                                     ui.horizontal(|ui| {
-                                                        ui.style_mut().spacing.item_spacing.x = 4.0;
+                                                        ui.spacing_mut().item_spacing.x = 4.0;
+                                                        let region_btn_height = 28.0;
 
                                                         // Set In Point
-                                                        if ui.add(egui::Button::new("⇥ Set In").min_size(Vec2::new(60.0, 0.0)))
-                                                            .on_hover_text("Set Start Point to current Playhead position")
+                                                        if ui
+                                                            .add(
+                                                                egui::Button::new("⇥ IN")
+                                                                    .min_size(Vec2::new(
+                                                                        60.0,
+                                                                        region_btn_height,
+                                                                    )),
+                                                            )
+                                                            .on_hover_text(
+                                                                "Set Start Point (In) to current Playhead",
+                                                            )
                                                             .clicked()
                                                         {
-                                                             *start_time = current_pos;
-                                                             let eff_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                             if *start_time >= eff_end { *end_time = 0.0; }
+                                                            *start_time = current_pos;
+                                                            let eff_end = if *end_time > 0.0 {
+                                                                *end_time
+                                                            } else {
+                                                                video_duration
+                                                            };
+                                                            if *start_time >= eff_end {
+                                                                *end_time = 0.0;
+                                                            }
+                                                        }
+
+                                                        // Reset
+                                                        if ui
+                                                            .add(
+                                                                egui::Button::new("↺")
+                                                                    .min_size(Vec2::new(
+                                                                        30.0,
+                                                                        region_btn_height,
+                                                                    )),
+                                                            )
+                                                            .on_hover_text("Reset Clip Region")
+                                                            .clicked()
+                                                        {
+                                                            *start_time = 0.0;
+                                                            *end_time = 0.0;
                                                         }
 
                                                         // Set Out Point
-                                                        if ui.add(egui::Button::new("⇤ Set Out").min_size(Vec2::new(60.0, 0.0)))
-                                                            .on_hover_text("Set End Point to current Playhead position")
+                                                        if ui
+                                                            .add(
+                                                                egui::Button::new("OUT ⇤")
+                                                                    .min_size(Vec2::new(
+                                                                        60.0,
+                                                                        region_btn_height,
+                                                                    )),
+                                                            )
+                                                            .on_hover_text(
+                                                                "Set End Point (Out) to current Playhead",
+                                                            )
                                                             .clicked()
                                                         {
-                                                             *end_time = current_pos;
-                                                             if *end_time <= *start_time { *start_time = (*end_time - 1.0).max(0.0); }
+                                                            *end_time = current_pos;
+                                                            if *end_time <= *start_time {
+                                                                *start_time =
+                                                                    (*end_time - 1.0).max(0.0);
+                                                            }
                                                         }
 
-                                                        ui.add_space(8.0);
-                                                        ui.label(egui::RichText::new("Shift+Drag region to slide").size(10.0).color(Color32::GRAY));
-
-                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                            if ui.button("↺ Reset").on_hover_text("Reset Clip Region").clicked() {
-                                                                *start_time = 0.0;
-                                                                *end_time = 0.0;
-                                                            }
-                                                        });
+                                                        ui.add_space(4.0);
+                                                        ui.label(
+                                                            egui::RichText::new(
+                                                                "Shift+Drag region to slide",
+                                                            )
+                                                            .size(10.0)
+                                                            .color(Color32::GRAY),
+                                                        );
                                                     });
                                                 }
 
@@ -867,53 +1042,6 @@ impl ModuleCanvas {
 
                                                 ui.separator();
 
-                                                // === TRANSPORT & PLAYBACK ===
-                                                ui.add_space(4.0);
-                                                ui.horizontal(|ui| {
-                                                    ui.style_mut().spacing.item_spacing.x = 4.0;
-                                                    let button_size = Vec2::new(40.0, 24.0);
-                                                    let is_playing = self.player_info.get(&part_id).map(|p| p.is_playing).unwrap_or(false);
-
-                                                    // Play
-                                                    let play_btn = egui::Button::new(egui::RichText::new("▶").size(16.0))
-                                                        .min_size(button_size)
-                                                        .fill(if is_playing { Color32::from_rgb(40, 120, 40) } else { Color32::from_gray(40) });
-
-                                                    if ui.add(play_btn).on_hover_text("Play").clicked() {
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
-                                                    }
-
-                                                    // Pause
-                                                    let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(16.0))
-                                                        .min_size(button_size)
-                                                        .fill(if !is_playing { Color32::from_rgb(120, 100, 40) } else { Color32::from_gray(40) });
-
-                                                    if ui.add(pause_btn).on_hover_text("Pause").clicked() {
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
-                                                    }
-
-                                                    // Stop
-                                                    let stop_btn = egui::Button::new(egui::RichText::new("⏹").size(16.0))
-                                                        .min_size(button_size);
-
-                                                    if ui.add(stop_btn).on_hover_text("Stop (Reset to Start)").clicked() {
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
-                                                    }
-
-                                                    ui.add_space(8.0);
-                                                    ui.separator();
-                                                    ui.add_space(8.0);
-
-                                                    // Loop & Reverse with better layout
-                                                    if ui.selectable_label(*loop_enabled, "🔁 Loop").clicked() {
-                                                        *loop_enabled = !*loop_enabled;
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
-                                                    }
-
-                                                    if ui.selectable_label(*reverse_playback, "⏪ Reverse").clicked() {
-                                                        *reverse_playback = !*reverse_playback;
-                                                    }
-                                                });
 
                                                 // Speed slider (always visible)
                                                 ui.horizontal(|ui| {
