@@ -182,4 +182,52 @@ mod tests {
             panic!("Expected float");
         }
     }
+
+    #[test]
+    fn test_mapping_curve_linear() {
+        let curve = MappingCurve::Linear;
+        assert_eq!(curve.apply(0.0), 0.0);
+        assert_eq!(curve.apply(0.5), 0.5);
+        assert_eq!(curve.apply(1.0), 1.0);
+    }
+
+    #[test]
+    fn test_mapping_curve_exponential() {
+        let curve = MappingCurve::Exponential;
+        assert_eq!(curve.apply(0.0), 0.0);
+        assert_eq!(curve.apply(0.5), 0.25); // 0.5 * 0.5
+        assert_eq!(curve.apply(1.0), 1.0);
+    }
+
+    #[test]
+    fn test_mapping_curve_logarithmic() {
+        let curve = MappingCurve::Logarithmic;
+        assert_eq!(curve.apply(0.0), 0.0);
+        assert!((curve.apply(0.25) - 0.5).abs() < 1e-6); // sqrt(0.25) = 0.5
+        assert_eq!(curve.apply(1.0), 1.0);
+    }
+
+    #[test]
+    fn test_mapping_curve_scurve() {
+        let curve = MappingCurve::SCurve;
+        assert_eq!(curve.apply(0.0), 0.0);
+        assert_eq!(curve.apply(0.5), 0.5);
+        assert_eq!(curve.apply(1.0), 1.0);
+
+        // Check smoothstep property: slower at edges
+        // x=0.1 -> 3(0.01) - 2(0.001) = 0.03 - 0.002 = 0.028 < 0.1
+        let val_0_1 = curve.apply(0.1);
+        assert!(val_0_1 < 0.1);
+
+        // x=0.9 -> 3(0.81) - 2(0.729) = 2.43 - 1.458 = 0.972 > 0.9
+        let val_0_9 = curve.apply(0.9);
+        assert!(val_0_9 > 0.9);
+    }
+
+    #[test]
+    fn test_mapping_curve_clamping() {
+        let curve = MappingCurve::Linear;
+        assert_eq!(curve.apply(-0.5), 0.0);
+        assert_eq!(curve.apply(1.5), 1.0);
+    }
 }
