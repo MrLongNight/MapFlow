@@ -12,3 +12,8 @@
 **Vulnerability:** API keys were stored in plain text within the `AuthConfig` struct and serialized to configuration files. This exposed credentials to anyone with read access to the config or memory dumps.
 **Learning:** Configuration structs are often serialized directly. Adding security layers (like hashing) requires careful handling of serialization to maintain backward compatibility with legacy plaintext data. A custom deserializer can intelligently migrate legacy data.
 **Prevention:** Use SHA-256 hashing for storage of all secrets. Implement `deserialize_with` for `serde` to handle the migration from plaintext to hash transparently on load.
+
+## 2026-02-14 - Implicit Wildcard Logic in Security Config
+**Vulnerability:** The web server configuration treated an empty `allowed_origins` list as "Allow All" (`*`), assuming empty meant "unconfigured/default permissive". This violated the principle of least privilege, where empty should imply "Allow None".
+**Learning:** Logic that attempts to be "helpful" by falling back to permissive defaults when configuration is missing/empty is a major security trap. Explicit configuration should always be required for permissive security settings.
+**Prevention:** Remove fallback logic that maps empty/default values to insecure states. Ensure empty collections in security configs fail closed (deny all) rather than open (allow all).
