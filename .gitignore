@@ -21,6 +21,9 @@
 # Logs (moved to logs/ directory)
 /logs/
 *.log
+*.tmp
+*.temp
+*.bak
 *.autosave
 .*.autosave
 

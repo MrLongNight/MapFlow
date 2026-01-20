@@ -14,6 +14,14 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-02-18 - Gitignore Standardization
+
+**Erkenntnis:** Die `.gitignore` Datei deckte die Standard-Temp-Dateien `*.tmp`, `*.temp` und `*.bak` nicht ab, obwohl diese im Archivist-Protokoll als temporär definiert sind. Das Repository selbst war ansonsten sauber und entsprach den Standards.
+
+**Aktion:**
+- `.gitignore` aktualisiert: `*.tmp`, `*.temp`, `*.bak` hinzugefügt.
+- Root-Verzeichnis Scan bestätigt Sauberkeit (keine unautorisierten Dateien).
+
 ## 2026-01-02 - Root Directory Cleanup
 
 **Erkenntnis:** Das Root-Verzeichnis enthielt mehrere temporäre Dateien (`check_*.txt`, `test_results.txt`, `core_error.txt`) sowie falsch platzierte Dokumentation (`SECURITY.md`, `knowledge.md`) und redundante Dateien (`VERSION.txt`).
