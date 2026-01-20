@@ -460,6 +460,10 @@ pub struct ModuleEvaluator {
     trigger_states: HashMap<ModulePartId, TriggerState>,
     /// Reusable result buffer to avoid allocations
     cached_result: ModuleEvalResult,
+    /// Cache for part ID -> Index lookup
+    part_id_to_idx: HashMap<ModulePartId, usize>,
+    /// Cache for incoming connections (Part ID -> List of Connection Indices)
+    conn_incoming_indices: HashMap<ModulePartId, Vec<usize>>,
 }
 
 impl Default for ModuleEvaluator {
@@ -476,6 +480,36 @@ impl ModuleEvaluator {
             start_time: Instant::now(),
             trigger_states: HashMap::new(),
             cached_result: ModuleEvalResult::default(),
+            part_id_to_idx: HashMap::new(),
+            conn_incoming_indices: HashMap::new(),
+        }
+    }
+
+    /// Rebuilds acceleration indices from the module
+    /// This avoids allocating new HashMaps/Vecs every frame
+    pub fn rebuild_indices(&mut self, module: &MapFlowModule) {
+        // Clear and rebuild part index
+        self.part_id_to_idx.clear();
+        // Reserve if needed (though clear keeps capacity usually)
+        if self.part_id_to_idx.capacity() < module.parts.len() {
+            self.part_id_to_idx.reserve(module.parts.len());
+        }
+
+        for (i, part) in module.parts.iter().enumerate() {
+            self.part_id_to_idx.insert(part.id, i);
+        }
+
+        // Reuse vectors in conn_incoming_indices
+        for vec in self.conn_incoming_indices.values_mut() {
+            vec.clear();
+        }
+
+        // Populate connections
+        for (i, conn) in module.connections.iter().enumerate() {
+            self.conn_incoming_indices
+                .entry(conn.to_part)
+                .or_default()
+                .push(i);
         }
     }
 
@@ -498,13 +532,7 @@ impl ModuleEvaluator {
         // we might have entries with empty vectors. This is fine as we will overwrite them.
 
         // Build acceleration indices
-        let part_index: HashMap<ModulePartId, &crate::module::ModulePart> =
-            module.parts.iter().map(|p| (p.id, p)).collect();
-        let mut conn_index: HashMap<ModulePartId, Vec<&crate::module::ModuleConnection>> =
-            HashMap::new();
-        for conn in &module.connections {
-            conn_index.entry(conn.to_part).or_default().push(conn);
-        }
+        self.rebuild_indices(module);
 
         // === DIAGNOSTICS: Log module structure ===
         // (Diagnostic logging code removed for brevity/performance in hot path unless feature enabled?
@@ -644,8 +672,14 @@ impl ModuleEvaluator {
         // Step 4: Trace Render Pipeline
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
-                if let Some(conn) = conn_index.get(&part.id).and_then(|v| v.first()) {
-                    if let Some(layer_part) = part_index.get(&conn.from_part) {
+                if let Some(conn_idx) = self
+                    .conn_incoming_indices
+                    .get(&part.id)
+                    .and_then(|v| v.first())
+                {
+                    let conn = &module.connections[*conn_idx];
+                    if let Some(layer_part_idx) = self.part_id_to_idx.get(&conn.from_part) {
+                        let layer_part = &module.parts[*layer_part_idx];
                         let link_opacity =
                             trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
 
@@ -657,8 +691,7 @@ impl ModuleEvaluator {
                                     blend_mode,
                                     ..
                                 } => {
-                                    let chain =
-                                        self.trace_chain(layer_part.id, &part_index, &conn_index);
+                                    let chain = self.trace_chain(layer_part.id, module);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -680,8 +713,7 @@ impl ModuleEvaluator {
                                     mesh,
                                     ..
                                 } => {
-                                    let chain =
-                                        self.trace_chain(layer_part.id, &part_index, &conn_index);
+                                    let chain = self.trace_chain(layer_part.id, module);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
@@ -717,11 +749,10 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain<'a>(
+    fn trace_chain(
         &self,
         start_node_id: ModulePartId,
-        part_index: &HashMap<ModulePartId, &'a crate::module::ModulePart>,
-        conn_index: &HashMap<ModulePartId, Vec<&'a crate::module::ModuleConnection>>,
+        module: &MapFlowModule,
     ) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
@@ -737,19 +768,8 @@ impl ModuleEvaluator {
         // Safety limit to prevent infinite loops in cyclic graphs
         for _iteration in 0..50 {
             // Apply Trigger Targets for the current node
-            // We need to find if any input sockets have triggers active and targets mapped
-            if let Some(part) = part_index.get(&current_id) {
-                // Check if any *incoming* connection determines the value?
-                // Wait, trigger targets are on this part's inputs.
-                // We need the input values for this part trigger sockets.
-                // But inputs are pull-based or pushed?
-                // We have `trigger_inputs` map computed in `evaluate` but it's not passed here.
-                // `compute_trigger_inputs` returns a map part_id -> float.
-                // But that's a single value per part (consolidated).
-                // We need per-socket values if we want specific mapping.
-                // Or we re-compute or access cached values.
-                // Let's assume we can access per-socket inputs or just iterate connections to this part.
-
+            if let Some(part_idx) = self.part_id_to_idx.get(&current_id) {
+                let part = &module.parts[*part_idx];
                 if !part.trigger_targets.is_empty() {
                     tracing::info!(
                         "Part {} has {} trigger targets",
@@ -760,8 +780,12 @@ impl ModuleEvaluator {
                 for (socket_idx, config) in &part.trigger_targets {
                     // Find connection to this socket
                     let mut trigger_val = 0.0;
-                    if let Some(conns) = conn_index.get(&current_id) {
-                        if let Some(conn) = conns.iter().find(|c| c.to_socket == *socket_idx) {
+                    if let Some(indices) = self.conn_incoming_indices.get(&current_id) {
+                        if let Some(conn_idx) = indices
+                            .iter()
+                            .find(|&&i| module.connections[i].to_socket == *socket_idx)
+                        {
+                            let conn = &module.connections[*conn_idx];
                             if let Some(from_values) = trigger_values.get(&conn.from_part) {
                                 if let Some(val) = from_values.get(conn.from_socket) {
                                     trigger_val = *val;
@@ -783,7 +807,7 @@ impl ModuleEvaluator {
                     );
 
                     match &config.target {
-                        crate::module::TriggerTarget::Opacity => source_props.opacity = final_val, // Override
+                        crate::module::TriggerTarget::Opacity => source_props.opacity = final_val,
                         crate::module::TriggerTarget::Brightness => {
                             source_props.brightness = final_val
                         }
@@ -806,9 +830,14 @@ impl ModuleEvaluator {
             }
 
             // Find main input connection (to ANY socket - usually socket 0)
-            // L522 replacement
-            if let Some(conn) = conn_index.get(&current_id).and_then(|v| v.first()) {
-                if let Some(part) = part_index.get(&conn.from_part) {
+            if let Some(conn_idx) = self
+                .conn_incoming_indices
+                .get(&current_id)
+                .and_then(|v| v.first())
+            {
+                let conn = &module.connections[*conn_idx];
+                if let Some(part_idx) = self.part_id_to_idx.get(&conn.from_part) {
+                    let part = &module.parts[*part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
                             source_id = Some(part.id);
@@ -845,19 +874,16 @@ impl ModuleEvaluator {
                                     flip_vertical: *flip_vertical,
                                 };
 
-                                // Re-apply overrides since we just replaced with defaults
-                                // (This structure is slightly inefficient, re-doing logic)
-                                // Better: Apply overrides TO props.
-
                                 // .. Re-run target logic ..
                                 for (socket_idx, config) in &part.trigger_targets {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
-                                    // L556 replacement
-                                    if let Some(conns) = conn_index.get(&part.id) {
-                                        if let Some(conn) =
-                                            conns.iter().find(|c| c.to_socket == *socket_idx)
-                                        {
+                                    if let Some(indices) = self.conn_incoming_indices.get(&part.id)
+                                    {
+                                        if let Some(conn_idx) = indices.iter().find(|&&i| {
+                                            module.connections[i].to_socket == *socket_idx
+                                        }) {
+                                            let conn = &module.connections[*conn_idx];
                                             if let Some(from_values) =
                                                 trigger_values.get(&conn.from_part)
                                             {
@@ -869,8 +895,6 @@ impl ModuleEvaluator {
                                         }
                                     }
 
-                                    // Apply config if value is significant (or if fixed/random mode which might trigger on 0?)
-                                    // Actually we just apply the mapping.
                                     match &config.target {
                                         crate::module::TriggerTarget::None => {}
                                         target => {
@@ -887,17 +911,6 @@ impl ModuleEvaluator {
                                                     props.opacity = final_val;
                                                 }
                                                 crate::module::TriggerTarget::Brightness => {
-                                                    // Map 0..1 to -1..1 for brightness if direct, or use configured range
-                                                    // With TriggerConfig, the user sets min/max.
-                                                    // If user wants -1..1, they set min=-1, max=1.
-                                                    // So we just assign the final_val directly if it's calibrated.
-                                                    // BUT: Historical behavior was 0..1 -> -1..1.
-                                                    // If we just use final_val which defaults to 0..1, brightness will be positive only.
-                                                    // Let's assume the user configures the range in the UI.
-                                                    // However, legacy projects might rely on the hardcoded mapping.
-                                                    // To support legacy, we could check if config is default?
-                                                    // But we want to empower the user.
-                                                    // For now, let's trust the configured min/max.
                                                     props.brightness = final_val;
                                                 }
                                                 crate::module::TriggerTarget::Contrast => {
@@ -1401,17 +1414,11 @@ mod tests_logic {
 
         // Need indices to test trace_chain now, or just call evaluate?
         // trace_chain is private. But the test calls it directly.
-        // I need to update the test to pass indices.
 
-        let part_index: HashMap<ModulePartId, &ModulePart> =
-            module.parts.iter().map(|p| (p.id, p)).collect();
-        let mut conn_index: HashMap<ModulePartId, Vec<&ModuleConnection>> = HashMap::new();
-        for conn in &module.connections {
-            conn_index.entry(conn.to_part).or_default().push(conn);
-        }
+        evaluator.rebuild_indices(&module);
 
         // Start trace from 1
-        let chain = evaluator.trace_chain(1, &part_index, &conn_index);
+        let chain = evaluator.trace_chain(1, &module);
 
         // Should not panic or hang, but finish with limited effects
         // The limit is 50.

@@ -17,3 +17,7 @@
 ## 2026-05-21 - Iterating VecDeque Windows
 **Learning:** `VecDeque` does not support slice methods like `.windows()` directly because its memory is not guaranteed to be contiguous. Calling `make_contiguous` moves memory, which defeats the purpose of O(1) operations.
 **Action:** For simple sliding windows on `VecDeque` (like calculating deltas), use `iter().zip(iter().skip(1))` instead of converting to a slice or `Vec`.
+
+## 2026-05-26 - Transient Index Caching
+**Learning:** For graph traversal in a hot path (`ModuleEvaluator::evaluate`), re-allocating `HashMap`s and `Vec`s every frame to build acceleration indices is a performance bottleneck.
+**Action:** Use persistent fields (`part_id_to_idx`, `conn_incoming_indices`) in the evaluator struct and clear/repopulate them using `clear()` (preserving capacity) instead of dropping them. This converts per-frame allocation overhead to amortized zero allocation.
