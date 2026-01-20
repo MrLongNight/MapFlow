@@ -5465,9 +5465,9 @@ impl ModuleCanvas {
                     let p1 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t1);
                     let p2 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t2);
                     // Shadow
-                    painter.line_segment([p1, p2], Stroke::new(4.0 * self.zoom, shadow_color));
+                    painter.line_segment([p1, p2], Stroke::new(5.0 * self.zoom, shadow_color));
                     // Cable
-                    painter.line_segment([p1, p2], Stroke::new(2.5 * self.zoom, cable_color));
+                    painter.line_segment([p1, p2], Stroke::new(3.0 * self.zoom, cable_color));
                 }
 
                 // Draw Plugs on top of cable
@@ -5576,13 +5576,13 @@ impl ModuleCanvas {
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
         let neutral_bg = Color32::from_rgb(20, 20, 25);
-        painter.rect_filled(rect, (6.0 * self.zoom) as u8, neutral_bg);
+        painter.rect_filled(rect, (8.0 * self.zoom) as u8, neutral_bg);
 
         // Node border - colored by type for quick identification
         // This replaces the generic gray border
         painter.rect_stroke(
             rect,
-            (6.0 * self.zoom) as u8,
+            (8.0 * self.zoom) as u8,
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
             egui::StrokeKind::Inside,
         );
@@ -5595,12 +5595,21 @@ impl ModuleCanvas {
         painter.rect_filled(
             title_rect,
             egui::CornerRadius {
-                nw: (6.0 * self.zoom) as u8,
-                ne: (6.0 * self.zoom) as u8,
+                nw: (8.0 * self.zoom) as u8,
+                ne: (8.0 * self.zoom) as u8,
                 sw: 0,
                 se: 0,
             },
             title_color,
+        );
+
+        // Title bar top highlight (bevel effect)
+        painter.line_segment(
+            [
+                Pos2::new(rect.min.x + 2.0, rect.min.y + 1.0),
+                Pos2::new(rect.max.x - 2.0, rect.min.y + 1.0),
+            ],
+            Stroke::new(1.0 * self.zoom, Color32::from_white_alpha(50)),
         );
 
         // Title separator line - make it sharper
@@ -5621,7 +5630,7 @@ impl ModuleCanvas {
             ),
             egui::Align2::CENTER_CENTER,
             title_text,
-            egui::FontId::proportional(13.0 * self.zoom),
+            egui::FontId::proportional(14.0 * self.zoom),
             Color32::WHITE,
         );
 
@@ -5698,7 +5707,7 @@ impl ModuleCanvas {
         for (i, socket) in part.inputs.iter().enumerate() {
             let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
             let socket_pos = Pos2::new(rect.min.x, socket_y);
-            let socket_radius = 6.0 * self.zoom;
+            let socket_radius = 7.0 * self.zoom;
 
             // Socket "Port" style (dark hole with colored ring)
             let socket_color = Self::get_socket_color(&socket.socket_type);
@@ -5715,14 +5724,20 @@ impl ModuleCanvas {
                 socket_radius - 2.0 * self.zoom,
                 Color32::from_gray(20),
             );
+            // Inner dot (Connector contact)
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                Color32::from_gray(100),
+            );
 
             // Socket label
             painter.text(
-                Pos2::new(rect.min.x + 12.0 * self.zoom, socket_y),
+                Pos2::new(rect.min.x + 14.0 * self.zoom, socket_y),
                 egui::Align2::LEFT_CENTER,
                 &socket.name,
-                egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(220), // Brighter text
+                egui::FontId::proportional(11.0 * self.zoom),
+                Color32::from_gray(230), // Brighter text
             );
         }
 
@@ -5730,7 +5745,7 @@ impl ModuleCanvas {
         for (i, socket) in part.outputs.iter().enumerate() {
             let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
             let socket_pos = Pos2::new(rect.max.x, socket_y);
-            let socket_radius = 6.0 * self.zoom;
+            let socket_radius = 7.0 * self.zoom;
 
             // Socket "Port" style
             let socket_color = Self::get_socket_color(&socket.socket_type);
@@ -5747,14 +5762,20 @@ impl ModuleCanvas {
                 socket_radius - 2.0 * self.zoom,
                 Color32::from_gray(20),
             );
+            // Inner dot (Connector contact)
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                Color32::from_gray(100),
+            );
 
             // Socket label
             painter.text(
-                Pos2::new(rect.max.x - 12.0 * self.zoom, socket_y),
+                Pos2::new(rect.max.x - 14.0 * self.zoom, socket_y),
                 egui::Align2::RIGHT_CENTER,
                 &socket.name,
-                egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(220), // Brighter text
+                egui::FontId::proportional(11.0 * self.zoom),
+                Color32::from_gray(230), // Brighter text
             );
 
             // Draw live value meter for output sockets
