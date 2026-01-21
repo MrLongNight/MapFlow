@@ -166,16 +166,10 @@ mod tests {
         let deserialized: AppState =
             serde_json::from_str(&serialized).expect("Failed to deserialize AppState");
 
-        // Note: We cannot compare 'dirty' flag as it is skipped in serialization
-        // But everything else should be equal
-        assert_eq!(original.name, deserialized.name);
-        assert_eq!(original.version, deserialized.version);
-        assert_eq!(original.settings, deserialized.settings);
-
-        // Check key manager states
-        assert_eq!(original.paint_manager, deserialized.paint_manager);
-        assert_eq!(original.layer_manager, deserialized.layer_manager);
-        // Note: ModuleManager derived PartialEq check
-        assert_eq!(original.module_manager, deserialized.module_manager);
+        // Note: We cannot compare 'dirty' flag as it is skipped in serialization.
+        // However, AppState::new() initializes dirty=false, and Default (used by serde skip)
+        // initializes dirty=false. So the full equality check should pass!
+        // This is a much better test as it covers ALL fields automatically.
+        assert_eq!(original, deserialized);
     }
 }

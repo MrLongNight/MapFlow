@@ -1355,7 +1355,7 @@ mod tests_logic {
 
     #[test]
     fn test_trace_chain_limit() {
-        let mut evaluator = ModuleEvaluator::new();
+        let evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
         // Create a cycle: Part 1 -> Part 2 -> Part 1

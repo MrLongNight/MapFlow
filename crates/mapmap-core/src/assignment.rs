@@ -110,3 +110,74 @@ impl AssignmentManager {
         &self.assignments
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_assignment_creation() {
+        let source = ControlSource::Midi {
+            channel: 1,
+            note: 60,
+        };
+        let target = ControlTarget::LayerOpacity { layer_id: 100 };
+        let assignment = Assignment::new(source.clone(), target.clone());
+
+        assert_eq!(assignment.source, source);
+        assert_eq!(assignment.target, target);
+        assert!(assignment.enabled);
+        assert!(!assignment.id.is_nil());
+    }
+
+    #[test]
+    fn test_assignment_manager_crud() {
+        let mut manager = AssignmentManager::new();
+        assert!(manager.assignments().is_empty());
+
+        let a1 = Assignment::new(
+            ControlSource::Osc {
+                address: "/fader/1".to_string(),
+            },
+            ControlTarget::LayerOpacity { layer_id: 1 },
+        );
+        let id1 = a1.id;
+
+        manager.add(a1);
+        assert_eq!(manager.assignments().len(), 1);
+
+        let a2 = Assignment::new(
+            ControlSource::Midi {
+                channel: 0,
+                note: 10,
+            },
+            ControlTarget::LayerOpacity { layer_id: 2 },
+        );
+        let id2 = a2.id;
+        manager.add(a2);
+        assert_eq!(manager.assignments().len(), 2);
+
+        manager.remove(id1);
+        assert_eq!(manager.assignments().len(), 1);
+        assert_eq!(manager.assignments()[0].id, id2);
+
+        manager.remove(id2);
+        assert!(manager.assignments().is_empty());
+    }
+
+    #[test]
+    fn test_serialization() {
+        let source = ControlSource::Dmx {
+            universe: 1,
+            channel: 1,
+        };
+        let target = ControlTarget::LayerOpacity { layer_id: 99 };
+        let assignment = Assignment::new(source, target);
+
+        let serialized = serde_json::to_string(&assignment).expect("Failed to serialize");
+        let deserialized: Assignment =
+            serde_json::from_str(&serialized).expect("Failed to deserialize");
+
+        assert_eq!(assignment, deserialized);
+    }
+}

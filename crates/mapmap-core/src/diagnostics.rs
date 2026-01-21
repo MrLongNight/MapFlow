@@ -133,3 +133,122 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
 
     issues
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::module::{
+        MapFlowModule, ModuleConnection, ModulePartType, ModulePlaybackMode,
+        PartType, SourceType,
+    };
+
+    fn create_empty_module() -> MapFlowModule {
+        MapFlowModule {
+            id: 1,
+            name: "Test Module".to_string(),
+            color: [1.0; 4],
+            parts: Vec::new(),
+            connections: Vec::new(),
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        }
+    }
+
+    #[test]
+    fn test_valid_module_no_issues() {
+        let mut module = create_empty_module();
+
+        // Create valid graph: Source -> Layer -> Output
+        let src_id = module.add_part(PartType::Source, (0.0, 0.0));
+        // Fix source path so it doesn't warn
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == src_id) {
+             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type {
+                 *path = "valid.mp4".to_string();
+             }
+        }
+
+        let layer_id = module.add_part(PartType::Layer, (100.0, 0.0));
+        let out_id = module.add_part(PartType::Output, (200.0, 0.0));
+
+        // Source(0) -> Layer(0)
+        module.add_connection(src_id, 0, layer_id, 0);
+        // Layer(0) -> Output(0)
+        module.add_connection(layer_id, 0, out_id, 0);
+
+        let issues = check_module_integrity(&module);
+        assert!(issues.is_empty(), "Expected no issues, found {:?}", issues);
+    }
+
+    #[test]
+    fn test_invalid_connection_topology() {
+        let mut module = create_empty_module();
+
+        // Add connection referring to non-existent parts
+        module.connections.push(ModuleConnection {
+            from_part: 999,
+            from_socket: 0,
+            to_part: 888,
+            to_socket: 0,
+        });
+
+        let issues = check_module_integrity(&module);
+        assert!(!issues.is_empty());
+
+        // Should have errors for missing parts
+        let errors = issues.iter().filter(|i| i.severity == IssueSeverity::Error).count();
+        assert!(errors >= 1);
+    }
+
+    #[test]
+    fn test_invalid_socket_index() {
+        let mut module = create_empty_module();
+        let src_id = module.add_part(PartType::Source, (0.0, 0.0));
+        let layer_id = module.add_part(PartType::Layer, (100.0, 0.0));
+
+        // Fix source path
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == src_id) {
+             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type {
+                 *path = "valid.mp4".to_string();
+             }
+        }
+
+        // Source has 1 output (index 0). Try connecting index 5.
+        module.connections.push(ModuleConnection {
+            from_part: src_id,
+            from_socket: 5,
+            to_part: layer_id,
+            to_socket: 0,
+        });
+
+        let issues = check_module_integrity(&module);
+        let errors: Vec<_> = issues.iter().filter(|i| i.severity == IssueSeverity::Error).collect();
+
+        assert!(!errors.is_empty());
+        assert!(errors[0].message.contains("references invalid socket index 5"));
+    }
+
+    #[test]
+    fn test_disconnected_output_warning() {
+        let mut module = create_empty_module();
+        // Add just an Output
+        module.add_part(PartType::Output, (0.0, 0.0));
+
+        let issues = check_module_integrity(&module);
+        let warnings: Vec<_> = issues.iter().filter(|i| i.severity == IssueSeverity::Warning).collect();
+
+        assert!(!warnings.is_empty());
+        assert!(warnings[0].message.contains("not connected"));
+    }
+
+    #[test]
+    fn test_empty_source_path_warning() {
+        let mut module = create_empty_module();
+        // Add Source (default path is empty)
+        module.add_part(PartType::Source, (0.0, 0.0));
+
+        let issues = check_module_integrity(&module);
+        let warnings: Vec<_> = issues.iter().filter(|i| i.severity == IssueSeverity::Warning).collect();
+
+        assert!(!warnings.is_empty());
+        assert!(warnings[0].message.contains("no file selected"));
+    }
+}
