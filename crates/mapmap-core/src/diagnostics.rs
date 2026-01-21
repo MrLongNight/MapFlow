@@ -138,8 +138,7 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
 mod tests {
     use super::*;
     use crate::module::{
-        MapFlowModule, ModuleConnection, ModulePartType, ModulePlaybackMode,
-        PartType, SourceType,
+        MapFlowModule, ModuleConnection, ModulePartType, ModulePlaybackMode, PartType, SourceType,
     };
 
     fn create_empty_module() -> MapFlowModule {
@@ -161,9 +160,10 @@ mod tests {
         let src_id = module.add_part(PartType::Source, (0.0, 0.0));
         // Fix source path so it doesn't warn
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == src_id) {
-             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type {
-                 *path = "valid.mp4".to_string();
-             }
+            if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
+            {
+                *path = "valid.mp4".to_string();
+            }
         }
 
         let layer_id = module.add_part(PartType::Layer, (100.0, 0.0));
@@ -194,7 +194,10 @@ mod tests {
         assert!(!issues.is_empty());
 
         // Should have errors for missing parts
-        let errors = issues.iter().filter(|i| i.severity == IssueSeverity::Error).count();
+        let errors = issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Error)
+            .count();
         assert!(errors >= 1);
     }
 
@@ -206,9 +209,10 @@ mod tests {
 
         // Fix source path
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == src_id) {
-             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type {
-                 *path = "valid.mp4".to_string();
-             }
+            if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
+            {
+                *path = "valid.mp4".to_string();
+            }
         }
 
         // Source has 1 output (index 0). Try connecting index 5.
@@ -220,10 +224,15 @@ mod tests {
         });
 
         let issues = check_module_integrity(&module);
-        let errors: Vec<_> = issues.iter().filter(|i| i.severity == IssueSeverity::Error).collect();
+        let errors: Vec<_> = issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Error)
+            .collect();
 
         assert!(!errors.is_empty());
-        assert!(errors[0].message.contains("references invalid socket index 5"));
+        assert!(errors[0]
+            .message
+            .contains("references invalid socket index 5"));
     }
 
     #[test]
@@ -233,7 +242,10 @@ mod tests {
         module.add_part(PartType::Output, (0.0, 0.0));
 
         let issues = check_module_integrity(&module);
-        let warnings: Vec<_> = issues.iter().filter(|i| i.severity == IssueSeverity::Warning).collect();
+        let warnings: Vec<_> = issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Warning)
+            .collect();
 
         assert!(!warnings.is_empty());
         assert!(warnings[0].message.contains("not connected"));
@@ -246,7 +258,10 @@ mod tests {
         module.add_part(PartType::Source, (0.0, 0.0));
 
         let issues = check_module_integrity(&module);
-        let warnings: Vec<_> = issues.iter().filter(|i| i.severity == IssueSeverity::Warning).collect();
+        let warnings: Vec<_> = issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Warning)
+            .collect();
 
         assert!(!warnings.is_empty());
         assert!(warnings[0].message.contains("no file selected"));
