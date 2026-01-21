@@ -46,7 +46,7 @@ pub struct WebServerConfig {
 }
 
 fn default_allowed_origins() -> Vec<String> {
-    vec!["*".to_string()]
+    vec![]
 }
 
 impl Default for WebServerConfig {
@@ -54,7 +54,7 @@ impl Default for WebServerConfig {
         Self {
             host: "127.0.0.1".to_string(),
             port: 8080,
-            enable_cors: true,
+            enable_cors: false,
             allowed_origins: default_allowed_origins(),
             auth: AuthConfig::new(),
         }
@@ -140,10 +140,9 @@ impl WebServer {
                 .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
                 .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
 
-            // If allowed_origins contains "*" or is empty (default permissive), allow Any
-            if self.config.allowed_origins.contains(&"*".to_string())
-                || self.config.allowed_origins.is_empty()
-            {
+            // If allowed_origins contains "*", allow Any.
+            // If empty, we do NOT default to Any (secure by default).
+            if self.config.allowed_origins.contains(&"*".to_string()) {
                 // Must be applied in separate branch to handle different concrete types
                 app.layer(cors_layer.allow_origin(Any))
             } else {
@@ -290,7 +289,8 @@ mod tests {
     #[test]
     fn test_web_server_default_origins() {
         let config = WebServerConfig::default();
-        assert!(config.allowed_origins.contains(&"*".to_string()));
+        assert!(config.allowed_origins.is_empty());
+        assert!(!config.enable_cors);
     }
 
     #[test]
