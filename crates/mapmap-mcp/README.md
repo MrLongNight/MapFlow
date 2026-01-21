@@ -1,11 +1,10 @@
 # MapFlow MCP Server
 
-<<<<<<< HEAD
-The **Model Context Protocol (MCP)** server for MapFlow. This crate enables AI assistants (like Claude, Gemini, or custom agents) to interact with and control the MapFlow application.
+This crate implements a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for MapFlow, enabling AI assistants (like Claude, Gemini, or custom agents) to interact with and control the MapFlow application.
 
 ## Overview
 
-MapFlow MCP exposes the internal state and control surface of the application via the standard [Model Context Protocol](https://modelcontextprotocol.io/). This allows for:
+MapFlow MCP exposes the internal state and control surface of the application via the standard Model Context Protocol. This allows for:
 
 - **Natural Language Control**: "Add a layer with the 'waves.mp4' file and set opacity to 50%."
 - **Automated Workflows**: Scripts that can manipulate the project state.
@@ -13,23 +12,18 @@ MapFlow MCP exposes the internal state and control surface of the application vi
 
 ## Features
 
-- **Project Management**: Save/Load projects.
-- **Layer Control**: Create layers, set opacity, blend modes, and visibility.
-- **Media Control**: Play, pause, seek, loop modes, and file loading.
+- **JSON-RPC 2.0**: Standard communication protocol over stdio or SSE.
+- **Project Management**: Save and load projects via AI commands.
+- **Layer Control**: Create, delete, modify, and mix layers (opacity, blend modes).
+- **Media Control**: Playback control (Play, Pause, Stop, Seek) and library management.
 - **Effect Chain**: Add/remove effects and modify parameters.
-- **Transport**: JSON-RPC 2.0 over Stdio or SSE (Server-Sent Events).
+- **Audio Reactivity**: Bind audio analysis parameters (bass, beat) to visual properties.
+- **Timeline**: Keyframe animation control.
+- **Scenes & Presets**: Manage scenes and recall presets.
 
 ## Architecture
 
 The MCP Server runs as a background service within the main MapFlow application (or as a standalone process for testing). It bridges external JSON-RPC requests to internal `McpAction` events, which are then processed by the main application loop.
-
-### Tools
-
-The server exposes a set of "Tools" that AI models can invoke. Examples include:
-
-- `layer_add(name: String)`
-- `media_play()`
-- `effect_set_param(layer_id: u64, effect_id: u64, param: String, value: f32)`
 
 ## Usage
 
@@ -42,22 +36,8 @@ use mapmap_mcp::McpServer;
 // The server is typically initialized by the App struct
 // let server = McpServer::new(...);
 ```
-=======
-This crate implements a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for MapFlow, enabling AI agents (like Claude Desktop or custom tools) to interact with and control the MapFlow application.
 
-## Features
-
-- **JSON-RPC 2.0**: Standard communication protocol over stdio.
-- **Project Management**: Save and load projects via AI commands.
-- **Layer Control**: Create, delete, modify, and mix layers.
-- **Media Control**: Playback control (Play, Pause, Stop, Seek) and library management.
-- **Audio Reactivity**: Bind audio analysis parameters (bass, beat) to visual properties.
-- **Timeline**: Keyframe animation control.
-- **Scenes & Presets**: Manage scenes and recall presets.
-
-## Usage
-
-This crate typically runs as a sidecar process or integrated module within the main application. However, it can also be run standalone for testing or specific integrations.
+You can also run it standalone for testing:
 
 ```bash
 # Run the MCP server (stdio mode)
@@ -86,11 +66,10 @@ To integrate with an MCP client (e.g., Claude Desktop), add the following to you
 
 ## Supported Actions
 
-The server supports a wide range of actions defined in `McpAction`, including:
+The server supports a set of "Tools" and actions defined in `McpAction`, including:
 
 *   **Project**: `SaveProject`, `LoadProject`
 *   **Layers**: `AddLayer`, `SetLayerOpacity`, `SetLayerBlendMode`
 *   **Media**: `MediaPlay`, `LayerLoadMedia`
-*   **Audio**: `AudioBindParam`, `AudioSetSensitivity`
 *   **Effects**: `EffectAdd`, `EffectSetParam`
->>>>>>> pr-217-branch
+*   **Audio**: `AudioBindParam`, `AudioSetSensitivity`

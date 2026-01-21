@@ -54,11 +54,26 @@ impl Default for ElementPosition {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MidiConfig {
     /// Control Change message
-    Cc { channel: u8, controller: u8 },
+    Cc {
+        /// MIDI Channel (0-15)
+        channel: u8,
+        /// Controller Number
+        controller: u8,
+    },
     /// Note On/Off message
-    Note { channel: u8, note: u8 },
+    Note {
+        /// MIDI Channel (0-15)
+        channel: u8,
+        /// Note Number
+        note: u8,
+    },
     /// Relative CC (for encoders)
-    CcRelative { channel: u8, controller: u8 },
+    CcRelative {
+        /// MIDI Channel (0-15)
+        channel: u8,
+        /// Controller Number
+        controller: u8,
+    },
 }
 
 /// A single controller element definition

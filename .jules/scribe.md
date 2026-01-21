@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 # Scribe Journal
-=======
-# Scribe Journal - 2026-01-09
 
-## Discrepancy in Documentation Structure
+## 2026-01-09 - Discrepancy in Documentation Structure
 
 I noticed a significant discrepancy between the documentation structure described in typical "Inventory" prompts/templates (listing `01-OVERVIEW`, `04-API`) and the actual filesystem structure (`01-GETTING-STARTED`, `04-USER-GUIDE`).
 
@@ -17,10 +14,7 @@ I noticed a significant discrepancy between the documentation structure describe
 - I have chosen to link to the **actual filesystem paths** (`01-GETTING-STARTED`) in `crates/mapmap/README.md` to avoid broken links.
 - I am documenting this here to clarify why the implementation might appear to diverge from the prompt's "inventory".
 
----
-
-# Scribe Journal - 2026-01-08
->>>>>>> pr-217-branch
+## 2026-01-08 - Journal Start
 
 ## Current State (2026-01-14)
 - **Cleanup**: Verified that `CHANGELOG.md` (root) is the superset of `docs/08-CHANGELOG/CHANGELOG.md` (which was stale, missing entries from 2026-01-13 and 2026-01-14). Safely deleted the stale duplicate to ensure a Single Source of Truth.

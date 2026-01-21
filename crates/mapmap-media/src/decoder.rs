@@ -10,8 +10,11 @@ use tracing::warn;
 /// Pixel format for decoded frames
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PixelFormat {
+    /// 32-bit RGBA (Red, Green, Blue, Alpha)
     RGBA8,
+    /// 32-bit BGRA (Blue, Green, Red, Alpha)
     BGRA8,
+    /// Planar YUV 4:2:0
     YUV420P,
 }
 
@@ -59,24 +62,35 @@ fn yuv420p_to_rgba(yuv_data: &[u8], width: u32, height: u32) -> Vec<u8> {
 /// is not thread-safe. Decoders should be used on a single thread or wrapped
 /// in appropriate synchronization primitives.
 pub trait VideoDecoder {
+    /// Get the next frame from the decoder
     fn next_frame(&mut self) -> Result<VideoFrame>;
+    /// Seek to a specific timestamp
     fn seek(&mut self, timestamp: Duration) -> Result<()>;
+    /// Get total duration of the video
     fn duration(&self) -> Duration;
+    /// Get video resolution (width, height)
     fn resolution(&self) -> (u32, u32);
+    /// Get video frame rate
     fn fps(&self) -> f64;
+    /// Clone the decoder state (if supported)
     fn clone_decoder(&self) -> Result<Box<dyn VideoDecoder>>;
 }
 
 /// Hardware acceleration type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HwAccelType {
+    /// No hardware acceleration (software decoding)
     None,
+    /// VA-API (Linux)
     #[cfg(target_os = "linux")]
     VAAPI,
+    /// VideoToolbox (macOS)
     #[cfg(target_os = "macos")]
     VideoToolbox,
+    /// DXVA2 (Windows)
     #[cfg(target_os = "windows")]
     DXVA2,
+    /// D3D11VA (Windows)
     #[cfg(target_os = "windows")]
     D3D11VA,
 }
@@ -427,8 +441,10 @@ impl VideoDecoder for TestPatternDecoder {
 
 /// Unified decoder that automatically uses FFmpeg if available, test pattern otherwise
 pub enum FFmpegDecoder {
+    /// Real FFmpeg implementation
     #[cfg(feature = "ffmpeg")]
     Real(ffmpeg_impl::RealFFmpegDecoder),
+    /// Fallback test pattern generator
     TestPattern(TestPatternDecoder),
 }
 

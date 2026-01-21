@@ -6,6 +6,8 @@
 //!
 //! Multi-threaded decoding pipeline is planned for a future phase.
 
+#![warn(missing_docs)]
+
 use std::path::Path;
 use thiserror::Error;
 
@@ -42,18 +44,23 @@ pub use sequence::ImageSequenceDecoder;
 /// Media errors
 #[derive(Error, Debug)]
 pub enum MediaError {
+    /// Failed to open file
     #[error("Failed to open file: {0}")]
     FileOpen(String),
 
+    /// No valid video stream found in file
     #[error("No video stream found")]
     NoVideoStream,
 
+    /// Error during decoding
     #[error("Decoder error: {0}")]
     DecoderError(String),
 
+    /// End of stream reached
     #[error("End of stream")]
     EndOfStream,
 
+    /// Error during seeking
     #[error("Seek error: {0}")]
     SeekError(String),
 }
