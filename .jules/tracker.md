@@ -37,3 +37,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-19 - Conflict Resolution & Missing Features Audit
 **Erkenntnis:** Merge-Konflikt in `ROADMAP.md` entdeckt und behoben (Version 1.9.2). Zwei bedeutende Features (Hue Integration, Node Module System) fehlten im Changelog.
 **Aktion:** ROADMAP-Status für FFmpeg/CI und Hue aktualisiert. Fehlende Changelog-Einträge für Commits #b8dd83b und #484c78e nachgetragen.
+
+## 2026-01-19 - Undocumented Hue Integration Commit
+**Erkenntnis:** Found a direct commit `89ec4d4` ("Changes to be committed: ...") that finalized the Hue Controller integration in `main.rs` but was not in `CHANGELOG.md`. Also `ROADMAP_2.0.md` listed Hue Integration as `PLANNED ⬜` despite code being present.
+**Aktion:** Added `feat(hue)` entry to `CHANGELOG.md`. Updated `ROADMAP_2.0.md` Phase 9 status to `IN PROGRESS 🟡` and marked implemented sub-features as `✅`.

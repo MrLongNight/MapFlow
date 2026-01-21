@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-19 11:00
+> **Stand:** 2026-01-19 22:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -838,7 +838,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ `scripts/install-ffmpeg-dev.sh` – FFmpeg-Install-Script
   - ✅ `rust-toolchain.toml` – Rust-Version 1.75
 
-### Phase 9: Lighting Integration – PLANNED
+### Phase 9: Lighting Integration – 🟡 IN PROGRESS
 
 - ⬜ **Art-Net DMX Output** (`mapmap-io/src/artnet/`)
   - ⬜ `artnet_protocol` Crate integrieren
@@ -846,12 +846,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Audio-reaktive DMX-Werte generieren
   - ⬜ UI: DMX-Channel-Mapper in Module Canvas
 
-- ⬜ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
-  - ⬜ `hueclient` für Bridge-Discovery und API-Zugriff
-  - ⬜ `udp-dtls` für Entertainment-Streaming
-  - ⬜ Audio-reaktive Farb-Synchronisation
+- 🟡 **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
+  - ✅ `hueclient` für Bridge-Discovery und API-Zugriff (COMPLETED 2026-01-19)
+  - ✅ `udp-dtls` für Entertainment-Streaming (COMPLETED 2026-01-19)
+  - ✅ Audio-reaktive Farb-Synchronisation (via Audio Trigger & Module System)
   - ⬜ Latenz-Ziel: <100ms
-  - ⬜ UI: Hue-Lampen-Auswahl und Zonen-Mapping
+  - ✅ UI: Hue-Lampen-Auswahl und Zonen-Mapping (COMPLETED 2026-01-19)
 
 ### 🔬 Evaluierte Libraries für Core-Funktionen
 
