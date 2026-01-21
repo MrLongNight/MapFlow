@@ -178,8 +178,8 @@ Texture Output\nzu Modulizer/Layer
                           Trigger Signal (0.0-1.0)
 NOTE
 
-Die Diagramme zeigen den logischen Datenfluss. Die tatsächliche Implementierung nutzt einen 
+Die Diagramme zeigen den logischen Datenfluss. Die tatsächliche Implementierung nutzt einen
 ModuleEvaluator
-, der den Node-Graphen traversiert und 
+, der den Node-Graphen traversiert und
 RenderOp
 -Strukturen generiert.
