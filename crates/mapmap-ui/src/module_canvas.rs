@@ -943,11 +943,12 @@ impl ModuleCanvas {
 
                                                 // === APPEARANCE ===
                                                 ui.collapsing("🎨 Appearance", |ui| {
-                                                    ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+                                                    egui::Grid::new("appearance_grid").num_columns(2).spacing([10.0, 4.0]).show(ui, |ui| {
+                                                        ui.label("Opacity");
+                                                        ui.add(egui::Slider::new(opacity, 0.0..=1.0));
+                                                        ui.end_row();
 
-                                                    // Blend Mode selector
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("Blend Mode:");
+                                                        ui.label("Blend Mode");
                                                         egui::ComboBox::from_id_salt("blend_mode_selector")
                                                             .selected_text(match blend_mode {
                                                                 Some(BlendModeType::Normal) => "Normal",
@@ -982,55 +983,84 @@ impl ModuleCanvas {
                                                                     *blend_mode = Some(BlendModeType::Exclusion);
                                                                 }
                                                             });
+                                                        ui.end_row();
                                                     });
                                                 });
 
                                                 // === COLOR CORRECTION ===
                                                 ui.collapsing("🌈 Color Correction", |ui| {
-                                                    ui.add(egui::Slider::new(brightness, -1.0..=1.0).text("Brightness"));
-                                                    ui.add(egui::Slider::new(contrast, 0.0..=2.0).text("Contrast"));
-                                                    ui.add(egui::Slider::new(saturation, 0.0..=2.0).text("Saturation"));
-                                                    ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).text("Hue Shift").suffix("°"));
-                                                    if ui.button("Reset Colors").clicked() {
-                                                        *brightness = 0.0;
-                                                        *contrast = 1.0;
-                                                        *saturation = 1.0;
-                                                        *hue_shift = 0.0;
-                                                    }
+                                                    ui.horizontal(|ui| {
+                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                             if ui.add(egui::Button::new("↺ Reset").small()).on_hover_text("Reset all color corrections").clicked() {
+                                                                 *brightness = 0.0;
+                                                                 *contrast = 1.0;
+                                                                 *saturation = 1.0;
+                                                                 *hue_shift = 0.0;
+                                                             }
+                                                        });
+                                                    });
+
+                                                    egui::Grid::new("color_corr_grid").num_columns(2).spacing([10.0, 4.0]).show(ui, |ui| {
+                                                        ui.label("Brightness");
+                                                        ui.add(egui::Slider::new(brightness, -1.0..=1.0));
+                                                        ui.end_row();
+
+                                                        ui.label("Contrast");
+                                                        ui.add(egui::Slider::new(contrast, 0.0..=2.0));
+                                                        ui.end_row();
+
+                                                        ui.label("Saturation");
+                                                        ui.add(egui::Slider::new(saturation, 0.0..=2.0));
+                                                        ui.end_row();
+
+                                                        ui.label("Hue Shift");
+                                                        ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).suffix("°"));
+                                                        ui.end_row();
+                                                    });
                                                 });
 
                                                 // === TRANSFORM ===
                                                 ui.collapsing("📐 Transform", |ui| {
                                                     ui.horizontal(|ui| {
-                                                        ui.label("Scale:");
-                                                        ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
-                                                    });
-                                                    ui.add(egui::Slider::new(rotation, -180.0..=180.0).text("Rotation").suffix("°"));
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("Offset:");
-                                                        ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
-                                                    });
-
-
-                                                    ui.separator();
-                                                    ui.label("Mirror / Flip:");
-                                                    ui.horizontal(|ui| {
-                                                        ui.checkbox(flip_horizontal, "↔️ Horizontal");
-                                                        ui.checkbox(flip_vertical, "↕️ Vertical");
+                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                            if ui.add(egui::Button::new("↺ Reset").small()).on_hover_text("Reset all transforms").clicked() {
+                                                                *scale_x = 1.0;
+                                                                *scale_y = 1.0;
+                                                                *rotation = 0.0;
+                                                                *offset_x = 0.0;
+                                                                *offset_y = 0.0;
+                                                                *flip_horizontal = false;
+                                                                *flip_vertical = false;
+                                                            }
+                                                        });
                                                     });
 
+                                                    egui::Grid::new("transform_grid").num_columns(2).spacing([10.0, 4.0]).show(ui, |ui| {
+                                                        ui.label("Scale");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
+                                                            ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
+                                                        });
+                                                        ui.end_row();
 
-                                                    if ui.button("Reset Transform").clicked() {
-                                                        *scale_x = 1.0;
-                                                        *scale_y = 1.0;
-                                                        *rotation = 0.0;
-                                                        *offset_x = 0.0;
-                                                        *offset_y = 0.0;
-                                                        *flip_horizontal = false;
-                                                        *flip_vertical = false;
-                                                    }
+                                                        ui.label("Rotation");
+                                                        ui.add(egui::Slider::new(rotation, -180.0..=180.0).suffix("°"));
+                                                        ui.end_row();
+
+                                                        ui.label("Offset");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
+                                                            ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
+                                                        });
+                                                        ui.end_row();
+
+                                                        ui.label("Mirror / Flip");
+                                                        ui.horizontal(|ui| {
+                                                            ui.checkbox(flip_horizontal, "Horizontal");
+                                                            ui.checkbox(flip_vertical, "Vertical");
+                                                        });
+                                                        ui.end_row();
+                                                    });
                                                 });
 
                                                 // === VIDEO OPTIONS ===
