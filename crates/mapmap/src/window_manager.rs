@@ -103,7 +103,7 @@ impl WindowManager {
             format: wgpu::TextureFormat::Bgra8Unorm,
             width: default_width,
             height: default_height,
-            present_mode: wgpu::PresentMode::Fifo,
+            present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
             view_formats: vec![],
             desired_maximum_frame_latency: 2,

@@ -39,7 +39,7 @@ use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use window_manager::WindowManager;
 use winit::{event::WindowEvent, event_loop::EventLoop};
@@ -775,6 +775,23 @@ impl App {
                 }
             }
             winit::event::Event::AboutToWait => {
+                // --- Frame Limiter ---
+                let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
+                // If target is 0 (VSync) but we are in AutoNoVsync mode, we must cap it ensuring we don't busy loop
+                // Default to 60 if 0 to be safe
+                let cap_fps = if target_fps <= 0.0 { 60.0 } else { target_fps };
+
+                let frame_target = std::time::Duration::from_secs_f64(1.0 / cap_fps as f64);
+                let time_since_last = std::time::Instant::now().duration_since(self.last_update);
+
+                if time_since_last < frame_target {
+                    let wait_until = std::time::Instant::now() + (frame_target - time_since_last);
+                    elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
+                    return Ok(());
+                }
+
+                elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+
                 // Poll MIDI
                 #[cfg(feature = "midi")]
                 if let Some(handler) = &mut self.midi_handler {
@@ -979,56 +996,7 @@ impl App {
                 // Update all active media players and upload frames to texture pool
                 // This ensures previews work even without triggers connected
 
-                // ⚡ Bolt Optimization: Use disjoint borrowing to avoid collecting keys and re-looking up players
-                // This removes N heap allocations and N hash lookups per frame.
-                let texture_pool = &mut self.texture_pool;
-                let queue = &self.backend.queue;
-                let ui_state = &mut self.ui_state;
-                let media_players = &mut self.media_players;
-
-                if !media_players.is_empty() {
-                    debug!("Updating {} active media players", media_players.len());
-                }
-
-                for (part_id, player) in media_players {
-                    debug!(
-                        "Updating player for part_id={}, state={:?}",
-                        part_id,
-                        player.state()
-                    );
-                    if let Some(frame) = player.update(std::time::Duration::from_millis(16)) {
-                        debug!(
-                            "Got frame for part_id={}, size={}x{}",
-                            part_id, frame.format.width, frame.format.height
-                        );
-                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                            let tex_name = format!("part_{}", part_id);
-                            debug!("Uploading texture '{}' with {} bytes", tex_name, data.len());
-                            texture_pool.upload_data(
-                                queue,
-                                &tex_name,
-                                data,
-                                frame.format.width,
-                                frame.format.height,
-                            );
-                        } else {
-                            debug!("Frame data is GPU-based, not CPU");
-                        }
-                    }
-
-                    // Sync player info to UI for timeline display
-                    ui_state.module_canvas.player_info.insert(
-                        *part_id,
-                        mapmap_ui::MediaPlayerInfo {
-                            current_time: player.current_time().as_secs_f64(),
-                            duration: player.duration().as_secs_f64(),
-                            is_playing: matches!(
-                                player.state(),
-                                mapmap_media::PlaybackState::Playing
-                            ),
-                        },
-                    );
-                }
+                // (Redundant media player update removed - handled in regular update_media_players path)
 
                 // Determine module to evaluate: either active from UI, or root_module
                 let module_to_evaluate = self
@@ -1915,6 +1883,10 @@ impl App {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             .is_multiple_of(60);
 
+        let texture_pool = &mut self.texture_pool;
+        let queue = &self.backend.queue;
+        let ui_state = &mut self.ui_state;
+
         for (id, player) in &mut self.media_players {
             // Update player logic
             if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
@@ -1931,8 +1903,8 @@ impl App {
                             data.len()
                         );
                     }
-                    self.texture_pool.upload_data(
-                        &self.backend.queue,
+                    texture_pool.upload_data(
+                        queue,
                         &tex_name,
                         data,
                         frame.format.width,
@@ -1942,6 +1914,16 @@ impl App {
             } else if log_this_frame {
                 tracing::warn!("Media player {} returned no frame", id);
             }
+
+            // Sync player info to UI for timeline display
+            ui_state.module_canvas.player_info.insert(
+                *id,
+                mapmap_ui::MediaPlayerInfo {
+                    current_time: player.current_time().as_secs_f64(),
+                    duration: player.duration().as_secs_f64(),
+                    is_playing: matches!(player.state(), mapmap_media::PlaybackState::Playing),
+                },
+            );
         }
     }
 
