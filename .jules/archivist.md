@@ -35,3 +35,14 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `crates/mapmap-render/src/effect_chain_renderer.rs` aktualisiert, um die Shader aus dem neuen Pfad (`../../../shaders/`) zu laden.
 - `crates/mapmap-render/shaders/` Verzeichnis gelöscht.
 - Build mit `cargo check` verifiziert.
+
+## 2026-01-22 - Documentation Structure Divergence
+**Erkenntnis:** Das Repository weicht von der in `MAPFLOW PROJEKTSTRUKTUR` definierten `docs/` Struktur ab.
+- Standard: `docs/01-OVERVIEW`, `docs/02-USER-GUIDE`, `docs/05-DEVELOPMENT`.
+- Ist-Zustand: `docs/01-GETTING-STARTED`, `docs/02-CONTRIBUTING`, `docs/05-ROADMAP`.
+Zusätzlich wurde ein nicht-standardkonformes Verzeichnis `docs/agent_rules/` entdeckt.
+
+**Aktion:**
+- `docs/agent_rules/ci_cd_strategy.md` wurde nach `docs/07-TECHNICAL/CI_CD_STRATEGY.md` verschoben, um Konformität mit technischen Dokumentationsstandards herzustellen.
+- Die Divergenz der `docs/` Struktur wurde dokumentiert, aber keine "Größere Ordnerumstrukturierung" ohne Rückfrage vorgenommen.
+- `.jules/roles/archivist.md` wurde erstellt, um die Agenten-Rolle zu persistieren.
