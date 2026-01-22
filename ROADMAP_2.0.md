@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-20 10:00
+> **Stand:** 2026-01-20 12:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -205,6 +205,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   - ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   - ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   - ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
+  - ✅ **Live Performance Header** (Transport/Timecode/Region) - COMPLETED 2026-01-20
   - ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
 
 - ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
@@ -365,7 +366,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   - ✅ ImGui Removal (Code Cleanup) – COMPLETED (2025-12-23)
 
 - 🟡 **UI Redesign (Resolume Style)**
-  - 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
+  - ✅ Cyber Dark Theme (Neutral Dark Greys/Cyan Accents) - COMPLETED 2026-01-20
   - ✅ Zone-Based Layout (Left MediaBrowser, Right Inspector, Bottom Timeline) - COMPLETED 2025-12-24
   - ✅ Performance Overlay (Top-Right, Real FPS) - COMPLETED 2025-12-24
   - ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - REMOVED 2025-12-30 (use Module Canvas)
@@ -810,6 +811,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ Project-Save/Load-Tests (COMPLETED PR #68, 2025-12-22)
   - ✅ Multi-Output-Rendering-Tests (COMPLETED 2025-12-22)
   - ✅ ModuleEvaluator Tests (COMPLETED 2026-01-16)
+  - ✅ **TriggerConfig & MappingCurve Tests** (COMPLETED 2026-01-20)
   - ⬜ Effect-Chain-Tests
   - ⬜ End-to-End-Tests
 
