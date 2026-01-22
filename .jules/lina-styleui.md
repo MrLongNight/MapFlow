@@ -1,13 +1,21 @@
 # Lina StyleUI Journal
 
-## 2026-01-24 – Toolbar Hierarchy with Egui Frames
-**Learning:** `egui::Frame` is essential for creating visual hierarchy in complex toolbars. By wrapping distinct sections (Context, Actions, View) in a Frame with `inner_margin` and `fill(ui.visuals().panel_fill)`, we create a "toolbar" feel that separates it from the canvas content without needing custom widget rendering.
-**Action:** Use `egui::Frame` + `ui.horizontal` as the standard pattern for all panel headers and toolbars.
+## 2024-05-22 – [Visual Gap Analysis]
+**Learning:** MapFlow's current UI is "flat dark" but lacks the "Cyber Dark" structure found in industry standards (Resolume, MadMapper).
+- **Problem:** Visual Hierarchy is weak. Panels blend together. Lists are dense and unstyled. Active states are low-contrast.
+- **Reference Standard:** Resolume/MadMapper use:
+    - **Strong Borders:** Panels are clearly contained.
+    - **Neon Accents:** Active states (play, selected) are high-contrast Cyan or Orange.
+    - **Headers:** Content vs. Controls is strictly separated.
+**Action:** Implement "Cyber Dark" theme:
+1.  **Container Strategy:** Use `egui::Frame` with visible strokes/rounding for panels.
+2.  **Accent Strategy:** Define a "Cyber Cyan" or "Neon Orange" for `Visuals.selection`.
+3.  **Typography:** Ensure headers are distinct (e.g., Bold/Different Color) from data.
 
-## 2026-01-24 – Egui 0.27 Slider Constraints
-**Learning:** `egui::Slider` in v0.27 does not support a fluent `.width()` builder method. Layout sizing for sliders must be handled by the parent container (e.g., `ui.add_sized` or `ui.with_layout`) or by accepting default sizing behavior.
-**Action:** Avoid `.width()` on Sliders; rely on layout containers or `ui.add_sized` if precise width is critical.
-
-## 2026-02-07 – Shadow Rendering in Egui
-**Learning:** `egui::epaint::Shadow` does not implement `Shape` directly in some versions. Use `.tessellate(rect, rounding)` to generate the shape primitive for the painter.
-**Action:** Use `painter.add(shadow.tessellate(...))` for custom node shadows.
+## 2024-05-22 – [Theme Definition]
+**Learning:** `egui` default dark theme is functional but too "gray".
+**Action:** Will look for `ctx.set_visuals` to inject:
+- Background: Darker (almost black).
+- Panel Background: Dark Gray.
+- Stroke: Lighter Gray for definition.
+- Accent: High saturation.
