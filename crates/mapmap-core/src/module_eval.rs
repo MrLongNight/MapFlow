@@ -742,11 +742,7 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain(
-        &self,
-        start_node_id: ModulePartId,
-        module: &MapFlowModule,
-    ) -> ProcessingChain {
+    fn trace_chain(&self, start_node_id: ModulePartId, module: &MapFlowModule) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
         let mut override_mesh = None;
@@ -891,14 +887,16 @@ impl ModuleEvaluator {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
                                     // L556 replacement
-                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id) {
+                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id)
+                                    {
                                         for &conn_idx in conn_indices {
                                             let conn = &module.connections[conn_idx];
                                             if conn.to_socket == *socket_idx {
                                                 if let Some(from_values) =
                                                     trigger_values.get(&conn.from_part)
                                                 {
-                                                    if let Some(val) = from_values.get(conn.from_socket)
+                                                    if let Some(val) =
+                                                        from_values.get(conn.from_socket)
                                                     {
                                                         trigger_val = *val;
                                                     }
