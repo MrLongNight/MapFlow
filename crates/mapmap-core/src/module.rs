@@ -2028,6 +2028,20 @@ mod tests {
         assert!(!outputs
             .iter()
             .any(|s| s.socket_type == ModuleSocketType::Link));
+
+        // Case 4: Slave with Trigger Input Enabled (should have Link In AND Trigger In)
+        // Note: compute_sockets logic seems to say Trigger In is available for Master or normal,
+        // but explicit check says `if self.link_data.trigger_input_enabled { inputs.push(...) }`
+        // so it should be present regardless of link mode?
+        // Let's verify this behavior.
+        part.link_data.trigger_input_enabled = true;
+        let (inputs, _) = part.compute_sockets();
+        assert!(inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Link && s.name == "Link In"));
+        assert!(inputs
+            .iter()
+            .any(|s| s.socket_type == ModuleSocketType::Trigger && s.name == "Trigger In (Vis)"));
     }
 
     #[test]
@@ -2319,7 +2333,11 @@ fn test_blend_mode_type_variants() {
         match mode {
             BlendModeType::Normal => assert_eq!(name, "Normal"),
             BlendModeType::Add => assert_eq!(name, "Add"),
-            _ => {}
+                BlendModeType::Multiply => assert_eq!(name, "Multiply"),
+                BlendModeType::Screen => assert_eq!(name, "Screen"),
+                BlendModeType::Overlay => assert_eq!(name, "Overlay"),
+                BlendModeType::Difference => assert_eq!(name, "Difference"),
+                BlendModeType::Exclusion => assert_eq!(name, "Exclusion"),
         }
     }
 }
