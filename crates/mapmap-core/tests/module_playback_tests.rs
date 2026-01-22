@@ -19,7 +19,8 @@ fn test_module_playback_mode_serialization() {
     // Timeline mode
     let timeline_mode = ModulePlaybackMode::TimelineDuration { duration_ms: 1234 };
     let serialized_timeline = serde_json::to_string(&timeline_mode).unwrap();
-    let deserialized_timeline: ModulePlaybackMode = serde_json::from_str(&serialized_timeline).unwrap();
+    let deserialized_timeline: ModulePlaybackMode =
+        serde_json::from_str(&serialized_timeline).unwrap();
     assert_eq!(timeline_mode, deserialized_timeline);
 
     if let ModulePlaybackMode::TimelineDuration { duration_ms } = deserialized_timeline {

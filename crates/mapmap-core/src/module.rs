@@ -2333,11 +2333,11 @@ fn test_blend_mode_type_variants() {
         match mode {
             BlendModeType::Normal => assert_eq!(name, "Normal"),
             BlendModeType::Add => assert_eq!(name, "Add"),
-                BlendModeType::Multiply => assert_eq!(name, "Multiply"),
-                BlendModeType::Screen => assert_eq!(name, "Screen"),
-                BlendModeType::Overlay => assert_eq!(name, "Overlay"),
-                BlendModeType::Difference => assert_eq!(name, "Difference"),
-                BlendModeType::Exclusion => assert_eq!(name, "Exclusion"),
+            BlendModeType::Multiply => assert_eq!(name, "Multiply"),
+            BlendModeType::Screen => assert_eq!(name, "Screen"),
+            BlendModeType::Overlay => assert_eq!(name, "Overlay"),
+            BlendModeType::Difference => assert_eq!(name, "Difference"),
+            BlendModeType::Exclusion => assert_eq!(name, "Exclusion"),
         }
     }
 }
