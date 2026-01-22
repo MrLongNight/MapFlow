@@ -760,8 +760,13 @@ impl ModuleCanvas {
                                                 let rect = response.rect;
 
                                                 // Background (Full Track)
-                                                painter.rect_filled(rect, 4.0, Color32::from_gray(30));
-                                                painter.rect_stroke(rect, (4.0 * self.zoom) as u8, Stroke::new(1.0 * self.zoom, Color32::from_gray(60)), egui::StrokeKind::Inside);
+                painter.rect_filled(rect, 0.0, Color32::from_gray(30));
+                painter.rect_stroke(
+                    rect,
+                    0,
+                    Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
+                    egui::StrokeKind::Inside,
+                );
 
                                                 // Data normalization
                                                 let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
@@ -771,10 +776,19 @@ impl ModuleCanvas {
                                                 // Active Region Highlight
                                                 let region_rect = Rect::from_min_max(
                                                     Pos2::new(start_x, rect.min.y),
-                                                    Pos2::new(end_x, rect.max.y)
+                    Pos2::new(end_x, rect.max.y),
+                );
+                painter.rect_filled(
+                    region_rect,
+                    0.0,
+                    Color32::from_rgba_unmultiplied(60, 180, 100, 80),
+                );
+                painter.rect_stroke(
+                    region_rect,
+                    0.0,
+                    Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
+                    egui::StrokeKind::Inside,
                                                 );
-                                                painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 80));
-                                                painter.rect_stroke(region_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(60, 180, 100)), egui::StrokeKind::Inside);
 
                                                 // INTERACTION LOGIC
                                                 let mut handled = false;
@@ -3664,10 +3678,11 @@ impl ModuleCanvas {
             // Draw selection highlight if selected
             if self.selected_parts.contains(&part.id) {
                 let highlight_rect = part_screen_rect.expand(4.0 * self.zoom);
+                // "Cyber" selection: Neon Cyan, Sharp Corners
                 painter.rect_stroke(
                     highlight_rect,
-                    (8.0 * self.zoom) as u8,
-                    Stroke::new(3.0 * self.zoom, Color32::from_rgb(100, 200, 255)),
+                    0, // Sharp corners
+                    Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
                     egui::StrokeKind::Inside,
                 );
 
@@ -3680,7 +3695,8 @@ impl ModuleCanvas {
                     ),
                     Vec2::splat(handle_size),
                 );
-                painter.rect_filled(handle_rect, 2.0, Color32::from_rgb(100, 200, 255));
+                // Cyan resize handle, sharp
+                painter.rect_filled(handle_rect, 0, Color32::from_rgb(0, 229, 255));
                 // Draw diagonal lines for resize indicator
                 painter.line_segment(
                     [
@@ -3801,12 +3817,12 @@ impl ModuleCanvas {
             let painter = ui.painter();
             painter.rect_filled(
                 menu_rect,
-                4.0,
+                0.0,
                 Color32::from_rgba_unmultiplied(40, 40, 50, 250),
             );
             painter.rect_stroke(
                 menu_rect,
-                4.0,
+                0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
                 egui::StrokeKind::Inside,
             );
@@ -3858,12 +3874,12 @@ impl ModuleCanvas {
         let painter = ui.painter();
         painter.rect_filled(
             popup_rect,
-            8.0,
+            0.0,
             Color32::from_rgba_unmultiplied(30, 30, 40, 240),
         );
         painter.rect_stroke(
             popup_rect,
-            8.0,
+            0.0,
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
             egui::StrokeKind::Inside,
         );
@@ -3939,12 +3955,12 @@ impl ModuleCanvas {
         let painter = ui.painter();
         painter.rect_filled(
             popup_rect,
-            8.0,
+            0.0,
             Color32::from_rgba_unmultiplied(30, 35, 45, 245),
         );
         painter.rect_stroke(
             popup_rect,
-            8.0,
+            0.0,
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
             egui::StrokeKind::Inside,
         );
@@ -4265,12 +4281,12 @@ impl ModuleCanvas {
         // Background
         painter.rect_filled(
             map_rect,
-            4,
+            0,
             Color32::from_rgba_unmultiplied(30, 30, 40, 200),
         );
         painter.rect_stroke(
             map_rect,
-            4,
+            0,
             Stroke::new(1.0, Color32::from_gray(80)),
             egui::StrokeKind::Inside,
         );
@@ -5354,15 +5370,16 @@ impl ModuleCanvas {
             );
 
             // Draw a thick stroke as a glow replacement since Shadow is deprecated/removed
+            // Sharp corners for glow
             painter.rect_stroke(
                 rect.expand(2.0 * self.zoom),
-                (8.0 * self.zoom) as u8,
+                0,
                 Stroke::new(3.0 * self.zoom, glow_color.linear_multiply(0.5)),
                 egui::StrokeKind::Outside,
             );
             painter.rect_stroke(
                 rect.expand(1.0 * self.zoom),
-                (8.0 * self.zoom) as u8,
+                0,
                 Stroke::new(1.0 * self.zoom, glow_color),
                 egui::StrokeKind::Outside,
             );
@@ -5381,13 +5398,14 @@ impl ModuleCanvas {
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
         let neutral_bg = Color32::from_rgb(20, 20, 25);
-        painter.rect_filled(rect, (8.0 * self.zoom) as u8, neutral_bg);
+        // Sharp corners for "Cyber" look
+        painter.rect_filled(rect, 0, neutral_bg);
 
         // Node border - colored by type for quick identification
         // This replaces the generic gray border
         painter.rect_stroke(
             rect,
-            (8.0 * self.zoom) as u8,
+            0, // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
             egui::StrokeKind::Inside,
         );
@@ -5399,12 +5417,7 @@ impl ModuleCanvas {
         // Title bar with subtle gradient or solid color
         painter.rect_filled(
             title_rect,
-            egui::CornerRadius {
-                nw: (8.0 * self.zoom) as u8,
-                ne: (8.0 * self.zoom) as u8,
-                sw: 0,
-                se: 0,
-            },
+            0, // Sharp corners
             title_color,
         );
 
@@ -5894,12 +5907,12 @@ impl ModuleCanvas {
         let painter = ui.painter();
         painter.rect_filled(
             popup_rect,
-            8.0,
+            0.0,
             Color32::from_rgba_unmultiplied(30, 35, 45, 245),
         );
         painter.rect_stroke(
             popup_rect,
-            8,
+            0,
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
             egui::StrokeKind::Inside,
         );
