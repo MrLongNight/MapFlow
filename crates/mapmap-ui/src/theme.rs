@@ -33,7 +33,7 @@ pub struct ThemeConfig {
 impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
-            theme: Theme::Dark,
+            theme: Theme::Resolume, // Default to Cyber Dark (Resolume)
             custom_colors: None,
             font_size: 14.0,
             spacing: 4.0,
@@ -273,66 +273,73 @@ impl ThemeConfig {
         }
     }
 
-    /// Resolume Arena-like theme visuals
+    /// Resolume Arena-like theme visuals (Cyber Dark: Neutral Dark + Cyan/Mint Accents)
     fn resolume_visuals() -> Visuals {
+        let cyan_accent = Color32::from_rgb(0, 229, 255); // Neon Cyan
+        let mint_accent = Color32::from_rgb(0, 255, 170); // Mint for selection/alt
+        let dark_grey = Color32::from_rgb(20, 20, 20); // Main Panel Background
+        let darker_grey = Color32::from_rgb(10, 10, 10); // Window/Deep Background
+        let lighter_grey = Color32::from_rgb(45, 45, 45); // Widget Background
+        let stroke_grey = Color32::from_rgb(60, 60, 60); // Borders
+
         Visuals {
             dark_mode: true,
-            override_text_color: Some(Color32::from_rgb(234, 234, 234)),
+            override_text_color: Some(Color32::from_rgb(240, 240, 240)),
             widgets: egui::style::Widgets {
                 noninteractive: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(22, 33, 62),
-                    weak_bg_fill: Color32::from_rgb(22, 33, 62),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(160, 160, 160)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    bg_fill: darker_grey,
+                    weak_bg_fill: darker_grey,
+                    bg_stroke: egui::Stroke::new(1.0, stroke_grey),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
+                    corner_radius: egui::CornerRadius::same(0), // Sharp corners
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(26, 26, 46),
-                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(234, 234, 234)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    bg_fill: lighter_grey,
+                    weak_bg_fill: lighter_grey,
+                    bg_stroke: egui::Stroke::new(1.0, stroke_grey),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(26, 26, 46),
-                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
-                    fg_stroke: egui::Stroke::new(1.5, Color32::from_rgb(234, 234, 234)),
-                    corner_radius: egui::CornerRadius::same(2),
-                    expansion: 1.0,
+                    bg_fill: Color32::from_rgb(60, 60, 60),
+                    weak_bg_fill: Color32::from_rgb(60, 60, 60),
+                    bg_stroke: egui::Stroke::new(1.0, cyan_accent), // Cyan border on hover
+                    fg_stroke: egui::Stroke::new(1.5, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::same(0),
+                    expansion: 0.0,
                 },
                 active: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(233, 69, 96),
-                    weak_bg_fill: Color32::from_rgb(233, 69, 96),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
-                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::same(2),
-                    expansion: 1.0,
+                    bg_fill: cyan_accent,
+                    weak_bg_fill: cyan_accent,
+                    bg_stroke: egui::Stroke::new(1.0, cyan_accent),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::BLACK), // Black text on Cyan
+                    corner_radius: egui::CornerRadius::same(0),
+                    expansion: 0.0,
                 },
                 open: egui::style::WidgetVisuals {
-                    bg_fill: Color32::from_rgb(26, 26, 46),
-                    weak_bg_fill: Color32::from_rgb(26, 26, 46),
-                    bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(15, 15, 35)),
-                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(234, 234, 234)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    bg_fill: dark_grey,
+                    weak_bg_fill: dark_grey,
+                    bg_stroke: egui::Stroke::new(1.0, stroke_grey),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
             },
             selection: egui::style::Selection {
-                bg_fill: Color32::from_rgb(157, 78, 221).linear_multiply(0.4),
-                stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+                bg_fill: mint_accent.linear_multiply(0.3),
+                stroke: egui::Stroke::new(1.0, mint_accent),
             },
-            hyperlink_color: Color32::from_rgb(233, 69, 96),
-            faint_bg_color: Color32::from_rgb(15, 15, 35),
-            extreme_bg_color: Color32::from_rgb(22, 33, 62),
-            code_bg_color: Color32::from_rgb(15, 15, 35),
-            warn_fg_color: Color32::from_rgb(255, 179, 71),
-            error_fg_color: Color32::from_rgb(255, 107, 107),
-            window_fill: Color32::from_rgb(26, 26, 46),
-            panel_fill: Color32::from_rgb(15, 15, 35),
-            window_stroke: egui::Stroke::new(1.0, Color32::from_rgb(157, 78, 221)),
+            hyperlink_color: cyan_accent,
+            faint_bg_color: darker_grey,
+            extreme_bg_color: darker_grey,
+            code_bg_color: dark_grey,
+            warn_fg_color: Color32::from_rgb(255, 170, 0), // Orange
+            error_fg_color: Color32::from_rgb(255, 50, 50), // Red
+            window_fill: dark_grey,
+            panel_fill: dark_grey,
+            window_stroke: egui::Stroke::new(1.0, stroke_grey),
             ..Default::default()
         }
     }

@@ -659,244 +659,66 @@ impl ModuleCanvas {
                                                 reverse_playback,
                                                 ..
                                             } => {
-                                                ui.label("📁 Media File");
+                                                // === LIVE PERFORMANCE HEADER ===
+                                                let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
+                                                let video_duration = player_info.duration.max(1.0) as f32;
+                                                let current_pos = player_info.current_time as f32;
+                                                let is_playing = player_info.is_playing;
 
-                                                // === PREVIEW ===
-                                                if let Some(tex_id) = self.node_previews.get(&part_id) {
-                                                    ui.add_space(5.0);
-                                                    let size = Vec2::new(240.0, 135.0); // 16:9 preview
-                                                    ui.image((*tex_id, size));
-                                                }
+                                                // Time Calculation
+                                                let current_min = (current_pos / 60.0) as u32;
+                                                let current_sec = (current_pos % 60.0) as u32;
+                                                let current_frac = ((current_pos * 100.0) % 100.0) as u32;
 
-                                                // === SMART TIMELINE (Unified) ===
-                                                {
-                                                    let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
-                                                    let video_duration = player_info.duration.max(1.0) as f32;
-                                                    let current_pos = player_info.current_time as f32;
+                                                let duration_min = (video_duration / 60.0) as u32;
+                                                let duration_sec = (video_duration % 60.0) as u32;
+                                                let duration_frac = ((video_duration * 100.0) % 100.0) as u32;
 
-                                                    // Time Display
-                                                    let current_min = (current_pos / 60.0) as u32;
-                                                    let current_sec = (current_pos % 60.0) as u32;
-                                                    let duration_min = (video_duration / 60.0) as u32;
-                                                    let duration_sec = (video_duration % 60.0) as u32;
+                                                ui.add_space(5.0);
 
-                                                    ui.horizontal(|ui| {
-                                                        if player_info.is_playing {
-                                                            ui.label("▶");
-                                                        } else {
-                                                            ui.label("⏸");
-                                                        }
-                                                        ui.label(format!("{:02}:{:02} / {:02}:{:02}",
-                                                            current_min, current_sec, duration_min, duration_sec));
-
-                                                        // Active Region Text
-                                                        if *start_time > 0.0 || *end_time > 0.0 {
-                                                            ui.label(
-                                                                egui::RichText::new(format!(" [Region: {:.1}s - {:.1}s]",
-                                                                    start_time,
-                                                                    if *end_time > 0.0 { *end_time } else { video_duration }
-                                                                )).color(Color32::from_rgb(100, 200, 150))
-                                                            );
-                                                        }
-                                                    });
-
-                                                    // Visual Timeline
-                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 32.0), Sense::click_and_drag());
-                                                    let rect = response.rect;
-
-                                                    // Background (Full Track)
-                                                    painter.rect_filled(rect, 4.0, Color32::from_gray(30));
-                                                    painter.rect_stroke(rect, (4.0 * self.zoom) as u8, Stroke::new(1.0 * self.zoom, Color32::from_gray(60)), egui::StrokeKind::Inside);
-
-                                                    // Data normalization
-                                                    let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                    let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
-                                                    let end_x = rect.min.x + (effective_end / video_duration).clamp(0.0, 1.0) * rect.width();
-
-                                                    // Active Region Highlight
-                                                    let region_rect = Rect::from_min_max(
-                                                        Pos2::new(start_x, rect.min.y),
-                                                        Pos2::new(end_x, rect.max.y)
+                                                // 1. BIG TIMECODE DISPLAY
+                                                ui.vertical_centered(|ui| {
+                                                    ui.label(
+                                                        egui::RichText::new(format!(
+                                                            "{:02}:{:02}.{:02} / {:02}:{:02}.{:02}",
+                                                            current_min, current_sec, current_frac,
+                                                            duration_min, duration_sec, duration_frac
+                                                        ))
+                                                        .monospace()
+                                                        .size(22.0)
+                                                        .strong()
+                                                        .color(if is_playing { Color32::from_rgb(100, 255, 150) } else { Color32::from_rgb(200, 200, 200) })
                                                     );
-                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 80));
-                                                    painter.rect_stroke(region_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(60, 180, 100)), egui::StrokeKind::Inside);
-
-                                                    // INTERACTION LOGIC
-                                                    let mut handled = false;
-
-                                                    // 1. Handles (Prioritize resizing)
-                                                    let handle_width = 8.0;
-                                                    let start_handle_rect = Rect::from_center_size(Pos2::new(start_x, rect.center().y), Vec2::new(handle_width, rect.height()));
-                                                    let end_handle_rect = Rect::from_center_size(Pos2::new(end_x, rect.center().y), Vec2::new(handle_width, rect.height()));
-
-                                                    let start_resp = ui.interact(start_handle_rect, response.id.with("start"), Sense::drag());
-                                                    let end_resp = ui.interact(end_handle_rect, response.id.with("end"), Sense::drag());
-
-                                                    if start_resp.hovered() || end_resp.hovered() {
-                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-                                                    }
-
-                                                    if start_resp.dragged() {
-                                                        let delta_s = (start_resp.drag_delta().x / rect.width()) * video_duration;
-                                                        *start_time = (*start_time + delta_s).clamp(0.0, effective_end - 0.1);
-                                                        handled = true;
-                                                    } else if end_resp.dragged() {
-                                                        let delta_s = (end_resp.drag_delta().x / rect.width()) * video_duration;
-                                                        let mut new_end = (effective_end + delta_s).clamp(*start_time + 0.1, video_duration);
-                                                        // Snap to end (0.0) if close
-                                                        if (video_duration - new_end).abs() < 0.1 { new_end = 0.0; }
-                                                        *end_time = new_end;
-                                                        handled = true;
-                                                    }
-
-                                                    // 2. Body Interaction (Slide or Seek)
-                                                    if !handled && response.hovered() {
-                                                        if ui.input(|i| i.modifiers.shift) && region_rect.contains(response.hover_pos().unwrap_or_default()) {
-                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
-                                                        } else {
-                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-                                                        }
-                                                    }
-
-                                                    if !handled && response.dragged() {
-                                                        if ui.input(|i| i.modifiers.shift) {
-                                                            // Slide Region
-                                                            let delta_s = (response.drag_delta().x / rect.width()) * video_duration;
-                                                            let duration_s = effective_end - *start_time;
-
-                                                            let new_start = (*start_time + delta_s).clamp(0.0, video_duration - duration_s);
-                                                            let new_end = new_start + duration_s;
-
-                                                            *start_time = new_start;
-                                                            *end_time = if (video_duration - new_end).abs() < 0.1 { 0.0 } else { new_end };
-                                                        } else {
-                                                            // Seek
-                                                            if let Some(pos) = response.interact_pointer_pos() {
-                                                                let seek_norm = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
-                                                                let seek_s = seek_norm * video_duration;
-                                                                self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_s as f64)));
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Draw Handles
-                                                    painter.rect_filled(start_handle_rect.shrink(2.0), 2.0, Color32::WHITE);
-                                                    painter.rect_filled(end_handle_rect.shrink(2.0), 2.0, Color32::WHITE);
-
-                                                    // Draw Playhead
-                                                    let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
-                                                    let cursor_x = rect.min.x + cursor_norm * rect.width();
-                                                    painter.line_segment(
-                                                        [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
-                                                        Stroke::new(2.0, Color32::from_rgb(255, 200, 50))
-                                                    );
-                                                    // Playhead triangle top
-                                                    let tri_size = 6.0;
-                                                    painter.add(egui::Shape::convex_polygon(
-                                                        vec![
-                                                            Pos2::new(cursor_x - tri_size, rect.min.y),
-                                                            Pos2::new(cursor_x + tri_size, rect.min.y),
-                                                            Pos2::new(cursor_x, rect.min.y + tri_size * 1.5),
-                                                        ],
-                                                        Color32::from_rgb(255, 200, 50),
-                                                        Stroke::NONE
-                                                    ));
-
-                                                    ui.add_space(4.0);
-
-                                                    // Buttons for quick region setting
-                                                    ui.horizontal(|ui| {
-                                                        ui.style_mut().spacing.item_spacing.x = 4.0;
-
-                                                        // Set In Point
-                                                        if ui.add(egui::Button::new("⇥ Set In").min_size(Vec2::new(60.0, 0.0)))
-                                                            .on_hover_text("Set Start Point to current Playhead position")
-                                                            .clicked()
-                                                        {
-                                                             *start_time = current_pos;
-                                                             let eff_end = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                             if *start_time >= eff_end { *end_time = 0.0; }
-                                                        }
-
-                                                        // Set Out Point
-                                                        if ui.add(egui::Button::new("⇤ Set Out").min_size(Vec2::new(60.0, 0.0)))
-                                                            .on_hover_text("Set End Point to current Playhead position")
-                                                            .clicked()
-                                                        {
-                                                             *end_time = current_pos;
-                                                             if *end_time <= *start_time { *start_time = (*end_time - 1.0).max(0.0); }
-                                                        }
-
-                                                        ui.add_space(8.0);
-                                                        ui.label(egui::RichText::new("Shift+Drag region to slide").size(10.0).color(Color32::GRAY));
-
-                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                            if ui.button("↺ Reset").on_hover_text("Reset Clip Region").clicked() {
-                                                                *start_time = 0.0;
-                                                                *end_time = 0.0;
-                                                            }
-                                                        });
-                                                    });
-                                                }
-
-                                                // === FILE PATH ===
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Path:");
-                                                    ui.add(
-                                                        egui::TextEdit::singleline(path)
-                                                            .desired_width(160.0),
-                                                    );
-                                                    if ui.button("📂").clicked() {
-                                                        if let Some(picked) = rfd::FileDialog::new()
-                                                            .add_filter(
-                                                                "Media",
-                                                                &[
-                                                                    "mp4", "mov", "avi", "mkv",
-                                                                    "webm", "gif", "png", "jpg",
-                                                                    "jpeg",
-                                                                ],
-                                                            )
-                                                            .pick_file()
-                                                        {
-                                                            *path = picked.display().to_string();
-                                                            // Trigger reload of the media player
-                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Reload));
-                                                        }
-                                                    }
                                                 });
+                                                ui.add_space(10.0);
 
-                                                ui.separator();
-
-                                                // === TRANSPORT & PLAYBACK ===
-                                                ui.add_space(4.0);
+                                                // 2. CONSOLIDATED TRANSPORT BAR
                                                 ui.horizontal(|ui| {
-                                                    ui.style_mut().spacing.item_spacing.x = 4.0;
-                                                    let button_size = Vec2::new(40.0, 24.0);
-                                                    let is_playing = self.player_info.get(&part_id).map(|p| p.is_playing).unwrap_or(false);
+                                                    ui.style_mut().spacing.item_spacing.x = 8.0;
+                                                    let button_height = 40.0;
+                                                    let big_btn_size = Vec2::new(60.0, button_height);
+                                                    let small_btn_size = Vec2::new(40.0, button_height);
 
-                                                    // Play
-                                                    let play_btn = egui::Button::new(egui::RichText::new("▶").size(16.0))
-                                                        .min_size(button_size)
-                                                        .fill(if is_playing { Color32::from_rgb(40, 120, 40) } else { Color32::from_gray(40) });
-
+                                                    // PLAY
+                                                    let play_btn = egui::Button::new(egui::RichText::new("▶").size(20.0))
+                                                        .min_size(big_btn_size)
+                                                        .fill(if is_playing { Color32::from_rgb(40, 160, 60) } else { Color32::from_gray(50) });
                                                     if ui.add(play_btn).on_hover_text("Play").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
                                                     }
 
-                                                    // Pause
-                                                    let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(16.0))
-                                                        .min_size(button_size)
-                                                        .fill(if !is_playing { Color32::from_rgb(120, 100, 40) } else { Color32::from_gray(40) });
-
+                                                    // PAUSE
+                                                    let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(20.0))
+                                                        .min_size(big_btn_size)
+                                                        .fill(if !is_playing && current_pos > 0.1 { Color32::from_rgb(180, 140, 40) } else { Color32::from_gray(50) });
                                                     if ui.add(pause_btn).on_hover_text("Pause").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
                                                     }
 
-                                                    // Stop
-                                                    let stop_btn = egui::Button::new(egui::RichText::new("⏹").size(16.0))
-                                                        .min_size(button_size);
-
-                                                    if ui.add(stop_btn).on_hover_text("Stop (Reset to Start)").clicked() {
+                                                    // STOP
+                                                    if ui.add(egui::Button::new(egui::RichText::new("⏹").size(20.0)).min_size(big_btn_size).fill(Color32::from_gray(50)))
+                                                        .on_hover_text("Stop (Reset)").clicked()
+                                                    {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
                                                     }
 
@@ -904,18 +726,182 @@ impl ModuleCanvas {
                                                     ui.separator();
                                                     ui.add_space(8.0);
 
-                                                    // Loop & Reverse with better layout
-                                                    if ui.selectable_label(*loop_enabled, "🔁 Loop").clicked() {
+                                                    // LOOP
+                                                    let loop_color = if *loop_enabled { Color32::from_rgb(80, 150, 255) } else { Color32::from_gray(50) };
+                                                    if ui.add(egui::Button::new(egui::RichText::new("🔁").size(18.0)).min_size(small_btn_size).fill(loop_color))
+                                                        .on_hover_text("Toggle Loop").clicked()
+                                                    {
                                                         *loop_enabled = !*loop_enabled;
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
                                                     }
 
-                                                    if ui.selectable_label(*reverse_playback, "⏪ Reverse").clicked() {
+                                                    // REVERSE
+                                                    let rev_color = if *reverse_playback { Color32::from_rgb(200, 80, 80) } else { Color32::from_gray(50) };
+                                                    if ui.add(egui::Button::new(egui::RichText::new("⏪").size(18.0)).min_size(small_btn_size).fill(rev_color))
+                                                        .on_hover_text("Toggle Reverse Playback").clicked()
+                                                    {
                                                         *reverse_playback = !*reverse_playback;
                                                     }
                                                 });
 
-                                                // Speed slider (always visible)
+                                                ui.add_space(10.0);
+
+                                                // 3. PREVIEW & INTERACTIVE TIMELINE
+                                                // Preview Image
+                                                if let Some(tex_id) = self.node_previews.get(&part_id) {
+                                                    let size = Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0); // Keep aspect ratio
+                                                    ui.image((*tex_id, size));
+                                                }
+
+                                                ui.add_space(4.0);
+
+                                                // Visual Timeline
+                                                let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 32.0), Sense::click_and_drag());
+                                                let rect = response.rect;
+
+                                                // Background (Full Track)
+                                                painter.rect_filled(rect, 4.0, Color32::from_gray(30));
+                                                painter.rect_stroke(rect, (4.0 * self.zoom) as u8, Stroke::new(1.0 * self.zoom, Color32::from_gray(60)), egui::StrokeKind::Inside);
+
+                                                // Data normalization
+                                                let effective_end = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
+                                                let end_x = rect.min.x + (effective_end / video_duration).clamp(0.0, 1.0) * rect.width();
+
+                                                // Active Region Highlight
+                                                let region_rect = Rect::from_min_max(
+                                                    Pos2::new(start_x, rect.min.y),
+                                                    Pos2::new(end_x, rect.max.y)
+                                                );
+                                                painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 80));
+                                                painter.rect_stroke(region_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(60, 180, 100)), egui::StrokeKind::Inside);
+
+                                                // INTERACTION LOGIC
+                                                let mut handled = false;
+
+                                                // 1. Handles (Prioritize resizing)
+                                                let handle_width = 8.0;
+                                                let start_handle_rect = Rect::from_center_size(Pos2::new(start_x, rect.center().y), Vec2::new(handle_width, rect.height()));
+                                                let end_handle_rect = Rect::from_center_size(Pos2::new(end_x, rect.center().y), Vec2::new(handle_width, rect.height()));
+
+                                                let start_resp = ui.interact(start_handle_rect, response.id.with("start"), Sense::drag());
+                                                let end_resp = ui.interact(end_handle_rect, response.id.with("end"), Sense::drag());
+
+                                                if start_resp.hovered() || end_resp.hovered() {
+                                                    ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                                                }
+
+                                                if start_resp.dragged() {
+                                                    let delta_s = (start_resp.drag_delta().x / rect.width()) * video_duration;
+                                                    *start_time = (*start_time + delta_s).clamp(0.0, effective_end - 0.1);
+                                                    handled = true;
+                                                } else if end_resp.dragged() {
+                                                    let delta_s = (end_resp.drag_delta().x / rect.width()) * video_duration;
+                                                    let mut new_end = (effective_end + delta_s).clamp(*start_time + 0.1, video_duration);
+                                                    // Snap to end (0.0) if close
+                                                    if (video_duration - new_end).abs() < 0.1 { new_end = 0.0; }
+                                                    *end_time = new_end;
+                                                    handled = true;
+                                                }
+
+                                                // 2. Body Interaction (Slide or Seek)
+                                                if !handled && response.hovered() {
+                                                    if ui.input(|i| i.modifiers.shift) && region_rect.contains(response.hover_pos().unwrap_or_default()) {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                                    } else {
+                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                                                    }
+                                                }
+
+                                                if !handled && response.dragged() {
+                                                    if ui.input(|i| i.modifiers.shift) {
+                                                        // Slide Region
+                                                        let delta_s = (response.drag_delta().x / rect.width()) * video_duration;
+                                                        let duration_s = effective_end - *start_time;
+
+                                                        let new_start = (*start_time + delta_s).clamp(0.0, video_duration - duration_s);
+                                                        let new_end = new_start + duration_s;
+
+                                                        *start_time = new_start;
+                                                        *end_time = if (video_duration - new_end).abs() < 0.1 { 0.0 } else { new_end };
+                                                    } else {
+                                                        // Seek
+                                                        if let Some(pos) = response.interact_pointer_pos() {
+                                                            let seek_norm = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
+                                                            let seek_s = seek_norm * video_duration;
+                                                            self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_s as f64)));
+                                                        }
+                                                    }
+                                                }
+
+                                                // Draw Handles
+                                                painter.rect_filled(start_handle_rect.shrink(2.0), 2.0, Color32::WHITE);
+                                                painter.rect_filled(end_handle_rect.shrink(2.0), 2.0, Color32::WHITE);
+
+                                                // Draw Playhead
+                                                let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
+                                                let cursor_x = rect.min.x + cursor_norm * rect.width();
+                                                painter.line_segment(
+                                                    [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
+                                                    Stroke::new(2.0, Color32::from_rgb(255, 200, 50))
+                                                );
+                                                // Playhead triangle top
+                                                let tri_size = 6.0;
+                                                painter.add(egui::Shape::convex_polygon(
+                                                    vec![
+                                                        Pos2::new(cursor_x - tri_size, rect.min.y),
+                                                        Pos2::new(cursor_x + tri_size, rect.min.y),
+                                                        Pos2::new(cursor_x, rect.min.y + tri_size * 1.5),
+                                                    ],
+                                                    Color32::from_rgb(255, 200, 50),
+                                                    Stroke::NONE
+                                                ));
+
+                                                ui.add_space(4.0);
+
+                                                // Buttons for quick region setting
+                                                ui.horizontal(|ui| {
+                                                    ui.style_mut().spacing.item_spacing.x = 8.0;
+
+                                                    // Set In Point
+                                                    if ui.add(egui::Button::new("⇥ Set In").min_size(Vec2::new(80.0, 30.0)))
+                                                        .on_hover_text("Set Start Point to current Playhead position")
+                                                        .clicked()
+                                                    {
+                                                         *start_time = current_pos;
+                                                         let eff_end = if *end_time > 0.0 { *end_time } else { video_duration };
+                                                         if *start_time >= eff_end { *end_time = 0.0; }
+                                                    }
+
+                                                    // Set Out Point
+                                                    if ui.add(egui::Button::new("⇤ Set Out").min_size(Vec2::new(80.0, 30.0)))
+                                                        .on_hover_text("Set End Point to current Playhead position")
+                                                        .clicked()
+                                                    {
+                                                         *end_time = current_pos;
+                                                         if *end_time <= *start_time { *start_time = (*end_time - 1.0).max(0.0); }
+                                                    }
+
+                                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                        if ui.add(egui::Button::new("↺ Reset").min_size(Vec2::new(60.0, 30.0))).on_hover_text("Reset Clip Region").clicked() {
+                                                            *start_time = 0.0;
+                                                            *end_time = 0.0;
+                                                        }
+                                                    });
+                                                });
+
+                                                // Region Info (smaller text)
+                                                if *start_time > 0.0 || *end_time > 0.0 {
+                                                    ui.label(
+                                                        egui::RichText::new(format!("Active Region: {:.2}s - {:.2}s",
+                                                            start_time,
+                                                            if *end_time > 0.0 { *end_time } else { video_duration }
+                                                        )).size(10.0).color(Color32::from_rgb(100, 200, 150))
+                                                    );
+                                                }
+                                                ui.add_space(8.0);
+
+                                                // Speed Slider
                                                 ui.horizontal(|ui| {
                                                     ui.label("Speed:");
                                                     let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).suffix("x").show_value(true));
@@ -924,217 +910,36 @@ impl ModuleCanvas {
                                                     }
                                                 });
 
-                                                // === CLIP REGION ===
-                                                ui.collapsing("✂️ Clip Region", |ui| {
-                                                    let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
-                                                    let video_duration = player_info.duration.max(1.0) as f32;
-                                                    let current_pos = player_info.current_time as f32;
+                                                ui.separator();
 
-                                                    // Visual Region Bar
-                                                    let (response, painter) = ui.allocate_painter(Vec2::new(ui.available_width(), 24.0), Sense::hover());
-                                                    let rect = response.rect;
-
-                                                    // Background (Full Duration)
-                                                    painter.rect_filled(rect, 4, Color32::from_gray(40));
-                                                    painter.rect_stroke(
-            rect,
-            4.0,
-            Stroke::new(1.0, Color32::from_gray(60)),
-            egui::StrokeKind::Inside,
-        );
-
-                                                    // Data normalization
-                                                    let end_val = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                    let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
-                                                    let end_x = rect.min.x + (end_val / video_duration).clamp(0.0, 1.0) * rect.width();
-
-                                                    // 1. Body Interaction (Move Region)
-                                                    // We define the body rect slightly shrunk so handles don't overlap too much
-                                                    let body_rect = Rect::from_min_max(
-                                                        Pos2::new(start_x + 4.0, rect.min.y),
-                                                        Pos2::new(end_x - 4.0, rect.max.y)
-                                                    );
-
-                                                    // Only interactive if wide enough
-                                                    if body_rect.width() > 10.0 {
-                                                        let body_id = response.id.with("region_body");
-                                                        let body_response = ui.interact(body_rect, body_id, Sense::drag());
-
-                                                        if body_response.dragged() {
-                                                            let delta_seconds = (body_response.drag_delta().x / rect.width()) * video_duration;
-
-                                                            // Calculate smart delta that respects bounds
-                                                            // We want to move as much as possible without going out of bounds
-                                                            let max_delta = video_duration - end_val;
-                                                            let min_delta = -*start_time;
-                                                            let valid_delta = delta_seconds.clamp(min_delta, max_delta);
-
-                                                            // Apply valid delta
-                                                            if valid_delta.abs() > 0.0001 {
-                                                                *start_time += valid_delta;
-                                                                *end_time = end_val + valid_delta;
-                                                            }
-                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
-                                                        } else if body_response.hovered() {
-                                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
-                                                        }
-                                                    }
-
-                                                    // 2. Start Handle Interaction
-                                                    let start_handle_rect = Rect::from_center_size(
-                                                        Pos2::new(start_x, rect.center().y),
-                                                        Vec2::new(12.0, rect.height())
-                                                    );
-                                                    let start_id = response.id.with("start_handle");
-                                                    let start_response = ui.interact(start_handle_rect, start_id, Sense::drag());
-
-                                                    if start_response.dragged() {
-                                                        let delta_seconds = (start_response.drag_delta().x / rect.width()) * video_duration;
-                                                        *start_time = (*start_time + delta_seconds).clamp(0.0, end_val - 0.1);
-                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-                                                    } else if start_response.hovered() {
-                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-                                                    }
-
-                                                    // 3. End Handle Interaction
-                                                    let end_handle_rect = Rect::from_center_size(
-                                                        Pos2::new(end_x, rect.center().y),
-                                                        Vec2::new(12.0, rect.height())
-                                                    );
-                                                    let end_id = response.id.with("end_handle");
-                                                    let end_response = ui.interact(end_handle_rect, end_id, Sense::drag());
-
-                                                    if end_response.dragged() {
-                                                        let delta_seconds = (end_response.drag_delta().x / rect.width()) * video_duration;
-                                                        // Ensure we don't cross start
-                                                        let mut new_end = (end_val + delta_seconds).clamp(*start_time + 0.1, video_duration);
-
-                                                        // Snap to end if close to duration
-                                                        if (video_duration - new_end).abs() < 0.1 {
-                                                            new_end = 0.0;
-                                                        }
-
-                                                        *end_time = new_end;
-                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-                                                    } else if end_response.hovered() {
-                                                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-                                                    }
-
-                                                    // === DRAWING ===
-                                                    // Re-calculate positions for drawing based on updated values
-                                                    let current_start_val = *start_time;
-                                                    let current_end_val = if *end_time > 0.0 { *end_time } else { video_duration };
-
-                                                    let draw_start_x = rect.min.x + (current_start_val / video_duration).clamp(0.0, 1.0) * rect.width();
-                                                    let draw_end_x = rect.min.x + (current_end_val / video_duration).clamp(0.0, 1.0) * rect.width();
-
-                                                    // Active Region Body
-                                                    let region_rect = Rect::from_min_max(
-                                                        Pos2::new(draw_start_x, rect.min.y),
-                                                        Pos2::new(draw_end_x, rect.max.y)
-                                                    );
-                                                    painter.rect_filled(region_rect, 4.0, Color32::from_rgba_unmultiplied(60, 180, 100, 120));
-
-                                                    // Handles
-                                                    let handle_width = 4.0;
-                                                    let start_handle_vis = Rect::from_center_size(
-                                                        Pos2::new(draw_start_x, rect.center().y),
-                                                        Vec2::new(handle_width, rect.height() - 4.0)
-                                                    );
-                                                    let end_handle_vis = Rect::from_center_size(
-                                                        Pos2::new(draw_end_x, rect.center().y),
-                                                        Vec2::new(handle_width, rect.height() - 4.0)
-                                                    );
-
-                                                    let start_color = if start_response.dragged() || start_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
-                                                    let end_color = if end_response.dragged() || end_response.hovered() { Color32::WHITE } else { Color32::from_gray(200) };
-
-                                                    painter.rect_filled(start_handle_vis, 2.0, start_color);
-                                                    painter.rect_filled(end_handle_vis, 2.0, end_color);
-
-                                                    // Playhead Cursor
-                                                    let cursor_norm = (current_pos / video_duration).clamp(0.0, 1.0);
-                                                    let cursor_x = rect.min.x + cursor_norm * rect.width();
-
-                                                    // Draw playhead triangle/line
-                                                    painter.line_segment(
-                                                        [Pos2::new(cursor_x, rect.min.y), Pos2::new(cursor_x, rect.max.y)],
-                                                        Stroke::new(1.5, Color32::from_rgb(255, 200, 100))
-                                                    );
-                                                    painter.circle_filled(Pos2::new(cursor_x, rect.min.y), 3.0, Color32::from_rgb(255, 200, 100));
-
-                                                    ui.add_space(4.0);
-
-                                                    // Controls with "Set to Playhead" buttons
+                                                // === FILE PATH (Moved down) ===
+                                                ui.collapsing("📁 File Info", |ui| {
                                                     ui.horizontal(|ui| {
-                                                        ui.vertical(|ui| {
-                                                            let mut ui_end_time = if *end_time > 0.0 { *end_time } else { video_duration };
-                                                            let mut ui_start_time = *start_time;
-
-                                                            // Start Control
-                                                            ui.horizontal(|ui| {
-                                                                 if ui.button("⇥").on_hover_text("Set Start to current Playhead").clicked() {
-                                                                     ui_start_time = current_pos;
-                                                                     if ui_start_time >= ui_end_time {
-                                                                         ui_end_time = video_duration;
-                                                                         *end_time = 0.0;
-                                                                     }
-                                                                     *start_time = ui_start_time;
-                                                                 }
-
-                                                                 let response = ui.add(
-                                                                     egui::Slider::new(&mut ui_start_time, 0.0..=ui_end_time)
-                                                                        .text("Start")
-                                                                        .custom_formatter(|n, _| {
-                                                                            let m = (n / 60.0) as u32;
-                                                                            let s = n % 60.0;
-                                                                            format!("{:02}:{:05.2}", m, s)
-                                                                        })
-                                                                 );
-
-                                                                 if response.changed() {
-                                                                     *start_time = ui_start_time;
-                                                                 }
-                                                            });
-
-                                                            // End Control
-                                                            ui.horizontal(|ui| {
-                                                                 if ui.button("⇤").on_hover_text("Set End to current Playhead").clicked() {
-                                                                     ui_end_time = current_pos;
-                                                                     if ui_end_time <= ui_start_time {
-                                                                         ui_start_time = (ui_end_time - 1.0).max(0.0);
-                                                                         *start_time = ui_start_time;
-                                                                     }
-                                                                     *end_time = ui_end_time;
-                                                                 }
-
-                                                                 let response = ui.add(
-                                                                     egui::Slider::new(&mut ui_end_time, ui_start_time..=video_duration)
-                                                                        .text("End")
-                                                                        .custom_formatter(|n, _| {
-                                                                            let m = (n / 60.0) as u32;
-                                                                            let s = n % 60.0;
-                                                                            format!("{:02}:{:05.2}", m, s)
-                                                                        })
-                                                                 );
-
-                                                                 if response.changed() {
-                                                                     // Snap to end if close
-                                                                     if (video_duration - ui_end_time).abs() < 0.1 {
-                                                                         *end_time = 0.0;
-                                                                     } else {
-                                                                         *end_time = ui_end_time;
-                                                                     }
-                                                                 }
-                                                            });
-                                                        });
+                                                        ui.label("Path:");
+                                                        ui.add(
+                                                            egui::TextEdit::singleline(path)
+                                                                .desired_width(160.0),
+                                                        );
+                                                        if ui.button("📂").clicked() {
+                                                            if let Some(picked) = rfd::FileDialog::new()
+                                                                .add_filter(
+                                                                    "Media",
+                                                                    &[
+                                                                        "mp4", "mov", "avi", "mkv",
+                                                                        "webm", "gif", "png", "jpg",
+                                                                        "jpeg",
+                                                                    ],
+                                                                )
+                                                                .pick_file()
+                                                            {
+                                                                *path = picked.display().to_string();
+                                                                // Trigger reload of the media player
+                                                                self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Reload));
+                                                            }
+                                                        }
                                                     });
-
-                                                    if ui.button("Reset Clip").clicked() {
-                                                        *start_time = 0.0;
-                                                        *end_time = 0.0;
-                                                    }
                                                 });
+
 
                                                 // === APPEARANCE ===
                                                 ui.collapsing("🎨 Appearance", |ui| {
@@ -5465,9 +5270,9 @@ impl ModuleCanvas {
                     let p1 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t1);
                     let p2 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t2);
                     // Shadow
-                    painter.line_segment([p1, p2], Stroke::new(4.0 * self.zoom, shadow_color));
+                    painter.line_segment([p1, p2], Stroke::new(5.0 * self.zoom, shadow_color));
                     // Cable
-                    painter.line_segment([p1, p2], Stroke::new(2.5 * self.zoom, cable_color));
+                    painter.line_segment([p1, p2], Stroke::new(3.0 * self.zoom, cable_color));
                 }
 
                 // Draw Plugs on top of cable
@@ -5576,13 +5381,13 @@ impl ModuleCanvas {
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
         let neutral_bg = Color32::from_rgb(20, 20, 25);
-        painter.rect_filled(rect, (6.0 * self.zoom) as u8, neutral_bg);
+        painter.rect_filled(rect, (8.0 * self.zoom) as u8, neutral_bg);
 
         // Node border - colored by type for quick identification
         // This replaces the generic gray border
         painter.rect_stroke(
             rect,
-            (6.0 * self.zoom) as u8,
+            (8.0 * self.zoom) as u8,
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
             egui::StrokeKind::Inside,
         );
@@ -5595,12 +5400,21 @@ impl ModuleCanvas {
         painter.rect_filled(
             title_rect,
             egui::CornerRadius {
-                nw: (6.0 * self.zoom) as u8,
-                ne: (6.0 * self.zoom) as u8,
+                nw: (8.0 * self.zoom) as u8,
+                ne: (8.0 * self.zoom) as u8,
                 sw: 0,
                 se: 0,
             },
             title_color,
+        );
+
+        // Title bar top highlight (bevel effect)
+        painter.line_segment(
+            [
+                Pos2::new(rect.min.x + 2.0, rect.min.y + 1.0),
+                Pos2::new(rect.max.x - 2.0, rect.min.y + 1.0),
+            ],
+            Stroke::new(1.0 * self.zoom, Color32::from_white_alpha(50)),
         );
 
         // Title separator line - make it sharper
@@ -5621,7 +5435,7 @@ impl ModuleCanvas {
             ),
             egui::Align2::CENTER_CENTER,
             title_text,
-            egui::FontId::proportional(13.0 * self.zoom),
+            egui::FontId::proportional(14.0 * self.zoom),
             Color32::WHITE,
         );
 
@@ -5698,7 +5512,7 @@ impl ModuleCanvas {
         for (i, socket) in part.inputs.iter().enumerate() {
             let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
             let socket_pos = Pos2::new(rect.min.x, socket_y);
-            let socket_radius = 6.0 * self.zoom;
+            let socket_radius = 7.0 * self.zoom;
 
             // Socket "Port" style (dark hole with colored ring)
             let socket_color = Self::get_socket_color(&socket.socket_type);
@@ -5715,14 +5529,20 @@ impl ModuleCanvas {
                 socket_radius - 2.0 * self.zoom,
                 Color32::from_gray(20),
             );
+            // Inner dot (Connector contact)
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                Color32::from_gray(100),
+            );
 
             // Socket label
             painter.text(
-                Pos2::new(rect.min.x + 12.0 * self.zoom, socket_y),
+                Pos2::new(rect.min.x + 14.0 * self.zoom, socket_y),
                 egui::Align2::LEFT_CENTER,
                 &socket.name,
-                egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(220), // Brighter text
+                egui::FontId::proportional(11.0 * self.zoom),
+                Color32::from_gray(230), // Brighter text
             );
         }
 
@@ -5730,7 +5550,7 @@ impl ModuleCanvas {
         for (i, socket) in part.outputs.iter().enumerate() {
             let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
             let socket_pos = Pos2::new(rect.max.x, socket_y);
-            let socket_radius = 6.0 * self.zoom;
+            let socket_radius = 7.0 * self.zoom;
 
             // Socket "Port" style
             let socket_color = Self::get_socket_color(&socket.socket_type);
@@ -5747,14 +5567,20 @@ impl ModuleCanvas {
                 socket_radius - 2.0 * self.zoom,
                 Color32::from_gray(20),
             );
+            // Inner dot (Connector contact)
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                Color32::from_gray(100),
+            );
 
             // Socket label
             painter.text(
-                Pos2::new(rect.max.x - 12.0 * self.zoom, socket_y),
+                Pos2::new(rect.max.x - 14.0 * self.zoom, socket_y),
                 egui::Align2::RIGHT_CENTER,
                 &socket.name,
-                egui::FontId::proportional(10.0 * self.zoom),
-                Color32::from_gray(220), // Brighter text
+                egui::FontId::proportional(11.0 * self.zoom),
+                Color32::from_gray(230), // Brighter text
             );
 
             // Draw live value meter for output sockets

@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-19 11:00
+> **Stand:** 2026-01-20 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -670,12 +670,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
-- ⬜ **NDI-Integration** (`mapmap-ndi/`)
-  - ⬜ `grafton-ndi` Rust Bindings integrieren
-  - ⬜ NDI Sender (wgpu Texture → NDI Stream)
-  - ⬜ NDI Receiver (NDI Stream → Fullscreen Texture)
-  - ⬜ Multi-Source-Diüscovery (NDI Finder)
-  - ⬜ Latenz-Optimierung (<100ms Ziel)
+- 🟡 **NDI-Integration** (`mapmap-ndi/`)
+  - ✅ `grafton-ndi` Rust Bindings integrieren
+  - ✅ NDI Sender (wgpu Texture → NDI Stream)
+  - ✅ NDI Receiver (NDI Stream → Fullscreen Texture)
+  - 🟡 Multi-Source-Discovery (NDI Finder)
+  - 🟡 Latenz-Optimierung (<100ms Ziel)
 
 - ⬜ **Player-Modus** (`--player-ndi`)
   - ⬜ Headless Player ohne Editor-UI
@@ -838,7 +838,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ `scripts/install-ffmpeg-dev.sh` – FFmpeg-Install-Script
   - ✅ `rust-toolchain.toml` – Rust-Version 1.75
 
-### Phase 9: Lighting Integration – PLANNED
+### Phase 9: Lighting Integration – IN PROGRESS
 
 - ⬜ **Art-Net DMX Output** (`mapmap-io/src/artnet/`)
   - ⬜ `artnet_protocol` Crate integrieren
@@ -846,12 +846,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Audio-reaktive DMX-Werte generieren
   - ⬜ UI: DMX-Channel-Mapper in Module Canvas
 
-- ⬜ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
-  - ⬜ `hueclient` für Bridge-Discovery und API-Zugriff
-  - ⬜ `udp-dtls` für Entertainment-Streaming
-  - ⬜ Audio-reaktive Farb-Synchronisation
-  - ⬜ Latenz-Ziel: <100ms
-  - ⬜ UI: Hue-Lampen-Auswahl und Zonen-Mapping
+- ✅ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
+  - ✅ `hueclient` für Bridge-Discovery und API-Zugriff
+  - ✅ `udp-dtls` für Entertainment-Streaming
+  - ✅ Audio-reaktive Farb-Synchronisation
+  - 🟡 Latenz-Ziel: <100ms
+  - ✅ UI: Hue-Lampen-Auswahl und Zonen-Mapping
 
 ### 🔬 Evaluierte Libraries für Core-Funktionen
 
