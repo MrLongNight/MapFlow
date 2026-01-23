@@ -23,19 +23,27 @@ use crate::osc::{OscClient, OscMapping, OscServer};
 /// Unified control system manager
 pub struct ControlManager {
     #[cfg(feature = "midi")]
+    /// MIDI input handler
     pub midi_input: Option<MidiInputHandler>,
 
     #[cfg(feature = "osc")]
+    /// OSC server instance
     pub osc_server: Option<OscServer>,
     #[cfg(feature = "osc")]
+    /// List of OSC clients for feedback
     pub osc_clients: Vec<OscClient>,
     #[cfg(feature = "osc")]
+    /// OSC address to control target mapping
     pub osc_mapping: OscMapping,
 
+    /// Art-Net DMX sender
     pub artnet_sender: Option<ArtNetSender>,
+    /// sACN DMX sender
     pub sacn_sender: Option<SacnSender>,
 
+    /// Cue list manager
     pub cue_list: CueList,
+    /// Keyboard bindings manager
     pub key_bindings: KeyBindings,
 
     /// Event callback for control changes
@@ -44,6 +52,7 @@ pub struct ControlManager {
 }
 
 impl ControlManager {
+    /// Create a new control manager
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "midi")]

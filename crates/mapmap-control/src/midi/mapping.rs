@@ -11,9 +11,13 @@ use std::collections::HashMap;
 /// Key for MIDI mapping (ignores value fields)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MidiMappingKey {
+    /// Note On/Off message
     Note(u8, u8),      // channel, note
+    /// Control Change message
     Control(u8, u8),   // channel, controller
+    /// Pitch Bend message
     PitchBend(u8),     // channel
+    /// Program Change message
     ProgramChange(u8), // channel
 }
 
@@ -48,22 +52,31 @@ pub struct MidiMapping {
 /// A single MIDI to control mapping
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MidiControlMapping {
+    /// Target parameter to control
     pub target: ControlTarget,
+    /// Minimum output value
     pub min_value: f32,
+    /// Maximum output value
     pub max_value: f32,
+    /// Curve for value interpolation
     pub curve: MappingCurve,
 }
 
 /// Value mapping curve
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum MappingCurve {
+    /// Linear mapping (default)
     Linear,
+    /// Exponential mapping (x^2) - good for volume
     Exponential,
+    /// Logarithmic mapping (sqrt(x)) - good for frequency
     Logarithmic,
+    /// S-Curve mapping (smoothstep)
     SCurve,
 }
 
 impl MidiMapping {
+    /// Create a new empty MIDI mapping
     pub fn new() -> Self {
         Self::default()
     }

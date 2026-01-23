@@ -39,31 +39,52 @@ use serde::{Deserialize, Serialize};
 /// MIDI message types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MidiMessage {
+    /// Note On event (key press)
     NoteOn {
+        /// MIDI Channel (0-15)
         channel: u8,
+        /// MIDI Note number (0-127)
         note: u8,
+        /// Velocity (0-127)
         velocity: u8,
     },
+    /// Note Off event (key release)
     NoteOff {
+        /// MIDI Channel (0-15)
         channel: u8,
+        /// MIDI Note number (0-127)
         note: u8,
     },
+    /// Control Change (CC) event (knobs, sliders)
     ControlChange {
+        /// MIDI Channel (0-15)
         channel: u8,
+        /// Controller number (0-127)
         controller: u8,
+        /// Value (0-127)
         value: u8,
     },
+    /// Program Change event
     ProgramChange {
+        /// MIDI Channel (0-15)
         channel: u8,
+        /// Program number (0-127)
         program: u8,
     },
+    /// Pitch Bend event
     PitchBend {
+        /// MIDI Channel (0-15)
         channel: u8,
+        /// Pitch bend value (0-16383)
         value: u16,
     },
+    /// System Realtime: Timing Clock (24 per quarter note)
     Clock,
+    /// System Realtime: Start
     Start,
+    /// System Realtime: Stop
     Stop,
+    /// System Realtime: Continue
     Continue,
 }
 

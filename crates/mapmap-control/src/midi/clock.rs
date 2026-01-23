@@ -8,8 +8,11 @@ use tracing::info;
 /// MIDI clock synchronization state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ClockState {
+    /// Clock is stopped
     Stopped,
+    /// Clock is running
     Playing,
+    /// Clock is paused (legacy state, rarely used in MIDI)
     Paused,
 }
 
@@ -27,6 +30,7 @@ impl MidiClock {
     /// MIDI clock ticks per quarter note
     pub const TICKS_PER_BEAT: u32 = 24;
 
+    /// Create a new MIDI clock handler
     pub fn new() -> Self {
         Self {
             state: ClockState::Stopped,
