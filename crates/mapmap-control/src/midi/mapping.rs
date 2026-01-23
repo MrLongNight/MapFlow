@@ -12,11 +12,11 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MidiMappingKey {
     /// Note On/Off message
-    Note(u8, u8),      // channel, note
+    Note(u8, u8), // channel, note
     /// Control Change message
-    Control(u8, u8),   // channel, controller
+    Control(u8, u8), // channel, controller
     /// Pitch Bend message
-    PitchBend(u8),     // channel
+    PitchBend(u8), // channel
     /// Program Change message
     ProgramChange(u8), // channel
 }

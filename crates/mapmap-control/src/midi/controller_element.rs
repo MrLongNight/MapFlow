@@ -58,21 +58,21 @@ pub enum MidiConfig {
         /// MIDI Channel
         channel: u8,
         /// Controller Number
-        controller: u8
+        controller: u8,
     },
     /// Note On/Off message
     Note {
         /// MIDI Channel
         channel: u8,
         /// Note Number
-        note: u8
+        note: u8,
     },
     /// Relative CC (for encoders)
     CcRelative {
         /// MIDI Channel
         channel: u8,
         /// Controller Number
-        controller: u8
+        controller: u8,
     },
 }
 
