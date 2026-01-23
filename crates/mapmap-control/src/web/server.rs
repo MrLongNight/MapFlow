@@ -46,7 +46,7 @@ pub struct WebServerConfig {
 }
 
 fn default_allowed_origins() -> Vec<String> {
-    vec!["*".to_string()]
+    vec![]
 }
 
 impl Default for WebServerConfig {
@@ -54,7 +54,7 @@ impl Default for WebServerConfig {
         Self {
             host: "127.0.0.1".to_string(),
             port: 8080,
-            enable_cors: true,
+            enable_cors: false,
             allowed_origins: default_allowed_origins(),
             auth: AuthConfig::new(),
         }
@@ -290,7 +290,14 @@ mod tests {
     #[test]
     fn test_web_server_default_origins() {
         let config = WebServerConfig::default();
-        assert!(config.allowed_origins.contains(&"*".to_string()));
+        assert!(config.allowed_origins.is_empty());
+    }
+
+    #[test]
+    fn test_web_server_secure_defaults() {
+        let config = WebServerConfig::default();
+        assert!(!config.enable_cors);
+        assert!(config.allowed_origins.is_empty());
     }
 
     #[test]

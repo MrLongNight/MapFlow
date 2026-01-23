@@ -12,3 +12,8 @@
 **Vulnerability:** API keys were stored in plain text within the `AuthConfig` struct and serialized to configuration files. This exposed credentials to anyone with read access to the config or memory dumps.
 **Learning:** Configuration structs are often serialized directly. Adding security layers (like hashing) requires careful handling of serialization to maintain backward compatibility with legacy plaintext data. A custom deserializer can intelligently migrate legacy data.
 **Prevention:** Use SHA-256 hashing for storage of all secrets. Implement `deserialize_with` for `serde` to handle the migration from plaintext to hash transparently on load.
+
+## 2026-02-14 - Insecure Default CORS Policy Drift
+**Vulnerability:** The codebase defaulted to `enable_cors: true` with `allowed_origins: ["*"]`, despite documentation and project memory stating a "secure-by-default" policy. This drift likely occurred during a refactor or initial setup where convenience was prioritized over the stated security posture.
+**Learning:** Documentation and "Memory" are not code. Security postures defined in docs must be enforced by automated tests that assert the default configuration state. Trusting docs without verification leads to hidden vulnerabilities.
+**Prevention:** Add unit tests that specifically assert the `Default` implementation of configuration structs matches the intended security policy (e.g., `assert!(!config.enable_cors)`).
