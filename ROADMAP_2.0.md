@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-20 10:00
+> **Stand:** 2026-01-20 14:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -846,12 +846,13 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Audio-reaktive DMX-Werte generieren
   - ⬜ UI: DMX-Channel-Mapper in Module Canvas
 
-- ✅ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
-  - ✅ `hueclient` für Bridge-Discovery und API-Zugriff
-  - ✅ `udp-dtls` für Entertainment-Streaming
+- 🟡 **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
+  - ⚠️ `hueclient` für Bridge-Discovery und API-Zugriff (Backend missing in codebase)
+  - ⚠️ `udp-dtls` für Entertainment-Streaming (Backend missing in codebase)
   - ✅ Audio-reaktive Farb-Synchronisation
   - 🟡 Latenz-Ziel: <100ms
   - ✅ UI: Hue-Lampen-Auswahl und Zonen-Mapping
+  - ⚠️ **Note:** UI and Data Model implemented. Backend IO implementation missing in `mapmap-io` despite Changelog claim.
 
 ### 🔬 Evaluierte Libraries für Core-Funktionen
 
