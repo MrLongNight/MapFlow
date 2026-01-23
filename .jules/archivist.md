@@ -14,6 +14,16 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-01-23 - Documentation Structure Cleanup
+
+**Erkenntnis:** Die Dokumentationsstruktur wich vom Prompt-Standard ab. `docs/08-CHANGELOG` war redundant zum Root-Changelog. `docs/agent_rules` war eine nicht-standardmäßige Struktur. Es gibt Konflikte in der Nummerierung (`04-USER-GUIDE` vs `04-API`).
+
+**Aktion:**
+- `docs/agent_rules/ci_cd_strategy.md` nach `docs/07-TECHNICAL/CI_CD_STRATEGY.md` verschoben.
+- `docs/08-CHANGELOG/` Inhalte nach `.temp-archive/` archiviert und Ordner gelöscht.
+- `docs/agent_rules/` Ordner gelöscht.
+- Nummerierungskonflikt (`04-API` vs `04-USER-GUIDE`) dokumentiert – Strukturänderung zurückgestellt (Größere Umstrukturierung benötigt Rücksprache).
+
 ## 2026-01-02 - Root Directory Cleanup
 
 **Erkenntnis:** Das Root-Verzeichnis enthielt mehrere temporäre Dateien (`check_*.txt`, `test_results.txt`, `core_error.txt`) sowie falsch platzierte Dokumentation (`SECURITY.md`, `knowledge.md`) und redundante Dateien (`VERSION.txt`).
