@@ -1,6 +1,4 @@
-use mapmap_core::module::{
-    TriggerConfig, TriggerMappingMode, TriggerTarget,
-};
+use mapmap_core::module::{TriggerConfig, TriggerMappingMode, TriggerTarget};
 
 #[test]
 fn test_trigger_config_defaults() {
