@@ -741,11 +741,7 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain(
-        &self,
-        start_node_id: ModulePartId,
-        module: &MapFlowModule,
-    ) -> ProcessingChain {
+    fn trace_chain(&self, start_node_id: ModulePartId, module: &MapFlowModule) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
         let mut override_mesh = None;
@@ -890,14 +886,16 @@ impl ModuleEvaluator {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
                                     // L556 replacement
-                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id) {
+                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id)
+                                    {
                                         for &conn_idx in conn_indices {
                                             let conn = &module.connections[conn_idx];
                                             if conn.to_socket == *socket_idx {
                                                 if let Some(from_values) =
                                                     trigger_values.get(&conn.from_part)
                                                 {
-                                                    if let Some(val) = from_values.get(conn.from_socket)
+                                                    if let Some(val) =
+                                                        from_values.get(conn.from_socket)
                                                     {
                                                         trigger_val = *val;
                                                     }
@@ -1461,9 +1459,10 @@ mod tests_logic {
         // 1. Source
         let source_id = module.add_part(crate::module::PartType::Source, (0.0, 0.0));
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == source_id) {
-             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type {
-                 *path = "test.mp4".to_string();
-             }
+            if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
+            {
+                *path = "test.mp4".to_string();
+            }
         }
 
         // 2. Effect A (Blur)
