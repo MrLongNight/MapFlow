@@ -1,22 +1,56 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 1.9.2
-> **Stand:** 2026-01-19 12:00
-> **Zielgruppe:** @jules und Entwickler-Team
+> **Version:** 2.0
+> **Stand:** 2026-01-20 10:00
+> **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
 ---
 
 ## 📋 Inhaltsverzeichnis
 
-1. [Feature-Status-Übersicht](#feature-status-übersicht)
-2. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
-3. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8)
-4. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
-5. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
-6. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
-7. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
-8. [Build- und Test-Strategie](#build--und-test-strategie)
+1. [Fokus & Ziele für Release 1.0](#fokus--ziele-für-release-10)
+2. [Feature-Status-Übersicht](#feature-status-übersicht)
+3. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
+4. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8)
+5. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
+6. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
+7. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
+8. [Technologie-Stack und Entscheidungen](#technologie-stack-und-entscheidungen)
+9. [Build- und Test-Strategie](#build--und-test-strategie)
+
+---
+
+## Fokus & Ziele für Release 1.0
+
+Basierend auf dem aktuellen Status und den Projektzielen für die erste produktive Version (v1.0):
+
+### A) Render Pipeline & Module Logic
+*   **Priorität:** 🔥 **CRITICAL**
+*   **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
+*   **Status:** Aktuell startet die App aufgrund eines größeren Refactorings nicht. Dies muss zuerst behoben werden.
+*   **Maßnahme:** "Broken Nodes" reparieren. Experimentelle Features (wie NDI/Multi-PC) ggf. ausklammern oder verstecken, falls sie die Stabilität gefährden.
+
+### B) Timeline Integration (V3)
+*   **Priorität:** 🚀 **HIGH**
+*   **Ziel:** Vollständige Integration der Module in die Timeline.
+*   **Funktionalität:**
+    *   Jeder Parameter eines Nodes (z.B. "Blur Amount") soll via Trigger-Nodes und Verbindungen definiert werden können.
+    *   Arrangement der konfigurierten Module in der Timeline.
+    *   Unterstützung für **Manuelle**, **Hybride** und **Vollautomatische** Steuerung.
+    *   Möglichkeit, Parameter bei Bedarf manuell zu triggern.
+
+### C) Stabilität & Performance
+*   **Priorität:** 🛡️ **HIGH**
+*   **Ziel:** Fixen von Fehlern und Problemen, Verbesserung der Performance.
+*   **Cleanup:** Entfernen von UI-Elementen, die keine Funktion haben.
+
+### D) Release-Artefakte
+*   **Priorität:** 📦 **REQUIRED**
+*   **Lieferumfang:**
+    *   Produktive Version von MapFlow (v1.0).
+    *   Fertiger Installer für **Windows** (.msi/.exe) und **Linux** (.deb/AppImage).
+    *   Handbuch in Form von **GitHub Wiki**-Beiträgen.
 
 ---
 
@@ -147,20 +181,20 @@
 
 - ✅ **FFmpeg-Decoder** (`mapmap-media/src/decoder.rs`)
   - ✅ FFmpeg-Integration über `ffmpeg-next` (optional feature)
-  - ✅ Video-Decode mit Hardware-Acceleration-Support
-  - ✅ Multi-threaded Decode-Pipeline
-  - ✅ Frame-Queue-Management
+  - ⬜ Video-Decode mit Hardware-Acceleration-Support
+  - ⬜ Multi-threaded Decode-Pipeline
+  - ⬜ Frame-Queue-Management
 
 - ✅ **libmpv Integration** (`mapmap-media/src/mpv_decoder.rs`) – **COMPLETED (2026-01-09)**
   - ✅ `libmpv2` crate integration (optional feature `libmpv`)
   - ✅ Alternative decoder backend
   - ✅ Fallback strategy implementation
 
-- ✅ **Image-Decoder** (`mapmap-media/src/image_decoder.rs`)
-  - ✅ PNG, JPG, BMP, TGA Support
-  - ✅ Image-Crate-basierte Dekodierung
-  - ✅ GIF-Animation vollständig implementiert (COMPLETED 2025-12-23)
-  - ✅ Image-Sequence-Playback via walkdir (COMPLETED 2025-12-23)
+- ⬜ **Image-Decoder** (`mapmap-media/src/image_decoder.rs`)
+  - ⬜ PNG, JPG, BMP, TGA Support
+  - ⬜ Image-Crate-basierte Dekodierung
+  - ⬜ GIF-Animation vollständig implementiert (COMPLETED 2025-12-23)
+  - ⬜ Image-Sequence-Playback via walkdir (COMPLETED 2025-12-23)
 
 - ✅ **Player** (`mapmap-media/src/player.rs`)
   - ✅ Robust State-Machine (Idle, Loading, Playing, Paused, Stopped, Error)
@@ -171,6 +205,7 @@
   - ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   - ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   - ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
+  - ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
 
 - ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
   - ✅ Media-Pipeline-Abstraktion
@@ -207,6 +242,7 @@
   - ✅ AnimationClip und AnimationPlayer
   - ✅ Interpolation-Modi (Linear, Cubic, Step)
   - ✅ TimePoint-basiertes Timing
+  - ⬜ Konzept der Effekt Nutzung völlig geändert (Modul Node Konzept)
 
 - ✅ **Shader-Graph-System** (`mapmap-core/src/shader_graph.rs`)
   - ✅ Node-basiertes Shader-System
@@ -234,6 +270,7 @@
     - ✅ Keyframe-Animation für beliebige Parameter (Float, Vec3, Color, etc.)
     - ✅ Binding-System (`EffectParameterBinding`) für Parameter-zu-Track Mapping
     - ✅ Playback-Controls (Play, Pause, Seek, Speed, Loop)
+    - ⬜ Es gibt noch sehr viele Probleme und Fehler in verschiedenen Modul Nodes und der Render Pipeline
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
 
@@ -273,10 +310,10 @@
   - ✅ **Entscheidung: WebSocket NICHT als Control-Pfad nutzen, OSC priorisieren**
 
 - ⬜ **DMX-System** (`mapmap-control/src/dmx/`) – FUTURE
-  - ✅ Art-Net (`dmx/artnet.rs`)
-  - ✅ sACN (`dmx/sacn.rs`)
-  - ✅ DMX-Channel-Mapping (`dmx/channels.rs`)
-  - ✅ DMX-Fixtures (`dmx/fixtures.rs`)
+  - ⬜ Art-Net (`dmx/artnet.rs`)
+  - ⬜ sACN (`dmx/sacn.rs`)
+  - ⬜ DMX-Channel-Mapping (`dmx/channels.rs`)
+  - ⬜ DMX-Fixtures (`dmx/fixtures.rs`)
   - ⬜ Nicht sofort erforderlich, für Phase 4+
 
 - ✅ **Cue-System** (`mapmap-control/src/cue/`) – **In Timeline integriert**
@@ -298,6 +335,7 @@
   - ❌ ImGui entfernt (Phase 6 Complete - 2025-12-23)
   - ✅ egui-Integration (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
   - ✅ **Phase 6: Migration von ImGui zu egui ABGESCHLOSSEN**
+  - ⬜ WGPU 0.27, Winit 0.30 & Egui 0.33 Upgrade ist jetzt vollständig abgeschlossen aber es gibt noch diverse Fehler die gerade gefixt werden
 
 - ✅ **UI-Module (Migriert zu egui)** (`mapmap-ui/src/`)
   - ✅ Dashboard (`dashboard.rs`) – Hauptansicht
@@ -308,6 +346,8 @@
   - ✅ Undo-Redo (`undo_redo.rs`) – Command-Pattern
   - ✅ Asset-Manager (`asset_manager.rs`)
   - ✅ Theme (`theme.rs`)
+  - ⬜ Es gibt diverse UI Elemente die keine Funktion haben und entfernt werden müssen
+  - ⬜ Es gibt diverse UI Elemente die noch nicht wie gewünscht implementiert sind
 
 - ✅ **UI Panel Migration Status (egui)** – COMPLETED (2025-12-23)
   - ✅ Transform Controls (`transform_panel.rs`) – Migriert
@@ -332,6 +372,7 @@
   - ✅ Layers Section removed from sidebar - COMPLETED 2025-12-30 (use Module Canvas)
   - ✅ Icon System: Fader SVG Icon added - COMPLETED 2025-12-30
   - ✅ **Icon System** (Streamline Ultimate/Custom) - COMPLETED 2026-01-15
+  - ⬜ Es gibt diverse UI Elemente die keine Icons haben
 
 - ✅ **Settings Persistence (COMPLETED 2025-12-30)**
   - ✅ Window size/position saved and restored
@@ -629,12 +670,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
-- ⬜ **NDI-Integration** (`mapmap-ndi/`)
-  - ⬜ `grafton-ndi` Rust Bindings integrieren
-  - ⬜ NDI Sender (wgpu Texture → NDI Stream)
-  - ⬜ NDI Receiver (NDI Stream → Fullscreen Texture)
-  - ⬜ Multi-Source-Diüscovery (NDI Finder)
-  - ⬜ Latenz-Optimierung (<100ms Ziel)
+- 🟡 **NDI-Integration** (`mapmap-ndi/`)
+  - ✅ `grafton-ndi` Rust Bindings integrieren
+  - ✅ NDI Sender (wgpu Texture → NDI Stream)
+  - ✅ NDI Receiver (NDI Stream → Fullscreen Texture)
+  - 🟡 Multi-Source-Discovery (NDI Finder)
+  - 🟡 Latenz-Optimierung (<100ms Ziel)
 
 - ⬜ **Player-Modus** (`--player-ndi`)
   - ⬜ Headless Player ohne Editor-UI
@@ -781,7 +822,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ Toolchain-Updates (stable verwendet, dtolnay/rust-toolchain@stable)
   - ✅ Windows-Build-Fixes (vcpkg-Pfade, git-ownership)
   - ✅ Audio-Feature in CI aktiviert
-  - ✅ FFmpeg in CI-Builds aktivieren (via vcpkg)
+  - ⬜ FFmpeg in CI-Builds aktivieren fehlt
   - ✅ Windows-CI-Builds (COMPLETED 2025-12-21, non-blocking)
   - ⬜ macOS-CI-Builds fehlen (optional)
 
@@ -797,7 +838,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ `scripts/install-ffmpeg-dev.sh` – FFmpeg-Install-Script
   - ✅ `rust-toolchain.toml` – Rust-Version 1.75
 
-### Phase 9: Lighting Integration – PLANNED
+### Phase 9: Lighting Integration – IN PROGRESS
 
 - ⬜ **Art-Net DMX Output** (`mapmap-io/src/artnet/`)
   - ⬜ `artnet_protocol` Crate integrieren
@@ -805,11 +846,11 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ⬜ Audio-reaktive DMX-Werte generieren
   - ⬜ UI: DMX-Channel-Mapper in Module Canvas
 
-- ✅ **Philips Hue Entertainment Integration** (`mapmap-control/src/hue/`)
+- ✅ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
   - ✅ `hueclient` für Bridge-Discovery und API-Zugriff
   - ✅ `udp-dtls` für Entertainment-Streaming
   - ✅ Audio-reaktive Farb-Synchronisation
-  - ✅ Latenz-Ziel: <100ms
+  - 🟡 Latenz-Ziel: <100ms
   - ✅ UI: Hue-Lampen-Auswahl und Zonen-Mapping
 
 ### 🔬 Evaluierte Libraries für Core-Funktionen
@@ -852,3 +893,88 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 ## Architektur und Crate-Übersicht
 
 ### Workspace-Struktur
+
+| Crate | Funktion | Abhängigkeiten | Status |
+|-------|----------|----------------|--------|
+| `mapmap` | Haupt-Applikation (Binary) | alle Crates | ✅ Stable |
+| `mapmap-core` | Datenstrukturen & Logik | `serde`, `nalgebra` | ✅ Stable |
+| `mapmap-ui` | Benutzeroberfläche | `egui`, `wgpu` | ✅ Stable |
+| `mapmap-render` | Rendering-Engine | `wgpu` | ✅ Stable |
+| `mapmap-media` | Medien-Handling | `ffmpeg-next`, `image` | ✅ Beta |
+| `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
+| `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
+| `mapmap-mcp` | MCP-Server Integration | `serde_json` | ✅ Beta |
+
+### Modul-Abhängigkeiten
+
+```mermaid
+graph TD
+    App[mapmap] --> UI[mapmap-ui]
+    App --> Render[mapmap-render]
+    App --> Control[mapmap-control]
+    App --> MCP[mapmap-mcp]
+    UI --> Core[mapmap-core]
+    Render --> Core
+    Control --> Core
+    UI --> Media[mapmap-media]
+    Render --> Media
+    Media --> Core
+    IO[mapmap-io] --> Core
+    Render --> IO
+```
+
+## Arbeitspakete für @jules
+
+1.  **Refactorings (Priorität: Hoch)**
+    *   `MapFlowModule` in `mapmap-core` aufräumen (nicht verwendete Felder entfernen).
+    *   `MediaPlayer` State-Machine stabilisieren.
+
+2.  **Testing (Priorität: Mittel)**
+    *   Property-Based Tests für `MeshWarp` hinzufügen.
+    *   Integration-Tests für `OSC` -> `Parameter` Mapping.
+
+3.  **Documentation (Priorität: Niedrig)**
+    *   Rustdoc für alle `pub` Structs in `mapmap-core`.
+    *   Tutorial "Wie erstelle ich einen neuen Node-Typ?".
+
+## Task-Gruppen (Adaptiert für Rust)
+
+*   **T0:** Architektur & Datenmodell (`structs`, `enums`, `traits`)
+*   **T1:** Core-Logik & Algorithmen (No-std compatible logic)
+*   **T2:** Rendering & GPU (`wgpu`, Shader)
+*   **T3:** UI & Interaktion (`egui`)
+*   **T4:** IO & Hardware (Disk, Network, USB)
+
+## Implementierungsdetails nach Crate
+
+### `mapmap-core`
+*   Enthält keine Abhängigkeiten zu Rendering oder UI.
+*   Definiert das Datenmodell (`Layer`, `Mapping`, `Project`).
+*   Implementiert die Business-Logik (z.B. `overlaps(layer1, layer2)`).
+
+### `mapmap-render`
+*   Managt die `wgpu` Instanz, Adapter, Device und Queue.
+*   Implementiert `Renderer` Traits für verschiedene Zeichendienste.
+*   Hält Shader-Code als Strings oder Dateien.
+
+### `mapmap-ui`
+*   Implementiert `egui::App`.
+*   Handhabt Input-Events.
+*   Visualisiert den State aus `mapmap-core`.
+
+## Technologie-Stack und Entscheidungen
+
+*   **Sprache:** Rust 2021 (wegen Sicherheit und Performance).
+*   **GUI:** `egui` (Immediate Mode, einfach zu integrieren, wgpu-basiert).
+*   **Grafik:** `wgpu` (WebGPU-Standard, Cross-Platform, Zukunftssicher).
+*   **Video:** `ffmpeg-next` (Bindings für FFmpeg).
+*   **Audio:** `cpal` (Low-Level Audio API).
+*   **Build-System:** Cargo (Standard).
+
+## Build- und Test-Strategie
+
+*   **Unit Tests:** In jedem Modul (`#[test]`).
+*   **Integration Tests:** In `tests/` Ordner.
+*   **CI:** GitHub Actions (Build, Test, Lint).
+*   **Linter:** `clippy` (Strikt).
+*   **Formatter:** `rustfmt`.
