@@ -17,3 +17,7 @@
 ## 2026-05-21 - Iterating VecDeque Windows
 **Learning:** `VecDeque` does not support slice methods like `.windows()` directly because its memory is not guaranteed to be contiguous. Calling `make_contiguous` moves memory, which defeats the purpose of O(1) operations.
 **Action:** For simple sliding windows on `VecDeque` (like calculating deltas), use `iter().zip(iter().skip(1))` instead of converting to a slice or `Vec`.
+
+## 2026-06-01 - O(N^2) Vector Construction via insert(0)
+**Learning:** Constructing a vector by repeatedly calling `insert(0, item)` is O(N^2) because every insertion shifts all existing elements. This was found in graph traversal logic (`trace_chain`) where chain length can be significant.
+**Action:** Use `push(item)` during traversal and call `reverse()` at the end. This reduces complexity to O(N) (amortized push + linear reverse).
