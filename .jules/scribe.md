@@ -1,6 +1,22 @@
-<<<<<<< HEAD
-# Scribe Journal
-=======
+# Scribe Journal - 2026-01-20
+
+## Documentation Cleanup & Restructuring
+
+I have undertaken a cleanup of the documentation structure to resolve conflicts and align with the project standards.
+
+### Actions Taken
+- **Resolved Conflicts**: Fixed merge conflicts in `.jules/scribe.md` and `crates/mapmap-mcp/README.md`.
+- **Restructured Docs**:
+  - Renamed `docs/04-USER-GUIDE` to `docs/02-USER-GUIDE` to resolve the numbering conflict with `04-API`.
+  - Moved `docs/02-CONTRIBUTING/CONTRIBUTING.md` and `CODE-OF-CONDUCT.md` to the project root.
+  - Renamed `docs/02-CONTRIBUTING/` to `docs/05-DEVELOPMENT/` to serve as the Developer Guide.
+  - Renumbered remaining folders (`05-ROADMAP` -> `06`, `06-TUTORIALS` -> `07`, `07-TECHNICAL` -> `08`) to ensure a sequential order without gaps or duplicates.
+  - Removed `docs/08-CHANGELOG/` to enforce `CHANGELOG.md` in the root as the Single Source of Truth.
+  - Updated `docs/INDEX.md` to reflect the new structure.
+- **Synced Roadmap**: Updated `ROADMAP.md` to match `ROADMAP_2.0.md`.
+
+---
+
 # Scribe Journal - 2026-01-09
 
 ## Discrepancy in Documentation Structure
@@ -20,7 +36,6 @@ I noticed a significant discrepancy between the documentation structure describe
 ---
 
 # Scribe Journal - 2026-01-08
->>>>>>> pr-217-branch
 
 ## Current State (2026-01-14)
 - **Cleanup**: Verified that `CHANGELOG.md` (root) is the superset of `docs/08-CHANGELOG/CHANGELOG.md` (which was stale, missing entries from 2026-01-13 and 2026-01-14). Safely deleted the stale duplicate to ensure a Single Source of Truth.
