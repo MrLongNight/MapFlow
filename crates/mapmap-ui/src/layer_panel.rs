@@ -1,5 +1,6 @@
 //! Egui-based Layer Management Panel
 use crate::i18n::LocaleManager;
+use crate::widgets;
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{BlendMode, LayerManager};
@@ -112,23 +113,30 @@ impl LayerPanel {
                                             ui.with_layout(
                                                 egui::Layout::right_to_left(egui::Align::Center),
                                                 |ui| {
-                                                    // Phase 1: Layer management buttons (Duplicate, Remove)
-                                                    if ui
-                                                        .small_button("🗑")
-                                                        .on_hover_text(i18n.t("btn-remove"))
-                                                        .clicked()
-                                                    {
-                                                        actions
-                                                            .push(UIAction::RemoveLayer(layer.id));
+                                                    // Phase 1: Layer management buttons (Delete, Duplicate, Solo, Bypass)
+                                                    // Right-aligned, so order is reversed: Delete, Duplicate, Solo, Bypass
+
+                                                    if widgets::delete_button(ui).clicked() {
+                                                        actions.push(UIAction::RemoveLayer(layer.id));
                                                     }
-                                                    if ui
-                                                        .small_button("📄")
-                                                        .on_hover_text(i18n.t("btn-duplicate"))
-                                                        .clicked()
-                                                    {
-                                                        actions.push(UIAction::DuplicateLayer(
-                                                            layer.id,
-                                                        ));
+
+                                                    ui.add_space(4.0);
+
+                                                    if widgets::duplicate_button(ui).clicked() {
+                                                        actions.push(UIAction::DuplicateLayer(layer.id));
+                                                    }
+
+                                                    ui.add_space(4.0);
+
+                                                    // Use newly added styled widgets for state toggles
+                                                    if widgets::solo_button(ui, layer.solo).clicked() {
+                                                        layer.solo = !layer.solo;
+                                                    }
+
+                                                    ui.add_space(4.0);
+
+                                                    if widgets::bypass_button(ui, layer.bypass).clicked() {
+                                                        layer.bypass = !layer.bypass;
                                                     }
                                                 },
                                             );
@@ -136,49 +144,7 @@ impl LayerPanel {
 
                                         // Indented properties
                                         ui.indent("layer_props", |ui| {
-                                            ui.horizontal(|ui| {
-                                                // Phase 1: Bypass, Solo
-                                                let mut bypass = layer.bypass;
-                                                if ui
-                                                    .checkbox(&mut bypass, i18n.t("check-bypass"))
-                                                    .changed()
-                                                {
-                                                    // Direct modification plus action for undo/consistency if needed
-                                                    // But UIAction handles ToggleLayerBypass which might toggle it back if we modify it here?
-                                                    // Standard pattern in ImGui code was: direct modify AND push action.
-                                                    // UIAction processing logic in main.rs toggles it. So if we set it here, then toggle it, it reverts.
-                                                    // We should only push action OR modify.
-                                                    // ImGui code: `if ui.checkbox(...) { layer.bypass = bypass; actions.push(...) }`
-                                                    // Main.rs logic: `ToggleLayerBypass(id) => if let Some(l) = ... { l.toggle_bypass() }`
-                                                    // If we set `layer.bypass = bypass` (new value) here, and then push `Toggle`, `Toggle` will flip it back to old value.
-                                                    // So we should NOT modify here if we push action. Or push `SetBypass` (if it existed).
-                                                    // `ToggleLayerBypass` implies we just fire the action.
-                                                    // But Checkbox expects a `&mut bool`.
-                                                    // If we pass `&mut layer.bypass`, it updates immediately. Then we push Toggle -> it flips back.
-                                                    // FIX: Don't push action for simple bool toggles if we have direct mutable access, OR don't update mutable access.
-                                                    // But egui Checkbox requires `&mut bool`.
-                                                    // So we update it. We should NOT push `ToggleLayerBypass` if we already updated it.
-                                                    // UNLESS the action is for other systems (Undo).
-                                                    // Let's check `lib.rs` ImGui implementation again.
-                                                    /*
-                                                    if ui.checkbox(self.i18n.t("check-bypass"), &mut bypass) {
-                                                        layer.bypass = bypass;
-                                                        self.actions.push(UIAction::ToggleLayerBypass(layer.id));
-                                                    }
-                                                    */
-                                                    // This ImGui code seems buggy if ToggleLayerBypass flips it.
-                                                    // Let's assume we just modify state directly here for now as we have mutable access.
-                                                    layer.bypass = bypass;
-                                                }
-
-                                                let mut solo = layer.solo;
-                                                if ui
-                                                    .checkbox(&mut solo, i18n.t("check-solo"))
-                                                    .changed()
-                                                {
-                                                    layer.solo = solo;
-                                                }
-                                            });
+                                            // Moved Bypass/Solo to header
 
                                             // Opacity
                                             let mut opacity = layer.opacity;
