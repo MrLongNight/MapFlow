@@ -5530,11 +5530,7 @@ impl ModuleCanvas {
                 Color32::from_gray(20),
             );
             // Inner dot (Connector contact)
-            painter.circle_filled(
-                socket_pos,
-                2.0 * self.zoom,
-                Color32::from_gray(100),
-            );
+            painter.circle_filled(socket_pos, 2.0 * self.zoom, Color32::from_gray(100));
 
             // Socket label
             painter.text(
@@ -5568,11 +5564,7 @@ impl ModuleCanvas {
                 Color32::from_gray(20),
             );
             // Inner dot (Connector contact)
-            painter.circle_filled(
-                socket_pos,
-                2.0 * self.zoom,
-                Color32::from_gray(100),
-            );
+            painter.circle_filled(socket_pos, 2.0 * self.zoom, Color32::from_gray(100));
 
             // Socket label
             painter.text(
