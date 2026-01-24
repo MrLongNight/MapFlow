@@ -342,7 +342,7 @@ impl ThemeConfig {
             faint_bg_color: colors::DARKER_GREY,
             extreme_bg_color: colors::DARKER_GREY,
             code_bg_color: colors::DARK_GREY,
-            warn_fg_color: colors::WARN_COLOR, // Orange
+            warn_fg_color: colors::WARN_COLOR,   // Orange
             error_fg_color: colors::ERROR_COLOR, // Red
             window_fill: colors::DARK_GREY,
             panel_fill: colors::DARK_GREY,

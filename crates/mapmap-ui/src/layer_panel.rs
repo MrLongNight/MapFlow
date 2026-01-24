@@ -117,25 +117,32 @@ impl LayerPanel {
                                                     // Right-aligned, so order is reversed: Delete, Duplicate, Solo, Bypass
 
                                                     if widgets::delete_button(ui).clicked() {
-                                                        actions.push(UIAction::RemoveLayer(layer.id));
+                                                        actions
+                                                            .push(UIAction::RemoveLayer(layer.id));
                                                     }
 
                                                     ui.add_space(4.0);
 
                                                     if widgets::duplicate_button(ui).clicked() {
-                                                        actions.push(UIAction::DuplicateLayer(layer.id));
+                                                        actions.push(UIAction::DuplicateLayer(
+                                                            layer.id,
+                                                        ));
                                                     }
 
                                                     ui.add_space(4.0);
 
                                                     // Use newly added styled widgets for state toggles
-                                                    if widgets::solo_button(ui, layer.solo).clicked() {
+                                                    if widgets::solo_button(ui, layer.solo)
+                                                        .clicked()
+                                                    {
                                                         layer.solo = !layer.solo;
                                                     }
 
                                                     ui.add_space(4.0);
 
-                                                    if widgets::bypass_button(ui, layer.bypass).clicked() {
+                                                    if widgets::bypass_button(ui, layer.bypass)
+                                                        .clicked()
+                                                    {
                                                         layer.bypass = !layer.bypass;
                                                     }
                                                 },
