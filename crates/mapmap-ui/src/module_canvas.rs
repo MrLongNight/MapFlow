@@ -881,23 +881,28 @@ impl ModuleCanvas {
                                                          *end_time = current_pos;
                                                          if *end_time <= *start_time { *start_time = (*end_time - 1.0).max(0.0); }
                                                     }
-
-                                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                        if ui.add(egui::Button::new("↺ Reset").min_size(Vec2::new(60.0, 30.0))).on_hover_text("Reset Clip Region").clicked() {
-                                                            *start_time = 0.0;
-                                                            *end_time = 0.0;
-                                                        }
-                                                    });
                                                 });
 
-                                                // Region Info (smaller text)
+                                                // Region Info & Reset
                                                 if *start_time > 0.0 || *end_time > 0.0 {
-                                                    ui.label(
-                                                        egui::RichText::new(format!("Active Region: {:.2}s - {:.2}s",
-                                                            start_time,
-                                                            if *end_time > 0.0 { *end_time } else { video_duration }
-                                                        )).size(10.0).color(Color32::from_rgb(100, 200, 150))
-                                                    );
+                                                    ui.horizontal(|ui| {
+                                                        ui.label(
+                                                            egui::RichText::new(format!("Active Region: {:.2}s - {:.2}s",
+                                                                start_time,
+                                                                if *end_time > 0.0 { *end_time } else { video_duration }
+                                                            )).size(12.0).color(Color32::from_rgb(100, 200, 150))
+                                                        );
+
+                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                             if ui.add(egui::Button::new("↺ Reset").small())
+                                                                .on_hover_text("Reset Clip Region")
+                                                                .clicked()
+                                                            {
+                                                                *start_time = 0.0;
+                                                                *end_time = 0.0;
+                                                            }
+                                                        });
+                                                    });
                                                 }
                                                 ui.add_space(8.0);
 
@@ -920,7 +925,7 @@ impl ModuleCanvas {
                                                             egui::TextEdit::singleline(path)
                                                                 .desired_width(160.0),
                                                         );
-                                                        if ui.button("📂").clicked() {
+                                                        if ui.button("📂").on_hover_text("Select Media File").clicked() {
                                                             if let Some(picked) = rfd::FileDialog::new()
                                                                 .add_filter(
                                                                     "Media",
@@ -987,20 +992,45 @@ impl ModuleCanvas {
 
                                                 // === COLOR CORRECTION ===
                                                 ui.collapsing("🌈 Color Correction", |ui| {
+                                                    ui.horizontal(|ui| {
+                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                            if ui.add(egui::Button::new("↺ Reset").min_size(Vec2::new(60.0, 24.0)))
+                                                                .on_hover_text("Reset Color Correction defaults")
+                                                                .clicked()
+                                                            {
+                                                                *brightness = 0.0;
+                                                                *contrast = 1.0;
+                                                                *saturation = 1.0;
+                                                                *hue_shift = 0.0;
+                                                            }
+                                                        });
+                                                    });
+
                                                     ui.add(egui::Slider::new(brightness, -1.0..=1.0).text("Brightness"));
                                                     ui.add(egui::Slider::new(contrast, 0.0..=2.0).text("Contrast"));
                                                     ui.add(egui::Slider::new(saturation, 0.0..=2.0).text("Saturation"));
                                                     ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).text("Hue Shift").suffix("°"));
-                                                    if ui.button("Reset Colors").clicked() {
-                                                        *brightness = 0.0;
-                                                        *contrast = 1.0;
-                                                        *saturation = 1.0;
-                                                        *hue_shift = 0.0;
-                                                    }
                                                 });
 
                                                 // === TRANSFORM ===
                                                 ui.collapsing("📐 Transform", |ui| {
+                                                    ui.horizontal(|ui| {
+                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                            if ui.add(egui::Button::new("↺ Reset").min_size(Vec2::new(60.0, 24.0)))
+                                                                .on_hover_text("Reset Transform defaults")
+                                                                .clicked()
+                                                            {
+                                                                *scale_x = 1.0;
+                                                                *scale_y = 1.0;
+                                                                *rotation = 0.0;
+                                                                *offset_x = 0.0;
+                                                                *offset_y = 0.0;
+                                                                *flip_horizontal = false;
+                                                                *flip_vertical = false;
+                                                            }
+                                                        });
+                                                    });
+
                                                     ui.horizontal(|ui| {
                                                         ui.label("Scale:");
                                                         ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
@@ -1020,17 +1050,6 @@ impl ModuleCanvas {
                                                         ui.checkbox(flip_horizontal, "↔️ Horizontal");
                                                         ui.checkbox(flip_vertical, "↕️ Vertical");
                                                     });
-
-
-                                                    if ui.button("Reset Transform").clicked() {
-                                                        *scale_x = 1.0;
-                                                        *scale_y = 1.0;
-                                                        *rotation = 0.0;
-                                                        *offset_x = 0.0;
-                                                        *offset_y = 0.0;
-                                                        *flip_horizontal = false;
-                                                        *flip_vertical = false;
-                                                    }
                                                 });
 
                                                 // === VIDEO OPTIONS ===
@@ -1158,7 +1177,7 @@ impl ModuleCanvas {
                                                         egui::TextEdit::singleline(path)
                                                             .desired_width(120.0),
                                                     );
-                                                    if ui.button("📂").clicked() {
+                                                    if ui.button("📂").on_hover_text("Select Mask File").clicked() {
                                                         if let Some(picked) = rfd::FileDialog::new()
                                                             .add_filter(
                                                                 "Image",
@@ -3035,7 +3054,7 @@ impl ModuleCanvas {
                         ui.label(format!("{:.0}%", self.zoom * 100.0));
 
                         // Zoom +
-                        if ui.button("+").clicked() {
+                        if ui.button("+").on_hover_text("Zoom In").clicked() {
                             self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
                         }
 
@@ -3046,7 +3065,7 @@ impl ModuleCanvas {
                         );
 
                         // Zoom -
-                        if ui.button("−").clicked() {
+                        if ui.button("−").on_hover_text("Zoom Out").clicked() {
                             self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
                         }
 
