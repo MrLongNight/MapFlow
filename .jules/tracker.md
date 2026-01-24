@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-24 - Roadmap Desynchronization
+**Erkenntnis:** `ROADMAP.md` (v1.9.2) was outdated compared to `ROADMAP_2.0.md` (v2.0), despite the guideline that they should be synchronized. Previous updates (Jan 20) only updated 2.0.
+**Aktion:** Synchronized `ROADMAP.md` to match `ROADMAP_2.0.md` content exactly and updated the timestamp.
+
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
