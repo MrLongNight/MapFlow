@@ -11,3 +11,17 @@
 2. Consolidated Transport Bar with large (60x40px minimum) hit targets.
 3. Color-coded active states (Green=Play, Yellow=Pause).
 This pattern should be applied to other time-based nodes (e.g., Timeline, Sequencer) in the future.
+
+## 2024-05-23 – [Safe Reset Pattern]
+**Learning:** Destructive actions like "Reset" were previously placed adjacent to interactive controls or at the bottom of forms, risking accidental clicks and poor visibility.
+**Action:** Implemented a standard pattern for property sections:
+1. Place "Reset" buttons in the top-right of the section header or content area.
+2. Use distinct, smaller visual styling (e.g., "↺ Reset" or icon-only) compared to primary actions.
+3. Ensure tooltips () clearly describe the scope of the reset (e.g., "Reset Transform defaults").
+
+## 2024-05-23 – [Safe Reset Pattern]
+**Learning:** Destructive actions like "Reset" were previously placed adjacent to interactive controls or at the bottom of forms, risking accidental clicks and poor visibility.
+**Action:** Implemented a standard pattern for property sections:
+1. Place "Reset" buttons in the top-right of the section header or content area.
+2. Use distinct, smaller visual styling (e.g., "↺ Reset" or icon-only) compared to primary actions.
+3. Ensure tooltips (`on_hover_text`) clearly describe the scope of the reset (e.g., "Reset Transform defaults").

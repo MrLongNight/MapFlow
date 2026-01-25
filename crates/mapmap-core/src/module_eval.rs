@@ -80,8 +80,7 @@ mod tests_evaluator {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
-        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, PartType, SourceType,
-        TriggerType,
+        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerType,
     };
     use std::time::Duration;
 
@@ -183,7 +182,7 @@ mod tests_evaluator {
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
         // 2. Source (Target)
-        let s_id = module.add_part(PartType::Source, (200.0, 0.0));
+        let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
         module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
         let _result = evaluator.evaluate(&module);
@@ -224,7 +223,7 @@ mod tests_evaluator {
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
         // 2. Source
-        let s_id = module.add_part(PartType::Source, (100.0, 0.0));
+        let s_id = module.add_part(crate::module::PartType::Source, (100.0, 0.0));
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
             {
@@ -233,10 +232,10 @@ mod tests_evaluator {
         }
 
         // 3. Layer
-        let l_id = module.add_part(PartType::Layer, (200.0, 0.0));
+        let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
 
         // 4. Output
-        let o_id = module.add_part(PartType::Output, (300.0, 0.0));
+        let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
 
         // Connections
         module.add_connection(t_id, 0, s_id, 0); // Trigger -> Source Trigger
@@ -302,7 +301,7 @@ mod tests_evaluator {
         module.add_connection(t_id, 0, m_id, 0);
 
         // Slave Node (Layer)
-        let s_id = module.add_part(PartType::Layer, (100.0, 0.0));
+        let s_id = module.add_part(crate::module::PartType::Layer, (100.0, 0.0));
         // Configure as Slave
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             part.link_data.mode = LinkMode::Slave;
@@ -742,11 +741,7 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain(
-        &self,
-        start_node_id: ModulePartId,
-        module: &MapFlowModule,
-    ) -> ProcessingChain {
+    fn trace_chain(&self, start_node_id: ModulePartId, module: &MapFlowModule) -> ProcessingChain {
         let mut effects = Vec::new();
         let mut masks = Vec::new();
         let mut override_mesh = None;
@@ -891,14 +886,16 @@ impl ModuleEvaluator {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
                                     // L556 replacement
-                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id) {
+                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id)
+                                    {
                                         for &conn_idx in conn_indices {
                                             let conn = &module.connections[conn_idx];
                                             if conn.to_socket == *socket_idx {
                                                 if let Some(from_values) =
                                                     trigger_values.get(&conn.from_part)
                                                 {
-                                                    if let Some(val) = from_values.get(conn.from_socket)
+                                                    if let Some(val) =
+                                                        from_values.get(conn.from_socket)
                                                     {
                                                         trigger_val = *val;
                                                     }
@@ -968,11 +965,11 @@ impl ModuleEvaluator {
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
-                            effects.insert(0, mod_type.clone()); // Prepend (execution order)
+                            effects.push(mod_type.clone());
                             current_id = part.id;
                         }
                         ModulePartType::Mask(mask_type) => {
-                            masks.insert(0, mask_type.clone());
+                            masks.push(mask_type.clone());
                             current_id = part.id;
                         }
                         ModulePartType::Mesh(mesh_type) => {
@@ -1006,6 +1003,10 @@ impl ModuleEvaluator {
                 start_node_id
             );
         }
+
+        // Fix order (we pushed back-to-front, so reverse to get execution order)
+        effects.reverse();
+        masks.reverse();
 
         ProcessingChain {
             source_id,
@@ -1448,5 +1449,75 @@ mod tests_logic {
         // The limit is 50.
         // It should just return safely.
         assert!(chain.effects.len() <= 50);
+    }
+
+    #[test]
+    fn test_trace_chain_order() {
+        let mut evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // 1. Source
+        let source_id = module.add_part(crate::module::PartType::Source, (0.0, 0.0));
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == source_id) {
+            if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
+            {
+                *path = "test.mp4".to_string();
+            }
+        }
+
+        // 2. Effect A (Blur)
+        let effect_a_id = module.add_part(crate::module::PartType::Modulator, (100.0, 0.0));
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == effect_a_id) {
+            part.part_type = ModulePartType::Modulizer(crate::module::ModulizerType::Effect {
+                effect_type: crate::module::EffectType::Blur,
+                params: HashMap::new(),
+            });
+        }
+
+        // 3. Effect B (Invert)
+        let effect_b_id = module.add_part(crate::module::PartType::Modulator, (200.0, 0.0));
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == effect_b_id) {
+            part.part_type = ModulePartType::Modulizer(crate::module::ModulizerType::Effect {
+                effect_type: crate::module::EffectType::Invert,
+                params: HashMap::new(),
+            });
+        }
+
+        // 4. Layer
+        let layer_id = module.add_part(crate::module::PartType::Layer, (300.0, 0.0));
+
+        // 5. Output
+        let output_id = module.add_part(crate::module::PartType::Output, (400.0, 0.0));
+
+        // Connections: Source -> Effect A -> Effect B -> Layer -> Output
+        // Source(0) -> Effect A(0) (Input)
+        module.add_connection(source_id, 0, effect_a_id, 0);
+        // Effect A(0) -> Effect B(0)
+        module.add_connection(effect_a_id, 0, effect_b_id, 0);
+        // Effect B(0) -> Layer(0)
+        module.add_connection(effect_b_id, 0, layer_id, 0);
+        // Layer(0) -> Output(0)
+        module.add_connection(layer_id, 0, output_id, 0);
+
+        let result = evaluator.evaluate(&module);
+
+        assert_eq!(result.render_ops.len(), 1);
+        let op = &result.render_ops[0];
+        assert_eq!(op.effects.len(), 2);
+
+        // Expected Order: Source -> Effect A (Blur) -> Effect B (Invert) -> Layer
+        // op.effects should be [Blur, Invert]
+
+        if let crate::module::ModulizerType::Effect { effect_type, .. } = &op.effects[0] {
+            assert_eq!(*effect_type, crate::module::EffectType::Blur);
+        } else {
+            panic!("First effect should be Blur");
+        }
+
+        if let crate::module::ModulizerType::Effect { effect_type, .. } = &op.effects[1] {
+            assert_eq!(*effect_type, crate::module::EffectType::Invert);
+        } else {
+            panic!("Second effect should be Invert");
+        }
     }
 }
