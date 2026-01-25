@@ -2296,6 +2296,11 @@ impl App {
                                     UIEffectType::Pixelate => RenderEffectType::Pixelate,
                                     UIEffectType::Vignette => RenderEffectType::Vignette,
                                     UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Wave => RenderEffectType::Wave,
+                                    UIEffectType::Glitch => RenderEffectType::Glitch,
+                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
+                                    UIEffectType::Mirror => RenderEffectType::Mirror,
+                                    UIEffectType::HueShift => RenderEffectType::HueShift,
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
 
@@ -2320,6 +2325,11 @@ impl App {
                                     UIEffectType::Pixelate => RenderEffectType::Pixelate,
                                     UIEffectType::Vignette => RenderEffectType::Vignette,
                                     UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Wave => RenderEffectType::Wave,
+                                    UIEffectType::Glitch => RenderEffectType::Glitch,
+                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
+                                    UIEffectType::Mirror => RenderEffectType::Mirror,
+                                    UIEffectType::HueShift => RenderEffectType::HueShift,
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
                                 self.state.effect_chain.add_effect(render_type);
@@ -3673,3 +3683,5 @@ fn main() -> Result<()> {
 
     Ok(())
 }
+/ /   F o r c e   C I   t r i g g e r  
+ 
