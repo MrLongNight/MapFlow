@@ -342,3 +342,30 @@ pub fn delete_button(ui: &mut Ui) -> Response {
 
     response.on_hover_text("Remove Layer")
 }
+
+pub fn collapsing_header_with_reset(
+    ui: &mut Ui,
+    title: &str,
+    default_open: bool,
+    add_contents: impl FnOnce(&mut Ui),
+) -> bool {
+    let id = ui.make_persistent_id(title);
+    let mut reset_clicked = false;
+    egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, default_open)
+        .show_header(ui, |ui| {
+            ui.label(title);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui
+                    .add(egui::Button::new("↺ Reset").small())
+                    .on_hover_text(format!("Reset {} defaults", title))
+                    .clicked()
+                {
+                    reset_clicked = true;
+                }
+            });
+        })
+        .body(|ui| {
+            add_contents(ui);
+        });
+    reset_clicked
+}

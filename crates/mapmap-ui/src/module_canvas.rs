@@ -993,66 +993,90 @@ impl ModuleCanvas {
                                                 });
 
                                                 // === COLOR CORRECTION ===
-                                                ui.collapsing("🌈 Color Correction", |ui| {
-                                                    ui.horizontal(|ui| {
-                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                            if ui.add(egui::Button::new("↺ Reset").min_size(Vec2::new(60.0, 24.0)))
-                                                                .on_hover_text("Reset Color Correction defaults")
-                                                                .clicked()
-                                                            {
-                                                                *brightness = 0.0;
-                                                                *contrast = 1.0;
-                                                                *saturation = 1.0;
-                                                                *hue_shift = 0.0;
-                                                            }
-                                                        });
-                                                    });
-
-                                                    ui.add(egui::Slider::new(brightness, -1.0..=1.0).text("Brightness"));
-                                                    ui.add(egui::Slider::new(contrast, 0.0..=2.0).text("Contrast"));
-                                                    ui.add(egui::Slider::new(saturation, 0.0..=2.0).text("Saturation"));
-                                                    ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).text("Hue Shift").suffix("°"));
-                                                });
+                                                if crate::widgets::collapsing_header_with_reset(
+                                                    ui,
+                                                    "🌈 Color Correction",
+                                                    false,
+                                                    |ui| {
+                                                        ui.add(
+                                                            egui::Slider::new(brightness, -1.0..=1.0)
+                                                                .text("Brightness"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(contrast, 0.0..=2.0)
+                                                                .text("Contrast"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(saturation, 0.0..=2.0)
+                                                                .text("Saturation"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(hue_shift, -180.0..=180.0)
+                                                                .text("Hue Shift")
+                                                                .suffix("°"),
+                                                        );
+                                                    },
+                                                ) {
+                                                    *brightness = 0.0;
+                                                    *contrast = 1.0;
+                                                    *saturation = 1.0;
+                                                    *hue_shift = 0.0;
+                                                }
 
                                                 // === TRANSFORM ===
-                                                ui.collapsing("📐 Transform", |ui| {
-                                                    ui.horizontal(|ui| {
-                                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                            if ui.add(egui::Button::new("↺ Reset").min_size(Vec2::new(60.0, 24.0)))
-                                                                .on_hover_text("Reset Transform defaults")
-                                                                .clicked()
-                                                            {
-                                                                *scale_x = 1.0;
-                                                                *scale_y = 1.0;
-                                                                *rotation = 0.0;
-                                                                *offset_x = 0.0;
-                                                                *offset_y = 0.0;
-                                                                *flip_horizontal = false;
-                                                                *flip_vertical = false;
-                                                            }
+                                                if crate::widgets::collapsing_header_with_reset(
+                                                    ui,
+                                                    "📐 Transform",
+                                                    false,
+                                                    |ui| {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Scale:");
+                                                            ui.add(
+                                                                egui::DragValue::new(scale_x)
+                                                                    .speed(0.01)
+                                                                    .prefix("X: "),
+                                                            );
+                                                            ui.add(
+                                                                egui::DragValue::new(scale_y)
+                                                                    .speed(0.01)
+                                                                    .prefix("Y: "),
+                                                            );
                                                         });
-                                                    });
+                                                        ui.add(
+                                                            egui::Slider::new(rotation, -180.0..=180.0)
+                                                                .text("Rotation")
+                                                                .suffix("°"),
+                                                        );
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Offset:");
+                                                            ui.add(
+                                                                egui::DragValue::new(offset_x)
+                                                                    .speed(1.0)
+                                                                    .prefix("X: "),
+                                                            );
+                                                            ui.add(
+                                                                egui::DragValue::new(offset_y)
+                                                                    .speed(1.0)
+                                                                    .prefix("Y: "),
+                                                            );
+                                                        });
 
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("Scale:");
-                                                        ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
-                                                    });
-                                                    ui.add(egui::Slider::new(rotation, -180.0..=180.0).text("Rotation").suffix("°"));
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("Offset:");
-                                                        ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
-                                                    });
-
-
-                                                    ui.separator();
-                                                    ui.label("Mirror / Flip:");
-                                                    ui.horizontal(|ui| {
-                                                        ui.checkbox(flip_horizontal, "↔️ Horizontal");
-                                                        ui.checkbox(flip_vertical, "↕️ Vertical");
-                                                    });
-                                                });
+                                                        ui.separator();
+                                                        ui.label("Mirror / Flip:");
+                                                        ui.horizontal(|ui| {
+                                                            ui.checkbox(flip_horizontal, "↔️ Horizontal");
+                                                            ui.checkbox(flip_vertical, "↕️ Vertical");
+                                                        });
+                                                    },
+                                                ) {
+                                                    *scale_x = 1.0;
+                                                    *scale_y = 1.0;
+                                                    *rotation = 0.0;
+                                                    *offset_x = 0.0;
+                                                    *offset_y = 0.0;
+                                                    *flip_horizontal = false;
+                                                    *flip_vertical = false;
+                                                }
 
                                                 // === VIDEO OPTIONS ===
                                                 ui.collapsing("🎬 Video Options", |ui| {
