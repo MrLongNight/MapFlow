@@ -57,6 +57,11 @@ jobs:
       pull-requests: write
 
     steps:
+    - name: Installiere ALSA- und systemnahe Bibliotheken
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libasound2-dev pkg-config
+
     - name: Check if PR branch is up-to-date
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
@@ -380,12 +385,12 @@ jobs:
         shared-key: "windows-cache"
         save-if: ${{ github.ref == 'refs/heads/main' }}
 
-    - name: Build (Release, Windows - without NDI)
+    - name: Build (Release, Windows - ohne NDI)
       env:
         RUST_BACKTRACE: full
       run: cargo build --release --verbose --no-default-features --features "audio"
 
-    - name: Run tests (Release, without NDI)
+    - name: Run tests (Release, ohne NDI)
       if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full
