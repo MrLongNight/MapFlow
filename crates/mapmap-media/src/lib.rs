@@ -6,6 +6,8 @@
 //!
 //! Multi-threaded decoding pipeline is planned for a future phase.
 
+#![warn(missing_docs)]
+
 use std::path::Path;
 use thiserror::Error;
 
