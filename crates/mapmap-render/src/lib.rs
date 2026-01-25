@@ -8,6 +8,8 @@
 //! - Effect chain post-processing
 //! - Preset system for effect chains
 
+#![warn(missing_docs)]
+
 use thiserror::Error;
 
 pub mod backend;
