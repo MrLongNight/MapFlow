@@ -822,7 +822,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ Toolchain-Updates (stable verwendet, dtolnay/rust-toolchain@stable)
   - ✅ Windows-Build-Fixes (vcpkg-Pfade, git-ownership)
   - ✅ Audio-Feature in CI aktiviert
-  - ✅ FFmpeg in CI-Builds aktivieren (via vcpkg)
+  - ⬜ FFmpeg in CI-Builds aktivieren fehlt
   - ✅ Windows-CI-Builds (COMPLETED 2025-12-21, non-blocking)
   - ⬜ macOS-CI-Builds fehlen (optional)
 
@@ -893,3 +893,88 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 ## Architektur und Crate-Übersicht
 
 ### Workspace-Struktur
+
+| Crate | Funktion | Abhängigkeiten | Status |
+|-------|----------|----------------|--------|
+| `mapmap` | Haupt-Applikation (Binary) | alle Crates | ✅ Stable |
+| `mapmap-core` | Datenstrukturen & Logik | `serde`, `nalgebra` | ✅ Stable |
+| `mapmap-ui` | Benutzeroberfläche | `egui`, `wgpu` | ✅ Stable |
+| `mapmap-render` | Rendering-Engine | `wgpu` | ✅ Stable |
+| `mapmap-media` | Medien-Handling | `ffmpeg-next`, `image` | ✅ Beta |
+| `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
+| `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
+| `mapmap-mcp` | MCP-Server Integration | `serde_json` | ✅ Beta |
+
+### Modul-Abhängigkeiten
+
+```mermaid
+graph TD
+    App[mapmap] --> UI[mapmap-ui]
+    App --> Render[mapmap-render]
+    App --> Control[mapmap-control]
+    App --> MCP[mapmap-mcp]
+    UI --> Core[mapmap-core]
+    Render --> Core
+    Control --> Core
+    UI --> Media[mapmap-media]
+    Render --> Media
+    Media --> Core
+    IO[mapmap-io] --> Core
+    Render --> IO
+```
+
+## Arbeitspakete für @jules
+
+1.  **Refactorings (Priorität: Hoch)**
+    *   `MapFlowModule` in `mapmap-core` aufräumen (nicht verwendete Felder entfernen).
+    *   `MediaPlayer` State-Machine stabilisieren.
+
+2.  **Testing (Priorität: Mittel)**
+    *   Property-Based Tests für `MeshWarp` hinzufügen.
+    *   Integration-Tests für `OSC` -> `Parameter` Mapping.
+
+3.  **Documentation (Priorität: Niedrig)**
+    *   Rustdoc für alle `pub` Structs in `mapmap-core`.
+    *   Tutorial "Wie erstelle ich einen neuen Node-Typ?".
+
+## Task-Gruppen (Adaptiert für Rust)
+
+*   **T0:** Architektur & Datenmodell (`structs`, `enums`, `traits`)
+*   **T1:** Core-Logik & Algorithmen (No-std compatible logic)
+*   **T2:** Rendering & GPU (`wgpu`, Shader)
+*   **T3:** UI & Interaktion (`egui`)
+*   **T4:** IO & Hardware (Disk, Network, USB)
+
+## Implementierungsdetails nach Crate
+
+### `mapmap-core`
+*   Enthält keine Abhängigkeiten zu Rendering oder UI.
+*   Definiert das Datenmodell (`Layer`, `Mapping`, `Project`).
+*   Implementiert die Business-Logik (z.B. `overlaps(layer1, layer2)`).
+
+### `mapmap-render`
+*   Managt die `wgpu` Instanz, Adapter, Device und Queue.
+*   Implementiert `Renderer` Traits für verschiedene Zeichendienste.
+*   Hält Shader-Code als Strings oder Dateien.
+
+### `mapmap-ui`
+*   Implementiert `egui::App`.
+*   Handhabt Input-Events.
+*   Visualisiert den State aus `mapmap-core`.
+
+## Technologie-Stack und Entscheidungen
+
+*   **Sprache:** Rust 2021 (wegen Sicherheit und Performance).
+*   **GUI:** `egui` (Immediate Mode, einfach zu integrieren, wgpu-basiert).
+*   **Grafik:** `wgpu` (WebGPU-Standard, Cross-Platform, Zukunftssicher).
+*   **Video:** `ffmpeg-next` (Bindings für FFmpeg).
+*   **Audio:** `cpal` (Low-Level Audio API).
+*   **Build-System:** Cargo (Standard).
+
+## Build- und Test-Strategie
+
+*   **Unit Tests:** In jedem Modul (`#[test]`).
+*   **Integration Tests:** In `tests/` Ordner.
+*   **CI:** GitHub Actions (Build, Test, Lint).
+*   **Linter:** `clippy` (Strikt).
+*   **Formatter:** `rustfmt`.

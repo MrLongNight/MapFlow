@@ -52,6 +52,20 @@ pub struct CustomColors {
     pub error: [u8; 4],
 }
 
+/// Shared color constants for the Cyber Dark (Resolume) theme
+pub mod colors {
+    use egui::Color32;
+
+    pub const CYAN_ACCENT: Color32 = Color32::from_rgb(0, 229, 255); // Neon Cyan
+    pub const MINT_ACCENT: Color32 = Color32::from_rgb(0, 255, 170); // Mint for selection/alt
+    pub const WARN_COLOR: Color32 = Color32::from_rgb(255, 170, 0); // Orange
+    pub const ERROR_COLOR: Color32 = Color32::from_rgb(255, 50, 50); // Red
+    pub const DARK_GREY: Color32 = Color32::from_rgb(20, 20, 20); // Main Panel Background
+    pub const DARKER_GREY: Color32 = Color32::from_rgb(10, 10, 10); // Window/Deep Background
+    pub const LIGHTER_GREY: Color32 = Color32::from_rgb(45, 45, 45); // Widget Background
+    pub const STROKE_GREY: Color32 = Color32::from_rgb(60, 60, 60); // Borders
+}
+
 impl ThemeConfig {
     /// Apply theme to egui context
     pub fn apply(&self, ctx: &egui::Context) {
@@ -275,29 +289,22 @@ impl ThemeConfig {
 
     /// Resolume Arena-like theme visuals (Cyber Dark: Neutral Dark + Cyan/Mint Accents)
     fn resolume_visuals() -> Visuals {
-        let cyan_accent = Color32::from_rgb(0, 229, 255); // Neon Cyan
-        let mint_accent = Color32::from_rgb(0, 255, 170); // Mint for selection/alt
-        let dark_grey = Color32::from_rgb(20, 20, 20); // Main Panel Background
-        let darker_grey = Color32::from_rgb(10, 10, 10); // Window/Deep Background
-        let lighter_grey = Color32::from_rgb(45, 45, 45); // Widget Background
-        let stroke_grey = Color32::from_rgb(60, 60, 60); // Borders
-
         Visuals {
             dark_mode: true,
             override_text_color: Some(Color32::from_rgb(240, 240, 240)),
             widgets: egui::style::Widgets {
                 noninteractive: egui::style::WidgetVisuals {
-                    bg_fill: darker_grey,
-                    weak_bg_fill: darker_grey,
-                    bg_stroke: egui::Stroke::new(1.0, stroke_grey),
+                    bg_fill: colors::DARKER_GREY,
+                    weak_bg_fill: colors::DARKER_GREY,
+                    bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
                     corner_radius: egui::CornerRadius::same(0), // Sharp corners
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
-                    bg_fill: lighter_grey,
-                    weak_bg_fill: lighter_grey,
-                    bg_stroke: egui::Stroke::new(1.0, stroke_grey),
+                    bg_fill: colors::LIGHTER_GREY,
+                    weak_bg_fill: colors::LIGHTER_GREY,
+                    bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
                     corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
@@ -305,41 +312,41 @@ impl ThemeConfig {
                 hovered: egui::style::WidgetVisuals {
                     bg_fill: Color32::from_rgb(60, 60, 60),
                     weak_bg_fill: Color32::from_rgb(60, 60, 60),
-                    bg_stroke: egui::Stroke::new(1.0, cyan_accent), // Cyan border on hover
+                    bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT), // Cyan border on hover
                     fg_stroke: egui::Stroke::new(1.5, Color32::WHITE),
                     corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 active: egui::style::WidgetVisuals {
-                    bg_fill: cyan_accent,
-                    weak_bg_fill: cyan_accent,
-                    bg_stroke: egui::Stroke::new(1.0, cyan_accent),
+                    bg_fill: colors::CYAN_ACCENT,
+                    weak_bg_fill: colors::CYAN_ACCENT,
+                    bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT),
                     fg_stroke: egui::Stroke::new(2.0, Color32::BLACK), // Black text on Cyan
                     corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 open: egui::style::WidgetVisuals {
-                    bg_fill: dark_grey,
-                    weak_bg_fill: dark_grey,
-                    bg_stroke: egui::Stroke::new(1.0, stroke_grey),
+                    bg_fill: colors::DARK_GREY,
+                    weak_bg_fill: colors::DARK_GREY,
+                    bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
                     corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
             },
             selection: egui::style::Selection {
-                bg_fill: mint_accent.linear_multiply(0.3),
-                stroke: egui::Stroke::new(1.0, mint_accent),
+                bg_fill: colors::MINT_ACCENT.linear_multiply(0.3),
+                stroke: egui::Stroke::new(1.0, colors::MINT_ACCENT),
             },
-            hyperlink_color: cyan_accent,
-            faint_bg_color: darker_grey,
-            extreme_bg_color: darker_grey,
-            code_bg_color: dark_grey,
-            warn_fg_color: Color32::from_rgb(255, 170, 0), // Orange
-            error_fg_color: Color32::from_rgb(255, 50, 50), // Red
-            window_fill: dark_grey,
-            panel_fill: dark_grey,
-            window_stroke: egui::Stroke::new(1.0, stroke_grey),
+            hyperlink_color: colors::CYAN_ACCENT,
+            faint_bg_color: colors::DARKER_GREY,
+            extreme_bg_color: colors::DARKER_GREY,
+            code_bg_color: colors::DARK_GREY,
+            warn_fg_color: colors::WARN_COLOR,   // Orange
+            error_fg_color: colors::ERROR_COLOR, // Red
+            window_fill: colors::DARK_GREY,
+            panel_fill: colors::DARK_GREY,
+            window_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
             ..Default::default()
         }
     }
