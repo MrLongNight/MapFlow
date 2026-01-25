@@ -91,6 +91,8 @@ struct App {
     start_time: std::time::Instant,
     /// Receiver for MCP commands
     mcp_receiver: Receiver<McpAction>,
+    /// Sender for internal actions (async -> sync)
+    action_sender: crossbeam_channel::Sender<McpAction>,
     /// Unified control manager
     control_manager: ControlManager,
     /// Flag to track if exit was requested
@@ -411,6 +413,7 @@ impl App {
 
         // Start MCP Server in a separate thread
         let (mcp_sender, mcp_receiver) = unbounded();
+        let action_sender = mcp_sender.clone();
 
         thread::spawn(move || {
             // Create a Tokio runtime for the MCP server
@@ -591,6 +594,7 @@ impl App {
             last_update: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
             mcp_receiver,
+            action_sender,
             control_manager,
             exit_requested: false,
             oscillator_renderer,
@@ -1339,6 +1343,24 @@ impl App {
                         }
                     }
                 }
+                mapmap_ui::UIAction::PickMediaFile(part_id) => {
+                    let sender = self.action_sender.clone();
+                    self.tokio_runtime.spawn(async move {
+                        if let Some(handle) = rfd::AsyncFileDialog::new()
+                            .add_filter(
+                                "Media",
+                                &[
+                                    "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg", "jpeg",
+                                ],
+                            )
+                            .pick_file()
+                            .await
+                        {
+                            let path = handle.path().to_path_buf();
+                            let _ = sender.send(McpAction::SetModuleSourcePath(part_id, path));
+                        }
+                    });
+                }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -1573,6 +1595,29 @@ impl App {
                     info!("MCP: Media Stop");
                     // TODO: Integrate with media player when available
                 }
+                McpAction::SetModuleSourcePath(part_id, path) => {
+                    info!(
+                        "MCP: Setting source path for part {} to {:?}",
+                        part_id, path
+                    );
+                    // Update module part
+                    for module in self.state.module_manager.modules_mut() {
+                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                            if let mapmap_core::module::ModulePartType::Source(
+                                mapmap_core::module::SourceType::MediaFile { path: ref mut p, .. },
+                            ) = &mut part.part_type
+                            {
+                                *p = path.to_string_lossy().to_string();
+                                self.state.dirty = true;
+                                // Trigger reload
+                                self.ui_state
+                                    .module_canvas
+                                    .pending_playback_commands
+                                    .push((part_id, mapmap_ui::MediaPlaybackCommand::Reload));
+                            }
+                        }
+                    }
+                }
                 McpAction::SetLayerOpacity(id, opacity) => {
                     info!("MCP: Set layer {} opacity to {}", id, opacity);
                     // TODO: Implement layer opacity update
@@ -1699,7 +1744,7 @@ impl App {
     fn sync_output_windows(
         &mut self,
         elwt: &winit::event_loop::ActiveEventLoop,
-        render_ops: &[mapmap_core::module_eval::RenderOp],
+        _render_ops: &[mapmap_core::module_eval::RenderOp],
     ) -> Result<()> {
         use mapmap_core::module::OutputType;
         const PREVIEW_FLAG: u64 = 1u64 << 63;
@@ -1710,120 +1755,124 @@ impl App {
 
         self.output_assignments.clear();
 
-        // 1. Process RenderOps
-        for op in render_ops {
-            let output_id = op.output_part_id;
+        // Get output definitions from MODULE GRAPH (stable), not render_ops (fluctuates)
+        for module in self.state.module_manager.list_modules() {
+            for part in &module.parts {
+                match &part.part_type {
+                    mapmap_core::module::ModulePartType::Output(output_type) => {
+                        match output_type {
+                            OutputType::Projector {
+                                id: projector_id,
+                                name,
+                                fullscreen,
+                                hide_cursor,
+                                target_screen,
+                                show_in_preview_panel: _,
+                                extra_preview_window,
+                                ..
+                            } => {
+                                // Use the Projector's ID (1-8), not part.id, for window management.
+                                // This ensures multiple Output nodes with same Projector share ONE window.
+                                let output_id = *projector_id;
 
-            // -- Projector Logic --
-            match &op.output_type {
-                OutputType::Projector {
-                    id: _,
-                    name,
-                    fullscreen,
-                    hide_cursor,
-                    target_screen,
-                    show_in_preview_panel: _,
-                    extra_preview_window,
-                    ..
-                } => {
-                    // 1. Primary Window
-                    active_window_ids.insert(output_id);
+                                // 1. Primary Window
+                                active_window_ids.insert(output_id);
 
-                    if let Some(window_context) = self.window_manager.get(output_id) {
-                        // Update existing
-                        let is_fullscreen = window_context.window.fullscreen().is_some();
-                        if is_fullscreen != *fullscreen {
-                            window_context.window.set_fullscreen(if *fullscreen {
-                                Some(winit::window::Fullscreen::Borderless(None))
-                            } else {
-                                None
-                            });
-                        }
-                        window_context.window.set_cursor_visible(!*hide_cursor);
-                    } else {
-                        // Create new
-                        self.window_manager.create_projector_window(
-                            elwt,
-                            &self.backend,
-                            output_id,
-                            name,
-                            *fullscreen,
-                            *hide_cursor,
-                            *target_screen,
-                        )?;
-                        info!("Created projector window for output {}", output_id);
-                    }
-
-                    // 2. Extra Preview Window
-                    if *extra_preview_window {
-                        let preview_id = output_id | PREVIEW_FLAG;
-                        active_window_ids.insert(preview_id);
-
-                        // Ensure render assignment exists for preview
-                        self.output_assignments.entry(preview_id).or_default().push(
-                            op.source_part_id
-                                .map(|id| format!("part_{}", id))
-                                .unwrap_or_default(),
-                        );
-
-                        if self.window_manager.get(preview_id).is_none() {
-                            self.window_manager.create_projector_window(
-                                elwt,
-                                &self.backend,
-                                preview_id,
-                                &format!("Preview: {}", name),
-                                false, // Always windowed
-                                false, // Show cursor
-                                0,     // Default screen (0)
-                            )?;
-                            info!("Created preview window for output {}", output_id);
-                        }
-                    }
-                }
-                OutputType::NdiOutput { name: _name } => {
-                    // -- NDI Logic --
-                    active_sender_ids.insert(output_id);
-
-                    #[cfg(feature = "ndi")]
-                    {
-                        if !self.ndi_senders.contains_key(&output_id) {
-                            // Create NDI Sender
-                            let width = 1920; // TODO: Dynamic Res
-                            let height = 1080;
-                            match mapmap_io::ndi::NdiSender::new(
-                                _name.clone(),
-                                mapmap_io::format::VideoFormat {
-                                    width,
-                                    height,
-                                    pixel_format: mapmap_io::format::PixelFormat::BGRA8,
-                                    frame_rate: 60.0,
-                                },
-                            ) {
-                                Ok(sender) => {
-                                    info!("Created NDI sender: {}", _name);
-                                    self.ndi_senders.insert(output_id, sender);
+                                if let Some(window_context) = self.window_manager.get(output_id) {
+                                    // Update existing
+                                    let is_fullscreen =
+                                        window_context.window.fullscreen().is_some();
+                                    if is_fullscreen != *fullscreen {
+                                        window_context.window.set_fullscreen(if *fullscreen {
+                                            Some(winit::window::Fullscreen::Borderless(None))
+                                        } else {
+                                            None
+                                        });
+                                    }
+                                    window_context.window.set_cursor_visible(!*hide_cursor);
+                                } else {
+                                    // Create new
+                                    self.window_manager.create_projector_window(
+                                        elwt,
+                                        &self.backend,
+                                        output_id,
+                                        name,
+                                        *fullscreen,
+                                        *hide_cursor,
+                                        *target_screen,
+                                    )?;
+                                    info!("Created projector window for output {}", output_id);
                                 }
-                                Err(e) => error!("Failed to create NDI sender {}: {}", _name, e),
+
+                                // 2. Extra Preview Window
+                                if *extra_preview_window {
+                                    let preview_id = output_id | PREVIEW_FLAG;
+                                    active_window_ids.insert(preview_id);
+
+                                    if self.window_manager.get(preview_id).is_none() {
+                                        self.window_manager.create_projector_window(
+                                            elwt,
+                                            &self.backend,
+                                            preview_id,
+                                            &format!("Preview: {}", name),
+                                            false, // Always windowed
+                                            false, // Show cursor
+                                            0,     // Default screen (0)
+                                        )?;
+                                        info!("Created preview window for output {}", output_id);
+                                    }
+                                }
+                            }
+                            OutputType::NdiOutput { name: _name } => {
+                                // For NDI, use part.id as the unique identifier
+                                let output_id = part.id;
+                                active_sender_ids.insert(output_id);
+
+                                #[cfg(feature = "ndi")]
+                                {
+                                    if !self.ndi_senders.contains_key(&output_id) {
+                                        let width = 1920;
+                                        let height = 1080;
+                                        match mapmap_io::ndi::NdiSender::new(
+                                            _name.clone(),
+                                            mapmap_io::format::VideoFormat {
+                                                width,
+                                                height,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
+                                                frame_rate: 60.0,
+                                            },
+                                        ) {
+                                            Ok(sender) => {
+                                                info!("Created NDI sender: {}", _name);
+                                                self.ndi_senders.insert(output_id, sender);
+                                            }
+                                            Err(e) => error!(
+                                                "Failed to create NDI sender {}: {}",
+                                                _name, e
+                                            ),
+                                        }
+                                    }
+                                }
+                            }
+                            #[cfg(target_os = "windows")]
+                            OutputType::Spout { .. } => {
+                                // TODO: Spout Sender
+                            }
+                            OutputType::Hue { .. } => {
+                                // Hue integration handled via separate controller, no window needed
                             }
                         }
                     }
-                }
-                #[cfg(target_os = "windows")]
-                OutputType::Spout { .. } => {
-                    // TODO: Spout Sender
-                }
-                OutputType::Hue { .. } => {
-                    // Hue integration handled via separate controller, no window needed
+                    _ => {}
                 }
             }
         }
 
-        // 2. Cleanup Windows
+        // 2. Cleanup Windows (only close if projector was removed from graph)
         let window_ids: Vec<u64> = self.window_manager.window_ids().cloned().collect();
         for id in window_ids {
             if id != 0 && !active_window_ids.contains(&id) {
                 self.window_manager.remove_window(id);
-                // Also remove assignment if it was a preview
                 if (id & PREVIEW_FLAG) != 0 {
                     self.output_assignments.remove(&id);
                 }
@@ -2193,20 +2242,42 @@ impl App {
             }
         }
 
-        // Sync output windows only when output set changes (not every frame!)
-        // Extract unique output IDs from current render_ops
-        let current_output_ids: std::collections::HashSet<u64> =
-            self.render_ops.iter().map(|op| op.output_part_id).collect();
+        // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
+        // NOT render_ops (which can be empty/fluctuate).
+        // Extract Projector output IDs from all modules' output parts.
+        let current_output_ids: std::collections::HashSet<u64> = self
+            .state
+            .module_manager
+            .list_modules()
+            .iter()
+            .flat_map(|m| m.parts.iter())
+            .filter_map(|part| {
+                if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector { id, .. },
+                ) = &part.part_type
+                {
+                    Some(*id)
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-        // Only sync if the set of outputs changed
+        // Get current window IDs (excluding main window 0)
         let prev_output_ids: std::collections::HashSet<u64> = self
             .window_manager
             .iter()
-            .filter(|wc| wc.output_id != 0) // Exclude main window
+            .filter(|wc| wc.output_id != 0)
             .map(|wc| wc.output_id)
             .collect();
 
+        // Only sync if module graph's projector set changed
         if current_output_ids != prev_output_ids {
+            tracing::info!(
+                "Output set changed: {:?} -> {:?}",
+                prev_output_ids,
+                current_output_ids
+            );
             let render_ops_temp = std::mem::take(&mut self.render_ops);
             if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
                 tracing::error!("Failed to sync output windows: {}", e);
