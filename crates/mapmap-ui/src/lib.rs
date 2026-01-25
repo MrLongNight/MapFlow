@@ -90,6 +90,7 @@ pub enum UIAction {
     // File actions
     NewProject,
     LoadVideo(String),
+    PickMediaFile(mapmap_core::module::ModulePartId),
     SaveProject(String),
     SaveProjectAs,
     LoadProject(String),
