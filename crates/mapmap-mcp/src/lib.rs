@@ -1,3 +1,9 @@
+//! MapFlow MCP - Model Context Protocol Server
+//!
+//! This crate implements the MCP server for MapFlow, allowing AI agents to control the application.
+
+#![warn(missing_docs)]
+
 pub mod protocol;
 pub mod server;
 
@@ -55,6 +61,8 @@ pub enum McpAction {
     LayerSetPlaybackSpeed(u64, f32),
     /// Set loop mode (layer_id, loop_mode: "none", "loop", "ping-pong")
     LayerSetLoopMode(u64, String),
+    /// Set module source path (part_id, path) - Used for async file picking
+    SetModuleSourcePath(u64, PathBuf),
     /// List media library (optional folder filter)
     MediaLibraryList(Option<String>),
     /// Import media (source_path, destination_folder)

@@ -37,6 +37,8 @@
 //! - [`target`] - Control target abstraction
 //! - [`error`] - Error types
 
+#![warn(missing_docs)]
+
 // Core modules
 /// Error types
 pub mod error;

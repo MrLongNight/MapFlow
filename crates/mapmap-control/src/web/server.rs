@@ -46,7 +46,7 @@ pub struct WebServerConfig {
 }
 
 fn default_allowed_origins() -> Vec<String> {
-    vec!["*".to_string()]
+    vec![]
 }
 
 impl Default for WebServerConfig {
@@ -140,10 +140,9 @@ impl WebServer {
                 .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
                 .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]);
 
-            // If allowed_origins contains "*" or is empty (default permissive), allow Any
-            if self.config.allowed_origins.contains(&"*".to_string())
-                || self.config.allowed_origins.is_empty()
-            {
+            // If allowed_origins contains "*", allow Any.
+            // Empty list implies NO allowed origins (secure default), handled by else block.
+            if self.config.allowed_origins.contains(&"*".to_string()) {
                 // Must be applied in separate branch to handle different concrete types
                 app.layer(cors_layer.allow_origin(Any))
             } else {
@@ -263,6 +262,13 @@ async fn security_headers(req: Request, next: Next) -> Response {
         HeaderValue::from_static("default-src 'none'; frame-ancestors 'none';"),
     );
 
+    // Strict Transport Security (HSTS)
+    // Enforce HTTPS usage (if applicable) and prevent downgrade attacks
+    headers.insert(
+        header::STRICT_TRANSPORT_SECURITY,
+        HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
+    );
+
     response
 }
 
@@ -290,7 +296,7 @@ mod tests {
     #[test]
     fn test_web_server_default_origins() {
         let config = WebServerConfig::default();
-        assert!(config.allowed_origins.contains(&"*".to_string()));
+        assert!(config.allowed_origins.is_empty());
     }
 
     #[test]
@@ -348,6 +354,12 @@ mod tests {
                 .get("Content-Security-Policy")
                 .and_then(|h| h.to_str().ok()),
             Some("default-src 'none'; frame-ancestors 'none';")
+        );
+        assert_eq!(
+            headers
+                .get("Strict-Transport-Security")
+                .and_then(|h| h.to_str().ok()),
+            Some("max-age=63072000; includeSubDomains; preload")
         );
     }
 }
