@@ -907,26 +907,7 @@ impl EffectChainPanel {
                     1.0,
                 );
             }
-            EffectType::Kaleidoscope => {
-                Self::render_param_slider_static(
-                    ui,
-                    parameters,
-                    param_changes,
-                    "segments",
-                    &locale.t("param-segments"),
-                    1.0,
-                    32.0,
-                );
-                Self::render_param_slider_static(
-                    ui,
-                    parameters,
-                    param_changes,
-                    "rotation",
-                    &locale.t("param-rotation"),
-                    0.0,
-                    6.28,
-                );
-            }
+
             _ => {
                 ui.label(locale.t("no-parameters")); // NOTE: Check if key exists or add it
             }

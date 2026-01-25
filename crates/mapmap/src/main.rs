@@ -1752,7 +1752,7 @@ impl App {
         &mut self,
         elwt: &winit::event_loop::ActiveEventLoop,
         _render_ops: &[mapmap_core::module_eval::RenderOp],
-        active_module_id: Option<mapmap_core::module::ModuleId>,
+        _active_module_id: Option<mapmap_core::module::ModuleId>,
     ) -> Result<()> {
         use mapmap_core::module::OutputType;
         const PREVIEW_FLAG: u64 = 1u64 << 63;

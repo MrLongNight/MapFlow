@@ -1,5 +1,6 @@
 //! Hello World Projection Mapping Example
 //!
+#![allow(deprecated)]
 //! This example demonstrates the basics of projection mapping:
 //! 1. Creating a Paint (media source)
 //! 2. Creating a Mesh (warping geometry)
