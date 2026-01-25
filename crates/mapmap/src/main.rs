@@ -2182,34 +2182,14 @@ impl App {
         }
 
         // --- Module Graph Evaluation ---
-        if let Some(active_id) = self.ui_state.module_canvas.active_module_id {
-            if let Some(module) = self.state.module_manager.get_module(active_id) {
-                let eval_result = self.module_evaluator.evaluate(module);
-                self.render_ops = eval_result.render_ops.clone();
-            } else {
-                self.render_ops.clear();
-            }
-        } else {
-            // Fallback: If no active module selected, try to use the first one (Main)
-            // This ensures on startup we see SOMETHING if UI hasn't selected yet?
-            // Or we just clear.
-            // MapFlow usually starts empty or loads.
-            // If we list modules?
-            if let Some(first_id) = self
-                .state
-                .module_manager
-                .list_modules()
-                .first()
-                .map(|m| m.id)
-            {
-                if let Some(module) = self.state.module_manager.get_module(first_id) {
-                    let eval_result = self.module_evaluator.evaluate(module);
-                    self.render_ops = eval_result.render_ops.clone();
-                    // Update UI state to reflect this selection
-                    self.ui_state.module_canvas.active_module_id = Some(first_id);
-                }
-            } else {
-                self.render_ops.clear();
+        // Evaluate ALL modules and merge render_ops for multi-output support
+        self.render_ops.clear();
+        for module in self.state.module_manager.list_modules() {
+            let module_id = module.id;
+            if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
+                let eval_result = self.module_evaluator.evaluate(module_ref);
+                self.render_ops
+                    .extend(eval_result.render_ops.iter().cloned());
             }
         }
 

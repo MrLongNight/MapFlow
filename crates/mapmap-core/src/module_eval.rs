@@ -809,7 +809,7 @@ impl ModuleEvaluator {
                     // Apply mapping
                     let final_val = config.apply(trigger_val);
 
-                    tracing::info!(
+                    tracing::debug!(
                         "Trigger applying: part={}, socket={}, target={:?}, raw={}, final={}",
                         part.id,
                         socket_idx,
