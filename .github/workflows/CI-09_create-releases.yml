@@ -50,12 +50,12 @@ jobs:
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
-
+      
       - name: Install ffmpeg
         run: |
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install ffmpeg[core]:x64-windows
         shell: pwsh
-
+      
       - name: Set VCPKG_ROOT
         run: |
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
@@ -115,7 +115,7 @@ jobs:
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
-
+      
       - name: Install ffmpeg
         run: |
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install ffmpeg[core]:x64-windows

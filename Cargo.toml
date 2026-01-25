@@ -38,7 +38,7 @@ cc = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Audio
-cpal = { version = "0.15", default-features = false }
+cpal = { version = "0.17", default-features = false }
 criterion = "0.5"
 
 # Concurrency
@@ -106,7 +106,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unic-langid = "0.9"
 usvg = "0.45"
 # Core dependencies
-wgpu = "28.0.0"
+wgpu = "27.0"
 winit = { version = "0.30", features = ["x11", "wayland"] }
 winres = "0.1"
 
