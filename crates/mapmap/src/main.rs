@@ -1764,8 +1764,13 @@ impl App {
         self.output_assignments.clear();
 
         // Get output definitions from the ACTIVE MODULE (or first module if none active)
-        let active_id =
-            active_module_id.or_else(|| self.state.module_manager.list_modules().first().copied());
+        let active_id = active_module_id.or_else(|| {
+            self.state
+                .module_manager
+                .list_modules()
+                .first()
+                .map(|m| m.id)
+        });
 
         if let Some(id) = active_id {
             if let Some(module) = self.state.module_manager.get_module(id) {
@@ -2306,7 +2311,7 @@ impl App {
                 current_output_ids
             );
             let render_ops_temp = std::mem::take(&mut self.render_ops);
-            if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+            if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp, None) {
                 tracing::error!("Failed to sync output windows: {}", e);
             }
             self.render_ops = render_ops_temp;
