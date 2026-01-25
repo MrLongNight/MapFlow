@@ -50,7 +50,7 @@ jobs:
   # ========================================
 
   pre-checks:
-    name: "Pre-Checks"
+    name: "Pre-Checks (Auto-Fix)"
     runs-on: ubuntu-latest
     permissions:
       contents: write

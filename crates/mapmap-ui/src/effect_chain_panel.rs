@@ -21,6 +21,11 @@ pub enum EffectType {
     Pixelate,
     Vignette,
     FilmGrain,
+    Wave,
+    Glitch,
+    RgbSplit,
+    Mirror,
+    HueShift,
     Custom,
 }
 
@@ -37,6 +42,11 @@ impl EffectType {
             EffectType::Pixelate => locale.t("effect-name-pixelate"),
             EffectType::Vignette => locale.t("effect-name-vignette"),
             EffectType::FilmGrain => locale.t("effect-name-film-grain"),
+            EffectType::Wave => locale.t("effect-name-wave"),
+            EffectType::Glitch => locale.t("effect-name-glitch"),
+            EffectType::RgbSplit => locale.t("effect-name-rgb-split"),
+            EffectType::Mirror => locale.t("effect-name-mirror"),
+            EffectType::HueShift => locale.t("effect-name-hue-shift"),
             EffectType::Custom => locale.t("effect-name-custom"),
         }
     }
@@ -51,8 +61,13 @@ impl EffectType {
             EffectType::Kaleidoscope => "🔮",
             EffectType::Invert => "🔄",
             EffectType::Pixelate => "🟩",
-            EffectType::Vignette => "⭕",
-            EffectType::FilmGrain => "📽️",
+            EffectType::Vignette => "🌑",
+            EffectType::FilmGrain => "🎞️",
+            EffectType::Wave => "🌊",
+            EffectType::Glitch => "👾",
+            EffectType::RgbSplit => "🌈",
+            EffectType::Mirror => "🪞",
+            EffectType::HueShift => "🎨",
             EffectType::Custom => "⚙️",
         }
     }
@@ -69,6 +84,11 @@ impl EffectType {
             EffectType::Pixelate => AppIcon::Screen,
             EffectType::Vignette => AppIcon::AppWindow,
             EffectType::FilmGrain => AppIcon::VideoFile,
+            EffectType::Wave => AppIcon::MagicWand,
+            EffectType::Glitch => AppIcon::Screen,
+            EffectType::RgbSplit => AppIcon::MagicWand,
+            EffectType::Mirror => AppIcon::Repeat,
+            EffectType::HueShift => AppIcon::PaintBucket,
             EffectType::Custom => AppIcon::Cog,
         }
     }
@@ -85,6 +105,12 @@ impl EffectType {
             EffectType::Pixelate,
             EffectType::Vignette,
             EffectType::FilmGrain,
+            EffectType::Wave,
+            EffectType::Glitch,
+            EffectType::RgbSplit,
+            EffectType::Mirror,
+            EffectType::HueShift,
+            EffectType::Custom,
         ]
     }
 }
