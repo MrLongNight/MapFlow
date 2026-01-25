@@ -26,6 +26,14 @@ pub enum EffectType {
     Vignette,
     /// Film grain noise
     FilmGrain,
+    /// Wave distortion effect
+    Wave,
+    /// Digital glitch effect
+    Glitch,
+    /// RGB channel split
+    RgbSplit,
+    /// Mirror reflection effect
+    Mirror,
     /// Custom shader from shader graph
     Custom,
 }
@@ -44,6 +52,10 @@ impl EffectType {
             EffectType::Pixelate => "Pixelate",
             EffectType::Vignette => "Vignette",
             EffectType::FilmGrain => "Film Grain",
+            EffectType::Wave => "Wave",
+            EffectType::Glitch => "Glitch",
+            EffectType::RgbSplit => "RGB Split",
+            EffectType::Mirror => "Mirror",
             EffectType::Custom => "Custom Shader",
         }
     }

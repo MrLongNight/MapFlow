@@ -801,6 +801,10 @@ impl App {
                 if time_since_last < frame_target {
                     let wait_until = std::time::Instant::now() + (frame_target - time_since_last);
                     elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
+                    // Request redraw for all windows to prevent output window freeze
+                    for window_context in self.window_manager.iter() {
+                        window_context.window.request_redraw();
+                    }
                     return Ok(());
                 }
 
