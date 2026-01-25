@@ -91,6 +91,8 @@ struct App {
     start_time: std::time::Instant,
     /// Receiver for MCP commands
     mcp_receiver: Receiver<McpAction>,
+    /// Sender for internal actions (async -> sync)
+    action_sender: crossbeam_channel::Sender<McpAction>,
     /// Unified control manager
     control_manager: ControlManager,
     /// Flag to track if exit was requested
@@ -411,6 +413,7 @@ impl App {
 
         // Start MCP Server in a separate thread
         let (mcp_sender, mcp_receiver) = unbounded();
+        let action_sender = mcp_sender.clone();
 
         thread::spawn(move || {
             // Create a Tokio runtime for the MCP server
@@ -591,6 +594,7 @@ impl App {
             last_update: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
             mcp_receiver,
+            action_sender,
             control_manager,
             exit_requested: false,
             oscillator_renderer,
@@ -1339,6 +1343,24 @@ impl App {
                         }
                     }
                 }
+                mapmap_ui::UIAction::PickMediaFile(part_id) => {
+                    let sender = self.action_sender.clone();
+                    self.tokio_runtime.spawn(async move {
+                        if let Some(handle) = rfd::AsyncFileDialog::new()
+                            .add_filter(
+                                "Media",
+                                &[
+                                    "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg", "jpeg",
+                                ],
+                            )
+                            .pick_file()
+                            .await
+                        {
+                            let path = handle.path().to_path_buf();
+                            let _ = sender.send(McpAction::SetModuleSourcePath(part_id, path));
+                        }
+                    });
+                }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -1573,6 +1595,29 @@ impl App {
                     info!("MCP: Media Stop");
                     // TODO: Integrate with media player when available
                 }
+                McpAction::SetModuleSourcePath(part_id, path) => {
+                    info!(
+                        "MCP: Setting source path for part {} to {:?}",
+                        part_id, path
+                    );
+                    // Update module part
+                    for module in self.state.module_manager.modules_mut() {
+                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                            if let mapmap_core::module::ModulePartType::Source(
+                                mapmap_core::module::SourceType::MediaFile { path: ref mut p, .. },
+                            ) = &mut part.part_type
+                            {
+                                *p = path.to_string_lossy().to_string();
+                                self.state.dirty = true;
+                                // Trigger reload
+                                self.ui_state
+                                    .module_canvas
+                                    .pending_playback_commands
+                                    .push((part_id, mapmap_ui::MediaPlaybackCommand::Reload));
+                            }
+                        }
+                    }
+                }
                 McpAction::SetLayerOpacity(id, opacity) => {
                     info!("MCP: Set layer {} opacity to {}", id, opacity);
                     // TODO: Implement layer opacity update
@@ -1715,9 +1760,12 @@ impl App {
             for part in &module.parts {
                 match &part.part_type {
                     mapmap_core::module::ModulePartType::Output(output_type) => {
+                        // Use part.id for consistency with render pipeline
+                        let output_id = part.id;
+
                         match output_type {
                             OutputType::Projector {
-                                id: projector_id,
+                                id: _projector_id,
                                 name,
                                 fullscreen,
                                 hide_cursor,
@@ -1726,10 +1774,6 @@ impl App {
                                 extra_preview_window,
                                 ..
                             } => {
-                                // Use the Projector's ID (1-8), not part.id, for window management.
-                                // This ensures multiple Output nodes with same Projector share ONE window.
-                                let output_id = *projector_id;
-
                                 // 1. Primary Window
                                 active_window_ids.insert(output_id);
 
@@ -1991,6 +2035,19 @@ impl App {
         // Render previews with effects
         let mut current_frame_previews = std::collections::HashMap::new();
 
+        // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
+        // This avoids creating N encoders and submitting N command buffers to the queue per frame.
+        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
+
+        let mut preview_encoder =
+            self.backend
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Preview Encoder (Batched)"),
+                });
+
+        let mut has_preview_work = false;
+
         for (
             part_id,
             brightness,
@@ -2022,14 +2079,6 @@ impl App {
                 );
                 let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-                // Use a fresh encoder for each preview
-                let mut preview_encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Encoder"),
-                        });
-
                 // Calculate Transform Matrix based on source properties
                 let transform_mat = glam::Mat4::from_scale_rotation_translation(
                     glam::Vec3::new(scale_x, scale_y, 1.0),
@@ -2038,6 +2087,8 @@ impl App {
                 );
 
                 // Prepare Uniforms
+                // Note: queue.write_buffer operations here are scheduled on the queue
+                // effectively "before" the command buffer execution, maintaining correctness.
                 let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
                     transform_mat,
@@ -2052,7 +2103,7 @@ impl App {
 
                 let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
 
-                // Render Pass
+                // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
                     let mut render_pass =
                         preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -2085,8 +2136,7 @@ impl App {
                     );
                 }
 
-                // Submit the preview encoder work!
-                self.backend.queue.submit(Some(preview_encoder.finish()));
+                has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
                 let texture_id = match self.preview_texture_cache.entry(part_id) {
@@ -2118,6 +2168,10 @@ impl App {
 
                 current_frame_previews.insert(part_id, texture_id);
             }
+        }
+
+        if has_preview_work {
+            self.backend.queue.submit(Some(preview_encoder.finish()));
         }
 
         // Cleanup stale cache entries
@@ -2199,7 +2253,7 @@ impl App {
 
         // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
         // NOT render_ops (which can be empty/fluctuate).
-        // Extract Projector output IDs from all modules' output parts.
+        // Extract Output part IDs from all modules' output parts.
         let current_output_ids: std::collections::HashSet<u64> = self
             .state
             .module_manager
@@ -2208,10 +2262,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { id, .. },
+                    mapmap_core::module::OutputType::Projector { .. },
                 ) = &part.part_type
                 {
-                    Some(*id)
+                    Some(part.id) // Use part.id for consistency with render pipeline
                 } else {
                     None
                 }
