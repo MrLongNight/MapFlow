@@ -19,3 +19,12 @@
 - Panel Background: Dark Gray.
 - Stroke: Lighter Gray for definition.
 - Accent: High saturation.
+
+## 2024-05-23 – [Hierarchy via Color Depth]
+**Learning:** To create hierarchy without adding layout complexity (margins/padding), color depth is effective.
+- **Insight:** Separating `window_fill` (Background) and `panel_fill` (Foreground) creates a "floating panel" effect even with standard `egui` layouts.
+- **Palette:**
+    - Window: `(5, 5, 8)` (Almost Black/Navy)
+    - Panel: `(18, 18, 24)` (Deep Navy)
+    - Border: `(80, 80, 90)` (Blue-Grey)
+**Action:** Applied these constants to `Theme::Resolume`. Future panels should respect `ui.visuals().panel_fill` to inherit this depth automatically.
