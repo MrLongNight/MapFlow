@@ -1774,7 +1774,7 @@ impl App {
 
                             match output_type {
                                 OutputType::Projector {
-                                    id: _projector_id,
+                                    id: projector_id,
                                     name,
                                     fullscreen,
                                     hide_cursor,
@@ -1783,10 +1783,11 @@ impl App {
                                     extra_preview_window,
                                     ..
                                 } => {
-                                    // 1. Primary Window
-                                    active_window_ids.insert(output_id);
+                                    // 1. Primary Window - Use Logical ID (projector_id) not Part ID
+                                    let window_id = *projector_id;
+                                    active_window_ids.insert(window_id);
 
-                                    if let Some(window_context) = self.window_manager.get(output_id)
+                                    if let Some(window_context) = self.window_manager.get(window_id)
                                     {
                                         // Update existing
                                         let is_fullscreen =
@@ -1804,18 +1805,21 @@ impl App {
                                         self.window_manager.create_projector_window(
                                             elwt,
                                             &self.backend,
-                                            output_id,
+                                            window_id,
                                             name,
                                             *fullscreen,
                                             *hide_cursor,
                                             *target_screen,
                                         )?;
-                                        info!("Created projector window for output {}", output_id);
+                                        info!(
+                                            "Created projector window for output {} (Part {})",
+                                            window_id, output_id
+                                        );
                                     }
 
                                     // 2. Extra Preview Window
                                     if *extra_preview_window {
-                                        let preview_id = output_id | PREVIEW_FLAG;
+                                        let preview_id = window_id | PREVIEW_FLAG;
                                         active_window_ids.insert(preview_id);
 
                                         if self.window_manager.get(preview_id).is_none() {
@@ -1830,7 +1834,7 @@ impl App {
                                             )?;
                                             info!(
                                                 "Created preview window for output {}",
-                                                output_id
+                                                window_id
                                             );
                                         }
                                     }
