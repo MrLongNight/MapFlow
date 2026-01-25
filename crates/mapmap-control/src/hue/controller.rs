@@ -142,7 +142,7 @@ impl HueController {
         ) {
             Ok(s) => s,
             Err(e) => {
-                error!("Failed to connect to Hue Bridge DTLS: {}", e);
+                error!("Failed to connect to Hue Bridge DTLS: {}. Check if Windows Firewall blocks UDP port 2100.", e);
                 // Continue without streaming? Or fail?
                 // We should probably fail to connect.
                 // But we successfully got nodes.
