@@ -790,7 +790,7 @@ impl App {
                     return Ok(());
                 }
 
-                elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+                // Frame limiter passed, continue with frame processing
 
                 // Poll MIDI
                 #[cfg(feature = "midi")]
@@ -862,42 +862,32 @@ impl App {
                             "Player doesn't exist for part_id={}, attempting to create...",
                             part_id
                         );
-                        // Find the source path from the module manager
-                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
-                        {
-                            if let Some(module) =
-                                self.state.module_manager.get_module(active_module_id)
-                            {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        info!("Found media path: '{}'", path);
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Successfully created player for '{}'",
-                                                        path
-                                                    );
-                                                    self.media_players.insert(part_id, player);
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to load media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
+                        // Find the source path by searching ALL modules
+                        'module_search: for module in self.state.module_manager.modules() {
+                            if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                if let mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                                ) = &part.part_type
+                                {
+                                    info!(
+                                        "Found media path: '{}' in module '{}'",
+                                        path, module.name
+                                    );
+                                    if !path.is_empty() {
+                                        match mapmap_media::open_path(path) {
+                                            Ok(player) => {
+                                                info!("Successfully created player for '{}'", path);
+                                                self.media_players.insert(part_id, player);
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to load media '{}': {}", path, e);
                                             }
                                         }
-                                    } else {
-                                        warn!("Part {} is not a MediaFile source", part_id);
                                     }
+                                    break 'module_search;
                                 } else {
-                                    warn!("Part {} not found in module", part_id);
+                                    warn!("Part {} is not a MediaFile source", part_id);
+                                    break 'module_search;
                                 }
                             }
                         }
@@ -952,41 +942,32 @@ impl App {
                                 part_id
                             );
                         }
-                        // Immediately recreate the player with the new path
-                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
-                        {
-                            if let Some(module) =
-                                self.state.module_manager.get_module(active_module_id)
-                            {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Recreated player for '{}' after reload",
-                                                        path
-                                                    );
-                                                    // Auto-play after reload
-                                                    let _ = player
-                                                        .command_sender()
-                                                        .send(PlaybackCommand::Play);
-                                                    self.media_players.insert(part_id, player);
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to reload media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
+                        // Immediately recreate the player by searching ALL modules
+                        'reload_search: for module in self.state.module_manager.modules() {
+                            if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                if let mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                                ) = &part.part_type
+                                {
+                                    if !path.is_empty() {
+                                        match mapmap_media::open_path(path) {
+                                            Ok(player) => {
+                                                info!(
+                                                    "Recreated player for '{}' after reload",
+                                                    path
+                                                );
+                                                // Auto-play after reload
+                                                let _ = player
+                                                    .command_sender()
+                                                    .send(PlaybackCommand::Play);
+                                                self.media_players.insert(part_id, player);
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to reload media '{}': {}", path, e);
                                             }
                                         }
                                     }
+                                    break 'reload_search;
                                 }
                             }
                         }
