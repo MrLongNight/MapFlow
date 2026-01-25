@@ -1715,9 +1715,12 @@ impl App {
             for part in &module.parts {
                 match &part.part_type {
                     mapmap_core::module::ModulePartType::Output(output_type) => {
+                        // Use part.id for consistency with render pipeline
+                        let output_id = part.id;
+
                         match output_type {
                             OutputType::Projector {
-                                id: projector_id,
+                                id: _projector_id,
                                 name,
                                 fullscreen,
                                 hide_cursor,
@@ -1726,10 +1729,6 @@ impl App {
                                 extra_preview_window,
                                 ..
                             } => {
-                                // Use the Projector's ID (1-8), not part.id, for window management.
-                                // This ensures multiple Output nodes with same Projector share ONE window.
-                                let output_id = *projector_id;
-
                                 // 1. Primary Window
                                 active_window_ids.insert(output_id);
 
@@ -2199,7 +2198,7 @@ impl App {
 
         // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
         // NOT render_ops (which can be empty/fluctuate).
-        // Extract Projector output IDs from all modules' output parts.
+        // Extract Output part IDs from all modules' output parts.
         let current_output_ids: std::collections::HashSet<u64> = self
             .state
             .module_manager
@@ -2208,10 +2207,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { id, .. },
+                    mapmap_core::module::OutputType::Projector { .. },
                 ) = &part.part_type
                 {
-                    Some(*id)
+                    Some(part.id) // Use part.id for consistency with render pipeline
                 } else {
                     None
                 }
