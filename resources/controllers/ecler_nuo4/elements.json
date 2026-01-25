@@ -16,7 +16,11 @@
         "type": "cc",
         "channel": 0,
         "controller": 16
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_treble",
@@ -33,7 +37,11 @@
         "type": "cc",
         "channel": 0,
         "controller": 17
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_mid",
@@ -50,7 +58,11 @@
         "type": "cc",
         "channel": 0,
         "controller": 18
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_bass",
@@ -67,7 +79,11 @@
         "type": "cc",
         "channel": 0,
         "controller": 19
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_fx_send",
@@ -84,7 +100,11 @@
         "type": "cc",
         "channel": 0,
         "controller": 12
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_fader",
@@ -101,7 +121,11 @@
         "type": "cc",
         "channel": 0,
         "controller": 7
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_bass_off",
@@ -118,7 +142,11 @@
         "type": "note",
         "channel": 0,
         "note": 50
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch2_pfl",
@@ -135,7 +163,11 @@
         "type": "note",
         "channel": 0,
         "note": 51
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_gain",
@@ -152,7 +184,11 @@
         "type": "cc",
         "channel": 1,
         "controller": 16
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_treble",
@@ -169,7 +205,11 @@
         "type": "cc",
         "channel": 1,
         "controller": 17
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_mid",
@@ -186,7 +226,11 @@
         "type": "cc",
         "channel": 1,
         "controller": 18
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_bass",
@@ -203,7 +247,11 @@
         "type": "cc",
         "channel": 1,
         "controller": 19
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_fx_send",
@@ -220,7 +268,11 @@
         "type": "cc",
         "channel": 1,
         "controller": 12
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_fader",
@@ -237,7 +289,11 @@
         "type": "cc",
         "channel": 1,
         "controller": 7
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_bass_off",
@@ -254,7 +310,11 @@
         "type": "note",
         "channel": 1,
         "note": 50
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "ch3_pfl",
@@ -271,7 +331,11 @@
         "type": "note",
         "channel": 1,
         "note": 51
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
       "id": "xfader",
@@ -288,13 +352,17 @@
         "type": "cc",
         "channel": 0,
         "controller": 3
-      }
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
-      "id": "encoder_1",
+      "id": "encoder_1_a1",
       "element_type": "encoder",
       "section": "midi_section",
-      "label": "MIDI Encoder 1",
+      "label": "MIDI Encoder 1 (A/L1)",
       "position": {
         "x": 0.5,
         "y": 0.1,
@@ -306,13 +374,121 @@
         "channel": 15,
         "controller": 20
       },
-      "layout_aware": true
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
-      "id": "encoder_2",
+      "id": "encoder_1_b1",
       "element_type": "encoder",
       "section": "midi_section",
-      "label": "MIDI Encoder 2",
+      "label": "MIDI Encoder 1 (B/L1)",
+      "position": {
+        "x": 0.5,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 24
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (A/L2)",
+      "position": {
+        "x": 0.5,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 28
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (B/L2)",
+      "position": {
+        "x": 0.5,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 102
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (A/L3)",
+      "position": {
+        "x": 0.5,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 106
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (B/L3)",
+      "position": {
+        "x": 0.5,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 110
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (A/L1)",
       "position": {
         "x": 0.6,
         "y": 0.1,
@@ -324,13 +500,121 @@
         "channel": 15,
         "controller": 21
       },
-      "layout_aware": true
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
-      "id": "encoder_3",
+      "id": "encoder_2_b1",
       "element_type": "encoder",
       "section": "midi_section",
-      "label": "MIDI Encoder 3",
+      "label": "MIDI Encoder 2 (B/L1)",
+      "position": {
+        "x": 0.6,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 25
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (A/L2)",
+      "position": {
+        "x": 0.6,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 29
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (B/L2)",
+      "position": {
+        "x": 0.6,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 103
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (A/L3)",
+      "position": {
+        "x": 0.6,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 107
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (B/L3)",
+      "position": {
+        "x": 0.6,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 111
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (A/L1)",
       "position": {
         "x": 0.7,
         "y": 0.1,
@@ -342,13 +626,121 @@
         "channel": 15,
         "controller": 22
       },
-      "layout_aware": true
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     },
     {
-      "id": "encoder_4",
+      "id": "encoder_3_b1",
       "element_type": "encoder",
       "section": "midi_section",
-      "label": "MIDI Encoder 4",
+      "label": "MIDI Encoder 3 (B/L1)",
+      "position": {
+        "x": 0.7,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 26
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (A/L2)",
+      "position": {
+        "x": 0.7,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 30
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (B/L2)",
+      "position": {
+        "x": 0.7,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 104
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (A/L3)",
+      "position": {
+        "x": 0.7,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 108
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (B/L3)",
+      "position": {
+        "x": 0.7,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 112
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (A/L1)",
       "position": {
         "x": 0.8,
         "y": 0.1,
@@ -360,7 +752,115 @@
         "channel": 15,
         "controller": 23
       },
-      "layout_aware": true
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_b1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (B/L1)",
+      "position": {
+        "x": 0.8,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 27
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (A/L2)",
+      "position": {
+        "x": 0.8,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 31
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (B/L2)",
+      "position": {
+        "x": 0.8,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 105
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (A/L3)",
+      "position": {
+        "x": 0.8,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 109
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (B/L3)",
+      "position": {
+        "x": 0.8,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 113
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
     }
   ]
 }
