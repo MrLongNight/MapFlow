@@ -41,29 +41,29 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     var uv = input.uv;
     let time = params.time;
     let intensity = params.intensity;
-    
+
     // Block size for glitch
     let block_size = max(params.block_size, 8.0);
-    
+
     // Calculate block position
     let block_y = floor(uv.y * params.resolution.y / block_size);
     let block_time = floor(time * 10.0);
-    
+
     // Random offset per block
     let rand_val = rand(vec2<f32>(block_y, block_time));
-    
+
     // Apply horizontal shift if random threshold met
     if rand_val > (1.0 - intensity * 0.3) {
         let shift = (rand(vec2<f32>(block_y + 1.0, block_time)) - 0.5) * intensity * 0.2;
         uv.x = uv.x + shift;
     }
-    
+
     // RGB splitting for color glitch
     let color_shift = params.color_shift * intensity * 0.01;
     let r = textureSample(input_texture, texture_sampler, uv + vec2<f32>(color_shift, 0.0)).r;
     let g = textureSample(input_texture, texture_sampler, uv).g;
     let b = textureSample(input_texture, texture_sampler, uv - vec2<f32>(color_shift, 0.0)).b;
     let a = textureSample(input_texture, texture_sampler, uv).a;
-    
+
     return vec4<f32>(r, g, b, a);
 }
