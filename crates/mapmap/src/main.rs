@@ -39,7 +39,7 @@ use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use window_manager::WindowManager;
 use winit::{event::WindowEvent, event_loop::EventLoop};
@@ -1005,7 +1005,7 @@ impl App {
 
                 if let Some(module) = module_to_evaluate {
                     // DEBUG: Log which module we're evaluating
-                    info!(
+                    debug!(
                         "Evaluating module: name='{}', parts={}, connections={}",
                         module.name,
                         module.parts.len(),
@@ -1015,7 +1015,7 @@ impl App {
                     let result = self.module_evaluator.evaluate(module);
 
                     // DEBUG: Log evaluation result details
-                    info!(
+                    debug!(
                         "Evaluation result: render_ops={}, source_commands={}, trigger_values={}",
                         result.render_ops.len(),
                         result.source_commands.len(),
@@ -1035,7 +1035,7 @@ impl App {
                             ModulePartType::Output(_) => "Output",
                             ModulePartType::Hue(_) => "Hue",
                         };
-                        info!("  Part {}: {}", part.id, type_name);
+                        debug!("  Part {}: {}", part.id, type_name);
                     }
 
                     // Assign Render Ops for next frame!
@@ -1171,10 +1171,10 @@ impl App {
                     unsafe {
                         if now_ms / 1000 > LAST_RENDER_LOG {
                             LAST_RENDER_LOG = now_ms / 1000;
-                            info!("=== Render Pipeline Status ===");
-                            info!("  render_ops count: {}", self.render_ops.len());
+                            debug!("=== Render Pipeline Status ===");
+                            debug!("  render_ops count: {}", self.render_ops.len());
                             for (i, op) in self.render_ops.iter().enumerate() {
-                                info!(
+                                debug!(
                                     "  Op[{}]: source_part_id={:?}, output={:?}",
                                     i,
                                     op.source_part_id,
@@ -1195,12 +1195,12 @@ impl App {
                                 if let Some(sid) = op.source_part_id {
                                     let tex_name = format!("part_{}", sid);
                                     let has_tex = self.texture_pool.has_texture(&tex_name);
-                                    info!("    -> Texture '{}' exists: {}", tex_name, has_tex);
+                                    debug!("    -> Texture '{}' exists: {}", tex_name, has_tex);
                                 }
                             }
-                            info!("  media_players count: {}", self.media_players.len());
+                            debug!("  media_players count: {}", self.media_players.len());
                             for id in self.media_players.keys() {
-                                info!("    -> Player for part_id={}", id);
+                                debug!("    -> Player for part_id={}", id);
                             }
                         }
                     }
