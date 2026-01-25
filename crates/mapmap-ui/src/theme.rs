@@ -60,10 +60,10 @@ pub mod colors {
     pub const MINT_ACCENT: Color32 = Color32::from_rgb(0, 255, 170); // Mint for selection/alt
     pub const WARN_COLOR: Color32 = Color32::from_rgb(255, 170, 0); // Orange
     pub const ERROR_COLOR: Color32 = Color32::from_rgb(255, 50, 50); // Red
-    pub const DARK_GREY: Color32 = Color32::from_rgb(20, 20, 20); // Main Panel Background
-    pub const DARKER_GREY: Color32 = Color32::from_rgb(10, 10, 10); // Window/Deep Background
-    pub const LIGHTER_GREY: Color32 = Color32::from_rgb(45, 45, 45); // Widget Background
-    pub const STROKE_GREY: Color32 = Color32::from_rgb(60, 60, 60); // Borders
+    pub const DARK_GREY: Color32 = Color32::from_rgb(18, 18, 24); // Main Panel Background (Deep Navy)
+    pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 8); // Window/Deep Background (Almost Black)
+    pub const LIGHTER_GREY: Color32 = Color32::from_rgb(40, 40, 45); // Widget Background
+    pub const STROKE_GREY: Color32 = Color32::from_rgb(80, 80, 90); // Borders (High Contrast)
 }
 
 impl ThemeConfig {
@@ -294,8 +294,8 @@ impl ThemeConfig {
             override_text_color: Some(Color32::from_rgb(240, 240, 240)),
             widgets: egui::style::Widgets {
                 noninteractive: egui::style::WidgetVisuals {
-                    bg_fill: colors::DARKER_GREY,
-                    weak_bg_fill: colors::DARKER_GREY,
+                    bg_fill: colors::DARK_GREY,
+                    weak_bg_fill: colors::DARK_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
                     corner_radius: egui::CornerRadius::same(0), // Sharp corners
@@ -344,8 +344,8 @@ impl ThemeConfig {
             code_bg_color: colors::DARK_GREY,
             warn_fg_color: colors::WARN_COLOR,   // Orange
             error_fg_color: colors::ERROR_COLOR, // Red
-            window_fill: colors::DARK_GREY,
-            panel_fill: colors::DARK_GREY,
+            window_fill: colors::DARKER_GREY,    // Darker window background for hierarchy
+            panel_fill: colors::DARK_GREY,       // Lighter panel background
             window_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
             ..Default::default()
         }

@@ -45,9 +45,9 @@ impl HueStreamer {
             .connect(&addr)
             .context("Failed to connect UDP socket")?;
 
-        // Set timeouts
-        socket.set_read_timeout(Some(Duration::from_secs(2))).ok();
-        socket.set_write_timeout(Some(Duration::from_secs(2))).ok();
+        // Set timeouts (increased for slower networks)
+        socket.set_read_timeout(Some(Duration::from_secs(10))).ok();
+        socket.set_write_timeout(Some(Duration::from_secs(10))).ok();
 
         // Wrap socket
         let socket_wrapper = ConnectedUdpSocket(socket);
