@@ -1715,11 +1715,9 @@ impl App {
             for part in &module.parts {
                 match &part.part_type {
                     mapmap_core::module::ModulePartType::Output(output_type) => {
-                        let output_id = part.id;
-
                         match output_type {
                             OutputType::Projector {
-                                id: _,
+                                id: projector_id,
                                 name,
                                 fullscreen,
                                 hide_cursor,
@@ -1728,6 +1726,10 @@ impl App {
                                 extra_preview_window,
                                 ..
                             } => {
+                                // Use the Projector's ID (1-8), not part.id, for window management.
+                                // This ensures multiple Output nodes with same Projector share ONE window.
+                                let output_id = *projector_id;
+
                                 // 1. Primary Window
                                 active_window_ids.insert(output_id);
 
@@ -1777,6 +1779,8 @@ impl App {
                                 }
                             }
                             OutputType::NdiOutput { name: _name } => {
+                                // For NDI, use part.id as the unique identifier
+                                let output_id = part.id;
                                 active_sender_ids.insert(output_id);
 
                                 #[cfg(feature = "ndi")]
