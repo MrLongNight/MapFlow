@@ -3214,9 +3214,11 @@ impl App {
                                     mapmap_core::module::EffectType::Brightness
                                     | mapmap_core::module::EffectType::Contrast
                                     | mapmap_core::module::EffectType::Saturation
-                                    | mapmap_core::module::EffectType::HueShift
                                     | mapmap_core::module::EffectType::Colorize => {
                                         Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                    }
+                                    mapmap_core::module::EffectType::HueShift => {
+                                        Some(mapmap_core::effects::EffectType::HueShift)
                                     }
                                     mapmap_core::module::EffectType::ChromaticAberration
                                     | mapmap_core::module::EffectType::RgbSplit => {
@@ -3238,18 +3240,25 @@ impl App {
                                     // Not yet implemented in core renderer
                                     mapmap_core::module::EffectType::Sharpen
                                     | mapmap_core::module::EffectType::Threshold
-                                    | mapmap_core::module::EffectType::Wave
                                     | mapmap_core::module::EffectType::Spiral
                                     | mapmap_core::module::EffectType::Pinch
-                                    | mapmap_core::module::EffectType::Mirror
                                     | mapmap_core::module::EffectType::Halftone
-                                    | mapmap_core::module::EffectType::Posterize
-                                    | mapmap_core::module::EffectType::Glitch => {
+                                    | mapmap_core::module::EffectType::Posterize => {
                                         tracing::warn!(
                                             "Effect {:?} not yet implemented in renderer",
                                             mod_effect
                                         );
                                         None
+                                    }
+                                    // Newly implemented effects
+                                    mapmap_core::module::EffectType::Wave => {
+                                        Some(mapmap_core::effects::EffectType::Wave)
+                                    }
+                                    mapmap_core::module::EffectType::Glitch => {
+                                        Some(mapmap_core::effects::EffectType::Glitch)
+                                    }
+                                    mapmap_core::module::EffectType::Mirror => {
+                                        Some(mapmap_core::effects::EffectType::Mirror)
                                     }
                                 };
                                 if let Some(et) = core_effect {
@@ -3664,3 +3673,6 @@ fn main() -> Result<()> {
 
     Ok(())
 }
+#   T r i g g e r   C I 
+ 
+ 

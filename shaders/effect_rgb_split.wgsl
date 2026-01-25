@@ -36,16 +36,16 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let uv = input.uv;
     let intensity = params.intensity;
-    
+
     // Calculate offset based on intensity
     let offset_x = params.offset_x * intensity * 0.02;
     let offset_y = params.offset_y * intensity * 0.02;
-    
+
     // Sample each channel with different offsets
     let r = textureSample(input_texture, texture_sampler, uv + vec2<f32>(offset_x, offset_y)).r;
     let g = textureSample(input_texture, texture_sampler, uv).g;
     let b = textureSample(input_texture, texture_sampler, uv - vec2<f32>(offset_x, offset_y)).b;
     let a = textureSample(input_texture, texture_sampler, uv).a;
-    
+
     return vec4<f32>(r, g, b, a);
 }

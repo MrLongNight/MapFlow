@@ -26,8 +26,13 @@ jobs:
       with:
         components: rustfmt, clippy
 
-    - name: Formatierung anwenden (cargo fmt)
-      run: cargo fmt --all
+    - name: Install cargo-sort
+      run: cargo install cargo-sort
+
+    - name: Formatierung anwenden (cargo fmt & sort)
+      run: |
+        cargo fmt --all
+        cargo sort --workspace
 
     - name: Clippy --fix ausführen (Korrekturen zulassen)
       run: cargo clippy --fix --allow-dirty --allow-staged --workspace --no-default-features --features audio -- -A warnings
