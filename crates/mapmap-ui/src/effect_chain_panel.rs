@@ -825,6 +825,108 @@ impl EffectChainPanel {
                     5.0,
                 );
             }
+            EffectType::Wave => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "frequency",
+                    &locale.t("param-frequency"),
+                    0.0,
+                    50.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amplitude",
+                    &locale.t("param-amplitude"),
+                    0.0,
+                    2.0,
+                );
+            }
+            EffectType::Glitch => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "block_size",
+                    &locale.t("param-block-size"),
+                    1.0,
+                    50.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "color_shift",
+                    &locale.t("param-color-shift"),
+                    0.0,
+                    20.0,
+                );
+            }
+            EffectType::RgbSplit => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset_x",
+                    &locale.t("param-offset-x"),
+                    -50.0,
+                    50.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset_y",
+                    &locale.t("param-offset-y"),
+                    -50.0,
+                    50.0,
+                );
+            }
+            EffectType::Mirror => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "center",
+                    &locale.t("param-center"),
+                    0.0,
+                    1.0,
+                );
+            }
+            EffectType::HueShift => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "hue_shift",
+                    &locale.t("param-hue-shift"),
+                    0.0,
+                    1.0,
+                );
+            }
+            EffectType::Kaleidoscope => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "segments",
+                    &locale.t("param-segments"),
+                    1.0,
+                    32.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "rotation",
+                    &locale.t("param-rotation"),
+                    0.0,
+                    6.28,
+                );
+            }
             _ => {
                 ui.label(locale.t("no-parameters")); // NOTE: Check if key exists or add it
             }

@@ -1645,6 +1645,11 @@ impl App {
             }
         }
 
+        // Request redraw for all windows to ensure continuous rendering
+        for window_context in self.window_manager.iter() {
+            window_context.window.request_redraw();
+        }
+
         Ok(())
     }
 
