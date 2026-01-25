@@ -56,7 +56,7 @@ pollster = { workspace = true }
 proptest = { workspace = true }
 rayon = { workspace = true }
 
-rfd = "0.14"
+rfd = "0.17"
 ron = { workspace = true }
 rosc = { workspace = true }
 rustfft = { workspace = true }
