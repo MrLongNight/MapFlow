@@ -3387,6 +3387,7 @@ impl App {
                 }
 
                 // C. Process and Render Each Op (Accumulate)
+                self.mesh_renderer.begin_frame();
                 for op in target_ops {
                     // Determine source texture view
                     let owned_source_view = if let Some(src_id) = op.source_part_id {
@@ -3503,7 +3504,6 @@ impl App {
 
                         // --- Render Mesh (Warping) ---
                         {
-                            self.mesh_renderer.begin_frame();
                             let (vertex_buffer, index_buffer, index_count) =
                                 self.mesh_buffer_cache.get_buffers(
                                     &self.backend.device,
