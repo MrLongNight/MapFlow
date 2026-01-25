@@ -1760,9 +1760,12 @@ impl App {
             for part in &module.parts {
                 match &part.part_type {
                     mapmap_core::module::ModulePartType::Output(output_type) => {
+                        // Use part.id for consistency with render pipeline
+                        let output_id = part.id;
+
                         match output_type {
                             OutputType::Projector {
-                                id: projector_id,
+                                id: _projector_id,
                                 name,
                                 fullscreen,
                                 hide_cursor,
@@ -1771,10 +1774,6 @@ impl App {
                                 extra_preview_window,
                                 ..
                             } => {
-                                // Use the Projector's ID (1-8), not part.id, for window management.
-                                // This ensures multiple Output nodes with same Projector share ONE window.
-                                let output_id = *projector_id;
-
                                 // 1. Primary Window
                                 active_window_ids.insert(output_id);
 
@@ -2036,6 +2035,19 @@ impl App {
         // Render previews with effects
         let mut current_frame_previews = std::collections::HashMap::new();
 
+        // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
+        // This avoids creating N encoders and submitting N command buffers to the queue per frame.
+        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
+
+        let mut preview_encoder =
+            self.backend
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Preview Encoder (Batched)"),
+                });
+
+        let mut has_preview_work = false;
+
         for (
             part_id,
             brightness,
@@ -2067,14 +2079,6 @@ impl App {
                 );
                 let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-                // Use a fresh encoder for each preview
-                let mut preview_encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Encoder"),
-                        });
-
                 // Calculate Transform Matrix based on source properties
                 let transform_mat = glam::Mat4::from_scale_rotation_translation(
                     glam::Vec3::new(scale_x, scale_y, 1.0),
@@ -2083,6 +2087,8 @@ impl App {
                 );
 
                 // Prepare Uniforms
+                // Note: queue.write_buffer operations here are scheduled on the queue
+                // effectively "before" the command buffer execution, maintaining correctness.
                 let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
                     transform_mat,
@@ -2097,7 +2103,7 @@ impl App {
 
                 let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
 
-                // Render Pass
+                // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
                     let mut render_pass =
                         preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -2130,8 +2136,7 @@ impl App {
                     );
                 }
 
-                // Submit the preview encoder work!
-                self.backend.queue.submit(Some(preview_encoder.finish()));
+                has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
                 let texture_id = match self.preview_texture_cache.entry(part_id) {
@@ -2163,6 +2168,10 @@ impl App {
 
                 current_frame_previews.insert(part_id, texture_id);
             }
+        }
+
+        if has_preview_work {
+            self.backend.queue.submit(Some(preview_encoder.finish()));
         }
 
         // Cleanup stale cache entries
@@ -2244,7 +2253,7 @@ impl App {
 
         // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
         // NOT render_ops (which can be empty/fluctuate).
-        // Extract Projector output IDs from all modules' output parts.
+        // Extract Output part IDs from all modules' output parts.
         let current_output_ids: std::collections::HashSet<u64> = self
             .state
             .module_manager
@@ -2253,10 +2262,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { id, .. },
+                    mapmap_core::module::OutputType::Projector { .. },
                 ) = &part.part_type
                 {
-                    Some(*id)
+                    Some(part.id) // Use part.id for consistency with render pipeline
                 } else {
                     None
                 }
