@@ -37,7 +37,7 @@
 //! - [`target`] - Control target abstraction
 //! - [`error`] - Error types
 
-#![allow(missing_docs)]
+#![warn(missing_docs)]
 
 // Core modules
 /// Error types

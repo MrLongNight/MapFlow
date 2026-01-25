@@ -38,7 +38,7 @@ parking_lot = { workspace = true }
 
 # SVG icon rendering
 resvg = { workspace = true }
-rfd = "0.14"
+rfd = "0.17"
 rust-embed = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

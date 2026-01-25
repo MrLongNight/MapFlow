@@ -128,7 +128,7 @@ pub mod cpal_backend {
                 "Audio: Using device '{}', format={:?}, sample_rate={}, channels={}",
                 device_name_str,
                 config.sample_format(),
-                config.sample_rate().0,
+                config.sample_rate(),
                 config.channels()
             );
 
@@ -274,7 +274,7 @@ pub mod cpal_backend {
                                     "Audio Input: '{}' - format={:?}, rate={}, channels={}",
                                     name,
                                     config.sample_format(),
-                                    config.sample_rate().0,
+                                    config.sample_rate(),
                                     config.channels()
                                 );
                             } else {
