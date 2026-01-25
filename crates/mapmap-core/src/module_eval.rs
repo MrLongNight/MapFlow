@@ -80,8 +80,7 @@ mod tests_evaluator {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
-        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, PartType, SourceType,
-        TriggerType,
+        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerType,
     };
     use std::time::Duration;
 
@@ -183,7 +182,7 @@ mod tests_evaluator {
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
         // 2. Source (Target)
-        let s_id = module.add_part(PartType::Source, (200.0, 0.0));
+        let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
         module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
         let _result = evaluator.evaluate(&module);
@@ -224,7 +223,7 @@ mod tests_evaluator {
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
         // 2. Source
-        let s_id = module.add_part(PartType::Source, (100.0, 0.0));
+        let s_id = module.add_part(crate::module::PartType::Source, (100.0, 0.0));
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
             {
@@ -233,10 +232,10 @@ mod tests_evaluator {
         }
 
         // 3. Layer
-        let l_id = module.add_part(PartType::Layer, (200.0, 0.0));
+        let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
 
         // 4. Output
-        let o_id = module.add_part(PartType::Output, (300.0, 0.0));
+        let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
 
         // Connections
         module.add_connection(t_id, 0, s_id, 0); // Trigger -> Source Trigger
@@ -302,7 +301,7 @@ mod tests_evaluator {
         module.add_connection(t_id, 0, m_id, 0);
 
         // Slave Node (Layer)
-        let s_id = module.add_part(PartType::Layer, (100.0, 0.0));
+        let s_id = module.add_part(crate::module::PartType::Layer, (100.0, 0.0));
         // Configure as Slave
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             part.link_data.mode = LinkMode::Slave;
@@ -466,6 +465,8 @@ pub struct ModuleEvaluator {
     part_index_cache: HashMap<ModulePartId, usize>,
     /// Cached map from Part ID to list of indices in `module.connections` (incoming connections)
     conn_index_cache: HashMap<ModulePartId, Vec<usize>>,
+    /// Currently active keyboard keys (for Shortcut triggers)
+    active_keys: std::collections::HashSet<String>,
 }
 
 impl Default for ModuleEvaluator {
@@ -484,6 +485,7 @@ impl ModuleEvaluator {
             cached_result: ModuleEvalResult::default(),
             part_index_cache: HashMap::new(),
             conn_index_cache: HashMap::new(),
+            active_keys: std::collections::HashSet::new(),
         }
     }
 
@@ -495,6 +497,11 @@ impl ModuleEvaluator {
         self.audio_trigger_data.beat_detected = analysis.beat_detected;
         self.audio_trigger_data.beat_strength = analysis.beat_strength;
         self.audio_trigger_data.bpm = analysis.tempo_bpm;
+    }
+
+    /// Update active keyboard keys for Shortcut triggers
+    pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) {
+        self.active_keys = keys.clone();
     }
 
     /// Evaluate a module for one frame
@@ -527,25 +534,28 @@ impl ModuleEvaluator {
         // keeping it as it was but maybe less frequently? leaving as is per instructions to preserve functionality)
 
         // Step 1: Evaluate all trigger nodes
-        for part in &module.parts {
-            if let ModulePartType::Trigger(trigger_type) = &part.part_type {
-                let values = self
-                    .cached_result
-                    .trigger_values
-                    .entry(part.id)
-                    .or_default();
-                // Ensure vector is empty (it should be due to clear(), but for new entries it's new)
-                // If it was an existing entry, clear() loop handled it.
-                // But wait, if clear() loop cleared *all* values, then they are empty.
-                // However, we need to be careful not to append to existing data if logic was different.
-                // clear() handles it.
-                Self::compute_trigger_output(
-                    trigger_type,
-                    &self.audio_trigger_data,
-                    self.start_time,
-                    values,
-                );
-            }
+        // Collect (part_id, trigger_type clone) to avoid borrow issues
+        let triggers_to_eval: Vec<_> = module
+            .parts
+            .iter()
+            .filter_map(|part| {
+                if let ModulePartType::Trigger(trigger_type) = &part.part_type {
+                    Some((part.id, trigger_type.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for (part_id, trigger_type) in triggers_to_eval {
+            let mut values = Vec::new();
+            self.compute_trigger_output(
+                &trigger_type,
+                &self.audio_trigger_data,
+                self.start_time,
+                &mut values,
+            );
+            self.cached_result.trigger_values.insert(part_id, values);
         }
 
         // Step 2: First propagation (Triggers -> Nodes)
@@ -773,7 +783,7 @@ impl ModuleEvaluator {
                 // Let's assume we can access per-socket inputs or just iterate connections to this part.
 
                 if !part.trigger_targets.is_empty() {
-                    tracing::info!(
+                    tracing::debug!(
                         "Part {} has {} trigger targets",
                         part.id,
                         part.trigger_targets.len()
@@ -799,7 +809,7 @@ impl ModuleEvaluator {
                     // Apply mapping
                     let final_val = config.apply(trigger_val);
 
-                    tracing::info!(
+                    tracing::debug!(
                         "Trigger applying: part={}, socket={}, target={:?}, raw={}, final={}",
                         part.id,
                         socket_idx,
@@ -966,11 +976,11 @@ impl ModuleEvaluator {
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
-                            effects.insert(0, mod_type.clone()); // Prepend (execution order)
+                            effects.push(mod_type.clone());
                             current_id = part.id;
                         }
                         ModulePartType::Mask(mask_type) => {
-                            masks.insert(0, mask_type.clone());
+                            masks.push(mask_type.clone());
                             current_id = part.id;
                         }
                         ModulePartType::Mesh(mesh_type) => {
@@ -1005,6 +1015,10 @@ impl ModuleEvaluator {
             );
         }
 
+        // Fix order (we pushed back-to-front, so reverse to get execution order)
+        effects.reverse();
+        masks.reverse();
+
         ProcessingChain {
             source_id,
             source_props,
@@ -1016,6 +1030,7 @@ impl ModuleEvaluator {
 
     /// Evaluate a trigger node and write output values to the provided buffer
     fn compute_trigger_output(
+        &self,
         trigger_type: &TriggerType,
         audio_data: &AudioTriggerData,
         start_time: Instant,
@@ -1112,8 +1127,16 @@ impl ModuleEvaluator {
             TriggerType::Osc { .. } => {
                 output.push(0.0);
             }
-            TriggerType::Shortcut { .. } => {
-                output.push(0.0);
+            TriggerType::Shortcut {
+                key_code,
+                modifiers,
+            } => {
+                // Check if the key is currently pressed
+                // key_code is stored as the winit KeyCode debug format (e.g., "KeyA")
+                let is_pressed = self.active_keys.contains(key_code);
+                // TODO: Check modifiers (Ctrl, Shift, Alt) if needed
+                let _ = modifiers; // Suppress unused warning for now
+                output.push(if is_pressed { 1.0 } else { 0.0 });
             }
         }
     }
@@ -1238,7 +1261,8 @@ mod tests_logic {
     fn test_compute_trigger_output_beat() {
         let mut output = Vec::new();
         let data_true = create_audio_data(true);
-        ModuleEvaluator::compute_trigger_output(
+        let evaluator = ModuleEvaluator::new();
+        evaluator.compute_trigger_output(
             &TriggerType::Beat,
             &data_true,
             Instant::now(),
@@ -1248,7 +1272,7 @@ mod tests_logic {
 
         output.clear();
         let data_false = create_audio_data(false);
-        ModuleEvaluator::compute_trigger_output(
+        evaluator.compute_trigger_output(
             &TriggerType::Beat,
             &data_false,
             Instant::now(),
@@ -1270,7 +1294,8 @@ mod tests_logic {
             inverted_outputs: vec!["Bass Out".to_string()].into_iter().collect(),
         };
 
-        ModuleEvaluator::compute_trigger_output(
+        let evaluator = ModuleEvaluator::new();
+        evaluator.compute_trigger_output(
             &TriggerType::AudioFFT {
                 band: AudioBand::Bass,
                 threshold: 0.5,
@@ -1309,7 +1334,8 @@ mod tests_logic {
         // Emulate 50ms elapsed
         let start_past_50 = Instant::now() - Duration::from_millis(50);
         output.clear();
-        ModuleEvaluator::compute_trigger_output(
+        let evaluator = ModuleEvaluator::new();
+        evaluator.compute_trigger_output(
             &TriggerType::Fixed {
                 interval_ms: 1000,
                 offset_ms: 0,
@@ -1323,7 +1349,7 @@ mod tests_logic {
         // 150ms
         let start_past_150 = Instant::now() - Duration::from_millis(150);
         output.clear();
-        ModuleEvaluator::compute_trigger_output(
+        evaluator.compute_trigger_output(
             &TriggerType::Fixed {
                 interval_ms: 1000,
                 offset_ms: 0,
@@ -1446,5 +1472,75 @@ mod tests_logic {
         // The limit is 50.
         // It should just return safely.
         assert!(chain.effects.len() <= 50);
+    }
+
+    #[test]
+    fn test_trace_chain_order() {
+        let mut evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // 1. Source
+        let source_id = module.add_part(crate::module::PartType::Source, (0.0, 0.0));
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == source_id) {
+            if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
+            {
+                *path = "test.mp4".to_string();
+            }
+        }
+
+        // 2. Effect A (Blur)
+        let effect_a_id = module.add_part(crate::module::PartType::Modulator, (100.0, 0.0));
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == effect_a_id) {
+            part.part_type = ModulePartType::Modulizer(crate::module::ModulizerType::Effect {
+                effect_type: crate::module::EffectType::Blur,
+                params: HashMap::new(),
+            });
+        }
+
+        // 3. Effect B (Invert)
+        let effect_b_id = module.add_part(crate::module::PartType::Modulator, (200.0, 0.0));
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == effect_b_id) {
+            part.part_type = ModulePartType::Modulizer(crate::module::ModulizerType::Effect {
+                effect_type: crate::module::EffectType::Invert,
+                params: HashMap::new(),
+            });
+        }
+
+        // 4. Layer
+        let layer_id = module.add_part(crate::module::PartType::Layer, (300.0, 0.0));
+
+        // 5. Output
+        let output_id = module.add_part(crate::module::PartType::Output, (400.0, 0.0));
+
+        // Connections: Source -> Effect A -> Effect B -> Layer -> Output
+        // Source(0) -> Effect A(0) (Input)
+        module.add_connection(source_id, 0, effect_a_id, 0);
+        // Effect A(0) -> Effect B(0)
+        module.add_connection(effect_a_id, 0, effect_b_id, 0);
+        // Effect B(0) -> Layer(0)
+        module.add_connection(effect_b_id, 0, layer_id, 0);
+        // Layer(0) -> Output(0)
+        module.add_connection(layer_id, 0, output_id, 0);
+
+        let result = evaluator.evaluate(&module);
+
+        assert_eq!(result.render_ops.len(), 1);
+        let op = &result.render_ops[0];
+        assert_eq!(op.effects.len(), 2);
+
+        // Expected Order: Source -> Effect A (Blur) -> Effect B (Invert) -> Layer
+        // op.effects should be [Blur, Invert]
+
+        if let crate::module::ModulizerType::Effect { effect_type, .. } = &op.effects[0] {
+            assert_eq!(*effect_type, crate::module::EffectType::Blur);
+        } else {
+            panic!("First effect should be Blur");
+        }
+
+        if let crate::module::ModulizerType::Effect { effect_type, .. } = &op.effects[1] {
+            assert_eq!(*effect_type, crate::module::EffectType::Invert);
+        } else {
+            panic!("Second effect should be Invert");
+        }
     }
 }

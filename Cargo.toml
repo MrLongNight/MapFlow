@@ -1,4 +1,5 @@
 [workspace]
+# CI Trigger fix attempt
 resolver = "2"
 members = [
     "crates/mapmap",
@@ -32,7 +33,7 @@ bindgen = "0.72"
 
 # Graphics utilities
 bytemuck = { version = "1.14", features = ["derive"] }
-cbindgen = "0.27"
+cbindgen = "0.29"
 cc = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
@@ -53,7 +54,7 @@ ffmpeg-next = { version = "8.0", default-features = false, features = ["codec", 
 fluent = "0.16"
 fluent-langneg = "0.14"
 futures = "0.3"
-glam = { version = "0.25", features = ["serde"] }
+glam = { version = "0.31", features = ["serde"] }
 hex = "0.4"
 hound = "3.5"
 hyper = "1.1"
@@ -79,7 +80,7 @@ rayon = "1.8"
 
 # SVG rendering for icons
 resvg = "0.40"
-ron = "0.8"
+ron = "0.12"
 rosc = "0.11"
 rust-embed = "8.0"
 rustfft = "6.2"
@@ -103,9 +104,9 @@ tower = "0.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unic-langid = "0.9"
-usvg = "0.40"
+usvg = "0.45"
 # Core dependencies
-wgpu = "27.0.1"
+wgpu = "28.0.0"
 winit = { version = "0.30", features = ["x11", "wayland"] }
 winres = "0.1"
 

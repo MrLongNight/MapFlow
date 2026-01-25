@@ -143,6 +143,13 @@ mod tests {
         assert_eq!(state.version, "0.1.0");
         assert!(!state.dirty);
         assert_eq!(state.output_manager.canvas_size(), (1920, 1080));
+
+        // Check deeper defaults
+        assert!(state.paint_manager.paints().is_empty());
+        assert!(state.layer_manager.is_empty());
+        assert!(state.module_manager.list_modules().is_empty());
+        assert!(state.shader_graphs.is_empty());
+        assert!(state.assignment_manager.assignments().is_empty());
     }
 
     #[test]
@@ -156,6 +163,24 @@ mod tests {
     }
 
     #[test]
+    fn test_app_settings_serialization() {
+        let settings = AppSettings {
+            master_volume: 0.5,
+            dark_mode: false,
+            ui_scale: 1.5,
+            language: "de".to_string(),
+            log_config: LogConfig::default(),
+            output_count: 3,
+        };
+
+        let serialized = serde_json::to_string(&settings).expect("Failed to serialize AppSettings");
+        let deserialized: AppSettings =
+            serde_json::from_str(&serialized).expect("Failed to deserialize AppSettings");
+
+        assert_eq!(settings, deserialized);
+    }
+
+    #[test]
     fn test_app_state_serialization_roundtrip() {
         let original = AppState::new("Test Project");
 
@@ -166,17 +191,33 @@ mod tests {
         let deserialized: AppState =
             serde_json::from_str(&serialized).expect("Failed to deserialize AppState");
 
-        // Note: We cannot compare 'dirty' flag as it is skipped in serialization
-        // But everything else should be equal
-        assert_eq!(original.name, deserialized.name);
-        assert_eq!(original.version, deserialized.version);
-        assert_eq!(original.settings, deserialized.settings);
+        // Note: 'dirty' flag is skipped in serialization, but since original is fresh (dirty=false)
+        // and default deserialization is dirty=false, they should match completely.
+        assert_eq!(original, deserialized);
+    }
 
-        // Check key manager states
-        assert_eq!(original.paint_manager, deserialized.paint_manager);
-        assert_eq!(original.layer_manager, deserialized.layer_manager);
-        // Note: ModuleManager derived PartialEq check
-        assert_eq!(original.module_manager, deserialized.module_manager);
+    #[test]
+    fn test_dirty_flag_excluded() {
+        let mut original = AppState::new("Dirty Project");
+        original.dirty = true;
+
+        // Serialize
+        let serialized = serde_json::to_string(&original).expect("Failed to serialize AppState");
+
+        // Deserialize
+        let deserialized: AppState =
+            serde_json::from_str(&serialized).expect("Failed to deserialize AppState");
+
+        // Name should match
+        assert_eq!(original.name, deserialized.name);
+
+        // Dirty flag should NOT match (original=true, deserialized=false default)
+        assert!(original.dirty);
+        assert!(!deserialized.dirty);
+        assert_ne!(original, deserialized);
+
+        // Check that "dirty" key is not in the JSON string
+        assert!(!serialized.contains("\"dirty\""));
     }
 
     #[test]

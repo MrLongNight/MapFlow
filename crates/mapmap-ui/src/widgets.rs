@@ -2,6 +2,7 @@
 //!
 //! This module provides custom `egui` widgets to match the professional VJ software aesthetic.
 
+use crate::theme::colors;
 use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
@@ -10,7 +11,11 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(stripe_rect, 0, Color32::from_rgb(157, 78, 221));
+    painter.rect_filled(
+        stripe_rect,
+        egui::CornerRadius::same(0),
+        colors::CYAN_ACCENT,
+    );
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -24,11 +29,11 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
     let color = if value < 0.5 {
-        Color32::from_rgb(0, 255, 0) // Green
+        colors::CYAN_ACCENT // Cyan (Normal)
     } else if value < 0.8 {
-        Color32::from_rgb(255, 255, 0) // Yellow
+        colors::WARN_COLOR // Orange (Warning)
     } else {
-        Color32::from_rgb(255, 0, 0) // Red
+        colors::ERROR_COLOR // Red (Limit)
     };
 
     let bar = egui::ProgressBar::new(value)
@@ -59,7 +64,7 @@ pub fn styled_slider(
 
     ui.painter().rect(
         rect,
-        visuals.corner_radius,
+        egui::CornerRadius::same(0),
         ui.visuals().widgets.inactive.bg_fill,
         visuals.bg_stroke,
         egui::StrokeKind::Inside,
@@ -78,8 +83,8 @@ pub fn styled_slider(
 
     ui.painter().rect(
         fill_rect,
-        visuals.corner_radius,
-        Color32::from_rgb(157, 78, 221),
+        egui::CornerRadius::same(0),
+        colors::CYAN_ACCENT,
         Stroke::new(0.0, Color32::TRANSPARENT),
         egui::StrokeKind::Inside,
     );
@@ -127,7 +132,7 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
 
     painter.add(egui::epaint::Shape::line(
         points,
-        Stroke::new(2.0, Color32::from_rgb(157, 78, 221)),
+        Stroke::new(2.0, colors::CYAN_ACCENT),
     ));
 
     response
@@ -140,31 +145,88 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
 
     let visuals = ui.style().interact(&response);
     let bg_fill = if active {
-        Color32::from_rgb(157, 78, 221)
+        colors::WARN_COLOR
     } else {
         visuals.bg_fill
     };
 
+    // Border: if active, use warning color, else normal
+    let stroke = if active {
+        Stroke::new(1.0, colors::WARN_COLOR)
+    } else {
+        visuals.bg_stroke
+    };
+
     ui.painter().rect(
         rect,
-        visuals.corner_radius,
+        egui::CornerRadius::same(0),
         bg_fill,
-        visuals.bg_stroke,
+        stroke,
         egui::StrokeKind::Inside,
     );
 
     let text_pos = rect.center();
+    // Text color: Black if active (contrast on Orange), else text color
+    let text_color = if active {
+        Color32::BLACK
+    } else {
+        ui.visuals().text_color()
+    };
+
     ui.painter().text(
         text_pos,
         egui::Align2::CENTER_CENTER,
         text,
         egui::FontId::proportional(14.0),
-        ui.visuals()
-            .override_text_color
-            .unwrap_or(visuals.fg_stroke.color),
+        text_color,
     );
 
-    response
+    response.on_hover_text("Bypass Layer")
+}
+
+pub fn solo_button(ui: &mut Ui, active: bool) -> Response {
+    let text = "S";
+    let desired_size = Vec2::new(24.0, 24.0);
+    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
+
+    let visuals = ui.style().interact(&response);
+    let bg_fill = if active {
+        colors::MINT_ACCENT
+    } else {
+        visuals.bg_fill
+    };
+
+    let stroke = if active {
+        Stroke::new(1.0, colors::MINT_ACCENT)
+    } else {
+        visuals.bg_stroke
+    };
+
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(0),
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Inside,
+    );
+
+    let text_pos = rect.center();
+    // Text color: Black if active (contrast on Mint), else text color
+    let text_color = if active {
+        Color32::BLACK
+    } else {
+        ui.visuals().text_color()
+    };
+
+    ui.painter().text(
+        text_pos,
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(14.0),
+        text_color,
+    );
+
+    response.on_hover_text("Solo Layer")
 }
 
 pub fn param_button(ui: &mut Ui) -> Response {
@@ -174,31 +236,73 @@ pub fn param_button(ui: &mut Ui) -> Response {
 
     let visuals = ui.style().interact(&response);
     let bg_fill = if response.hovered() {
-        Color32::from_rgb(233, 69, 96)
+        colors::CYAN_ACCENT
     } else {
         visuals.bg_fill
     };
 
     ui.painter().rect(
         rect,
-        visuals.corner_radius,
+        egui::CornerRadius::same(0),
         bg_fill,
         visuals.bg_stroke,
         egui::StrokeKind::Inside,
     );
 
     let text_pos = rect.center();
+    let text_color = if response.hovered() {
+        Color32::BLACK
+    } else {
+        ui.visuals().text_color()
+    };
+
     ui.painter().text(
         text_pos,
         egui::Align2::CENTER_CENTER,
         text,
         egui::FontId::proportional(14.0),
-        ui.visuals()
-            .override_text_color
-            .unwrap_or(visuals.fg_stroke.color),
+        text_color,
     );
 
     response
+}
+
+pub fn duplicate_button(ui: &mut Ui) -> Response {
+    let text = "D";
+    let desired_size = Vec2::new(24.0, 24.0);
+    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
+
+    let visuals = ui.style().interact(&response);
+    let bg_fill = if response.hovered() {
+        colors::CYAN_ACCENT
+    } else {
+        visuals.bg_fill
+    };
+
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(0),
+        bg_fill,
+        visuals.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
+
+    let text_pos = rect.center();
+    let text_color = if response.hovered() {
+        Color32::BLACK
+    } else {
+        ui.visuals().text_color()
+    };
+
+    ui.painter().text(
+        text_pos,
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(14.0),
+        text_color,
+    );
+
+    response.on_hover_text("Duplicate Layer")
 }
 
 pub fn delete_button(ui: &mut Ui) -> Response {
@@ -208,29 +312,33 @@ pub fn delete_button(ui: &mut Ui) -> Response {
 
     let visuals = ui.style().interact(&response);
     let bg_fill = if response.hovered() {
-        Color32::from_rgb(255, 107, 107)
+        colors::ERROR_COLOR
     } else {
         visuals.bg_fill
     };
 
     ui.painter().rect(
         rect,
-        visuals.corner_radius,
+        egui::CornerRadius::same(0),
         bg_fill,
         visuals.bg_stroke,
         egui::StrokeKind::Inside,
     );
 
     let text_pos = rect.center();
+    let text_color = if response.hovered() {
+        Color32::BLACK
+    } else {
+        ui.visuals().text_color()
+    };
+
     ui.painter().text(
         text_pos,
         egui::Align2::CENTER_CENTER,
         text,
         egui::FontId::proportional(14.0),
-        ui.visuals()
-            .override_text_color
-            .unwrap_or(visuals.fg_stroke.color),
+        text_color,
     );
 
-    response
+    response.on_hover_text("Remove Layer")
 }

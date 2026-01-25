@@ -90,6 +90,7 @@ pub enum UIAction {
     // File actions
     NewProject,
     LoadVideo(String),
+    PickMediaFile(mapmap_core::module::ModulePartId),
     SaveProject(String),
     SaveProjectAs,
     LoadProject(String),
@@ -285,6 +286,8 @@ pub struct AppUI {
     pub available_hue_groups: Vec<(String, String)>,
     /// System Info
     pub sys_info: sysinfo::System,
+    /// Active keyboard keys (for Shortcut triggers)
+    pub active_keys: std::collections::HashSet<String>,
 }
 
 impl Default for AppUI {
@@ -384,6 +387,7 @@ impl Default for AppUI {
             discovered_hue_bridges: Vec::new(),
             available_hue_groups: Vec::new(),
             sys_info: sysinfo::System::new_all(),
+            active_keys: std::collections::HashSet::new(),
         }
     }
 }

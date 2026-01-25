@@ -1,6 +1,5 @@
 # MapFlow MCP Server
 
-<<<<<<< HEAD
 The **Model Context Protocol (MCP)** server for MapFlow. This crate enables AI assistants (like Claude, Gemini, or custom agents) to interact with and control the MapFlow application.
 
 ## Overview
@@ -11,43 +10,13 @@ MapFlow MCP exposes the internal state and control surface of the application vi
 - **Automated Workflows**: Scripts that can manipulate the project state.
 - **Context-Aware Assistance**: AI agents can query the current project structure (layers, effects, mappings) to provide relevant help.
 
-## Features
-
-- **Project Management**: Save/Load projects.
-- **Layer Control**: Create layers, set opacity, blend modes, and visibility.
-- **Media Control**: Play, pause, seek, loop modes, and file loading.
-- **Effect Chain**: Add/remove effects and modify parameters.
-- **Transport**: JSON-RPC 2.0 over Stdio or SSE (Server-Sent Events).
-
 ## Architecture
 
 The MCP Server runs as a background service within the main MapFlow application (or as a standalone process for testing). It bridges external JSON-RPC requests to internal `McpAction` events, which are then processed by the main application loop.
 
-### Tools
-
-The server exposes a set of "Tools" that AI models can invoke. Examples include:
-
-- `layer_add(name: String)`
-- `media_play()`
-- `effect_set_param(layer_id: u64, effect_id: u64, param: String, value: f32)`
-
-## Usage
-
-This crate is primarily used internally by `mapmap-control` and the main `mapmap` binary. To enable it, ensure the `mcp` feature is active (if applicable) or that the server is initialized in your configuration.
-
-```rust,no_run
-// Internal usage example
-use mapmap_mcp::McpServer;
-
-// The server is typically initialized by the App struct
-// let server = McpServer::new(...);
-```
-=======
-This crate implements a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for MapFlow, enabling AI agents (like Claude Desktop or custom tools) to interact with and control the MapFlow application.
-
 ## Features
 
-- **JSON-RPC 2.0**: Standard communication protocol over stdio.
+- **JSON-RPC 2.0**: Standard communication protocol over stdio or SSE.
 - **Project Management**: Save and load projects via AI commands.
 - **Layer Control**: Create, delete, modify, and mix layers.
 - **Media Control**: Playback control (Play, Pause, Stop, Seek) and library management.
@@ -57,7 +26,9 @@ This crate implements a [Model Context Protocol (MCP)](https://modelcontextproto
 
 ## Usage
 
-This crate typically runs as a sidecar process or integrated module within the main application. However, it can also be run standalone for testing or specific integrations.
+This crate is primarily used internally by `mapmap-control` and the main `mapmap` binary. To enable it, ensure the `mcp` feature is active (if applicable) or that the server is initialized in your configuration.
+
+It can also be run standalone for testing:
 
 ```bash
 # Run the MCP server (stdio mode)
@@ -93,4 +64,3 @@ The server supports a wide range of actions defined in `McpAction`, including:
 *   **Media**: `MediaPlay`, `LayerLoadMedia`
 *   **Audio**: `AudioBindParam`, `AudioSetSensitivity`
 *   **Effects**: `EffectAdd`, `EffectSetParam`
->>>>>>> pr-217-branch

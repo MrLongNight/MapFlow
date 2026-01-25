@@ -39,7 +39,7 @@ use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use window_manager::WindowManager;
 use winit::{event::WindowEvent, event_loop::EventLoop};
@@ -91,6 +91,8 @@ struct App {
     start_time: std::time::Instant,
     /// Receiver for MCP commands
     mcp_receiver: Receiver<McpAction>,
+    /// Sender for internal actions (async -> sync)
+    action_sender: crossbeam_channel::Sender<McpAction>,
     /// Unified control manager
     control_manager: ControlManager,
     /// Flag to track if exit was requested
@@ -136,8 +138,8 @@ struct App {
     /// Shader Graph Manager (Runtime)
     #[allow(dead_code)]
     shader_graph_manager: mapmap_render::ShaderGraphManager,
-    /// Output assignments (OutputID -> Texture Name)
-    output_assignments: std::collections::HashMap<u64, String>,
+    /// Output assignments (OutputID -> List of Texture Names)
+    output_assignments: std::collections::HashMap<u64, Vec<String>>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
     /// Render Operations from Module Evaluator
@@ -411,6 +413,7 @@ impl App {
 
         // Start MCP Server in a separate thread
         let (mcp_sender, mcp_receiver) = unbounded();
+        let action_sender = mcp_sender.clone();
 
         thread::spawn(move || {
             // Create a Tokio runtime for the MCP server
@@ -591,6 +594,7 @@ impl App {
             last_update: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
             mcp_receiver,
+            action_sender,
             control_manager,
             exit_requested: false,
             oscillator_renderer,
@@ -732,6 +736,20 @@ impl App {
                             error!("Render error on output {}: {}", output_id, e);
                         }
                     }
+                    // Handle keyboard input for Shortcut triggers
+                    WindowEvent::KeyboardInput { event, .. } => {
+                        if let winit::keyboard::PhysicalKey::Code(key_code) = event.physical_key {
+                            let key_name = format!("{:?}", key_code);
+                            match event.state {
+                                winit::event::ElementState::Pressed => {
+                                    self.ui_state.active_keys.insert(key_name);
+                                }
+                                winit::event::ElementState::Released => {
+                                    self.ui_state.active_keys.remove(&key_name);
+                                }
+                            }
+                        }
+                    }
                     _ => (),
                 }
             }
@@ -775,30 +793,32 @@ impl App {
                 }
             }
             winit::event::Event::AboutToWait => {
-                // --- Frame Limiter ---
+                // --- Non-blocking Frame Limiter ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
-                // If target is 0 (VSync) but we are in AutoNoVsync mode, we must cap it ensuring we don't busy loop
-                // Default to 60 if 0 to be safe
                 let cap_fps = if target_fps <= 0.0 { 60.0 } else { target_fps };
-
                 let frame_target = std::time::Duration::from_secs_f64(1.0 / cap_fps as f64);
                 let time_since_last = std::time::Instant::now().duration_since(self.last_update);
 
+                // Skip frame if too early (non-blocking)
                 if time_since_last < frame_target {
-                    let wait_until = std::time::Instant::now() + (frame_target - time_since_last);
-                    elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
+                    // Don't block - use Poll to immediately re-check
+                    elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
                     return Ok(());
                 }
 
+                // Always use Poll mode - VJ software needs continuous updates
                 elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+
+                // --- Update State (Physics/Media) ---
+                let actual_dt = time_since_last.as_secs_f32();
+                self.update(elwt, actual_dt);
+                self.last_update = std::time::Instant::now();
 
                 // Poll MIDI
                 #[cfg(feature = "midi")]
                 if let Some(handler) = &mut self.midi_handler {
                     while let Some(msg) = handler.poll_message() {
-                        // Pass to UI Overlay
                         self.ui_state.controller_overlay.process_midi(msg);
-                        // Pass to Module Canvas for MIDI Learn
                         self.ui_state.module_canvas.process_midi_message(msg);
                     }
                 }
@@ -807,23 +827,28 @@ impl App {
                 if self.state.dirty
                     && self.last_autosave.elapsed() >= std::time::Duration::from_secs(300)
                 {
-                    // Use data directory for autosave
                     let autosave_path = dirs::data_local_dir()
                         .unwrap_or_else(|| PathBuf::from("."))
                         .join("MapFlow")
                         .join("autosave.mflow");
-
-                    // Ensure directory exists
                     if let Some(parent) = autosave_path.parent() {
                         let _ = std::fs::create_dir_all(parent);
                     }
-
                     if let Err(e) = save_project(&self.state, &autosave_path) {
                         error!("Autosave failed: {}", e);
                     } else {
                         info!("Autosave successful to {:?}", autosave_path);
                         self.last_autosave = std::time::Instant::now();
-                        // Note: We don't clear dirty flag on autosave, only on explicit save
+                    }
+                }
+
+                // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
+                // This ensures output windows update immediately, not after event dispatch
+                let output_ids: Vec<u64> =
+                    self.window_manager.iter().map(|wc| wc.output_id).collect();
+                for output_id in output_ids {
+                    if let Err(e) = self.render(output_id) {
+                        error!("Render error on output {}: {}", output_id, e);
                     }
                 }
 
@@ -842,6 +867,8 @@ impl App {
 
                 // --- MODULE EVALUATION ---
                 self.module_evaluator.update_audio(&analysis_v2);
+                self.module_evaluator
+                    .update_keys(&self.ui_state.active_keys);
 
                 // Process pending playback commands from UI
                 for (part_id, cmd) in self
@@ -862,42 +889,32 @@ impl App {
                             "Player doesn't exist for part_id={}, attempting to create...",
                             part_id
                         );
-                        // Find the source path from the module manager
-                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
-                        {
-                            if let Some(module) =
-                                self.state.module_manager.get_module(active_module_id)
-                            {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        info!("Found media path: '{}'", path);
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Successfully created player for '{}'",
-                                                        path
-                                                    );
-                                                    self.media_players.insert(part_id, player);
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to load media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
+                        // Find the source path by searching ALL modules
+                        'module_search: for module in self.state.module_manager.modules() {
+                            if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                if let mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                                ) = &part.part_type
+                                {
+                                    info!(
+                                        "Found media path: '{}' in module '{}'",
+                                        path, module.name
+                                    );
+                                    if !path.is_empty() {
+                                        match mapmap_media::open_path(path) {
+                                            Ok(player) => {
+                                                info!("Successfully created player for '{}'", path);
+                                                self.media_players.insert(part_id, player);
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to load media '{}': {}", path, e);
                                             }
                                         }
-                                    } else {
-                                        warn!("Part {} is not a MediaFile source", part_id);
                                     }
+                                    break 'module_search;
                                 } else {
-                                    warn!("Part {} not found in module", part_id);
+                                    warn!("Part {} is not a MediaFile source", part_id);
+                                    break 'module_search;
                                 }
                             }
                         }
@@ -952,41 +969,32 @@ impl App {
                                 part_id
                             );
                         }
-                        // Immediately recreate the player with the new path
-                        if let Some(active_module_id) = self.ui_state.module_canvas.active_module_id
-                        {
-                            if let Some(module) =
-                                self.state.module_manager.get_module(active_module_id)
-                            {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Recreated player for '{}' after reload",
-                                                        path
-                                                    );
-                                                    // Auto-play after reload
-                                                    let _ = player
-                                                        .command_sender()
-                                                        .send(PlaybackCommand::Play);
-                                                    self.media_players.insert(part_id, player);
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to reload media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
+                        // Immediately recreate the player by searching ALL modules
+                        'reload_search: for module in self.state.module_manager.modules() {
+                            if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                if let mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                                ) = &part.part_type
+                                {
+                                    if !path.is_empty() {
+                                        match mapmap_media::open_path(path) {
+                                            Ok(player) => {
+                                                info!(
+                                                    "Recreated player for '{}' after reload",
+                                                    path
+                                                );
+                                                // Auto-play after reload
+                                                let _ = player
+                                                    .command_sender()
+                                                    .send(PlaybackCommand::Play);
+                                                self.media_players.insert(part_id, player);
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to reload media '{}': {}", path, e);
                                             }
                                         }
                                     }
+                                    break 'reload_search;
                                 }
                             }
                         }
@@ -1008,7 +1016,7 @@ impl App {
 
                 if let Some(module) = module_to_evaluate {
                     // DEBUG: Log which module we're evaluating
-                    info!(
+                    debug!(
                         "Evaluating module: name='{}', parts={}, connections={}",
                         module.name,
                         module.parts.len(),
@@ -1018,7 +1026,7 @@ impl App {
                     let result = self.module_evaluator.evaluate(module);
 
                     // DEBUG: Log evaluation result details
-                    info!(
+                    debug!(
                         "Evaluation result: render_ops={}, source_commands={}, trigger_values={}",
                         result.render_ops.len(),
                         result.source_commands.len(),
@@ -1038,7 +1046,7 @@ impl App {
                             ModulePartType::Output(_) => "Output",
                             ModulePartType::Hue(_) => "Hue",
                         };
-                        info!("  Part {}: {}", part.id, type_name);
+                        debug!("  Part {}: {}", part.id, type_name);
                     }
 
                     // Assign Render Ops for next frame!
@@ -1174,10 +1182,10 @@ impl App {
                     unsafe {
                         if now_ms / 1000 > LAST_RENDER_LOG {
                             LAST_RENDER_LOG = now_ms / 1000;
-                            info!("=== Render Pipeline Status ===");
-                            info!("  render_ops count: {}", self.render_ops.len());
+                            debug!("=== Render Pipeline Status ===");
+                            debug!("  render_ops count: {}", self.render_ops.len());
                             for (i, op) in self.render_ops.iter().enumerate() {
-                                info!(
+                                debug!(
                                     "  Op[{}]: source_part_id={:?}, output={:?}",
                                     i,
                                     op.source_part_id,
@@ -1198,12 +1206,12 @@ impl App {
                                 if let Some(sid) = op.source_part_id {
                                     let tex_name = format!("part_{}", sid);
                                     let has_tex = self.texture_pool.has_texture(&tex_name);
-                                    info!("    -> Texture '{}' exists: {}", tex_name, has_tex);
+                                    debug!("    -> Texture '{}' exists: {}", tex_name, has_tex);
                                 }
                             }
-                            info!("  media_players count: {}", self.media_players.len());
+                            debug!("  media_players count: {}", self.media_players.len());
                             for id in self.media_players.keys() {
-                                info!("    -> Player for part_id={}", id);
+                                debug!("    -> Player for part_id={}", id);
                             }
                         }
                     }
@@ -1220,9 +1228,15 @@ impl App {
                             if let Some(source_id) = op.source_part_id {
                                 let tex_name = format!("part_{}", source_id);
                                 // Insert with internal projector ID (for UI preview panel)
-                                self.output_assignments.insert(*id, tex_name.clone());
+                                self.output_assignments
+                                    .entry(*id)
+                                    .or_default()
+                                    .push(tex_name.clone());
                                 // Also insert with output_part_id (for window rendering)
-                                self.output_assignments.insert(op.output_part_id, tex_name);
+                                self.output_assignments
+                                    .entry(op.output_part_id)
+                                    .or_default()
+                                    .push(tex_name);
                             }
                         }
                     }
@@ -1328,6 +1342,24 @@ impl App {
                             info!("Project saved to {:?}", path);
                         }
                     }
+                }
+                mapmap_ui::UIAction::PickMediaFile(part_id) => {
+                    let sender = self.action_sender.clone();
+                    self.tokio_runtime.spawn(async move {
+                        if let Some(handle) = rfd::AsyncFileDialog::new()
+                            .add_filter(
+                                "Media",
+                                &[
+                                    "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg", "jpeg",
+                                ],
+                            )
+                            .pick_file()
+                            .await
+                        {
+                            let path = handle.path().to_path_buf();
+                            let _ = sender.send(McpAction::SetModuleSourcePath(part_id, path));
+                        }
+                    });
                 }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
@@ -1563,6 +1595,29 @@ impl App {
                     info!("MCP: Media Stop");
                     // TODO: Integrate with media player when available
                 }
+                McpAction::SetModuleSourcePath(part_id, path) => {
+                    info!(
+                        "MCP: Setting source path for part {} to {:?}",
+                        part_id, path
+                    );
+                    // Update module part
+                    for module in self.state.module_manager.modules_mut() {
+                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                            if let mapmap_core::module::ModulePartType::Source(
+                                mapmap_core::module::SourceType::MediaFile { path: ref mut p, .. },
+                            ) = &mut part.part_type
+                            {
+                                *p = path.to_string_lossy().to_string();
+                                self.state.dirty = true;
+                                // Trigger reload
+                                self.ui_state
+                                    .module_canvas
+                                    .pending_playback_commands
+                                    .push((part_id, mapmap_ui::MediaPlaybackCommand::Reload));
+                            }
+                        }
+                    }
+                }
                 McpAction::SetLayerOpacity(id, opacity) => {
                     info!("MCP: Set layer {} opacity to {}", id, opacity);
                     // TODO: Implement layer opacity update
@@ -1644,6 +1699,11 @@ impl App {
             }
         }
 
+        // Request redraw for all windows to ensure continuous rendering
+        for window_context in self.window_manager.iter() {
+            window_context.window.request_redraw();
+        }
+
         Ok(())
     }
 
@@ -1684,7 +1744,7 @@ impl App {
     fn sync_output_windows(
         &mut self,
         elwt: &winit::event_loop::ActiveEventLoop,
-        render_ops: &[mapmap_core::module_eval::RenderOp],
+        _render_ops: &[mapmap_core::module_eval::RenderOp],
     ) -> Result<()> {
         use mapmap_core::module::OutputType;
         const PREVIEW_FLAG: u64 = 1u64 << 63;
@@ -1693,121 +1753,125 @@ impl App {
         let mut active_window_ids = std::collections::HashSet::new();
         let mut active_sender_ids = std::collections::HashSet::new();
 
-        // 1. Process RenderOps
-        for op in render_ops {
-            let output_id = op.output_part_id;
+        self.output_assignments.clear();
 
-            // -- Projector Logic --
-            match &op.output_type {
-                OutputType::Projector {
-                    id: _,
-                    name,
-                    fullscreen,
-                    hide_cursor,
-                    target_screen,
-                    show_in_preview_panel: _,
-                    extra_preview_window,
-                    ..
-                } => {
-                    // 1. Primary Window
-                    active_window_ids.insert(output_id);
+        // Get output definitions from MODULE GRAPH (stable), not render_ops (fluctuates)
+        for module in self.state.module_manager.list_modules() {
+            for part in &module.parts {
+                match &part.part_type {
+                    mapmap_core::module::ModulePartType::Output(output_type) => {
+                        // Use part.id for consistency with render pipeline
+                        let output_id = part.id;
 
-                    if let Some(window_context) = self.window_manager.get(output_id) {
-                        // Update existing
-                        let is_fullscreen = window_context.window.fullscreen().is_some();
-                        if is_fullscreen != *fullscreen {
-                            window_context.window.set_fullscreen(if *fullscreen {
-                                Some(winit::window::Fullscreen::Borderless(None))
-                            } else {
-                                None
-                            });
-                        }
-                        window_context.window.set_cursor_visible(!*hide_cursor);
-                    } else {
-                        // Create new
-                        self.window_manager.create_projector_window(
-                            elwt,
-                            &self.backend,
-                            output_id,
-                            name,
-                            *fullscreen,
-                            *hide_cursor,
-                            *target_screen,
-                        )?;
-                        info!("Created projector window for output {}", output_id);
-                    }
+                        match output_type {
+                            OutputType::Projector {
+                                id: _projector_id,
+                                name,
+                                fullscreen,
+                                hide_cursor,
+                                target_screen,
+                                show_in_preview_panel: _,
+                                extra_preview_window,
+                                ..
+                            } => {
+                                // 1. Primary Window
+                                active_window_ids.insert(output_id);
 
-                    // 2. Extra Preview Window
-                    if *extra_preview_window {
-                        let preview_id = output_id | PREVIEW_FLAG;
-                        active_window_ids.insert(preview_id);
-
-                        // Ensure render assignment exists for preview
-                        self.output_assignments.insert(
-                            preview_id,
-                            op.source_part_id
-                                .map(|id| format!("part_{}", id))
-                                .unwrap_or_default(),
-                        );
-
-                        if self.window_manager.get(preview_id).is_none() {
-                            self.window_manager.create_projector_window(
-                                elwt,
-                                &self.backend,
-                                preview_id,
-                                &format!("Preview: {}", name),
-                                false, // Always windowed
-                                false, // Show cursor
-                                0,     // Default screen (0)
-                            )?;
-                            info!("Created preview window for output {}", output_id);
-                        }
-                    }
-                }
-                OutputType::NdiOutput { name: _name } => {
-                    // -- NDI Logic --
-                    active_sender_ids.insert(output_id);
-
-                    #[cfg(feature = "ndi")]
-                    {
-                        if !self.ndi_senders.contains_key(&output_id) {
-                            // Create NDI Sender
-                            let width = 1920; // TODO: Dynamic Res
-                            let height = 1080;
-                            match mapmap_io::ndi::NdiSender::new(
-                                _name.clone(),
-                                mapmap_io::format::VideoFormat {
-                                    width,
-                                    height,
-                                    pixel_format: mapmap_io::format::PixelFormat::BGRA8,
-                                    frame_rate: 60.0,
-                                },
-                            ) {
-                                Ok(sender) => {
-                                    info!("Created NDI sender: {}", _name);
-                                    self.ndi_senders.insert(output_id, sender);
+                                if let Some(window_context) = self.window_manager.get(output_id) {
+                                    // Update existing
+                                    let is_fullscreen =
+                                        window_context.window.fullscreen().is_some();
+                                    if is_fullscreen != *fullscreen {
+                                        window_context.window.set_fullscreen(if *fullscreen {
+                                            Some(winit::window::Fullscreen::Borderless(None))
+                                        } else {
+                                            None
+                                        });
+                                    }
+                                    window_context.window.set_cursor_visible(!*hide_cursor);
+                                } else {
+                                    // Create new
+                                    self.window_manager.create_projector_window(
+                                        elwt,
+                                        &self.backend,
+                                        output_id,
+                                        name,
+                                        *fullscreen,
+                                        *hide_cursor,
+                                        *target_screen,
+                                    )?;
+                                    info!("Created projector window for output {}", output_id);
                                 }
-                                Err(e) => error!("Failed to create NDI sender {}: {}", _name, e),
+
+                                // 2. Extra Preview Window
+                                if *extra_preview_window {
+                                    let preview_id = output_id | PREVIEW_FLAG;
+                                    active_window_ids.insert(preview_id);
+
+                                    if self.window_manager.get(preview_id).is_none() {
+                                        self.window_manager.create_projector_window(
+                                            elwt,
+                                            &self.backend,
+                                            preview_id,
+                                            &format!("Preview: {}", name),
+                                            false, // Always windowed
+                                            false, // Show cursor
+                                            0,     // Default screen (0)
+                                        )?;
+                                        info!("Created preview window for output {}", output_id);
+                                    }
+                                }
+                            }
+                            OutputType::NdiOutput { name: _name } => {
+                                // For NDI, use part.id as the unique identifier
+                                let output_id = part.id;
+                                active_sender_ids.insert(output_id);
+
+                                #[cfg(feature = "ndi")]
+                                {
+                                    if !self.ndi_senders.contains_key(&output_id) {
+                                        let width = 1920;
+                                        let height = 1080;
+                                        match mapmap_io::ndi::NdiSender::new(
+                                            _name.clone(),
+                                            mapmap_io::format::VideoFormat {
+                                                width,
+                                                height,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
+                                                frame_rate: 60.0,
+                                            },
+                                        ) {
+                                            Ok(sender) => {
+                                                info!("Created NDI sender: {}", _name);
+                                                self.ndi_senders.insert(output_id, sender);
+                                            }
+                                            Err(e) => error!(
+                                                "Failed to create NDI sender {}: {}",
+                                                _name, e
+                                            ),
+                                        }
+                                    }
+                                }
+                            }
+                            #[cfg(target_os = "windows")]
+                            OutputType::Spout { .. } => {
+                                // TODO: Spout Sender
+                            }
+                            OutputType::Hue { .. } => {
+                                // Hue integration handled via separate controller, no window needed
                             }
                         }
                     }
-                }
-                #[cfg(target_os = "windows")]
-                OutputType::Spout { .. } => {
-                    // TODO: Spout Sender
-                }
-                OutputType::Hue { .. } => {
-                    // Hue integration handled via separate controller, no window needed
+                    _ => {}
                 }
             }
         }
 
-        // 2. Cleanup Windows
+        // 2. Cleanup Windows (only close if projector was removed from graph)
         let window_ids: Vec<u64> = self.window_manager.window_ids().cloned().collect();
         for id in window_ids {
             if id != 0 && !active_window_ids.contains(&id) {
                 self.window_manager.remove_window(id);
-                // Also remove assignment if it was a preview
                 if (id & PREVIEW_FLAG) != 0 {
                     self.output_assignments.remove(&id);
                 }
@@ -1971,6 +2035,19 @@ impl App {
         // Render previews with effects
         let mut current_frame_previews = std::collections::HashMap::new();
 
+        // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
+        // This avoids creating N encoders and submitting N command buffers to the queue per frame.
+        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
+
+        let mut preview_encoder =
+            self.backend
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Preview Encoder (Batched)"),
+                });
+
+        let mut has_preview_work = false;
+
         for (
             part_id,
             brightness,
@@ -2002,14 +2079,6 @@ impl App {
                 );
                 let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-                // Use a fresh encoder for each preview
-                let mut preview_encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Encoder"),
-                        });
-
                 // Calculate Transform Matrix based on source properties
                 let transform_mat = glam::Mat4::from_scale_rotation_translation(
                     glam::Vec3::new(scale_x, scale_y, 1.0),
@@ -2018,6 +2087,8 @@ impl App {
                 );
 
                 // Prepare Uniforms
+                // Note: queue.write_buffer operations here are scheduled on the queue
+                // effectively "before" the command buffer execution, maintaining correctness.
                 let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
                     transform_mat,
@@ -2032,7 +2103,7 @@ impl App {
 
                 let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
 
-                // Render Pass
+                // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
                     let mut render_pass =
                         preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -2065,8 +2136,7 @@ impl App {
                     );
                 }
 
-                // Submit the preview encoder work!
-                self.backend.queue.submit(Some(preview_encoder.finish()));
+                has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
                 let texture_id = match self.preview_texture_cache.entry(part_id) {
@@ -2100,6 +2170,10 @@ impl App {
             }
         }
 
+        if has_preview_work {
+            self.backend.queue.submit(Some(preview_encoder.finish()));
+        }
+
         // Cleanup stale cache entries
         self.preview_texture_cache.retain(|id, (tex_id, _)| {
             if !current_frame_previews.contains_key(id) {
@@ -2116,24 +2190,27 @@ impl App {
         // Register Output Preview Textures
         let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
             std::collections::HashMap::new();
-        for (output_id, tex_name) in &self.output_assignments {
-            if self.texture_pool.has_texture(tex_name) {
-                let tex_view = self.texture_pool.get_view(tex_name);
+        for (output_id, tex_names) in &self.output_assignments {
+            // Use the last assigned texture for preview (topmost layer)
+            if let Some(tex_name) = tex_names.last() {
+                if self.texture_pool.has_texture(tex_name) {
+                    let tex_view = self.texture_pool.get_view(tex_name);
 
-                let texture_id = if let Some(&cached_id) = self.output_preview_cache.get(output_id)
-                {
-                    cached_id
-                } else {
-                    let new_id = self.egui_renderer.register_native_texture(
-                        &self.backend.device,
-                        &tex_view,
-                        wgpu::FilterMode::Linear,
-                    );
-                    self.output_preview_cache.insert(*output_id, new_id);
-                    new_id
-                };
+                    let texture_id =
+                        if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
+                            cached_id
+                        } else {
+                            let new_id = self.egui_renderer.register_native_texture(
+                                &self.backend.device,
+                                &tex_view,
+                                wgpu::FilterMode::Linear,
+                            );
+                            self.output_preview_cache.insert(*output_id, new_id);
+                            new_id
+                        };
 
-                current_output_previews.insert(*output_id, texture_id);
+                    current_output_previews.insert(*output_id, texture_id);
+                }
             }
         }
 
@@ -2147,23 +2224,85 @@ impl App {
         });
     }
 
-    /// Renders a single frame for a given output.
-    fn render(&mut self, output_id: OutputId) -> Result<()> {
-        let now = std::time::Instant::now();
-        let delta_time = now.duration_since(self.last_update).as_secs_f32();
-        self.last_update = now;
-
+    /// Global update loop (physics/logic), independent of render rate per window.
+    fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
         // --- Media Player Update ---
         self.sync_media_players();
-        self.update_media_players(delta_time);
+        self.update_media_players(dt);
 
         // --- Effect Animator Update ---
-        // Moved from about_to_wait to ensure consistent delta_time with rendering
-        let _param_updates = self.state.effect_animator.update(delta_time as f64);
-        // TODO: Apply param_updates to renderer
+        // --- Effect Animator Update ---
+        let param_updates = self.state.effect_animator.update(dt as f64);
+        // Note: param_updates is Vec, so just iterate
+        if !param_updates.is_empty() {
+            // TODO: Apply updates to Active Module
+            tracing::trace!("Effect updates: {}", param_updates.len());
+        }
 
-        // Calculate FPS with smoothing (rolling average of last 60 frames)
-        let frame_time_ms = delta_time * 1000.0;
+        // --- Module Graph Evaluation ---
+        // Evaluate ALL modules and merge render_ops for multi-output support
+        self.render_ops.clear();
+        for module in self.state.module_manager.list_modules() {
+            let module_id = module.id;
+            if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
+                let eval_result = self.module_evaluator.evaluate(module_ref);
+                self.render_ops
+                    .extend(eval_result.render_ops.iter().cloned());
+            }
+        }
+
+        // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
+        // NOT render_ops (which can be empty/fluctuate).
+        // Extract Output part IDs from all modules' output parts.
+        let current_output_ids: std::collections::HashSet<u64> = self
+            .state
+            .module_manager
+            .list_modules()
+            .iter()
+            .flat_map(|m| m.parts.iter())
+            .filter_map(|part| {
+                if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector { .. },
+                ) = &part.part_type
+                {
+                    Some(part.id) // Use part.id for consistency with render pipeline
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Get current window IDs (excluding main window 0)
+        let prev_output_ids: std::collections::HashSet<u64> = self
+            .window_manager
+            .iter()
+            .filter(|wc| wc.output_id != 0)
+            .map(|wc| wc.output_id)
+            .collect();
+
+        // Only sync if module graph's projector set changed
+        if current_output_ids != prev_output_ids {
+            tracing::info!(
+                "Output set changed: {:?} -> {:?}",
+                prev_output_ids,
+                current_output_ids
+            );
+            let render_ops_temp = std::mem::take(&mut self.render_ops);
+            if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+                tracing::error!("Failed to sync output windows: {}", e);
+            }
+            self.render_ops = render_ops_temp;
+        }
+
+        // --- Oscillator Update ---
+        if let Some(renderer) = &mut self.oscillator_renderer {
+            if self.state.oscillator_config.enabled {
+                renderer.update(dt, &self.state.oscillator_config);
+            }
+        }
+
+        // --- FPS Calculation ---
+        let frame_time_ms = dt * 1000.0;
         self.fps_samples.push_back(frame_time_ms);
         if self.fps_samples.len() > 60 {
             self.fps_samples.pop_front();
@@ -2178,13 +2317,8 @@ impl App {
                 0.0
             };
         }
-
-        if let Some(renderer) = &mut self.oscillator_renderer {
-            if self.state.oscillator_config.enabled {
-                renderer.update(delta_time, &self.state.oscillator_config);
-            }
-        }
-
+    }
+    fn render(&mut self, output_id: OutputId) -> Result<()> {
         if output_id == 0 {
             // Sync Texture Previews for Module Canvas
             self.prepare_texture_previews();
@@ -2295,6 +2429,11 @@ impl App {
                                     UIEffectType::Pixelate => RenderEffectType::Pixelate,
                                     UIEffectType::Vignette => RenderEffectType::Vignette,
                                     UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Wave => RenderEffectType::Wave,
+                                    UIEffectType::Glitch => RenderEffectType::Glitch,
+                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
+                                    UIEffectType::Mirror => RenderEffectType::Mirror,
+                                    UIEffectType::HueShift => RenderEffectType::HueShift,
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
 
@@ -2319,6 +2458,11 @@ impl App {
                                     UIEffectType::Pixelate => RenderEffectType::Pixelate,
                                     UIEffectType::Vignette => RenderEffectType::Vignette,
                                     UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Wave => RenderEffectType::Wave,
+                                    UIEffectType::Glitch => RenderEffectType::Glitch,
+                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
+                                    UIEffectType::Mirror => RenderEffectType::Mirror,
+                                    UIEffectType::HueShift => RenderEffectType::HueShift,
                                     UIEffectType::Custom => RenderEffectType::Custom,
                                 };
                                 self.state.effect_chain.add_effect(render_type);
@@ -2637,7 +2781,7 @@ impl App {
                                                                 id: *id,
                                                                 name: name.clone(),
                                                                 show_in_panel: *show_in_preview_panel,
-                                                                texture_name: self.output_assignments.get(id).cloned(),
+                                                                texture_name: self.output_assignments.get(id).and_then(|v| v.last().cloned()),
                                                                 texture_id: self.output_preview_cache.get(id).copied(),
                                                             })
                                                         }
@@ -3164,230 +3308,225 @@ impl App {
         } else {
             // === Node-Based Rendering Pipeline ===
 
-            // 1. Find the RenderOp for this output (use output_part_id, not Projector id)
-            let target_op = self
+            // 1. Find ALL RenderOps for this output to support composition
+            let target_ops: Vec<&mapmap_core::module_eval::RenderOp> = self
                 .render_ops
                 .iter()
-                .find(|op| op.output_part_id == output_id);
+                .filter(|op| op.output_part_id == output_id)
+                .collect();
 
-            if let Some(op) = target_op {
-                // Determine source texture view
-                let owned_source_view = if let Some(src_id) = op.source_part_id {
-                    let tex_name = format!("part_{}", src_id);
-                    if self.texture_pool.has_texture(&tex_name) {
-                        Some(self.texture_pool.get_view(&tex_name))
+            // Debug: Log number of ops per output
+            if target_ops.len() > 1 {
+                tracing::info!(
+                    "Multi-Output active: Output {} rendering {} layers",
+                    output_id,
+                    target_ops.len()
+                );
+            }
+
+            if target_ops.is_empty() {
+                // No op for this output - Clear to Black
+                let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Clear Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+            } else {
+                // Shared Configuration for Output
+                let output_config_opt = self.state.output_manager.get_output(output_id);
+                let use_edge_blend =
+                    output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+                let use_color_calib =
+                    output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+                let needs_post_processing = use_edge_blend || use_color_calib;
+
+                // A. Prepare Mesh Target
+                let mesh_target_view_ref;
+                let mesh_output_tex_name = &self.layer_ping_pong[1];
+                let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> = None;
+
+                if needs_post_processing {
+                    let width = window_context.surface_config.width;
+                    let height = window_context.surface_config.height;
+                    self.texture_pool
+                        .resize_if_needed(mesh_output_tex_name, width, height);
+                    _mesh_intermediate_view =
+                        Some(self.texture_pool.get_view(mesh_output_tex_name));
+                    mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
+                } else {
+                    mesh_target_view_ref = &view;
+                }
+
+                // B. Clear Mesh Target (Once per frame, before accumulation)
+                {
+                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Mesh Target Clear Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: mesh_target_view_ref,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+                }
+
+                // C. Process and Render Each Op (Accumulate)
+                for op in target_ops {
+                    // Determine source texture view
+                    let owned_source_view = if let Some(src_id) = op.source_part_id {
+                        let tex_name = format!("part_{}", src_id);
+                        if self.texture_pool.has_texture(&tex_name) {
+                            Some(self.texture_pool.get_view(&tex_name))
+                        } else {
+                            None
+                        }
                     } else {
                         None
-                    }
-                } else {
-                    None
-                };
-                let source_view_ref = owned_source_view.as_deref();
-                let effective_view = source_view_ref.or(self.dummy_view.as_ref());
+                    };
+                    let source_view_ref = owned_source_view.as_deref();
+                    let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
-                if let Some(src_view) = effective_view {
-                    // --- 1. Effect Chain Processing (Common) ---
-                    let mut final_view = src_view;
-                    let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
+                    if let Some(src_view) = effective_view {
+                        // --- Effect Chain Processing ---
+                        let mut final_view = src_view;
+                        let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
-                    if !op.effects.is_empty() {
-                        let time = self.start_time.elapsed().as_secs_f32();
-                        let mut chain = mapmap_core::EffectChain::new();
+                        if !op.effects.is_empty() {
+                            let time = self.start_time.elapsed().as_secs_f32();
+                            let mut chain = mapmap_core::EffectChain::new();
 
-                        for modulizer in &op.effects {
-                            if let mapmap_core::module::ModulizerType::Effect {
-                                effect_type: mod_effect,
-                                params,
-                            } = modulizer
-                            {
-                                let core_effect = match mod_effect {
-                                    mapmap_core::module::EffectType::Blur => {
-                                        Some(mapmap_core::effects::EffectType::Blur)
-                                    }
-                                    mapmap_core::module::EffectType::Invert => {
-                                        Some(mapmap_core::effects::EffectType::Invert)
-                                    }
-                                    mapmap_core::module::EffectType::Pixelate => {
-                                        Some(mapmap_core::effects::EffectType::Pixelate)
-                                    }
-                                    mapmap_core::module::EffectType::Brightness
-                                    | mapmap_core::module::EffectType::Contrast
-                                    | mapmap_core::module::EffectType::Saturation
-                                    | mapmap_core::module::EffectType::HueShift
-                                    | mapmap_core::module::EffectType::Colorize => {
-                                        Some(mapmap_core::effects::EffectType::ColorAdjust)
-                                    }
-                                    mapmap_core::module::EffectType::ChromaticAberration
-                                    | mapmap_core::module::EffectType::RgbSplit => {
-                                        Some(mapmap_core::effects::EffectType::ChromaticAberration)
-                                    }
-                                    mapmap_core::module::EffectType::EdgeDetect => {
-                                        Some(mapmap_core::effects::EffectType::EdgeDetect)
-                                    }
-                                    mapmap_core::module::EffectType::FilmGrain
-                                    | mapmap_core::module::EffectType::VHS => {
-                                        Some(mapmap_core::effects::EffectType::FilmGrain)
-                                    }
-                                    mapmap_core::module::EffectType::Vignette => {
-                                        Some(mapmap_core::effects::EffectType::Vignette)
-                                    }
-                                    mapmap_core::module::EffectType::Kaleidoscope => {
-                                        Some(mapmap_core::effects::EffectType::Kaleidoscope)
-                                    }
-                                    // Not yet implemented in core renderer
-                                    mapmap_core::module::EffectType::Sharpen
-                                    | mapmap_core::module::EffectType::Threshold
-                                    | mapmap_core::module::EffectType::Wave
-                                    | mapmap_core::module::EffectType::Spiral
-                                    | mapmap_core::module::EffectType::Pinch
-                                    | mapmap_core::module::EffectType::Mirror
-                                    | mapmap_core::module::EffectType::Halftone
-                                    | mapmap_core::module::EffectType::Posterize
-                                    | mapmap_core::module::EffectType::Glitch => {
-                                        tracing::warn!(
-                                            "Effect {:?} not yet implemented in renderer",
-                                            mod_effect
-                                        );
-                                        None
-                                    }
-                                };
-                                if let Some(et) = core_effect {
-                                    let effect_id = chain.add_effect(et);
-                                    if let Some(effect) = chain.get_effect_mut(effect_id) {
-                                        effect.parameters = params.clone();
+                            for modulizer in &op.effects {
+                                if let mapmap_core::module::ModulizerType::Effect {
+                                    effect_type: mod_effect,
+                                    params,
+                                } = modulizer
+                                {
+                                    let core_effect = match mod_effect {
+                                        mapmap_core::module::EffectType::Blur => {
+                                            Some(mapmap_core::effects::EffectType::Blur)
+                                        }
+                                        mapmap_core::module::EffectType::Invert => {
+                                            Some(mapmap_core::effects::EffectType::Invert)
+                                        }
+                                        mapmap_core::module::EffectType::Pixelate => {
+                                            Some(mapmap_core::effects::EffectType::Pixelate)
+                                        }
+                                        mapmap_core::module::EffectType::Brightness
+                                        | mapmap_core::module::EffectType::Contrast
+                                        | mapmap_core::module::EffectType::Saturation
+                                        | mapmap_core::module::EffectType::Colorize => {
+                                            Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                        }
+                                        mapmap_core::module::EffectType::HueShift => {
+                                            Some(mapmap_core::effects::EffectType::HueShift)
+                                        }
+                                        mapmap_core::module::EffectType::ChromaticAberration
+                                        | mapmap_core::module::EffectType::RgbSplit => Some(
+                                            mapmap_core::effects::EffectType::ChromaticAberration,
+                                        ),
+                                        mapmap_core::module::EffectType::EdgeDetect => {
+                                            Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                        }
+                                        mapmap_core::module::EffectType::FilmGrain
+                                        | mapmap_core::module::EffectType::VHS => {
+                                            Some(mapmap_core::effects::EffectType::FilmGrain)
+                                        }
+                                        mapmap_core::module::EffectType::Vignette => {
+                                            Some(mapmap_core::effects::EffectType::Vignette)
+                                        }
+                                        mapmap_core::module::EffectType::Kaleidoscope => {
+                                            Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                        }
+                                        mapmap_core::module::EffectType::Wave => {
+                                            Some(mapmap_core::effects::EffectType::Wave)
+                                        }
+                                        mapmap_core::module::EffectType::Glitch => {
+                                            Some(mapmap_core::effects::EffectType::Glitch)
+                                        }
+                                        mapmap_core::module::EffectType::Mirror => {
+                                            Some(mapmap_core::effects::EffectType::Mirror)
+                                        }
+                                        _ => {
+                                            tracing::warn!(
+                                                "Effect {:?} not implemented",
+                                                mod_effect
+                                            );
+                                            None
+                                        }
+                                    };
+                                    if let Some(et) = core_effect {
+                                        let effect_id = chain.add_effect(et);
+                                        if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                            effect.parameters = params.clone();
+                                        }
                                     }
                                 }
                             }
+
+                            if chain.enabled_effects().count() > 0 {
+                                let target_tex_name = &self.layer_ping_pong[0];
+                                let (w, h) = (
+                                    window_context.surface_config.width,
+                                    window_context.surface_config.height,
+                                );
+                                self.texture_pool.resize_if_needed(target_tex_name, w, h);
+                                let target_view = self.texture_pool.get_view(target_tex_name);
+                                self.effect_chain_renderer.apply_chain(
+                                    &mut encoder,
+                                    src_view,
+                                    &target_view,
+                                    &chain,
+                                    time,
+                                    w,
+                                    h,
+                                );
+                                _temp_view_holder = Some(target_view);
+                                final_view = _temp_view_holder.as_ref().unwrap();
+                            }
                         }
 
-                        if chain.enabled_effects().count() > 0 {
-                            let target_tex_name = &self.layer_ping_pong[0];
-                            let (w, h) = (
-                                window_context.surface_config.width,
-                                window_context.surface_config.height,
-                            );
-                            self.texture_pool.resize_if_needed(target_tex_name, w, h);
-                            let target_view = self.texture_pool.get_view(target_tex_name);
-                            self.effect_chain_renderer.apply_chain(
-                                &mut encoder,
-                                src_view,
-                                &target_view,
-                                &chain,
-                                time,
-                                w,
-                                h,
-                            );
-                            _temp_view_holder = Some(target_view);
-                            final_view = _temp_view_holder.as_ref().unwrap();
-                        }
-                    }
-
-                    // --- 2. Combined Mesh & Output Processing Pipeline ---
-                    // Pipeline: Source -> [Mesh Warp] -> (Intermediate) -> [Edge Blend/Color] -> Surface
-
-                    let output_config_opt = self.state.output_manager.get_output(output_id);
-                    let use_edge_blend =
-                        output_config_opt.is_some() && self.edge_blend_renderer.is_some();
-                    let use_color_calib =
-                        output_config_opt.is_some() && self.color_calibration_renderer.is_some();
-
-                    let needs_post_processing = use_edge_blend || use_color_calib;
-
-                    // A. Prepare Mesh Target
-                    // If we need post-processing (Edge Blend/Color), Mesh writes to PingPong1.
-                    // Otherwise, Mesh writes directly to the Surface.
-                    let mesh_target_view_ref;
-                    let mesh_output_tex_name = &self.layer_ping_pong[1]; // Use secondary ping-pong for mesh output
-
-                    // Scope to keep view borrow short
-                    let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> =
-                        None;
-
-                    if needs_post_processing {
-                        let width = window_context.surface_config.width;
-                        let height = window_context.surface_config.height;
-
-                        // Resize intermediate texture to match output resolution
-                        self.texture_pool
-                            .resize_if_needed(mesh_output_tex_name, width, height);
-
-                        _mesh_intermediate_view =
-                            Some(self.texture_pool.get_view(mesh_output_tex_name));
-                        mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
-                    } else {
-                        mesh_target_view_ref = &view;
-                    }
-
-                    // B. Clear Mesh Target
-                    {
-                        let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: Some("Mesh Target Clear Pass"),
-                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: &view,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                                        r: 0.0,
-                                        g: 0.0,
-                                        b: 0.0,
-                                        a: 1.0,
-                                    }),
-                                    store: wgpu::StoreOp::Store,
-                                },
-                                depth_slice: None,
-                            })],
-                            depth_stencil_attachment: None,
-                            occlusion_query_set: None,
-                            timestamp_writes: None,
-                        });
-                    }
-
-                    // C. Render Mesh (Warping)
-                    {
-                        self.mesh_renderer.begin_frame();
-                        let (vertex_buffer, index_buffer, index_count) =
-                            self.mesh_buffer_cache.get_buffers(
-                                &self.backend.device,
-                                op.layer_part_id,
-                                &op.mesh.to_mesh(),
-                            );
-
-                        // LOGGING: Check mesh and opacity (ROBUST)
-                        static DRAW_COUNT: std::sync::atomic::AtomicU64 =
-                            std::sync::atomic::AtomicU64::new(0);
-                        let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        if count.is_multiple_of(120) {
-                            info!("Render: Drawing Mesh for output {}", output_id);
-                            info!("  -> index_count: {}", index_count);
-                            info!("  -> opacity: {}", op.opacity);
-                            info!("  -> layer_part_id: {}", op.layer_part_id);
-                            info!(
-                                "  -> pipeline: mesh -> {}",
-                                if needs_post_processing {
-                                    "post-process"
-                                } else {
-                                    "surface"
-                                }
-                            );
-                        }
-
-                        let transform = glam::Mat4::IDENTITY;
-                        let uniform_bind_group =
-                            self.mesh_renderer.get_uniform_bind_group_with_source_props(
-                                &self.backend.queue,
-                                transform,
-                                op.opacity * op.source_props.opacity,
-                                op.source_props.flip_horizontal,
-                                op.source_props.flip_vertical,
-                                op.source_props.brightness,
-                                op.source_props.contrast,
-                                op.source_props.saturation,
-                                op.source_props.hue_shift,
-                            );
-                        let texture_bind_group =
-                            self.mesh_renderer.create_texture_bind_group(final_view);
-
+                        // --- Render Mesh (Warping) ---
                         {
+                            self.mesh_renderer.begin_frame();
+                            let (vertex_buffer, index_buffer, index_count) =
+                                self.mesh_buffer_cache.get_buffers(
+                                    &self.backend.device,
+                                    op.layer_part_id,
+                                    &op.mesh.to_mesh(),
+                                );
+
+                            let transform = glam::Mat4::IDENTITY;
+                            let uniform_bind_group =
+                                self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                                    &self.backend.queue,
+                                    transform,
+                                    op.opacity * op.source_props.opacity,
+                                    op.source_props.flip_horizontal,
+                                    op.source_props.flip_vertical,
+                                    op.source_props.brightness,
+                                    op.source_props.contrast,
+                                    op.source_props.saturation,
+                                    op.source_props.hue_shift,
+                                );
+                            let texture_bind_group =
+                                self.mesh_renderer.create_texture_bind_group(final_view);
+
                             let mut render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Mesh Render Pass"),
@@ -3395,7 +3534,7 @@ impl App {
                                         view: mesh_target_view_ref,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load,
+                                            load: wgpu::LoadOp::Load, // ACCUMULATE
                                             store: wgpu::StoreOp::Store,
                                         },
                                         depth_slice: None,
@@ -3414,162 +3553,124 @@ impl App {
                                 true,
                             );
                         }
+                    } else {
+                        // Log missing view?
                     }
+                } // End Loop
 
-                    // D. Post-Processing (Edge Blend / Color Calibration)
-                    if needs_post_processing {
-                        // Input for post-processing is the result of the mesh render
-                        let post_input_view = mesh_target_view_ref;
+                // D. Post-Processing
+                if needs_post_processing {
+                    let post_input_view = mesh_target_view_ref;
+                    let need_double_pass = use_edge_blend && use_color_calib;
+                    let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
 
-                        // Setup intermediate for EdgeBlend -> ColorCalib chain if both are active
-                        let need_double_pass = use_edge_blend && use_color_calib;
-                        let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
+                    if need_double_pass {
+                        let width = window_context.surface_config.width;
+                        let height = window_context.surface_config.height;
+                        // Optimization: reuse text logic from original... for brevity assume recreation or fetch
+                        let recreate = if let Some(tex) = self.output_temp_textures.get(&output_id)
+                        {
+                            tex.width() != width || tex.height() != height
+                        } else {
+                            true
+                        };
 
-                        if need_double_pass {
-                            let width = window_context.surface_config.width;
-                            let height = window_context.surface_config.height;
-                            let recreate =
-                                if let Some(tex) = self.output_temp_textures.get(&output_id) {
-                                    tex.width() != width || tex.height() != height
-                                } else {
-                                    true
-                                };
-
-                            if recreate {
-                                let texture =
-                                    self.backend
-                                        .device
-                                        .create_texture(&wgpu::TextureDescriptor {
-                                            label: Some(&format!(
-                                                "Output {} Blend Temp Texture",
-                                                output_id
-                                            )),
-                                            size: wgpu::Extent3d {
-                                                width,
-                                                height,
-                                                depth_or_array_layers: 1,
-                                            },
-                                            mip_level_count: 1,
-                                            sample_count: 1,
-                                            dimension: wgpu::TextureDimension::D2,
-                                            format: self.backend.surface_format(),
-                                            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                                                | wgpu::TextureUsages::TEXTURE_BINDING,
-                                            view_formats: &[],
-                                        });
-                                self.output_temp_textures.insert(output_id, texture);
-                            }
-                            blend_output_temp_view_opt = Some(
-                                self.output_temp_textures
-                                    .get(&output_id)
-                                    .unwrap()
-                                    .create_view(&wgpu::TextureViewDescriptor::default()),
-                            );
-                        }
-
-                        let config = output_config_opt.unwrap();
-
-                        if use_edge_blend {
-                            let renderer = self.edge_blend_renderer.as_ref().unwrap();
-                            // If Color Calib follows, render to BlendTemp. Else render to Surface.
-                            let target_view = if use_color_calib {
-                                blend_output_temp_view_opt.as_ref().unwrap()
-                            } else {
-                                &view
-                            };
-
-                            let bind_group = renderer.create_texture_bind_group(post_input_view);
-                            let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
-                            let uniform_bind_group =
-                                renderer.create_uniform_bind_group(&uniform_buffer);
-
-                            let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Edge Blend Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: target_view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                            store: wgpu::StoreOp::Store,
+                        if recreate {
+                            // Create tex... logic abbreviated but necessary
+                            let texture =
+                                self.backend
+                                    .device
+                                    .create_texture(&wgpu::TextureDescriptor {
+                                        label: Some("Blend Temp"),
+                                        size: wgpu::Extent3d {
+                                            width,
+                                            height,
+                                            depth_or_array_layers: 1,
                                         },
-                                        depth_slice: None,
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    occlusion_query_set: None,
-                                    timestamp_writes: None,
-                                });
-                            renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                                        mip_level_count: 1,
+                                        sample_count: 1,
+                                        dimension: wgpu::TextureDimension::D2,
+                                        format: self.backend.surface_format(),
+                                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                                            | wgpu::TextureUsages::TEXTURE_BINDING,
+                                        view_formats: &[],
+                                    });
+                            self.output_temp_textures.insert(output_id, texture);
                         }
-
-                        if use_color_calib {
-                            let renderer = self.color_calibration_renderer.as_ref().unwrap();
-                            // Input is BlendTemp (if Blend ran) or MeshOutput (if Blend didn't run)
-                            let input_view_for_cc = if use_edge_blend {
-                                blend_output_temp_view_opt.as_ref().unwrap()
-                            } else {
-                                post_input_view
-                            };
-
-                            // Output is always Surface
-                            let target_view = &view;
-
-                            let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
-                            let uniform_buffer =
-                                renderer.create_uniform_buffer(&config.color_calibration);
-                            let uniform_bind_group =
-                                renderer.create_uniform_bind_group(&uniform_buffer);
-
-                            let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Color Calibration Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: target_view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                        depth_slice: None,
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    occlusion_query_set: None,
-                                    timestamp_writes: None,
-                                });
-                            renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
-                        }
-                    }
-                } else {
-                    static MISSING_VIEW: std::sync::atomic::AtomicU64 =
-                        std::sync::atomic::AtomicU64::new(0);
-                    if MISSING_VIEW
-                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-                        .is_multiple_of(120)
-                    {
-                        tracing::warn!(
-                            "Render: No effective view for output {} (Texture logic failed)",
-                            output_id
+                        blend_output_temp_view_opt = Some(
+                            self.output_temp_textures
+                                .get(&output_id)
+                                .unwrap()
+                                .create_view(&wgpu::TextureViewDescriptor::default()),
                         );
                     }
-                }
-            } else {
-                // No op for this output - Clear to Black
-                {
-                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Clear Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                store: wgpu::StoreOp::Store,
-                            },
-                            depth_slice: None,
-                        })],
-                        depth_stencil_attachment: None,
-                        occlusion_query_set: None,
-                        timestamp_writes: None,
-                    });
+
+                    let config = output_config_opt.unwrap();
+
+                    if use_edge_blend {
+                        let renderer = self.edge_blend_renderer.as_ref().unwrap();
+                        let target_view = if use_color_calib {
+                            blend_output_temp_view_opt.as_ref().unwrap()
+                        } else {
+                            &view
+                        };
+                        let bind_group = renderer.create_texture_bind_group(post_input_view);
+                        let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
+                        let uniform_bind_group =
+                            renderer.create_uniform_bind_group(&uniform_buffer);
+
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Edge Blend Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
+
+                    if use_color_calib {
+                        let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                        let input_view_for_cc = if use_edge_blend {
+                            blend_output_temp_view_opt.as_ref().unwrap()
+                        } else {
+                            post_input_view
+                        };
+                        // Output is always Surface
+                        let target_view = &view;
+                        let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
+                        let uniform_buffer =
+                            renderer.create_uniform_buffer(&config.color_calibration);
+                        let uniform_bind_group =
+                            renderer.create_uniform_bind_group(&uniform_buffer);
+
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Color Calibration Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
                 }
             }
         }
@@ -3663,3 +3764,4 @@ fn main() -> Result<()> {
 
     Ok(())
 }
+// Force CI trigger

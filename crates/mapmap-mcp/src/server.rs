@@ -7,6 +7,29 @@ use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{error, info};
 
+/// Validate that a path is safe for file operations
+///
+/// Prevents:
+/// - Path traversal (.. components)
+/// - Absolute paths (restricts to working directory)
+fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
+    let path = PathBuf::from(path_str);
+
+    // Check for absolute path
+    if path.is_absolute() {
+        return Err("Absolute paths are not allowed".to_string());
+    }
+
+    // Check for path traversal components
+    for component in path.components() {
+        if matches!(component, std::path::Component::ParentDir) {
+            return Err("Path traversal (..) is not allowed".to_string());
+        }
+    }
+
+    Ok(path)
+}
+
 pub struct McpServer {
     // Optional OSC client (currently unused but will be used for OSC tools)
     #[allow(dead_code)]
@@ -768,15 +791,25 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    if let Some(sender) = &self.action_sender {
-                                        let _ = sender.send(crate::McpAction::SaveProject(
-                                            PathBuf::from(path_str),
-                                        ));
+                                    match validate_safe_path(path_str) {
+                                        Ok(path) => {
+                                            if let Some(sender) = &self.action_sender {
+                                                let _ = sender
+                                                    .send(crate::McpAction::SaveProject(path));
+                                            }
+                                            return Some(success_response(
+                                                id,
+                                                serde_json::json!({"status":"queued"}),
+                                            ));
+                                        }
+                                        Err(e) => {
+                                            return Some(error_response(
+                                                id,
+                                                -32602,
+                                                &format!("Invalid path: {}", e),
+                                            ));
+                                        }
                                     }
-                                    return Some(success_response(
-                                        id,
-                                        serde_json::json!({"status":"queued"}),
-                                    ));
                                 }
                             }
                         }
@@ -786,15 +819,25 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    if let Some(sender) = &self.action_sender {
-                                        let _ = sender.send(crate::McpAction::LoadProject(
-                                            PathBuf::from(path_str),
-                                        ));
+                                    match validate_safe_path(path_str) {
+                                        Ok(path) => {
+                                            if let Some(sender) = &self.action_sender {
+                                                let _ = sender
+                                                    .send(crate::McpAction::LoadProject(path));
+                                            }
+                                            return Some(success_response(
+                                                id,
+                                                serde_json::json!({"status":"queued"}),
+                                            ));
+                                        }
+                                        Err(e) => {
+                                            return Some(error_response(
+                                                id,
+                                                -32602,
+                                                &format!("Invalid path: {}", e),
+                                            ));
+                                        }
                                     }
-                                    return Some(success_response(
-                                        id,
-                                        serde_json::json!({"status":"queued"}),
-                                    ));
                                 }
                             }
                         }
@@ -1222,5 +1265,63 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("Sent OSC"));
+    }
+
+    #[tokio::test]
+    async fn test_security_path_traversal() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        // Test vulnerable path traversal
+        let save_req = json!({
+            "jsonrpc": "2.0",
+            "id": 99,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "../evil.txt"
+                }
+            }
+        });
+
+        let response = server.handle_request(&save_req.to_string()).await;
+        let resp = response.unwrap();
+
+        // Should fail now
+        assert!(resp.error.is_some(), "Should fail after fix (secure)");
+
+        let error = resp.error.unwrap();
+        assert!(error.message.contains("Invalid path"));
+        assert!(error.message.contains("Path traversal"));
+
+        // Verify NO action was sent
+        assert!(rx.try_recv().is_err());
+
+        // Test valid path
+        let valid_req = json!({
+            "jsonrpc": "2.0",
+            "id": 100,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "good_project.mapmap"
+                }
+            }
+        });
+
+        let valid_response = server.handle_request(&valid_req.to_string()).await;
+        let valid_resp = valid_response.unwrap();
+        assert!(valid_resp.error.is_none());
+        assert_eq!(valid_resp.result.unwrap()["status"], "queued");
+
+        // Verify valid action sent
+        let valid_action = rx.try_recv().unwrap();
+        if let McpAction::SaveProject(path) = valid_action {
+            assert_eq!(path.to_str().unwrap(), "good_project.mapmap");
+        } else {
+            panic!("Expected SaveProject action");
+        }
     }
 }

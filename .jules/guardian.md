@@ -13,3 +13,10 @@
 ## 2024-05-24 - [State Defaults]
 **Erkenntnis:** `AppState` default values for deep fields (like `EffectParameterAnimator`) were not verified, risking hidden initialization bugs.
 **Aktion:** Added `test_app_state_deep_defaults` to enforce correct initialization state.
+## 2024-05-24 - [State Persistence]
+**Erkenntnis:** `AppState` serialization tests were only checking a subset of fields, risking silent data loss for new features. Deep checking of default states revealed nested managers must also be verified. `dirty` flag exclusion must be explicitly tested to avoid false positive "unsaved changes" warnings.
+**Aktion:** Refactored `test_app_state_serialization_roundtrip` to use `assert_eq!` on the full struct (via `PartialEq`). Added specific test `test_dirty_flag_excluded` to guarantee transient flags are not persisted.
+
+## 2024-05-25 - [MIDI Parsing]
+**Erkenntnis:** `MidiMessage` parsing logic for PitchBend (14-bit reconstruction) and system messages (Start/Stop) was implemented but untested. This created a risk for hardware controllers relying on high-resolution input or transport controls.
+**Aktion:** Implemented `test_midi_message_parsing_extended` covering full 14-bit Pitch Bend reconstruction and all system realtime messages to ensure reliable hardware integration.

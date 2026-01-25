@@ -12,3 +12,13 @@
 **Vulnerability:** API keys were stored in plain text within the `AuthConfig` struct and serialized to configuration files. This exposed credentials to anyone with read access to the config or memory dumps.
 **Learning:** Configuration structs are often serialized directly. Adding security layers (like hashing) requires careful handling of serialization to maintain backward compatibility with legacy plaintext data. A custom deserializer can intelligently migrate legacy data.
 **Prevention:** Use SHA-256 hashing for storage of all secrets. Implement `deserialize_with` for `serde` to handle the migration from plaintext to hash transparently on load.
+
+## 2026-05-24 - Path Traversal in MCP Server
+**Vulnerability:** The Model Context Protocol (MCP) server allowed `project_save` and `project_load` commands to access arbitrary file paths (e.g., `../evil.txt`), potentially allowing an automated agent (or attacker) to overwrite sensitive system files or exfiltrate data.
+**Learning:** Agent interfaces that expose file system operations must be sandboxed. Standard `PathBuf` handling does not automatically prevent traversal (`..`).
+**Prevention:** Explicitly validate all user-supplied paths in agent tools. Reject paths containing `ParentDir` (`..`) components and enforce relative paths or specific sandboxed roots.
+
+## 2026-10-24 - Insecure Logic for Empty Allowed Origins
+**Vulnerability:** The web server treated an empty list of `allowed_origins` as "Allow All" (wildcard), intended as a permissive default. This meant that configurations intending to restrict access (by providing an empty list) inadvertently opened the API to all origins.
+**Learning:** "Empty means None" is the standard semantic expectation for security allowlists. "Empty means All" is a dangerous anti-pattern that leads to accidental exposure.
+**Prevention:** Treat empty allowlists as "Deny All". Require explicit `*` or `Any` markers for permissive modes. Ensure secure defaults (empty/deny) in configuration structs.
