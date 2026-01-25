@@ -1763,18 +1763,10 @@ impl App {
 
         self.output_assignments.clear();
 
-        // Get output definitions from the ACTIVE MODULE (or first module if none active)
-        let active_id = active_module_id.or_else(|| {
-            self.state
-                .module_manager
-                .list_modules()
-                .first()
-                .map(|m| m.id)
-        });
-
-        if let Some(id) = active_id {
-            if let Some(module) = self.state.module_manager.get_module(id) {
-                for part in &module.parts {
+        // 1. Iterate over ALL modules to collect required outputs
+        for module in self.state.module_manager.list_modules() {
+            if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
+                for part in &module_ref.parts {
                     match &part.part_type {
                         mapmap_core::module::ModulePartType::Output(output_type) => {
                             // Use part.id for consistency with render pipeline
