@@ -789,24 +789,24 @@ impl App {
                 }
             }
             winit::event::Event::AboutToWait => {
-                // --- Frame Limiter (Sleep-based, not early return) ---
+                // --- Non-blocking Frame Limiter ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
                 let cap_fps = if target_fps <= 0.0 { 60.0 } else { target_fps };
                 let frame_target = std::time::Duration::from_secs_f64(1.0 / cap_fps as f64);
                 let time_since_last = std::time::Instant::now().duration_since(self.last_update);
 
-                // Sleep to maintain frame rate (non-blocking for events)
+                // Skip frame if too early (non-blocking)
                 if time_since_last < frame_target {
-                    let sleep_duration = frame_target - time_since_last;
-                    // Use short spin-sleep for accuracy
-                    std::thread::sleep(sleep_duration);
+                    // Don't block - use Poll to immediately re-check
+                    elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+                    return Ok(());
                 }
 
                 // Always use Poll mode - VJ software needs continuous updates
                 elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
                 // --- Update State (Physics/Media) ---
-                let actual_dt = self.last_update.elapsed().as_secs_f32();
+                let actual_dt = time_since_last.as_secs_f32();
                 self.update(elwt, actual_dt);
                 self.last_update = std::time::Instant::now();
 
@@ -814,9 +814,7 @@ impl App {
                 #[cfg(feature = "midi")]
                 if let Some(handler) = &mut self.midi_handler {
                     while let Some(msg) = handler.poll_message() {
-                        // Pass to UI Overlay
                         self.ui_state.controller_overlay.process_midi(msg);
-                        // Pass to Module Canvas for MIDI Learn
                         self.ui_state.module_canvas.process_midi_message(msg);
                     }
                 }
@@ -825,29 +823,29 @@ impl App {
                 if self.state.dirty
                     && self.last_autosave.elapsed() >= std::time::Duration::from_secs(300)
                 {
-                    // Use data directory for autosave
                     let autosave_path = dirs::data_local_dir()
                         .unwrap_or_else(|| PathBuf::from("."))
                         .join("MapFlow")
                         .join("autosave.mflow");
-
-                    // Ensure directory exists
                     if let Some(parent) = autosave_path.parent() {
                         let _ = std::fs::create_dir_all(parent);
                     }
-
                     if let Err(e) = save_project(&self.state, &autosave_path) {
                         error!("Autosave failed: {}", e);
                     } else {
                         info!("Autosave successful to {:?}", autosave_path);
                         self.last_autosave = std::time::Instant::now();
-                        // Note: We don't clear dirty flag on autosave, only on explicit save
                     }
                 }
 
-                // Request redraw for all windows to trigger render
-                for window_context in self.window_manager.iter() {
-                    window_context.window.request_redraw();
+                // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
+                // This ensures output windows update immediately, not after event dispatch
+                let output_ids: Vec<u64> =
+                    self.window_manager.iter().map(|wc| wc.output_id).collect();
+                for output_id in output_ids {
+                    if let Err(e) = self.render(output_id) {
+                        error!("Render error on output {}: {}", output_id, e);
+                    }
                 }
 
                 // Process audio
@@ -3251,12 +3249,11 @@ impl App {
                 .collect();
 
             // Debug: Log number of ops per output
-            if !target_ops.is_empty() {
-                tracing::debug!(
-                    "Output {}: Rendering {} layers (multi-output: {})",
+            if target_ops.len() > 1 {
+                tracing::info!(
+                    "Multi-Output active: Output {} rendering {} layers",
                     output_id,
-                    target_ops.len(),
-                    target_ops.len() > 1
+                    target_ops.len()
                 );
             }
 
