@@ -265,4 +265,123 @@ mod tests {
         let msg = MidiMessage::Clock;
         assert_eq!(msg.to_bytes(), vec![0xF8]);
     }
+
+    #[test]
+    fn test_midi_message_parsing_extended() {
+        // Note Off Explicit (0x80)
+        let msg = MidiMessage::from_bytes(&[0x80, 60, 0]);
+        assert_eq!(
+            msg,
+            Some(MidiMessage::NoteOff {
+                channel: 0,
+                note: 60
+            })
+        );
+
+        // Program Change (0xC0)
+        let msg = MidiMessage::from_bytes(&[0xC0, 10]);
+        assert_eq!(
+            msg,
+            Some(MidiMessage::ProgramChange {
+                channel: 0,
+                program: 10
+            })
+        );
+
+        // Pitch Bend (0xE0)
+        // LSB = 0x00, MSB = 0x40 (center = 8192)
+        // 0x40 << 7 = 0x2000 = 8192
+        let msg = MidiMessage::from_bytes(&[0xE0, 0x00, 0x40]);
+        assert_eq!(
+            msg,
+            Some(MidiMessage::PitchBend {
+                channel: 0,
+                value: 8192
+            })
+        );
+
+        // Pitch Bend Max
+        // LSB = 0x7F, MSB = 0x7F
+        // 0x7F | (0x7F << 7) = 127 | 16256 = 16383
+        let msg = MidiMessage::from_bytes(&[0xE0, 0x7F, 0x7F]);
+        assert_eq!(
+            msg,
+            Some(MidiMessage::PitchBend {
+                channel: 0,
+                value: 16383
+            })
+        );
+
+        // Start
+        let msg = MidiMessage::from_bytes(&[0xFA]);
+        assert_eq!(msg, Some(MidiMessage::Start));
+
+        // Stop
+        let msg = MidiMessage::from_bytes(&[0xFC]);
+        assert_eq!(msg, Some(MidiMessage::Stop));
+
+        // Continue
+        let msg = MidiMessage::from_bytes(&[0xFB]);
+        assert_eq!(msg, Some(MidiMessage::Continue));
+    }
+
+    #[test]
+    fn test_midi_matches() {
+        // Note On Matches
+        let n1 = MidiMessage::NoteOn {
+            channel: 1,
+            note: 60,
+            velocity: 100,
+        };
+        let n2 = MidiMessage::NoteOn {
+            channel: 1,
+            note: 60,
+            velocity: 50,
+        }; // Different velocity
+        let n3 = MidiMessage::NoteOn {
+            channel: 1,
+            note: 61,
+            velocity: 100,
+        }; // Different note
+
+        assert!(n1.matches(&n2));
+        assert!(!n1.matches(&n3));
+
+        // CC Matches
+        let c1 = MidiMessage::ControlChange {
+            channel: 2,
+            controller: 10,
+            value: 0,
+        };
+        let c2 = MidiMessage::ControlChange {
+            channel: 2,
+            controller: 10,
+            value: 127,
+        };
+        let c3 = MidiMessage::ControlChange {
+            channel: 2,
+            controller: 11,
+            value: 0,
+        };
+
+        assert!(c1.matches(&c2));
+        assert!(!c1.matches(&c3));
+
+        // Pitch Bend Matches (channel only)
+        let p1 = MidiMessage::PitchBend {
+            channel: 3,
+            value: 0,
+        };
+        let p2 = MidiMessage::PitchBend {
+            channel: 3,
+            value: 16383,
+        };
+        let p3 = MidiMessage::PitchBend {
+            channel: 4,
+            value: 0,
+        };
+
+        assert!(p1.matches(&p2));
+        assert!(!p1.matches(&p3));
+    }
 }
