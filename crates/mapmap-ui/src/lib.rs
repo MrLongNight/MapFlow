@@ -9,6 +9,8 @@
 //! - Effect Chain Panel (Phase 3)
 //! - Controller Overlay Panel (MIDI visualization)
 
+#![warn(missing_docs)]
+
 // Phase 6: Advanced Authoring UI (egui-based)
 pub mod asset_manager;
 pub mod assignment_panel;
