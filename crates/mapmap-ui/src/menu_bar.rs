@@ -485,7 +485,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         ui.label(format!("RAM:{:.0}MB", ram));
 
                         let gpu_color = traffic_light(gpu, 70.0, 90.0);
-                        ui.colored_label(gpu_color, format!("GPU:{:.0}%", gpu));
+                        ui.colored_label(gpu_color, format!("Load:{:.0}%", gpu));
 
                         let cpu_color = traffic_light(cpu, 70.0, 90.0);
                         ui.colored_label(cpu_color, format!("CPU:{:.0}%", cpu));

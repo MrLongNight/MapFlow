@@ -732,6 +732,20 @@ impl App {
                             error!("Render error on output {}: {}", output_id, e);
                         }
                     }
+                    // Handle keyboard input for Shortcut triggers
+                    WindowEvent::KeyboardInput { event, .. } => {
+                        if let winit::keyboard::PhysicalKey::Code(key_code) = event.physical_key {
+                            let key_name = format!("{:?}", key_code);
+                            match event.state {
+                                winit::event::ElementState::Pressed => {
+                                    self.ui_state.active_keys.insert(key_name);
+                                }
+                                winit::event::ElementState::Released => {
+                                    self.ui_state.active_keys.remove(&key_name);
+                                }
+                            }
+                        }
+                    }
                     _ => (),
                 }
             }
@@ -842,6 +856,8 @@ impl App {
 
                 // --- MODULE EVALUATION ---
                 self.module_evaluator.update_audio(&analysis_v2);
+                self.module_evaluator
+                    .update_keys(&self.ui_state.active_keys);
 
                 // Process pending playback commands from UI
                 for (part_id, cmd) in self

@@ -465,6 +465,8 @@ pub struct ModuleEvaluator {
     part_index_cache: HashMap<ModulePartId, usize>,
     /// Cached map from Part ID to list of indices in `module.connections` (incoming connections)
     conn_index_cache: HashMap<ModulePartId, Vec<usize>>,
+    /// Currently active keyboard keys (for Shortcut triggers)
+    active_keys: std::collections::HashSet<String>,
 }
 
 impl Default for ModuleEvaluator {
@@ -483,6 +485,7 @@ impl ModuleEvaluator {
             cached_result: ModuleEvalResult::default(),
             part_index_cache: HashMap::new(),
             conn_index_cache: HashMap::new(),
+            active_keys: std::collections::HashSet::new(),
         }
     }
 
@@ -494,6 +497,11 @@ impl ModuleEvaluator {
         self.audio_trigger_data.beat_detected = analysis.beat_detected;
         self.audio_trigger_data.beat_strength = analysis.beat_strength;
         self.audio_trigger_data.bpm = analysis.tempo_bpm;
+    }
+
+    /// Update active keyboard keys for Shortcut triggers
+    pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) {
+        self.active_keys = keys.clone();
     }
 
     /// Evaluate a module for one frame
@@ -526,25 +534,28 @@ impl ModuleEvaluator {
         // keeping it as it was but maybe less frequently? leaving as is per instructions to preserve functionality)
 
         // Step 1: Evaluate all trigger nodes
-        for part in &module.parts {
-            if let ModulePartType::Trigger(trigger_type) = &part.part_type {
-                let values = self
-                    .cached_result
-                    .trigger_values
-                    .entry(part.id)
-                    .or_default();
-                // Ensure vector is empty (it should be due to clear(), but for new entries it's new)
-                // If it was an existing entry, clear() loop handled it.
-                // But wait, if clear() loop cleared *all* values, then they are empty.
-                // However, we need to be careful not to append to existing data if logic was different.
-                // clear() handles it.
-                Self::compute_trigger_output(
-                    trigger_type,
-                    &self.audio_trigger_data,
-                    self.start_time,
-                    values,
-                );
-            }
+        // Collect (part_id, trigger_type clone) to avoid borrow issues
+        let triggers_to_eval: Vec<_> = module
+            .parts
+            .iter()
+            .filter_map(|part| {
+                if let ModulePartType::Trigger(trigger_type) = &part.part_type {
+                    Some((part.id, trigger_type.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for (part_id, trigger_type) in triggers_to_eval {
+            let mut values = Vec::new();
+            self.compute_trigger_output(
+                &trigger_type,
+                &self.audio_trigger_data,
+                self.start_time,
+                &mut values,
+            );
+            self.cached_result.trigger_values.insert(part_id, values);
         }
 
         // Step 2: First propagation (Triggers -> Nodes)
@@ -1019,6 +1030,7 @@ impl ModuleEvaluator {
 
     /// Evaluate a trigger node and write output values to the provided buffer
     fn compute_trigger_output(
+        &self,
         trigger_type: &TriggerType,
         audio_data: &AudioTriggerData,
         start_time: Instant,
@@ -1115,8 +1127,16 @@ impl ModuleEvaluator {
             TriggerType::Osc { .. } => {
                 output.push(0.0);
             }
-            TriggerType::Shortcut { .. } => {
-                output.push(0.0);
+            TriggerType::Shortcut {
+                key_code,
+                modifiers,
+            } => {
+                // Check if the key is currently pressed
+                // key_code is stored as the winit KeyCode debug format (e.g., "KeyA")
+                let is_pressed = self.active_keys.contains(key_code);
+                // TODO: Check modifiers (Ctrl, Shift, Alt) if needed
+                let _ = modifiers; // Suppress unused warning for now
+                output.push(if is_pressed { 1.0 } else { 0.0 });
             }
         }
     }
@@ -1241,7 +1261,8 @@ mod tests_logic {
     fn test_compute_trigger_output_beat() {
         let mut output = Vec::new();
         let data_true = create_audio_data(true);
-        ModuleEvaluator::compute_trigger_output(
+        let evaluator = ModuleEvaluator::new();
+        evaluator.compute_trigger_output(
             &TriggerType::Beat,
             &data_true,
             Instant::now(),
@@ -1251,7 +1272,7 @@ mod tests_logic {
 
         output.clear();
         let data_false = create_audio_data(false);
-        ModuleEvaluator::compute_trigger_output(
+        evaluator.compute_trigger_output(
             &TriggerType::Beat,
             &data_false,
             Instant::now(),
@@ -1273,7 +1294,8 @@ mod tests_logic {
             inverted_outputs: vec!["Bass Out".to_string()].into_iter().collect(),
         };
 
-        ModuleEvaluator::compute_trigger_output(
+        let evaluator = ModuleEvaluator::new();
+        evaluator.compute_trigger_output(
             &TriggerType::AudioFFT {
                 band: AudioBand::Bass,
                 threshold: 0.5,
@@ -1312,7 +1334,8 @@ mod tests_logic {
         // Emulate 50ms elapsed
         let start_past_50 = Instant::now() - Duration::from_millis(50);
         output.clear();
-        ModuleEvaluator::compute_trigger_output(
+        let evaluator = ModuleEvaluator::new();
+        evaluator.compute_trigger_output(
             &TriggerType::Fixed {
                 interval_ms: 1000,
                 offset_ms: 0,
@@ -1326,7 +1349,7 @@ mod tests_logic {
         // 150ms
         let start_past_150 = Instant::now() - Duration::from_millis(150);
         output.clear();
-        ModuleEvaluator::compute_trigger_output(
+        evaluator.compute_trigger_output(
             &TriggerType::Fixed {
                 interval_ms: 1000,
                 offset_ms: 0,
