@@ -904,7 +904,8 @@ impl App {
                                         match mapmap_media::open_path(path) {
                                             Ok(player) => {
                                                 info!("Successfully created player for '{}'", path);
-                                                self.media_players.insert(part_id, player);
+                                                self.media_players
+                                                    .insert(part_id, (path.clone(), player));
                                             }
                                             Err(e) => {
                                                 error!("Failed to load media '{}': {}", path, e);
@@ -920,7 +921,7 @@ impl App {
                         }
                     }
 
-                    if let Some(player) = self.media_players.get_mut(&part_id) {
+                    if let Some((_, player)) = self.media_players.get_mut(&part_id) {
                         match cmd {
                             mapmap_ui::MediaPlaybackCommand::Play => {
                                 let _ = player.command_sender().send(PlaybackCommand::Play);
@@ -987,7 +988,8 @@ impl App {
                                                 let _ = player
                                                     .command_sender()
                                                     .send(PlaybackCommand::Play);
-                                                self.media_players.insert(part_id, player);
+                                                self.media_players
+                                                    .insert(part_id, (path.clone(), player));
                                             }
                                             Err(e) => {
                                                 error!("Failed to reload media '{}': {}", path, e);
@@ -1945,7 +1947,7 @@ impl App {
                                             part.id, e
                                         );
                                     }
-                                    e.insert(player);
+                                    e.insert((path.clone(), player));
                                 }
                                 Err(e) => {
                                     error!(
@@ -1977,7 +1979,7 @@ impl App {
         let queue = &self.backend.queue;
         let ui_state = &mut self.ui_state;
 
-        for (id, player) in &mut self.media_players {
+        for (id, (_, player)) in &mut self.media_players {
             // Update player logic
             if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
                 let tex_name = format!("part_{}", id);
