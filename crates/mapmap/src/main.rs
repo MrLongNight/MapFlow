@@ -136,8 +136,8 @@ struct App {
     /// Shader Graph Manager (Runtime)
     #[allow(dead_code)]
     shader_graph_manager: mapmap_render::ShaderGraphManager,
-    /// Output assignments (OutputID -> Texture Name)
-    output_assignments: std::collections::HashMap<u64, String>,
+    /// Output assignments (OutputID -> List of Texture Names)
+    output_assignments: std::collections::HashMap<u64, Vec<String>>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
     /// Render Operations from Module Evaluator
@@ -810,6 +810,10 @@ impl App {
 
                 // Frame limiter passed, continue with frame processing
 
+                // --- Update State (Physics/Media) ---
+                self.update(time_since_last.as_secs_f32());
+                self.last_update = std::time::Instant::now();
+
                 // Poll MIDI
                 #[cfg(feature = "midi")]
                 if let Some(handler) = &mut self.midi_handler {
@@ -1221,9 +1225,15 @@ impl App {
                             if let Some(source_id) = op.source_part_id {
                                 let tex_name = format!("part_{}", source_id);
                                 // Insert with internal projector ID (for UI preview panel)
-                                self.output_assignments.insert(*id, tex_name.clone());
+                                self.output_assignments
+                                    .entry(*id)
+                                    .or_default()
+                                    .push(tex_name.clone());
                                 // Also insert with output_part_id (for window rendering)
-                                self.output_assignments.insert(op.output_part_id, tex_name);
+                                self.output_assignments
+                                    .entry(op.output_part_id)
+                                    .or_default()
+                                    .push(tex_name);
                             }
                         }
                     }
@@ -1699,6 +1709,8 @@ impl App {
         let mut active_window_ids = std::collections::HashSet::new();
         let mut active_sender_ids = std::collections::HashSet::new();
 
+        self.output_assignments.clear();
+
         // 1. Process RenderOps
         for op in render_ops {
             let output_id = op.output_part_id;
@@ -1749,8 +1761,7 @@ impl App {
                         active_window_ids.insert(preview_id);
 
                         // Ensure render assignment exists for preview
-                        self.output_assignments.insert(
-                            preview_id,
+                        self.output_assignments.entry(preview_id).or_default().push(
                             op.source_part_id
                                 .map(|id| format!("part_{}", id))
                                 .unwrap_or_default(),
@@ -2122,24 +2133,27 @@ impl App {
         // Register Output Preview Textures
         let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
             std::collections::HashMap::new();
-        for (output_id, tex_name) in &self.output_assignments {
-            if self.texture_pool.has_texture(tex_name) {
-                let tex_view = self.texture_pool.get_view(tex_name);
+        for (output_id, tex_names) in &self.output_assignments {
+            // Use the last assigned texture for preview (topmost layer)
+            if let Some(tex_name) = tex_names.last() {
+                if self.texture_pool.has_texture(tex_name) {
+                    let tex_view = self.texture_pool.get_view(tex_name);
 
-                let texture_id = if let Some(&cached_id) = self.output_preview_cache.get(output_id)
-                {
-                    cached_id
-                } else {
-                    let new_id = self.egui_renderer.register_native_texture(
-                        &self.backend.device,
-                        &tex_view,
-                        wgpu::FilterMode::Linear,
-                    );
-                    self.output_preview_cache.insert(*output_id, new_id);
-                    new_id
-                };
+                    let texture_id =
+                        if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
+                            cached_id
+                        } else {
+                            let new_id = self.egui_renderer.register_native_texture(
+                                &self.backend.device,
+                                &tex_view,
+                                wgpu::FilterMode::Linear,
+                            );
+                            self.output_preview_cache.insert(*output_id, new_id);
+                            new_id
+                        };
 
-                current_output_previews.insert(*output_id, texture_id);
+                    current_output_previews.insert(*output_id, texture_id);
+                }
             }
         }
 
@@ -2153,23 +2167,24 @@ impl App {
         });
     }
 
-    /// Renders a single frame for a given output.
-    fn render(&mut self, output_id: OutputId) -> Result<()> {
-        let now = std::time::Instant::now();
-        let delta_time = now.duration_since(self.last_update).as_secs_f32();
-        self.last_update = now;
-
+    /// Global update loop (physics/logic), independent of render rate per window.
+    fn update(&mut self, dt: f32) {
         // --- Media Player Update ---
         self.sync_media_players();
-        self.update_media_players(delta_time);
+        self.update_media_players(dt);
 
         // --- Effect Animator Update ---
-        // Moved from about_to_wait to ensure consistent delta_time with rendering
-        let _param_updates = self.state.effect_animator.update(delta_time as f64);
-        // TODO: Apply param_updates to renderer
+        let _param_updates = self.state.effect_animator.update(dt as f64);
 
-        // Calculate FPS with smoothing (rolling average of last 60 frames)
-        let frame_time_ms = delta_time * 1000.0;
+        // --- Oscillator Update ---
+        if let Some(renderer) = &mut self.oscillator_renderer {
+            if self.state.oscillator_config.enabled {
+                renderer.update(dt, &self.state.oscillator_config);
+            }
+        }
+
+        // --- FPS Calculation ---
+        let frame_time_ms = dt * 1000.0;
         self.fps_samples.push_back(frame_time_ms);
         if self.fps_samples.len() > 60 {
             self.fps_samples.pop_front();
@@ -2184,13 +2199,8 @@ impl App {
                 0.0
             };
         }
-
-        if let Some(renderer) = &mut self.oscillator_renderer {
-            if self.state.oscillator_config.enabled {
-                renderer.update(delta_time, &self.state.oscillator_config);
-            }
-        }
-
+    }
+    fn render(&mut self, output_id: OutputId) -> Result<()> {
         if output_id == 0 {
             // Sync Texture Previews for Module Canvas
             self.prepare_texture_previews();
@@ -2653,7 +2663,7 @@ impl App {
                                                                 id: *id,
                                                                 name: name.clone(),
                                                                 show_in_panel: *show_in_preview_panel,
-                                                                texture_name: self.output_assignments.get(id).cloned(),
+                                                                texture_name: self.output_assignments.get(id).and_then(|v| v.last().cloned()),
                                                                 texture_id: self.output_preview_cache.get(id).copied(),
                                                             })
                                                         }
@@ -3180,239 +3190,216 @@ impl App {
         } else {
             // === Node-Based Rendering Pipeline ===
 
-            // 1. Find the RenderOp for this output (use output_part_id, not Projector id)
-            let target_op = self
+            // 1. Find ALL RenderOps for this output to support composition
+            let target_ops: Vec<&mapmap_core::module_eval::RenderOp> = self
                 .render_ops
                 .iter()
-                .find(|op| op.output_part_id == output_id);
+                .filter(|op| op.output_part_id == output_id)
+                .collect();
 
-            if let Some(op) = target_op {
-                // Determine source texture view
-                let owned_source_view = if let Some(src_id) = op.source_part_id {
-                    let tex_name = format!("part_{}", src_id);
-                    if self.texture_pool.has_texture(&tex_name) {
-                        Some(self.texture_pool.get_view(&tex_name))
+            if target_ops.is_empty() {
+                // No op for this output - Clear to Black
+                let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Clear Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+            } else {
+                // Shared Configuration for Output
+                let output_config_opt = self.state.output_manager.get_output(output_id);
+                let use_edge_blend =
+                    output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+                let use_color_calib =
+                    output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+                let needs_post_processing = use_edge_blend || use_color_calib;
+
+                // A. Prepare Mesh Target
+                let mesh_target_view_ref;
+                let mesh_output_tex_name = &self.layer_ping_pong[1];
+                let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> = None;
+
+                if needs_post_processing {
+                    let width = window_context.surface_config.width;
+                    let height = window_context.surface_config.height;
+                    self.texture_pool
+                        .resize_if_needed(mesh_output_tex_name, width, height);
+                    _mesh_intermediate_view =
+                        Some(self.texture_pool.get_view(mesh_output_tex_name));
+                    mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
+                } else {
+                    mesh_target_view_ref = &view;
+                }
+
+                // B. Clear Mesh Target (Once per frame, before accumulation)
+                {
+                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Mesh Target Clear Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: mesh_target_view_ref,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+                }
+
+                // C. Process and Render Each Op (Accumulate)
+                for op in target_ops {
+                    // Determine source texture view
+                    let owned_source_view = if let Some(src_id) = op.source_part_id {
+                        let tex_name = format!("part_{}", src_id);
+                        if self.texture_pool.has_texture(&tex_name) {
+                            Some(self.texture_pool.get_view(&tex_name))
+                        } else {
+                            None
+                        }
                     } else {
                         None
-                    }
-                } else {
-                    None
-                };
-                let source_view_ref = owned_source_view.as_deref();
-                let effective_view = source_view_ref.or(self.dummy_view.as_ref());
+                    };
+                    let source_view_ref = owned_source_view.as_deref();
+                    let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
-                if let Some(src_view) = effective_view {
-                    // --- 1. Effect Chain Processing (Common) ---
-                    let mut final_view = src_view;
-                    let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
+                    if let Some(src_view) = effective_view {
+                        // --- Effect Chain Processing ---
+                        let mut final_view = src_view;
+                        let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
-                    if !op.effects.is_empty() {
-                        let time = self.start_time.elapsed().as_secs_f32();
-                        let mut chain = mapmap_core::EffectChain::new();
+                        if !op.effects.is_empty() {
+                            let time = self.start_time.elapsed().as_secs_f32();
+                            let mut chain = mapmap_core::EffectChain::new();
 
-                        for modulizer in &op.effects {
-                            if let mapmap_core::module::ModulizerType::Effect {
-                                effect_type: mod_effect,
-                                params,
-                            } = modulizer
-                            {
-                                let core_effect = match mod_effect {
-                                    mapmap_core::module::EffectType::Blur => {
-                                        Some(mapmap_core::effects::EffectType::Blur)
-                                    }
-                                    mapmap_core::module::EffectType::Invert => {
-                                        Some(mapmap_core::effects::EffectType::Invert)
-                                    }
-                                    mapmap_core::module::EffectType::Pixelate => {
-                                        Some(mapmap_core::effects::EffectType::Pixelate)
-                                    }
-                                    mapmap_core::module::EffectType::Brightness
-                                    | mapmap_core::module::EffectType::Contrast
-                                    | mapmap_core::module::EffectType::Saturation
-                                    | mapmap_core::module::EffectType::Colorize => {
-                                        Some(mapmap_core::effects::EffectType::ColorAdjust)
-                                    }
-                                    mapmap_core::module::EffectType::HueShift => {
-                                        Some(mapmap_core::effects::EffectType::HueShift)
-                                    }
-                                    mapmap_core::module::EffectType::ChromaticAberration
-                                    | mapmap_core::module::EffectType::RgbSplit => {
-                                        Some(mapmap_core::effects::EffectType::ChromaticAberration)
-                                    }
-                                    mapmap_core::module::EffectType::EdgeDetect => {
-                                        Some(mapmap_core::effects::EffectType::EdgeDetect)
-                                    }
-                                    mapmap_core::module::EffectType::FilmGrain
-                                    | mapmap_core::module::EffectType::VHS => {
-                                        Some(mapmap_core::effects::EffectType::FilmGrain)
-                                    }
-                                    mapmap_core::module::EffectType::Vignette => {
-                                        Some(mapmap_core::effects::EffectType::Vignette)
-                                    }
-                                    mapmap_core::module::EffectType::Kaleidoscope => {
-                                        Some(mapmap_core::effects::EffectType::Kaleidoscope)
-                                    }
-                                    // Not yet implemented in core renderer
-                                    mapmap_core::module::EffectType::Sharpen
-                                    | mapmap_core::module::EffectType::Threshold
-                                    | mapmap_core::module::EffectType::Spiral
-                                    | mapmap_core::module::EffectType::Pinch
-                                    | mapmap_core::module::EffectType::Halftone
-                                    | mapmap_core::module::EffectType::Posterize => {
-                                        tracing::warn!(
-                                            "Effect {:?} not yet implemented in renderer",
-                                            mod_effect
-                                        );
-                                        None
-                                    }
-                                    // Newly implemented effects
-                                    mapmap_core::module::EffectType::Wave => {
-                                        Some(mapmap_core::effects::EffectType::Wave)
-                                    }
-                                    mapmap_core::module::EffectType::Glitch => {
-                                        Some(mapmap_core::effects::EffectType::Glitch)
-                                    }
-                                    mapmap_core::module::EffectType::Mirror => {
-                                        Some(mapmap_core::effects::EffectType::Mirror)
-                                    }
-                                };
-                                if let Some(et) = core_effect {
-                                    let effect_id = chain.add_effect(et);
-                                    if let Some(effect) = chain.get_effect_mut(effect_id) {
-                                        effect.parameters = params.clone();
+                            for modulizer in &op.effects {
+                                if let mapmap_core::module::ModulizerType::Effect {
+                                    effect_type: mod_effect,
+                                    params,
+                                } = modulizer
+                                {
+                                    let core_effect = match mod_effect {
+                                        mapmap_core::module::EffectType::Blur => {
+                                            Some(mapmap_core::effects::EffectType::Blur)
+                                        }
+                                        mapmap_core::module::EffectType::Invert => {
+                                            Some(mapmap_core::effects::EffectType::Invert)
+                                        }
+                                        mapmap_core::module::EffectType::Pixelate => {
+                                            Some(mapmap_core::effects::EffectType::Pixelate)
+                                        }
+                                        mapmap_core::module::EffectType::Brightness
+                                        | mapmap_core::module::EffectType::Contrast
+                                        | mapmap_core::module::EffectType::Saturation
+                                        | mapmap_core::module::EffectType::Colorize => {
+                                            Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                        }
+                                        mapmap_core::module::EffectType::HueShift => {
+                                            Some(mapmap_core::effects::EffectType::HueShift)
+                                        }
+                                        mapmap_core::module::EffectType::ChromaticAberration
+                                        | mapmap_core::module::EffectType::RgbSplit => Some(
+                                            mapmap_core::effects::EffectType::ChromaticAberration,
+                                        ),
+                                        mapmap_core::module::EffectType::EdgeDetect => {
+                                            Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                        }
+                                        mapmap_core::module::EffectType::FilmGrain
+                                        | mapmap_core::module::EffectType::VHS => {
+                                            Some(mapmap_core::effects::EffectType::FilmGrain)
+                                        }
+                                        mapmap_core::module::EffectType::Vignette => {
+                                            Some(mapmap_core::effects::EffectType::Vignette)
+                                        }
+                                        mapmap_core::module::EffectType::Kaleidoscope => {
+                                            Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                        }
+                                        mapmap_core::module::EffectType::Wave => {
+                                            Some(mapmap_core::effects::EffectType::Wave)
+                                        }
+                                        mapmap_core::module::EffectType::Glitch => {
+                                            Some(mapmap_core::effects::EffectType::Glitch)
+                                        }
+                                        mapmap_core::module::EffectType::Mirror => {
+                                            Some(mapmap_core::effects::EffectType::Mirror)
+                                        }
+                                        _ => {
+                                            tracing::warn!(
+                                                "Effect {:?} not implemented",
+                                                mod_effect
+                                            );
+                                            None
+                                        }
+                                    };
+                                    if let Some(et) = core_effect {
+                                        let effect_id = chain.add_effect(et);
+                                        if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                            effect.parameters = params.clone();
+                                        }
                                     }
                                 }
                             }
+
+                            if chain.enabled_effects().count() > 0 {
+                                let target_tex_name = &self.layer_ping_pong[0];
+                                let (w, h) = (
+                                    window_context.surface_config.width,
+                                    window_context.surface_config.height,
+                                );
+                                self.texture_pool.resize_if_needed(target_tex_name, w, h);
+                                let target_view = self.texture_pool.get_view(target_tex_name);
+                                self.effect_chain_renderer.apply_chain(
+                                    &mut encoder,
+                                    src_view,
+                                    &target_view,
+                                    &chain,
+                                    time,
+                                    w,
+                                    h,
+                                );
+                                _temp_view_holder = Some(target_view);
+                                final_view = _temp_view_holder.as_ref().unwrap();
+                            }
                         }
 
-                        if chain.enabled_effects().count() > 0 {
-                            let target_tex_name = &self.layer_ping_pong[0];
-                            let (w, h) = (
-                                window_context.surface_config.width,
-                                window_context.surface_config.height,
-                            );
-                            self.texture_pool.resize_if_needed(target_tex_name, w, h);
-                            let target_view = self.texture_pool.get_view(target_tex_name);
-                            self.effect_chain_renderer.apply_chain(
-                                &mut encoder,
-                                src_view,
-                                &target_view,
-                                &chain,
-                                time,
-                                w,
-                                h,
-                            );
-                            _temp_view_holder = Some(target_view);
-                            final_view = _temp_view_holder.as_ref().unwrap();
-                        }
-                    }
-
-                    // --- 2. Combined Mesh & Output Processing Pipeline ---
-                    // Pipeline: Source -> [Mesh Warp] -> (Intermediate) -> [Edge Blend/Color] -> Surface
-
-                    let output_config_opt = self.state.output_manager.get_output(output_id);
-                    let use_edge_blend =
-                        output_config_opt.is_some() && self.edge_blend_renderer.is_some();
-                    let use_color_calib =
-                        output_config_opt.is_some() && self.color_calibration_renderer.is_some();
-
-                    let needs_post_processing = use_edge_blend || use_color_calib;
-
-                    // A. Prepare Mesh Target
-                    // If we need post-processing (Edge Blend/Color), Mesh writes to PingPong1.
-                    // Otherwise, Mesh writes directly to the Surface.
-                    let mesh_target_view_ref;
-                    let mesh_output_tex_name = &self.layer_ping_pong[1]; // Use secondary ping-pong for mesh output
-
-                    // Scope to keep view borrow short
-                    let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> =
-                        None;
-
-                    if needs_post_processing {
-                        let width = window_context.surface_config.width;
-                        let height = window_context.surface_config.height;
-
-                        // Resize intermediate texture to match output resolution
-                        self.texture_pool
-                            .resize_if_needed(mesh_output_tex_name, width, height);
-
-                        _mesh_intermediate_view =
-                            Some(self.texture_pool.get_view(mesh_output_tex_name));
-                        mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
-                    } else {
-                        mesh_target_view_ref = &view;
-                    }
-
-                    // B. Clear Mesh Target
-                    {
-                        let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: Some("Mesh Target Clear Pass"),
-                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: &view,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                                        r: 0.0,
-                                        g: 0.0,
-                                        b: 0.0,
-                                        a: 1.0,
-                                    }),
-                                    store: wgpu::StoreOp::Store,
-                                },
-                                depth_slice: None,
-                            })],
-                            depth_stencil_attachment: None,
-                            occlusion_query_set: None,
-                            timestamp_writes: None,
-                        });
-                    }
-
-                    // C. Render Mesh (Warping)
-                    {
-                        self.mesh_renderer.begin_frame();
-                        let (vertex_buffer, index_buffer, index_count) =
-                            self.mesh_buffer_cache.get_buffers(
-                                &self.backend.device,
-                                op.layer_part_id,
-                                &op.mesh.to_mesh(),
-                            );
-
-                        // LOGGING: Check mesh and opacity (ROBUST)
-                        static DRAW_COUNT: std::sync::atomic::AtomicU64 =
-                            std::sync::atomic::AtomicU64::new(0);
-                        let count = DRAW_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        if count.is_multiple_of(120) {
-                            info!("Render: Drawing Mesh for output {}", output_id);
-                            info!("  -> index_count: {}", index_count);
-                            info!("  -> opacity: {}", op.opacity);
-                            info!("  -> layer_part_id: {}", op.layer_part_id);
-                            info!(
-                                "  -> pipeline: mesh -> {}",
-                                if needs_post_processing {
-                                    "post-process"
-                                } else {
-                                    "surface"
-                                }
-                            );
-                        }
-
-                        let transform = glam::Mat4::IDENTITY;
-                        let uniform_bind_group =
-                            self.mesh_renderer.get_uniform_bind_group_with_source_props(
-                                &self.backend.queue,
-                                transform,
-                                op.opacity * op.source_props.opacity,
-                                op.source_props.flip_horizontal,
-                                op.source_props.flip_vertical,
-                                op.source_props.brightness,
-                                op.source_props.contrast,
-                                op.source_props.saturation,
-                                op.source_props.hue_shift,
-                            );
-                        let texture_bind_group =
-                            self.mesh_renderer.create_texture_bind_group(final_view);
-
+                        // --- Render Mesh (Warping) ---
                         {
+                            self.mesh_renderer.begin_frame();
+                            let (vertex_buffer, index_buffer, index_count) =
+                                self.mesh_buffer_cache.get_buffers(
+                                    &self.backend.device,
+                                    op.layer_part_id,
+                                    &op.mesh.to_mesh(),
+                                );
+
+                            let transform = glam::Mat4::IDENTITY;
+                            let uniform_bind_group =
+                                self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                                    &self.backend.queue,
+                                    transform,
+                                    op.opacity * op.source_props.opacity,
+                                    op.source_props.flip_horizontal,
+                                    op.source_props.flip_vertical,
+                                    op.source_props.brightness,
+                                    op.source_props.contrast,
+                                    op.source_props.saturation,
+                                    op.source_props.hue_shift,
+                                );
+                            let texture_bind_group =
+                                self.mesh_renderer.create_texture_bind_group(final_view);
+
                             let mut render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Mesh Render Pass"),
@@ -3420,7 +3407,7 @@ impl App {
                                         view: mesh_target_view_ref,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load,
+                                            load: wgpu::LoadOp::Load, // ACCUMULATE
                                             store: wgpu::StoreOp::Store,
                                         },
                                         depth_slice: None,
@@ -3439,162 +3426,124 @@ impl App {
                                 true,
                             );
                         }
+                    } else {
+                        // Log missing view?
                     }
+                } // End Loop
 
-                    // D. Post-Processing (Edge Blend / Color Calibration)
-                    if needs_post_processing {
-                        // Input for post-processing is the result of the mesh render
-                        let post_input_view = mesh_target_view_ref;
+                // D. Post-Processing
+                if needs_post_processing {
+                    let post_input_view = mesh_target_view_ref;
+                    let need_double_pass = use_edge_blend && use_color_calib;
+                    let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
 
-                        // Setup intermediate for EdgeBlend -> ColorCalib chain if both are active
-                        let need_double_pass = use_edge_blend && use_color_calib;
-                        let mut blend_output_temp_view_opt: Option<wgpu::TextureView> = None;
+                    if need_double_pass {
+                        let width = window_context.surface_config.width;
+                        let height = window_context.surface_config.height;
+                        // Optimization: reuse text logic from original... for brevity assume recreation or fetch
+                        let recreate = if let Some(tex) = self.output_temp_textures.get(&output_id)
+                        {
+                            tex.width() != width || tex.height() != height
+                        } else {
+                            true
+                        };
 
-                        if need_double_pass {
-                            let width = window_context.surface_config.width;
-                            let height = window_context.surface_config.height;
-                            let recreate =
-                                if let Some(tex) = self.output_temp_textures.get(&output_id) {
-                                    tex.width() != width || tex.height() != height
-                                } else {
-                                    true
-                                };
-
-                            if recreate {
-                                let texture =
-                                    self.backend
-                                        .device
-                                        .create_texture(&wgpu::TextureDescriptor {
-                                            label: Some(&format!(
-                                                "Output {} Blend Temp Texture",
-                                                output_id
-                                            )),
-                                            size: wgpu::Extent3d {
-                                                width,
-                                                height,
-                                                depth_or_array_layers: 1,
-                                            },
-                                            mip_level_count: 1,
-                                            sample_count: 1,
-                                            dimension: wgpu::TextureDimension::D2,
-                                            format: self.backend.surface_format(),
-                                            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                                                | wgpu::TextureUsages::TEXTURE_BINDING,
-                                            view_formats: &[],
-                                        });
-                                self.output_temp_textures.insert(output_id, texture);
-                            }
-                            blend_output_temp_view_opt = Some(
-                                self.output_temp_textures
-                                    .get(&output_id)
-                                    .unwrap()
-                                    .create_view(&wgpu::TextureViewDescriptor::default()),
-                            );
-                        }
-
-                        let config = output_config_opt.unwrap();
-
-                        if use_edge_blend {
-                            let renderer = self.edge_blend_renderer.as_ref().unwrap();
-                            // If Color Calib follows, render to BlendTemp. Else render to Surface.
-                            let target_view = if use_color_calib {
-                                blend_output_temp_view_opt.as_ref().unwrap()
-                            } else {
-                                &view
-                            };
-
-                            let bind_group = renderer.create_texture_bind_group(post_input_view);
-                            let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
-                            let uniform_bind_group =
-                                renderer.create_uniform_bind_group(&uniform_buffer);
-
-                            let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Edge Blend Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: target_view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                            store: wgpu::StoreOp::Store,
+                        if recreate {
+                            // Create tex... logic abbreviated but necessary
+                            let texture =
+                                self.backend
+                                    .device
+                                    .create_texture(&wgpu::TextureDescriptor {
+                                        label: Some("Blend Temp"),
+                                        size: wgpu::Extent3d {
+                                            width,
+                                            height,
+                                            depth_or_array_layers: 1,
                                         },
-                                        depth_slice: None,
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    occlusion_query_set: None,
-                                    timestamp_writes: None,
-                                });
-                            renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                                        mip_level_count: 1,
+                                        sample_count: 1,
+                                        dimension: wgpu::TextureDimension::D2,
+                                        format: self.backend.surface_format(),
+                                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                                            | wgpu::TextureUsages::TEXTURE_BINDING,
+                                        view_formats: &[],
+                                    });
+                            self.output_temp_textures.insert(output_id, texture);
                         }
-
-                        if use_color_calib {
-                            let renderer = self.color_calibration_renderer.as_ref().unwrap();
-                            // Input is BlendTemp (if Blend ran) or MeshOutput (if Blend didn't run)
-                            let input_view_for_cc = if use_edge_blend {
-                                blend_output_temp_view_opt.as_ref().unwrap()
-                            } else {
-                                post_input_view
-                            };
-
-                            // Output is always Surface
-                            let target_view = &view;
-
-                            let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
-                            let uniform_buffer =
-                                renderer.create_uniform_buffer(&config.color_calibration);
-                            let uniform_bind_group =
-                                renderer.create_uniform_bind_group(&uniform_buffer);
-
-                            let mut render_pass =
-                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: Some("Color Calibration Pass"),
-                                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                        view: target_view,
-                                        resolve_target: None,
-                                        ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                            store: wgpu::StoreOp::Store,
-                                        },
-                                        depth_slice: None,
-                                    })],
-                                    depth_stencil_attachment: None,
-                                    occlusion_query_set: None,
-                                    timestamp_writes: None,
-                                });
-                            renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
-                        }
-                    }
-                } else {
-                    static MISSING_VIEW: std::sync::atomic::AtomicU64 =
-                        std::sync::atomic::AtomicU64::new(0);
-                    if MISSING_VIEW
-                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-                        .is_multiple_of(120)
-                    {
-                        tracing::warn!(
-                            "Render: No effective view for output {} (Texture logic failed)",
-                            output_id
+                        blend_output_temp_view_opt = Some(
+                            self.output_temp_textures
+                                .get(&output_id)
+                                .unwrap()
+                                .create_view(&wgpu::TextureViewDescriptor::default()),
                         );
                     }
-                }
-            } else {
-                // No op for this output - Clear to Black
-                {
-                    let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Clear Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                store: wgpu::StoreOp::Store,
-                            },
-                            depth_slice: None,
-                        })],
-                        depth_stencil_attachment: None,
-                        occlusion_query_set: None,
-                        timestamp_writes: None,
-                    });
+
+                    let config = output_config_opt.unwrap();
+
+                    if use_edge_blend {
+                        let renderer = self.edge_blend_renderer.as_ref().unwrap();
+                        let target_view = if use_color_calib {
+                            blend_output_temp_view_opt.as_ref().unwrap()
+                        } else {
+                            &view
+                        };
+                        let bind_group = renderer.create_texture_bind_group(post_input_view);
+                        let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
+                        let uniform_bind_group =
+                            renderer.create_uniform_bind_group(&uniform_buffer);
+
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Edge Blend Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
+
+                    if use_color_calib {
+                        let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                        let input_view_for_cc = if use_edge_blend {
+                            blend_output_temp_view_opt.as_ref().unwrap()
+                        } else {
+                            post_input_view
+                        };
+                        // Output is always Surface
+                        let target_view = &view;
+                        let bind_group = renderer.create_texture_bind_group(input_view_for_cc);
+                        let uniform_buffer =
+                            renderer.create_uniform_buffer(&config.color_calibration);
+                        let uniform_bind_group =
+                            renderer.create_uniform_bind_group(&uniform_buffer);
+
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Color Calibration Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
                 }
             }
         }
