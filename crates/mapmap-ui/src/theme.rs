@@ -2,6 +2,7 @@
 //!
 //! Professional theme support with dark, light, and high-contrast modes.
 //! Includes accessibility features and customizable color schemes.
+//! Refined Cyber Dark theme with deep navy tones for better hierarchy and contrast.
 
 use egui::{Color32, Style, Visuals};
 use serde::{Deserialize, Serialize};
