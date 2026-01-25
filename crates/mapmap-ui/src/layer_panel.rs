@@ -83,12 +83,14 @@ impl LayerPanel {
                                             ui.vertical(|ui| {
                                                 if ui
                                                     .add_enabled(!is_first, egui::Button::new("⬆"))
+                                                    .on_hover_text("Move Layer Up")
                                                     .clicked()
                                                 {
                                                     move_up_id = Some(layer.id);
                                                 }
                                                 if ui
                                                     .add_enabled(!is_last, egui::Button::new("⬇"))
+                                                    .on_hover_text("Move Layer Down")
                                                     .clicked()
                                                 {
                                                     move_down_id = Some(layer.id);
