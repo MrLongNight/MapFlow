@@ -105,8 +105,8 @@ struct App {
     dummy_view: Option<wgpu::TextureView>,
     /// Module evaluator
     module_evaluator: ModuleEvaluator,
-    /// Active media players for source nodes (PartID -> Player)
-    media_players: HashMap<ModulePartId, (String, VideoPlayer)>,
+    /// Active media players for source nodes ((ModuleID, PartID) -> Player)
+    media_players: HashMap<(ModulePartId, ModulePartId), (String, VideoPlayer)>,
     /// FPS calculation: accumulated frame times
     fps_samples: VecDeque<f32>,
     /// Current calculated FPS
@@ -142,8 +142,8 @@ struct App {
     output_assignments: std::collections::HashMap<u64, Vec<String>>,
     /// Recent Effect Configurations (User Prefs)
     recent_effect_configs: mapmap_core::RecentEffectConfigs,
-    /// Render Operations from Module Evaluator
-    render_ops: Vec<RenderOp>,
+    /// Render Operations from Module Evaluator ((ModuleID, RenderOp))
+    render_ops: Vec<(ModulePartId, RenderOp)>,
     /// Edge blend renderer for output windows
     edge_blend_renderer: Option<EdgeBlendRenderer>,
     /// Color calibration renderer for output windows
@@ -882,124 +882,149 @@ impl App {
                         cmd, part_id
                     );
                     // If player doesn't exist and we get any command (except Reload), try to create it
-                    if !self.media_players.contains_key(&part_id)
-                        && cmd != mapmap_ui::MediaPlaybackCommand::Reload
-                    {
-                        info!(
-                            "Player doesn't exist for part_id={}, attempting to create...",
-                            part_id
-                        );
-                        // Find the source path by searching ALL modules
-                        'module_search: for module in self.state.module_manager.modules() {
-                            if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                if let mapmap_core::module::ModulePartType::Source(
-                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
-                                ) = &part.part_type
-                                {
-                                    info!(
-                                        "Found media path: '{}' in module '{}'",
-                                        path, module.name
-                                    );
-                                    if !path.is_empty() {
-                                        match mapmap_media::open_path(path) {
-                                            Ok(player) => {
-                                                info!("Successfully created player for '{}'", path);
-                                                self.media_players
-                                                    .insert(part_id, (path.clone(), player));
-                                            }
-                                            Err(e) => {
-                                                error!("Failed to load media '{}': {}", path, e);
-                                            }
-                                        }
-                                    }
-                                    break 'module_search;
-                                } else {
-                                    warn!("Part {} is not a MediaFile source", part_id);
-                                    break 'module_search;
-                                }
-                            }
+                    // Find the module that owns this part to construct the key
+                    let mut target_module_id = None;
+                    for module in self.state.module_manager.modules() {
+                        if module.parts.iter().any(|p| p.id == part_id) {
+                            target_module_id = Some(module.id);
+                            break;
                         }
                     }
 
-                    if let Some((_, player)) = self.media_players.get_mut(&part_id) {
-                        match cmd {
-                            mapmap_ui::MediaPlaybackCommand::Play => {
-                                let _ = player.command_sender().send(PlaybackCommand::Play);
-                            }
-                            mapmap_ui::MediaPlaybackCommand::Pause => {
-                                let _ = player.command_sender().send(PlaybackCommand::Pause);
-                            }
-                            mapmap_ui::MediaPlaybackCommand::Stop => {
-                                let _ = player.command_sender().send(PlaybackCommand::Stop);
-                            }
-                            mapmap_ui::MediaPlaybackCommand::Reload => {
-                                // Remove existing player - it will be recreated with new path
-                                info!("Reloading media player for part_id={}", part_id);
-                                // (Player removal handled below)
-                            }
-                            mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
-                                info!("Setting speed to {} for part_id={}", speed, part_id);
-                                let _ = player
-                                    .command_sender()
-                                    .send(PlaybackCommand::SetSpeed(speed));
-                            }
-                            mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
-                                info!("Setting loop to {} for part_id={}", enabled, part_id);
-                                let mode = if enabled {
-                                    mapmap_media::LoopMode::Loop
-                                } else {
-                                    mapmap_media::LoopMode::PlayOnce
-                                };
-                                let _ = player
-                                    .command_sender()
-                                    .send(PlaybackCommand::SetLoopMode(mode));
-                            }
-                            mapmap_ui::MediaPlaybackCommand::Seek(position) => {
-                                info!("Seeking to {} for part_id={}", position, part_id);
-                                let _ = player.command_sender().send(PlaybackCommand::Seek(
-                                    std::time::Duration::from_secs_f64(position),
-                                ));
-                            }
-                        }
-                    }
-                    // Handle Reload by removing player and immediately recreating
-                    if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
-                        if self.media_players.remove(&part_id).is_some() {
+                    if let Some(mod_id) = target_module_id {
+                        let player_key = (mod_id, part_id);
+
+                        // If player doesn't exist and we get any command (except Reload), try to create it
+                        if !self.media_players.contains_key(&player_key)
+                            && cmd != mapmap_ui::MediaPlaybackCommand::Reload
+                        {
                             info!(
-                                "Removed old media player for part_id={} for reload",
+                                "Player doesn't exist for part_id={}, attempting to create...",
                                 part_id
                             );
-                        }
-                        // Immediately recreate the player by searching ALL modules
-                        'reload_search: for module in self.state.module_manager.modules() {
-                            if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                if let mapmap_core::module::ModulePartType::Source(
-                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
-                                ) = &part.part_type
-                                {
-                                    if !path.is_empty() {
-                                        match mapmap_media::open_path(path) {
-                                            Ok(player) => {
-                                                info!(
-                                                    "Recreated player for '{}' after reload",
-                                                    path
-                                                );
-                                                // Auto-play after reload
-                                                let _ = player
-                                                    .command_sender()
-                                                    .send(PlaybackCommand::Play);
-                                                self.media_players
-                                                    .insert(part_id, (path.clone(), player));
-                                            }
-                                            Err(e) => {
-                                                error!("Failed to reload media '{}': {}", path, e);
+                            // Find the source path
+                            if let Some(module) = self.state.module_manager.get_module(mod_id) {
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
+                                    {
+                                        info!(
+                                            "Found media path: '{}' in module '{}'",
+                                            path, module.name
+                                        );
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Successfully created player for '{}'",
+                                                        path
+                                                    );
+                                                    self.media_players
+                                                        .insert(player_key, (path.clone(), player));
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to load media '{}': {}",
+                                                        path, e
+                                                    );
+                                                }
                                             }
                                         }
                                     }
-                                    break 'reload_search;
                                 }
                             }
                         }
+
+                        if let Some((_, player)) = self.media_players.get_mut(&player_key) {
+                            match cmd {
+                                mapmap_ui::MediaPlaybackCommand::Play => {
+                                    let _ = player.command_sender().send(PlaybackCommand::Play);
+                                }
+                                mapmap_ui::MediaPlaybackCommand::Pause => {
+                                    let _ = player.command_sender().send(PlaybackCommand::Pause);
+                                }
+                                mapmap_ui::MediaPlaybackCommand::Stop => {
+                                    let _ = player.command_sender().send(PlaybackCommand::Stop);
+                                }
+                                mapmap_ui::MediaPlaybackCommand::Reload => {
+                                    // Remove existing player - it will be recreated with new path
+                                    info!("Reloading media player for part_id={}", part_id);
+                                    // (Player removal handled below)
+                                }
+                                mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
+                                    info!("Setting speed to {} for part_id={}", speed, part_id);
+                                    let _ = player
+                                        .command_sender()
+                                        .send(PlaybackCommand::SetSpeed(speed));
+                                }
+                                mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
+                                    info!("Setting loop to {} for part_id={}", enabled, part_id);
+                                    let mode = if enabled {
+                                        mapmap_media::LoopMode::Loop
+                                    } else {
+                                        mapmap_media::LoopMode::PlayOnce
+                                    };
+                                    let _ = player
+                                        .command_sender()
+                                        .send(PlaybackCommand::SetLoopMode(mode));
+                                }
+                                mapmap_ui::MediaPlaybackCommand::Seek(position) => {
+                                    info!("Seeking to {} for part_id={}", position, part_id);
+                                    let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                        std::time::Duration::from_secs_f64(position),
+                                    ));
+                                }
+                            }
+                        }
+
+                        // Handle Reload by removing player and immediately recreating
+                        if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
+                            if self.media_players.remove(&player_key).is_some() {
+                                info!(
+                                    "Removed old media player for part_id={} for reload",
+                                    part_id
+                                );
+                            }
+                            // Immediately recreate the player
+                            if let Some(module) = self.state.module_manager.get_module(mod_id) {
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
+                                    {
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Recreated player for '{}' after reload",
+                                                        path
+                                                    );
+                                                    // Auto-play after reload
+                                                    let _ = player
+                                                        .command_sender()
+                                                        .send(PlaybackCommand::Play);
+                                                    self.media_players
+                                                        .insert(player_key, (path.clone(), player));
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to reload media '{}': {}",
+                                                        path, e
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        warn!("Could not find module owner for part_id={}", part_id);
                     }
                 }
 
@@ -1052,7 +1077,12 @@ impl App {
                     }
 
                     // Assign Render Ops for next frame!
-                    self.render_ops = result.render_ops.clone();
+                    self.render_ops = result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module.id, op))
+                        .collect();
 
                     // Update UI Trigger Visualization
                     self.ui_state.module_canvas.last_trigger_values = result
@@ -1185,7 +1215,12 @@ impl App {
                     }
 
                     // 2. Handle Render Ops (New System)
-                    self.render_ops = result.render_ops.clone();
+                    self.render_ops = result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module.id, op))
+                        .collect();
                     static mut LAST_RENDER_LOG: u64 = 0;
                     let now_ms = (timestamp * 1000.0) as u64;
                     unsafe {
@@ -1193,10 +1228,11 @@ impl App {
                             LAST_RENDER_LOG = now_ms / 1000;
                             debug!("=== Render Pipeline Status ===");
                             debug!("  render_ops count: {}", self.render_ops.len());
-                            for (i, op) in self.render_ops.iter().enumerate() {
+                            for (i, (mid, op)) in self.render_ops.iter().enumerate() {
                                 debug!(
-                                    "  Op[{}]: source_part_id={:?}, output={:?}",
+                                    "  Op[{}]: mod={} source_part_id={:?}, output={:?}",
                                     i,
+                                    mid,
                                     op.source_part_id,
                                     match &op.output_type {
                                         mapmap_core::module::OutputType::Projector {
@@ -1213,14 +1249,14 @@ impl App {
                                     }
                                 );
                                 if let Some(sid) = op.source_part_id {
-                                    let tex_name = format!("part_{}", sid);
+                                    let tex_name = format!("part_{}_{}", mid, sid);
                                     let has_tex = self.texture_pool.has_texture(&tex_name);
                                     debug!("    -> Texture '{}' exists: {}", tex_name, has_tex);
                                 }
                             }
                             debug!("  media_players count: {}", self.media_players.len());
-                            for id in self.media_players.keys() {
-                                debug!("    -> Player for part_id={}", id);
+                            for (mid, pid) in self.media_players.keys() {
+                                debug!("    -> Player for mod={} part_id={}", mid, pid);
                             }
                         }
                     }
@@ -1229,13 +1265,17 @@ impl App {
                     // NOTE: We need to insert with BOTH IDs:
                     // - Internal Projector ID (*id): Used by UI preview panel (line 2651)
                     // - output_part_id: Used by window_manager and render function
+                    // Update Output Assignments for Preview
+                    // NOTE: We need to insert with BOTH IDs:
+                    // - Internal Projector ID (*id): Used by UI preview panel (line 2651)
+                    // - output_part_id: Used by window_manager and render function
                     self.output_assignments.clear();
-                    for op in &self.render_ops {
+                    for (mid, op) in &self.render_ops {
                         if let mapmap_core::module::OutputType::Projector { id, .. } =
                             &op.output_type
                         {
                             if let Some(source_id) = op.source_part_id {
-                                let tex_name = format!("part_{}", source_id);
+                                let tex_name = format!("part_{}_{}", mid, source_id);
                                 // Insert with internal projector ID (for UI preview panel)
                                 self.output_assignments
                                     .entry(*id)
@@ -1253,10 +1293,22 @@ impl App {
                     // 3. Sync output windows with evaluation result
                     // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
                     // by temporarily taking ownership and restoring it immediately.
+                    // 3. Sync output windows with evaluation result
+                    // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
+                    // by temporarily taking ownership and restoring it immediately.
+                    // We need to pass clean RenderOps to sync_window, so map back to just RenderOp or update sync_window
+                    // Updating sync_window is better but complex signature.
+                    // For now, let's extract just the RenderOps to satisfy the signature if it expects RenderOp
+                    // Wait, sync_output_windows uses op.output_type which is in RenderOp. ModuleID not strictly needed there?
+                    // Let's create a temporary Vec<RenderOp> for sync_window.
+                    // This is inefficient but fixes the type error without changing sync_output_windows signature yet.
                     let render_ops_temp = std::mem::take(&mut self.render_ops);
+                    let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+                        render_ops_temp.iter().map(|(_, op)| op.clone()).collect();
+
                     if let Err(e) = self.sync_output_windows(
                         elwt,
-                        &render_ops_temp,
+                        &ops_only,
                         self.ui_state.module_canvas.active_module_id,
                     ) {
                         error!("Failed to sync output windows: {}", e);
@@ -1923,6 +1975,7 @@ impl App {
     }
 
     /// Synchronize media players with active source modules
+    /// Synchronize media players with active source modules
     fn sync_media_players(&mut self) {
         let mut active_sources = std::collections::HashSet::new();
 
@@ -1932,28 +1985,51 @@ impl App {
                 if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &part.part_type
                 {
                     if !path.is_empty() {
-                        active_sources.insert(part.id);
+                        let key = (module.id, part.id);
+                        active_sources.insert(key);
 
                         // Create player if not exists
-                        // Note: Using entry API would be cleaner but path update requires check
-                        if let std::collections::hash_map::Entry::Vacant(e) =
-                            self.media_players.entry(part.id)
-                        {
-                            match mapmap_media::open_path(path) {
-                                Ok(mut player) => {
-                                    if let Err(e) = player.play() {
+                        match self.media_players.entry(key) {
+                            std::collections::hash_map::Entry::Vacant(e) => {
+                                match mapmap_media::open_path(path) {
+                                    Ok(mut player) => {
+                                        if let Err(e) = player.play() {
+                                            error!(
+                                                "Failed to start playback for source {}:{} : {}",
+                                                module.id, part.id, e
+                                            );
+                                        }
+                                        e.insert((path.clone(), player));
+                                    }
+                                    Err(e) => {
                                         error!(
-                                            "Failed to start playback for source {}: {}",
-                                            part.id, e
+                                            "Failed to create video player for source {}:{} : {}",
+                                            module.id, part.id, e
                                         );
                                     }
-                                    e.insert((path.clone(), player));
                                 }
-                                Err(e) => {
-                                    error!(
-                                        "Failed to create video player for source {}: {}",
-                                        part.id, e
+                            }
+                            std::collections::hash_map::Entry::Occupied(mut e) => {
+                                // Check if path changed
+                                let (current_path, player) = e.get_mut();
+                                if current_path != path {
+                                    info!(
+                                        "Path changed for source {}:{} -> loading {}",
+                                        module.id, part.id, path
                                     );
+                                    // Load new media
+                                    match mapmap_media::open_path(path) {
+                                        Ok(mut new_player) => {
+                                            if let Err(err) = new_player.play() {
+                                                error!("Failed to start playback: {}", err);
+                                            }
+                                            *current_path = path.clone();
+                                            *player = new_player;
+                                        }
+                                        Err(err) => {
+                                            error!("Failed to load new media: {}", err);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1964,9 +2040,10 @@ impl App {
 
         // Cleanup removed players
         self.media_players
-            .retain(|id, _| active_sources.contains(id));
+            .retain(|key, _| active_sources.contains(key));
     }
 
+    /// Update all media players and upload frames to texture pool
     /// Update all media players and upload frames to texture pool
     fn update_media_players(&mut self, dt: f32) {
         static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 =
@@ -1979,20 +2056,20 @@ impl App {
         let queue = &self.backend.queue;
         let ui_state = &mut self.ui_state;
 
-        for (id, (_, player)) in &mut self.media_players {
+        for ((mod_id, part_id), (_, player)) in &mut self.media_players {
             // Update player logic
             if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
-                let tex_name = format!("part_{}", id);
+                let tex_name = format!("part_{}_{}", mod_id, part_id);
 
                 // Upload to GPU if data is on CPU
                 if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
                     if log_this_frame {
                         tracing::info!(
-                            "Frame upload: part_id={}, size={}x{}, data_len={}",
-                            id,
+                            "Frame upload: mod={} part={} size={}x{}",
+                            mod_id,
+                            part_id,
                             frame.format.width,
-                            frame.format.height,
-                            data.len()
+                            frame.format.height
                         );
                     }
                     texture_pool.upload_data(
@@ -2004,18 +2081,28 @@ impl App {
                     );
                 }
             } else if log_this_frame {
-                tracing::warn!("Media player {} returned no frame", id);
+                // tracing::warn!("Media player {}:{} returned no frame", mod_id, part_id);
             }
 
             // Sync player info to UI for timeline display
-            ui_state.module_canvas.player_info.insert(
-                *id,
-                mapmap_ui::MediaPlayerInfo {
-                    current_time: player.current_time().as_secs_f64(),
-                    duration: player.duration().as_secs_f64(),
-                    is_playing: matches!(player.state(), mapmap_media::PlaybackState::Playing),
-                },
-            );
+            // Only if this is the active module to avoid polluting global state map?
+            // Actually ModuleCanvas has a map PartID -> Info. This assumes uniqueness.
+            // Since UI only shows ONE active module, we should only populate if mod_id == active_module_id
+            if let Some(active_id) = ui_state.module_canvas.active_module_id {
+                if *mod_id == active_id {
+                    ui_state.module_canvas.player_info.insert(
+                        *part_id,
+                        mapmap_ui::MediaPlayerInfo {
+                            current_time: player.current_time().as_secs_f64(),
+                            duration: player.duration().as_secs_f64(),
+                            is_playing: matches!(
+                                player.state(),
+                                mapmap_media::PlaybackState::Playing
+                            ),
+                        },
+                    );
+                }
+            }
         }
     }
 
@@ -2274,8 +2361,14 @@ impl App {
             let module_id = module.id;
             if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
                 let eval_result = self.module_evaluator.evaluate(module_ref);
-                self.render_ops
-                    .extend(eval_result.render_ops.iter().cloned());
+                // Push (ModuleId, RenderOp) tuple
+                self.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module_id, op)),
+                );
             }
         }
 
@@ -2309,17 +2402,19 @@ impl App {
             .collect();
 
         // Only sync if module graph's projector set changed
+        // Only sync if module graph's projector set changed
         if current_output_ids != prev_output_ids {
             tracing::info!(
                 "Output set changed: {:?} -> {:?}",
                 prev_output_ids,
                 current_output_ids
             );
-            let render_ops_temp = std::mem::take(&mut self.render_ops);
-            if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp, None) {
+            // Create temp list of ops for sync (stripping module ID)
+            let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+                self.render_ops.iter().map(|(_, op)| op.clone()).collect();
+            if let Err(e) = self.sync_output_windows(elwt, &ops_only, None) {
                 tracing::error!("Failed to sync output windows: {}", e);
             }
-            self.render_ops = render_ops_temp;
         }
 
         // --- Oscillator Update ---
@@ -3340,13 +3435,14 @@ impl App {
             const PREVIEW_FLAG: u64 = 1u64 << 63;
             let real_output_id = output_id & !PREVIEW_FLAG;
 
-            let target_ops: Vec<&mapmap_core::module_eval::RenderOp> = self
+            let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
                 .render_ops
                 .iter()
-                .filter(|op| match &op.output_type {
+                .filter(|(module_id, op)| match &op.output_type {
                     mapmap_core::module::OutputType::Projector { id, .. } => *id == real_output_id,
-                    _ => op.output_part_id == output_id,
+                    _ => op.output_part_id == real_output_id, /* Use real_output_id for generic outputs too */
                 })
+                .map(|(mid, op)| (*mid, op))
                 .collect();
 
             // Debug: Log number of ops per output
@@ -3422,10 +3518,10 @@ impl App {
 
                 // C. Process and Render Each Op (Accumulate)
                 self.mesh_renderer.begin_frame();
-                for op in target_ops {
+                for (module_id, op) in target_ops {
                     // Determine source texture view
                     let owned_source_view = if let Some(src_id) = op.source_part_id {
-                        let tex_name = format!("part_{}", src_id);
+                        let tex_name = format!("part_{}_{}", module_id, src_id);
                         if self.texture_pool.has_texture(&tex_name) {
                             Some(self.texture_pool.get_view(&tex_name))
                         } else {

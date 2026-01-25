@@ -59,8 +59,12 @@ jobs:
     steps:
     - name: Installiere ALSA- und systemnahe Bibliotheken
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libasound2-dev pkg-config
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          libasound2-dev pkg-config \
+          libavcodec-dev libavformat-dev libavutil-dev \
+          libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+          ffmpeg
 
     - name: Check if PR branch is up-to-date
       if: github.event_name == 'pull_request'
