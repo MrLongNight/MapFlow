@@ -48,7 +48,7 @@ tiny-skia = { workspace = true }
 tokio = { workspace = true, optional = true, features = ["sync", "macros", "rt-multi-thread"] }                               # Added for NDI async
 tracing = { workspace = true }
 unic-langid = { workspace = true }
-usvg = { workspace = true }
+usvg = "0.40"
 
 wgpu = { workspace = true }
 winit = { workspace = true }
