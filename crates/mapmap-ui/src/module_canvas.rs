@@ -942,7 +942,7 @@ impl ModuleCanvas {
                                                                 .desired_width(160.0),
                                                         );
                                                         if ui.button("📂").on_hover_text("Select Media File").clicked() {
-                                                            actions.push(crate::UIAction::PickMediaFile(part_id));
+                                                            actions.push(crate::UIAction::PickMediaFile(module.id, part_id));
                                                         }
                                                     });
                                                 });

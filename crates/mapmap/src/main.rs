@@ -1245,7 +1245,7 @@ impl App {
                     // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
                     // by temporarily taking ownership and restoring it immediately.
                     let render_ops_temp = std::mem::take(&mut self.render_ops);
-                    if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+                    if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp, self.ui_state.module_canvas.active_module_id) {
                         error!("Failed to sync output windows: {}", e);
                     }
                     self.render_ops = render_ops_temp;
@@ -1343,7 +1343,7 @@ impl App {
                         }
                     }
                 }
-                mapmap_ui::UIAction::PickMediaFile(part_id) => {
+                mapmap_ui::UIAction::PickMediaFile(module_id, part_id) => {
                     let sender = self.action_sender.clone();
                     self.tokio_runtime.spawn(async move {
                         if let Some(handle) = rfd::AsyncFileDialog::new()
@@ -1357,7 +1357,7 @@ impl App {
                             .await
                         {
                             let path = handle.path().to_path_buf();
-                            let _ = sender.send(McpAction::SetModuleSourcePath(part_id, path));
+                            let _ = sender.send(McpAction::SetModuleSourcePath(module_id, part_id, path));
                         }
                     });
                 }
@@ -1595,13 +1595,13 @@ impl App {
                     info!("MCP: Media Stop");
                     // TODO: Integrate with media player when available
                 }
-                McpAction::SetModuleSourcePath(part_id, path) => {
+                McpAction::SetModuleSourcePath(module_id, part_id, path) => {
                     info!(
-                        "MCP: Setting source path for part {} to {:?}",
-                        part_id, path
+                        "MCP: Setting source path for part {} in module {} to {:?}",
+                        part_id, module_id, path
                     );
-                    // Update module part
-                    for module in self.state.module_manager.modules_mut() {
+                    // Update module part in specific module
+                    if let Some(module) = self.state.module_manager.get_module_mut(module_id) {
                         if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
                             if let mapmap_core::module::ModulePartType::Source(
                                 mapmap_core::module::SourceType::MediaFile { path: ref mut p, .. },
@@ -1745,6 +1745,7 @@ impl App {
         &mut self,
         elwt: &winit::event_loop::ActiveEventLoop,
         _render_ops: &[mapmap_core::module_eval::RenderOp],
+        active_module_id: Option<mapmap_core::module::ModuleId>,
     ) -> Result<()> {
         use mapmap_core::module::OutputType;
         const PREVIEW_FLAG: u64 = 1u64 << 63;
@@ -1755,9 +1756,12 @@ impl App {
 
         self.output_assignments.clear();
 
-        // Get output definitions from MODULE GRAPH (stable), not render_ops (fluctuates)
-        for module in self.state.module_manager.list_modules() {
-            for part in &module.parts {
+        // Get output definitions from the ACTIVE MODULE (or first module if none active)
+        let active_id = active_module_id.or_else(|| self.state.module_manager.list_modules().first().copied());
+        
+        if let Some(id) = active_id {
+            if let Some(module) = self.state.module_manager.get_module(id) {
+                for part in &module.parts {
                 match &part.part_type {
                     mapmap_core::module::ModulePartType::Output(output_type) => {
                         // Use part.id for consistency with render pipeline
