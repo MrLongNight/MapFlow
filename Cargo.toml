@@ -38,7 +38,7 @@ cc = "1.2"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Audio
-cpal = { version = "0.15", default-features = false }
+cpal = { version = "0.17", default-features = false }
 criterion = "0.5"
 
 # Concurrency
