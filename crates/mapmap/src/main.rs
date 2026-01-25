@@ -2193,19 +2193,26 @@ impl App {
             }
         }
 
-        // Sync output windows with new render ops
-        // Temporarily take render_ops to avoid clone (borrow checker workaround if needed,
-        // but sync_output_windows takes slice usually? No, step 1419 used take & restore)
-        // Let's check sync_output_windows signature. It takes &Vec<RenderOp>.
-        // BUT strict borrow might block if we hold self. Or sync_output_windows uses &mut self.
-        // Yes, sync_output_windows is &mut self.
-        // So we cannot pass &self.render_ops.
-        // We must take it.
-        let render_ops_temp = std::mem::take(&mut self.render_ops);
-        if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
-            tracing::error!("Failed to sync output windows: {}", e);
+        // Sync output windows only when output set changes (not every frame!)
+        // Extract unique output IDs from current render_ops
+        let current_output_ids: std::collections::HashSet<u64> =
+            self.render_ops.iter().map(|op| op.output_part_id).collect();
+
+        // Only sync if the set of outputs changed
+        let prev_output_ids: std::collections::HashSet<u64> = self
+            .window_manager
+            .iter()
+            .filter(|wc| wc.output_id != 0) // Exclude main window
+            .map(|wc| wc.output_id)
+            .collect();
+
+        if current_output_ids != prev_output_ids {
+            let render_ops_temp = std::mem::take(&mut self.render_ops);
+            if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+                tracing::error!("Failed to sync output windows: {}", e);
+            }
+            self.render_ops = render_ops_temp;
         }
-        self.render_ops = render_ops_temp;
 
         // --- Oscillator Update ---
         if let Some(renderer) = &mut self.oscillator_renderer {

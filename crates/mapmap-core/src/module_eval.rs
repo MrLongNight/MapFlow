@@ -783,7 +783,7 @@ impl ModuleEvaluator {
                 // Let's assume we can access per-socket inputs or just iterate connections to this part.
 
                 if !part.trigger_targets.is_empty() {
-                    tracing::info!(
+                    tracing::debug!(
                         "Part {} has {} trigger targets",
                         part.id,
                         part.trigger_targets.len()

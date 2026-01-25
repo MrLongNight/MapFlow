@@ -1,143 +1,366 @@
 {
   "controller": "Ecler NUO 4",
-  "version": "1.0",
-  "source": "Config.c4l",
-  "elements": {
-    "channel_2": {
-      "gain": {
+  "elements": [
+    {
+      "id": "ch2_gain",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Gain",
+      "position": {
+        "x": 0.1,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
         "type": "cc",
         "channel": 0,
-        "controller": 16,
-        "label": "Ch2 Gain"
-      },
-      "treble": {
-        "type": "cc",
-        "channel": 0,
-        "controller": 17,
-        "label": "Ch2 Treble"
-      },
-      "mid": {
-        "type": "cc",
-        "channel": 0,
-        "controller": 18,
-        "label": "Ch2 Mid"
-      },
-      "bass": {
-        "type": "cc",
-        "channel": 0,
-        "controller": 19,
-        "label": "Ch2 Bass"
-      },
-      "fx_send": {
-        "type": "cc",
-        "channel": 0,
-        "controller": 12,
-        "label": "Ch2 FX Send"
-      },
-      "fader": {
-        "type": "cc",
-        "channel": 0,
-        "controller": 7,
-        "label": "Ch2 Fader"
-      },
-      "bass_off": {
-        "type": "note",
-        "channel": 0,
-        "note": 50,
-        "label": "Ch2 Bass Kill"
-      },
-      "pfl": {
-        "type": "note",
-        "channel": 0,
-        "note": 51,
-        "label": "Ch2 PFL"
+        "controller": 16
       }
     },
-    "channel_3": {
-      "gain": {
-        "type": "cc",
-        "channel": 1,
-        "controller": 16,
-        "label": "Ch3 Gain"
+    {
+      "id": "ch2_treble",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Treble",
+      "position": {
+        "x": 0.1,
+        "y": 0.2,
+        "width": 0.05,
+        "height": 0.05
       },
-      "treble": {
-        "type": "cc",
-        "channel": 1,
-        "controller": 17,
-        "label": "Ch3 Treble"
-      },
-      "mid": {
-        "type": "cc",
-        "channel": 1,
-        "controller": 18,
-        "label": "Ch3 Mid"
-      },
-      "bass": {
-        "type": "cc",
-        "channel": 1,
-        "controller": 19,
-        "label": "Ch3 Bass"
-      },
-      "fx_send": {
-        "type": "cc",
-        "channel": 1,
-        "controller": 12,
-        "label": "Ch3 FX Send"
-      },
-      "fader": {
-        "type": "cc",
-        "channel": 1,
-        "controller": 7,
-        "label": "Ch3 Fader"
-      },
-      "bass_off": {
-        "type": "note",
-        "channel": 1,
-        "note": 50,
-        "label": "Ch3 Bass Kill"
-      },
-      "pfl": {
-        "type": "note",
-        "channel": 1,
-        "note": 51,
-        "label": "Ch3 PFL"
-      }
-    },
-    "crossfader": {
-      "xfader": {
+      "midi": {
         "type": "cc",
         "channel": 0,
-        "controller": 3,
-        "label": "Crossfader"
+        "controller": 17
       }
     },
-    "midi_section": {
-      "bank_a_layout_1": {
-        "encoder_1": {
-          "type": "cc",
-          "channel": 15,
-          "controller": 20,
-          "label": "MIDI Encoder 1"
-        },
-        "encoder_2": {
-          "type": "cc",
-          "channel": 15,
-          "controller": 21,
-          "label": "MIDI Encoder 2"
-        },
-        "encoder_3": {
-          "type": "cc",
-          "channel": 15,
-          "controller": 22,
-          "label": "MIDI Encoder 3"
-        },
-        "encoder_4": {
-          "type": "cc",
-          "channel": 15,
-          "controller": 23,
-          "label": "MIDI Encoder 4"
-        }
+    {
+      "id": "ch2_mid",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Mid",
+      "position": {
+        "x": 0.1,
+        "y": 0.3,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 18
       }
+    },
+    {
+      "id": "ch2_bass",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Bass",
+      "position": {
+        "x": 0.1,
+        "y": 0.4,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 19
+      }
+    },
+    {
+      "id": "ch2_fx_send",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 FX Send",
+      "position": {
+        "x": 0.1,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 12
+      }
+    },
+    {
+      "id": "ch2_fader",
+      "element_type": "fader",
+      "section": "channel_2",
+      "label": "Ch2 Fader",
+      "position": {
+        "x": 0.1,
+        "y": 0.6,
+        "width": 0.03,
+        "height": 0.15
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 7
+      }
+    },
+    {
+      "id": "ch2_bass_off",
+      "element_type": "button",
+      "section": "channel_2",
+      "label": "Ch2 Bass Kill",
+      "position": {
+        "x": 0.1,
+        "y": 0.8,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 0,
+        "note": 50
+      }
+    },
+    {
+      "id": "ch2_pfl",
+      "element_type": "button",
+      "section": "channel_2",
+      "label": "Ch2 PFL",
+      "position": {
+        "x": 0.1,
+        "y": 0.85,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 0,
+        "note": 51
+      }
+    },
+    {
+      "id": "ch3_gain",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Gain",
+      "position": {
+        "x": 0.25,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 16
+      }
+    },
+    {
+      "id": "ch3_treble",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Treble",
+      "position": {
+        "x": 0.25,
+        "y": 0.2,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 17
+      }
+    },
+    {
+      "id": "ch3_mid",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Mid",
+      "position": {
+        "x": 0.25,
+        "y": 0.3,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 18
+      }
+    },
+    {
+      "id": "ch3_bass",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Bass",
+      "position": {
+        "x": 0.25,
+        "y": 0.4,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 19
+      }
+    },
+    {
+      "id": "ch3_fx_send",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 FX Send",
+      "position": {
+        "x": 0.25,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 12
+      }
+    },
+    {
+      "id": "ch3_fader",
+      "element_type": "fader",
+      "section": "channel_3",
+      "label": "Ch3 Fader",
+      "position": {
+        "x": 0.25,
+        "y": 0.6,
+        "width": 0.03,
+        "height": 0.15
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 7
+      }
+    },
+    {
+      "id": "ch3_bass_off",
+      "element_type": "button",
+      "section": "channel_3",
+      "label": "Ch3 Bass Kill",
+      "position": {
+        "x": 0.25,
+        "y": 0.8,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 1,
+        "note": 50
+      }
+    },
+    {
+      "id": "ch3_pfl",
+      "element_type": "button",
+      "section": "channel_3",
+      "label": "Ch3 PFL",
+      "position": {
+        "x": 0.25,
+        "y": 0.85,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 1,
+        "note": 51
+      }
+    },
+    {
+      "id": "xfader",
+      "element_type": "crossfader",
+      "section": "crossfader",
+      "label": "Crossfader",
+      "position": {
+        "x": 0.4,
+        "y": 0.9,
+        "width": 0.2,
+        "height": 0.03
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 3
+      }
+    },
+    {
+      "id": "encoder_1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1",
+      "position": {
+        "x": 0.5,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 20
+      },
+      "layout_aware": true
+    },
+    {
+      "id": "encoder_2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2",
+      "position": {
+        "x": 0.6,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 21
+      },
+      "layout_aware": true
+    },
+    {
+      "id": "encoder_3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3",
+      "position": {
+        "x": 0.7,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 22
+      },
+      "layout_aware": true
+    },
+    {
+      "id": "encoder_4",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4",
+      "position": {
+        "x": 0.8,
+        "y": 0.1,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 23
+      },
+      "layout_aware": true
     }
-  }
+  ]
 }
