@@ -1,4 +1,5 @@
 use crate::i18n::LocaleManager;
+use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
@@ -403,6 +404,7 @@ impl ModuleCanvas {
         &mut self,
         ctx: &egui::Context,
         module: &mut mapmap_core::module::MapFlowModule,
+        actions: &mut Vec<UIAction>,
     ) {
         let mut changed_part_id = None;
         if let Some(part_id) = self.editing_part_id {
@@ -940,21 +942,7 @@ impl ModuleCanvas {
                                                                 .desired_width(160.0),
                                                         );
                                                         if ui.button("📂").on_hover_text("Select Media File").clicked() {
-                                                            if let Some(picked) = rfd::FileDialog::new()
-                                                                .add_filter(
-                                                                    "Media",
-                                                                    &[
-                                                                        "mp4", "mov", "avi", "mkv",
-                                                                        "webm", "gif", "png", "jpg",
-                                                                        "jpeg",
-                                                                    ],
-                                                                )
-                                                                .pick_file()
-                                                            {
-                                                                *path = picked.display().to_string();
-                                                                // Trigger reload of the media player
-                                                                self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Reload));
-                                                            }
+                                                            actions.push(crate::UIAction::PickMediaFile(part_id));
                                                         }
                                                     });
                                                 });
@@ -2284,7 +2272,7 @@ impl ModuleCanvas {
         ui: &mut Ui,
         manager: &mut ModuleManager,
         locale: &LocaleManager,
-        _actions: &mut Vec<crate::UIAction>,
+        actions: &mut Vec<crate::UIAction>,
     ) {
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
@@ -3100,7 +3088,7 @@ impl ModuleCanvas {
             // Render the canvas taking up the full available space
             self.render_canvas(ui, module, locale);
             // The properties popup is now rendered at the top level
-            self.render_properties_popup(ui.ctx(), module);
+            self.render_properties_popup(ui.ctx(), module, actions);
         } else {
             // Show a message if no module is selected
             ui.centered_and_justified(|ui| {
