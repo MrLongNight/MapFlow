@@ -37,21 +37,21 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     var uv = input.uv;
     let mode = i32(params.mode);
     let center = select(0.5, params.center, params.center > 0.0);
-    
+
     // Horizontal mirror (left-right)
     if mode == 0 || mode == 2 {
         if uv.x > center {
             uv.x = center - (uv.x - center);
         }
     }
-    
+
     // Vertical mirror (top-bottom)
     if mode == 1 || mode == 2 {
         if uv.y > center {
             uv.y = center - (uv.y - center);
         }
     }
-    
+
     // Diagonal mirror
     if mode == 3 {
         if uv.x + uv.y > 1.0 {
@@ -60,9 +60,9 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
             uv.y = 1.0 - temp;
         }
     }
-    
+
     // Clamp to valid range
     uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
-    
+
     return textureSample(input_texture, texture_sampler, uv);
 }

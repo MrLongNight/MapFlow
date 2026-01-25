@@ -38,29 +38,29 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     // Center the UV coordinates
     var uv = input.uv - 0.5;
-    
+
     let segments = max(params.segments, 4.0);
     let rotation = params.rotation * params.time;
-    
+
     // Convert to polar coordinates
     var angle = atan2(uv.y, uv.x) + rotation;
     let radius = length(uv);
-    
+
     // Calculate segment angle
     let segment_angle = 2.0 * PI / segments;
-    
+
     // Fold the angle into one segment
     angle = abs(((angle % segment_angle) + segment_angle) % segment_angle);
     if angle > segment_angle * 0.5 {
         angle = segment_angle - angle;
     }
-    
+
     // Convert back to cartesian coordinates
     uv = vec2<f32>(cos(angle), sin(angle)) * radius;
-    
+
     // Re-center and clamp
     uv = uv + 0.5;
     uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
-    
+
     return textureSample(input_texture, texture_sampler, uv);
 }

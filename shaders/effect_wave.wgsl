@@ -35,24 +35,24 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let uv = input.uv;
-    
+
     // Wave parameters
     let frequency = max(params.frequency, 1.0);
     let amplitude = params.amplitude * params.intensity * 0.1;
     let time = params.time;
-    
+
     // Calculate wave offset
     let wave_x = sin(uv.y * frequency + time * 2.0) * amplitude;
     let wave_y = cos(uv.x * frequency + time * 2.0) * amplitude;
-    
+
     // Apply distortion
     let distorted_uv = vec2<f32>(
         uv.x + wave_x,
         uv.y + wave_y
     );
-    
+
     // Clamp to valid range
     let clamped_uv = clamp(distorted_uv, vec2<f32>(0.0), vec2<f32>(1.0));
-    
+
     return textureSample(input_texture, texture_sampler, clamped_uv);
 }
