@@ -17,3 +17,7 @@
 ## 2026-05-21 - Iterating VecDeque Windows
 **Learning:** `VecDeque` does not support slice methods like `.windows()` directly because its memory is not guaranteed to be contiguous. Calling `make_contiguous` moves memory, which defeats the purpose of O(1) operations.
 **Action:** For simple sliding windows on `VecDeque` (like calculating deltas), use `iter().zip(iter().skip(1))` instead of converting to a slice or `Vec`.
+
+## 2026-05-24 - WGPU Queue Submission Overhead
+**Learning:** Submitting command buffers to the `wgpu` queue (`queue.submit`) is a high-overhead synchronization operation. Doing this inside a loop (e.g., once per texture preview) kills parallelism and CPU throughput.
+**Action:** Batch multiple render operations into a single `CommandEncoder` and issue a single `queue.submit` call at the end of the batch processing.

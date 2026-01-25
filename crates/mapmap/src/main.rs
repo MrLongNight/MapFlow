@@ -1989,111 +1989,123 @@ impl App {
         // Render previews with effects
         let mut current_frame_previews = std::collections::HashMap::new();
 
-        for (
-            part_id,
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            flip_h,
-            flip_v,
-            rotation,
-            scale_x,
-            scale_y,
-            offset_x,
-            offset_y,
-        ) in active_preview_sources
-        {
-            let raw_tex_name = format!("part_{}", part_id);
-            if self.texture_pool.has_texture(&raw_tex_name) {
-                let raw_view = self.texture_pool.get_view(&raw_tex_name);
+        if !active_preview_sources.is_empty() {
+            // OPTIMIZATION: Use a single encoder for all previews to reduce queue submission overhead.
+            // Explicitly begin frame for mesh renderer to reset uniform buffer cache for this batch.
+            self.mesh_renderer.begin_frame();
 
-                // Create/Get preview texture (fixed small resolution)
-                let preview_tex_name = format!("preview_{}", part_id);
-                // Ensure it exists with correct size
-                self.texture_pool.ensure_texture(
-                    &preview_tex_name,
-                    320,
-                    180,
-                    self.backend.surface_format(),
-                    wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-                );
-                let preview_view = self.texture_pool.get_view(&preview_tex_name);
+            let mut preview_encoder =
+                self.backend
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Preview Batch Encoder"),
+                    });
 
-                // Use a fresh encoder for each preview
-                let mut preview_encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Encoder"),
-                        });
+            for (
+                part_id,
+                brightness,
+                contrast,
+                saturation,
+                hue_shift,
+                flip_h,
+                flip_v,
+                rotation,
+                scale_x,
+                scale_y,
+                offset_x,
+                offset_y,
+            ) in active_preview_sources
+            {
+                let raw_tex_name = format!("part_{}", part_id);
+                if self.texture_pool.has_texture(&raw_tex_name) {
+                    let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
-                // Calculate Transform Matrix based on source properties
-                let transform_mat = glam::Mat4::from_scale_rotation_translation(
-                    glam::Vec3::new(scale_x, scale_y, 1.0),
-                    glam::Quat::from_rotation_z(rotation.to_radians()),
-                    glam::Vec3::new(offset_x, offset_y, 0.0),
-                );
-
-                // Prepare Uniforms
-                let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
-                    &self.backend.queue,
-                    transform_mat,
-                    1.0,
-                    flip_h,
-                    flip_v,
-                    brightness,
-                    contrast,
-                    saturation,
-                    hue_shift,
-                );
-
-                let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
-
-                // Render Pass
-                {
-                    let mut render_pass =
-                        preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: Some("Preview Pass"),
-                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: &preview_view,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                    store: wgpu::StoreOp::Store,
-                                },
-                                depth_slice: None,
-                            })],
-                            depth_stencil_attachment: None,
-                            timestamp_writes: None,
-                            occlusion_query_set: None,
-                        });
-
-                    // Use the pre-allocated quad buffers
-                    let (vb, ib, index_count) = &self.preview_quad_buffers;
-
-                    self.mesh_renderer.draw(
-                        &mut render_pass,
-                        vb,
-                        ib,
-                        *index_count,
-                        &uniform_bg,
-                        &texture_bg,
-                        false,
+                    // Create/Get preview texture (fixed small resolution)
+                    let preview_tex_name = format!("preview_{}", part_id);
+                    // Ensure it exists with correct size
+                    self.texture_pool.ensure_texture(
+                        &preview_tex_name,
+                        320,
+                        180,
+                        self.backend.surface_format(),
+                        wgpu::TextureUsages::RENDER_ATTACHMENT
+                            | wgpu::TextureUsages::TEXTURE_BINDING,
                     );
-                }
+                    let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-                // Submit the preview encoder work!
-                self.backend.queue.submit(Some(preview_encoder.finish()));
+                    // Calculate Transform Matrix based on source properties
+                    let transform_mat = glam::Mat4::from_scale_rotation_translation(
+                        glam::Vec3::new(scale_x, scale_y, 1.0),
+                        glam::Quat::from_rotation_z(rotation.to_radians()),
+                        glam::Vec3::new(offset_x, offset_y, 0.0),
+                    );
 
-                // Register the PROCESSED preview texture for UI
-                let texture_id = match self.preview_texture_cache.entry(part_id) {
-                    std::collections::hash_map::Entry::Occupied(mut entry) => {
-                        let (cached_id, cached_view) = entry.get();
-                        if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
-                            *cached_id
-                        } else {
-                            self.egui_renderer.free_texture(cached_id);
+                    // Prepare Uniforms
+                    let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                        &self.backend.queue,
+                        transform_mat,
+                        1.0,
+                        flip_h,
+                        flip_v,
+                        brightness,
+                        contrast,
+                        saturation,
+                        hue_shift,
+                    );
+
+                    let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
+
+                    // Render Pass
+                    {
+                        let mut render_pass =
+                            preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &preview_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+
+                        // Use the pre-allocated quad buffers
+                        let (vb, ib, index_count) = &self.preview_quad_buffers;
+
+                        self.mesh_renderer.draw(
+                            &mut render_pass,
+                            vb,
+                            ib,
+                            *index_count,
+                            &uniform_bg,
+                            &texture_bg,
+                            false,
+                        );
+                    }
+
+                    // Register the PROCESSED preview texture for UI
+                    let texture_id = match self.preview_texture_cache.entry(part_id) {
+                        std::collections::hash_map::Entry::Occupied(mut entry) => {
+                            let (cached_id, cached_view) = entry.get();
+                            if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
+                                *cached_id
+                            } else {
+                                self.egui_renderer.free_texture(cached_id);
+                                let new_id = self.egui_renderer.register_native_texture(
+                                    &self.backend.device,
+                                    &preview_view,
+                                    wgpu::FilterMode::Linear,
+                                );
+                                entry.insert((new_id, preview_view.clone()));
+                                new_id
+                            }
+                        }
+                        std::collections::hash_map::Entry::Vacant(entry) => {
                             let new_id = self.egui_renderer.register_native_texture(
                                 &self.backend.device,
                                 &preview_view,
@@ -2102,20 +2114,13 @@ impl App {
                             entry.insert((new_id, preview_view.clone()));
                             new_id
                         }
-                    }
-                    std::collections::hash_map::Entry::Vacant(entry) => {
-                        let new_id = self.egui_renderer.register_native_texture(
-                            &self.backend.device,
-                            &preview_view,
-                            wgpu::FilterMode::Linear,
-                        );
-                        entry.insert((new_id, preview_view.clone()));
-                        new_id
-                    }
-                };
+                    };
 
-                current_frame_previews.insert(part_id, texture_id);
+                    current_frame_previews.insert(part_id, texture_id);
+                }
             }
+            // Submit the batched preview work!
+            self.backend.queue.submit(Some(preview_encoder.finish()));
         }
 
         // Cleanup stale cache entries
