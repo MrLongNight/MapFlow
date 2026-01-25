@@ -2035,6 +2035,19 @@ impl App {
         // Render previews with effects
         let mut current_frame_previews = std::collections::HashMap::new();
 
+        // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
+        // This avoids creating N encoders and submitting N command buffers to the queue per frame.
+        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
+
+        let mut preview_encoder =
+            self.backend
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Preview Encoder (Batched)"),
+                });
+
+        let mut has_preview_work = false;
+
         for (
             part_id,
             brightness,
@@ -2066,14 +2079,6 @@ impl App {
                 );
                 let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-                // Use a fresh encoder for each preview
-                let mut preview_encoder =
-                    self.backend
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Preview Encoder"),
-                        });
-
                 // Calculate Transform Matrix based on source properties
                 let transform_mat = glam::Mat4::from_scale_rotation_translation(
                     glam::Vec3::new(scale_x, scale_y, 1.0),
@@ -2082,6 +2087,8 @@ impl App {
                 );
 
                 // Prepare Uniforms
+                // Note: queue.write_buffer operations here are scheduled on the queue
+                // effectively "before" the command buffer execution, maintaining correctness.
                 let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
                     transform_mat,
@@ -2096,7 +2103,7 @@ impl App {
 
                 let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
 
-                // Render Pass
+                // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
                     let mut render_pass =
                         preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -2129,8 +2136,7 @@ impl App {
                     );
                 }
 
-                // Submit the preview encoder work!
-                self.backend.queue.submit(Some(preview_encoder.finish()));
+                has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
                 let texture_id = match self.preview_texture_cache.entry(part_id) {
@@ -2162,6 +2168,10 @@ impl App {
 
                 current_frame_previews.insert(part_id, texture_id);
             }
+        }
+
+        if has_preview_work {
+            self.backend.queue.submit(Some(preview_encoder.finish()));
         }
 
         // Cleanup stale cache entries
