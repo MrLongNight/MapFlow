@@ -219,4 +219,33 @@ mod tests {
         // Check that "dirty" key is not in the JSON string
         assert!(!serialized.contains("\"dirty\""));
     }
+
+    #[test]
+    fn test_app_state_deep_defaults() {
+        let state = AppState::default();
+
+        // Verify Oscillator defaults within AppState
+        assert!(state.oscillator_config.enabled);
+        assert_eq!(state.oscillator_config.frequency_min, 0.5);
+
+        // Verify Effect Animator is default (empty)
+        assert!(state.effect_animator.bindings().is_empty());
+    }
+
+    #[test]
+    fn test_app_state_dirty_flag_skip() {
+        let mut state = AppState::new("Dirty Project");
+        state.dirty = true;
+
+        let serialized = serde_json::to_string(&state).expect("Failed to serialize");
+
+        // Ensure "dirty" field is NOT in the JSON string
+        assert!(!serialized.contains("\"dirty\""));
+
+        let deserialized: AppState =
+            serde_json::from_str(&serialized).expect("Failed to deserialize");
+
+        // Deserialized object should have default dirty state (false), NOT true
+        assert!(!deserialized.dirty);
+    }
 }

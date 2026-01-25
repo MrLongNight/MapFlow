@@ -279,9 +279,10 @@ pub struct ModulePart {
 }
 
 /// Target parameter for a trigger input
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum TriggerTarget {
     /// No target (default)
+    #[default]
     None,
     /// Opacity/Transparency
     Opacity,
@@ -301,12 +302,6 @@ pub enum TriggerTarget {
     Rotation,
     /// Specific Effect Parameter (by name)
     Param(String),
-}
-
-impl Default for TriggerTarget {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 /// Mapping mode for trigger value transformation
