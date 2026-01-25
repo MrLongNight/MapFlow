@@ -57,6 +57,11 @@ jobs:
       pull-requests: write
 
     steps:
+    - name: Installiere ALSA- und systemnahe Bibliotheken
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libasound2-dev pkg-config
+
     - name: Check if PR branch is up-to-date
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
@@ -116,33 +121,15 @@ jobs:
         cargo install --locked cargo-make
         cargo install cargo-sort
 
-    - name: Check & Auto-Fix Formatting
+    - name: Check Formatting & Sort
       id: fmt
       run: |
-        cargo fmt --all
-        cargo sort --workspace
-        if [[ -n $(git status --porcelain) ]]; then
-          echo "formatted=true" >> $GITHUB_OUTPUT
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: Auto-format and sort code [skip ci]"
-          git push
-        else
-          echo "formatted=false" >> $GITHUB_OUTPUT
-        fi
+        cargo fmt --all -- --check
+        cargo sort --workspace --check
 
-    - name: Fix common Clippy issues (Auto-Fix)
-      continue-on-error: true
+    - name: Check Clippy (No Fix)
       run: |
-        cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
-        if [[ -n $(git status --porcelain) ]]; then
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: Auto-fix Clippy warnings [skip ci]"
-          git push
-        fi
+        cargo clippy --workspace --features "mapmap-io/ci-linux" -- -D warnings
 
   # ========================================
   # PHASE 2: Code Quality & Linting
@@ -380,12 +367,12 @@ jobs:
         shared-key: "windows-cache"
         save-if: ${{ github.ref == 'refs/heads/main' }}
 
-    - name: Build (Release, Windows - without NDI)
+    - name: Build (Release, Windows - ohne NDI)
       env:
         RUST_BACKTRACE: full
       run: cargo build --release --verbose --no-default-features --features "audio"
 
-    - name: Run tests (Release, without NDI)
+    - name: Run tests (Release, ohne NDI)
       if: ${{ github.event.inputs.skip_tests != 'true' }}
       env:
         RUST_BACKTRACE: full

@@ -248,6 +248,12 @@ impl EffectChainRenderer {
             EffectType::Pixelate,
             EffectType::Vignette,
             EffectType::FilmGrain,
+            EffectType::Wave,
+            EffectType::Glitch,
+            EffectType::RgbSplit,
+            EffectType::Mirror,
+            EffectType::HueShift,
+            EffectType::Kaleidoscope,
         ];
 
         for effect_type in effect_types {
@@ -366,6 +372,12 @@ impl EffectChainRenderer {
             EffectType::Pixelate => include_str!("../../../shaders/effect_pixelate.wgsl"),
             EffectType::Vignette => include_str!("../../../shaders/effect_vignette.wgsl"),
             EffectType::FilmGrain => include_str!("../../../shaders/effect_film_grain.wgsl"),
+            EffectType::Wave => include_str!("../../../shaders/effect_wave.wgsl"),
+            EffectType::Glitch => include_str!("../../../shaders/effect_glitch.wgsl"),
+            EffectType::RgbSplit => include_str!("../../../shaders/effect_rgb_split.wgsl"),
+            EffectType::Mirror => include_str!("../../../shaders/effect_mirror.wgsl"),
+            EffectType::HueShift => include_str!("../../../shaders/effect_hue_shift.wgsl"),
+            EffectType::Kaleidoscope => include_str!("../../../shaders/effect_kaleidoscope.wgsl"),
             _ => include_str!("../../../shaders/effect_passthrough.wgsl"),
         }
     }
@@ -511,7 +523,32 @@ impl EffectChainRenderer {
                     params.param_a = effect.get_param("amount", 0.1);
                     params.param_b = effect.get_param("speed", 1.0);
                 }
-                // Add other effect types here as needed
+                EffectType::Wave => {
+                    params.param_a = effect.get_param("frequency", 10.0);
+                    params.param_b = effect.get_param("amplitude", 1.0);
+                }
+                EffectType::Glitch => {
+                    params.param_a = effect.get_param("block_size", 16.0);
+                    params.param_b = effect.get_param("color_shift", 5.0);
+                }
+                EffectType::RgbSplit => {
+                    params.param_a = effect.get_param("offset_x", 5.0);
+                    params.param_b = effect.get_param("offset_y", 0.0);
+                }
+                EffectType::Mirror => {
+                    params.param_a = effect.get_param("mode", 0.0);
+                    params.param_b = effect.get_param("center", 0.5);
+                }
+                EffectType::Kaleidoscope => {
+                    params.param_a = effect.get_param("segments", 8.0);
+                    params.param_b = effect.get_param("rotation", 0.5);
+                }
+                EffectType::HueShift => {
+                    params.param_a = effect.get_param("hue_shift", 0.0);
+                }
+                EffectType::Pixelate => {
+                    params.param_a = effect.get_param("pixel_size", 8.0);
+                }
                 _ => {}
             }
 
