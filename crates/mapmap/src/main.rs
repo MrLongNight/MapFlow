@@ -3328,10 +3328,16 @@ impl App {
             // === Node-Based Rendering Pipeline ===
 
             // 1. Find ALL RenderOps for this output to support composition
+            const PREVIEW_FLAG: u64 = 1u64 << 63;
+            let real_output_id = output_id & !PREVIEW_FLAG;
+
             let target_ops: Vec<&mapmap_core::module_eval::RenderOp> = self
                 .render_ops
                 .iter()
-                .filter(|op| op.output_part_id == output_id)
+                .filter(|op| match &op.output_type {
+                    mapmap_core::module::OutputType::Projector { id, .. } => *id == real_output_id,
+                    _ => op.output_part_id == output_id,
+                })
                 .collect();
 
             // Debug: Log number of ops per output
