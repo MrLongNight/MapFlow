@@ -811,7 +811,8 @@ impl App {
                 // Frame limiter passed, continue with frame processing
 
                 // --- Update State (Physics/Media) ---
-                self.update(time_since_last.as_secs_f32());
+                // --- Update State (Physics/Media) ---
+                self.update(elwt, time_since_last.as_secs_f32());
                 self.last_update = std::time::Instant::now();
 
                 // Poll MIDI
@@ -2173,13 +2174,65 @@ impl App {
     }
 
     /// Global update loop (physics/logic), independent of render rate per window.
-    fn update(&mut self, dt: f32) {
+    fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
         // --- Media Player Update ---
         self.sync_media_players();
         self.update_media_players(dt);
 
         // --- Effect Animator Update ---
-        let _param_updates = self.state.effect_animator.update(dt as f64);
+        // --- Effect Animator Update ---
+        let param_updates = self.state.effect_animator.update(dt as f64);
+        // Note: param_updates is Vec, so just iterate
+        if !param_updates.is_empty() {
+            // TODO: Apply updates to Active Module
+            tracing::trace!("Effect updates: {}", param_updates.len());
+        }
+
+        // --- Module Graph Evaluation ---
+        if let Some(active_id) = self.ui_state.module_canvas.active_module_id {
+            if let Some(module) = self.state.module_manager.get_module(active_id) {
+                let eval_result = self.module_evaluator.evaluate(module);
+                self.render_ops = eval_result.render_ops.clone();
+            } else {
+                self.render_ops.clear();
+            }
+        } else {
+            // Fallback: If no active module selected, try to use the first one (Main)
+            // This ensures on startup we see SOMETHING if UI hasn't selected yet?
+            // Or we just clear.
+            // MapFlow usually starts empty or loads.
+            // If we list modules?
+            if let Some(first_id) = self
+                .state
+                .module_manager
+                .list_modules()
+                .first()
+                .map(|m| m.id)
+            {
+                if let Some(module) = self.state.module_manager.get_module(first_id) {
+                    let eval_result = self.module_evaluator.evaluate(module);
+                    self.render_ops = eval_result.render_ops.clone();
+                    // Update UI state to reflect this selection
+                    self.ui_state.module_canvas.active_module_id = Some(first_id);
+                }
+            } else {
+                self.render_ops.clear();
+            }
+        }
+
+        // Sync output windows with new render ops
+        // Temporarily take render_ops to avoid clone (borrow checker workaround if needed,
+        // but sync_output_windows takes slice usually? No, step 1419 used take & restore)
+        // Let's check sync_output_windows signature. It takes &Vec<RenderOp>.
+        // BUT strict borrow might block if we hold self. Or sync_output_windows uses &mut self.
+        // Yes, sync_output_windows is &mut self.
+        // So we cannot pass &self.render_ops.
+        // We must take it.
+        let render_ops_temp = std::mem::take(&mut self.render_ops);
+        if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+            tracing::error!("Failed to sync output windows: {}", e);
+        }
+        self.render_ops = render_ops_temp;
 
         // --- Oscillator Update ---
         if let Some(renderer) = &mut self.oscillator_renderer {
