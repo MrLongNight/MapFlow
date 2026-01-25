@@ -80,7 +80,7 @@ rayon = "1.8"
 
 # SVG rendering for icons
 resvg = "0.40"
-ron = "0.8"
+ron = "0.12"
 rosc = "0.11"
 rust-embed = "8.0"
 rustfft = "6.2"
