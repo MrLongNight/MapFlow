@@ -34,6 +34,8 @@ pub enum EffectType {
     RgbSplit,
     /// Mirror reflection effect
     Mirror,
+    /// Hue shift effect
+    HueShift,
     /// Custom shader from shader graph
     Custom,
 }
@@ -56,6 +58,7 @@ impl EffectType {
             EffectType::Glitch => "Glitch",
             EffectType::RgbSplit => "RGB Split",
             EffectType::Mirror => "Mirror",
+            EffectType::HueShift => "Hue Shift",
             EffectType::Custom => "Custom Shader",
         }
     }

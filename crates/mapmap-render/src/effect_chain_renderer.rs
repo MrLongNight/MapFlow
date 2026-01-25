@@ -252,6 +252,7 @@ impl EffectChainRenderer {
             EffectType::Glitch,
             EffectType::RgbSplit,
             EffectType::Mirror,
+            EffectType::HueShift,
             EffectType::Kaleidoscope,
         ];
 
@@ -375,6 +376,7 @@ impl EffectChainRenderer {
             EffectType::Glitch => include_str!("../../../shaders/effect_glitch.wgsl"),
             EffectType::RgbSplit => include_str!("../../../shaders/effect_rgb_split.wgsl"),
             EffectType::Mirror => include_str!("../../../shaders/effect_mirror.wgsl"),
+            EffectType::HueShift => include_str!("../../../shaders/effect_hue_shift.wgsl"),
             EffectType::Kaleidoscope => include_str!("../../../shaders/effect_kaleidoscope.wgsl"),
             _ => include_str!("../../../shaders/effect_passthrough.wgsl"),
         }
@@ -540,6 +542,12 @@ impl EffectChainRenderer {
                 EffectType::Kaleidoscope => {
                     params.param_a = effect.get_param("segments", 8.0);
                     params.param_b = effect.get_param("rotation", 0.5);
+                }
+                EffectType::HueShift => {
+                    params.param_a = effect.get_param("hue_shift", 0.0);
+                }
+                EffectType::Pixelate => {
+                    params.param_a = effect.get_param("pixel_size", 8.0);
                 }
                 _ => {}
             }

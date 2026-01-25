@@ -26,8 +26,11 @@ jobs:
       with:
         components: rustfmt, clippy
 
+    - name: Install cargo-binstall
+      uses: cargo-bins/cargo-binstall@main
+
     - name: Install cargo-sort
-      run: cargo install cargo-sort
+      run: cargo binstall -y cargo-sort
 
     - name: Formatierung anwenden (cargo fmt & sort)
       run: |
