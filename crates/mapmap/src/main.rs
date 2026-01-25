@@ -106,7 +106,7 @@ struct App {
     /// Module evaluator
     module_evaluator: ModuleEvaluator,
     /// Active media players for source nodes (PartID -> Player)
-    media_players: HashMap<ModulePartId, VideoPlayer>,
+    media_players: HashMap<ModulePartId, (String, VideoPlayer)>,
     /// FPS calculation: accumulated frame times
     fps_samples: VecDeque<f32>,
     /// Current calculated FPS
@@ -1075,12 +1075,19 @@ impl App {
                                 }
 
                                 // Check if player exists or needs creation
-                                let player_exists = self.media_players.contains_key(&part_id);
+                                let player_needs_reload = if let Some((current_path, _)) =
+                                    self.media_players.get(&part_id)
+                                {
+                                    current_path != &path
+                                } else {
+                                    true
+                                };
 
-                                if !player_exists {
+                                if player_needs_reload {
                                     match mapmap_media::open_path(&path) {
                                         Ok(player) => {
-                                            self.media_players.insert(part_id, player);
+                                            self.media_players
+                                                .insert(part_id, (path.clone(), player));
                                         }
                                         Err(e) => {
                                             // Log error only once per failure to avoid spam?
@@ -1091,7 +1098,7 @@ impl App {
                                     }
                                 }
 
-                                if let Some(player) = self.media_players.get_mut(&part_id) {
+                                if let Some((_, player)) = self.media_players.get_mut(&part_id) {
                                     // Trigger update
                                     if trigger_value > 0.1 {
                                         let _ = player.command_sender().send(PlaybackCommand::Play);
@@ -3536,7 +3543,11 @@ impl App {
                                     &op.mesh.to_mesh(),
                                 );
 
-                            let transform = glam::Mat4::IDENTITY;
+                            // Fix Inverted Output: Flip Y axis
+                            // User reported 180 rotation. WGPU NDC Y is Up usually, but texture origin Top-Left.
+                            // Flipping Y fixes "Upside Down". If it is 180 (also X flipped), we might need (-1, -1).
+                            // Let's try Flip Y first as it's standard for WGPU Texture mapping.
+                            let transform = glam::Mat4::from_scale(glam::vec3(1.0, -1.0, 1.0));
                             let uniform_bind_group =
                                 self.mesh_renderer.get_uniform_bind_group_with_source_props(
                                     &self.backend.queue,
