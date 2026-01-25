@@ -54,7 +54,7 @@ ffmpeg-next = { version = "8.0", default-features = false, features = ["codec", 
 fluent = "0.16"
 fluent-langneg = "0.14"
 futures = "0.3"
-glam = { version = "0.25", features = ["serde"] }
+glam = { version = "0.31", features = ["serde"] }
 hex = "0.4"
 hound = "3.5"
 hyper = "1.1"
