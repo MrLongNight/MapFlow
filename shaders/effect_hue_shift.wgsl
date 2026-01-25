@@ -53,16 +53,16 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(input_texture, input_sampler, input.uv);
-    
+
     // Convert to HSV
     var hsv = rgb2hsv(color.rgb);
-    
+
     // Shift Hue
     let shift = uniforms.hue_shift * uniforms.intensity;
     hsv.x = fract(hsv.x + shift);
-    
+
     // Convert back to RGB
     let rgb = hsv2rgb(hsv);
-    
+
     return vec4<f32>(rgb, color.a);
 }
