@@ -14,6 +14,15 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-01-25 - Documentation Structure Cleanup
+
+**Erkenntnis:** `docs/agent_rules/` war ein nicht-standardisiertes Verzeichnis mit einer wichtigen Strategiedatei, die in `docs/08-TECHNICAL/` gehört. `docs/INDEX.md` ist für GitHub weniger optimal als `README.md`.
+
+**Aktion:**
+- `docs/agent_rules/ci_cd_strategy.md` nach `docs/08-TECHNICAL/CI_CD_STRATEGY.md` verschoben.
+- `docs/agent_rules/` entfernt.
+- `docs/INDEX.md` in `docs/README.md` umbenannt.
+
 ## 2026-01-02 - Root Directory Cleanup
 
 **Erkenntnis:** Das Root-Verzeichnis enthielt mehrere temporäre Dateien (`check_*.txt`, `test_results.txt`, `core_error.txt`) sowie falsch platzierte Dokumentation (`SECURITY.md`, `knowledge.md`) und redundante Dateien (`VERSION.txt`).
