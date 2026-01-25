@@ -789,29 +789,25 @@ impl App {
                 }
             }
             winit::event::Event::AboutToWait => {
-                // --- Frame Limiter ---
+                // --- Frame Limiter (Sleep-based, not early return) ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
-                // If target is 0 (VSync) but we are in AutoNoVsync mode, we must cap it ensuring we don't busy loop
-                // Default to 60 if 0 to be safe
                 let cap_fps = if target_fps <= 0.0 { 60.0 } else { target_fps };
-
                 let frame_target = std::time::Duration::from_secs_f64(1.0 / cap_fps as f64);
                 let time_since_last = std::time::Instant::now().duration_since(self.last_update);
 
+                // Sleep to maintain frame rate (non-blocking for events)
                 if time_since_last < frame_target {
-                    let wait_until = std::time::Instant::now() + (frame_target - time_since_last);
-                    elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
-                    // Request redraw for all windows to prevent output window freeze
-                    for window_context in self.window_manager.iter() {
-                        window_context.window.request_redraw();
-                    }
-                    return Ok(());
+                    let sleep_duration = frame_target - time_since_last;
+                    // Use short spin-sleep for accuracy
+                    std::thread::sleep(sleep_duration);
                 }
 
-                // Frame limiter passed, continue with frame processing
+                // Always use Poll mode - VJ software needs continuous updates
+                elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
                 // --- Update State (Physics/Media) ---
-                self.update(time_since_last.as_secs_f32());
+                let actual_dt = self.last_update.elapsed().as_secs_f32();
+                self.update(elwt, actual_dt);
                 self.last_update = std::time::Instant::now();
 
                 // Poll MIDI
@@ -847,6 +843,11 @@ impl App {
                         self.last_autosave = std::time::Instant::now();
                         // Note: We don't clear dirty flag on autosave, only on explicit save
                     }
+                }
+
+                // Request redraw for all windows to trigger render
+                for window_context in self.window_manager.iter() {
+                    window_context.window.request_redraw();
                 }
 
                 // Process audio
@@ -2168,13 +2169,65 @@ impl App {
     }
 
     /// Global update loop (physics/logic), independent of render rate per window.
-    fn update(&mut self, dt: f32) {
+    fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
         // --- Media Player Update ---
         self.sync_media_players();
         self.update_media_players(dt);
 
         // --- Effect Animator Update ---
-        let _param_updates = self.state.effect_animator.update(dt as f64);
+        // --- Effect Animator Update ---
+        let param_updates = self.state.effect_animator.update(dt as f64);
+        // Note: param_updates is Vec, so just iterate
+        if !param_updates.is_empty() {
+            // TODO: Apply updates to Active Module
+            tracing::trace!("Effect updates: {}", param_updates.len());
+        }
+
+        // --- Module Graph Evaluation ---
+        if let Some(active_id) = self.ui_state.module_canvas.active_module_id {
+            if let Some(module) = self.state.module_manager.get_module(active_id) {
+                let eval_result = self.module_evaluator.evaluate(module);
+                self.render_ops = eval_result.render_ops.clone();
+            } else {
+                self.render_ops.clear();
+            }
+        } else {
+            // Fallback: If no active module selected, try to use the first one (Main)
+            // This ensures on startup we see SOMETHING if UI hasn't selected yet?
+            // Or we just clear.
+            // MapFlow usually starts empty or loads.
+            // If we list modules?
+            if let Some(first_id) = self
+                .state
+                .module_manager
+                .list_modules()
+                .first()
+                .map(|m| m.id)
+            {
+                if let Some(module) = self.state.module_manager.get_module(first_id) {
+                    let eval_result = self.module_evaluator.evaluate(module);
+                    self.render_ops = eval_result.render_ops.clone();
+                    // Update UI state to reflect this selection
+                    self.ui_state.module_canvas.active_module_id = Some(first_id);
+                }
+            } else {
+                self.render_ops.clear();
+            }
+        }
+
+        // Sync output windows with new render ops
+        // Temporarily take render_ops to avoid clone (borrow checker workaround if needed,
+        // but sync_output_windows takes slice usually? No, step 1419 used take & restore)
+        // Let's check sync_output_windows signature. It takes &Vec<RenderOp>.
+        // BUT strict borrow might block if we hold self. Or sync_output_windows uses &mut self.
+        // Yes, sync_output_windows is &mut self.
+        // So we cannot pass &self.render_ops.
+        // We must take it.
+        let render_ops_temp = std::mem::take(&mut self.render_ops);
+        if let Err(e) = self.sync_output_windows(elwt, &render_ops_temp) {
+            tracing::error!("Failed to sync output windows: {}", e);
+        }
+        self.render_ops = render_ops_temp;
 
         // --- Oscillator Update ---
         if let Some(renderer) = &mut self.oscillator_renderer {
@@ -3196,6 +3249,16 @@ impl App {
                 .iter()
                 .filter(|op| op.output_part_id == output_id)
                 .collect();
+
+            // Debug: Log number of ops per output
+            if !target_ops.is_empty() {
+                tracing::debug!(
+                    "Output {}: Rendering {} layers (multi-output: {})",
+                    output_id,
+                    target_ops.len(),
+                    target_ops.len() > 1
+                );
+            }
 
             if target_ops.is_empty() {
                 // No op for this output - Clear to Black
