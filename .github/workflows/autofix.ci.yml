@@ -1,7 +1,4 @@
-name: "CI-11: Autofix PRs"
-
-# Automatically fix trivial issues like code formatting
-# Uses autofix.ci to push fixes directly to PRs
+name: autofix.ci
 
 on:
   pull_request:
@@ -16,20 +13,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Repository auschecken
       uses: actions/checkout@v4
 
-    - name: Setup Rust toolchain
+    - name: System-Abhängigkeiten installieren (ALSA für alsa-sys)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libasound2-dev pkg-config
+
+    - name: Rust Toolchain einrichten
       uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt, clippy
 
-    - name: Run cargo fmt
+    - name: Formatierung anwenden (cargo fmt)
       run: cargo fmt --all
 
-    - name: Run clippy --fix (allow changes)
+    - name: Clippy --fix ausführen (Korrekturen zulassen)
       run: cargo clippy --fix --allow-dirty --allow-staged --workspace --no-default-features --features audio -- -A warnings
       continue-on-error: true
 
-    - name: Apply autofix
+    - name: Autofix anwenden
       uses: autofix-ci/action@8bc06253bec489732e5f9c52884c7cace15c0160
