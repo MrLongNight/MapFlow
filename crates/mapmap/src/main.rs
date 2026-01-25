@@ -849,6 +849,11 @@ impl App {
                     }
                 }
 
+                // Request redraw for all windows to ensure we render the updated frame
+                for window_context in self.window_manager.iter() {
+                    window_context.window.request_redraw();
+                }
+
                 // Process audio
                 // Process audio
                 let timestamp = self.start_time.elapsed().as_secs_f64();
