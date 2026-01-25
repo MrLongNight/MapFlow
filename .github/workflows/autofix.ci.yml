@@ -1,7 +1,4 @@
-name: "CI-11: Autofix PRs"
-
-# Automatically fix trivial issues like code formatting
-# Uses autofix.ci to push fixes directly to PRs
+name: autofix.ci
 
 on:
   pull_request:
