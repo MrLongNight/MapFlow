@@ -50,7 +50,7 @@ jobs:
   # ========================================
 
   pre-checks:
-    name: "Pre-Checks (Auto-Fix)"
+    name: "Pre-Checks"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -121,33 +121,15 @@ jobs:
         cargo install --locked cargo-make
         cargo install cargo-sort
 
-    - name: Check & Auto-Fix Formatting
+    - name: Check Formatting & Sort
       id: fmt
       run: |
-        cargo fmt --all
-        cargo sort --workspace
-        if [[ -n $(git status --porcelain) ]]; then
-          echo "formatted=true" >> $GITHUB_OUTPUT
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: Auto-format and sort code [skip ci]"
-          git push
-        else
-          echo "formatted=false" >> $GITHUB_OUTPUT
-        fi
+        cargo fmt --all -- --check
+        cargo sort --workspace --check
 
-    - name: Fix common Clippy issues (Auto-Fix)
-      continue-on-error: true
+    - name: Check Clippy (No Fix)
       run: |
-        cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux"
-        if [[ -n $(git status --porcelain) ]]; then
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: Auto-fix Clippy warnings [skip ci]"
-          git push
-        fi
+        cargo clippy --workspace --features "mapmap-io/ci-linux" -- -D warnings
 
   # ========================================
   # PHASE 2: Code Quality & Linting
