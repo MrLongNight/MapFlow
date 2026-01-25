@@ -2017,14 +2017,13 @@ impl ModuleCanvas {
     fn load_svg_icon(path: &std::path::Path, ctx: &egui::Context) -> Option<TextureHandle> {
         let svg_data = std::fs::read(path).ok()?;
         let options = usvg::Options::default();
-        let fontdb = usvg::fontdb::Database::new();
-        let tree = usvg::Tree::from_data(&svg_data, &options, &fontdb).ok()?;
+        let tree = usvg::Tree::from_data(&svg_data, &options).ok()?;
         let size = tree.size();
         let width = size.width().round() as u32;
         let height = size.height().round() as u32;
 
         let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
-        resvg::render(&tree, usvg::Transform::default(), &mut pixmap.as_mut());
+        resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
 
         let mut pixels = Vec::with_capacity((width * height) as usize);
         for pixel in pixmap.pixels() {

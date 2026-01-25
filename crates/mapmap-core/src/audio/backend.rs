@@ -88,7 +88,11 @@ pub mod cpal_backend {
             let device = if let Some(ref name) = device_name {
                 match host.input_devices() {
                     Ok(mut devices) => {
-                        match devices.find(|d| d.name().map(|n| n == *name).unwrap_or(false)) {
+                        match devices.find(|d| {
+                            d.description()
+                                .map(|desc| desc.to_string().contains(name))
+                                .unwrap_or(false)
+                        }) {
                             Some(dev) => dev,
                             None => {
                                 return Err(AudioError::NoDevicesFound(format!(
@@ -123,7 +127,10 @@ pub mod cpal_backend {
             };
 
             // Log device info for debugging
-            let device_name_str = device.name().unwrap_or_else(|_| "Unknown".to_string());
+            let device_name_str = device
+                .description()
+                .map(|d| d.to_string())
+                .unwrap_or_else(|_| "Unknown".to_string());
             tracing::info!(
                 "Audio: Using device '{}', format={:?}, sample_rate={}, channels={}",
                 device_name_str,
@@ -267,7 +274,8 @@ pub mod cpal_backend {
                 Ok(devices) => {
                     let mut device_names = Vec::new();
                     for device in devices {
-                        if let Ok(name) = device.name() {
+                        if let Ok(desc) = device.description() {
+                            let name = desc.to_string();
                             // Try to get default config for debugging
                             if let Ok(config) = device.default_input_config() {
                                 tracing::debug!(

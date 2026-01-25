@@ -538,9 +538,9 @@ impl OscillatorRenderer {
         match mode {
             PhaseInitMode::Random => {
                 use rand::Rng;
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 for phase in &mut phase_data {
-                    *phase = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
+                    *phase = rng.random::<f32>() * 2.0 * std::f32::consts::PI;
                 }
             }
             PhaseInitMode::Uniform => {

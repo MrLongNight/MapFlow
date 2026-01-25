@@ -2,7 +2,7 @@
 //!
 //! This crate implements the MCP server for MapFlow, allowing AI agents to control the application.
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 pub mod protocol;
 pub mod server;

@@ -79,7 +79,7 @@ proptest = "1.4"
 rayon = "1.8"
 
 # SVG rendering for icons
-resvg = "0.40"
+resvg = "0.45"
 ron = "0.12"
 rosc = "0.11"
 rust-embed = "8.0"
