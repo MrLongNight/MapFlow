@@ -789,30 +789,25 @@ impl App {
                 }
             }
             winit::event::Event::AboutToWait => {
-                // --- Frame Limiter ---
+                // --- Frame Limiter (Sleep-based, not early return) ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
-                // If target is 0 (VSync) but we are in AutoNoVsync mode, we must cap it ensuring we don't busy loop
-                // Default to 60 if 0 to be safe
                 let cap_fps = if target_fps <= 0.0 { 60.0 } else { target_fps };
-
                 let frame_target = std::time::Duration::from_secs_f64(1.0 / cap_fps as f64);
                 let time_since_last = std::time::Instant::now().duration_since(self.last_update);
 
+                // Sleep to maintain frame rate (non-blocking for events)
                 if time_since_last < frame_target {
-                    let wait_until = std::time::Instant::now() + (frame_target - time_since_last);
-                    elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
-                    // Request redraw for all windows to prevent output window freeze
-                    for window_context in self.window_manager.iter() {
-                        window_context.window.request_redraw();
-                    }
-                    return Ok(());
+                    let sleep_duration = frame_target - time_since_last;
+                    // Use short spin-sleep for accuracy
+                    std::thread::sleep(sleep_duration);
                 }
 
-                // Frame limiter passed, continue with frame processing
+                // Always use Poll mode - VJ software needs continuous updates
+                elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
                 // --- Update State (Physics/Media) ---
-                // --- Update State (Physics/Media) ---
-                self.update(elwt, time_since_last.as_secs_f32());
+                let actual_dt = self.last_update.elapsed().as_secs_f32();
+                self.update(elwt, actual_dt);
                 self.last_update = std::time::Instant::now();
 
                 // Poll MIDI
@@ -850,7 +845,7 @@ impl App {
                     }
                 }
 
-                // Request redraw for all windows to ensure we render the updated frame
+                // Request redraw for all windows to trigger render
                 for window_context in self.window_manager.iter() {
                     window_context.window.request_redraw();
                 }
@@ -3254,6 +3249,16 @@ impl App {
                 .iter()
                 .filter(|op| op.output_part_id == output_id)
                 .collect();
+
+            // Debug: Log number of ops per output
+            if !target_ops.is_empty() {
+                tracing::debug!(
+                    "Output {}: Rendering {} layers (multi-output: {})",
+                    output_id,
+                    target_ops.len(),
+                    target_ops.len() > 1
+                );
+            }
 
             if target_ops.is_empty() {
                 // No op for this output - Clear to Black
