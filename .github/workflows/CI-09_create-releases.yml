@@ -48,17 +48,15 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-
-      - name: Install ffmpeg
+      - name: vcpkg und FFmpeg installieren
         run: |
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install ffmpeg[core]:x64-windows
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
         shell: pwsh
 
-      - name: Set VCPKG_ROOT
-        run: |
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+      - name: VCPKG_ROOT setzen
+        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
       - name: Build Release (mit FFMpeg)
@@ -74,7 +72,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target\release\MapFlow.exe dist\MapFlow.exe
 
-          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin\*.dll" dist\
             Write-Host "Copied FFmpeg DLLs to dist"
@@ -113,17 +111,15 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-
-      - name: Install ffmpeg
+      - name: vcpkg und FFmpeg installieren
         run: |
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install ffmpeg[core]:x64-windows
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install ffmpeg:x64-windows
         shell: pwsh
 
-      - name: Set VCPKG_ROOT
-        run: |
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+      - name: VCPKG_ROOT setzen
+        run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
       - name: Build Release (mit FFMpeg)
@@ -136,7 +132,7 @@ jobs:
             Write-Host "Build fehlgeschlagen: MapFlow.exe fehlt!"
             exit 1
           }
-          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin\*.dll" target\release\
             Write-Host "Copied FFmpeg DLLs to target\release"
