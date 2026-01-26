@@ -21,3 +21,7 @@
 ## 2026-06-15 - Queue Submission Batching
 **Learning:** Submitting command buffers to the `wgpu` queue inside a loop (e.g. for generating N previews) causes significant driver overhead due to repeated synchronization and validation.
 **Action:** Batch multiple render passes into a single `CommandEncoder` and submit once at the end of the loop. Use `begin_frame` (if available) to reset resource caches before the batch starts to ensure optimal buffer reuse.
+
+## 2026-01-28 - Mutable Iteration in UI Panels
+**Learning:** `egui` panels often need to iterate over a collection (Layers, Paints) and mutate items. A common anti-pattern is collecting IDs into a `Vec` to avoid borrow checker conflicts, then doing O(N) lookups inside the loop.
+**Action:** Expose `_mut` iterators/slices on Managers (e.g. `layers_mut()`) and iterate directly over mutable references. This removes both the allocation and the O(N) lookup, resulting in O(N) instead of O(N^2) for UI rendering.
