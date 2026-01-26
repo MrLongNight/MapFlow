@@ -8,7 +8,7 @@
 //! - Effect chain post-processing
 //! - Preset system for effect chains
 
-#![allow(missing_docs)]
+#![warn(missing_docs)]
 
 use thiserror::Error;
 
@@ -53,18 +53,23 @@ pub use texture::{TextureDescriptor, TextureHandle, TexturePool};
 /// Rendering errors
 #[derive(Error, Debug)]
 pub enum RenderError {
+    /// Device creation or configuration error
     #[error("Device error: {0}")]
     DeviceError(String),
 
+    /// Shader compilation failed
     #[error("Shader compilation failed: {0}")]
     ShaderCompilation(String),
 
+    /// Texture creation failed
     #[error("Texture creation failed: {0}")]
     TextureCreation(String),
 
+    /// Graphics device was lost
     #[error("Device lost")]
     DeviceLost,
 
+    /// Surface configuration error
     #[error("Surface error: {0}")]
     SurfaceError(String),
 }
