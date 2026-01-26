@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-26 - Missing Changelog for FFmpeg Refactor
+**Erkenntnis:** Commit 2b1c931 (FFmpeg split) was missing from CHANGELOG.
+**Aktion:** Added entry to ensure completeness.
+
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
