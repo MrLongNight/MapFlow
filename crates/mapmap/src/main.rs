@@ -2286,6 +2286,8 @@ impl App {
 
     /// Global update loop (physics/logic), independent of render rate per window.
     fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
+        let _ = self.handle_ui_actions();
+
         // --- Media Player Update ---
         self.sync_media_players();
         self.update_media_players(dt);
@@ -2386,6 +2388,108 @@ impl App {
             };
         }
     }
+    /// Handle global UI actions
+    fn handle_ui_actions(&mut self) -> Result<()> {
+        let actions = self.ui_state.take_actions();
+        for action in actions {
+            match action {
+                mapmap_ui::UIAction::NodeAction(node_action) => {
+                    self.handle_node_action(node_action)?;
+                }
+                mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
+                    self.ui_state.show_shader_graph = true;
+                    if let Some(graph) = self.state.shader_graphs.get(&graph_id) {
+                        self.ui_state.node_editor_panel.load_graph(graph);
+                    } else {
+                        // Create if not exists (lazy creation for testing)
+                        // Or log warning
+                        // For Phase 6 demo: Create a default graph if ID not found?
+                        // Better: Ensure graph exists via other means (Graph Manager UI).
+                        // For now we assume call is valid or we create empty.
+                        if !self.state.shader_graphs.contains_key(&graph_id) {
+                            let new_graph = mapmap_core::shader_graph::ShaderGraph::new(
+                                graph_id,
+                                "New Graph".to_string(),
+                            );
+                            self.state.shader_graphs.insert(graph_id, new_graph.clone());
+                            self.ui_state.node_editor_panel.load_graph(&new_graph);
+                        }
+                    }
+                }
+                _ => {
+                    // Ignore other actions or let them fall through if not handled here
+                    // Ideally we should have a centralized handler. Both AppUI and App might handle different actions.
+                    // But AppUI actions are usually handled by the caller (Main).
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Handle Node Editor actions
+    fn handle_node_action(&mut self, action: mapmap_ui::NodeEditorAction) -> Result<()> {
+        if let Some(graph_id) = self.ui_state.node_editor_panel.graph_id {
+            if let Some(graph) = self.state.shader_graphs.get_mut(&graph_id) {
+                use mapmap_ui::NodeEditorAction;
+                let mut needs_update = false;
+
+                match action {
+                    NodeEditorAction::AddNode(node_type, pos) => {
+                        let _id = graph.add_node(node_type);
+                        // TODO: Update position in Core logic if possible.
+                        // Core ShaderNode has `position: (f32, f32)`.
+                        if let Some(node) = graph.nodes.get_mut(&_id) {
+                            node.position = (pos.x, pos.y);
+                        }
+                        needs_update = true;
+                    }
+                    NodeEditorAction::RemoveNode(node_id) => {
+                        graph.remove_node(node_id);
+                        needs_update = true;
+                    }
+                    NodeEditorAction::SelectNode(_) => {
+                        // Selection is handled in UI state mostly.
+                    }
+                    NodeEditorAction::AddConnection(_from, from_socket, to, to_socket) => {
+                        // Note: UI NodeEditorAction provides NodeId and socket name
+                        if let Err(e) = graph.connect(_from, &from_socket, to, &to_socket) {
+                            tracing::warn!("Failed to connect nodes: {}", e);
+                        } else {
+                            needs_update = true;
+                        }
+                    }
+                    NodeEditorAction::RemoveConnection(_from, _sub_idx, to, to_socket) => {
+                        if let Err(e) = graph.disconnect(to, &to_socket) {
+                            tracing::warn!("Failed to disconnect nodes: {}", e);
+                        } else {
+                            needs_update = true;
+                        }
+                    }
+                    NodeEditorAction::UpdateGraph(_) => {
+                        needs_update = true;
+                    }
+                }
+
+                if needs_update {
+                    // Sync back to UI to maintain consistency
+                    self.ui_state.node_editor_panel.load_graph(graph);
+                    self.state.dirty = true;
+
+                    // Compile Graph
+                    if let Err(e) = self
+                        .effect_chain_renderer
+                        .update_shader_graph(&mut self.shader_graph_manager, graph_id)
+                    {
+                        tracing::error!("Shader Compile Error: {}", e);
+                    } else {
+                        tracing::info!("Shader Graph {} compiled successfully", graph_id);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         if output_id == 0 {
             // Sync Texture Previews for Module Canvas
@@ -2906,6 +3010,9 @@ impl App {
                             });
                         }
                     });
+
+                    // === 6. Node Editor (Phase 6b) ===
+                    self.ui_state.render_node_editor(ctx);
 
                     // === Settings Window (only modal allowed) ===
                     let mut show_settings = self.ui_state.show_settings;

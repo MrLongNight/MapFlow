@@ -410,6 +410,7 @@ async fn test_vignette_plus_filmgrain_chain() {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
+        let output_view = output.create_view(&Default::default());
         let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
         let mut chain = EffectChain::new();
         let vignette_id = chain.add_effect(EffectType::Vignette);

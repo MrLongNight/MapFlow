@@ -661,6 +661,23 @@ impl EffectChainRenderer {
         Ok(())
     }
 
+    /// Update and compile a shader graph using the renderer's layouts
+    pub fn update_shader_graph(
+        &self,
+        manager: &mut crate::ShaderGraphManager,
+        graph_id: mapmap_core::shader_graph::GraphId,
+    ) -> crate::Result<()> {
+        manager
+            .compile_for_gpu(
+                graph_id,
+                &self.device,
+                &self.bind_group_layout,
+                &self.uniform_bind_group_layout,
+                self.target_format,
+            )
+            .map_err(|e| crate::RenderError::ShaderCompilation(e.to_string()))
+    }
+
     /// Get the wgpu device.
     pub fn device(&self) -> &Arc<wgpu::Device> {
         &self.device
