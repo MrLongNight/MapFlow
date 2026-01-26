@@ -422,6 +422,7 @@ pub enum AudioAnimationBlendMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shader_graph::NodeType;
 
     #[test]
     fn test_audio_reactive_controller() {
@@ -446,8 +447,11 @@ mod tests {
             ..Default::default()
         };
 
-        let values = controller.update(&audio, 0.0);
+        // Use a non-zero time to allow attack/smoothing to apply
+        let values = controller.update(&audio, 0.1);
         assert!(values.contains_key("1.opacity"));
+        // Basic check that value is updated (smoothing makes exact check hard without time)
+        assert!(values["1.opacity"] > 0.0);
     }
 
     #[test]
@@ -456,11 +460,14 @@ mod tests {
         controller.create_preset_mappings(AudioReactivePreset::BassScale, 1);
 
         assert!(!controller.mappings.is_empty());
+        assert!(controller.mappings.contains_key("1.scale"));
     }
 
     #[test]
-    fn test_blend_modes() {
-        let system = AudioReactiveAnimationSystem::new();
+    fn test_blend_mode_add() {
+        let mut system = AudioReactiveAnimationSystem::new();
+        system.blend_mode = AudioAnimationBlendMode::Add;
+        system.blend_factor = 1.0; // Full audio influence
 
         let mut animated = HashMap::new();
         animated.insert("1.opacity".to_string(), 0.5);
@@ -468,7 +475,157 @@ mod tests {
         let mut audio = HashMap::new();
         audio.insert("1.opacity".to_string(), 0.3);
 
+        // Add: 0.5 + 0.3 * 1.0 = 0.8
         let blended = system.blend_values(&animated, &audio);
-        assert!(blended.contains_key("1.opacity"));
+        assert!((blended["1.opacity"] - 0.8).abs() < 1e-6);
+
+        // Test with partial blend factor
+        system.blend_factor = 0.5;
+        // Add: 0.5 + 0.3 * 0.5 = 0.65
+        let blended = system.blend_values(&animated, &audio);
+        assert!((blended["1.opacity"] - 0.65).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_blend_mode_replace() {
+        let mut system = AudioReactiveAnimationSystem::new();
+        system.blend_mode = AudioAnimationBlendMode::Replace;
+
+        let mut animated = HashMap::new();
+        animated.insert("1.opacity".to_string(), 0.5);
+
+        let mut audio = HashMap::new();
+        audio.insert("1.opacity".to_string(), 0.3);
+
+        // Replace with 1.0 factor: should be audio value (0.3)
+        system.blend_factor = 1.0;
+        let blended = system.blend_values(&animated, &audio);
+        assert!((blended["1.opacity"] - 0.3).abs() < 1e-6);
+
+        // Replace with 0.0 factor: should be animation value (0.5)
+        system.blend_factor = 0.0;
+        let blended = system.blend_values(&animated, &audio);
+        assert!((blended["1.opacity"] - 0.5).abs() < 1e-6);
+
+        // Replace with 0.5 factor: should be average (0.4)
+        system.blend_factor = 0.5;
+        let blended = system.blend_values(&animated, &audio);
+        assert!((blended["1.opacity"] - 0.4).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_blend_mode_multiply() {
+        let mut system = AudioReactiveAnimationSystem::new();
+        system.blend_mode = AudioAnimationBlendMode::Multiply;
+
+        let mut animated = HashMap::new();
+        animated.insert("1.opacity".to_string(), 0.5);
+
+        let mut audio = HashMap::new();
+        audio.insert("1.opacity".to_string(), 1.5); // Boost by 50%
+
+        // Multiply with 1.0 factor: anim * audio = 0.5 * 1.5 = 0.75
+        // Logic: anim * (1.0 + (audio - 1.0) * blend_factor)
+        // 0.5 * (1.0 + (1.5 - 1.0) * 1.0) = 0.5 * 1.5 = 0.75
+        system.blend_factor = 1.0;
+        let blended = system.blend_values(&animated, &audio);
+        assert!((blended["1.opacity"] - 0.75).abs() < 1e-6);
+
+        // Multiply with 0.0 factor: anim * 1.0 = 0.5
+        // 0.5 * (1.0 + (1.5 - 1.0) * 0.0) = 0.5 * 1.0 = 0.5
+        system.blend_factor = 0.0;
+        let blended = system.blend_values(&animated, &audio);
+        assert!((blended["1.opacity"] - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_controller_smoothing() {
+        let mut controller = AudioReactiveController::new();
+
+        let mapping = AudioReactiveMapping {
+            parameter_name: "test".to_string(),
+            source: crate::audio::AudioSource::SystemInput,
+            mapping_type: AudioMappingType::Volume,
+            frequency_band: None,
+            output_min: 0.0,
+            output_max: 1.0,
+            smoothing: 0.5, // 50% smoothing
+            attack: 1.0,    // Instant attack (lerp factor 1.0)
+            release: 1.0,   // Instant release
+        };
+
+        controller.add_mapping("p1".to_string(), mapping);
+
+        let audio_full = AudioAnalysis {
+            rms_volume: 1.0,
+            ..Default::default()
+        };
+
+        // First update: should jump to target if smoothing logic allows
+        // Wait, AudioReactiveMapping::apply uses internal logic which might mix smoothing and attack/release.
+        // If smoothing is 0.5, it usually means new_val = old * 0.5 + target * 0.5
+        let values = controller.update(&audio_full, 0.0);
+        let val1 = values["p1"];
+
+        // Update again with same input
+        let values = controller.update(&audio_full, 0.1);
+        let val2 = values["p1"];
+
+        // With smoothing, it should approach 1.0
+        // If it started at 0, first step might be partial
+        assert!(val2 >= val1, "Value should increase or stay same");
+    }
+
+    #[test]
+    fn test_apply_to_shader_graph() {
+        let mut graph = ShaderGraph::new(1, "Test".to_string());
+        let node_id = graph.add_node(NodeType::Blur); // Has "radius" parameter
+
+        let controller = AudioReactiveController::new();
+        let mut values = HashMap::new();
+        // Path format: "{node_id}.{param_name}"
+        let param_path = format!("{}.radius", node_id);
+        values.insert(param_path.clone(), 5.5);
+
+        controller.apply_to_shader_graph(&mut graph, &values);
+
+        // Verify update
+        let node = graph.nodes.get(&node_id).unwrap();
+        if let ParameterValue::Float(v) = node.parameters["radius"] {
+            assert_eq!(v, 5.5);
+        } else {
+            panic!("Parameter not updated correctly");
+        }
+    }
+
+    #[test]
+    fn test_controller_update_logic() {
+        let mut controller = AudioReactiveController::new();
+        let mapping = AudioReactiveMapping {
+            parameter_name: "val".to_string(),
+            source: crate::audio::AudioSource::SystemInput,
+            mapping_type: AudioMappingType::Volume,
+            frequency_band: None,
+            output_min: 0.0,
+            output_max: 100.0,
+            smoothing: 0.0, // No smoothing for deterministic check
+            attack: 1.0,
+            release: 1.0,
+        };
+        controller.add_mapping("1.val".to_string(), mapping);
+
+        let audio = AudioAnalysis {
+            rms_volume: 0.5,
+            ..Default::default()
+        };
+
+        // 0.5 volume mapped to 0..100 should be 50.0
+        let values = controller.update(&audio, 1.0);
+        assert!((values["1.val"] - 50.0).abs() < 1e-6);
+
+        // Disable controller
+        controller.enabled = false;
+        let values = controller.update(&audio, 2.0);
+        assert!(values.is_empty());
     }
 }
