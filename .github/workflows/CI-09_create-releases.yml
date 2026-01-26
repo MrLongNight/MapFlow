@@ -135,7 +135,7 @@ jobs:
 
         shell: pwsh
 
-      - name: FFMPEG-DLLs für Installer bereitstellen
+      - name: Kopiere benötigte FFmpeg-DLLs für WiX
         run: |
           $dlls = @(
             "avcodec-61.dll",
@@ -147,13 +147,6 @@ jobs:
             "swscale-8.dll"
           )
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
-          Write-Host "Source Path: $vcpkgBin"
-          
-          # Ensure target directory exists
-          if (!(Test-Path "target\release")) {
-            New-Item -ItemType Directory -Force -Path "target\release"
-          }
-
           foreach ($dll in $dlls) {
             $src = Join-Path $vcpkgBin $dll
             $dst = "target\release\$dll"
