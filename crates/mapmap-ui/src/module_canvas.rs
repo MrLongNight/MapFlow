@@ -1520,7 +1520,7 @@ impl ModuleCanvas {
                                                     // Body Dragging Logic
                                                     let body_id = response.id.with("body_drag");
                                                     let body_response = ui.interact(rect, body_id, Sense::drag());
-                                                    
+
                                                     let mut delta_norm = (0.0, 0.0);
                                                     if body_response.dragged() {
                                                         if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
@@ -1534,7 +1534,7 @@ impl ModuleCanvas {
                                                             let c2 = cross(p_tr, p_br, pos);
                                                             let c3 = cross(p_br, p_bl, pos);
                                                             let c4 = cross(p_bl, p_tl, pos);
-                                                            
+
                                                             // Check if all have same sign (or zero)
                                                             let inside = (c1 >= 0.0 && c2 >= 0.0 && c3 >= 0.0 && c4 >= 0.0) ||
                                                                          (c1 <= 0.0 && c2 <= 0.0 && c3 <= 0.0 && c4 <= 0.0);
@@ -1543,13 +1543,13 @@ impl ModuleCanvas {
                                                             // For better UX, we should check if *hovered* was inside, but interacting with rect is global.
                                                             // Simplified: If dragging and mouse is currently effectively inside bounding box of quad?
                                                             // No, let's just use the `drag_delta`.
-                                                            if inside || body_response.hovered() { 
+                                                            if inside || body_response.hovered() {
                                                                  let dt = body_response.drag_delta();
                                                                  delta_norm = (dt.x / rect.width(), dt.y / rect.height());
                                                             }
                                                         }
                                                     }
-                                                    
+
                                                     if delta_norm != (0.0, 0.0) {
                                                         let apply_delta = |c: &mut (f32, f32)| {
                                                             c.0 = (c.0 + delta_norm.0).clamp(0.0, 1.0);
@@ -1685,7 +1685,7 @@ impl ModuleCanvas {
                                                 // Body Dragging Logic
                                                 let body_id = response.id.with("body_drag");
                                                 let body_response = ui.interact(rect, body_id, Sense::drag());
-                                                
+
                                                 let mut delta_norm = (0.0, 0.0);
                                                 if body_response.dragged() {
                                                     if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
@@ -1697,17 +1697,17 @@ impl ModuleCanvas {
                                                         let c2 = cross(p_tr, p_br, pos);
                                                         let c3 = cross(p_br, p_bl, pos);
                                                         let c4 = cross(p_bl, p_tl, pos);
-                                                        
+
                                                         let inside = (c1 >= 0.0 && c2 >= 0.0 && c3 >= 0.0 && c4 >= 0.0) ||
                                                                      (c1 <= 0.0 && c2 <= 0.0 && c3 <= 0.0 && c4 <= 0.0);
 
-                                                        if inside { 
+                                                        if inside {
                                                              let dt = body_response.drag_delta();
                                                              delta_norm = (dt.x / rect.width(), dt.y / rect.height());
                                                         }
                                                     }
                                                 }
-                                                
+
                                                 if delta_norm != (0.0, 0.0) {
                                                     let apply_delta = |c: &mut (f32, f32)| {
                                                         c.0 = (c.0 + delta_norm.0).clamp(0.0, 1.0);
