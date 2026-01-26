@@ -190,6 +190,10 @@ pub enum UIAction {
     NextCue,
     PrevCue,
     StopCue,
+
+    // Shader Graph (Phase 6b)
+    NodeAction(NodeEditorAction),
+    OpenShaderGraph(mapmap_core::GraphId),
 }
 
 use mapmap_control::ControlTarget;
@@ -693,5 +697,25 @@ impl AppUI {
                 }
             }
         }
+    }
+
+    /// Render Node Editor Window
+    pub fn render_node_editor(&mut self, ctx: &egui::Context) {
+        if !self.show_shader_graph {
+            return;
+        }
+
+        let mut open = self.show_shader_graph;
+        egui::Window::new(self.i18n.t("panel-node-editor"))
+            .default_size([800.0, 600.0])
+            .resizable(true)
+            .vscroll(false) // Canvas handles panning
+            .open(&mut open)
+            .show(ctx, |ui| {
+                if let Some(action) = self.node_editor_panel.ui(ui, &self.i18n) {
+                    self.actions.push(UIAction::NodeAction(action));
+                }
+            });
+        self.show_shader_graph = open;
     }
 }
