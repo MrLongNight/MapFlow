@@ -1124,10 +1124,13 @@ impl App {
                                     }
                                 }
                             }
-                            mapmap_core::SourceCommand::NdiInput { source_name, .. } =>
+                            mapmap_core::SourceCommand::NdiInput {
+                                source_name: _source_name,
+                                ..
+                            } =>
                             {
                                 #[cfg(feature = "ndi")]
-                                if let Some(src_name) = source_name {
+                                if let Some(src_name) = _source_name {
                                     let receiver =
                                         self.ndi_receivers.entry(*part_id).or_insert_with(|| {
                                             mapmap_io::ndi::NdiReceiver::new()
@@ -1276,7 +1279,7 @@ impl App {
                     beat_detected: analysis_v2.beat_detected,
                     beat_strength: analysis_v2.beat_strength,
                     onset_detected: false, // Not implemented in V2 yet
-                    tempo_bpm: Some(analysis_v2.tempo_bpm),
+                    tempo_bpm: analysis_v2.tempo_bpm,
                     waveform: analysis_v2.waveform.clone(),
                 };
 
@@ -1291,7 +1294,7 @@ impl App {
                         peak_volume: analysis_v2.peak_volume,
                         beat_detected: analysis_v2.beat_detected,
                         beat_strength: analysis_v2.beat_strength,
-                        bpm: Some(analysis_v2.tempo_bpm),
+                        bpm: analysis_v2.tempo_bpm,
                     });
 
                 // Update BPM in toolbar
