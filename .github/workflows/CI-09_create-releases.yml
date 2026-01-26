@@ -135,16 +135,14 @@ jobs:
 
         shell: pwsh
 
-      - name: FFmpeg-DLLs bereitstellen
+      - name: Copy FFmpeg-DLLs für WiX
         run: |
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
-          Write-Host "Source Path: $vcpkgBin"
           if (Test-Path $vcpkgBin) {
-            Copy-Item "$vcpkgBin\*.dll" target\release\ -Force
-            Write-Host "Copied FFmpeg DLLs to target\release"
-            Get-ChildItem target\release\*.dll | Select-Object Name
+            Copy-Item "$vcpkgBin\*.dll" target\release\
+            Write-Host "FFmpeg DLLs nach target\release kopiert."
           } else {
-            Write-Host "Error: vcpkg bin directory not found at $vcpkgBin"
+            Write-Host "Warnung: vcpkg bin-Verzeichnis nicht gefunden!"
             exit 1
           }
         shell: pwsh
