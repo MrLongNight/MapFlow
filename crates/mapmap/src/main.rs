@@ -1037,13 +1037,7 @@ impl App {
                 self.render_ops.clear();
 
                 // Evaluate ALL modules to support parallel output
-                for module_id in self.state.module_manager.list_modules() {
-                    let module = if let Some(m) = self.state.module_manager.get_module(*module_id) {
-                        m
-                    } else {
-                        continue;
-                    };
-
+                for module in self.state.module_manager.list_modules() {
                     // DEBUG: Log which module we're evaluating
                     debug!(
                         "Evaluating module '{}' (ID {}): parts={}, connections={}",
@@ -1055,31 +1049,6 @@ impl App {
 
                     let result = self.module_evaluator.evaluate(module);
 
-                    // DEBUG: Log evaluation result details
-                    debug!(
-                        "Evaluation result for module '{}': render_ops={}, source_commands={}, trigger_values={}",
-                        module.name,
-                        result.render_ops.len(),
-                        result.source_commands.len(),
-                        result.trigger_values.len()
-                    );
-
-                    // DEBUG: Log part types in module
-                    for part in &module.parts {
-                        use mapmap_core::module::ModulePartType;
-                        let type_name = match &part.part_type {
-                            ModulePartType::Trigger(_) => "Trigger",
-                            ModulePartType::Source(_) => "Source",
-                            ModulePartType::Mask(_) => "Mask",
-                            ModulePartType::Modulizer(_) => "Modulizer",
-                            ModulePartType::Layer(_) => "Layer",
-                            ModulePartType::Mesh(_) => "Mesh",
-                            ModulePartType::Output(_) => "Output",
-                            ModulePartType::Hue(_) => "Hue",
-                        };
-                        debug!("  Part {}: {}", part.id, type_name);
-                    }
-
                     // Accumulate Render Ops
                     let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
                         .render_ops
@@ -1089,7 +1058,7 @@ impl App {
                         .collect();
                     self.render_ops.append(&mut module_ops);
 
-                    // Update UI Trigger Visualization (only for the active module to avoid flickering)
+                    // Update UI Trigger Visualization (only for active module)
                     if Some(module.id) == self.ui_state.module_canvas.active_module_id {
                         self.ui_state.module_canvas.last_trigger_values = result
                             .trigger_values
@@ -1106,15 +1075,12 @@ impl App {
                                 trigger_value,
                             } => {
                                 let path = path.clone();
-                                let trigger_value = *trigger_value;
                                 let part_id = *part_id;
                                 let player_key = (module.id, part_id);
-
                                 if path.is_empty() {
                                     continue;
                                 }
 
-                                // Check if player exists or needs creation
                                 let player_needs_reload = if let Some((current_path, _)) =
                                     self.media_players.get(&player_key)
                                 {
@@ -1130,8 +1096,6 @@ impl App {
                                                 .insert(player_key, (path.clone(), player));
                                         }
                                         Err(e) => {
-                                            // Log error only once per failure to avoid spam?
-                                            // For now just error
                                             error!("Failed to load media '{}': {}", path, e);
                                             continue;
                                         }
@@ -1139,16 +1103,12 @@ impl App {
                                 }
 
                                 if let Some((_, player)) = self.media_players.get_mut(&player_key) {
-                                    // Trigger update
-                                    if trigger_value > 0.1 {
+                                    if *trigger_value > 0.1 {
                                         let _ = player.command_sender().send(PlaybackCommand::Play);
                                     }
-
-                                    // Update player with fixed DT for now (should use real DT)
                                     if let Some(frame) =
                                         player.update(std::time::Duration::from_millis(16))
                                     {
-                                        // Upload to texture pool
                                         if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
                                         {
                                             let tex_name =
@@ -1164,47 +1124,33 @@ impl App {
                                     }
                                 }
                             }
-                            mapmap_core::SourceCommand::NdiInput {
-                                source_name: _source_name,
-                                trigger_value: _,
-                            } => {
-                                let _part_id = *part_id;
+                            mapmap_core::SourceCommand::NdiInput { source_name, .. } =>
+                            {
                                 #[cfg(feature = "ndi")]
-                                {
-                                    if let Some(src_name) = _source_name {
-                                        let receiver = self
-                                            .ndi_receivers
-                                            .entry(part_id)
-                                            .or_insert_with(|| {
-                                                info!(
-                                                    "Creating NDI receiver for part {} source {}",
-                                                    part_id, src_name
-                                                );
-                                                mapmap_io::ndi::NdiReceiver::new()
-                                                    .expect("Failed to create NDI receiver")
-                                            });
-
-                                        if let Ok(Some(frame)) =
-                                            receiver.receive(std::time::Duration::from_millis(0))
+                                if let Some(src_name) = source_name {
+                                    let receiver =
+                                        self.ndi_receivers.entry(*part_id).or_insert_with(|| {
+                                            mapmap_io::ndi::NdiReceiver::new()
+                                                .expect("Failed to create NDI receiver")
+                                        });
+                                    if let Ok(Some(frame)) =
+                                        receiver.receive(std::time::Duration::from_millis(0))
+                                    {
+                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
                                         {
-                                            if let mapmap_io::format::FrameData::Cpu(data) =
-                                                &frame.data
-                                            {
-                                                let tex_name =
-                                                    format!("part_{}_{}", module.id, part_id);
-                                                self.texture_pool.upload_data(
-                                                    &self.backend.queue,
-                                                    &tex_name,
-                                                    data,
-                                                    frame.format.width,
-                                                    frame.format.height,
-                                                );
-                                            }
+                                            let tex_name =
+                                                format!("part_{}_{}", module.id, part_id);
+                                            self.texture_pool.upload_data(
+                                                &self.backend.queue,
+                                                &tex_name,
+                                                data,
+                                                frame.format.width,
+                                                frame.format.height,
+                                            );
                                         }
                                     }
                                 }
                             }
-
                             mapmap_core::SourceCommand::HueOutput {
                                 brightness,
                                 hue,
@@ -1223,99 +1169,56 @@ impl App {
                             _ => {}
                         }
                     }
-                    let now_ms = (timestamp * 1000.0) as u64;
-                    unsafe {
-                        if now_ms / 1000 > LAST_RENDER_LOG {
-                            LAST_RENDER_LOG = now_ms / 1000;
-                            debug!("=== Render Pipeline Status ===");
-                            debug!("  render_ops count: {}", self.render_ops.len());
-                            for (i, (mid, op)) in self.render_ops.iter().enumerate() {
-                                debug!(
-                                    "  Op[{}]: mod={} source_part_id={:?}, output={:?}",
-                                    i,
-                                    mid,
-                                    op.source_part_id,
-                                    match &op.output_type {
-                                        mapmap_core::module::OutputType::Projector {
-                                            id, ..
-                                        } => format!("Projector({})", id),
-                                        mapmap_core::module::OutputType::NdiOutput { name } =>
-                                            format!("NDI({})", name),
-                                        #[cfg(target_os = "windows")]
-                                        mapmap_core::module::OutputType::Spout { name } =>
-                                            format!("Spout({})", name),
-
-                                        mapmap_core::module::OutputType::Hue { .. } =>
-                                            "Hue".to_string(),
-                                    }
-                                );
-                                if let Some(sid) = op.source_part_id {
-                                    let tex_name = format!("part_{}_{}", mid, sid);
-                                    let has_tex = self.texture_pool.has_texture(&tex_name);
-                                    debug!("    -> Texture '{}' exists: {}", tex_name, has_tex);
-                                }
-                            }
-                            debug!("  media_players count: {}", self.media_players.len());
-                            for (mid, pid) in self.media_players.keys() {
-                                debug!("    -> Player for mod={} part_id={}", mid, pid);
-                            }
-                        }
-                    }
-
-                    // Update Output Assignments for Preview
-                    // NOTE: We need to insert with BOTH IDs:
-                    // - Internal Projector ID (*id): Used by UI preview panel (line 2651)
-                    // - output_part_id: Used by window_manager and render function
-                    // Update Output Assignments for Preview
-                    // NOTE: We need to insert with BOTH IDs:
-                    // - Internal Projector ID (*id): Used by UI preview panel (line 2651)
-                    // - output_part_id: Used by window_manager and render function
-                    self.output_assignments.clear();
-                    for (mid, op) in &self.render_ops {
-                        if let mapmap_core::module::OutputType::Projector { id, .. } =
-                            &op.output_type
-                        {
-                            if let Some(source_id) = op.source_part_id {
-                                let tex_name = format!("part_{}_{}", mid, source_id);
-                                // Insert with internal projector ID (for UI preview panel)
-                                self.output_assignments
-                                    .entry(*id)
-                                    .or_default()
-                                    .push(tex_name.clone());
-                                // Also insert with output_part_id (for window rendering)
-                                self.output_assignments
-                                    .entry(op.output_part_id)
-                                    .or_default()
-                                    .push(tex_name);
-                            }
-                        }
-                    }
-
-                    // 3. Sync output windows with evaluation result
-                    // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
-                    // by temporarily taking ownership and restoring it immediately.
-                    // 3. Sync output windows with evaluation result
-                    // OPTIMIZATION: Avoid deep clone of RenderOps (which contains Vecs)
-                    // by temporarily taking ownership and restoring it immediately.
-                    // We need to pass clean RenderOps to sync_window, so map back to just RenderOp or update sync_window
-                    // Updating sync_window is better but complex signature.
-                    // For now, let's extract just the RenderOps to satisfy the signature if it expects RenderOp
-                    // Wait, sync_output_windows uses op.output_type which is in RenderOp. ModuleID not strictly needed there?
-                    // Let's create a temporary Vec<RenderOp> for sync_window.
-                    // This is inefficient but fixes the type error without changing sync_output_windows signature yet.
-                    let render_ops_temp = std::mem::take(&mut self.render_ops);
-                    let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
-                        render_ops_temp.iter().map(|(_, op)| op.clone()).collect();
-
-                    if let Err(e) = self.sync_output_windows(
-                        elwt,
-                        &ops_only,
-                        self.ui_state.module_canvas.active_module_id,
-                    ) {
-                        error!("Failed to sync output windows: {}", e);
-                    }
-                    self.render_ops = render_ops_temp;
                 }
+
+                // Global render log (once per second)
+                static mut LAST_RENDER_LOG: u64 = 0;
+                let now_ms = (timestamp * 1000.0) as u64;
+                unsafe {
+                    if now_ms / 1000 > LAST_RENDER_LOG {
+                        LAST_RENDER_LOG = now_ms / 1000;
+                        debug!("=== Render Pipeline Status ===");
+                        debug!("  render_ops count: {}", self.render_ops.len());
+                        for (i, (mid, op)) in self.render_ops.iter().enumerate() {
+                            debug!(
+                                "  Op[{}]: mod={} source_part_id={:?}, output={:?}",
+                                i, mid, op.source_part_id, op.output_type
+                            );
+                        }
+                    }
+                }
+
+                // 2. Update Output Assignments for Preview/Window Mapping
+                self.output_assignments.clear();
+                for (mid, op) in &self.render_ops {
+                    if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
+                        if let Some(source_id) = op.source_part_id {
+                            let tex_name = format!("part_{}_{}", mid, source_id);
+                            // Insert both for UI panel and window manager
+                            self.output_assignments
+                                .entry(*id)
+                                .or_default()
+                                .push(tex_name.clone());
+                            self.output_assignments
+                                .entry(op.output_part_id)
+                                .or_default()
+                                .push(tex_name);
+                        }
+                    }
+                }
+
+                // 3. Sync output windows with evaluation result
+                let render_ops_temp = std::mem::take(&mut self.render_ops);
+                let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+                    render_ops_temp.iter().map(|(_, op)| op.clone()).collect();
+                if let Err(e) = self.sync_output_windows(
+                    elwt,
+                    &ops_only,
+                    self.ui_state.module_canvas.active_module_id,
+                ) {
+                    error!("Failed to sync output windows: {}", e);
+                }
+                self.render_ops = render_ops_temp;
 
                 // Convert V2 analysis to legacy format for UI compatibility
                 let legacy_analysis = mapmap_core::audio::AudioAnalysis {
@@ -1351,6 +1254,44 @@ impl App {
                         beat_detected: analysis_v2.beat_detected,
                         beat_strength: analysis_v2.beat_strength,
                         bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
+                    });
+
+                // Update BPM in toolbar
+                // Convert V2 analysis to legacy format for UI compatibility
+                // analyzer_v2 produces 9 bands, legacy AudioAnalysis expects 7.
+                let legacy_analysis = mapmap_core::audio::AudioAnalysis {
+                    timestamp: analysis_v2.timestamp,
+                    fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
+                    band_energies: [
+                        analysis_v2.band_energies[0], // SubBass
+                        analysis_v2.band_energies[1], // Bass
+                        analysis_v2.band_energies[2], // LowMid
+                        analysis_v2.band_energies[3], // Mid
+                        analysis_v2.band_energies[4], // HighMid
+                        analysis_v2.band_energies[6], // Presence (V2 Presence)
+                        analysis_v2.band_energies[8], // Brilliance (V2 Air)
+                    ],
+                    rms_volume: analysis_v2.rms_volume,
+                    peak_volume: analysis_v2.peak_volume,
+                    beat_detected: analysis_v2.beat_detected,
+                    beat_strength: analysis_v2.beat_strength,
+                    onset_detected: false, // Not implemented in V2 yet
+                    tempo_bpm: Some(analysis_v2.tempo_bpm),
+                    waveform: analysis_v2.waveform.clone(),
+                };
+
+                self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
+
+                // Update module canvas with audio trigger data
+                self.ui_state
+                    .module_canvas
+                    .set_audio_data(AudioTriggerData {
+                        band_energies: analysis_v2.band_energies,
+                        rms_volume: analysis_v2.rms_volume,
+                        peak_volume: analysis_v2.peak_volume,
+                        beat_detected: analysis_v2.beat_detected,
+                        beat_strength: analysis_v2.beat_strength,
+                        bpm: Some(analysis_v2.tempo_bpm),
                     });
 
                 // Update BPM in toolbar
