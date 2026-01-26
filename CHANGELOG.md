@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - 2026-01-26: fix(ci): Ensure FFmpeg development libraries are installed in CI-01 pre-checks job to fix ffmpeg-sys-next build errors
 - 2026-01-26: fix(ci): Improve library verification in CI-01 with robust pkg-config check loop and detailed diagnostics
-- 2026-01-26: fix(ci): Fix missing FFmpeg DLLs in WiX installer by explicitly copying them to target/release in CI-09
+- 2026-01-26: fix(ci): Fix missing FFmpeg DLLs in WiX installer by explicitly verifying and copying each required DLL to target/release in CI-09
 - 2026-01-26: fix(scripts): Add missing libswresample-dev to install-ffmpeg-dev.sh
 - 2026-01-20: docs: Update Roadmap status for NDI and Hue integration (Tracker)
 - 2026-01-19: fix(ci): Ensure VCPKG_ROOT is set and vcpkg integrated in release workflow

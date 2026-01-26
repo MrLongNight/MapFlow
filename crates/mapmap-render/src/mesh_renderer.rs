@@ -267,8 +267,16 @@ impl MeshRenderer {
 
     /// Create a uniform buffer
     pub fn create_uniform_buffer(&self, transform: Mat4, opacity: f32) -> wgpu::Buffer {
+        // Normalization Transform: Maps [0, 1] (Top-Left 0,0) to [-1, 1] (Top-Left -1,1)
+        // X: [0, 1] -> [-1, 1] => * 2.0 - 1.0
+        // Y: [0, 1] -> [1, -1] => * -2.0 + 1.0
+        let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
+            * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
+
+        let final_transform = normalization * transform;
+
         let uniforms = MeshUniforms {
-            transform: transform.to_cols_array_2d(),
+            transform: final_transform.to_cols_array_2d(),
             opacity,
             flip_h: 0.0,
             flip_v: 0.0,
@@ -313,8 +321,12 @@ impl MeshRenderer {
     ) -> Arc<wgpu::BindGroup> {
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
+            let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
+                * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
+            let final_transform = normalization * transform;
+
             let uniforms = MeshUniforms {
-                transform: transform.to_cols_array_2d(),
+                transform: final_transform.to_cols_array_2d(),
                 opacity,
                 flip_h: 0.0,
                 flip_v: 0.0,
@@ -350,8 +362,12 @@ impl MeshRenderer {
 
         // Update current buffer
         let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
+            * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
+        let final_transform = normalization * transform;
+
         let uniforms = MeshUniforms {
-            transform: transform.to_cols_array_2d(),
+            transform: final_transform.to_cols_array_2d(),
             opacity,
             flip_h: 0.0,
             flip_v: 0.0,
@@ -387,8 +403,12 @@ impl MeshRenderer {
     ) -> Arc<wgpu::BindGroup> {
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
+            let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
+                * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
+            let final_transform = normalization * transform;
+
             let uniforms = MeshUniforms {
-                transform: transform.to_cols_array_2d(),
+                transform: final_transform.to_cols_array_2d(),
                 opacity,
                 flip_h: if flip_h { 1.0 } else { 0.0 },
                 flip_v: if flip_v { 1.0 } else { 0.0 },
@@ -424,8 +444,12 @@ impl MeshRenderer {
 
         // Update current buffer
         let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
+            * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
+        let final_transform = normalization * transform;
+
         let uniforms = MeshUniforms {
-            transform: transform.to_cols_array_2d(),
+            transform: final_transform.to_cols_array_2d(),
             opacity,
             flip_h: if flip_h { 1.0 } else { 0.0 },
             flip_v: if flip_v { 1.0 } else { 0.0 },

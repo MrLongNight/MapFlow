@@ -1033,19 +1033,22 @@ impl App {
 
                 // (Redundant media player update removed - handled in regular update_media_players path)
 
-                // Determine module to evaluate: either active from UI, or root_module
-                let module_to_evaluate = self
-                    .ui_state
-                    .module_canvas
-                    .active_module_id
-                    .and_then(|id| self.state.module_manager.get_module(id))
-                    .or_else(|| self.state.module_manager.list_modules().first().map(|m| *m));
+                // CLEAR render ops for the new frame
+                self.render_ops.clear();
 
-                if let Some(module) = module_to_evaluate {
+                // Evaluate ALL modules to support parallel output
+                for module_id in self.state.module_manager.list_modules() {
+                    let module = if let Some(m) = self.state.module_manager.get_module(*module_id) {
+                        m
+                    } else {
+                        continue;
+                    };
+
                     // DEBUG: Log which module we're evaluating
                     debug!(
-                        "Evaluating module: name='{}', parts={}, connections={}",
+                        "Evaluating module '{}' (ID {}): parts={}, connections={}",
                         module.name,
+                        module.id,
                         module.parts.len(),
                         module.connections.len()
                     );
@@ -1054,7 +1057,8 @@ impl App {
 
                     // DEBUG: Log evaluation result details
                     debug!(
-                        "Evaluation result: render_ops={}, source_commands={}, trigger_values={}",
+                        "Evaluation result for module '{}': render_ops={}, source_commands={}, trigger_values={}",
+                        module.name,
                         result.render_ops.len(),
                         result.source_commands.len(),
                         result.trigger_values.len()
@@ -1076,22 +1080,25 @@ impl App {
                         debug!("  Part {}: {}", part.id, type_name);
                     }
 
-                    // Assign Render Ops for next frame!
-                    self.render_ops = result
+                    // Accumulate Render Ops
+                    let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
                         .render_ops
                         .iter()
                         .cloned()
                         .map(|op| (module.id, op))
                         .collect();
+                    self.render_ops.append(&mut module_ops);
 
-                    // Update UI Trigger Visualization
-                    self.ui_state.module_canvas.last_trigger_values = result
-                        .trigger_values
-                        .iter()
-                        .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
-                        .collect();
+                    // Update UI Trigger Visualization (only for the active module to avoid flickering)
+                    if Some(module.id) == self.ui_state.module_canvas.active_module_id {
+                        self.ui_state.module_canvas.last_trigger_values = result
+                            .trigger_values
+                            .iter()
+                            .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
+                            .collect();
+                    }
 
-                    // 1. Handle Source Commands
+                    // 1. Handle Source Commands for this module
                     for (part_id, cmd) in &result.source_commands {
                         match cmd {
                             mapmap_core::SourceCommand::PlayMedia {
@@ -1183,7 +1190,8 @@ impl App {
                                             if let mapmap_io::format::FrameData::Cpu(data) =
                                                 &frame.data
                                             {
-                                                let tex_name = format!("part_{}", part_id);
+                                                let tex_name =
+                                                    format!("part_{}_{}", module.id, part_id);
                                                 self.texture_pool.upload_data(
                                                     &self.backend.queue,
                                                     &tex_name,
@@ -1215,15 +1223,6 @@ impl App {
                             _ => {}
                         }
                     }
-
-                    // 2. Handle Render Ops (New System)
-                    self.render_ops = result
-                        .render_ops
-                        .iter()
-                        .cloned()
-                        .map(|op| (module.id, op))
-                        .collect();
-                    static mut LAST_RENDER_LOG: u64 = 0;
                     let now_ms = (timestamp * 1000.0) as u64;
                     unsafe {
                         if now_ms / 1000 > LAST_RENDER_LOG {
@@ -3643,11 +3642,8 @@ impl App {
                                     &op.mesh.to_mesh(),
                                 );
 
-                            // Fix Inverted Output: Flip Y axis
-                            // User reported 180 rotation. WGPU NDC Y is Up usually, but texture origin Top-Left.
-                            // Flipping Y fixes "Upside Down". If it is 180 (also X flipped), we might need (-1, -1).
-                            // Let's try Flip Y first as it's standard for WGPU Texture mapping.
-                            let transform = glam::Mat4::from_scale(glam::vec3(1.0, -1.0, 1.0));
+                            // No manual transform needed - MeshRenderer handles [0,1] -> [-1,1] conversion internally
+                            let transform = glam::Mat4::IDENTITY;
                             let uniform_bind_group =
                                 self.mesh_renderer.get_uniform_bind_group_with_source_props(
                                     &self.backend.queue,
