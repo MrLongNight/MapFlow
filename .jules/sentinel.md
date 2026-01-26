@@ -22,3 +22,8 @@
 **Vulnerability:** The web server treated an empty list of `allowed_origins` as "Allow All" (wildcard), intended as a permissive default. This meant that configurations intending to restrict access (by providing an empty list) inadvertently opened the API to all origins.
 **Learning:** "Empty means None" is the standard semantic expectation for security allowlists. "Empty means All" is a dangerous anti-pattern that leads to accidental exposure.
 **Prevention:** Treat empty allowlists as "Deny All". Require explicit `*` or `Any` markers for permissive modes. Ensure secure defaults (empty/deny) in configuration structs.
+
+## 2026-10-27 - Unrestricted File Write in MCP Tools
+**Vulnerability:** The MCP `project_save` tool validated path traversal but allowed writing to any file extension (e.g., `src/lib.rs`). This allowed an agent to overwrite source code or configuration files within the allowed directory.
+**Learning:** Path traversal protection is insufficient for file write operations. Restricting file types by extension is crucial to prevent code injection or configuration corruption.
+**Prevention:** Whitelist allowed file extensions (e.g., `.mapmap`, `.json`) for all file write operations exposed to agents.
