@@ -162,9 +162,7 @@ jobs:
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
 
-      - name: Build MSI
-        shell: pwsh
-        run: |
+
       - name: Build MSI with Heat Harvesting
         shell: pwsh
         run: |
