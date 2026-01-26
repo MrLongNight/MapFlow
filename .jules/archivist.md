@@ -14,6 +14,15 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-01-26 - Configuration File Standards & Root Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt `CODE-OF-CONDUCT.md`, das nicht in der Liste der erlaubten Root-Dateien stand. Zusätzlich wurden notwendige Konfigurationsdateien (`Makefile.toml`, `deny.toml`) und Dokumentation (`ROADMAP_2.0.md`, `AGENTS.md`) identifiziert, die im Root verbleiben müssen, aber nicht explizit gelistet waren.
+
+**Aktion:**
+- `CODE-OF-CONDUCT.md` nach `.github/` verschoben (Standard-Konvention).
+- `Makefile.toml` (cargo-make), `deny.toml` (cargo-deny), `ROADMAP_2.0.md` und `AGENTS.md` als erlaubte Ausnahmen dokumentiert.
+- Repository auf "Unauthorized Root Files" und "Misplaced Markdown Files" gescannt (Ergebnis: Sauber).
+
 ## 2026-01-02 - Root Directory Cleanup
 
 **Erkenntnis:** Das Root-Verzeichnis enthielt mehrere temporäre Dateien (`check_*.txt`, `test_results.txt`, `core_error.txt`) sowie falsch platzierte Dokumentation (`SECURITY.md`, `knowledge.md`) und redundante Dateien (`VERSION.txt`).
