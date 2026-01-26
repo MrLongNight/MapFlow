@@ -26,3 +26,10 @@ This pattern should be applied to other time-based nodes (e.g., Timeline, Sequen
 2. Dispatch this action from the UI (instead of calling blocking code).
 3. Handle the action in the main event loop by spawning a `tokio` task.
 4. Send the result back to the main thread via an internal channel (e.g., `McpAction` or dedicated channel).
+
+## 2024-05-24 – [Accessible Custom Widget Pattern]
+**Learning:** Custom `egui` painters (using `ui.allocate_painter`) are inaccessible by default. They lack keyboard focus and semantic meaning.
+**Action:** Implemented a standard pattern for making custom widgets accessible:
+1. Use `Sense::click_and_drag().union(Sense::focusable_noninteractive())` to allow the widget to accept focus while maintaining mouse interaction.
+2. Check `response.has_focus()` to draw a visual focus ring (Neon Cyan `0, 229, 255` for Cyber Dark theme).
+3. Handle `ui.input(|i| i.events)` inside the focus block to map standard keys (Arrows, Space) to widget actions.
