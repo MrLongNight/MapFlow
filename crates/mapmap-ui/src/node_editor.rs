@@ -384,25 +384,12 @@ impl NodeEditor {
         let id = self.next_id;
         self.next_id += 1;
 
-        let inputs = node_type.default_inputs();
-        let outputs = node_type.default_outputs();
+        // Use core logic to create default sockets and parameters
+        let core_node = mapmap_core::shader_graph::ShaderNode::new(id, node_type);
+        let mut ui_node = self.core_node_to_ui(&core_node);
+        ui_node.position = position;
 
-        let size = Vec2::new(
-            180.0,
-            80.0 + (inputs.len().max(outputs.len()) as f32 * 24.0),
-        );
-
-        let node = Node {
-            id,
-            node_type,
-            position,
-            inputs,
-            outputs,
-            parameters: HashMap::new(),
-            size,
-        };
-
-        self.nodes.insert(id, node);
+        self.nodes.insert(id, ui_node);
         id
     }
 
@@ -418,35 +405,44 @@ impl NodeEditor {
     pub fn add_connection(
         &mut self,
         from_node: NodeId,
-        from_socket: SocketId,
+        from_socket_name: String,
         to_node: NodeId,
-        to_socket: SocketId,
+        to_socket_name: String,
     ) -> bool {
         // Validate connection
         if let (Some(from), Some(to)) = (self.nodes.get(&from_node), self.nodes.get(&to_node)) {
-            if from_socket < from.outputs.len() && to_socket < to.inputs.len() {
-                let from_type = &from.outputs[from_socket].socket_type;
-                let to_type = &to.inputs[to_socket].socket_type;
+            // Find sockets
+            let out_socket = from.outputs.iter().find(|s| s.name == from_socket_name);
+            let in_socket = to.inputs.iter().find(|s| s.name == to_socket_name);
 
-                if from_type.compatible_with(to_type) {
-                    // Remove existing connection to this input
-                    self.connections
-                        .retain(|c| c.to_node != to_node || c.to_socket != to_socket);
+            if let (Some(out_s), Some(in_s)) = (out_socket, in_socket) {
+                 if out_s.data_type.compatible_with(&in_s.data_type) {
+                      // Remove existing connection to this input
+                      self.connections
+                          .retain(|c| c.to_node != to_node || c.to_socket != to_socket_name);
 
-                    self.connections.push(Connection {
-                        from_node,
-                        from_socket,
-                        to_node,
-                        to_socket,
-                    });
-                    return true;
-                }
+                      self.connections.push(Connection {
+                          from_node,
+                          from_socket: from_socket_name,
+                          to_node,
+                          to_socket: to_socket_name,
+                      });
+                      
+                      // Update socket status
+                       if let Some(node) = self.nodes.get_mut(&to_node) {
+                           if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == to_socket_name) {
+                               socket.connected = true;
+                           }
+                       }
+                      
+                      return true;
+                 }
             }
         }
         false
     }
-
-    /// Render the node editor UI
+    
+    // ... ui method ... (Updated below)
     pub fn ui(&mut self, ui: &mut Ui, locale: &LocaleManager) -> Option<NodeEditorAction> {
         let mut action = None;
 
@@ -487,14 +483,23 @@ impl NodeEditor {
                 self.nodes.get(&conn.from_node),
                 self.nodes.get(&conn.to_node),
             ) {
-                let from_pos = self.get_socket_pos(from_node, conn.from_socket, false);
-                let to_pos = self.get_socket_pos(to_node, conn.to_socket, true);
+                // We need indices for old get_socket_pos logic, or update it
+                // Updating get_socket_pos to take names is hard because map order is not guaranteed?
+                // Actually Vectors are ordered.
+                // We need to find index by name.
+                let from_idx = from_node.outputs.iter().position(|s| s.name == conn.from_socket);
+                let to_idx = to_node.inputs.iter().position(|s| s.name == conn.to_socket);
+                
+                if let (Some(f_idx), Some(t_idx)) = (from_idx, to_idx) {
+                     let from_pos = self.get_socket_pos(from_node, f_idx, false);
+                     let to_pos = self.get_socket_pos(to_node, t_idx, true);
 
-                let from_screen = to_screen(from_pos);
-                let to_screen = to_screen(to_pos);
+                    let from_screen = to_screen(from_pos);
+                    let to_screen = to_screen(to_pos);
 
-                let color = from_node.outputs[conn.from_socket].socket_type.color();
-                self.draw_connection(&painter, from_screen, to_screen, color);
+                    let color = from_node.outputs[f_idx].data_type.color();
+                    self.draw_connection(&painter, from_screen, to_screen, color);
+                }
             }
         }
 
@@ -527,20 +532,18 @@ impl NodeEditor {
                 self.dragging_node = None;
             }
         }
-
+        
         // Draw connection being created
-        if let Some((_node_id, _socket_id, start_pos)) = self.creating_connection {
+        if let Some((_node_id, _socket_name, start_pos)) = &self.creating_connection {
             if let Some(pointer_pos) = response.interact_pointer_pos() {
                 self.draw_connection(
                     &painter,
-                    start_pos,
+                    *start_pos,
                     pointer_pos,
                     Color32::from_rgb(150, 150, 150),
                 );
 
                 if response.clicked() {
-                    // Try to complete connection
-                    // TODO: Detect socket under pointer
                     self.creating_connection = None;
                 }
             }
@@ -561,14 +564,14 @@ impl NodeEditor {
                             let mut current_category = String::new();
 
                             for node_type in &self.node_palette {
-                                let category = node_type.category(locale);
+                                let category = node_type.ui_category(locale);
                                 if category != current_category {
                                     current_category = category.clone();
                                     ui.separator();
                                     ui.label(&current_category);
                                 }
 
-                                if ui.button(node_type.name(locale)).clicked() {
+                                if ui.button(node_type.ui_name(locale)).clicked() {
                                     selected_type = Some(node_type.clone());
                                     self.show_palette = false;
                                 }
@@ -584,7 +587,6 @@ impl NodeEditor {
                     });
             }
 
-            // Close palette if clicked outside
             if response.clicked() {
                 self.show_palette = false;
             }
@@ -592,6 +594,31 @@ impl NodeEditor {
 
         action
     }
+}
+
+/// Helper trait for UI names
+pub trait NodeTypeUI {
+    fn ui_name(&self, locale: &LocaleManager) -> String;
+    fn ui_category(&self, locale: &LocaleManager) -> String;
+}
+
+impl NodeTypeUI for NodeType {
+    fn ui_name(&self, locale: &LocaleManager) -> String {
+        // Fallback names for simplicity now, ideally fully localized
+        match self {
+             NodeType::TextureInput => "Texture Input",
+             NodeType::TimeInput => "Time",
+             NodeType::UVInput => "UV",
+             NodeType::ParameterInput => "Param",
+             NodeType::Output => "Output",
+             _ => self.display_name(), // from core, returns static str
+        }.to_string()
+    }
+    
+    fn ui_category(&self, locale: &LocaleManager) -> String {
+         self.category().to_string() // from core
+    }
+}
 
     /// Draw grid background
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
@@ -645,7 +672,7 @@ impl NodeEditor {
         &self,
         ui: &Ui,
         painter: &egui::Painter,
-        node: &Node,
+        node: &mut Node,
         rect: Rect,
         locale: &LocaleManager,
     ) -> Response {
@@ -673,7 +700,7 @@ impl NodeEditor {
         painter.text(
             title_rect.center(),
             egui::Align2::CENTER_CENTER,
-            node.node_type.name(locale),
+            node.node_type.ui_name(locale),
             egui::FontId::proportional(14.0 * self.zoom.clamp(0.1, 10.0)),
             Color32::WHITE,
         );
@@ -681,15 +708,44 @@ impl NodeEditor {
         // Input sockets
         for (i, input) in node.inputs.iter().enumerate() {
             let socket_pos = self.get_socket_pos(node, i, true);
-            self.draw_socket(painter, socket_pos, input.socket_type, true);
+            self.draw_socket(painter, socket_pos, input.data_type, true);
+            
+            // Draw label
+            let text_pos = socket_pos + Vec2::new(10.0 * self.zoom, 0.0);
+             painter.text(
+                text_pos,
+                egui::Align2::LEFT_CENTER,
+                &input.name,
+                egui::FontId::proportional(12.0 * self.zoom.clamp(0.1, 10.0)),
+                Color32::LIGHT_GRAY,
+            );
         }
 
         // Output sockets
         for (i, output) in node.outputs.iter().enumerate() {
             let socket_pos = self.get_socket_pos(node, i, false);
-            self.draw_socket(painter, socket_pos, output.socket_type, false);
+            self.draw_socket(painter, socket_pos, output.data_type, false);
+            
+             // Draw label
+            let text_pos = socket_pos - Vec2::new(10.0 * self.zoom, 0.0);
+             painter.text(
+                text_pos,
+                egui::Align2::RIGHT_CENTER,
+                &output.name,
+                egui::FontId::proportional(12.0 * self.zoom.clamp(0.1, 10.0)),
+                Color32::LIGHT_GRAY,
+            );
         }
-
+        
+        // Parameters (rendered in node body if space)
+        // TODO: This requires proper layout inside the node rect which is custom painted currently.
+        // For now we assume nodes have fixed size calculated in create_node.
+        
+        // We can render parameter widgets inside the node if we overlay a Ui.
+        // But doing that over a custom painted rect is tricky with transforms.
+        // Easiest is to just expose parameters in a side panel for selected node.
+        // Or render simple sliders.
+        
         response
     }
 
@@ -698,11 +754,11 @@ impl NodeEditor {
         &self,
         painter: &egui::Painter,
         pos: Pos2,
-        socket_type: SocketType,
+        data_type: DataType,
         _is_input: bool,
     ) {
         let radius = 6.0 * self.zoom.clamp(0.1, 10.0);
-        painter.circle_filled(pos, radius, socket_type.color());
+        painter.circle_filled(pos, radius, data_type.color());
         painter.circle_stroke(pos, radius, Stroke::new(2.0, Color32::WHITE));
     }
 
