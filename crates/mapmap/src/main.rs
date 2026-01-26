@@ -1101,6 +1101,7 @@ impl App {
                                 let path = path.clone();
                                 let trigger_value = *trigger_value;
                                 let part_id = *part_id;
+                                let player_key = (module.id, part_id);
 
                                 if path.is_empty() {
                                     continue;
@@ -1108,7 +1109,7 @@ impl App {
 
                                 // Check if player exists or needs creation
                                 let player_needs_reload = if let Some((current_path, _)) =
-                                    self.media_players.get(&part_id)
+                                    self.media_players.get(&player_key)
                                 {
                                     current_path != &path
                                 } else {
@@ -1119,7 +1120,7 @@ impl App {
                                     match mapmap_media::open_path(&path) {
                                         Ok(player) => {
                                             self.media_players
-                                                .insert(part_id, (path.clone(), player));
+                                                .insert(player_key, (path.clone(), player));
                                         }
                                         Err(e) => {
                                             // Log error only once per failure to avoid spam?
@@ -1130,7 +1131,7 @@ impl App {
                                     }
                                 }
 
-                                if let Some((_, player)) = self.media_players.get_mut(&part_id) {
+                                if let Some((_, player)) = self.media_players.get_mut(&player_key) {
                                     // Trigger update
                                     if trigger_value > 0.1 {
                                         let _ = player.command_sender().send(PlaybackCommand::Play);
@@ -1143,7 +1144,8 @@ impl App {
                                         // Upload to texture pool
                                         if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
                                         {
-                                            let tex_name = format!("part_{}", part_id);
+                                            let tex_name =
+                                                format!("part_{}_{}", module.id, part_id);
                                             self.texture_pool.upload_data(
                                                 &self.backend.queue,
                                                 &tex_name,
@@ -3438,7 +3440,7 @@ impl App {
             let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
                 .render_ops
                 .iter()
-                .filter(|(module_id, op)| match &op.output_type {
+                .filter(|(_, op)| match &op.output_type {
                     mapmap_core::module::OutputType::Projector { id, .. } => *id == real_output_id,
                     _ => op.output_part_id == real_output_id, /* Use real_output_id for generic outputs too */
                 })
