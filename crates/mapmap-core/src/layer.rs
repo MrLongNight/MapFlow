@@ -494,6 +494,11 @@ impl LayerManager {
         &self.layers
     }
 
+    /// Get all layers (mutable)
+    pub fn layers_mut(&mut self) -> &mut [Layer] {
+        &mut self.layers
+    }
+
     /// Get all visible layers in render order
     ///
     /// ⚡ Bolt: Returns an iterator to avoid allocation per frame.

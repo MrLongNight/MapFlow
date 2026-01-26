@@ -42,62 +42,59 @@ impl PaintPanel {
                 ));
                 ui.separator();
 
-                let paint_ids: Vec<_> = paint_manager.paints().iter().map(|p| p.id).collect();
-
-                for paint_id in paint_ids {
-                    if let Some(paint) = paint_manager.get_paint_mut(paint_id) {
-                        ui.group(|ui| {
-                            ui.horizontal(|ui| {
-                                if let Some(mgr) = icon_manager {
-                                    let icon = match paint.paint_type {
-                                        PaintType::Video => AppIcon::VideoFile,
-                                        PaintType::Color => AppIcon::PaintBucket,
-                                        _ => AppIcon::Pencil, // Fallback
-                                    };
-                                    mgr.show(ui, icon, 16.0);
-                                }
-                                ui.heading(&paint.name);
-                            });
-
-                            // Opacity slider
-                            ui.add(
-                                egui::Slider::new(&mut paint.opacity, 0.0..=1.0)
-                                    .text(i18n.t("label-master-opacity")),
-                            );
-
-                            // Playback controls for video
-                            if paint.paint_type == PaintType::Video {
-                                ui.checkbox(&mut paint.is_playing, i18n.t("check-playing"));
-                                ui.checkbox(&mut paint.loop_playback, i18n.t("mode-loop"));
-                                ui.add(
-                                    egui::Slider::new(&mut paint.rate, 0.1..=2.0)
-                                        .text(i18n.t("label-speed")),
-                                );
-                            }
-
-                            // Color picker for color type
-                            if paint.paint_type == PaintType::Color {
-                                ui.horizontal(|ui| {
-                                    ui.label(i18n.t("paints-color"));
-                                    ui.color_edit_button_rgba_unmultiplied(&mut paint.color);
-                                });
-                            }
-
+                // Iterate directly over mutable paints to avoid allocation and O(N) lookups
+                for paint in paint_manager.paints_mut() {
+                    ui.group(|ui| {
+                        ui.horizontal(|ui| {
                             if let Some(mgr) = icon_manager {
-                                if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
-                                    if ui
-                                        .add(egui::Button::image(img))
-                                        .on_hover_text(i18n.t("btn-remove"))
-                                        .clicked()
-                                    {
-                                        self.action = Some(PaintPanelAction::RemovePaint(paint.id));
-                                    }
-                                }
-                            } else if ui.button(i18n.t("btn-remove")).clicked() {
-                                self.action = Some(PaintPanelAction::RemovePaint(paint.id));
+                                let icon = match paint.paint_type {
+                                    PaintType::Video => AppIcon::VideoFile,
+                                    PaintType::Color => AppIcon::PaintBucket,
+                                    _ => AppIcon::Pencil, // Fallback
+                                };
+                                mgr.show(ui, icon, 16.0);
                             }
+                            ui.heading(&paint.name);
                         });
-                    }
+
+                        // Opacity slider
+                        ui.add(
+                            egui::Slider::new(&mut paint.opacity, 0.0..=1.0)
+                                .text(i18n.t("label-master-opacity")),
+                        );
+
+                        // Playback controls for video
+                        if paint.paint_type == PaintType::Video {
+                            ui.checkbox(&mut paint.is_playing, i18n.t("check-playing"));
+                            ui.checkbox(&mut paint.loop_playback, i18n.t("mode-loop"));
+                            ui.add(
+                                egui::Slider::new(&mut paint.rate, 0.1..=2.0)
+                                    .text(i18n.t("label-speed")),
+                            );
+                        }
+
+                        // Color picker for color type
+                        if paint.paint_type == PaintType::Color {
+                            ui.horizontal(|ui| {
+                                ui.label(i18n.t("paints-color"));
+                                ui.color_edit_button_rgba_unmultiplied(&mut paint.color);
+                            });
+                        }
+
+                        if let Some(mgr) = icon_manager {
+                            if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
+                                if ui
+                                    .add(egui::Button::image(img))
+                                    .on_hover_text(i18n.t("btn-remove"))
+                                    .clicked()
+                                {
+                                    self.action = Some(PaintPanelAction::RemovePaint(paint.id));
+                                }
+                            }
+                        } else if ui.button(i18n.t("btn-remove")).clicked() {
+                            self.action = Some(PaintPanelAction::RemovePaint(paint.id));
+                        }
+                    });
                 }
 
                 ui.separator();
