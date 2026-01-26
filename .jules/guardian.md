@@ -20,3 +20,7 @@
 ## 2024-05-25 - [MIDI Parsing]
 **Erkenntnis:** `MidiMessage` parsing logic for PitchBend (14-bit reconstruction) and system messages (Start/Stop) was implemented but untested. This created a risk for hardware controllers relying on high-resolution input or transport controls.
 **Aktion:** Implemented `test_midi_message_parsing_extended` covering full 14-bit Pitch Bend reconstruction and all system realtime messages to ensure reliable hardware integration.
+
+## 2024-05-26 - [Audio Reactivity & Blending]
+**Erkenntnis:** `AudioReactiveAnimationSystem` blending logic (Replace, Multiply, Add) was partially implemented but completely untested for variants other than default. `AudioReactiveController::update` logic was fragile regarding zero-delta time, which could lead to stuck values during initialization or paused states.
+**Aktion:** Implemented comprehensive test suite in `audio_reactive.rs` covering all `AudioAnimationBlendMode` variants and verifying parameter smoothing behavior with non-zero time deltas. Validated integration with `ShaderGraph`.
