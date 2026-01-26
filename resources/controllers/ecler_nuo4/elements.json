@@ -19,7 +19,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -40,7 +40,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-EQ_Cap.png",
       "animation_range": null
     },
     {
@@ -61,7 +61,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-EQ_Cap.png",
       "animation_range": null
     },
     {
@@ -82,7 +82,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-EQ_Cap.png",
       "animation_range": null
     },
     {
@@ -103,7 +103,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-FX-Send_Cap.png",
       "animation_range": null
     },
     {
@@ -124,7 +124,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4-Fader_Cap.png",
       "animation_range": null
     },
     {
@@ -187,7 +187,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -208,7 +208,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-EQ_Cap.png",
       "animation_range": null
     },
     {
@@ -229,7 +229,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-EQ_Cap.png",
       "animation_range": null
     },
     {
@@ -250,7 +250,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-EQ_Cap.png",
       "animation_range": null
     },
     {
@@ -271,7 +271,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-FX-Send_Cap.png",
       "animation_range": null
     },
     {
@@ -292,7 +292,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4-Fader_Cap.png",
       "animation_range": null
     },
     {
@@ -355,7 +355,7 @@
       },
       "layout_aware": false,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4-Fader_Cap.png",
       "animation_range": null
     },
     {

@@ -280,14 +280,20 @@ jobs:
     - name: Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
-    - name: Verify installations
+    - name: Verify installations (Detailed)
       run: |
-        pkg-config --exists fontconfig && echo "✓ Fontconfig found" || echo "✗ Fontconfig not found"
-        pkg-config --exists freetype2 && echo "✓ FreeType found" || echo "✗ FreeType not found"
-        pkg-config --exists alsa && echo "✓ ALSA found" || echo "✗ ALSA not found"
-        pkg-config --exists libavutil && echo "✓ libavutil found" || (echo "✗ libavutil not found"; exit 1)
-        pkg-config --exists libavcodec && echo "✓ libavcodec found" || (echo "✗ libavcodec not found"; exit 1)
-        pkg-config --exists libavformat && echo "✓ libavformat found" || (echo "✗ libavformat not found"; exit 1)
+        failed=0
+        for lib in fontconfig freetype2 alsa libavutil libavcodec libavformat libswscale libavdevice libavfilter libswresample; do
+          if pkg-config --exists $lib; then
+            echo "✓ $lib found"
+          else
+            echo "✗ $lib NOT found"
+            failed=1
+          fi
+        done
+        if [ $failed -eq 1 ]; then
+          exit 1
+        fi
 
     - name: Install cargo-nextest (Faster test runner)
       run: cargo install cargo-nextest --locked

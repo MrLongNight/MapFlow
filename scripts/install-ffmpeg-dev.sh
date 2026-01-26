@@ -11,6 +11,8 @@ sudo apt-get install -y \
   libavformat-dev \
   libswscale-dev \
   libavfilter-dev \
-  libavdevice-dev
+  libavfilter-dev \
+  libavdevice-dev \
+  libswresample-dev
 
 echo "Alle relevanten FFmpeg-Dev-Abhängigkeiten installiert."
