@@ -1543,7 +1543,7 @@ impl ModuleCanvas {
                                                             // For better UX, we should check if *hovered* was inside, but interacting with rect is global.
                                                             // Simplified: If dragging and mouse is currently effectively inside bounding box of quad?
                                                             // No, let's just use the `drag_delta`.
-                                                            if inside || body_response.hovered() { 
+                                                            if inside || body_response.hovered() {
                                                                  let dt = body_response.drag_delta();
                                                                  delta_norm = (dt.x / rect.width(), dt.y / rect.height());
                                                             }
@@ -3399,7 +3399,11 @@ impl ModuleCanvas {
         if response.hovered() || ui.input(|i| i.modifiers.ctrl) {
             let scroll = ui.input(|i| i.raw_scroll_delta.y);
             if scroll != 0.0 {
-                let speed = if ui.input(|i| i.modifiers.ctrl) { 0.004 } else { 0.001 };
+                let speed = if ui.input(|i| i.modifiers.ctrl) {
+                    0.004
+                } else {
+                    0.001
+                };
                 self.zoom *= 1.0 + scroll * speed;
                 self.zoom = self.zoom.clamp(0.1, 5.0);
             }
