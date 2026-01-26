@@ -7,8 +7,8 @@
       "section": "channel_2",
       "label": "Ch2 Gain",
       "position": {
-        "x": 0.1,
-        "y": 0.1,
+        "x": 0.277665,
+        "y": 0.10729928,
         "width": 0.05,
         "height": 0.05
       },
@@ -28,8 +28,8 @@
       "section": "channel_2",
       "label": "Ch2 Treble",
       "position": {
-        "x": 0.1,
-        "y": 0.2,
+        "x": 0.24382406,
+        "y": 0.18832117,
         "width": 0.05,
         "height": 0.05
       },
@@ -49,8 +49,8 @@
       "section": "channel_2",
       "label": "Ch2 Mid",
       "position": {
-        "x": 0.1,
-        "y": 0.3,
+        "x": 0.24382405,
+        "y": 0.27518243,
         "width": 0.05,
         "height": 0.05
       },
@@ -70,8 +70,8 @@
       "section": "channel_2",
       "label": "Ch2 Bass",
       "position": {
-        "x": 0.1,
-        "y": 0.4,
+        "x": 0.24382405,
+        "y": 0.36204386,
         "width": 0.05,
         "height": 0.05
       },
@@ -91,8 +91,8 @@
       "section": "channel_2",
       "label": "Ch2 FX Send",
       "position": {
-        "x": 0.1,
-        "y": 0.5,
+        "x": 0.24213196,
+        "y": 0.5175182,
         "width": 0.05,
         "height": 0.05
       },
@@ -112,10 +112,10 @@
       "section": "channel_2",
       "label": "Ch2 Fader",
       "position": {
-        "x": 0.1,
-        "y": 0.6,
-        "width": 0.03,
-        "height": 0.15
+        "x": 0.2522843,
+        "y": 0.6525549,
+        "width": 0.031692047,
+        "height": 0.19379556
       },
       "midi": {
         "type": "cc",
@@ -133,8 +133,8 @@
       "section": "channel_2",
       "label": "Ch2 Bass Kill",
       "position": {
-        "x": 0.1,
-        "y": 0.8,
+        "x": 0.3250423,
+        "y": 0.020438002,
         "width": 0.04,
         "height": 0.04
       },
@@ -154,8 +154,8 @@
       "section": "channel_2",
       "label": "Ch2 PFL",
       "position": {
-        "x": 0.1,
-        "y": 0.85,
+        "x": 0.26412854,
+        "y": 0.013503647,
         "width": 0.04,
         "height": 0.04
       },
@@ -175,8 +175,8 @@
       "section": "channel_3",
       "label": "Ch3 Gain",
       "position": {
-        "x": 0.25,
-        "y": 0.1,
+        "x": 0.59179354,
+        "y": 0.107299276,
         "width": 0.05,
         "height": 0.05
       },
@@ -196,8 +196,8 @@
       "section": "channel_3",
       "label": "Ch3 Treble",
       "position": {
-        "x": 0.25,
-        "y": 0.2,
+        "x": 0.5562606,
+        "y": 0.18832119,
         "width": 0.05,
         "height": 0.05
       },
@@ -217,8 +217,8 @@
       "section": "channel_3",
       "label": "Ch3 Mid",
       "position": {
-        "x": 0.25,
-        "y": 0.3,
+        "x": 0.55626065,
+        "y": 0.2751825,
         "width": 0.05,
         "height": 0.05
       },
@@ -238,8 +238,8 @@
       "section": "channel_3",
       "label": "Ch3 Bass",
       "position": {
-        "x": 0.25,
-        "y": 0.4,
+        "x": 0.5562606,
+        "y": 0.3620438,
         "width": 0.05,
         "height": 0.05
       },
@@ -259,8 +259,8 @@
       "section": "channel_3",
       "label": "Ch3 FX Send",
       "position": {
-        "x": 0.25,
-        "y": 0.5,
+        "x": 0.5562605,
+        "y": 0.51751834,
         "width": 0.05,
         "height": 0.05
       },
@@ -280,10 +280,10 @@
       "section": "channel_3",
       "label": "Ch3 Fader",
       "position": {
-        "x": 0.25,
-        "y": 0.6,
-        "width": 0.03,
-        "height": 0.15
+        "x": 0.56472075,
+        "y": 0.65401465,
+        "width": 0.033384092,
+        "height": 0.19087587
       },
       "midi": {
         "type": "cc",
@@ -301,8 +301,8 @@
       "section": "channel_3",
       "label": "Ch3 Bass Kill",
       "position": {
-        "x": 0.25,
-        "y": 0.8,
+        "x": 0.41751269,
+        "y": 0.01167897,
         "width": 0.04,
         "height": 0.04
       },
@@ -322,8 +322,8 @@
       "section": "channel_3",
       "label": "Ch3 PFL",
       "position": {
-        "x": 0.25,
-        "y": 0.85,
+        "x": 0.49196276,
+        "y": 0.012043815,
         "width": 0.04,
         "height": 0.04
       },
@@ -343,10 +343,10 @@
       "section": "crossfader",
       "label": "Crossfader",
       "position": {
-        "x": 0.4,
-        "y": 0.9,
-        "width": 0.2,
-        "height": 0.03
+        "x": 0.33231816,
+        "y": 0.88394165,
+        "width": 0.1830795,
+        "height": 0.0650365
       },
       "midi": {
         "type": "cc",
@@ -364,8 +364,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 1 (A/L1)",
       "position": {
-        "x": 0.5,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.11,
         "width": 0.05,
         "height": 0.05
       },
@@ -376,7 +376,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -385,8 +385,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 1 (B/L1)",
       "position": {
-        "x": 0.5,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.11,
         "width": 0.05,
         "height": 0.05
       },
@@ -397,7 +397,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -406,8 +406,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 1 (A/L2)",
       "position": {
-        "x": 0.5,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.11,
         "width": 0.05,
         "height": 0.05
       },
@@ -418,7 +418,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -427,8 +427,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 1 (B/L2)",
       "position": {
-        "x": 0.5,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.11,
         "width": 0.05,
         "height": 0.05
       },
@@ -439,7 +439,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -448,8 +448,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 1 (A/L3)",
       "position": {
-        "x": 0.5,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.11,
         "width": 0.05,
         "height": 0.05
       },
@@ -460,7 +460,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -469,8 +469,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 1 (B/L3)",
       "position": {
-        "x": 0.5,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.11,
         "width": 0.05,
         "height": 0.05
       },
@@ -481,7 +481,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -490,8 +490,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 2 (A/L1)",
       "position": {
-        "x": 0.6,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.24,
         "width": 0.05,
         "height": 0.05
       },
@@ -502,7 +502,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -511,8 +511,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 2 (B/L1)",
       "position": {
-        "x": 0.6,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.24,
         "width": 0.05,
         "height": 0.05
       },
@@ -523,7 +523,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -532,8 +532,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 2 (A/L2)",
       "position": {
-        "x": 0.6,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.24,
         "width": 0.05,
         "height": 0.05
       },
@@ -544,7 +544,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -553,8 +553,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 2 (B/L2)",
       "position": {
-        "x": 0.6,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.24,
         "width": 0.05,
         "height": 0.05
       },
@@ -565,7 +565,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -574,8 +574,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 2 (A/L3)",
       "position": {
-        "x": 0.6,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.24,
         "width": 0.05,
         "height": 0.05
       },
@@ -586,7 +586,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -595,8 +595,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 2 (B/L3)",
       "position": {
-        "x": 0.6,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.24,
         "width": 0.05,
         "height": 0.05
       },
@@ -607,7 +607,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -616,8 +616,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 3 (A/L1)",
       "position": {
-        "x": 0.7,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.37,
         "width": 0.05,
         "height": 0.05
       },
@@ -628,7 +628,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -637,8 +637,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 3 (B/L1)",
       "position": {
-        "x": 0.7,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.37,
         "width": 0.05,
         "height": 0.05
       },
@@ -649,7 +649,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -658,8 +658,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 3 (A/L2)",
       "position": {
-        "x": 0.7,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.37,
         "width": 0.05,
         "height": 0.05
       },
@@ -670,7 +670,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -679,8 +679,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 3 (B/L2)",
       "position": {
-        "x": 0.7,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.37,
         "width": 0.05,
         "height": 0.05
       },
@@ -691,7 +691,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -700,8 +700,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 3 (A/L3)",
       "position": {
-        "x": 0.7,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.37,
         "width": 0.05,
         "height": 0.05
       },
@@ -712,7 +712,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -721,8 +721,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 3 (B/L3)",
       "position": {
-        "x": 0.7,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.37,
         "width": 0.05,
         "height": 0.05
       },
@@ -733,7 +733,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -742,8 +742,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 4 (A/L1)",
       "position": {
-        "x": 0.8,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.5,
         "width": 0.05,
         "height": 0.05
       },
@@ -754,7 +754,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -763,8 +763,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 4 (B/L1)",
       "position": {
-        "x": 0.8,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.5,
         "width": 0.05,
         "height": 0.05
       },
@@ -775,7 +775,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -784,8 +784,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 4 (A/L2)",
       "position": {
-        "x": 0.8,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.5,
         "width": 0.05,
         "height": 0.05
       },
@@ -796,7 +796,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -805,8 +805,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 4 (B/L2)",
       "position": {
-        "x": 0.8,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.5,
         "width": 0.05,
         "height": 0.05
       },
@@ -817,7 +817,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -826,8 +826,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 4 (A/L3)",
       "position": {
-        "x": 0.8,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.5,
         "width": 0.05,
         "height": 0.05
       },
@@ -838,7 +838,7 @@
       },
       "layout_aware": true,
       "ab_aware": false,
-      "asset": null,
+      "asset": "nuo4_Poti-Gain_Cap.png",
       "animation_range": null
     },
     {
@@ -847,8 +847,8 @@
       "section": "midi_section",
       "label": "MIDI Encoder 4 (B/L3)",
       "position": {
-        "x": 0.8,
-        "y": 0.1,
+        "x": 0.39299999999999996,
+        "y": 0.5,
         "width": 0.05,
         "height": 0.05
       },
@@ -859,7 +859,41 @@
       },
       "layout_aware": true,
       "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "layout_toggle",
+      "element_type": "button",
+      "section": "midi_section",
+      "label": "Layout Selector",
+      "position": {
+        "x": 0.415,
+        "y": 0.76,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": null,
+      "layout_aware": false,
+      "ab_aware": false,
       "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "layout_led",
+      "element_type": "led",
+      "section": "midi_section",
+      "label": "Layout LED",
+      "position": {
+        "x": 0.46,
+        "y": 0.77,
+        "width": 0.02,
+        "height": 0.02
+      },
+      "midi": null,
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Midi-Layout_AB-LED-On.png",
       "animation_range": null
     }
   ]

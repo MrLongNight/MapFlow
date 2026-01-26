@@ -66,6 +66,12 @@ jobs:
           libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
           ffmpeg
 
+    - name: Prüfe FFmpeg-Dev-Libs und pkg-config (Pre-Check)
+      run: |
+        for lib in libavutil libavcodec libavformat libswscale libavdevice libavfilter libswresample; do
+          pkg-config --exists $lib && echo "✓ $lib gefunden" || (echo "✗ $lib NICHT gefunden"; exit 1)
+        done
+
     - name: Check if PR branch is up-to-date
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
@@ -280,14 +286,14 @@ jobs:
     - name: Run FFmpeg setup script
       run: bash scripts/install-ffmpeg-dev.sh
 
-    - name: Verify installations (Detailed)
+    - name: Prüfe FFmpeg-Dev-Libs und pkg-config
       run: |
         failed=0
         for lib in fontconfig freetype2 alsa libavutil libavcodec libavformat libswscale libavdevice libavfilter libswresample; do
           if pkg-config --exists $lib; then
-            echo "✓ $lib found"
+            echo "✓ $lib gefunden"
           else
-            echo "✗ $lib NOT found"
+            echo "✗ $lib NICHT gefunden"
             failed=1
           fi
         done
