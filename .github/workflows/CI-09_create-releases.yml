@@ -137,39 +137,26 @@ jobs:
 
       - name: Kopiere benötigte FFmpeg-DLLs für WiX
         run: |
-          $dlls = @(
-            "avcodec-61.dll",
-            "avdevice-61.dll",
-            "avfilter-10.dll",
-            "avformat-61.dll",
-            "avutil-59.dll",
-            "swresample-5.dll",
-            "swscale-8.dll"
-          )
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           $targetDir = "target\release"
 
+          Write-Host "Kopiere DLLs von: $vcpkgBin"
+
           if (!(Test-Path $targetDir)) {
-            New-Item -ItemType Directory -Force -Path $targetDir
+             New-Item -ItemType Directory -Force -Path $targetDir
           }
 
-          foreach ($dll in $dlls) {
-            $src = Join-Path $vcpkgBin $dll
-            $dst = Join-Path $targetDir $dll
-            if (Test-Path $src) {
-              Copy-Item -Path $src -Destination $targetDir -Force
-              if (Test-Path $dst) {
-                Write-Host "✓ $dll erfolgreich kopiert."
-              } else {
-                Write-Host "✗ Fehler: $dll wurde nicht im Zielverzeichnis gefunden!"
-                exit 1
-              }
-            } else {
-              Write-Host "✗ $dll fehlt in $vcpkgBin!"
-              exit 1
-            }
+          if (Test-Path $vcpkgBin) {
+             # Wildcard copy all DLLs
+             Copy-Item "$vcpkgBin\*.dll" -Destination $targetDir -Force
+             Write-Host "✓ Alle DLLs (*.dll) erfolgreich kopiert."
+             
+             # Verify contents
+             Get-ChildItem "$targetDir\*.dll" | Select-Object Name
+          } else {
+             Write-Host "✗ Fehler: vcpkg bin Verzeichnis nicht gefunden: $vcpkgBin"
+             exit 1
           }
-          Get-ChildItem $targetDir\*.dll | Select-Object Name
         shell: pwsh
 
       - name: Install WiX Toolset

@@ -1420,6 +1420,9 @@ pub enum ModulizerType {
 /// Available visual effects
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EffectType {
+    // Custom
+    /// Custom Shader Graph
+    ShaderGraph(crate::shader_graph::GraphId),
     // Basic
     /// Blur effect
     Blur,
@@ -1533,6 +1536,7 @@ impl EffectType {
             EffectType::VHS => "VHS",
             EffectType::FilmGrain => "Film Grain",
             EffectType::Vignette => "Vignette",
+            EffectType::ShaderGraph(_) => "Custom Shader Graph",
         }
     }
 }

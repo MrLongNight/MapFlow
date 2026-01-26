@@ -5,42 +5,37 @@
 
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
+use mapmap_core::shader_graph::{DataType, GraphId, NodeType, ParameterValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Node graph editor
 pub struct NodeEditor {
-    /// All nodes in the graph
+    /// ID of the graph being edited
+    pub graph_id: Option<GraphId>,
+    /// All nodes in the graph (shadow copy for UI)
     nodes: HashMap<NodeId, Node>,
-    /// All connections between nodes
+    /// All connections
     connections: Vec<Connection>,
-    /// Next node ID
+    /// Next node ID (managed by core usually, but needed for local optimist updates)
     next_id: u64,
     /// Selected nodes
     selected_nodes: Vec<NodeId>,
     /// Node being dragged
     dragging_node: Option<(NodeId, Vec2)>,
-    /// Connection being created (from socket)
-    creating_connection: Option<(NodeId, SocketId, Pos2)>,
-    /// Canvas pan offset
+    /// Connection being created
+    creating_connection: Option<(NodeId, String, Pos2)>, // String for socket name
     pan_offset: Vec2,
-    /// Canvas zoom level
     zoom: f32,
-    /// Node palette (available node types)
     node_palette: Vec<NodeType>,
-    /// Show node palette
     show_palette: bool,
-    /// Palette position
     palette_pos: Option<Pos2>,
 }
 
 /// Unique node identifier
 pub type NodeId = u64;
 
-/// Socket identifier (input/output index)
-pub type SocketId = usize;
-
-/// Node in the graph
+/// Node in the graph (UI representation)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     pub id: NodeId,
@@ -48,81 +43,11 @@ pub struct Node {
     pub position: Pos2,
     pub inputs: Vec<Socket>,
     pub outputs: Vec<Socket>,
-    pub parameters: HashMap<String, Parameter>,
+    pub parameters: HashMap<String, ParameterValue>,
     pub size: Vec2,
 }
 
-/// Node type
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum NodeType {
-    // Effect nodes
-    Blur {
-        radius: f32,
-    },
-    Glow {
-        intensity: f32,
-        threshold: f32,
-    },
-    ColorCorrection {
-        hue: f32,
-        saturation: f32,
-        brightness: f32,
-    },
-    Sharpen {
-        amount: f32,
-    },
-    EdgeDetect,
-    ChromaKey {
-        key_color: [f32; 3],
-        threshold: f32,
-    },
-
-    // Math nodes
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-    Sin,
-    Cos,
-    Abs,
-    Clamp {
-        min: f32,
-        max: f32,
-    },
-    Lerp,
-    SmoothStep,
-
-    // Utility nodes
-    Switch,
-    Merge,
-    Split,
-    Value(f32),
-    Vector3 {
-        x: f32,
-        y: f32,
-        z: f32,
-    },
-    Color {
-        r: f32,
-        g: f32,
-        b: f32,
-        a: f32,
-    },
-
-    // Input/Output
-    Input {
-        name: String,
-    },
-    Output {
-        name: String,
-    },
-
-    // Custom
-    Custom {
-        name: String,
-        code: String,
-    },
-}
+// Removing local NodeType enum as we use mapmap_core::shader_graph::NodeType
 
 impl NodeType {
     /// Get human-readable name
@@ -271,46 +196,43 @@ impl NodeType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Socket {
     pub name: String,
-    pub socket_type: SocketType,
+    pub data_type: DataType,
     pub connected: bool,
 }
 
 impl Socket {
-    pub fn new(name: &str, socket_type: SocketType) -> Self {
+    pub fn new(name: &str, data_type: DataType) -> Self {
         Self {
             name: name.to_string(),
-            socket_type,
+            data_type,
             connected: false,
         }
     }
 }
 
-/// Socket data type
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum SocketType {
-    Float,
-    Vector,
-    Color,
-    Image,
-    Bool,
-    Any,
+/// Extension trait for DataType to get UI colors
+pub trait DataTypeUI {
+    fn color(&self) -> Color32;
+    fn compatible_with(&self, other: &DataType) -> bool;
 }
 
-impl SocketType {
-    pub fn color(&self) -> Color32 {
+impl DataTypeUI for DataType {
+    fn color(&self) -> Color32 {
         match self {
-            Self::Float => Color32::from_rgb(100, 150, 255),
-            Self::Vector => Color32::from_rgb(150, 100, 255),
-            Self::Color => Color32::from_rgb(255, 150, 100),
-            Self::Image => Color32::from_rgb(255, 200, 100),
-            Self::Bool => Color32::from_rgb(100, 255, 150),
-            Self::Any => Color32::from_rgb(150, 150, 150),
+            DataType::Float => Color32::from_rgb(100, 150, 255),
+            DataType::Vec2 => Color32::from_rgb(150, 100, 255),
+            DataType::Vec3 => Color32::from_rgb(200, 100, 200),
+            DataType::Vec4 => Color32::from_rgb(255, 100, 255),
+            DataType::Color => Color32::from_rgb(255, 150, 100),
+            DataType::Texture => Color32::from_rgb(255, 200, 100),
+            DataType::Sampler => Color32::from_rgb(150, 150, 150),
         }
     }
 
-    /// Check if types are compatible for connection
-    pub fn compatible_with(&self, other: &SocketType) -> bool {
-        *self == *other || *self == SocketType::Any || *other == SocketType::Any
+    fn compatible_with(&self, other: &DataType) -> bool {
+        // Simple type checking for now
+        // TODO: Allow Float -> Vec conversions implicitly?
+        self == other
     }
 }
 
@@ -318,19 +240,9 @@ impl SocketType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
     pub from_node: NodeId,
-    pub from_socket: SocketId,
+    pub from_socket: String, // Output name
     pub to_node: NodeId,
-    pub to_socket: SocketId,
-}
-
-/// Parameter value
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Parameter {
-    Float(f32),
-    Int(i32),
-    Bool(bool),
-    String(String),
-    Color([f32; 4]),
+    pub to_socket: String, // Input name
 }
 
 impl Default for NodeEditor {
@@ -342,6 +254,7 @@ impl Default for NodeEditor {
 impl NodeEditor {
     pub fn new() -> Self {
         Self {
+            graph_id: None,
             nodes: HashMap::new(),
             connections: Vec::new(),
             next_id: 1,
@@ -356,43 +269,113 @@ impl NodeEditor {
         }
     }
 
+    /// Load a graph from core definition
+    pub fn load_graph(&mut self, graph: &mapmap_core::shader_graph::ShaderGraph) {
+        self.graph_id = Some(graph.id);
+        self.nodes.clear();
+        self.connections.clear();
+        self.next_id = 1; // todo: sync with graph?
+
+        // Map core nodes to UI nodes
+        for (id, core_node) in &graph.nodes {
+            let ui_node = self.core_node_to_ui(core_node);
+            self.nodes.insert(*id, ui_node);
+            self.next_id = self.next_id.max(id + 1);
+
+            // Reconstruct connections
+            for input in &core_node.inputs {
+                if let Some((from_node, from_output)) = &input.connected_output {
+                    self.connections.push(Connection {
+                        from_node: *from_node,
+                        from_socket: from_output.clone(),
+                        to_node: *id,
+                        to_socket: input.name.clone(),
+                    });
+                    // Mark socket as connected
+                    if let Some(node) = self.nodes.get_mut(id) {
+                        if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == input.name)
+                        {
+                            socket.connected = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Create UI node from core node
+    fn core_node_to_ui(&self, core_node: &mapmap_core::shader_graph::ShaderNode) -> Node {
+        let inputs = core_node
+            .inputs
+            .iter()
+            .map(|s| Socket::new(&s.name, s.data_type))
+            .collect();
+        let outputs = core_node
+            .outputs
+            .iter()
+            .map(|s| Socket::new(&s.name, s.data_type))
+            .collect();
+
+        let mut size = Vec2::new(
+            180.0,
+            80.0 + (core_node.inputs.len().max(core_node.outputs.len()) as f32 * 24.0),
+        );
+
+        // Adjust size for specific nodes if needed
+
+        Node {
+            id: core_node.id,
+            node_type: core_node.node_type.clone(),
+            position: Pos2::new(core_node.position.0, core_node.position.1),
+            inputs,
+            outputs,
+            parameters: core_node.parameters.clone(),
+            size,
+        }
+    }
+
     /// Create the node palette with all available node types
     fn create_palette() -> Vec<NodeType> {
         vec![
-            // Effects
-            NodeType::Blur { radius: 5.0 },
-            NodeType::Glow {
-                intensity: 1.0,
-                threshold: 0.5,
-            },
-            NodeType::ColorCorrection {
-                hue: 0.0,
-                saturation: 1.0,
-                brightness: 1.0,
-            },
-            NodeType::Sharpen { amount: 1.0 },
-            NodeType::EdgeDetect,
-            NodeType::ChromaKey {
-                key_color: [0.0, 1.0, 0.0],
-                threshold: 0.1,
-            },
+            // Input
+            NodeType::TextureInput,
+            NodeType::TimeInput,
+            NodeType::UVInput,
+            NodeType::ParameterInput,
             // Math
             NodeType::Add,
+            NodeType::Subtract,
             NodeType::Multiply,
-            NodeType::Lerp,
-            NodeType::Clamp { min: 0.0, max: 1.0 },
+            NodeType::Divide,
+            NodeType::Power,
+            NodeType::Sin,
+            NodeType::Cos,
+            NodeType::Clamp,
+            NodeType::Mix,
+            // Color
+            NodeType::ColorRamp,
+            NodeType::HSVToRGB,
+            NodeType::RGBToHSV,
+            NodeType::Desaturate,
+            NodeType::Brightness,
+            NodeType::Contrast,
+            // Texture
+            NodeType::TextureSample,
+            NodeType::TextureCombine,
+            NodeType::UVTransform,
+            NodeType::UVDistort,
+            // Effects
+            NodeType::Blur,
+            NodeType::Glow,
+            NodeType::ChromaticAberration,
+            NodeType::Kaleidoscope,
+            NodeType::PixelSort,
+            NodeType::EdgeDetect,
             // Utility
-            NodeType::Switch,
-            NodeType::Merge,
             NodeType::Split,
-            // Constants
-            NodeType::Value(0.0),
-            NodeType::Color {
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-                a: 1.0,
-            },
+            NodeType::Combine,
+            // Output
+            NodeType::Output,
         ]
     }
 

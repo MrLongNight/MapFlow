@@ -143,9 +143,12 @@ jobs:
     - name: Auto-fix formatting and linting
       if: failure() || success()
       run: |
-        # Apply formatting fixes
-        cargo fmt --all
-        cargo sort --workspace
+        # Apply formatting fixes using pre-commit for consistent rules
+        pip install pre-commit
+        pre-commit run --all-files || true  # Run checks and allow them to modify files
+        
+        # Verify changes were made (optional debug)
+        git status
         
         # Configure Git
         git config user.name "github-actions[bot]"

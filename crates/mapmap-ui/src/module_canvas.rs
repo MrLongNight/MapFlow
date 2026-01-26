@@ -5816,6 +5816,7 @@ impl ModuleCanvas {
                         EffectType::VHS => "VHS",
                         EffectType::FilmGrain => "Film Grain",
                         EffectType::Vignette => "Vignette",
+                        EffectType::ShaderGraph(_) => "Custom Graph",
                     },
                     ModulizerType::BlendMode(blend) => match blend {
                         BlendModeType::Normal => "Normal",

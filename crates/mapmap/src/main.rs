@@ -3538,6 +3538,9 @@ impl App {
                                         mapmap_core::module::EffectType::Mirror => {
                                             Some(mapmap_core::effects::EffectType::Mirror)
                                         }
+                                        mapmap_core::module::EffectType::ShaderGraph(id) => {
+                                            Some(mapmap_core::effects::EffectType::ShaderGraph(*id))
+                                        }
                                         _ => {
                                             tracing::warn!(
                                                 "Effect {:?} not implemented",
@@ -3568,6 +3571,7 @@ impl App {
                                     src_view,
                                     &target_view,
                                     &chain,
+                                    &self.shader_graph_manager,
                                     time,
                                     w,
                                     h,
