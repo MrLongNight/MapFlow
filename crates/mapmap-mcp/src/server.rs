@@ -30,6 +30,26 @@ fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// Validate that a path is a valid project file path
+///
+/// Enforces:
+/// - Safe path (relative, no traversal)
+/// - Allowed extensions (.mapmap, .json)
+fn validate_project_path(path_str: &str) -> Result<PathBuf, String> {
+    let path = validate_safe_path(path_str)?;
+
+    let extension = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    match extension.as_str() {
+        "mapmap" | "json" => Ok(path),
+        _ => Err("Invalid file extension. Only .mapmap and .json are allowed".to_string()),
+    }
+}
+
 pub struct McpServer {
     // Optional OSC client (currently unused but will be used for OSC tools)
     #[allow(dead_code)]
@@ -791,7 +811,7 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_project_path(path_str) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -819,7 +839,7 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_project_path(path_str) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -1320,6 +1340,77 @@ mod tests {
         let valid_action = rx.try_recv().unwrap();
         if let McpAction::SaveProject(path) = valid_action {
             assert_eq!(path.to_str().unwrap(), "good_project.mapmap");
+        } else {
+            panic!("Expected SaveProject action");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_security_extension_restriction() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        // 1. Test Invalid Extension (e.g., .rs source file)
+        let save_req = json!({
+            "jsonrpc": "2.0",
+            "id": 200,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "src/lib.rs"
+                }
+            }
+        });
+
+        let response = server.handle_request(&save_req.to_string()).await;
+        let resp = response.unwrap();
+
+        assert!(resp.error.is_some(), "Should fail with invalid extension");
+        let error = resp.error.unwrap();
+        assert!(
+            error.message.contains("Invalid file extension"),
+            "Error message was: {}",
+            error.message
+        );
+        assert!(rx.try_recv().is_err()); // No action sent
+
+        // 2. Test Invalid Extension (e.g., .txt)
+        let save_txt = json!({
+            "jsonrpc": "2.0",
+            "id": 201,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "notes.txt"
+                }
+            }
+        });
+        let response = server.handle_request(&save_txt.to_string()).await;
+        let resp = response.unwrap();
+        assert!(resp.error.is_some());
+
+        // 3. Test Valid Extension (.json)
+        let save_json = json!({
+            "jsonrpc": "2.0",
+            "id": 202,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "config.json"
+                }
+            }
+        });
+        let response = server.handle_request(&save_json.to_string()).await;
+        let resp = response.unwrap();
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["status"], "queued");
+
+        let action = rx.try_recv().unwrap();
+        if let McpAction::SaveProject(path) = action {
+            assert_eq!(path.to_str().unwrap(), "config.json");
         } else {
             panic!("Expected SaveProject action");
         }
