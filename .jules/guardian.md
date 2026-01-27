@@ -20,3 +20,11 @@
 ## 2024-05-25 - [MIDI Parsing]
 **Erkenntnis:** `MidiMessage` parsing logic for PitchBend (14-bit reconstruction) and system messages (Start/Stop) was implemented but untested. This created a risk for hardware controllers relying on high-resolution input or transport controls.
 **Aktion:** Implemented `test_midi_message_parsing_extended` covering full 14-bit Pitch Bend reconstruction and all system realtime messages to ensure reliable hardware integration.
+
+## 2024-05-25 - [Audio Analyzer Stability]
+**Erkenntnis:** `AudioAnalyzerV2` logic for BPM detection and buffer resizing was untested, posing risks for stability during audio configuration changes and reliability of beat-sync features.
+**Aktion:** Added `test_bpm_calculation_steady_beat` (simulation), `test_update_config_resizing` (buffer safety), and `test_smoothing_logic` to `crates/mapmap-core/src/audio/analyzer_v2.rs`.
+
+## 2024-05-25 - [Reactive Envelope Logic]
+**Erkenntnis:** `AudioReactiveController` envelope logic (attack/release) relied on `delta_time`, but existing tests passed `0.0`, masking potential timing bugs.
+**Aktion:** Added `test_audio_reactive_attack_release` with explicit non-zero time deltas to verify temporal smoothing behavior.

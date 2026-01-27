@@ -471,4 +471,52 @@ mod tests {
         let blended = system.blend_values(&animated, &audio);
         assert!(blended.contains_key("1.opacity"));
     }
+
+    #[test]
+    fn test_audio_reactive_attack_release() {
+        let mut controller = AudioReactiveController::new();
+
+        // Slow attack, slow release
+        let mapping = AudioReactiveMapping {
+            parameter_name: "test".to_string(),
+            source: crate::audio::AudioSource::SystemInput,
+            mapping_type: AudioMappingType::Volume,
+            frequency_band: None,
+            output_min: 0.0,
+            output_max: 1.0,
+            smoothing: 0.0, // Disable general smoothing to isolate attack/release
+            attack: 0.1,    // 0.1s attack
+            release: 0.5,   // 0.5s release
+        };
+        controller.add_mapping("param".to_string(), mapping);
+
+        let mut audio = AudioAnalysis::default();
+
+        // 1. Initial State: 0.0
+        audio.rms_volume = 0.0;
+        let val = controller.update(&audio, 0.0).get("param").cloned().unwrap_or(0.0);
+        assert_eq!(val, 0.0);
+
+        // 2. Input Jumps to 1.0
+        audio.rms_volume = 1.0;
+
+        // After small delta (0.01s), should rise but not reach 1.0 (Attack)
+        let val_attack_1 = controller.update(&audio, 0.01).get("param").cloned().unwrap();
+        assert!(val_attack_1 > 0.0 && val_attack_1 < 1.0, "Should be rising: {}", val_attack_1);
+
+        // After long delta (1.0s), should be fully up
+        let val_attack_2 = controller.update(&audio, 1.0).get("param").cloned().unwrap();
+        assert!(val_attack_2 > 0.9, "Should be near target: {}", val_attack_2);
+
+        // 3. Input Drops to 0.0
+        audio.rms_volume = 0.0;
+
+        // After small delta (0.01s), should fall but slowly (Release)
+        let val_release_1 = controller.update(&audio, 1.01).get("param").cloned().unwrap();
+        assert!(val_release_1 < val_attack_2 && val_release_1 > 0.8, "Should fall slowly: {}", val_release_1);
+
+        // After long delta (2.0s), should be near zero
+        let val_release_2 = controller.update(&audio, 3.0).get("param").cloned().unwrap();
+        assert!(val_release_2 < 0.1, "Should be near zero: {}", val_release_2);
+    }
 }
