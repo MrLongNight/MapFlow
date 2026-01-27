@@ -30,6 +30,20 @@ fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// Validate that a path is safe AND has a valid project extension (.mapmap, .json)
+fn validate_project_path(path_str: &str) -> Result<PathBuf, String> {
+    let path = validate_safe_path(path_str)?;
+
+    let allowed_extensions = ["mapmap", "json"];
+    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+        if allowed_extensions.contains(&ext) {
+            return Ok(path);
+        }
+    }
+
+    Err("Invalid file extension. Allowed extensions are: .mapmap, .json".to_string())
+}
+
 pub struct McpServer {
     // Optional OSC client (currently unused but will be used for OSC tools)
     #[allow(dead_code)]
@@ -791,7 +805,7 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_project_path(path_str) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -819,7 +833,7 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_project_path(path_str) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -1323,5 +1337,63 @@ mod tests {
         } else {
             panic!("Expected SaveProject action");
         }
+    }
+
+    #[tokio::test]
+    async fn test_security_project_extensions() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        // Test invalid extension (.txt)
+        let save_req = json!({
+            "jsonrpc": "2.0",
+            "id": 200,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "evil.txt"
+                }
+            }
+        });
+
+        let response = server.handle_request(&save_req.to_string()).await;
+        let resp = response.unwrap();
+        assert!(resp.error.is_some(), "Should fail for .txt extension");
+        let error = resp.error.unwrap();
+        assert!(error.message.contains("Invalid file extension"));
+        assert!(rx.try_recv().is_err()); // No action sent
+
+        // Test valid extension (.mapmap)
+        let valid_req_1 = json!({
+            "jsonrpc": "2.0",
+            "id": 201,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "good.mapmap"
+                }
+            }
+        });
+        let resp1 = server.handle_request(&valid_req_1.to_string()).await.unwrap();
+        assert!(resp1.error.is_none());
+        assert!(matches!(rx.try_recv().unwrap(), McpAction::SaveProject(_)));
+
+        // Test valid extension (.json)
+        let valid_req_2 = json!({
+            "jsonrpc": "2.0",
+            "id": 202,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "config.json"
+                }
+            }
+        });
+        let resp2 = server.handle_request(&valid_req_2.to_string()).await.unwrap();
+        assert!(resp2.error.is_none());
+        assert!(matches!(rx.try_recv().unwrap(), McpAction::SaveProject(_)));
     }
 }
