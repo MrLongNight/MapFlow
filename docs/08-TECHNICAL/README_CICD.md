@@ -21,12 +21,12 @@ JULES_AUTOMATION_ENABLED: true   # Auf 'false' setzen zum Deaktivieren
 
 | Dokument | Zweck | Für wen? |
 |----------|-------|----------|
-| [SETUP_GUIDE.md](SETUP_GUIDE.md) | **5-Minuten Setup** | ⭐ Start hier |
+| [SETUP_GUIDE.md](../05-DEVELOPMENT/SETUP_GUIDE.md) | **5-Minuten Setup** | ⭐ Start hier |
 | [WORKFLOW_CONTROL.md](WORKFLOW_CONTROL.md) | **Workflows steuern** | Alle Nutzer |
 | [WORKFLOW_QUICKREF.md](WORKFLOW_QUICKREF.md) | **Schnellreferenz** | Alle Nutzer |
-| [JULES_INTEGRATION.md](JULES_INTEGRATION.md) | **Jules Config** | Admins |
-| [workflows/README.md](workflows/README.md) | **Workflow Details** | Entwickler |
-| [automation-config.yml](automation-config.yml) | **Zentrale Konfiguration** | Admins |
+| [JULES_INTEGRATION.md](../../.jules/JULES_INTEGRATION.md) | **Jules Config** | Admins |
+| [workflows/README.md](../../.github/workflows/README.md) | **Workflow Details** | Entwickler |
+| [automation-config.yml](../../.github/automation-config.yml) | **Zentrale Konfiguration** | Admins |
 
 ## 🚀 Schnellstart
 
@@ -69,14 +69,7 @@ gh workflow run "CI-01:Build&Test" -f skip_platforms=true -f skip_tests=true
 
 ```
 .github/
-├── README_CICD.md                     # ← Diese Datei (Übersicht)
 ├── automation-config.yml              # Zentrale Konfiguration (informativ)
-│
-├── SETUP_GUIDE.md                     # 5-Min Setup, Quick Start
-├── WORKFLOW_CONTROL.md                # Workflows ein-/ausschalten
-├── WORKFLOW_QUICKREF.md               # Schnellreferenz
-├── JULES_ISSUES_EXPLANATION.md        # Warum Jules Issues manuell
-├── JULES_INTEGRATION.md               # Jules API Konfiguration
 │
 ├── workflows/
 │   ├── README.md                      # Technische Workflow-Details
@@ -132,17 +125,17 @@ gh workflow run "CI-01:Build&Test" -f skip_platforms=true -f skip_tests=true
 ## 🎓 Für verschiedene Nutzergruppen
 
 ### 🆕 Erste Schritte
-1. Lies: [SETUP_GUIDE.md](SETUP_GUIDE.md)
+1. Lies: [SETUP_GUIDE.md](../05-DEVELOPMENT/SETUP_GUIDE.md)
 2. Erstelle ein Issue via Template (Bug/Feature/Task)
 3. Fertig! Jules bearbeitet es automatisch
 
 ### 👔 Admins (Automation kontrollieren)
 1. **Alles deaktivieren**: `JULES_AUTOMATION_ENABLED: false` in CI-04, CI-05, CI-07, CI-08
 2. **Nur Auto-Merge**: `AUTO_MERGE_ENABLED: false` in CI-05
-3. Lies: [automation-config.yml](automation-config.yml) für Details
+3. Lies: [automation-config.yml](../../.github/automation-config.yml) für Details
 
 ### 👨‍💻 Entwickler
-1. Lies: [workflows/README.md](workflows/README.md)
+1. Lies: [workflows/README.md](../../.github/workflows/README.md)
 2. Verstehe: [WORKFLOW_CONTROL.md](WORKFLOW_CONTROL.md)
 3. Nutze: CI/CD Optionen für schnellere Entwicklung
 
@@ -189,4 +182,4 @@ gh workflow run "CI-01:Build&Test" -f skip_platforms=true -f skip_tests=true
 **Maintainer:** MapFlow Team  
 **Status:** ✅ Produktionsbereit
 
-**Nächster Schritt:** Lies [SETUP_GUIDE.md](SETUP_GUIDE.md) für 5-Minuten Setup! 🚀
+**Nächster Schritt:** Lies [SETUP_GUIDE.md](../05-DEVELOPMENT/SETUP_GUIDE.md) für 5-Minuten Setup! 🚀
