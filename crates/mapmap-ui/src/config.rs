@@ -57,6 +57,7 @@ pub struct MidiAssignment {
 
 /// Configuration for Philips Hue integration
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default)]
 pub struct HueConfig {
     /// Bridge IP address
     #[serde(default)]
@@ -75,17 +76,6 @@ pub struct HueConfig {
     pub auto_connect: bool,
 }
 
-impl Default for HueConfig {
-    fn default() -> Self {
-        Self {
-            bridge_ip: String::new(),
-            username: String::new(),
-            client_key: String::new(),
-            entertainment_area: String::new(),
-            auto_connect: false,
-        }
-    }
-}
 
 /// User configuration settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
