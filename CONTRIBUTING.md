@@ -1,6 +1,6 @@
 # Contribute to MapFlow
 
-Thank you for contributing! MapFlow is a community-built, maintained and operated project that welcomes contributions from everyone. Please read our [code of conduct](CODE-OF-CONDUCT.md)
+Thank you for contributing! MapFlow is a community-built, maintained and operated project that welcomes contributions from everyone. Please read our [code of conduct](.github/CODE-OF-CONDUCT.md)
 
 This document outlines the procedures and what to expect when contributing a bug report, a feature request, or new code via a pull request.
 

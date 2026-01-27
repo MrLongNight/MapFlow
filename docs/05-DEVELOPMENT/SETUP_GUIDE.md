@@ -149,7 +149,7 @@ gh run view <run-id> --log
 | `.github/workflows/CI-02_security-scan.yml` | Security Scanning |
 | `.github/ISSUE_TEMPLATE/development_task.yml` | Template für neue Tasks |
 | `.github/labels.yml` | Label Konfiguration |
-| `.github/JULES_INTEGRATION.md` | Detaillierte Jules Dokumentation |
+| `.jules/JULES_INTEGRATION.md` | Detaillierte Jules Dokumentation |
 
 ## 🔧 Troubleshooting
 
@@ -250,10 +250,10 @@ gh issue close <issue-number>
 
 ## 📚 Weitere Dokumentation
 
-- [Workflow README](.github/workflows/README.md) - Detaillierte Workflow-Dokumentation
-- [Jules Integration](.github/JULES_INTEGRATION.md) - Umfassende Jules Anleitung
-- [Issue Templates](.github/ISSUE_TEMPLATE/) - Templates für Issues
-- [PR Template](.github/pull_request_template.md) - Template für PRs
+- [Workflow README](../../.github/workflows/README.md) - Detaillierte Workflow-Dokumentation
+- [Jules Integration](../../.jules/JULES_INTEGRATION.md) - Umfassende Jules Anleitung
+- [Issue Templates](../../.github/ISSUE_TEMPLATE/) - Templates für Issues
+- [PR Template](../../.github/pull_request_template.md) - Template für PRs
 
 ## ✨ Das war's!
 

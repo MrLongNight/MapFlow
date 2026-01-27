@@ -35,3 +35,13 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `crates/mapmap-render/src/effect_chain_renderer.rs` aktualisiert, um die Shader aus dem neuen Pfad (`../../../shaders/`) zu laden.
 - `crates/mapmap-render/shaders/` Verzeichnis gelöscht.
 - Build mit `cargo check` verifiziert.
+
+## 2026-01-27 - Documentation Structure Cleanup
+
+**Erkenntnis:** Das `.github/` Verzeichnis enthielt mehrere Markdown-Dateien, die eigentlich zur technischen Dokumentation, Entwickler-Anleitungen oder Jules-Konfiguration gehören. `CODE-OF-CONDUCT.md` befand sich fälschlicherweise im Root.
+
+**Aktion:**
+- `CODE-OF-CONDUCT.md` nach `.github/` verschoben.
+- `JULES_INTEGRATION.md`, `JULES_ISSUES_EXPLANATION.md` nach `.jules/` verschoben.
+- `GMAIL_API_SETUP.md`, `README_CICD.md`, `WORKFLOW_CONTROL.md`, `WORKFLOW_QUICKREF.md` nach `docs/08-TECHNICAL/` verschoben.
+- `SETUP_GUIDE.md` nach `docs/05-DEVELOPMENT/` verschoben.
