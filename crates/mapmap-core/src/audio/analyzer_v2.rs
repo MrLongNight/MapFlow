@@ -717,4 +717,120 @@ mod tests {
         );
         assert!(analysis.beat_strength > 0.0);
     }
+
+    #[test]
+    fn test_bpm_calculation_steady_beat() {
+        let config = AudioAnalyzerV2Config {
+            sample_rate: 44100,
+            fft_size: 1024,
+            smoothing: 0.0,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // Simulate 120 BPM: 2 beats per second => 0.5s interval
+        let sample_rate = 44100.0;
+        let beat_interval = 0.5;
+        let samples_per_block = 1024;
+        let block_duration = samples_per_block as f64 / sample_rate;
+
+        let kick_freq = 60.0_f32;
+        let kick: Vec<f32> = (0..samples_per_block)
+            .map(|i| (2.0 * std::f32::consts::PI * kick_freq * i as f32 / sample_rate as f32).sin())
+            .collect();
+        let silence = vec![0.0f32; samples_per_block];
+
+        let mut current_time = 0.0;
+        let mut last_beat_time = -1.0;
+
+        // Run simulation for 5 seconds (10 beats)
+        // We need to feed audio in blocks
+        for _ in 0..(5.0 / block_duration) as usize {
+            current_time += block_duration;
+
+            // Trigger kick every 0.5s
+            if current_time - last_beat_time >= beat_interval {
+                analyzer.process_samples(&kick, current_time);
+                last_beat_time = current_time;
+            } else {
+                analyzer.process_samples(&silence, current_time);
+            }
+        }
+
+        let analysis = analyzer.get_latest_analysis();
+        if let Some(bpm) = analysis.tempo_bpm {
+            // Should be close to 120.0 (allow some jitter due to block alignment)
+            assert!(
+                (bpm - 120.0).abs() < 5.0,
+                "Expected ~120 BPM, got {}",
+                bpm
+            );
+        } else {
+            // It might take time to stabilize, but after 5s (10 beats) it SHOULD have a guess
+            // Note: The analyzer requires 4 beats minimum. 10 is plenty.
+            // If this fails, the beat detection might be too strict or the simulation imperfect.
+            // Let's inspect beat timestamps count if we could access private fields, but we can't.
+            // We'll panic with a helpful message.
+            panic!("BPM detection failed to produce a result after 10 steady beats");
+        }
+    }
+
+    #[test]
+    fn test_update_config_resizing() {
+        let mut config = AudioAnalyzerV2Config {
+            fft_size: 1024,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config.clone());
+
+        let samples = vec![0.0; 1024];
+        analyzer.process_samples(&samples, 0.0);
+
+        // Magnitudes should be half of FFT size
+        assert_eq!(analyzer.get_latest_analysis().fft_magnitudes.len(), 512);
+
+        // Update config to larger FFT
+        config.fft_size = 2048;
+        analyzer.update_config(config);
+
+        // Process more samples (should not panic)
+        analyzer.process_samples(&samples, 1.0);
+
+        // New magnitudes should be half of NEW FFT size
+        assert_eq!(analyzer.get_latest_analysis().fft_magnitudes.len(), 1024);
+    }
+
+    #[test]
+    fn test_smoothing_logic() {
+        let config = AudioAnalyzerV2Config {
+            smoothing: 0.9, // High smoothing
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // 1. Spike the volume
+        let loud: Vec<f32> = vec![1.0; 1024];
+        analyzer.process_samples(&loud, 0.0);
+        let rms_high = analyzer.get_latest_analysis().rms_volume;
+        assert!(rms_high > 0.0);
+
+        // 2. Feed silence
+        let silence: Vec<f32> = vec![0.0; 1024];
+        analyzer.process_samples(&silence, 0.1);
+
+        // 3. RMS should NOT be 0.0 immediately due to smoothing
+        let rms_decay = analyzer.get_latest_analysis().rms_volume;
+        assert!(
+            rms_decay > 0.0 && rms_decay < rms_high,
+            "RMS should decay: high={}, decayed={}",
+            rms_high,
+            rms_decay
+        );
+
+        // 4. Eventually it should reach near zero
+        for i in 0..100 {
+            analyzer.process_samples(&silence, 0.1 + i as f64 * 0.01);
+        }
+        assert!(analyzer.get_latest_analysis().rms_volume < 0.001);
+    }
 }
