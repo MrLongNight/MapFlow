@@ -26,3 +26,11 @@ This pattern should be applied to other time-based nodes (e.g., Timeline, Sequen
 2. Dispatch this action from the UI (instead of calling blocking code).
 3. Handle the action in the main event loop by spawning a `tokio` task.
 4. Send the result back to the main thread via an internal channel (e.g., `McpAction` or dedicated channel).
+
+## 2024-05-24 – [Smart Empty State Pattern]
+**Learning:** Initializing nodes (like Media Players) with "empty" defaults creates confusion when the interface shows disabled or irrelevant controls (like 00:00 timecode or Play buttons). This violates the "Predictability" principle and clutters the UI.
+**Action:** Implemented a "Smart Empty State" pattern:
+1. Detect if the primary resource (e.g., file path) is missing.
+2. If missing, hide operational controls (Transport, Timeline).
+3. Display a prominent "Hero" call-to-action (Big Icon + Button) to guide the user to the setup step immediately.
+4. Maintain access to detailed configuration (File Info) below the hero section.
