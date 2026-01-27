@@ -41,3 +41,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-19 - Conflict Resolution & Missing Features Audit
 **Erkenntnis:** Merge-Konflikt in `ROADMAP.md` entdeckt und behoben (Version 1.9.2). Zwei bedeutende Features (Hue Integration, Node Module System) fehlten im Changelog.
 **Aktion:** ROADMAP-Status für FFmpeg/CI und Hue aktualisiert. Fehlende Changelog-Einträge für Commits #b8dd83b und #484c78e nachgetragen.
+
+## 2026-01-26 - CI/CD & Packaging Fixes Documentation
+**Erkenntnis:** Several CI/CD and Installer fixes were merged and documented in CHANGELOG.md but missing from ROADMAP_2.0.md.
+**Aktion:** Updated ROADMAP_2.0.md to reflect the completion of FFmpeg integration in CI, pre-checks hardening, and WiX installer fixes.
