@@ -150,7 +150,7 @@ jobs:
              # Wildcard copy all DLLs
              Copy-Item "$vcpkgBin\*.dll" -Destination $targetDir -Force
              Write-Host "✓ Alle DLLs (*.dll) erfolgreich kopiert."
-             
+
              # Verify contents
              Get-ChildItem "$targetDir\*.dll" | Select-Object Name
           } else {
@@ -168,15 +168,15 @@ jobs:
         run: |
           $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
           $cargoTargetBinDir = "${{ github.workspace }}\target\release"
-          
+
           # Create a clean packaging directory
           $packageDir = "${{ github.workspace }}\package_staging"
           New-Item -ItemType Directory -Force -Path $packageDir
-          
+
           # Copy EVERYTHING needed into staging (App + DLLs)
           Copy-Item "$cargoTargetBinDir\MapFlow.exe" -Destination $packageDir -Force
           Copy-Item "$cargoTargetBinDir\*.dll" -Destination $packageDir -Force
-          
+
           Write-Host "Staging Directory Contents:"
           Get-ChildItem $packageDir | Select-Object Name
 
@@ -184,10 +184,10 @@ jobs:
           # -cg MainComponents: Component Group ID
           # -dr INSTALLFOLDER: Directory Ref ID in main.wxs
           heat.exe dir "$packageDir" -gg -sfrag -cg MainComponents -dr INSTALLFOLDER -var "var.PackageDir" -out components.wxs
-          
+
           # Compile Main + Components
           candle.exe .\crates\mapmap\wix\main.wxs components.wxs -dPackageDir="$packageDir" -dCargoTargetBinDir="$cargoTargetBinDir" -out mapflow.wixobj -out components.wixobj -ext WixUIExtension
-          
+
           # Link
           light.exe mapflow.wixobj components.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
 
