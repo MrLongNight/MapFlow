@@ -143,6 +143,8 @@ pub enum UIAction {
     ToggleLayerBypass(u64),
     ToggleLayerSolo(u64),
     SetLayerOpacity(u64, f32),
+    SetLayerBlendMode(u64, mapmap_core::BlendMode),
+    SetLayerVisibility(u64, bool),
     EjectAllLayers,
 
     // Transform actions (Phase 1)

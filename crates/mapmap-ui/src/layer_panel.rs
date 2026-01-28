@@ -105,10 +105,12 @@ impl LayerPanel {
                                                     });
                                                 });
 
-                                                // Visibility
+                                                // Visibility initialization
                                                 let mut visible = layer.visible;
                                                 if ui.checkbox(&mut visible, "").changed() {
-                                                    layer.visible = visible;
+                                                    actions.push(UIAction::SetLayerVisibility(
+                                                        layer.id, visible,
+                                                    ));
                                                 }
 
                                                 // Name and Selection
@@ -172,9 +174,9 @@ impl LayerPanel {
                                                     )
                                                     .changed()
                                                 {
-                                                    layer.opacity = opacity;
-                                                    // For sliders, we might want to push action only on release, but for now direct update is fine.
-                                                    // If we need to record for Undo, we'd need a "drag ended" event.
+                                                    actions.push(UIAction::SetLayerOpacity(
+                                                        layer.id, opacity,
+                                                    ));
                                                 }
 
                                                 // Blend Mode
@@ -198,7 +200,10 @@ impl LayerPanel {
                                                 });
 
                                                 if selected_mode != current_mode {
-                                                    layer.blend_mode = selected_mode;
+                                                    actions.push(UIAction::SetLayerBlendMode(
+                                                        layer.id,
+                                                        selected_mode,
+                                                    ));
                                                 }
                                             });
                                         },
