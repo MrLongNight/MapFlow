@@ -14,6 +14,16 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ---
 
+## 2026-01-28 - Documentation Reorganization
+
+**Erkenntnis:** Mehrere Dokumentationsdateien befanden sich im `.github/` Verzeichnis oder verstreut im Root, anstatt in den dedizierten Ordnern `docs/` oder `.jules/`. Dies widersprach den Archivist-Regeln, dass `.github/` nur für GitHub-spezifische Konfigurationen genutzt werden soll.
+
+**Aktion:**
+- `CODE-OF-CONDUCT.md` vom Root nach `.github/` verschoben (Ausnahme, da GitHub-Standard).
+- `JULES_*.md` und `SETUP_GUIDE.md` von `.github/` nach `.jules/` verschoben.
+- CI/CD und technische Dokumentation (`README_CICD.md`, `GMAIL_API_SETUP.md`, `WORKFLOW_*.md`) von `.github/` nach `docs/08-TECHNICAL/` verschoben.
+- `docs/agent_rules/ci_cd_strategy.md` nach `docs/08-TECHNICAL/CI_CD_STRATEGY.md` konsolidiert und `docs/agent_rules/` entfernt.
+
 ## 2026-01-02 - Root Directory Cleanup
 
 **Erkenntnis:** Das Root-Verzeichnis enthielt mehrere temporäre Dateien (`check_*.txt`, `test_results.txt`, `core_error.txt`) sowie falsch platzierte Dokumentation (`SECURITY.md`, `knowledge.md`) und redundante Dateien (`VERSION.txt`).
