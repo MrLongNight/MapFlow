@@ -436,19 +436,16 @@ impl AppUI {
             .default_width(280.0)
             .min_width(200.0)
             .max_width(400.0)
+            .frame(egui::Frame::new())
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading(self.i18n.t("panel-media-browser"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("✕").clicked() {
-                            self.show_media_browser = false;
-                        }
-                    });
-                });
-                ui.separator();
-                let _ = self
+                if let Some(action) = self
                     .media_browser
-                    .ui(ui, &self.i18n, self.icon_manager.as_ref());
+                    .ui(ui, &self.i18n, self.icon_manager.as_ref())
+                {
+                    if let media_browser::MediaBrowserAction::Close = action {
+                        self.show_media_browser = false;
+                    }
+                }
             });
     }
 
