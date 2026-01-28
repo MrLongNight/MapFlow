@@ -30,6 +30,27 @@ fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// Validate that a path is safe and has an allowed extension
+fn validate_path_with_extensions(
+    path_str: &str,
+    allowed_extensions: &[&str],
+) -> Result<PathBuf, String> {
+    let path = validate_safe_path(path_str)?;
+
+    if let Some(ext) = path.extension() {
+        if let Some(ext_str) = ext.to_str() {
+            if allowed_extensions.contains(&ext_str.to_lowercase().as_str()) {
+                return Ok(path);
+            }
+        }
+    }
+
+    Err(format!(
+        "Invalid file extension. Allowed: {:?}",
+        allowed_extensions
+    ))
+}
+
 pub struct McpServer {
     // Optional OSC client (currently unused but will be used for OSC tools)
     #[allow(dead_code)]
@@ -791,7 +812,10 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_path_with_extensions(
+                                        path_str,
+                                        &["mapmap", "json", "ron", "mflow"],
+                                    ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -819,7 +843,10 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_path_with_extensions(
+                                        path_str,
+                                        &["mapmap", "json", "ron", "mflow"],
+                                    ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -979,6 +1006,80 @@ impl McpServer {
                         } else {
                             Some(error_response(id, -32602, "Missing arguments for send_osc"))
                         }
+                    }
+                    "layer_load_media" => {
+                        if let Some(args) = params.arguments {
+                            if let (Some(layer_id_val), Some(media_path_val)) =
+                                (args.get("layer_id"), args.get("media_path"))
+                            {
+                                if let (Some(layer_id), Some(media_path_str)) =
+                                    (layer_id_val.as_u64(), media_path_val.as_str())
+                                {
+                                    match validate_path_with_extensions(
+                                        media_path_str,
+                                        &[
+                                            "mp4", "mov", "avi", "mkv", "webm", "png", "jpg", "jpeg", "webp",
+                                        ],
+                                    ) {
+                                        Ok(path) => {
+                                            if let Some(sender) = &self.action_sender {
+                                                let _ = sender.send(crate::McpAction::LayerLoadMedia(
+                                                    layer_id, path,
+                                                ));
+                                            }
+                                            return Some(success_response(
+                                                id,
+                                                serde_json::json!({"status":"queued"}),
+                                            ));
+                                        }
+                                        Err(e) => {
+                                            return Some(error_response(
+                                                id,
+                                                -32602,
+                                                &format!("Invalid media path: {}", e),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Some(error_response(id, -32602, "Missing arguments"))
+                    }
+                    "shader_load" => {
+                        if let Some(args) = params.arguments {
+                            if let (Some(layer_id_val), Some(shader_path_val)) =
+                                (args.get("layer_id"), args.get("shader_path"))
+                            {
+                                if let (Some(layer_id), Some(shader_path_str)) =
+                                    (layer_id_val.as_u64(), shader_path_val.as_str())
+                                {
+                                    match validate_path_with_extensions(
+                                        shader_path_str,
+                                        &["wgsl", "glsl", "frag", "vert"],
+                                    ) {
+                                        Ok(path) => {
+                                            if let Some(sender) = &self.action_sender {
+                                                let _ = sender.send(crate::McpAction::ShaderLoad(
+                                                    layer_id, path,
+                                                ));
+                                            }
+                                            return Some(success_response(
+                                                id,
+                                                serde_json::json!({"status":"queued"}),
+                                            ));
+                                        }
+                                        Err(e) => {
+                                            return Some(error_response(
+                                                id,
+                                                -32602,
+                                                &format!("Invalid shader path: {}", e),
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Some(error_response(id, -32602, "Missing arguments"))
                     }
                     _ => Some(error_response(id, -32601, "Tool not found")),
                 }
@@ -1322,6 +1423,82 @@ mod tests {
             assert_eq!(path.to_str().unwrap(), "good_project.mapmap");
         } else {
             panic!("Expected SaveProject action");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_security_extensions() {
+        let (tx, rx) = unbounded();
+        let server = McpServer::new(Some(tx));
+
+        // Test project_save with invalid extension
+        let invalid_save = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "malware.sh"
+                }
+            }
+        });
+        let resp = server.handle_request(&invalid_save.to_string()).await.unwrap();
+        assert!(resp.error.is_some(), "Should reject .sh extension");
+        assert!(rx.try_recv().is_err(), "Should not send action");
+
+        // Test project_save with valid extension
+        let valid_save = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "project.mapmap"
+                }
+            }
+        });
+        let resp = server.handle_request(&valid_save.to_string()).await.unwrap();
+        assert!(resp.error.is_none());
+        assert!(matches!(rx.try_recv().unwrap(), McpAction::SaveProject(_)));
+
+        // Test layer_load_media with invalid extension
+        let invalid_media = json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "layer_load_media",
+                "arguments": {
+                    "layer_id": 1,
+                    "media_path": "script.txt"
+                }
+            }
+        });
+        let resp = server.handle_request(&invalid_media.to_string()).await.unwrap();
+        assert!(resp.error.is_some(), "Should reject .txt for media");
+
+        // Test layer_load_media with valid extension
+        let valid_media = json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "layer_load_media",
+                "arguments": {
+                    "layer_id": 1,
+                    "media_path": "video.mp4"
+                }
+            }
+        });
+        let resp = server.handle_request(&valid_media.to_string()).await.unwrap();
+        assert!(resp.error.is_none());
+        if let McpAction::LayerLoadMedia(id, path) = rx.try_recv().unwrap() {
+            assert_eq!(id, 1);
+            assert_eq!(path.to_str().unwrap(), "video.mp4");
+        } else {
+            panic!("Expected LayerLoadMedia");
         }
     }
 }
