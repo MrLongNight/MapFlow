@@ -1294,74 +1294,166 @@ impl ModuleCanvas {
                                         ui.label("Modulator:");
                                         match mod_type {
                                             ModulizerType::Effect { effect_type: effect, params } => {
-                                                ui.label("✨ Effect");
-                                                let mut changed_type = None;
+                                                // === LIVE HEADER ===
+                                                ui.horizontal(|ui| {
+                                                    ui.heading(format!("✨ {}", effect.name()));
+                                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                        let reset_btn = egui::Button::new("↺ Reset")
+                                                            .min_size(Vec2::new(60.0, 24.0))
+                                                            .fill(Color32::from_rgb(60, 60, 70));
 
-                                                egui::ComboBox::from_id_salt(format!("{}_effect", part_id))
-                                                    .selected_text(format!("{:?}", effect))
-                                                    .show_ui(ui, |ui| {
-                                                        ui.label("--- Basic ---");
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Blur), "Blur").clicked() { changed_type = Some(ModuleEffectType::Blur); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Invert), "Invert").clicked() { changed_type = Some(ModuleEffectType::Invert); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Sharpen), "Sharpen").clicked() { changed_type = Some(ModuleEffectType::Sharpen); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Threshold), "Threshold").clicked() { changed_type = Some(ModuleEffectType::Threshold); }
-
-                                                        ui.label("--- Color ---");
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Brightness), "Brightness").clicked() { changed_type = Some(ModuleEffectType::Brightness); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Contrast), "Contrast").clicked() { changed_type = Some(ModuleEffectType::Contrast); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Saturation), "Saturation").clicked() { changed_type = Some(ModuleEffectType::Saturation); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::HueShift), "Hue Shift").clicked() { changed_type = Some(ModuleEffectType::HueShift); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Colorize), "Colorize").clicked() { changed_type = Some(ModuleEffectType::Colorize); }
-
-                                                        ui.label("--- Distortion ---");
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Wave), "Wave").clicked() { changed_type = Some(ModuleEffectType::Wave); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Spiral), "Spiral").clicked() { changed_type = Some(ModuleEffectType::Spiral); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Kaleidoscope), "Kaleidoscope").clicked() { changed_type = Some(ModuleEffectType::Kaleidoscope); }
-
-                                                        ui.label("--- Stylize ---");
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Pixelate), "Pixelate").clicked() { changed_type = Some(ModuleEffectType::Pixelate); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::EdgeDetect), "Edge Detect").clicked() { changed_type = Some(ModuleEffectType::EdgeDetect); }
-
-                                                        ui.label("--- Composite ---");
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::RgbSplit), "RGB Split").clicked() { changed_type = Some(ModuleEffectType::RgbSplit); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::ChromaticAberration), "Chromatic").clicked() { changed_type = Some(ModuleEffectType::ChromaticAberration); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::FilmGrain), "Film Grain").clicked() { changed_type = Some(ModuleEffectType::FilmGrain); }
-                                                        if ui.selectable_label(matches!(effect, ModuleEffectType::Vignette), "Vignette").clicked() { changed_type = Some(ModuleEffectType::Vignette); }
+                                                        if ui
+                                                            .add(reset_btn)
+                                                            .on_hover_text("Reset all parameters to default")
+                                                            .clicked()
+                                                        {
+                                                            Self::set_default_effect_params(*effect, params);
+                                                        }
                                                     });
+                                                });
+                                                ui.separator();
 
-                                                if let Some(new_type) = changed_type {
-                                                    *effect = new_type;
-                                                    params.clear();
-                                                    // Set defaults
-                                                    match new_type {
-                                                        ModuleEffectType::Blur => {
-                                                            params.insert("radius".to_string(), 5.0);
-                                                            params.insert("samples".to_string(), 9.0);
-                                                        }
-                                                        ModuleEffectType::Pixelate => { params.insert("pixel_size".to_string(), 8.0); }
-                                                        ModuleEffectType::FilmGrain => {
-                                                            params.insert("amount".to_string(), 0.1);
-                                                            params.insert("speed".to_string(), 1.0);
-                                                        }
-                                                        ModuleEffectType::Vignette => {
-                                                            params.insert("radius".to_string(), 0.5);
-                                                            params.insert("softness".to_string(), 0.5);
-                                                        }
-                                                        ModuleEffectType::ChromaticAberration => {
-                                                            params.insert("amount".to_string(), 0.01);
-                                                        }
-                                                        ModuleEffectType::EdgeDetect => {
-                                                            // Usually no params, or threshold?
-                                                        }
-                                                        ModuleEffectType::Brightness | ModuleEffectType::Contrast | ModuleEffectType::Saturation => {
-                                                            params.insert("brightness".to_string(), 0.0);
-                                                            params.insert("contrast".to_string(), 1.0);
-                                                            params.insert("saturation".to_string(), 1.0);
-                                                        }
-                                                        _ => {}
+                                                // === TYPE SELECTION ===
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Type:");
+                                                    let mut changed_type = None;
+                                                    egui::ComboBox::from_id_salt(format!("{}_effect", part_id))
+                                                        .selected_text(effect.name())
+                                                        .width(180.0)
+                                                        .show_ui(ui, |ui| {
+                                                            ui.label("--- Basic ---");
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Blur), "Blur")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Blur);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Invert), "Invert")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Invert);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Sharpen), "Sharpen")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Sharpen);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Threshold), "Threshold")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Threshold);
+                                                            }
+
+                                                            ui.label("--- Color ---");
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Brightness), "Brightness")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Brightness);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Contrast), "Contrast")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Contrast);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Saturation), "Saturation")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Saturation);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::HueShift), "Hue Shift")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::HueShift);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Colorize), "Colorize")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Colorize);
+                                                            }
+
+                                                            ui.label("--- Distortion ---");
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Wave), "Wave")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Wave);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Spiral), "Spiral")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Spiral);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(effect, ModuleEffectType::Kaleidoscope),
+                                                                    "Kaleidoscope",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Kaleidoscope);
+                                                            }
+
+                                                            ui.label("--- Stylize ---");
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Pixelate), "Pixelate")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Pixelate);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::EdgeDetect), "Edge Detect")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::EdgeDetect);
+                                                            }
+
+                                                            ui.label("--- Composite ---");
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::RgbSplit), "RGB Split")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::RgbSplit);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(
+                                                                    matches!(effect, ModuleEffectType::ChromaticAberration),
+                                                                    "Chromatic",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::ChromaticAberration);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::FilmGrain), "Film Grain")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::FilmGrain);
+                                                            }
+                                                            if ui
+                                                                .selectable_label(matches!(effect, ModuleEffectType::Vignette), "Vignette")
+                                                                .clicked()
+                                                            {
+                                                                changed_type = Some(ModuleEffectType::Vignette);
+                                                            }
+                                                        });
+
+                                                    if let Some(new_type) = changed_type {
+                                                        *effect = new_type;
+                                                        Self::set_default_effect_params(new_type, params);
                                                     }
-                                                }
+                                                });
 
+                                                ui.add_space(4.0);
+                                                ui.label(egui::RichText::new("Parameters").strong());
                                                 ui.separator();
                                                 match effect {
                                                     ModuleEffectType::Blur => {
@@ -5302,6 +5394,46 @@ impl ModuleCanvas {
         ));
         ui.label(format!("Inputs: {}", part.inputs.len()));
         ui.label(format!("Outputs: {}", part.outputs.len()));
+    }
+
+    /// Set default parameters for an effect type
+    fn set_default_effect_params(
+        effect: mapmap_core::module::EffectType,
+        params: &mut std::collections::HashMap<String, f32>,
+    ) {
+        use mapmap_core::module::EffectType as ModuleEffectType;
+        params.clear();
+        match effect {
+            ModuleEffectType::Blur => {
+                params.insert("radius".to_string(), 5.0);
+                params.insert("samples".to_string(), 9.0);
+            }
+            ModuleEffectType::Pixelate => {
+                params.insert("pixel_size".to_string(), 8.0);
+            }
+            ModuleEffectType::FilmGrain => {
+                params.insert("amount".to_string(), 0.1);
+                params.insert("speed".to_string(), 1.0);
+            }
+            ModuleEffectType::Vignette => {
+                params.insert("radius".to_string(), 0.5);
+                params.insert("softness".to_string(), 0.5);
+            }
+            ModuleEffectType::ChromaticAberration => {
+                params.insert("amount".to_string(), 0.01);
+            }
+            ModuleEffectType::EdgeDetect => {
+                // Usually no params, or threshold?
+            }
+            ModuleEffectType::Brightness
+            | ModuleEffectType::Contrast
+            | ModuleEffectType::Saturation => {
+                params.insert("brightness".to_string(), 0.0);
+                params.insert("contrast".to_string(), 1.0);
+                params.insert("saturation".to_string(), 1.0);
+            }
+            _ => {}
+        }
     }
 
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
