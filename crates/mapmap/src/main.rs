@@ -1773,7 +1773,9 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
                 for part in &module_ref.parts {
-                    if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+                    if let mapmap_core::module::ModulePartType::Output(output_type) =
+                        &part.part_type
+                    {
                         // Use part.id for consistency with render pipeline
                         let output_id = part.id;
 
@@ -1792,8 +1794,7 @@ impl App {
                                 let window_id = *projector_id;
                                 active_window_ids.insert(window_id);
 
-                                if let Some(window_context) = self.window_manager.get(window_id)
-                                {
+                                if let Some(window_context) = self.window_manager.get(window_id) {
                                     // Update existing
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
@@ -1807,7 +1808,7 @@ impl App {
                                     window_context.window.set_cursor_visible(!*hide_cursor);
                                 } else {
                                     // Create new
-                                    self.window_manager.create_projector_window(
+                                    if let Err(e) = self.window_manager.create_projector_window(
                                         elwt,
                                         &self.backend,
                                         window_id,
@@ -1815,11 +1816,17 @@ impl App {
                                         *fullscreen,
                                         *hide_cursor,
                                         *target_screen,
-                                    )?;
-                                    info!(
-                                        "Created projector window for output {} (Part {})",
-                                        window_id, output_id
-                                    );
+                                    ) {
+                                        error!(
+                                            "Failed to create projector window for output {} (Part {}): {}",
+                                            window_id, output_id, e
+                                        );
+                                    } else {
+                                        info!(
+                                            "Created projector window for output {} (Part {})",
+                                            window_id, output_id
+                                        );
+                                    }
                                 }
 
                                 // 2. Extra Preview Window
@@ -1828,7 +1835,7 @@ impl App {
                                     active_window_ids.insert(preview_id);
 
                                     if self.window_manager.get(preview_id).is_none() {
-                                        self.window_manager.create_projector_window(
+                                        if let Err(e) = self.window_manager.create_projector_window(
                                             elwt,
                                             &self.backend,
                                             preview_id,
@@ -1836,11 +1843,17 @@ impl App {
                                             false, // Always windowed
                                             false, // Show cursor
                                             0,     // Default screen (0)
-                                        )?;
-                                        info!(
-                                            "Created preview window for output {}",
-                                            window_id
-                                        );
+                                        ) {
+                                            error!(
+                                                "Failed to create preview window for output {}: {}",
+                                                window_id, e
+                                            );
+                                        } else {
+                                            info!(
+                                                "Created preview window for output {}",
+                                                window_id
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -1859,8 +1872,7 @@ impl App {
                                             mapmap_io::format::VideoFormat {
                                                 width,
                                                 height,
-                                                pixel_format:
-                                                    mapmap_io::format::PixelFormat::BGRA8,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
                                                 frame_rate: 60.0,
                                             },
                                         ) {
@@ -2403,7 +2415,9 @@ impl App {
                         // For Phase 6 demo: Create a default graph if ID not found?
                         // Better: Ensure graph exists via other means (Graph Manager UI).
                         // For now we assume call is valid or we create empty.
-                        if let std::collections::hash_map::Entry::Vacant(e) = self.state.shader_graphs.entry(graph_id) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.state.shader_graphs.entry(graph_id)
+                        {
                             let new_graph = mapmap_core::shader_graph::ShaderGraph::new(
                                 graph_id,
                                 "New Graph".to_string(),
