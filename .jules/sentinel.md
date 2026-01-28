@@ -22,3 +22,8 @@
 **Vulnerability:** The web server treated an empty list of `allowed_origins` as "Allow All" (wildcard), intended as a permissive default. This meant that configurations intending to restrict access (by providing an empty list) inadvertently opened the API to all origins.
 **Learning:** "Empty means None" is the standard semantic expectation for security allowlists. "Empty means All" is a dangerous anti-pattern that leads to accidental exposure.
 **Prevention:** Treat empty allowlists as "Deny All". Require explicit `*` or `Any` markers for permissive modes. Ensure secure defaults (empty/deny) in configuration structs.
+
+## 2026-10-25 - Missing MCP Tool Implementation & Extension Validation
+**Vulnerability:** Several MCP tools (`layer_load_media`, `shader_load`) were defined in the schema but not implemented in the handler. Furthermore, existing file operations (`project_save`) lacked extension validation, potentially allowing arbitrary file writes (e.g., `.sh`, `.exe`).
+**Learning:** Defining an API without implementing it creates a false sense of functionality. More importantly, path traversal checks are insufficient for file operations; content type enforcement (via extensions) is critical to prevent polyglot attacks or arbitrary code execution via file placement.
+**Prevention:** Enforce strict extension whitelisting for all file-handling MCP tools. Use `validate_path_with_extensions` helper. Ensure all advertised tools are implemented or explicitly rejected.
