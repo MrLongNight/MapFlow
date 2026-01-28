@@ -3545,16 +3545,18 @@ impl App {
 
                 // A. Prepare Mesh Target
                 let mesh_target_view_ref;
-                let mesh_output_tex_name = &self.layer_ping_pong[1];
+                // Use unique texture name per output to prevent race conditions!
+                let mesh_output_tex_name =
+                    format!("{}_out_{}", &self.layer_ping_pong[1], output_id);
                 let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
                 if needs_post_processing {
                     let width = window_context.surface_config.width;
                     let height = window_context.surface_config.height;
                     self.texture_pool
-                        .resize_if_needed(mesh_output_tex_name, width, height);
+                        .resize_if_needed(&mesh_output_tex_name, width, height);
                     _mesh_intermediate_view =
-                        Some(self.texture_pool.get_view(mesh_output_tex_name));
+                        Some(self.texture_pool.get_view(&mesh_output_tex_name));
                     mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
                 } else {
                     mesh_target_view_ref = &view;
