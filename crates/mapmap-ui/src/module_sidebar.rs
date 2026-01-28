@@ -16,10 +16,7 @@ impl ModuleSidebar {
     ) -> Option<ModuleSidebarAction> {
         let mut action = None;
 
-        ui.vertical(|ui| {
-            ui.heading(locale.t("panel-modules"));
-            ui.separator();
-
+        crate::widgets::panel_container(ui, &locale.t("panel-modules"), |ui| {
             // Button to add a new module
             if ui.button(locale.t("btn-add-module")).clicked() {
                 action = Some(ModuleSidebarAction::AddModule);

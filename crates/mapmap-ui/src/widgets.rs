@@ -369,3 +369,63 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
+
+/// A container that applies the "Cyber Dark" panel style (Border + Header)
+pub fn panel_container<R>(
+    ui: &mut Ui,
+    title: &str,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> R {
+    let panel_fill = ui.visuals().panel_fill;
+    let stroke_color = colors::STROKE_GREY;
+
+    // Outer Frame (Border + Background)
+    egui::Frame::new()
+        .fill(panel_fill)
+        .stroke(egui::Stroke::new(1.0, stroke_color))
+        .inner_margin(egui::Margin::same(0))
+        .corner_radius(0)
+        .show(ui, |ui| {
+            // Header
+            ui.vertical(|ui| {
+                egui::Frame::new()
+                    .fill(egui::Color32::from_white_alpha(5)) // Subtle highlight for header
+                    .inner_margin(egui::Margin::symmetric(8, 4))
+                    .corner_radius(0)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            // Cyan Accent Mark
+                            let mark_rect = Rect::from_min_size(
+                                ui.cursor().min + Vec2::new(0.0, 2.0),
+                                Vec2::new(3.0, 14.0),
+                            );
+                            ui.painter().rect_filled(
+                                mark_rect,
+                                egui::CornerRadius::ZERO,
+                                colors::CYAN_ACCENT,
+                            );
+                            ui.add_space(8.0);
+
+                            // Title
+                            ui.heading(title);
+                        });
+                    });
+
+                // Separator Line
+                let sep_rect = Rect::from_min_size(
+                    ui.cursor().min,
+                    Vec2::new(ui.available_width(), 1.0),
+                );
+                ui.painter()
+                    .rect_filled(sep_rect, 0.0, stroke_color);
+                ui.add_space(1.0);
+            });
+
+            // Content Body
+            egui::Frame::new()
+                .inner_margin(egui::Margin::same(8))
+                .show(ui, add_contents)
+                .inner
+        })
+        .inner
+}
