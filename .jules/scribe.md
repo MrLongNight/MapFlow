@@ -1,3 +1,20 @@
+# Scribe Journal - 2026-01-27
+
+## Documentation Cleanup
+
+I have fixed broken links in the root `README.md` and `CONTRIBUTING.md` that were pointing to incorrect paths after the previous documentation restructuring.
+
+### Actions Taken
+- **Fixed Links**:
+  - `README.md`: Updated links to `ROADMAP.md` (now `ROADMAP_2.0.md`) and `CONTRIBUTING.md` (now in root).
+  - `CONTRIBUTING.md`: Updated links to `ROADMAP.md` and `DEVELOPMENT-SETUP.md` (now in `docs/05-DEVELOPMENT/`).
+- **Updated Roadmap**:
+  - Updated `ROADMAP_2.0.md` Stand date to `2026-01-27`.
+  - Confirmed "Phase 6" and "MCP Integration" are marked as complete.
+- **Changelog**: Added entry for these documentation fixes.
+
+---
+
 # Scribe Journal - 2026-01-20
 
 ## Documentation Cleanup & Restructuring
