@@ -357,6 +357,83 @@ impl App {
             warn!("Could not determine data local directory for autosave.");
         }
 
+        // --- SELF-REPAIR: Fix Duplicate Output IDs ---
+        // Older projects might have multiple Projectors with ID 0 or 1.
+        // We scan and reassign them to unique IDs.
+        let mut fixed_count = 0;
+        let mut used_ids: std::collections::HashSet<u64> = std::collections::HashSet::new();
+
+        // First pass: Collect all IDs
+        for module in state.module_manager.modules() {
+            for part in &module.parts {
+                if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector { id, .. },
+                ) = &part.part_type
+                {
+                    if *id > 0 {
+                        used_ids.insert(*id);
+                    }
+                }
+            }
+        }
+
+        // Re-inplementing cleanly:
+        let mut seen_ids = std::collections::HashSet::new();
+        let mut next_safe_id = 1;
+
+        // Find max existing ID to start safe search
+        for module in state.module_manager.modules() {
+            for part in &module.parts {
+                if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector { id, .. },
+                ) = &part.part_type
+                {
+                    if *id >= next_safe_id {
+                        next_safe_id = *id + 1;
+                    }
+                }
+            }
+        }
+
+        for module in state.module_manager.modules_mut() {
+            for part in &mut module.parts {
+                if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector { id, name, .. },
+                ) = &mut part.part_type
+                {
+                    let mut needs_fix = false;
+
+                    if *id == 0 {
+                        needs_fix = true;
+                    } else if seen_ids.contains(id) {
+                        needs_fix = true;
+                    }
+
+                    if needs_fix {
+                        let old_id = *id;
+                        *id = next_safe_id;
+                        *name = format!("Projector {}", next_safe_id);
+                        info!(
+                            "Self-Repair: Reassigned Module '{}' Projector ID from {} to {}",
+                            module.name, old_id, *id
+                        );
+                        next_safe_id += 1;
+                        fixed_count += 1;
+                    }
+
+                    seen_ids.insert(*id);
+                }
+            }
+        }
+
+        if fixed_count > 0 {
+            info!(
+                "Self-Repair: Fixed {} duplicate/invalid Output IDs.",
+                fixed_count
+            );
+            state.dirty = true;
+        }
+
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
             Ok(None) => vec![],
