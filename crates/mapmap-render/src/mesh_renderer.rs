@@ -483,7 +483,10 @@ impl MeshRenderer {
 
     /// Get a texture bind group, reusing cached ones if available
     /// ⚡ Bolt: Caches bind groups by TextureView address (via Arc/Weak) to avoid allocation
-    pub fn get_texture_bind_group(&mut self, texture_view: &Arc<wgpu::TextureView>) -> Arc<wgpu::BindGroup> {
+    pub fn get_texture_bind_group(
+        &mut self,
+        texture_view: &Arc<wgpu::TextureView>,
+    ) -> Arc<wgpu::BindGroup> {
         let key = Arc::as_ptr(texture_view) as usize;
 
         // Check cache
@@ -514,7 +517,8 @@ impl MeshRenderer {
         let bg_arc = Arc::new(bind_group);
 
         // Store in cache
-        self.texture_bind_group_cache.insert(key, (bg_arc.clone(), Arc::downgrade(texture_view)));
+        self.texture_bind_group_cache
+            .insert(key, (bg_arc.clone(), Arc::downgrade(texture_view)));
 
         bg_arc
     }
