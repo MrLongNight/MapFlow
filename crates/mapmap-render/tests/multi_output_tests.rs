@@ -298,7 +298,8 @@ fn test_individual_output_transforms() {
             let color = [0, 255, 0, 255]; // Green
 
             let source_texture = create_solid_color_texture(&device, &queue, width, height, color);
-            let source_view = source_texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let source_view =
+                Arc::new(source_texture.create_view(&wgpu::TextureViewDescriptor::default()));
 
             let output_texture = device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Transform Output Texture"),
@@ -316,11 +317,11 @@ fn test_individual_output_transforms() {
             });
             let output_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-            let mesh_renderer =
+            let mut mesh_renderer =
                 MeshRenderer::new(device.clone(), wgpu::TextureFormat::Rgba8UnormSrgb).unwrap();
             let mesh = create_fullscreen_quad_mesh();
             let (vertex_buffer, index_buffer) = mesh_renderer.create_mesh_buffers(&mesh);
-            let texture_bind_group = mesh_renderer.create_texture_bind_group(&source_view);
+            let texture_bind_group = mesh_renderer.get_texture_bind_group(&source_view);
 
             // Scale the quad to half size. It should now occupy the center quadrant.
             let transform = Mat4::from_scale(glam::Vec3::new(0.5, 0.5, 1.0));
