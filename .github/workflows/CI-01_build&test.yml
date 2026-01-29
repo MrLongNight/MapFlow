@@ -146,14 +146,14 @@ jobs:
         # Apply formatting fixes using pre-commit for consistent rules
         pip install pre-commit
         pre-commit run --all-files || true  # Run checks and allow them to modify files
-        
+
         # Verify changes were made (optional debug)
         git status
-        
+
         # Configure Git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        
+
         # Commit and push
         git add .
         git commit -m "style: auto-fix formatting (cargo fmt / cargo sort)" || echo "No changes to commit"
