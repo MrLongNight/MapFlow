@@ -357,83 +357,6 @@ impl App {
             warn!("Could not determine data local directory for autosave.");
         }
 
-        // --- SELF-REPAIR: Fix Duplicate Output IDs ---
-        // Older projects might have multiple Projectors with ID 0 or 1.
-        // We scan and reassign them to unique IDs.
-        let mut fixed_count = 0;
-        let mut used_ids: std::collections::HashSet<u64> = std::collections::HashSet::new();
-
-        // First pass: Collect all IDs
-        for module in state.module_manager.modules() {
-            for part in &module.parts {
-                if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { id, .. },
-                ) = &part.part_type
-                {
-                    if *id > 0 {
-                        used_ids.insert(*id);
-                    }
-                }
-            }
-        }
-
-        // Re-inplementing cleanly:
-        let mut seen_ids = std::collections::HashSet::new();
-        let mut next_safe_id = 1;
-
-        // Find max existing ID to start safe search
-        for module in state.module_manager.modules() {
-            for part in &module.parts {
-                if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { id, .. },
-                ) = &part.part_type
-                {
-                    if *id >= next_safe_id {
-                        next_safe_id = *id + 1;
-                    }
-                }
-            }
-        }
-
-        for module in state.module_manager.modules_mut() {
-            for part in &mut module.parts {
-                if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { id, name, .. },
-                ) = &mut part.part_type
-                {
-                    let mut needs_fix = false;
-
-                    if *id == 0 {
-                        needs_fix = true;
-                    } else if seen_ids.contains(id) {
-                        needs_fix = true;
-                    }
-
-                    if needs_fix {
-                        let old_id = *id;
-                        *id = next_safe_id;
-                        *name = format!("Projector {}", next_safe_id);
-                        info!(
-                            "Self-Repair: Reassigned Module '{}' Projector ID from {} to {}",
-                            module.name, old_id, *id
-                        );
-                        next_safe_id += 1;
-                        fixed_count += 1;
-                    }
-
-                    seen_ids.insert(*id);
-                }
-            }
-        }
-
-        if fixed_count > 0 {
-            info!(
-                "Self-Repair: Fixed {} duplicate/invalid Output IDs.",
-                fixed_count
-            );
-            state.dirty = true;
-        }
-
         let audio_devices = match CpalBackend::list_devices() {
             Ok(Some(devices)) => devices,
             Ok(None) => vec![],
@@ -3658,7 +3581,7 @@ impl App {
 
                 // C. Process and Render Each Op (Accumulate)
                 // self.mesh_renderer.begin_frame(); // MOVED to NewEvents to prevent reset per output!
-                for (module_id, op) in target_ops {
+                for (op_index, (module_id, op)) in target_ops.iter().enumerate() {
                     // Determine source texture view
                     let owned_source_view = if let Some(src_id) = op.source_part_id {
                         let tex_name = format!("part_{}_{}", module_id, src_id);
@@ -3776,7 +3699,14 @@ impl App {
                             }
                         }
 
-                        // --- Render Mesh (Warping) ---
+                        // --- Render to Output ---
+                        // Use Load for 2nd+ layer to accumulate
+                        let load_op = if op_index == 0 {
+                            wgpu::LoadOp::Clear(wgpu::Color::BLACK)
+                        } else {
+                            wgpu::LoadOp::Load
+                        };
+
                         {
                             let (vertex_buffer, index_buffer, index_count) =
                                 self.mesh_buffer_cache.get_buffers(
@@ -3802,14 +3732,14 @@ impl App {
                             let texture_bind_group =
                                 self.mesh_renderer.create_texture_bind_group(final_view);
 
-                            let mut render_pass =
+                            let mut rpass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Mesh Render Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                                         view: mesh_target_view_ref,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load, // ACCUMULATE
+                                            load: load_op,
                                             store: wgpu::StoreOp::Store,
                                         },
                                         depth_slice: None,
@@ -3818,8 +3748,9 @@ impl App {
                                     occlusion_query_set: None,
                                     timestamp_writes: None,
                                 });
+
                             self.mesh_renderer.draw(
-                                &mut render_pass,
+                                &mut rpass,
                                 vertex_buffer,
                                 index_buffer,
                                 index_count,
@@ -3828,10 +3759,8 @@ impl App {
                                 true,
                             );
                         }
-                    } else {
-                        // Log missing view?
                     }
-                } // End Loop
+                }
 
                 // D. Post-Processing
                 if needs_post_processing {
