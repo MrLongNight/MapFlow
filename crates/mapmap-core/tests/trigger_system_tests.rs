@@ -85,10 +85,12 @@ fn test_update_audio_volume_beat() {
     let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
 
     // Case 1: RMS above threshold
-    let mut audio_data = AudioTriggerData::default();
-    audio_data.rms_volume = 0.6;
-    audio_data.peak_volume = 0.1;
-    audio_data.beat_detected = false;
+    let audio_data = AudioTriggerData {
+        rms_volume: 0.6,
+        peak_volume: 0.1,
+        beat_detected: false,
+        ..Default::default()
+    };
 
     system.update(&manager, &audio_data);
     assert!(system.is_active(part_id, 9)); // RMS (index 9)
@@ -96,9 +98,13 @@ fn test_update_audio_volume_beat() {
     assert!(!system.is_active(part_id, 11)); // Beat (index 11)
 
     // Case 2: Peak above threshold and Beat detected
-    audio_data.rms_volume = 0.1;
-    audio_data.peak_volume = 0.9;
-    audio_data.beat_detected = true;
+    // We create a new struct to avoid mutation if possible, or just reuse
+    let audio_data = AudioTriggerData {
+        rms_volume: 0.1,
+        peak_volume: 0.9,
+        beat_detected: true,
+        ..Default::default()
+    };
 
     system.update(&manager, &audio_data);
     assert!(!system.is_active(part_id, 9));
@@ -122,8 +128,10 @@ fn test_update_clears_previous_state() {
     let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
 
     // Frame 1: Beat active
-    let mut audio_data = AudioTriggerData::default();
-    audio_data.beat_detected = true;
+    let mut audio_data = AudioTriggerData {
+        beat_detected: true,
+        ..Default::default()
+    };
     system.update(&manager, &audio_data);
     assert!(system.is_active(part_id, 11));
 
