@@ -2100,15 +2100,7 @@ impl App {
 
                 // Upload to GPU if data is on CPU
                 if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                    if log_this_frame {
-                        tracing::info!(
-                            "Frame upload: mod={} part={} size={}x{}",
-                            mod_id,
-                            part_id,
-                            frame.format.width,
-                            frame.format.height
-                        );
-                    }
+                    // (Log removed to reduce spam)
                     texture_pool.upload_data(
                         queue,
                         &tex_name,
