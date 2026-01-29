@@ -30,3 +30,22 @@ repos:
       - id: check-merge-conflict
       - id: mixed-line-ending
         args: [--fix=lf]
+
+  # ===========================================
+  # Rust formatting and sorting (System hooks)
+  # ===========================================
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --all
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-sort
+        name: cargo sort
+        entry: cargo sort --workspace
+        language: system
+        types: [toml]
+        pass_filenames: false

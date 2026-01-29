@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-01-28 - Massive Commit without Documentation (dec7046)
+**Erkenntnis:** Commit `dec7046` (Main application logic) was a massive feature update (98k+ insertions) but completely missing from `CHANGELOG.md`.
+**Aktion:** Tracker detected this by comparing `git log` head with `CHANGELOG.md` and added the entry. Future large merges must be flagged immediately.
+
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.

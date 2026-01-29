@@ -2196,7 +2196,8 @@ impl ModuleCanvas {
                 let value = match band {
                     mapmap_core::module::AudioBand::SubBass => self
                         .audio_trigger_data
-                        .band_energies.first()
+                        .band_energies
+                        .first()
                         .copied()
                         .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Bass => self
