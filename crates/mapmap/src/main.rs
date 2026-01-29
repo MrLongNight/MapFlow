@@ -2996,6 +2996,14 @@ impl App {
                             });
                     }
 
+                    // === RIGHT PANEL: Inspector ===
+                    self.ui_state.render_inspector(
+                        ctx,
+                        &mut self.state.module_manager,
+                        &self.state.layer_manager,
+                        &self.state.output_manager,
+                    );
+
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
