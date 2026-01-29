@@ -138,21 +138,31 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
     response
 }
 
-pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
-    let text = "B";
+/// Generic Icon Button Helper
+pub fn icon_button(
+    ui: &mut Ui,
+    text: &str,
+    hover_color: Color32,
+    active_color: Color32,
+    is_active: bool,
+) -> Response {
     let desired_size = Vec2::new(24.0, 24.0);
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
 
     let visuals = ui.style().interact(&response);
-    let bg_fill = if active {
-        colors::WARN_COLOR
+
+    // Background fill logic
+    let bg_fill = if is_active {
+        active_color
+    } else if response.hovered() && hover_color != Color32::TRANSPARENT {
+        hover_color
     } else {
         visuals.bg_fill
     };
 
-    // Border: if active, use warning color, else normal
-    let stroke = if active {
-        Stroke::new(1.0, colors::WARN_COLOR)
+    // Stroke logic
+    let stroke = if is_active {
+        Stroke::new(1.0, active_color)
     } else {
         visuals.bg_stroke
     };
@@ -166,91 +176,10 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
     );
 
     let text_pos = rect.center();
-    // Text color: Black if active (contrast on Orange), else text color
-    let text_color = if active {
-        Color32::BLACK
-    } else {
-        ui.visuals().text_color()
-    };
 
-    ui.painter().text(
-        text_pos,
-        egui::Align2::CENTER_CENTER,
-        text,
-        egui::FontId::proportional(14.0),
-        text_color,
-    );
-
-    response.on_hover_text("Bypass Layer")
-}
-
-pub fn solo_button(ui: &mut Ui, active: bool) -> Response {
-    let text = "S";
-    let desired_size = Vec2::new(24.0, 24.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
-
-    let visuals = ui.style().interact(&response);
-    let bg_fill = if active {
-        colors::MINT_ACCENT
-    } else {
-        visuals.bg_fill
-    };
-
-    let stroke = if active {
-        Stroke::new(1.0, colors::MINT_ACCENT)
-    } else {
-        visuals.bg_stroke
-    };
-
-    ui.painter().rect(
-        rect,
-        egui::CornerRadius::same(0),
-        bg_fill,
-        stroke,
-        egui::StrokeKind::Inside,
-    );
-
-    let text_pos = rect.center();
-    // Text color: Black if active (contrast on Mint), else text color
-    let text_color = if active {
-        Color32::BLACK
-    } else {
-        ui.visuals().text_color()
-    };
-
-    ui.painter().text(
-        text_pos,
-        egui::Align2::CENTER_CENTER,
-        text,
-        egui::FontId::proportional(14.0),
-        text_color,
-    );
-
-    response.on_hover_text("Solo Layer")
-}
-
-pub fn param_button(ui: &mut Ui) -> Response {
-    let text = "P";
-    let desired_size = Vec2::new(24.0, 24.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
-
-    let visuals = ui.style().interact(&response);
-    let bg_fill = if response.hovered() {
-        colors::CYAN_ACCENT
-    } else {
-        visuals.bg_fill
-    };
-
-    ui.painter().rect(
-        rect,
-        egui::CornerRadius::same(0),
-        bg_fill,
-        visuals.bg_stroke,
-        egui::StrokeKind::Inside,
-    );
-
-    let text_pos = rect.center();
-    let text_color = if response.hovered() {
+    // Text color logic: Black if active or hovered with color
+    let is_colored = is_active || (response.hovered() && hover_color != Color32::TRANSPARENT);
+    let text_color = if is_colored {
         Color32::BLACK
     } else {
         ui.visuals().text_color()
@@ -267,80 +196,36 @@ pub fn param_button(ui: &mut Ui) -> Response {
     response
 }
 
+pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
+    icon_button(ui, "B", Color32::TRANSPARENT, colors::WARN_COLOR, active)
+        .on_hover_text("Bypass Layer")
+}
+
+pub fn solo_button(ui: &mut Ui, active: bool) -> Response {
+    icon_button(ui, "S", Color32::TRANSPARENT, colors::MINT_ACCENT, active).on_hover_text("Solo Layer")
+}
+
+pub fn param_button(ui: &mut Ui) -> Response {
+    icon_button(ui, "P", colors::CYAN_ACCENT, colors::CYAN_ACCENT, false)
+}
+
 pub fn duplicate_button(ui: &mut Ui) -> Response {
-    let text = "D";
-    let desired_size = Vec2::new(24.0, 24.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
-
-    let visuals = ui.style().interact(&response);
-    let bg_fill = if response.hovered() {
-        colors::CYAN_ACCENT
-    } else {
-        visuals.bg_fill
-    };
-
-    ui.painter().rect(
-        rect,
-        egui::CornerRadius::same(0),
-        bg_fill,
-        visuals.bg_stroke,
-        egui::StrokeKind::Inside,
-    );
-
-    let text_pos = rect.center();
-    let text_color = if response.hovered() {
-        Color32::BLACK
-    } else {
-        ui.visuals().text_color()
-    };
-
-    ui.painter().text(
-        text_pos,
-        egui::Align2::CENTER_CENTER,
-        text,
-        egui::FontId::proportional(14.0),
-        text_color,
-    );
-
-    response.on_hover_text("Duplicate Layer")
+    icon_button(ui, "D", colors::CYAN_ACCENT, colors::CYAN_ACCENT, false)
+        .on_hover_text("Duplicate Layer")
 }
 
 pub fn delete_button(ui: &mut Ui) -> Response {
-    let text = "X";
-    let desired_size = Vec2::new(24.0, 24.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
+    icon_button(ui, "X", colors::ERROR_COLOR, colors::ERROR_COLOR, false).on_hover_text("Remove Layer")
+}
 
-    let visuals = ui.style().interact(&response);
-    let bg_fill = if response.hovered() {
-        colors::ERROR_COLOR
-    } else {
-        visuals.bg_fill
-    };
+pub fn move_up_button(ui: &mut Ui) -> Response {
+    icon_button(ui, "⬆", colors::CYAN_ACCENT, colors::CYAN_ACCENT, false)
+        .on_hover_text("Move Layer Up")
+}
 
-    ui.painter().rect(
-        rect,
-        egui::CornerRadius::same(0),
-        bg_fill,
-        visuals.bg_stroke,
-        egui::StrokeKind::Inside,
-    );
-
-    let text_pos = rect.center();
-    let text_color = if response.hovered() {
-        Color32::BLACK
-    } else {
-        ui.visuals().text_color()
-    };
-
-    ui.painter().text(
-        text_pos,
-        egui::Align2::CENTER_CENTER,
-        text,
-        egui::FontId::proportional(14.0),
-        text_color,
-    );
-
-    response.on_hover_text("Remove Layer")
+pub fn move_down_button(ui: &mut Ui) -> Response {
+    icon_button(ui, "⬇", colors::CYAN_ACCENT, colors::CYAN_ACCENT, false)
+        .on_hover_text("Move Layer Down")
 }
 
 pub fn collapsing_header_with_reset(
