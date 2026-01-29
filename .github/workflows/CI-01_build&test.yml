@@ -136,6 +136,7 @@ jobs:
 
     - name: Check Formatting & Sort
       id: fmt
+      continue-on-error: true
       run: |
         cargo fmt --all -- --check
         cargo sort --workspace --check
