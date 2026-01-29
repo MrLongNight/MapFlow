@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-20 10:00
+> **Stand:** 2026-01-28 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -26,9 +26,9 @@
 Basierend auf dem aktuellen Status und den Projektzielen für die erste produktive Version (v1.0):
 
 ### A) Render Pipeline & Module Logic
-*   **Priorität:** 🔥 **CRITICAL**
+*   **Priorität:** ✅ **COMPLETED**
 *   **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
-*   **Status:** Aktuell startet die App aufgrund eines größeren Refactorings nicht. Dies muss zuerst behoben werden.
+*   **Status:** ✅ **RESOLVED** (2026-01-28) - Main application logic implemented and initialized.
 *   **Maßnahme:** "Broken Nodes" reparieren. Experimentelle Features (wie NDI/Multi-PC) ggf. ausklammern oder verstecken, falls sie die Stabilität gefährden.
 
 ### B) Timeline Integration (V3)
