@@ -2339,10 +2339,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { .. },
+                    mapmap_core::module::OutputType::Projector { id, .. },
                 ) = &part.part_type
                 {
-                    Some(part.id) // Use part.id for consistency with render pipeline
+                    Some(*id) // Use logical Projector ID to match Window ID
                 } else {
                     None
                 }
