@@ -20,3 +20,7 @@
 ## 2024-05-25 - [MIDI Parsing]
 **Erkenntnis:** `MidiMessage` parsing logic for PitchBend (14-bit reconstruction) and system messages (Start/Stop) was implemented but untested. This created a risk for hardware controllers relying on high-resolution input or transport controls.
 **Aktion:** Implemented `test_midi_message_parsing_extended` covering full 14-bit Pitch Bend reconstruction and all system realtime messages to ensure reliable hardware integration.
+
+## 2024-05-26 - [Trigger System Integration]
+**Erkenntnis:** `TriggerSystem` integration logic was untested. While `TriggerConfig` logic was tested, the actual mapping of Audio FFT bands to socket indices (0-8, 9-11) in the `update` loop was unverified, leaving a gap in ensuring audio reactivity works end-to-end.
+**Aktion:** Restored `tests/trigger_system_tests.rs` with mocks for `ModuleManager` and `AudioTriggerData`, ensuring every frequency band and volume trigger fires correctly.

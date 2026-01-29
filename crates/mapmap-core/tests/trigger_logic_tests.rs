@@ -13,9 +13,11 @@ fn test_trigger_config_defaults() {
 
 #[test]
 fn test_trigger_config_apply_direct() {
-    let mut config = TriggerConfig::default();
-    config.min_value = 0.0;
-    config.max_value = 100.0;
+    let mut config = TriggerConfig {
+        min_value: 0.0,
+        max_value: 100.0,
+        ..TriggerConfig::default()
+    };
 
     // Direct mapping
     assert_eq!(config.apply(0.0), 0.0);
@@ -31,11 +33,13 @@ fn test_trigger_config_apply_direct() {
 
 #[test]
 fn test_trigger_config_apply_fixed() {
-    let mut config = TriggerConfig::default();
-    config.mode = TriggerMappingMode::Fixed;
-    config.min_value = 10.0;
-    config.max_value = 20.0;
-    config.threshold = 0.5;
+    let mut config = TriggerConfig {
+        mode: TriggerMappingMode::Fixed,
+        min_value: 10.0,
+        max_value: 20.0,
+        threshold: 0.5,
+        ..TriggerConfig::default()
+    };
 
     // Below threshold
     assert_eq!(config.apply(0.4), 10.0);
@@ -54,10 +58,12 @@ fn test_trigger_config_apply_fixed() {
 
 #[test]
 fn test_trigger_config_apply_random() {
-    let mut config = TriggerConfig::default();
-    config.mode = TriggerMappingMode::RandomInRange;
-    config.min_value = 10.0;
-    config.max_value = 20.0;
+    let config = TriggerConfig {
+        mode: TriggerMappingMode::RandomInRange,
+        min_value: 10.0,
+        max_value: 20.0,
+        ..TriggerConfig::default()
+    };
 
     // When trigger is inactive (0.0), returns min value
     assert_eq!(config.apply(0.0), 10.0);
@@ -65,7 +71,7 @@ fn test_trigger_config_apply_random() {
     // When trigger is active (> 0.0), returns value in range
     for _ in 0..100 {
         let val = config.apply(1.0);
-        assert!(val >= 10.0 && val <= 20.0);
+        assert!((10.0..=20.0).contains(&val));
     }
 }
 
