@@ -793,8 +793,7 @@ impl App {
                 }
             }
             winit::event::Event::NewEvents(_) => {
-                // Reset frame-local caches at the VERY START of the global frame
-                self.mesh_renderer.begin_frame();
+                // (Reset moved to AboutToWait to ensure single reset per game loop tick)
             }
             winit::event::Event::AboutToWait => {
                 // --- Non-blocking Frame Limiter ---
@@ -847,7 +846,10 @@ impl App {
                 }
 
                 // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
-                // This ensures output windows update immediately, not after event dispatch
+                // Reset frame-local caches HERE, exactly once per frame update loop.
+                // This prevents race conditions where NewEvents fires multiple times (e.g. input events).
+                self.mesh_renderer.begin_frame();
+
                 let output_ids: Vec<u64> =
                     self.window_manager.iter().map(|wc| wc.output_id).collect();
                 for output_id in output_ids {
