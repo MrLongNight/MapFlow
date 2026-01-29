@@ -792,6 +792,10 @@ impl App {
                     info!("Exit autosave successful to {:?}", autosave_path);
                 }
             }
+            winit::event::Event::NewEvents(_) => {
+                // Reset frame-local caches at the VERY START of the global frame
+                self.mesh_renderer.begin_frame();
+            }
             winit::event::Event::AboutToWait => {
                 // --- Non-blocking Frame Limiter ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
@@ -3582,7 +3586,7 @@ impl App {
                 }
 
                 // C. Process and Render Each Op (Accumulate)
-                self.mesh_renderer.begin_frame();
+                // self.mesh_renderer.begin_frame(); // MOVED to NewEvents to prevent reset per output!
                 for (module_id, op) in target_ops {
                     // Determine source texture view
                     let owned_source_view = if let Some(src_id) = op.source_part_id {
