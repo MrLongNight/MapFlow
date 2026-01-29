@@ -3192,7 +3192,7 @@ impl App {
                                 ui.separator();
 
                                 // Philips Hue Settings
-                                egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
+                                let body_returned = egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
                                     .default_open(true)
                                     .show(ui, |ui| {
                                         let mut changed = false;
@@ -3304,8 +3304,9 @@ impl App {
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before linking/connecting for the first time.").small());
                                         (changed, connect_clicked, disconnect_clicked, discover_clicked, register_clicked)
                                     })
-                                    .body_returned
-                                    .map(|(changed, connect, disconnect, discover, register)| {
+                                    .body_returned;
+
+                                    if let Some((changed, connect, disconnect, discover, register)) = body_returned {
                                         if register {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::RegisterHue);
                                         }
@@ -3331,7 +3332,7 @@ impl App {
                                         if discover {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::DiscoverHueBridges);
                                         }
-                                    });
+                                    }
 
                                 ui.separator();
 

@@ -597,7 +597,11 @@ impl AppUI {
         if matches!(context, crate::InspectorContext::None) {
             if let Some(id) = self.selected_layer_id {
                 if let Some(layer) = layer_manager.get_layer(id) {
-                    let index = layer_manager.layers().iter().position(|l| l.id == id).unwrap_or(0);
+                    let index = layer_manager
+                        .layers()
+                        .iter()
+                        .position(|l| l.id == id)
+                        .unwrap_or(0);
                     context = crate::InspectorContext::Layer {
                         layer,
                         transform: &layer.transform,

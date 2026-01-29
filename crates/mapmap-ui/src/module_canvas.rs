@@ -2175,7 +2175,8 @@ impl ModuleCanvas {
                 let value = match band {
                     mapmap_core::module::AudioBand::SubBass => self
                         .audio_trigger_data
-                        .band_energies.first()
+                        .band_energies
+                        .first()
                         .copied()
                         .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Bass => self
@@ -2355,7 +2356,7 @@ impl ModuleCanvas {
         ui: &mut Ui,
         manager: &mut ModuleManager,
         locale: &LocaleManager,
-        actions: &mut Vec<crate::UIAction>,
+        _actions: &mut [crate::UIAction],
     ) {
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
