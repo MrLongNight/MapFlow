@@ -1,4 +1,4 @@
-name: autofix.ci
+name: Autofix CI
 
 on:
   pull_request:
