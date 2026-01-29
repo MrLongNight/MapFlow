@@ -202,7 +202,8 @@ pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
 }
 
 pub fn solo_button(ui: &mut Ui, active: bool) -> Response {
-    icon_button(ui, "S", Color32::TRANSPARENT, colors::MINT_ACCENT, active).on_hover_text("Solo Layer")
+    icon_button(ui, "S", Color32::TRANSPARENT, colors::MINT_ACCENT, active)
+        .on_hover_text("Solo Layer")
 }
 
 pub fn param_button(ui: &mut Ui) -> Response {
@@ -215,7 +216,8 @@ pub fn duplicate_button(ui: &mut Ui) -> Response {
 }
 
 pub fn delete_button(ui: &mut Ui) -> Response {
-    icon_button(ui, "X", colors::ERROR_COLOR, colors::ERROR_COLOR, false).on_hover_text("Remove Layer")
+    icon_button(ui, "X", colors::ERROR_COLOR, colors::ERROR_COLOR, false)
+        .on_hover_text("Remove Layer")
 }
 
 pub fn move_up_button(ui: &mut Ui) -> Response {

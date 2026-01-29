@@ -79,17 +79,17 @@ impl LayerPanel {
                                     // Layer Row
                                     let is_selected = *selected_layer_id == Some(layer.id);
                                     let bg_color = if is_selected {
-                                        ui.visuals().selection.bg_fill.linear_multiply(0.2) // Subtle selection background
+                                        ui.visuals().selection.bg_fill.linear_multiply(0.2)
+                                    // Subtle selection background
                                     } else if index % 2 == 1 {
                                         ui.visuals().faint_bg_color // Zebra striping
                                     } else {
                                         Color32::TRANSPARENT
                                     };
 
-                                    egui::Frame::new()
-                                        .fill(bg_color)
-                                        .inner_margin(4.0)
-                                        .show(ui, |ui| {
+                                    egui::Frame::new().fill(bg_color).inner_margin(4.0).show(
+                                        ui,
+                                        |ui| {
                                             ui.horizontal(|ui| {
                                                 // Reorder buttons (Vertical stack)
                                                 ui.vertical(|ui| {
@@ -136,9 +136,9 @@ impl LayerPanel {
                                                         ui.add_space(4.0);
 
                                                         if widgets::duplicate_button(ui).clicked() {
-                                                            actions.push(
-                                                                UIAction::DuplicateLayer(layer.id),
-                                                            );
+                                                            actions.push(UIAction::DuplicateLayer(
+                                                                layer.id,
+                                                            ));
                                                         }
 
                                                         ui.add_space(4.0);
@@ -201,7 +201,8 @@ impl LayerPanel {
                                                     layer.blend_mode = selected_mode;
                                                 }
                                             });
-                                        });
+                                        },
+                                    );
                                 });
                             }
                         }

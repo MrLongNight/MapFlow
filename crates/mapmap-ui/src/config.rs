@@ -56,8 +56,7 @@ pub struct MidiAssignment {
 }
 
 /// Configuration for Philips Hue integration
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct HueConfig {
     /// Bridge IP address
     #[serde(default)]
@@ -75,7 +74,6 @@ pub struct HueConfig {
     #[serde(default)]
     pub auto_connect: bool,
 }
-
 
 /// User configuration settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
