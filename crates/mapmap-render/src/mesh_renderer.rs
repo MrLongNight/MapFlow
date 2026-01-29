@@ -319,49 +319,8 @@ impl MeshRenderer {
         transform: Mat4,
         opacity: f32,
     ) -> Arc<wgpu::BindGroup> {
-        // Expand cache if needed
-        if self.current_cache_index >= self.uniform_cache.len() {
-            let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
-                * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
-            let final_transform = normalization * transform;
-
-            let uniforms = MeshUniforms {
-                transform: final_transform.to_cols_array_2d(),
-                opacity,
-                flip_h: 0.0,
-                flip_v: 0.0,
-                brightness: 0.0,
-                contrast: 1.0,
-                saturation: 1.0,
-                hue_shift: 0.0,
-                _padding: 0.0,
-            };
-
-            let buffer = self
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Mesh Uniform Buffer"),
-                    contents: bytemuck::cast_slice(&[uniforms]),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                });
-
-            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Mesh Uniform Bind Group"),
-                layout: &self.uniform_bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffer.as_entire_binding(),
-                }],
-            });
-
-            self.uniform_cache.push(CachedMeshUniform {
-                buffer,
-                bind_group: Arc::new(bind_group),
-            });
-        }
-
-        // Update current buffer
-        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        // ALWAYS allocate new buffer to prevent race conditions during multi-output rendering
+        // or double-buffering issues. The performance cost is negligible for <100 layers.
         let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
             * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
         let final_transform = normalization * transform;
@@ -378,14 +337,25 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        let buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Mesh Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
 
-        let bind_group = self.uniform_cache[self.current_cache_index]
-            .bind_group
-            .clone();
-        self.current_cache_index += 1;
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Mesh Uniform Bind Group"),
+            layout: &self.uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffer.as_entire_binding(),
+            }],
+        });
 
-        bind_group
+        // We don't use the cache vector anymore, but keep the signature compatible
+        Arc::new(bind_group)
     }
 
     /// Get a uniform bind group with source properties (flip, color correction)
@@ -401,49 +371,7 @@ impl MeshRenderer {
         saturation: f32,
         hue_shift: f32,
     ) -> Arc<wgpu::BindGroup> {
-        // Expand cache if needed
-        if self.current_cache_index >= self.uniform_cache.len() {
-            let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
-                * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
-            let final_transform = normalization * transform;
-
-            let uniforms = MeshUniforms {
-                transform: final_transform.to_cols_array_2d(),
-                opacity,
-                flip_h: if flip_h { 1.0 } else { 0.0 },
-                flip_v: if flip_v { 1.0 } else { 0.0 },
-                brightness,
-                contrast,
-                saturation,
-                hue_shift,
-                _padding: 0.0,
-            };
-
-            let buffer = self
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Mesh Uniform Buffer"),
-                    contents: bytemuck::cast_slice(&[uniforms]),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                });
-
-            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Mesh Uniform Bind Group"),
-                layout: &self.uniform_bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffer.as_entire_binding(),
-                }],
-            });
-
-            self.uniform_cache.push(CachedMeshUniform {
-                buffer,
-                bind_group: Arc::new(bind_group),
-            });
-        }
-
-        // Update current buffer
-        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        // ALWAYS allocate new buffer to prevent race conditions
         let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
             * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
         let final_transform = normalization * transform;
@@ -460,14 +388,24 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        let buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Mesh Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
 
-        let bind_group = self.uniform_cache[self.current_cache_index]
-            .bind_group
-            .clone();
-        self.current_cache_index += 1;
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Mesh Uniform Bind Group"),
+            layout: &self.uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffer.as_entire_binding(),
+            }],
+        });
 
-        bind_group
+        Arc::new(bind_group)
     }
     /// Create a texture bind group
     pub fn create_texture_bind_group(&self, texture_view: &wgpu::TextureView) -> wgpu::BindGroup {

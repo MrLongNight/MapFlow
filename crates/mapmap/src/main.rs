@@ -850,13 +850,10 @@ impl App {
                 // This prevents race conditions where NewEvents fires multiple times (e.g. input events).
                 self.mesh_renderer.begin_frame();
 
-                let output_ids: Vec<u64> =
-                    self.window_manager.iter().map(|wc| wc.output_id).collect();
-                for output_id in output_ids {
-                    if let Err(e) = self.render(output_id) {
-                        error!("Render error on output {}: {}", output_id, e);
-                    }
-                }
+                // Note: We removed the manual 'render()' loop here because we call 'request_redraw()'
+                // at the end of this block/update cycle (lines 1311+).
+                // Rendering here AND in RedrawRequested caused double-rendering and potential race conditions.
+                // Now we rely on the OS event loop to trigger RedrawRequested -> render().
 
                 // Process audio
                 // Process audio
