@@ -12,7 +12,11 @@ use tracing::{error, info};
 /// Prevents:
 /// - Path traversal (.. components)
 /// - Absolute paths (restricts to working directory)
-fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
+/// - Invalid file extensions
+fn validate_path_with_extensions(
+    path_str: &str,
+    allowed_extensions: &[&str],
+) -> Result<PathBuf, String> {
     let path = PathBuf::from(path_str);
 
     // Check for absolute path
@@ -25,6 +29,22 @@ fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
         if matches!(component, std::path::Component::ParentDir) {
             return Err("Path traversal (..) is not allowed".to_string());
         }
+    }
+
+    // Check extension
+    if let Some(ext) = path.extension() {
+        if let Some(ext_str) = ext.to_str() {
+            if !allowed_extensions.contains(&ext_str.to_lowercase().as_str()) {
+                return Err(format!(
+                    "Extension '{}' is not allowed. Allowed: {:?}",
+                    ext_str, allowed_extensions
+                ));
+            }
+        } else {
+            return Err("Invalid file extension".to_string());
+        }
+    } else {
+        return Err("File must have an extension".to_string());
     }
 
     Ok(path)
@@ -791,7 +811,10 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_path_with_extensions(
+                                        path_str,
+                                        &["mapmap", "json"],
+                                    ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -819,7 +842,10 @@ impl McpServer {
                         if let Some(args) = params.arguments {
                             if let Some(path_val) = args.get("path") {
                                 if let Some(path_str) = path_val.as_str() {
-                                    match validate_safe_path(path_str) {
+                                    match validate_path_with_extensions(
+                                        path_str,
+                                        &["mapmap", "json"],
+                                    ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
                                                 let _ = sender
@@ -1293,10 +1319,29 @@ mod tests {
 
         let error = resp.error.unwrap();
         assert!(error.message.contains("Invalid path"));
-        assert!(error.message.contains("Path traversal"));
+        // Could be traversal or extension error depending on order, but we check generic "Invalid path" prefix
+        assert!(
+            error.message.contains("Path traversal") || error.message.contains("Extension")
+        );
 
         // Verify NO action was sent
         assert!(rx.try_recv().is_err());
+
+        // Test invalid extension
+        let ext_req = json!({
+            "jsonrpc": "2.0",
+            "id": 101,
+            "method": "tools/call",
+            "params": {
+                "name": "project_save",
+                "arguments": {
+                    "path": "script.sh"
+                }
+            }
+        });
+        let ext_resp = server.handle_request(&ext_req.to_string()).await.unwrap();
+        assert!(ext_resp.error.is_some());
+        assert!(ext_resp.error.unwrap().message.contains("Extension 'sh' is not allowed"));
 
         // Test valid path
         let valid_req = json!({
