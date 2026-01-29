@@ -147,6 +147,10 @@ jobs:
         pip install pre-commit
         pre-commit run --all-files || true  # Run checks and allow them to modify files
 
+        # Also run cargo fmt and sort explicitly to catch Rust-specific issues
+        cargo fmt --all
+        cargo sort --workspace
+
         # Verify changes were made (optional debug)
         git status
 
