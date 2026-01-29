@@ -148,9 +148,9 @@ jobs:
         pre-commit run --all-files || true  # Run checks and allow them to modify files
 
         # Explicitly run cargo tools to ensure fixes are applied
+        cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux" -- -A warnings || true
         cargo fmt --all
         cargo sort --workspace
-        cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux" -- -A warnings || true
 
         # Verify changes were made (optional debug)
         git status
