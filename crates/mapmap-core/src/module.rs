@@ -2235,7 +2235,7 @@ fn test_update_part_position() {
         parts: vec![],
         connections: vec![],
         playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
-            next_part_id: 1,
+        next_part_id: 1,
     };
 
     let pid = module.add_part(PartType::Trigger, (0.0, 0.0));
