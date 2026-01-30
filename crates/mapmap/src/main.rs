@@ -1204,10 +1204,6 @@ impl App {
                                 .entry(*id)
                                 .or_default()
                                 .push(tex_name.clone());
-                            self.output_assignments
-                                .entry(op.output_part_id)
-                                .or_default()
-                                .push(tex_name);
                         }
                     }
                 }
@@ -2097,7 +2093,8 @@ impl App {
                 {
                     active_preview_sources.push((
                         module.id,
-                        part.id,
+                        part.id, // Target (The Node in UI)
+                        part.id, // Source (The Texture Owner)
                         *brightness,
                         *contrast,
                         *saturation,
@@ -2110,6 +2107,38 @@ impl App {
                         *offset_x,
                         *offset_y,
                     ));
+                } else if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector {
+                        show_in_preview_panel,
+                        ..
+                    },
+                ) = &part.part_type
+                {
+                    if *show_in_preview_panel {
+                        // Find connected input
+                        // We need to look at module.connections
+                        // Find connection where to_part == part.id
+                        // For Projector, input is usually socket 0 ("Layer In")
+                        if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id)
+                        {
+                            active_preview_sources.push((
+                                module.id,
+                                part.id,        // Target (Output Node)
+                                conn.from_part, // Source (The plugged in layer/media)
+                                0.0,            // Brightness default
+                                1.0,            // Contrast default
+                                1.0,            // Saturation default
+                                0.0,            // Hue default
+                                false,          // Flip H
+                                false,          // Flip V
+                                0.0,            // Rotation
+                                1.0,            // Scale X
+                                1.0,            // Scale Y
+                                0.0,            // Offset X
+                                0.0,            // Offset Y
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -2131,7 +2160,8 @@ impl App {
 
         for (
             module_id,
-            part_id,
+            target_part_id,
+            source_part_id,
             brightness,
             contrast,
             saturation,
@@ -2145,12 +2175,12 @@ impl App {
             offset_y,
         ) in active_preview_sources
         {
-            let raw_tex_name = format!("part_{}_{}", module_id, part_id);
+            let raw_tex_name = format!("part_{}_{}", module_id, source_part_id);
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
                 // Create/Get preview texture (fixed small resolution)
-                let preview_tex_name = format!("preview_{}", part_id);
+                let preview_tex_name = format!("preview_{}", target_part_id);
                 // Ensure it exists with correct size
                 self.texture_pool.ensure_texture(
                     &preview_tex_name,
@@ -2221,7 +2251,7 @@ impl App {
                 has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
-                let texture_id = match self.preview_texture_cache.entry(part_id) {
+                let texture_id = match self.preview_texture_cache.entry(target_part_id) {
                     std::collections::hash_map::Entry::Occupied(mut entry) => {
                         let (cached_id, cached_view) = entry.get();
                         if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
@@ -2248,7 +2278,7 @@ impl App {
                     }
                 };
 
-                current_frame_previews.insert(part_id, texture_id);
+                current_frame_previews.insert(target_part_id, texture_id);
             }
         }
 
