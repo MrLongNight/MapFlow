@@ -96,6 +96,11 @@ pub enum UIAction {
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
     ),
+    AssignMediaFile(
+        mapmap_core::module::ModuleId,
+        mapmap_core::module::ModulePartId,
+        String,
+    ),
     SaveProject(String),
     SaveProjectAs,
     LoadProject(String),
