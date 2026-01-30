@@ -52,7 +52,6 @@ pub struct MapFlowModule {
     /// List of wires (connections)
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
-    /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
     /// Next available Part ID
     #[serde(default = "default_next_part_id")]
@@ -1984,12 +1983,8 @@ mod tests {
             output_config: config,
         });
 
-<<<<<<< HEAD
-        let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
-=======
         let p1 = module.add_part_with_type(fft_part_type.clone(), (0.0, 0.0));
         let _unused_p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
->>>>>>> main
         let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         // Connect SubBass (index 0) and Air (index 8)
