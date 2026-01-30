@@ -58,9 +58,10 @@ fn test_socket_generation_coverage() {
         id: 1,
         name: "Test".to_string(),
         color: [1.0; 4],
-        parts: vec![],
+                    parts: vec![],
         connections: vec![],
         playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
     };
 
     // 1. Trigger (Beat)
@@ -149,3 +150,4 @@ fn test_socket_generation_coverage() {
     assert_eq!(part_mesh.inputs.len(), 2);
     assert_eq!(part_mesh.outputs.len(), 1);
 }
+

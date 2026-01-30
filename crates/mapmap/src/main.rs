@@ -1349,24 +1349,33 @@ impl App {
                         }
                     }
                 }
-                mapmap_ui::UIAction::PickMediaFile(module_id, part_id) => {
-                    let sender = self.action_sender.clone();
-                    self.tokio_runtime.spawn(async move {
-                        if let Some(handle) = rfd::AsyncFileDialog::new()
-                            .add_filter(
-                                "Media",
-                                &[
-                                    "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg", "jpeg",
-                                ],
-                            )
-                            .pick_file()
-                            .await
-                        {
-                            let path = handle.path().to_path_buf();
-                            let _ = sender
-                                .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
-                        }
-                    });
+                mapmap_ui::UIAction::PickMediaFile(module_id, part_id, path_str) => {
+                    if !path_str.is_empty() {
+                        let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
+                            module_id,
+                            part_id,
+                            std::path::PathBuf::from(path_str),
+                        ));
+                    } else {
+                        let sender = self.action_sender.clone();
+                        self.tokio_runtime.spawn(async move {
+                            if let Some(handle) = rfd::AsyncFileDialog::new()
+                                .add_filter(
+                                    "Media",
+                                    &[
+                                        "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg",
+                                        "jpeg",
+                                    ],
+                                )
+                                .pick_file()
+                                .await
+                            {
+                                let path = handle.path().to_path_buf();
+                                let _ = sender
+                                    .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
+                            }
+                        });
+                    }
                 }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
@@ -2070,22 +2079,25 @@ impl App {
                     },
                 ) = &part.part_type
                 {
-                    active_preview_sources.push((
-                        module.id,
-                        part.id,        // Target (Output Node)
-                        conn.from_part, // Source (The plugged in layer/media)
-                        *brightness,
-                        *contrast,
-                        *saturation,
-                        *hue_shift,
-                        *flip_horizontal,
-                        *flip_vertical,
-                        *rotation,
-                        *scale_x,
-                        *scale_y,
-                        *offset_x,
-                        *offset_y,
-                    ));
+                    // Find source connection
+                    if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
+                        active_preview_sources.push((
+                            module.id,
+                            part.id,        // Target (Output Node)
+                            conn.from_part, // Source (The plugged in layer/media)
+                            *brightness,
+                            *contrast,
+                            *saturation,
+                            *hue_shift,
+                            *flip_horizontal,
+                            *flip_vertical,
+                            *rotation,
+                            *scale_x,
+                            *scale_y,
+                            *offset_x,
+                            *offset_y,
+                        ));
+                    }
                 } else if let mapmap_core::module::ModulePartType::Output(
                     mapmap_core::module::OutputType::Projector {
                         show_in_preview_panel,
@@ -2174,7 +2186,7 @@ impl App {
                 // Calculate Transform Matrix based on source properties
                 let transform_mat = glam::Mat4::from_scale_rotation_translation(
                     glam::Vec3::new(scale_x, scale_y, 1.0),
-                    glam::Quat::from_rotation_z(rotation.to_radians()),
+                    glam::Quat::from_rotation_z(rotation.to_radians() as f32),
                     glam::Vec3::new(offset_x, offset_y, 0.0),
                 );
 
@@ -2789,7 +2801,7 @@ impl App {
                                                                             self.ui_state.module_canvas.active_module_id,
                                                                             self.ui_state.module_canvas.editing_part_id
                                                                         ) {
-                                                                            actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                                                            self.ui_state.actions.push(mapmap_ui::UIAction::PickMediaFile(
                                                                                 module_id,
                                                                                 part_id,
                                                                                 path.to_string_lossy().to_string()
