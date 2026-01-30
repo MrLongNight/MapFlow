@@ -15,11 +15,11 @@ foreach ($id in $prs) {
     # Resolve CI conflicts specifically
     $ci1 = ".github/workflows/CI-01_build&test.yml"
     $ci9 = ".github/workflows/CI-09_create-releases.yml"
-    
+
     # Try to checkout 'theirs' (main) for CI files
     git checkout --theirs $ci1 2>$null
     git checkout --theirs $ci9 2>$null
-    
+
     git add $ci1 $ci9
 
     # Check for remaining conflicts

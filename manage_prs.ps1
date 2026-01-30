@@ -3,7 +3,7 @@ $prs = gh pr list --limit 100 --json number,title,headRefName,mergeable,statusCh
 
 foreach ($pr in $prs) {
     Write-Host "Processing PR #$($pr.number): $($pr.title)" -ForegroundColor Cyan
-    
+
     # Check for conflicts
     if ($pr.mergeable -eq "CONFLICTING") {
         Write-Host "  -> CONFLICT DETECTED! Adding to manual fix list." -ForegroundColor Red
