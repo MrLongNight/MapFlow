@@ -1384,12 +1384,7 @@ impl App {
                         PathBuf::from(path),
                     ));
                 }
-                mapmap_ui::UIAction::SetMediaFile(module_id, part_id, path_str) => {
-                    let path = PathBuf::from(path_str);
-                    let _ = self
-                        .action_sender
-                        .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
-                }
+
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
