@@ -150,4 +150,3 @@ fn test_socket_generation_coverage() {
     assert_eq!(part_mesh.inputs.len(), 2);
     assert_eq!(part_mesh.outputs.len(), 1);
 }
-
