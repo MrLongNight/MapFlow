@@ -5,42 +5,37 @@
 
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
+pub use mapmap_core::shader_graph::{DataType, GraphId, NodeType, ParameterValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Node graph editor
 pub struct NodeEditor {
-    /// All nodes in the graph
-    nodes: HashMap<NodeId, Node>,
-    /// All connections between nodes
-    connections: Vec<Connection>,
+    /// ID of the graph being edited
+    pub graph_id: Option<GraphId>,
+    /// All nodes in the graph (shadow copy for UI)
+    pub nodes: HashMap<NodeId, Node>,
+    /// All connections
+    pub connections: Vec<Connection>,
     /// Next node ID
     next_id: u64,
     /// Selected nodes
     selected_nodes: Vec<NodeId>,
     /// Node being dragged
     dragging_node: Option<(NodeId, Vec2)>,
-    /// Connection being created (from socket)
-    creating_connection: Option<(NodeId, SocketId, Pos2)>,
-    /// Canvas pan offset
+    /// Connection being created
+    creating_connection: Option<(NodeId, String, Pos2)>, // String for socket name
     pan_offset: Vec2,
-    /// Canvas zoom level
     zoom: f32,
-    /// Node palette (available node types)
     node_palette: Vec<NodeType>,
-    /// Show node palette
     show_palette: bool,
-    /// Palette position
     palette_pos: Option<Pos2>,
 }
 
 /// Unique node identifier
 pub type NodeId = u64;
 
-/// Socket identifier (input/output index)
-pub type SocketId = usize;
-
-/// Node in the graph
+/// Node in the graph (UI representation)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     pub id: NodeId,
@@ -48,269 +43,25 @@ pub struct Node {
     pub position: Pos2,
     pub inputs: Vec<Socket>,
     pub outputs: Vec<Socket>,
-    pub parameters: HashMap<String, Parameter>,
+    pub parameters: HashMap<String, ParameterValue>,
     pub size: Vec2,
-}
-
-/// Node type
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum NodeType {
-    // Effect nodes
-    Blur {
-        radius: f32,
-    },
-    Glow {
-        intensity: f32,
-        threshold: f32,
-    },
-    ColorCorrection {
-        hue: f32,
-        saturation: f32,
-        brightness: f32,
-    },
-    Sharpen {
-        amount: f32,
-    },
-    EdgeDetect,
-    ChromaKey {
-        key_color: [f32; 3],
-        threshold: f32,
-    },
-
-    // Math nodes
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-    Sin,
-    Cos,
-    Abs,
-    Clamp {
-        min: f32,
-        max: f32,
-    },
-    Lerp,
-    SmoothStep,
-
-    // Utility nodes
-    Switch,
-    Merge,
-    Split,
-    Value(f32),
-    Vector3 {
-        x: f32,
-        y: f32,
-        z: f32,
-    },
-    Color {
-        r: f32,
-        g: f32,
-        b: f32,
-        a: f32,
-    },
-
-    // Input/Output
-    Input {
-        name: String,
-    },
-    Output {
-        name: String,
-    },
-
-    // Custom
-    Custom {
-        name: String,
-        code: String,
-    },
-}
-
-impl NodeType {
-    /// Get human-readable name
-    pub fn name(&self, locale: &LocaleManager) -> String {
-        match self {
-            Self::Blur { .. } => locale.t("node-blur"),
-            Self::Glow { .. } => locale.t("node-glow"),
-            Self::ColorCorrection { .. } => locale.t("node-color-correction"),
-            Self::Sharpen { .. } => locale.t("node-sharpen"),
-            Self::EdgeDetect => locale.t("node-edge-detect"),
-            Self::ChromaKey { .. } => locale.t("node-chroma-key"),
-            Self::Add => locale.t("node-math-add"),
-            Self::Subtract => locale.t("node-math-subtract"),
-            Self::Multiply => locale.t("node-math-multiply"),
-            Self::Divide => locale.t("node-math-divide"),
-            Self::Sin => locale.t("node-math-sin"),
-            Self::Cos => locale.t("node-math-cos"),
-            Self::Abs => locale.t("node-math-abs"),
-            Self::Clamp { .. } => locale.t("node-math-clamp"),
-            Self::Lerp => locale.t("node-math-lerp"),
-            Self::SmoothStep => locale.t("node-math-smooth-step"),
-            Self::Switch => locale.t("node-utility-switch"),
-            Self::Merge => locale.t("node-utility-merge"),
-            Self::Split => locale.t("node-utility-split"),
-            Self::Value(_) => locale.t("node-constant-value"),
-            Self::Vector3 { .. } => locale.t("node-constant-vector3"),
-            Self::Color { .. } => locale.t("node-constant-color"),
-            Self::Input { .. } => locale.t("node-io-input"),
-            Self::Output { .. } => locale.t("node-io-output"),
-            Self::Custom { name, .. } => name.clone(),
-        }
-    }
-
-    /// Get category for palette grouping
-    pub fn category(&self, locale: &LocaleManager) -> String {
-        match self {
-            Self::Blur { .. }
-            | Self::Glow { .. }
-            | Self::ColorCorrection { .. }
-            | Self::Sharpen { .. }
-            | Self::EdgeDetect
-            | Self::ChromaKey { .. } => locale.t("node-category-effects"),
-            Self::Add
-            | Self::Subtract
-            | Self::Multiply
-            | Self::Divide
-            | Self::Sin
-            | Self::Cos
-            | Self::Abs
-            | Self::Clamp { .. }
-            | Self::Lerp
-            | Self::SmoothStep => locale.t("node-category-math"),
-            Self::Switch | Self::Merge | Self::Split => locale.t("node-category-utility"),
-            Self::Value(_) | Self::Vector3 { .. } | Self::Color { .. } => {
-                locale.t("node-category-constants")
-            }
-            Self::Input { .. } | Self::Output { .. } => locale.t("node-category-io"),
-            Self::Custom { .. } => locale.t("node-category-custom"),
-        }
-    }
-
-    /// Get default inputs for this node type
-    pub fn default_inputs(&self) -> Vec<Socket> {
-        match self {
-            Self::Blur { .. } => vec![
-                Socket::new("Input", SocketType::Image),
-                Socket::new("Radius", SocketType::Float),
-            ],
-            Self::Glow { .. } => vec![
-                Socket::new("Input", SocketType::Image),
-                Socket::new("Intensity", SocketType::Float),
-                Socket::new("Threshold", SocketType::Float),
-            ],
-            Self::ColorCorrection { .. } => vec![
-                Socket::new("Input", SocketType::Image),
-                Socket::new("Hue", SocketType::Float),
-                Socket::new("Saturation", SocketType::Float),
-                Socket::new("Brightness", SocketType::Float),
-            ],
-            Self::Add | Self::Subtract | Self::Multiply | Self::Divide => vec![
-                Socket::new("A", SocketType::Float),
-                Socket::new("B", SocketType::Float),
-            ],
-            Self::Lerp => vec![
-                Socket::new("A", SocketType::Float),
-                Socket::new("B", SocketType::Float),
-                Socket::new("T", SocketType::Float),
-            ],
-            Self::Clamp { .. } => vec![
-                Socket::new("Value", SocketType::Float),
-                Socket::new("Min", SocketType::Float),
-                Socket::new("Max", SocketType::Float),
-            ],
-            Self::Switch => vec![
-                Socket::new("Condition", SocketType::Bool),
-                Socket::new("True", SocketType::Any),
-                Socket::new("False", SocketType::Any),
-            ],
-            Self::Merge => vec![
-                Socket::new("A", SocketType::Image),
-                Socket::new("B", SocketType::Image),
-                Socket::new("Mix", SocketType::Float),
-            ],
-            Self::Output { .. } => vec![Socket::new("Input", SocketType::Any)],
-            _ => vec![],
-        }
-    }
-
-    /// Get default outputs for this node type
-    pub fn default_outputs(&self) -> Vec<Socket> {
-        match self {
-            Self::Blur { .. }
-            | Self::Glow { .. }
-            | Self::ColorCorrection { .. }
-            | Self::Sharpen { .. }
-            | Self::EdgeDetect
-            | Self::ChromaKey { .. } => vec![Socket::new("Output", SocketType::Image)],
-            Self::Add
-            | Self::Subtract
-            | Self::Multiply
-            | Self::Divide
-            | Self::Sin
-            | Self::Cos
-            | Self::Abs
-            | Self::Clamp { .. }
-            | Self::Lerp
-            | Self::SmoothStep => vec![Socket::new("Result", SocketType::Float)],
-            Self::Switch | Self::Merge => vec![Socket::new("Output", SocketType::Any)],
-            Self::Split => vec![
-                Socket::new("R", SocketType::Float),
-                Socket::new("G", SocketType::Float),
-                Socket::new("B", SocketType::Float),
-                Socket::new("A", SocketType::Float),
-            ],
-            Self::Value(_) => vec![Socket::new("Value", SocketType::Float)],
-            Self::Vector3 { .. } => vec![Socket::new("Vector", SocketType::Vector)],
-            Self::Color { .. } => vec![Socket::new("Color", SocketType::Color)],
-            Self::Input { .. } => vec![Socket::new("Output", SocketType::Any)],
-            Self::Output { .. } => vec![],
-            Self::Custom { .. } => vec![Socket::new("Output", SocketType::Any)],
-        }
-    }
 }
 
 /// Socket (input or output connection point)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Socket {
     pub name: String,
-    pub socket_type: SocketType,
+    pub data_type: DataType,
     pub connected: bool,
 }
 
 impl Socket {
-    pub fn new(name: &str, socket_type: SocketType) -> Self {
+    pub fn new(name: &str, data_type: DataType) -> Self {
         Self {
             name: name.to_string(),
-            socket_type,
+            data_type,
             connected: false,
         }
-    }
-}
-
-/// Socket data type
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum SocketType {
-    Float,
-    Vector,
-    Color,
-    Image,
-    Bool,
-    Any,
-}
-
-impl SocketType {
-    pub fn color(&self) -> Color32 {
-        match self {
-            Self::Float => Color32::from_rgb(100, 150, 255),
-            Self::Vector => Color32::from_rgb(150, 100, 255),
-            Self::Color => Color32::from_rgb(255, 150, 100),
-            Self::Image => Color32::from_rgb(255, 200, 100),
-            Self::Bool => Color32::from_rgb(100, 255, 150),
-            Self::Any => Color32::from_rgb(150, 150, 150),
-        }
-    }
-
-    /// Check if types are compatible for connection
-    pub fn compatible_with(&self, other: &SocketType) -> bool {
-        *self == *other || *self == SocketType::Any || *other == SocketType::Any
     }
 }
 
@@ -318,19 +69,9 @@ impl SocketType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
     pub from_node: NodeId,
-    pub from_socket: SocketId,
+    pub from_socket: String, // Output name
     pub to_node: NodeId,
-    pub to_socket: SocketId,
-}
-
-/// Parameter value
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Parameter {
-    Float(f32),
-    Int(i32),
-    Bool(bool),
-    String(String),
-    Color([f32; 4]),
+    pub to_socket: String, // Input name
 }
 
 impl Default for NodeEditor {
@@ -342,6 +83,7 @@ impl Default for NodeEditor {
 impl NodeEditor {
     pub fn new() -> Self {
         Self {
+            graph_id: None,
             nodes: HashMap::new(),
             connections: Vec::new(),
             next_id: 1,
@@ -356,43 +98,111 @@ impl NodeEditor {
         }
     }
 
+    /// Load a graph from core definition
+    pub fn load_graph(&mut self, graph: &mapmap_core::shader_graph::ShaderGraph) {
+        self.graph_id = Some(graph.id);
+        self.nodes.clear();
+        self.connections.clear();
+        self.next_id = 1; // todo: sync with graph?
+
+        // Map core nodes to UI nodes
+        for (id, core_node) in &graph.nodes {
+            let ui_node = self.core_node_to_ui(core_node);
+            self.nodes.insert(*id, ui_node);
+            self.next_id = self.next_id.max(id + 1);
+
+            // Reconstruct connections
+            for input in &core_node.inputs {
+                if let Some((from_node, from_output)) = &input.connected_output {
+                    self.connections.push(Connection {
+                        from_node: *from_node,
+                        from_socket: from_output.clone(),
+                        to_node: *id,
+                        to_socket: input.name.clone(),
+                    });
+                    // Mark socket as connected
+                    if let Some(node) = self.nodes.get_mut(id) {
+                        if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == input.name)
+                        {
+                            socket.connected = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Create UI node from core node
+    fn core_node_to_ui(&self, core_node: &mapmap_core::shader_graph::ShaderNode) -> Node {
+        let inputs: Vec<Socket> = core_node
+            .inputs
+            .iter()
+            .map(|s| Socket::new(&s.name, s.data_type))
+            .collect();
+        let outputs: Vec<Socket> = core_node
+            .outputs
+            .iter()
+            .map(|s| Socket::new(&s.name, s.data_type))
+            .collect();
+
+        // Calculate dynamic height
+        let height = 80.0 + (inputs.len().max(outputs.len()) as f32 * 24.0);
+
+        let size = Vec2::new(180.0, height);
+
+        Node {
+            id: core_node.id,
+            node_type: core_node.node_type.clone(),
+            position: Pos2::new(core_node.position.0, core_node.position.1),
+            inputs,
+            outputs,
+            parameters: core_node.parameters.clone(),
+            size,
+        }
+    }
+
     /// Create the node palette with all available node types
     fn create_palette() -> Vec<NodeType> {
         vec![
-            // Effects
-            NodeType::Blur { radius: 5.0 },
-            NodeType::Glow {
-                intensity: 1.0,
-                threshold: 0.5,
-            },
-            NodeType::ColorCorrection {
-                hue: 0.0,
-                saturation: 1.0,
-                brightness: 1.0,
-            },
-            NodeType::Sharpen { amount: 1.0 },
-            NodeType::EdgeDetect,
-            NodeType::ChromaKey {
-                key_color: [0.0, 1.0, 0.0],
-                threshold: 0.1,
-            },
+            // Input
+            NodeType::TextureInput,
+            NodeType::TimeInput,
+            NodeType::UVInput,
+            NodeType::ParameterInput,
             // Math
             NodeType::Add,
+            NodeType::Subtract,
             NodeType::Multiply,
-            NodeType::Lerp,
-            NodeType::Clamp { min: 0.0, max: 1.0 },
+            NodeType::Divide,
+            NodeType::Power,
+            NodeType::Sin,
+            NodeType::Cos,
+            NodeType::Clamp,
+            NodeType::Mix,
+            // Color
+            NodeType::ColorRamp,
+            NodeType::HSVToRGB,
+            NodeType::RGBToHSV,
+            NodeType::Desaturate,
+            NodeType::Brightness,
+            NodeType::Contrast,
+            // Texture
+            NodeType::TextureSample,
+            NodeType::TextureCombine,
+            NodeType::UVTransform,
+            NodeType::UVDistort,
+            // Effects
+            NodeType::Blur,
+            NodeType::Glow,
+            NodeType::ChromaticAberration,
+            NodeType::Kaleidoscope,
+            NodeType::PixelSort,
+            NodeType::EdgeDetect,
             // Utility
-            NodeType::Switch,
-            NodeType::Merge,
             NodeType::Split,
-            // Constants
-            NodeType::Value(0.0),
-            NodeType::Color {
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-                a: 1.0,
-            },
+            NodeType::Combine,
+            // Output
+            NodeType::Output,
         ]
     }
 
@@ -401,25 +211,12 @@ impl NodeEditor {
         let id = self.next_id;
         self.next_id += 1;
 
-        let inputs = node_type.default_inputs();
-        let outputs = node_type.default_outputs();
+        // Use core logic to create default sockets and parameters
+        let core_node = mapmap_core::shader_graph::ShaderNode::new(id, node_type);
+        let mut ui_node = self.core_node_to_ui(&core_node);
+        ui_node.position = position;
 
-        let size = Vec2::new(
-            180.0,
-            80.0 + (inputs.len().max(outputs.len()) as f32 * 24.0),
-        );
-
-        let node = Node {
-            id,
-            node_type,
-            position,
-            inputs,
-            outputs,
-            parameters: HashMap::new(),
-            size,
-        };
-
-        self.nodes.insert(id, node);
+        self.nodes.insert(id, ui_node);
         id
     }
 
@@ -435,32 +232,161 @@ impl NodeEditor {
     pub fn add_connection(
         &mut self,
         from_node: NodeId,
-        from_socket: SocketId,
+        from_socket_name: String,
         to_node: NodeId,
-        to_socket: SocketId,
+        to_socket_name: String,
     ) -> bool {
         // Validate connection
         if let (Some(from), Some(to)) = (self.nodes.get(&from_node), self.nodes.get(&to_node)) {
-            if from_socket < from.outputs.len() && to_socket < to.inputs.len() {
-                let from_type = &from.outputs[from_socket].socket_type;
-                let to_type = &to.inputs[to_socket].socket_type;
+            // Find sockets
+            let out_socket = from.outputs.iter().find(|s| s.name == from_socket_name);
+            let in_socket = to.inputs.iter().find(|s| s.name == to_socket_name);
 
-                if from_type.compatible_with(to_type) {
+            if let (Some(out_s), Some(in_s)) = (out_socket, in_socket) {
+                if out_s.data_type.compatible_with(&in_s.data_type) {
                     // Remove existing connection to this input
+                    // Clone to_socket_name to avoid move issues in closure
+                    let target_socket = to_socket_name.clone();
                     self.connections
-                        .retain(|c| c.to_node != to_node || c.to_socket != to_socket);
+                        .retain(|c| c.to_node != to_node || c.to_socket != target_socket);
 
                     self.connections.push(Connection {
                         from_node,
-                        from_socket,
+                        from_socket: from_socket_name,
                         to_node,
-                        to_socket,
+                        to_socket: to_socket_name.clone(), // Clone here too
                     });
+
+                    // Update socket status
+                    if let Some(node) = self.nodes.get_mut(&to_node) {
+                        if let Some(socket) =
+                            node.inputs.iter_mut().find(|s| s.name == to_socket_name)
+                        {
+                            socket.connected = true;
+                        }
+                    }
+
                     return true;
                 }
             }
         }
         false
+    }
+
+    // UI Helpers (Static/Associated functions to avoid &self borrows during iteration)
+
+    fn get_socket_pos(node: &Node, socket_idx: usize, is_input: bool) -> Pos2 {
+        let socket_y = node.position.y + 40.0 + (socket_idx as f32 * 24.0);
+        let socket_x = if is_input {
+            node.position.x
+        } else {
+            node.position.x + node.size.x
+        };
+        Pos2::new(socket_x, socket_y)
+    }
+
+    fn draw_socket(
+        painter: &egui::Painter,
+        pos: Pos2,
+        data_type: DataType,
+        _is_input: bool,
+        zoom: f32,
+    ) {
+        let radius = 6.0 * zoom.clamp(0.1, 10.0);
+        painter.circle_filled(pos, radius, data_type.color());
+        painter.circle_stroke(pos, radius, Stroke::new(2.0, Color32::WHITE));
+    }
+
+    /// Draw a node
+    fn draw_node(
+        ui: &Ui,
+        painter: &egui::Painter,
+        node: &mut Node, // Mutable to potentially support parameter editing later
+        rect: Rect,
+        locale: &LocaleManager,
+        zoom: f32,
+        is_selected: bool,
+    ) -> Response {
+        let response = ui.interact(rect, egui::Id::new(node.id), Sense::click_and_drag());
+
+        let bg_color = if is_selected {
+            Color32::from_rgb(50, 100, 150)
+        } else {
+            Color32::from_rgb(40, 40, 40)
+        };
+
+        // Node background
+        painter.rect_filled(rect, 4, bg_color);
+        painter.rect_stroke(
+            rect,
+            4,
+            Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+            egui::StrokeKind::Inside,
+        );
+
+        // Title bar
+        let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 24.0 * zoom));
+        painter.rect_filled(title_rect, 4, Color32::from_rgb(30, 30, 30));
+        painter.text(
+            title_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            node.node_type.ui_name(locale),
+            egui::FontId::proportional(14.0 * zoom.clamp(0.1, 10.0)),
+            Color32::WHITE,
+        );
+
+        // Input sockets
+        for (i, input) in node.inputs.iter().enumerate() {
+            let socket_pos = Self::get_socket_pos(node, i, true);
+            Self::draw_socket(painter, socket_pos, input.data_type, true, zoom);
+
+            // Draw label
+            let text_pos = socket_pos + Vec2::new(10.0 * zoom, 0.0);
+            painter.text(
+                text_pos,
+                egui::Align2::LEFT_CENTER,
+                &input.name,
+                egui::FontId::proportional(12.0 * zoom.clamp(0.1, 10.0)),
+                Color32::LIGHT_GRAY,
+            );
+        }
+
+        // Output sockets
+        for (i, output) in node.outputs.iter().enumerate() {
+            let socket_pos = Self::get_socket_pos(node, i, false);
+            Self::draw_socket(painter, socket_pos, output.data_type, false, zoom);
+
+            // Draw label
+            let text_pos = socket_pos - Vec2::new(10.0 * zoom, 0.0);
+            painter.text(
+                text_pos,
+                egui::Align2::RIGHT_CENTER,
+                &output.name,
+                egui::FontId::proportional(12.0 * zoom.clamp(0.1, 10.0)),
+                Color32::LIGHT_GRAY,
+            );
+        }
+
+        response
+    }
+
+    fn draw_connection(painter: &egui::Painter, from: Pos2, to: Pos2, color: Color32) {
+        let control_offset = ((to.x - from.x) * 0.5).abs().max(50.0);
+        let ctrl1 = Pos2::new(from.x + control_offset, from.y);
+        let ctrl2 = Pos2::new(to.x - control_offset, to.y);
+
+        // Draw bezier curve with multiple segments
+        let segments = 20;
+        let mut points = Vec::new();
+        for i in 0..=segments {
+            let t = i as f32 / segments as f32;
+            let point = cubic_bezier(from, ctrl1, ctrl2, to, t);
+            points.push(point);
+        }
+
+        for i in 0..points.len() - 1 {
+            painter.line_segment([points[i], points[i + 1]], Stroke::new(2.0, color));
+        }
     }
 
     /// Render the node editor UI
@@ -492,8 +418,11 @@ impl NodeEditor {
         }
 
         let canvas_rect = response.rect;
+        let zoom = self.zoom;
+        let pan_offset = self.pan_offset;
+
         let to_screen =
-            |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + self.pan_offset) * self.zoom };
+            |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + pan_offset) * zoom };
 
         // Draw grid
         self.draw_grid(&painter, canvas_rect);
@@ -504,34 +433,54 @@ impl NodeEditor {
                 self.nodes.get(&conn.from_node),
                 self.nodes.get(&conn.to_node),
             ) {
-                let from_pos = self.get_socket_pos(from_node, conn.from_socket, false);
-                let to_pos = self.get_socket_pos(to_node, conn.to_socket, true);
+                let from_idx = from_node
+                    .outputs
+                    .iter()
+                    .position(|s| s.name == conn.from_socket);
+                let to_idx = to_node.inputs.iter().position(|s| s.name == conn.to_socket);
 
-                let from_screen = to_screen(from_pos);
-                let to_screen = to_screen(to_pos);
+                if let (Some(f_idx), Some(t_idx)) = (from_idx, to_idx) {
+                    let from_pos = Self::get_socket_pos(from_node, f_idx, false);
+                    let to_pos = Self::get_socket_pos(to_node, t_idx, true);
 
-                let color = from_node.outputs[conn.from_socket].socket_type.color();
-                self.draw_connection(&painter, from_screen, to_screen, color);
+                    let from_screen = to_screen(from_pos);
+                    let to_screen = to_screen(to_pos);
+
+                    let color = from_node.outputs[f_idx].data_type.color();
+                    Self::draw_connection(&painter, from_screen, to_screen, color);
+                }
             }
         }
 
         // Draw nodes
-        let mut nodes_vec: Vec<_> = self.nodes.values().collect();
-        nodes_vec.sort_by_key(|n| n.id); // Stable ordering
+        // Using values_mut() safely
+        let mut nodes_vec: Vec<_> = self.nodes.values_mut().collect();
+        nodes_vec.sort_by_key(|n| n.id);
 
         for node in nodes_vec {
             let node_screen_pos = to_screen(node.position);
-            let node_screen_rect = Rect::from_min_size(node_screen_pos, node.size * self.zoom);
+            let node_screen_rect = Rect::from_min_size(node_screen_pos, node.size * zoom);
 
-            let node_response = self.draw_node(ui, &painter, node, node_screen_rect, locale);
+            let is_selected = self.selected_nodes.contains(&node.id);
+
+            let node_response = Self::draw_node(
+                ui,
+                &painter,
+                node,
+                node_screen_rect,
+                locale,
+                zoom,
+                is_selected,
+            );
 
             if node_response.clicked() {
                 self.selected_nodes.clear();
                 self.selected_nodes.push(node.id);
+                action = Some(NodeEditorAction::SelectNode(node.id));
             }
 
             if node_response.dragged() {
-                self.dragging_node = Some((node.id, response.drag_delta() / self.zoom));
+                self.dragging_node = Some((node.id, response.drag_delta() / zoom));
             }
         }
 
@@ -546,18 +495,16 @@ impl NodeEditor {
         }
 
         // Draw connection being created
-        if let Some((_node_id, _socket_id, start_pos)) = self.creating_connection {
+        if let Some((_node_id, _socket_name, start_pos)) = &self.creating_connection {
             if let Some(pointer_pos) = response.interact_pointer_pos() {
-                self.draw_connection(
+                Self::draw_connection(
                     &painter,
-                    start_pos,
+                    *start_pos,
                     pointer_pos,
                     Color32::from_rgb(150, 150, 150),
                 );
 
                 if response.clicked() {
-                    // Try to complete connection
-                    // TODO: Detect socket under pointer
                     self.creating_connection = None;
                 }
             }
@@ -578,22 +525,21 @@ impl NodeEditor {
                             let mut current_category = String::new();
 
                             for node_type in &self.node_palette {
-                                let category = node_type.category(locale);
+                                let category = node_type.ui_category(locale);
                                 if category != current_category {
                                     current_category = category.clone();
                                     ui.separator();
                                     ui.label(&current_category);
                                 }
 
-                                if ui.button(node_type.name(locale)).clicked() {
+                                if ui.button(node_type.ui_name(locale)).clicked() {
                                     selected_type = Some(node_type.clone());
                                     self.show_palette = false;
                                 }
                             }
 
                             if let Some(node_type) = selected_type {
-                                let world_pos =
-                                    (pos - canvas_rect.min - self.pan_offset) / self.zoom;
+                                let world_pos = (pos - canvas_rect.min - pan_offset) / zoom;
                                 action =
                                     Some(NodeEditorAction::AddNode(node_type, world_pos.to_pos2()));
                             }
@@ -601,7 +547,6 @@ impl NodeEditor {
                     });
             }
 
-            // Close palette if clicked outside
             if response.clicked() {
                 self.show_palette = false;
             }
@@ -610,7 +555,7 @@ impl NodeEditor {
         action
     }
 
-    /// Draw grid background
+    /// Draw grid background (Uses &self, but is called before mutable iteration)
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
         let grid_size = 20.0 * self.zoom;
         let color = Color32::from_rgb(40, 40, 40);
@@ -636,106 +581,9 @@ impl NodeEditor {
             y += grid_size;
         }
     }
-
-    /// Draw a connection curve
-    fn draw_connection(&self, painter: &egui::Painter, from: Pos2, to: Pos2, color: Color32) {
-        let control_offset = ((to.x - from.x) * 0.5).abs().max(50.0);
-        let ctrl1 = Pos2::new(from.x + control_offset, from.y);
-        let ctrl2 = Pos2::new(to.x - control_offset, to.y);
-
-        // Draw bezier curve with multiple segments
-        let segments = 20;
-        let mut points = Vec::new();
-        for i in 0..=segments {
-            let t = i as f32 / segments as f32;
-            let point = cubic_bezier(from, ctrl1, ctrl2, to, t);
-            points.push(point);
-        }
-
-        for i in 0..points.len() - 1 {
-            painter.line_segment([points[i], points[i + 1]], Stroke::new(2.0, color));
-        }
-    }
-
-    /// Draw a node
-    fn draw_node(
-        &self,
-        ui: &Ui,
-        painter: &egui::Painter,
-        node: &Node,
-        rect: Rect,
-        locale: &LocaleManager,
-    ) -> Response {
-        let response = ui.interact(rect, egui::Id::new(node.id), Sense::click_and_drag());
-
-        let is_selected = self.selected_nodes.contains(&node.id);
-        let bg_color = if is_selected {
-            Color32::from_rgb(50, 100, 150)
-        } else {
-            Color32::from_rgb(40, 40, 40)
-        };
-
-        // Node background
-        painter.rect_filled(rect, 4, bg_color);
-        painter.rect_stroke(
-            rect,
-            4,
-            Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-            egui::StrokeKind::Inside,
-        );
-
-        // Title bar
-        let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 24.0 * self.zoom));
-        painter.rect_filled(title_rect, 4, Color32::from_rgb(30, 30, 30));
-        painter.text(
-            title_rect.center(),
-            egui::Align2::CENTER_CENTER,
-            node.node_type.name(locale),
-            egui::FontId::proportional(14.0 * self.zoom.clamp(0.1, 10.0)),
-            Color32::WHITE,
-        );
-
-        // Input sockets
-        for (i, input) in node.inputs.iter().enumerate() {
-            let socket_pos = self.get_socket_pos(node, i, true);
-            self.draw_socket(painter, socket_pos, input.socket_type, true);
-        }
-
-        // Output sockets
-        for (i, output) in node.outputs.iter().enumerate() {
-            let socket_pos = self.get_socket_pos(node, i, false);
-            self.draw_socket(painter, socket_pos, output.socket_type, false);
-        }
-
-        response
-    }
-
-    /// Draw a socket
-    fn draw_socket(
-        &self,
-        painter: &egui::Painter,
-        pos: Pos2,
-        socket_type: SocketType,
-        _is_input: bool,
-    ) {
-        let radius = 6.0 * self.zoom.clamp(0.1, 10.0);
-        painter.circle_filled(pos, radius, socket_type.color());
-        painter.circle_stroke(pos, radius, Stroke::new(2.0, Color32::WHITE));
-    }
-
-    /// Get socket position in world space
-    fn get_socket_pos(&self, node: &Node, socket_idx: usize, is_input: bool) -> Pos2 {
-        let socket_y = node.position.y + 40.0 + (socket_idx as f32 * 24.0);
-        let socket_x = if is_input {
-            node.position.x
-        } else {
-            node.position.x + node.size.x
-        };
-        Pos2::new(socket_x, socket_y)
-    }
 }
 
-/// Cubic bezier interpolation
+/// Helper functions
 fn cubic_bezier(p0: Pos2, p1: Pos2, p2: Pos2, p3: Pos2, t: f32) -> Pos2 {
     let t2 = t * t;
     let t3 = t2 * t;
@@ -755,6 +603,58 @@ pub enum NodeEditorAction {
     AddNode(NodeType, Pos2),
     RemoveNode(NodeId),
     SelectNode(NodeId),
-    AddConnection(NodeId, SocketId, NodeId, SocketId),
-    RemoveConnection(NodeId, SocketId, NodeId, SocketId),
+    AddConnection(NodeId, String, NodeId, String),
+    RemoveConnection(NodeId, String, NodeId, String),
+    /// Request full graph save/update
+    UpdateGraph(GraphId),
+}
+
+/// Helper trait for UI names
+pub trait NodeTypeUI {
+    fn ui_name(&self, locale: &LocaleManager) -> String;
+    fn ui_category(&self, locale: &LocaleManager) -> String;
+}
+
+impl NodeTypeUI for NodeType {
+    fn ui_name(&self, _locale: &LocaleManager) -> String {
+        // Fallback names for simplicity now, ideally fully localized
+        match self {
+            NodeType::TextureInput => "Texture Input",
+            NodeType::TimeInput => "Time",
+            NodeType::UVInput => "UV",
+            NodeType::ParameterInput => "Param",
+            NodeType::Output => "Output",
+            _ => self.display_name(), // from core, returns static str
+        }
+        .to_string()
+    }
+
+    fn ui_category(&self, _locale: &LocaleManager) -> String {
+        self.category().to_string() // from core
+    }
+}
+
+/// Extension trait for DataType to get UI colors
+pub trait DataTypeUI {
+    fn color(&self) -> Color32;
+    fn compatible_with(&self, other: &DataType) -> bool;
+}
+
+impl DataTypeUI for DataType {
+    fn color(&self) -> Color32 {
+        match self {
+            DataType::Float => Color32::from_rgb(100, 150, 255),
+            DataType::Vec2 => Color32::from_rgb(150, 100, 255),
+            DataType::Vec3 => Color32::from_rgb(200, 100, 200),
+            DataType::Vec4 => Color32::from_rgb(255, 100, 255),
+            DataType::Color => Color32::from_rgb(255, 150, 100),
+            DataType::Texture => Color32::from_rgb(255, 200, 100),
+            DataType::Sampler => Color32::from_rgb(150, 150, 150),
+        }
+    }
+
+    fn compatible_with(&self, other: &DataType) -> bool {
+        // Simple type checking for now
+        self == other
+    }
 }

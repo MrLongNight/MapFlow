@@ -38,6 +38,8 @@ pub enum EffectType {
     HueShift,
     /// Custom shader from shader graph
     Custom,
+    /// Custom Node-based Shader Graph
+    ShaderGraph(crate::shader_graph::GraphId),
 }
 
 impl EffectType {
@@ -60,6 +62,7 @@ impl EffectType {
             EffectType::Mirror => "Mirror",
             EffectType::HueShift => "Hue Shift",
             EffectType::Custom => "Custom Shader",
+            EffectType::ShaderGraph(_) => "Shader Graph",
         }
     }
 }
