@@ -43,11 +43,6 @@ struct MeshUniforms {
     _padding: f32,            // 4 bytes (total 96 bytes)
 }
 
-struct CachedMeshUniform {
-    buffer: wgpu::Buffer,
-    bind_group: Arc<wgpu::BindGroup>,
-}
-
 /// Mesh renderer for warped texture mapping
 pub struct MeshRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -56,10 +51,6 @@ pub struct MeshRenderer {
     texture_bind_group_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     device: Arc<wgpu::Device>,
-
-    // Caching
-    uniform_cache: Vec<CachedMeshUniform>,
-    current_cache_index: usize,
 }
 
 impl MeshRenderer {
@@ -232,8 +223,6 @@ impl MeshRenderer {
             texture_bind_group_layout,
             sampler,
             device,
-            uniform_cache: Vec::new(),
-            current_cache_index: 0,
         })
     }
 
@@ -307,15 +296,10 @@ impl MeshRenderer {
         })
     }
 
-    /// Reset cache index at start of frame
-    pub fn begin_frame(&mut self) {
-        self.current_cache_index = 0;
-    }
-
     /// Get a uniform bind group with updated parameters, reusing cached resources
     pub fn get_uniform_bind_group(
         &mut self,
-        queue: &wgpu::Queue,
+        _queue: &wgpu::Queue,
         transform: Mat4,
         opacity: f32,
     ) -> Arc<wgpu::BindGroup> {
@@ -361,7 +345,7 @@ impl MeshRenderer {
     /// Get a uniform bind group with source properties (flip, color correction)
     pub fn get_uniform_bind_group_with_source_props(
         &mut self,
-        queue: &wgpu::Queue,
+        _queue: &wgpu::Queue,
         transform: Mat4,
         opacity: f32,
         flip_h: bool,

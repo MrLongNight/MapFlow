@@ -848,7 +848,6 @@ impl App {
                 // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
                 // Reset frame-local caches HERE, exactly once per frame update loop.
                 // This prevents race conditions where NewEvents fires multiple times (e.g. input events).
-                self.mesh_renderer.begin_frame();
 
                 // Note: We removed the manual 'render()' loop here because we call 'request_redraw()'
                 // at the end of this block/update cycle (lines 1311+).
@@ -2101,7 +2100,6 @@ impl App {
 
         // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
-        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
 
         let mut preview_encoder =
             self.backend
