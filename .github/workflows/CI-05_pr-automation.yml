@@ -221,7 +221,7 @@ jobs:
             // Skip the check suite for the auto-merge workflow itself if we can identify it
             // Typically, the suite.app.name for GitHub Actions is "GitHub Actions"
             // But we want to wait for other specific workflows.
-            
+
             // If any suite is failed, we abort completely
             if (suite.conclusion === 'failure' || suite.conclusion === 'error' || suite.conclusion === 'timed_out' || suite.conclusion === 'cancelled') {
               console.log(`❌ Check suite failed: ${suite.app.name} (${suite.conclusion})`);
@@ -235,7 +235,7 @@ jobs:
                pendingChecks = true;
             } else if (suite.conclusion !== 'success' && suite.conclusion !== 'neutral' && suite.conclusion !== 'skipped') {
                console.log(`⚠️ Check suite concluded with non-success: ${suite.app.name} (${suite.conclusion})`);
-               allChecksPassed = false; 
+               allChecksPassed = false;
             }
           }
 

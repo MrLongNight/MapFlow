@@ -1388,6 +1388,13 @@ impl App {
                         }
                     });
                 }
+                mapmap_ui::UIAction::SetMediaFile(module_id, part_id, path) => {
+                    let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
+                        module_id,
+                        part_id,
+                        PathBuf::from(path),
+                    ));
+                }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -2811,7 +2818,7 @@ impl App {
                                                                             self.ui_state.module_canvas.active_module_id,
                                                                             self.ui_state.module_canvas.editing_part_id
                                                                         ) {
-                                                                            actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                            self.ui_state.actions.push(mapmap_ui::UIAction::SetMediaFile(
                                                                                 module_id,
                                                                                 part_id,
                                                                                 path.to_string_lossy().to_string()
@@ -3057,6 +3064,14 @@ impl App {
                             });
                     }
 
+                    // === RIGHT PANEL: Inspector ===
+                    self.ui_state.render_inspector(
+                        ctx,
+                        &mut self.state.module_manager,
+                        &self.state.layer_manager,
+                        &self.state.output_manager,
+                    );
+
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
@@ -3245,7 +3260,7 @@ impl App {
                                 ui.separator();
 
                                 // Philips Hue Settings
-                                egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
+                                let body_returned = egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
                                     .default_open(true)
                                     .show(ui, |ui| {
                                         let mut changed = false;
@@ -3357,8 +3372,9 @@ impl App {
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before linking/connecting for the first time.").small());
                                         (changed, connect_clicked, disconnect_clicked, discover_clicked, register_clicked)
                                     })
-                                    .body_returned
-                                    .map(|(changed, connect, disconnect, discover, register)| {
+                                    .body_returned;
+
+                                    if let Some((changed, connect, disconnect, discover, register)) = body_returned {
                                         if register {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::RegisterHue);
                                         }
@@ -3384,7 +3400,7 @@ impl App {
                                         if discover {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::DiscoverHueBridges);
                                         }
-                                    });
+                                    }
 
                                 ui.separator();
 
