@@ -2176,7 +2176,7 @@ impl ModuleCanvas {
                     mapmap_core::module::AudioBand::SubBass => self
                         .audio_trigger_data
                         .band_energies
-                        .get(0)
+                        .first()
                         .copied()
                         .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Bass => self
@@ -2359,30 +2359,31 @@ impl ModuleCanvas {
         _actions: &mut [crate::UIAction],
     ) {
         // === KEYBOARD SHORTCUTS ===
-        if !self.selected_parts.is_empty() && !ui.memory(|m| m.focused().is_some()) {
-            if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space)) {
-                if let Some(module_id) = self.active_module_id {
-                    if let Some(module) = manager.get_module_mut(module_id) {
-                        for part_id in &self.selected_parts {
-                            if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
-                                if let mapmap_core::module::ModulePartType::Source(
-                                    mapmap_core::module::SourceType::MediaFile { .. },
-                                ) = part.part_type
-                                {
-                                    // Toggle playback
-                                    let is_playing = self
-                                        .player_info
-                                        .get(part_id)
-                                        .map(|info| info.is_playing)
-                                        .unwrap_or(false);
+        if !self.selected_parts.is_empty()
+            && !ui.memory(|m| m.focused().is_some())
+            && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space))
+        {
+            if let Some(module_id) = self.active_module_id {
+                if let Some(module) = manager.get_module_mut(module_id) {
+                    for part_id in &self.selected_parts {
+                        if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                            if let mapmap_core::module::ModulePartType::Source(
+                                mapmap_core::module::SourceType::MediaFile { .. },
+                            ) = &part.part_type
+                            {
+                                // Toggle playback
+                                let is_playing = self
+                                    .player_info
+                                    .get(part_id)
+                                    .map(|info| info.is_playing)
+                                    .unwrap_or(false);
 
-                                    let command = if is_playing {
-                                        MediaPlaybackCommand::Pause
-                                    } else {
-                                        MediaPlaybackCommand::Play
-                                    };
-                                    self.pending_playback_commands.push((*part_id, command));
-                                }
+                                let command = if is_playing {
+                                    MediaPlaybackCommand::Pause
+                                } else {
+                                    MediaPlaybackCommand::Play
+                                };
+                                self.pending_playback_commands.push((*part_id, command));
                             }
                         }
                     }
@@ -2449,14 +2450,12 @@ impl ModuleCanvas {
                             .selected_text(current_name)
                             .width(160.0)
                             .show_ui(ui, |ui| {
-                                if ui
-                                    .selectable_value(
-                                        &mut self.active_module_id,
-                                        None,
-                                        "— None —",
-                                    )
-                                    .clicked()
-                                {}
+                                ui.selectable_value(
+                                    &mut self.active_module_id,
+                                    None,
+                                    "— None —",
+                                )
+                                .clicked();
                                 ui.separator();
                                 for (id, name) in &module_names {
                                     if ui
