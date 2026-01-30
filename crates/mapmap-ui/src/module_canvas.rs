@@ -3071,9 +3071,28 @@ impl ModuleCanvas {
                         ui.menu_button("📺 Output", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "projector".contains(&filter)) && ui.button("📽️ Projector").clicked() {
+                                // Calculate next available ID
+                                let mut next_id = 1;
+                                if let Some(module_id) = self.active_module_id {
+                                    if let Some(module) = manager.get_module(module_id) {
+                                        let used_ids: Vec<u64> = module.parts.iter()
+                                            .filter_map(|p| {
+                                                if let ModulePartType::Output(OutputType::Projector { id, .. }) = &p.part_type {
+                                                    Some(*id)
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .collect();
+                                        while used_ids.contains(&next_id) {
+                                            next_id += 1;
+                                        }
+                                    }
+                                }
+
                                 self.add_module_node(manager, ModulePartType::Output(OutputType::Projector {
-                                    id: 1,
-                                    name: "Projector 1".to_string(),
+                                    id: next_id,
+                                    name: format!("Projector {}", next_id),
                                     fullscreen: false,
                                     hide_cursor: true,
                                     target_screen: 0,
@@ -3086,6 +3105,7 @@ impl ModuleCanvas {
                                 self.search_filter.clear();
                                 ui.close();
                             }
+
                         });
                     }
 
