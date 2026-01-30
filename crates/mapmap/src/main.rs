@@ -1785,7 +1785,9 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
                 for part in &module_ref.parts {
-                    if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+                    if let mapmap_core::module::ModulePartType::Output(output_type) =
+                        &part.part_type
+                    {
                         // Use part.id for consistency with render pipeline
                         let output_id = part.id;
 
@@ -1804,8 +1806,7 @@ impl App {
                                 let window_id = *projector_id;
                                 active_window_ids.insert(window_id);
 
-                                if let Some(window_context) = self.window_manager.get(window_id)
-                                {
+                                if let Some(window_context) = self.window_manager.get(window_id) {
                                     // Update existing
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
@@ -1849,10 +1850,7 @@ impl App {
                                             false, // Show cursor
                                             0,     // Default screen (0)
                                         )?;
-                                        info!(
-                                            "Created preview window for output {}",
-                                            window_id
-                                        );
+                                        info!("Created preview window for output {}", window_id);
                                     }
                                 }
                             }
@@ -1871,8 +1869,7 @@ impl App {
                                             mapmap_io::format::VideoFormat {
                                                 width,
                                                 height,
-                                                pixel_format:
-                                                    mapmap_io::format::PixelFormat::BGRA8,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
                                                 frame_rate: 60.0,
                                             },
                                         ) {
