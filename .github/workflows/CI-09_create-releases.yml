@@ -149,7 +149,7 @@ jobs:
             "swresample-5.dll",
             "swscale-8.dll"
           )
-          
+
           if (!(Test-Path $outPath)) {
             New-Item -ItemType Directory -Force -Path $outPath
           }

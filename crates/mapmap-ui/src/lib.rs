@@ -96,6 +96,11 @@ pub enum UIAction {
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
     ),
+    AssignMediaFile(
+        mapmap_core::module::ModuleId,
+        mapmap_core::module::ModulePartId,
+        String,
+    ),
     SaveProject(String),
     SaveProjectAs,
     LoadProject(String),
@@ -561,6 +566,91 @@ impl AppUI {
     pub fn render_stats(&mut self, ctx: &egui::Context, fps: f32, frame_time_ms: f32) {
         // Redirect to overlay version
         self.render_stats_overlay(ctx, fps, frame_time_ms);
+    }
+
+    /// Render the right-side inspector panel (docked)
+    pub fn render_inspector(
+        &mut self,
+        ctx: &egui::Context,
+        module_manager: &mut mapmap_core::module::ModuleManager,
+        layer_manager: &mapmap_core::LayerManager,
+        output_manager: &mapmap_core::OutputManager,
+    ) {
+        if !self.show_inspector {
+            return;
+        }
+
+        // Determine context priority: Module > Layer > Output
+        let mut context = crate::InspectorContext::None;
+
+        // 1. Module Selection
+        if self.show_module_canvas {
+            if let Some(module_id) = self.module_canvas.active_module_id {
+                if let Some(module) = module_manager.get_module_mut(module_id) {
+                    if let Some(part_id) = self.module_canvas.get_selected_part_id() {
+                        context = crate::InspectorContext::Module {
+                            canvas: &mut self.module_canvas,
+                            module,
+                            part_id,
+                        };
+                    }
+                }
+            }
+        }
+
+        // 2. Layer Selection (if not in module mode)
+        if matches!(context, crate::InspectorContext::None) {
+            if let Some(id) = self.selected_layer_id {
+                if let Some(layer) = layer_manager.get_layer(id) {
+                    let index = layer_manager
+                        .layers()
+                        .iter()
+                        .position(|l| l.id == id)
+                        .unwrap_or(0);
+                    context = crate::InspectorContext::Layer {
+                        layer,
+                        transform: &layer.transform,
+                        index,
+                    };
+                }
+            }
+        }
+
+        // 3. Output Selection
+        if matches!(context, crate::InspectorContext::None) {
+            if let Some(id) = self.selected_output_id {
+                if let Some(output) = output_manager.get_output(id) {
+                    context = crate::InspectorContext::Output(output);
+                }
+            }
+        }
+
+        let is_learning = self.is_midi_learn_mode;
+        let last_active_element = self.controller_overlay.last_active_element.clone();
+        let last_active_time = self.controller_overlay.last_active_time;
+
+        let action = self.inspector_panel.show(
+            ctx,
+            context,
+            &self.i18n,
+            self.icon_manager.as_ref(),
+            is_learning,
+            last_active_element.as_ref(),
+            last_active_time,
+            &mut self.actions,
+        );
+
+        if let Some(action) = action {
+            match action {
+                crate::InspectorAction::UpdateOpacity(id, val) => {
+                    self.actions.push(crate::UIAction::SetLayerOpacity(id, val));
+                }
+                crate::InspectorAction::UpdateTransform(id, transform) => {
+                    self.actions
+                        .push(crate::UIAction::SetLayerTransform(id, transform));
+                }
+            }
+        }
     }
 
     /// Render master controls panel (Phase 6 Migration)
