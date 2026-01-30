@@ -389,6 +389,7 @@ impl MeshRenderer {
     }
 
     /// Get a uniform bind group with source properties (flip, color correction)
+    #[allow(clippy::too_many_arguments)]
     pub fn get_uniform_bind_group_with_source_props(
         &mut self,
         queue: &wgpu::Queue,

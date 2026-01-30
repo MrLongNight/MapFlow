@@ -6,12 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-01-26: docs: Fix broken links in README and CONTRIBUTING (Scribe) (#410)
 - 2026-01-26: fix(ci): Ensure FFmpeg development libraries are installed in CI-01 pre-checks job to fix ffmpeg-sys-next build errors
 - 2026-01-26: fix(ci): Improve library verification in CI-01 with robust pkg-config check loop and detailed diagnostics
 - 2026-01-26: fix(ci): Fix missing FFmpeg DLLs in WiX installer by explicitly verifying and copying each required DLL to target/release in CI-09
 - 2026-01-26: fix(scripts): Add missing libswresample-dev to install-ffmpeg-dev.sh
+- 2026-01-26: fix(ci): Enforce unconditional Windows Build & Tests on all PRs in CI-01 and make Windows failure blocking for Success Gate
 - 2026-01-26: fix(ci): Harden CI-01 workflow by ensuring X11 and system dependencies are installed across all jobs (pre-checks, quality), fixing build failures in non-release steps
-- 2026-01-26: fix(ci): Ensure FFmpeg DLLs (avcodec-61, etc.) are explicitly copied to target/release for WiX installer in CI-09, verifying expected versions from vcpkg
+- 2026-01-26: fix(ci): Resolve WiX installer errors in CI-09 by implementing robust wildcard copy for FFmpeg DLLs, eliminating version-mismatch failures
+- 2026-01-26: fix(ci): Integrate pre-commit hooks into CI-01 to automatically fix formatting issues (trailing whitespace, etc.) in PRs
 - 2026-01-20: docs: Update Roadmap status for NDI and Hue integration (Tracker)
 - 2026-01-19: fix(ci): Ensure VCPKG_ROOT is set and vcpkg integrated in release workflow
 - 2026-01-18: fix(ci): Fix CI-09 workflow build error by explicitly installing vcpkg and ffmpeg (#287)

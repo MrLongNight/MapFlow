@@ -61,6 +61,7 @@ fn test_socket_generation_coverage() {
         parts: vec![],
         connections: vec![],
         playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
     };
 
     // 1. Trigger (Beat)

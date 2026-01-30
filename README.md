@@ -6,6 +6,7 @@
 [![Build & Test](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-01_build%26test.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-01_build%26test.yml)
 [![Security Scan](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml)
 [![Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-09_create-releases.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-09_create-releases.yml)
+[![CI-10: Backup Main Branch](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-10_backup-main.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-10_backup-main.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 # MapFlow
@@ -34,7 +35,7 @@ MapFlow is now a fully functional Rust application. The migration from ImGui to 
 
 ## 🗺️ Roadmap Overview
 
-For a detailed status, see the [ROADMAP](ROADMAP.md).
+For a detailed status, see the [ROADMAP](ROADMAP_2.0.md).
 
 **Phase 1: Core Engine**
 -   [x] Layer system with transforms, opacity, and blend modes
@@ -111,7 +112,7 @@ crates/
 
 ## 🤝 Contributing
 
-See the [Contributing Guidelines](docs/02-CONTRIBUTING/CONTRIBUTING.md).
+See the [Contributing Guidelines](CONTRIBUTING.md).
 
 ## 📄 License
 

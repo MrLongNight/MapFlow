@@ -135,8 +135,11 @@ jobs:
 
         shell: pwsh
 
-      - name: Kopiere benötigte FFmpeg-DLLs für WiX
+      - name: Kopiere FFmpeg-DLLs für Installer
+        shell: pwsh
         run: |
+          $ffmpegPath = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
+          $outPath = "${{ github.workspace }}\target\release"
           $dlls = @(
             "avcodec-61.dll",
             "avdevice-61.dll",
@@ -146,30 +149,53 @@ jobs:
             "swresample-5.dll",
             "swscale-8.dll"
           )
-          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
+
+          if (!(Test-Path $outPath)) {
+            New-Item -ItemType Directory -Force -Path $outPath
+          }
+
           foreach ($dll in $dlls) {
-            $src = Join-Path $vcpkgBin $dll
-            $dst = "target\release\$dll"
-            if (Test-Path $src) {
-              Copy-Item $src $dst -Force
-              Write-Host "✓ $dll kopiert."
+            if (Test-Path "$ffmpegPath\$dll") {
+              Copy-Item "$ffmpegPath\$dll" $outPath
+              Write-Host "Kopiert: $dll"
             } else {
-              Write-Host "✗ $dll fehlt in $vcpkgBin!"
+              Write-Host "WARNUNG: $dll nicht gefunden im $ffmpegPath!"
               exit 1
             }
           }
-        shell: pwsh
 
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
 
-      - name: Build MSI
+
+      - name: Build MSI with Heat Harvesting
         shell: pwsh
         run: |
           $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
           $cargoTargetBinDir = "${{ github.workspace }}\target\release"
-          candle.exe .\crates\mapmap\wix\main.wxs -dCargoTargetBinDir="$cargoTargetBinDir" -out mapflow.wixobj -ext WixUIExtension
-          light.exe mapflow.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
+
+          # Create a clean packaging directory
+          $packageDir = "${{ github.workspace }}\package_staging"
+          New-Item -ItemType Directory -Force -Path $packageDir
+
+          # Copy EVERYTHING needed into staging (App + DLLs)
+          Copy-Item "$cargoTargetBinDir\MapFlow.exe" -Destination $packageDir -Force
+          Copy-Item "$cargoTargetBinDir\*.dll" -Destination $packageDir -Force
+
+          Write-Host "Staging Directory Contents:"
+          Get-ChildItem $packageDir | Select-Object Name
+
+          # Harvest the staging directory
+          # -cg MainComponents: Component Group ID
+          # -dr INSTALLFOLDER: Directory Ref ID in main.wxs
+          heat.exe dir "$packageDir" -gg -sfrag -cg MainComponents -dr INSTALLFOLDER -var "var.PackageDir" -out components.wxs
+
+          # Compile Main + Components
+          candle.exe .\crates\mapmap\wix\main.wxs components.wxs -dPackageDir="$packageDir" -dCargoTargetBinDir="$cargoTargetBinDir" -out mapflow.wixobj -out components.wixobj -ext WixUIExtension
+
+          # Link
+          light.exe mapflow.wixobj components.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
+
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4

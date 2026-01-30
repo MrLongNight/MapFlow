@@ -34,6 +34,9 @@ fn default_saturation() -> f32 {
 fn default_scale() -> f32 {
     1.0
 }
+fn default_next_part_id() -> ModulePartId {
+    1
+}
 
 /// Represents a complete visual programming graph (Scene/Module)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -49,15 +52,20 @@ pub struct MapFlowModule {
     /// List of wires (connections)
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
+    /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
+    /// Next available Part ID
+    #[serde(default = "default_next_part_id")]
+    pub next_part_id: ModulePartId,
 }
 
 impl MapFlowModule {
     /// Add a part to this module with proper socket configuration
+    /// Note: This is now a lower-level method. Use ModuleManager::add_part_to_module instead.
+    /// Add a part to this module with proper socket configuration (Internal use)
     pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
-        static NEXT_PART_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-
+        let id = self.next_part_id;
+        self.next_part_id += 1;
         let module_part_type = match part_type {
             PartType::Trigger => ModulePartType::Trigger(TriggerType::Beat),
             PartType::Source => ModulePartType::Source(SourceType::MediaFile {
@@ -146,9 +154,8 @@ impl MapFlowModule {
         part_type: ModulePartType,
         position: (f32, f32),
     ) -> ModulePartId {
-        static NEXT_PART_ID: std::sync::atomic::AtomicU64 =
-            std::sync::atomic::AtomicU64::new(10000);
-        let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let id = self.next_part_id;
+        self.next_part_id += 1;
 
         let mut part = ModulePart {
             id,
@@ -1420,6 +1427,9 @@ pub enum ModulizerType {
 /// Available visual effects
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EffectType {
+    // Custom
+    /// Custom Shader Graph
+    ShaderGraph(crate::shader_graph::GraphId),
     // Basic
     /// Blur effect
     Blur,
@@ -1533,6 +1543,7 @@ impl EffectType {
             EffectType::VHS => "VHS",
             EffectType::FilmGrain => "Film Grain",
             EffectType::Vignette => "Vignette",
+            EffectType::ShaderGraph(_) => "Custom Shader Graph",
         }
     }
 }
@@ -1778,6 +1789,22 @@ impl ModuleManager {
         }
     }
 
+    /// Add a part to a specific module
+    pub fn add_part_to_module(
+        &mut self,
+        module_id: ModuleId,
+        part_type: PartType,
+        position: (f32, f32),
+    ) -> Option<ModulePartId> {
+        if let Some(module) = self.modules.get_mut(&module_id) {
+            let _id = self.next_part_id;
+            self.next_part_id += 1;
+            Some(module.add_part(part_type, position))
+        } else {
+            None
+        }
+    }
+
     /// Create a new module
     pub fn create_module(&mut self, name: String) -> ModuleId {
         let id = self.next_module_id;
@@ -1793,6 +1820,7 @@ impl ModuleManager {
             parts: Vec::new(),
             connections: Vec::new(),
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
         self.modules.insert(id, module);
@@ -1892,6 +1920,7 @@ mod tests {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
         let part_id = module.add_part(PartType::Trigger, (0.0, 0.0));
@@ -1916,6 +1945,7 @@ mod tests {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
         let p1 = module.add_part(PartType::Trigger, (0.0, 0.0));
@@ -1940,6 +1970,7 @@ mod tests {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
         // Create AudioFFT trigger with all bands (many outputs)
@@ -1953,7 +1984,8 @@ mod tests {
             output_config: config,
         });
 
-        let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
+        let p1 = module.add_part_with_type(fft_part_type.clone(), (0.0, 0.0));
+        let _unused_p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
         let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         // Connect SubBass (index 0) and Air (index 8)
@@ -2186,6 +2218,7 @@ fn test_update_part_position() {
         parts: vec![],
         connections: vec![],
         playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
     };
 
     let pid = module.add_part(PartType::Trigger, (0.0, 0.0));
