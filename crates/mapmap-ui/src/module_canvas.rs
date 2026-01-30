@@ -920,19 +920,34 @@ impl ModuleCanvas {
 
                                                 ui.separator();
 
-                                                // === FILE PATH (Moved down) ===
-                                                ui.collapsing("📁 File Info", |ui| {
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("Path:");
-                                                        ui.add(
-                                                            egui::TextEdit::singleline(path)
-                                                                .desired_width(160.0),
-                                                        );
-                                                        if ui.button("📂").on_hover_text("Select Media File").clicked() {
+                                                // === SMART EMPTY STATE ===
+                                                if path.is_empty() {
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(10.0);
+                                                        if ui.add(egui::Button::new("📂 Select Media File")
+                                                            .min_size(egui::vec2(150.0, 30.0)))
+                                                            .clicked()
+                                                        {
                                                             actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                                         }
+                                                        ui.label(egui::RichText::new("No media loaded").weak());
+                                                        ui.add_space(10.0);
                                                     });
-                                                });
+                                                } else {
+                                                    // === FILE PATH ===
+                                                    ui.collapsing("📁 File Info", |ui| {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Path:");
+                                                            ui.add(
+                                                                egui::TextEdit::singleline(path)
+                                                                    .desired_width(160.0),
+                                                            );
+                                                            if ui.button("📂").on_hover_text("Select Media File").clicked() {
+                                                                actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
+                                                            }
+                                                        });
+                                                    });
+                                                }
 
 
                                                 // === APPEARANCE ===
