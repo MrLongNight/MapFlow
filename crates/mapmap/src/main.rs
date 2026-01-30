@@ -1314,6 +1314,8 @@ impl App {
                     }
                 }
                 mapmap_ui::UIAction::PickMediaFile(module_id, part_id, path_str) => {
+                    self.ui_state.module_canvas.active_module_id = Some(module_id);
+                    self.ui_state.module_canvas.editing_part_id = Some(part_id);
                     if !path_str.is_empty() {
                         let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
                             module_id,
@@ -1347,10 +1349,6 @@ impl App {
                         part_id,
                         PathBuf::from(path),
                     ));
-                }
-                mapmap_ui::UIAction::PickMediaFile(module_id, part_id, _) => {
-                    self.ui_state.module_canvas.active_module_id = Some(module_id);
-                    self.ui_state.module_canvas.editing_part_id = Some(part_id);
                 }
 
                 mapmap_ui::UIAction::LoadProject(path_str) => {
