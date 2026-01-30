@@ -42,12 +42,6 @@ pub enum InspectorContext<'a> {
     },
     /// An output is selected
     Output(&'a OutputConfig),
-    /// A module part is selected
-    Module {
-        canvas: &'a mut crate::ModuleCanvas,
-        module: &'a mut mapmap_core::module::MapFlowModule,
-        part_id: mapmap_core::module::ModulePartId,
-    },
 }
 
 impl InspectorPanel {
@@ -113,17 +107,6 @@ impl InspectorPanel {
                     }
                     InspectorContext::Output(output) => {
                         self.show_output_inspector(ui, output, i18n);
-                    }
-                    InspectorContext::Module {
-                        canvas,
-                        module,
-                        part_id,
-                    } => {
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                            canvas.render_inspector_for_part(ui, part, global_actions, module.id);
-                        } else {
-                            self.show_no_selection(ui, i18n);
-                        }
                     }
                 }
             });

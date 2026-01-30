@@ -12,7 +12,6 @@ use tracing::{error, info};
 /// Prevents:
 /// - Path traversal (.. components)
 /// - Absolute paths (restricts to working directory)
-/// - Invalid file extensions
 fn validate_safe_path(path_str: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(path_str);
 
@@ -43,13 +42,11 @@ fn validate_path_with_extensions(
             if allowed_extensions.contains(&ext_str.to_lowercase().as_str()) {
                 return Ok(path);
             }
+            return Err(format!("Extension '{}' is not allowed", ext_str));
         }
     }
 
-    Err(format!(
-        "Invalid file extension. Allowed: {:?}",
-        allowed_extensions
-    ))
+    Err("Invalid file extension".to_string())
 }
 
 pub struct McpServer {
@@ -1019,16 +1016,14 @@ impl McpServer {
                                     match validate_path_with_extensions(
                                         media_path_str,
                                         &[
-                                            "mp4", "mov", "avi", "mkv", "webm", "png", "jpg",
-                                            "jpeg", "webp",
+                                            "mp4", "mov", "avi", "mkv", "webm", "png", "jpg", "jpeg", "webp",
                                         ],
                                     ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
-                                                let _ =
-                                                    sender.send(crate::McpAction::LayerLoadMedia(
-                                                        layer_id, path,
-                                                    ));
+                                                let _ = sender.send(crate::McpAction::LayerLoadMedia(
+                                                    layer_id, path,
+                                                ));
                                             }
                                             return Some(success_response(
                                                 id,
@@ -1397,31 +1392,10 @@ mod tests {
 
         let error = resp.error.unwrap();
         assert!(error.message.contains("Invalid path"));
-        // Could be traversal or extension error depending on order, but we check generic "Invalid path" prefix
-        assert!(error.message.contains("Path traversal") || error.message.contains("Extension"));
+        assert!(error.message.contains("Path traversal"));
 
         // Verify NO action was sent
         assert!(rx.try_recv().is_err());
-
-        // Test invalid extension
-        let ext_req = json!({
-            "jsonrpc": "2.0",
-            "id": 101,
-            "method": "tools/call",
-            "params": {
-                "name": "project_save",
-                "arguments": {
-                    "path": "script.sh"
-                }
-            }
-        });
-        let ext_resp = server.handle_request(&ext_req.to_string()).await.unwrap();
-        assert!(ext_resp.error.is_some());
-        assert!(ext_resp
-            .error
-            .unwrap()
-            .message
-            .contains("Extension 'sh' is not allowed"));
 
         // Test valid path
         let valid_req = json!({
@@ -1467,11 +1441,10 @@ mod tests {
                 }
             }
         });
-        let resp = server
-            .handle_request(&invalid_save.to_string())
-            .await
-            .unwrap();
+        let resp = server.handle_request(&invalid_save.to_string()).await.unwrap();
         assert!(resp.error.is_some(), "Should reject .sh extension");
+        let error = resp.error.unwrap();
+        assert!(error.message.contains("Extension 'sh' is not allowed"));
         assert!(rx.try_recv().is_err(), "Should not send action");
 
         // Test project_save with valid extension
@@ -1486,10 +1459,7 @@ mod tests {
                 }
             }
         });
-        let resp = server
-            .handle_request(&valid_save.to_string())
-            .await
-            .unwrap();
+        let resp = server.handle_request(&valid_save.to_string()).await.unwrap();
         assert!(resp.error.is_none());
         assert!(matches!(rx.try_recv().unwrap(), McpAction::SaveProject(_)));
 
@@ -1506,11 +1476,10 @@ mod tests {
                 }
             }
         });
-        let resp = server
-            .handle_request(&invalid_media.to_string())
-            .await
-            .unwrap();
+        let resp = server.handle_request(&invalid_media.to_string()).await.unwrap();
         assert!(resp.error.is_some(), "Should reject .txt for media");
+        let error = resp.error.unwrap();
+        assert!(error.message.contains("Extension 'txt' is not allowed"));
 
         // Test layer_load_media with valid extension
         let valid_media = json!({
@@ -1525,10 +1494,7 @@ mod tests {
                 }
             }
         });
-        let resp = server
-            .handle_request(&valid_media.to_string())
-            .await
-            .unwrap();
+        let resp = server.handle_request(&valid_media.to_string()).await.unwrap();
         assert!(resp.error.is_none());
         if let McpAction::LayerLoadMedia(id, path) = rx.try_recv().unwrap() {
             assert_eq!(id, 1);

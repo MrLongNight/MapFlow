@@ -43,7 +43,7 @@ impl EntertainmentEngine {
                     for (id, (r, g, b)) in updates_map {
                         updates_vec.push(LightState { id, r, g, b });
                     }
-                    if (self.dtls_tx.send(updates_vec).await).is_err() {
+                    if let Err(_) = self.dtls_tx.send(updates_vec).await {
                         break; // Receiver closed
                     }
                 }

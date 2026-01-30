@@ -28,12 +28,3 @@
     - Panel: `(18, 18, 24)` (Deep Navy)
     - Border: `(80, 80, 90)` (Blue-Grey)
 **Action:** Applied these constants to `Theme::Resolume`. Future panels should respect `ui.visuals().panel_fill` to inherit this depth automatically.
-
-## 2024-05-24 – [List & Table Patterns]
-**Learning:** Using `ui.group` for list items creates excessive visual noise ("box-in-box").
-- **Insight:** Clean lists use `egui::Frame` with subtle background variations (zebra striping) and no stroke for individual rows.
-- **Pattern:**
-    - **Selection:** `Visuals.selection.bg_fill.linear_multiply(0.2)` for row background.
-    - **Striping:** `Visuals.faint_bg_color` for odd rows.
-    - **Buttons:** Consolidate repeated widget logic into helpers (e.g., `icon_button`) to enforce consistent active/hover states.
-**Action:** Refactored `LayerPanel` to use this pattern, removing nested groups and aligning controls horizontally.
