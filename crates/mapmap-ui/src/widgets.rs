@@ -258,11 +258,7 @@ pub fn collapsing_header_with_reset(
 }
 
 /// A container that applies the "Cyber Dark" panel style (Border + Header)
-pub fn panel_container<R>(
-    ui: &mut Ui,
-    title: &str,
-    add_contents: impl FnOnce(&mut Ui) -> R,
-) -> R {
+pub fn panel_container<R>(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui) -> R) -> R {
     let panel_fill = ui.visuals().panel_fill;
     let stroke_color = colors::STROKE_GREY;
 
@@ -299,12 +295,9 @@ pub fn panel_container<R>(
                     });
 
                 // Separator Line
-                let sep_rect = Rect::from_min_size(
-                    ui.cursor().min,
-                    Vec2::new(ui.available_width(), 1.0),
-                );
-                ui.painter()
-                    .rect_filled(sep_rect, 0.0, stroke_color);
+                let sep_rect =
+                    Rect::from_min_size(ui.cursor().min, Vec2::new(ui.available_width(), 1.0));
+                ui.painter().rect_filled(sep_rect, 0.0, stroke_color);
                 ui.add_space(1.0);
             });
 

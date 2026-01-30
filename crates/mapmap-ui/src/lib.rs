@@ -444,9 +444,9 @@ impl AppUI {
             .max_width(400.0)
             .frame(egui::Frame::new())
             .show(ctx, |ui| {
-                if let Some(action) = self
-                    .media_browser
-                    .ui(ui, &self.i18n, self.icon_manager.as_ref())
+                if let Some(action) =
+                    self.media_browser
+                        .ui(ui, &self.i18n, self.icon_manager.as_ref())
                 {
                     if let media_browser::MediaBrowserAction::Close = action {
                         self.show_media_browser = false;
