@@ -249,7 +249,7 @@ pub struct ModuleCanvas {
     /// Available outputs (id, name) for output node selection
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
-    editing_part_id: Option<ModulePartId>,
+    pub editing_part_id: Option<ModulePartId>,
     /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
     pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
     /// Pending playback commands (Part ID, Command)
@@ -400,41 +400,27 @@ impl ModuleCanvas {
     }
 
     /// Renders the property editor popup for the currently selected node.
-    fn render_properties_popup(
+    /// Get the ID of the selected part
+    pub fn get_selected_part_id(&self) -> Option<ModulePartId> {
+        self.selected_parts.last().copied()
+    }
+
+    pub fn render_inspector_for_part(
         &mut self,
-        ctx: &egui::Context,
-        module: &mut mapmap_core::module::MapFlowModule,
+        ui: &mut Ui,
+        part: &mut mapmap_core::module::ModulePart,
         actions: &mut Vec<UIAction>,
+        module_id: mapmap_core::module::ModuleId,
     ) {
-        let mut changed_part_id = None;
-        if let Some(part_id) = self.editing_part_id {
-            let part_exists = module.parts.iter().any(|p| p.id == part_id);
+        use mapmap_core::module::*;
+        let part_id = part.id;
+        let mut changed_part_id: Option<ModulePartId> = None;
 
-            if !part_exists {
-                self.editing_part_id = None;
-                return;
-            }
-
-            let mut is_open = true;
-            let part = module.parts.iter().find(|p| p.id == part_id).unwrap();
-            let (_, _, icon, type_name) = Self::get_part_style(&part.part_type);
-
-            egui::Window::new(format!("{} {} Properties", icon, type_name))
-                .open(&mut is_open)
-                .default_pos(ctx.content_rect().center())
-                .resizable(true)
-                .vscroll(true)
-                .show(ctx, |ui| {
-                    // Find the part to edit from the module's parts list
-                    if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                        use mapmap_core::module::*;
-
-                        // The property UI code from the old side panel starts here
-                        egui::ScrollArea::vertical()
-                            .auto_shrink([false, false])
-                            .show(ui, |ui| {
-                                // --- Input Configuration ---
-                                self.render_trigger_config_ui(ui, part);
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                // --- Input Configuration ---
+                self.render_trigger_config_ui(ui, part);
                                 ui.separator();
 
                                 match &mut part.part_type {
@@ -942,7 +928,7 @@ impl ModuleCanvas {
                                                                 .desired_width(160.0),
                                                         );
                                                         if ui.button("📂").on_hover_text("Select Media File").clicked() {
-                                                            actions.push(crate::UIAction::PickMediaFile(module.id, part_id));
+                                                            actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                                         }
                                                     });
                                                 });
@@ -2087,13 +2073,6 @@ impl ModuleCanvas {
                                 ui.label(format!("Inputs: {}", part.inputs.len()));
                                 ui.label(format!("Outputs: {}", part.outputs.len()));
                             });
-                    }
-                });
-
-            if !is_open {
-                self.editing_part_id = None;
-            }
-        }
     }
 
     fn load_svg_icon(path: &std::path::Path, ctx: &egui::Context) -> Option<TextureHandle> {
@@ -2377,8 +2356,41 @@ impl ModuleCanvas {
         ui: &mut Ui,
         manager: &mut ModuleManager,
         locale: &LocaleManager,
-        actions: &mut Vec<crate::UIAction>,
+        _actions: &mut [crate::UIAction],
     ) {
+        // === KEYBOARD SHORTCUTS ===
+        if !self.selected_parts.is_empty()
+            && !ui.memory(|m| m.focused().is_some())
+            && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space))
+        {
+            if let Some(module_id) = self.active_module_id {
+                if let Some(module) = manager.get_module_mut(module_id) {
+                    for part_id in &self.selected_parts {
+                        if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                            if let mapmap_core::module::ModulePartType::Source(
+                                mapmap_core::module::SourceType::MediaFile { .. },
+                            ) = &part.part_type
+                            {
+                                // Toggle playback
+                                let is_playing = self
+                                    .player_info
+                                    .get(part_id)
+                                    .map(|info| info.is_playing)
+                                    .unwrap_or(false);
+
+                                let command = if is_playing {
+                                    MediaPlaybackCommand::Pause
+                                } else {
+                                    MediaPlaybackCommand::Play
+                                };
+                                self.pending_playback_commands.push((*part_id, command));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
             if let Some(module_id) = self.active_module_id {
@@ -2438,13 +2450,12 @@ impl ModuleCanvas {
                             .selected_text(current_name)
                             .width(160.0)
                             .show_ui(ui, |ui| {
-                                ui
-                                    .selectable_value(
-                                        &mut self.active_module_id,
-                                        None,
-                                        "— None —",
-                                    )
-                                    .clicked();
+                                ui.selectable_value(
+                                    &mut self.active_module_id,
+                                    None,
+                                    "— None —",
+                                )
+                                .clicked();
                                 ui.separator();
                                 for (id, name) in &module_names {
                                     if ui
@@ -3191,8 +3202,7 @@ impl ModuleCanvas {
         if let Some(module) = active_module {
             // Render the canvas taking up the full available space
             self.render_canvas(ui, module, locale);
-            // The properties popup is now rendered at the top level
-            self.render_properties_popup(ui.ctx(), module, actions);
+            // Properties popup removed - moved to docked inspector
         } else {
             // Show a message if no module is selected
             ui.centered_and_justified(|ui| {
@@ -3948,7 +3958,9 @@ impl ModuleCanvas {
             ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
                 ui.vertical(|ui| {
                     if ui.button("⚙ Open Properties").clicked() {
-                        self.editing_part_id = Some(part_id);
+                        // Select the part to show it in the inspector
+                        self.selected_parts.clear();
+                        self.selected_parts.push(part_id);
                         self.context_menu_part = None;
                         self.context_menu_pos = None;
                     }
@@ -5595,6 +5607,44 @@ impl ModuleCanvas {
                 egui::FontId::proportional(10.0 * self.zoom),
                 Color32::from_gray(180), // Slightly brighter for readability
             );
+        }
+
+        // Draw Media Playback Progress Bar
+        if let mapmap_core::module::ModulePartType::Source(
+            mapmap_core::module::SourceType::MediaFile { .. },
+        ) = &part.part_type
+        {
+            if let Some(info) = self.player_info.get(&part.id) {
+                let duration = info.duration.max(0.001);
+                let progress = (info.current_time / duration).clamp(0.0, 1.0) as f32;
+                let is_playing = info.is_playing;
+
+                let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
+                let bar_height = 4.0 * self.zoom;
+                let bar_y = rect.max.y - (offset_from_bottom * self.zoom) - bar_height;
+                let bar_width = rect.width() - 20.0 * self.zoom;
+                let bar_x = rect.min.x + 10.0 * self.zoom;
+
+                // Background
+                let bar_bg =
+                    Rect::from_min_size(Pos2::new(bar_x, bar_y), Vec2::new(bar_width, bar_height));
+                painter.rect_filled(bar_bg, 2.0 * self.zoom, Color32::from_gray(30));
+
+                // Progress
+                let progress_width = (progress * bar_width).max(2.0 * self.zoom);
+                let progress_rect = Rect::from_min_size(
+                    Pos2::new(bar_x, bar_y),
+                    Vec2::new(progress_width, bar_height),
+                );
+
+                let color = if is_playing {
+                    Color32::from_rgb(100, 255, 100) // Green
+                } else {
+                    Color32::from_rgb(255, 200, 50) // Yellow/Orange
+                };
+
+                painter.rect_filled(progress_rect, 2.0 * self.zoom, color);
+            }
         }
 
         // Draw audio trigger VU meter and live value display

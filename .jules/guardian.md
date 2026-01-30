@@ -1,11 +1,10 @@
-## 2024-05-23 - [Initial Assessment]
-**Erkenntnis:** Codebase has high test coverage in core logic (`module_eval.rs`, `analyzer_v2.rs`). Gap identified in `TriggerConfig::apply` logic within `module.rs` which handles critical value transformation.
-**Aktion:** Implement specific unit tests for `TriggerConfig::apply` covering all modes (Direct, Fixed, Random) and edge cases (Invert, Thresholds).
+# Guardian's Journal 🧪
 
-## 2024-05-23 - [Control Logic]
-**Erkenntnis:** `MappingCurve::apply` in `midi/mapping.rs` defines the "feel" of controller inputs but relied on implicit testing. Explicit mathematical verification of curves (Exp, Log, S-Curve) ensures hardware controls behave predictably.
-**Aktion:** Added dedicated test suite for all `MappingCurve` variants to guarantee correct response curves and bounds clamping.
+## 2024-10-24 - Initial Setup
+**Insight:** Established the Guardian role to improve test coverage and reliability.
+**Action:** Created this journal to track critical testing insights.
 
+<<<<<<< HEAD
 ## 2024-05-24 - [Assignment Module Coverage]
 **Erkenntnis:** The `assignment` module (ControlSource, ControlTarget) was completely devoid of tests despite being critical for MIDI/OSC routing.
 **Aktion:** Added `tests/assignment_tests.rs` with full CRUD and serialization coverage. Added to weekly check list.
@@ -24,3 +23,8 @@
 ## 2024-05-26 - [Trigger System Integration]
 **Erkenntnis:** `TriggerSystem` integration logic was untested. While `TriggerConfig` logic was tested, the actual mapping of Audio FFT bands to socket indices (0-8, 9-11) in the `update` loop was unverified, leaving a gap in ensuring audio reactivity works end-to-end.
 **Aktion:** Restored `tests/trigger_system_tests.rs` with mocks for `ModuleManager` and `AudioTriggerData`, ensuring every frequency band and volume trigger fires correctly.
+=======
+## 2024-10-24 - TriggerSystem Coverage
+**Insight:** `TriggerSystem` in `mapmap-core` was a critical logic component with zero unit tests. It relies heavily on `ModuleManager` and `AudioTriggerData` integration.
+**Action:** Implemented integration tests using `ModuleManager` to simulate module configuration and `AudioTriggerData` to simulate input. This pattern effectively tests the interaction without needing full app state.
+>>>>>>> main
