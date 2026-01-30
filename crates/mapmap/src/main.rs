@@ -1785,120 +1785,114 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
                 for part in &module_ref.parts {
-                    match &part.part_type {
-                        mapmap_core::module::ModulePartType::Output(output_type) => {
-                            // Use part.id for consistency with render pipeline
-                            let output_id = part.id;
+                    if let mapmap_core::module::ModulePartType::Output(output_type) =
+                        &part.part_type
+                    {
+                        // Use part.id for consistency with render pipeline
+                        let output_id = part.id;
 
-                            match output_type {
-                                OutputType::Projector {
-                                    id: projector_id,
-                                    name,
-                                    fullscreen,
-                                    hide_cursor,
-                                    target_screen,
-                                    show_in_preview_panel: _,
-                                    extra_preview_window,
-                                    ..
-                                } => {
-                                    // 1. Primary Window - Use Logical ID (projector_id) not Part ID
-                                    let window_id = *projector_id;
-                                    active_window_ids.insert(window_id);
+                        match output_type {
+                            OutputType::Projector {
+                                id: projector_id,
+                                name,
+                                fullscreen,
+                                hide_cursor,
+                                target_screen,
+                                show_in_preview_panel: _,
+                                extra_preview_window,
+                                ..
+                            } => {
+                                // 1. Primary Window - Use Logical ID (projector_id) not Part ID
+                                let window_id = *projector_id;
+                                active_window_ids.insert(window_id);
 
-                                    if let Some(window_context) = self.window_manager.get(window_id)
-                                    {
-                                        // Update existing
-                                        let is_fullscreen =
-                                            window_context.window.fullscreen().is_some();
-                                        if is_fullscreen != *fullscreen {
-                                            window_context.window.set_fullscreen(if *fullscreen {
-                                                Some(winit::window::Fullscreen::Borderless(None))
-                                            } else {
-                                                None
-                                            });
-                                        }
-                                        window_context.window.set_cursor_visible(!*hide_cursor);
-                                    } else {
-                                        // Create new
+                                if let Some(window_context) = self.window_manager.get(window_id) {
+                                    // Update existing
+                                    let is_fullscreen =
+                                        window_context.window.fullscreen().is_some();
+                                    if is_fullscreen != *fullscreen {
+                                        window_context.window.set_fullscreen(if *fullscreen {
+                                            Some(winit::window::Fullscreen::Borderless(None))
+                                        } else {
+                                            None
+                                        });
+                                    }
+                                    window_context.window.set_cursor_visible(!*hide_cursor);
+                                } else {
+                                    // Create new
+                                    self.window_manager.create_projector_window(
+                                        elwt,
+                                        &self.backend,
+                                        window_id,
+                                        name,
+                                        *fullscreen,
+                                        *hide_cursor,
+                                        *target_screen,
+                                    )?;
+                                    info!(
+                                        "Created projector window for output {} (Part {})",
+                                        window_id, output_id
+                                    );
+                                }
+
+                                // 2. Extra Preview Window
+                                if *extra_preview_window {
+                                    let preview_id = window_id | PREVIEW_FLAG;
+                                    active_window_ids.insert(preview_id);
+
+                                    if self.window_manager.get(preview_id).is_none() {
                                         self.window_manager.create_projector_window(
                                             elwt,
                                             &self.backend,
-                                            window_id,
-                                            name,
-                                            *fullscreen,
-                                            *hide_cursor,
-                                            *target_screen,
+                                            preview_id,
+                                            &format!("Preview: {}", name),
+                                            false, // Always windowed
+                                            false, // Show cursor
+                                            0,     // Default screen (0)
                                         )?;
-                                        info!(
-                                            "Created projector window for output {} (Part {})",
-                                            window_id, output_id
-                                        );
-                                    }
-
-                                    // 2. Extra Preview Window
-                                    if *extra_preview_window {
-                                        let preview_id = window_id | PREVIEW_FLAG;
-                                        active_window_ids.insert(preview_id);
-
-                                        if self.window_manager.get(preview_id).is_none() {
-                                            self.window_manager.create_projector_window(
-                                                elwt,
-                                                &self.backend,
-                                                preview_id,
-                                                &format!("Preview: {}", name),
-                                                false, // Always windowed
-                                                false, // Show cursor
-                                                0,     // Default screen (0)
-                                            )?;
-                                            info!(
-                                                "Created preview window for output {}",
-                                                window_id
-                                            );
-                                        }
+                                        info!("Created preview window for output {}", window_id);
                                     }
                                 }
-                                OutputType::NdiOutput { name: _name } => {
-                                    // For NDI, use part.id as the unique identifier
-                                    let output_id = part.id;
-                                    active_sender_ids.insert(output_id);
+                            }
+                            OutputType::NdiOutput { name: _name } => {
+                                // For NDI, use part.id as the unique identifier
+                                let output_id = part.id;
+                                active_sender_ids.insert(output_id);
 
-                                    #[cfg(feature = "ndi")]
-                                    {
-                                        if !self.ndi_senders.contains_key(&output_id) {
-                                            let width = 1920;
-                                            let height = 1080;
-                                            match mapmap_io::ndi::NdiSender::new(
-                                                _name.clone(),
-                                                mapmap_io::format::VideoFormat {
-                                                    width,
-                                                    height,
-                                                    pixel_format:
-                                                        mapmap_io::format::PixelFormat::BGRA8,
-                                                    frame_rate: 60.0,
-                                                },
-                                            ) {
-                                                Ok(sender) => {
-                                                    info!("Created NDI sender: {}", _name);
-                                                    self.ndi_senders.insert(output_id, sender);
-                                                }
-                                                Err(e) => error!(
-                                                    "Failed to create NDI sender {}: {}",
-                                                    _name, e
-                                                ),
+                                #[cfg(feature = "ndi")]
+                                {
+                                    if !self.ndi_senders.contains_key(&output_id) {
+                                        let width = 1920;
+                                        let height = 1080;
+                                        match mapmap_io::ndi::NdiSender::new(
+                                            _name.clone(),
+                                            mapmap_io::format::VideoFormat {
+                                                width,
+                                                height,
+                                                pixel_format:
+                                                    mapmap_io::format::PixelFormat::BGRA8,
+                                                frame_rate: 60.0,
+                                            },
+                                        ) {
+                                            Ok(sender) => {
+                                                info!("Created NDI sender: {}", _name);
+                                                self.ndi_senders.insert(output_id, sender);
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to create NDI sender {}: {}", _name, e)
                                             }
                                         }
                                     }
                                 }
-                                #[cfg(target_os = "windows")]
-                                OutputType::Spout { .. } => {
-                                    // TODO: Spout Sender
-                                }
-                                OutputType::Hue { .. } => {
-                                    // Hue integration handled via separate controller, no window needed
-                                }
+                            }
+                            #[cfg(target_os = "windows")]
+                            OutputType::Spout { .. } => {
+                                // TODO: Spout Sender
+                            }
+                            OutputType::Hue { .. } => {
+                                // Hue integration handled via separate controller, no window needed
                             }
                         }
-                        _ => {}
                     }
                 }
             }
@@ -2063,7 +2057,7 @@ impl App {
         }
     }
 
-    fn prepare_texture_previews(&mut self, encoder: &mut wgpu::CommandEncoder) {
+    fn prepare_texture_previews(&mut self, _encoder: &mut wgpu::CommandEncoder) {
         // Sync Texture Previews for Module Canvas
         // Identify active sources and gather their properties
         let mut active_preview_sources = Vec::new();
@@ -2155,7 +2149,7 @@ impl App {
                     label: Some("Preview Encoder (Batched)"),
                 });
 
-        let mut has_preview_work = false;
+        let _has_preview_work = false;
 
         for (
             module_id,
@@ -2193,7 +2187,7 @@ impl App {
                 // Calculate Transform Matrix based on source properties
                 let transform_mat = glam::Mat4::from_scale_rotation_translation(
                     glam::Vec3::new(scale_x, scale_y, 1.0),
-                    glam::Quat::from_rotation_z(rotation.to_radians() as f32),
+                    glam::Quat::from_rotation_z(rotation.to_radians()),
                     glam::Vec3::new(offset_x, offset_y, 0.0),
                 );
 
@@ -2465,12 +2459,14 @@ impl App {
                         // For Phase 6 demo: Create a default graph if ID not found?
                         // Better: Ensure graph exists via other means (Graph Manager UI).
                         // For now we assume call is valid or we create empty.
-                        if !self.state.shader_graphs.contains_key(&graph_id) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.state.shader_graphs.entry(graph_id)
+                        {
                             let new_graph = mapmap_core::shader_graph::ShaderGraph::new(
                                 graph_id,
                                 "New Graph".to_string(),
                             );
-                            self.state.shader_graphs.insert(graph_id, new_graph.clone());
+                            e.insert(new_graph.clone());
                             self.ui_state.node_editor_panel.load_graph(&new_graph);
                         }
                     }
