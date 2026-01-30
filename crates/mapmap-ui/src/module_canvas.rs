@@ -1,5 +1,6 @@
 use crate::i18n::LocaleManager;
 use crate::UIAction;
+use egui::epaint::CubicBezierShape;
 use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
@@ -3567,14 +3568,12 @@ impl ModuleCanvas {
                 };
 
                 // Draw bezier path
-                let segments = 20;
-                for i in 0..segments {
-                    let t0 = i as f32 / segments as f32;
-                    let t1 = (i + 1) as f32 / segments as f32;
-                    let p0 = Self::bezier_point(start_pos, ctrl1, ctrl2, mouse_pos, t0);
-                    let p1 = Self::bezier_point(start_pos, ctrl1, ctrl2, mouse_pos, t1);
-                    painter.line_segment([p0, p1], Stroke::new(3.0 * self.zoom, wire_color));
-                }
+                painter.add(CubicBezierShape::from_points_stroke(
+                    [start_pos, ctrl1, ctrl2, mouse_pos],
+                    false,
+                    Color32::TRANSPARENT,
+                    Stroke::new(3.0 * self.zoom, wire_color),
+                ));
 
                 // Draw endpoint circle at mouse
                 painter.circle_filled(mouse_pos, 6.0 * self.zoom, wire_color);
@@ -5407,17 +5406,23 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
-                let steps = 30;
-                for i in 0..steps {
-                    let t1 = i as f32 / steps as f32;
-                    let t2 = (i + 1) as f32 / steps as f32;
-                    let p1 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t1);
-                    let p2 = Self::bezier_point(cable_start, ctrl1, ctrl2, cable_end, t2);
-                    // Shadow
-                    painter.line_segment([p1, p2], Stroke::new(5.0 * self.zoom, shadow_color));
-                    // Cable
-                    painter.line_segment([p1, p2], Stroke::new(3.0 * self.zoom, cable_color));
-                }
+                // Shadow
+                let shadow_stroke = Stroke::new(5.0 * self.zoom, shadow_color);
+                painter.add(CubicBezierShape::from_points_stroke(
+                    [cable_start, ctrl1, ctrl2, cable_end],
+                    false,
+                    Color32::TRANSPARENT,
+                    shadow_stroke,
+                ));
+
+                // Cable
+                let cable_stroke = Stroke::new(3.0 * self.zoom, cable_color);
+                painter.add(CubicBezierShape::from_points_stroke(
+                    [cable_start, ctrl1, ctrl2, cable_end],
+                    false,
+                    Color32::TRANSPARENT,
+                    cable_stroke,
+                ));
 
                 // Draw Plugs on top of cable
                 if let Some(texture) = self.plug_icons.get(icon_name) {
@@ -5447,19 +5452,6 @@ impl ModuleCanvas {
                 }
             }
         }
-    }
-
-    fn bezier_point(p0: Pos2, p1: Pos2, p2: Pos2, p3: Pos2, t: f32) -> Pos2 {
-        let u = 1.0 - t;
-        let tt = t * t;
-        let uu = u * u;
-        let uuu = uu * u;
-        let ttt = tt * t;
-
-        Pos2::new(
-            uuu * p0.x + 3.0 * uu * t * p1.x + 3.0 * u * tt * p2.x + ttt * p3.x,
-            uuu * p0.y + 3.0 * uu * t * p1.y + 3.0 * u * tt * p2.y + ttt * p3.y,
-        )
     }
 
     fn draw_part_with_delete(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {

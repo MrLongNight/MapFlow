@@ -1,5 +1,6 @@
 # Big files
 .*.swp
+*.swo
 *.zip
 *.gz
 *.jpg
@@ -14,6 +15,14 @@
 *.svg
 *.ps
 *.pdf
+
+# IDEs
+.idea/
+.vscode/settings.json
+
+# Environment
+.env
+.env.local
 
 # Other files
 *.out
@@ -60,6 +69,8 @@ check_*.txt
 
 # Temporary build/debug files
 *.txt
+*.tmp
+*.temp
 !README.txt
 !CHANGELOG.txt
 !LICENSE.txt
