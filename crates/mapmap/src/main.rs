@@ -1202,10 +1202,6 @@ impl App {
                                 .entry(*id)
                                 .or_default()
                                 .push(tex_name.clone());
-                            self.output_assignments
-                                .entry(op.output_part_id)
-                                .or_default()
-                                .push(tex_name);
                         }
                     }
                 }
@@ -2075,7 +2071,9 @@ impl App {
                 ) = &part.part_type
                 {
                     active_preview_sources.push((
-                        part.id,
+                        module.id,
+                        part.id,        // Target (Output Node)
+                        conn.from_part, // Source (The plugged in layer/media)
                         *brightness,
                         *contrast,
                         *saturation,
@@ -2088,6 +2086,38 @@ impl App {
                         *offset_x,
                         *offset_y,
                     ));
+                } else if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector {
+                        show_in_preview_panel,
+                        ..
+                    },
+                ) = &part.part_type
+                {
+                    if *show_in_preview_panel {
+                        // Find connected input
+                        // We need to look at module.connections
+                        // Find connection where to_part == part.id
+                        // For Projector, input is usually socket 0 ("Layer In")
+                        if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id)
+                        {
+                            active_preview_sources.push((
+                                module.id,
+                                part.id,        // Target (Output Node)
+                                conn.from_part, // Source (The plugged in layer/media)
+                                0.0,            // Brightness default
+                                1.0,            // Contrast default
+                                1.0,            // Saturation default
+                                0.0,            // Hue default
+                                false,          // Flip H
+                                false,          // Flip V
+                                0.0,            // Rotation
+                                1.0,            // Scale X
+                                1.0,            // Scale Y
+                                0.0,            // Offset X
+                                0.0,            // Offset Y
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -2109,7 +2139,9 @@ impl App {
         let mut has_preview_work = false;
 
         for (
-            part_id,
+            module_id,
+            target_part_id,
+            source_part_id,
             brightness,
             contrast,
             saturation,
@@ -2123,12 +2155,12 @@ impl App {
             offset_y,
         ) in active_preview_sources
         {
-            let raw_tex_name = format!("part_{}", part_id);
+            let raw_tex_name = format!("part_{}_{}", module_id, source_part_id);
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
                 // Create/Get preview texture (fixed small resolution)
-                let preview_tex_name = format!("preview_{}", part_id);
+                let preview_tex_name = format!("preview_{}", target_part_id);
                 // Ensure it exists with correct size
                 self.texture_pool.ensure_texture(
                     &preview_tex_name,
@@ -2199,7 +2231,7 @@ impl App {
                 has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
-                let texture_id = match self.preview_texture_cache.entry(part_id) {
+                let texture_id = match self.preview_texture_cache.entry(target_part_id) {
                     std::collections::hash_map::Entry::Occupied(mut entry) => {
                         let (cached_id, cached_view) = entry.get();
                         if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
@@ -2226,7 +2258,7 @@ impl App {
                     }
                 };
 
-                current_frame_previews.insert(part_id, texture_id);
+                current_frame_previews.insert(target_part_id, texture_id);
             }
         }
 
@@ -2744,11 +2776,29 @@ impl App {
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
                                                         .show(ui, |ui| {
-                                                            let _ = self.ui_state.media_browser.ui(
+                                                            if let Some(action) = self.ui_state.media_browser.ui(
                                                                 ui,
                                                                 &self.ui_state.i18n,
                                                                 self.ui_state.icon_manager.as_ref(),
-                                                            );
+                                                            ) {
+                                                                use mapmap_ui::media_browser::MediaBrowserAction;
+                                                                match action {
+                                                                    MediaBrowserAction::FileSelected(path) | MediaBrowserAction::FileDoubleClicked(path) => {
+                                                                        // Update active part if one is being edited
+                                                                        if let (Some(module_id), Some(part_id)) = (
+                                                                            self.ui_state.module_canvas.active_module_id,
+                                                                            self.ui_state.module_canvas.editing_part_id
+                                                                        ) {
+                                                                            actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                                                                module_id,
+                                                                                part_id,
+                                                                                path.to_string_lossy().to_string()
+                                                                            ));
+                                                                        }
+                                                                    }
+                                                                    _ => {}
+                                                                }
+                                                            }
                                                         });
 
                                                     // Audio Section

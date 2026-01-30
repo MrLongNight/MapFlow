@@ -26,6 +26,7 @@ permissions:
 
 jobs:
   # Auto-merge for Jules PRs with failure handling
+  # Auto-merge for Jules PRs with failure handling
   auto-merge:
     name: Auto-Merge Jules PR
     runs-on: ubuntu-latest
@@ -208,16 +209,43 @@ jobs:
             ref: pr.head.sha
           });
 
+          if (checkSuites.check_suites.length === 0) {
+            console.log('⏳ No check suites found yet - waiting for workflows to start');
+            return;
+          }
+
           let allChecksPassed = true;
+          let pendingChecks = false;
+
           for (const suite of checkSuites.check_suites) {
-            if (suite.conclusion === 'failure' || suite.conclusion === 'error') {
+            // Skip the check suite for the auto-merge workflow itself if we can identify it
+            // Typically, the suite.app.name for GitHub Actions is "GitHub Actions"
+            // But we want to wait for other specific workflows.
+            
+            // If any suite is failed, we abort completely
+            if (suite.conclusion === 'failure' || suite.conclusion === 'error' || suite.conclusion === 'timed_out' || suite.conclusion === 'cancelled') {
+              console.log(`❌ Check suite failed: ${suite.app.name} (${suite.conclusion})`);
               allChecksPassed = false;
               break;
+            }
+
+            // If any suite is not completed, we wait.
+            if (suite.status !== 'completed') {
+               console.log(`⏳ Check suite still running: ${suite.app.name} (Status: ${suite.status})`);
+               pendingChecks = true;
+            } else if (suite.conclusion !== 'success' && suite.conclusion !== 'neutral' && suite.conclusion !== 'skipped') {
+               console.log(`⚠️ Check suite concluded with non-success: ${suite.app.name} (${suite.conclusion})`);
+               allChecksPassed = false; 
             }
           }
 
           if (!allChecksPassed) {
             console.log('❌ Not all checks passed - cannot auto-merge');
+            return;
+          }
+
+          if (pendingChecks) {
+            console.log('⏳ Some checks are still pending - waiting for completion');
             return;
           }
 
