@@ -2176,7 +2176,7 @@ impl ModuleCanvas {
                     mapmap_core::module::AudioBand::SubBass => self
                         .audio_trigger_data
                         .band_energies
-                        .get(0)
+                        .first()
                         .copied()
                         .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Bass => self
@@ -2417,14 +2417,11 @@ impl ModuleCanvas {
                             .selected_text(current_name)
                             .width(160.0)
                             .show_ui(ui, |ui| {
-                                if ui
-                                    .selectable_value(
-                                        &mut self.active_module_id,
-                                        None,
-                                        "— None —",
-                                    )
-                                    .clicked()
-                                {}
+                                ui.selectable_value(
+                                    &mut self.active_module_id,
+                                    None,
+                                    "— None —",
+                                );
                                 ui.separator();
                                 for (id, name) in &module_names {
                                     if ui
