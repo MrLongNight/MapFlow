@@ -1320,7 +1320,9 @@ mod tests {
         let error = resp.error.unwrap();
         assert!(error.message.contains("Invalid path"));
         // Could be traversal or extension error depending on order, but we check generic "Invalid path" prefix
-        assert!(error.message.contains("Path traversal") || error.message.contains("Extension"));
+        assert!(
+            error.message.contains("Path traversal") || error.message.contains("Extension")
+        );
 
         // Verify NO action was sent
         assert!(rx.try_recv().is_err());
