@@ -1219,29 +1219,8 @@ impl App {
                 }
                 self.render_ops = render_ops_temp;
 
-                // Convert V2 analysis to legacy format for UI compatibility
-                let legacy_analysis = mapmap_core::audio::AudioAnalysis {
-                    timestamp: analysis_v2.timestamp,
-                    fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
-                    band_energies: [
-                        analysis_v2.band_energies[0], // SubBass
-                        analysis_v2.band_energies[1], // Bass
-                        analysis_v2.band_energies[2], // LowMid
-                        analysis_v2.band_energies[3], // Mid
-                        analysis_v2.band_energies[4], // HighMid
-                        analysis_v2.band_energies[5], // UpperMid (Presence in V1)
-                        analysis_v2.band_energies[6], // Presence (Brilliance in V1)
-                    ],
-                    rms_volume: analysis_v2.rms_volume,
-                    peak_volume: analysis_v2.peak_volume,
-                    beat_detected: analysis_v2.beat_detected,
-                    beat_strength: analysis_v2.beat_strength,
-                    onset_detected: false, // Not implemented in V2 yet
-                    tempo_bpm: analysis_v2.tempo_bpm, // Now from AudioAnalyzerV2!
-                    waveform: analysis_v2.waveform.clone(),
-                };
-
-                self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
+                // Update BPM in toolbar
+                self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update module canvas with audio trigger data
                 self.ui_state
@@ -1252,15 +1231,15 @@ impl App {
                         peak_volume: analysis_v2.peak_volume,
                         beat_detected: analysis_v2.beat_detected,
                         beat_strength: analysis_v2.beat_strength,
-                        bpm: analysis_v2.tempo_bpm, // BPM from beat tracking!
+                        bpm: analysis_v2.tempo_bpm,
                     });
 
-                // Update BPM in toolbar
                 // Convert V2 analysis to legacy format for UI compatibility
                 // analyzer_v2 produces 9 bands, legacy AudioAnalysis expects 7.
+                // ⚡ Bolt: Moved vectors instead of cloning to reduce allocations
                 let legacy_analysis = mapmap_core::audio::AudioAnalysis {
                     timestamp: analysis_v2.timestamp,
-                    fft_magnitudes: analysis_v2.fft_magnitudes.clone(),
+                    fft_magnitudes: analysis_v2.fft_magnitudes, // Move
                     band_energies: [
                         analysis_v2.band_energies[0], // SubBass
                         analysis_v2.band_energies[1], // Bass
@@ -1276,25 +1255,10 @@ impl App {
                     beat_strength: analysis_v2.beat_strength,
                     onset_detected: false, // Not implemented in V2 yet
                     tempo_bpm: analysis_v2.tempo_bpm,
-                    waveform: analysis_v2.waveform.clone(),
+                    waveform: analysis_v2.waveform, // Move
                 };
 
                 self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
-
-                // Update module canvas with audio trigger data
-                self.ui_state
-                    .module_canvas
-                    .set_audio_data(AudioTriggerData {
-                        band_energies: analysis_v2.band_energies,
-                        rms_volume: analysis_v2.rms_volume,
-                        peak_volume: analysis_v2.peak_volume,
-                        beat_detected: analysis_v2.beat_detected,
-                        beat_strength: analysis_v2.beat_strength,
-                        bpm: analysis_v2.tempo_bpm,
-                    });
-
-                // Update BPM in toolbar
-                self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update Effect Automation
                 // Redraw all windows - Optimized to avoid allocation
@@ -1383,6 +1347,12 @@ impl App {
                         part_id,
                         PathBuf::from(path),
                     ));
+                }
+                mapmap_ui::UIAction::AssignMediaFile(module_id, part_id, path_str) => {
+                    let path = PathBuf::from(path_str);
+                    let _ = self
+                        .action_sender
+                        .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
                 }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
