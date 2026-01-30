@@ -496,10 +496,8 @@ impl ModuleCanvas {
         } else {
             video_duration
         };
-        let start_x = rect.min.x
-            + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
-        let end_x = rect.min.x
-            + (effective_end / video_duration).clamp(0.0, 1.0) * rect.width();
+        let start_x = rect.min.x + (*start_time / video_duration).clamp(0.0, 1.0) * rect.width();
+        let end_x = rect.min.x + (effective_end / video_duration).clamp(0.0, 1.0) * rect.width();
 
         // Active Region Highlight
         let region_rect =
@@ -530,14 +528,11 @@ impl ModuleCanvas {
             Vec2::new(handle_width, rect.height()),
         );
 
-        let start_resp =
-            ui.interact(start_handle_rect, response.id.with("start"), Sense::drag());
-        let end_resp =
-            ui.interact(end_handle_rect, response.id.with("end"), Sense::drag());
+        let start_resp = ui.interact(start_handle_rect, response.id.with("start"), Sense::drag());
+        let end_resp = ui.interact(end_handle_rect, response.id.with("end"), Sense::drag());
 
         if start_resp.hovered() || end_resp.hovered() {
-            ui.ctx()
-                .set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+            ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
         }
 
         if start_resp.dragged() {
@@ -546,8 +541,7 @@ impl ModuleCanvas {
             handled = true;
         } else if end_resp.dragged() {
             let delta_s = (end_resp.drag_delta().x / rect.width()) * video_duration;
-            let mut new_end =
-                (effective_end + delta_s).clamp(*start_time + 0.1, video_duration);
+            let mut new_end = (effective_end + delta_s).clamp(*start_time + 0.1, video_duration);
             // Snap to end (0.0) if close
             if (video_duration - new_end).abs() < 0.1 {
                 new_end = 0.0;
@@ -573,8 +567,7 @@ impl ModuleCanvas {
                 let delta_s = (response.drag_delta().x / rect.width()) * video_duration;
                 let duration_s = effective_end - *start_time;
 
-                let new_start =
-                    (*start_time + delta_s).clamp(0.0, video_duration - duration_s);
+                let new_start = (*start_time + delta_s).clamp(0.0, video_duration - duration_s);
                 let new_end = new_start + duration_s;
 
                 *start_time = new_start;
@@ -586,8 +579,7 @@ impl ModuleCanvas {
             } else {
                 // Seek
                 if let Some(pos) = response.interact_pointer_pos() {
-                    let seek_norm =
-                        ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
+                    let seek_norm = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
                     let seek_s = seek_norm * video_duration;
                     self.pending_playback_commands
                         .push((part_id, MediaPlaybackCommand::Seek(seek_s as f64)));
@@ -2312,7 +2304,7 @@ impl ModuleCanvas {
                     mapmap_core::module::AudioBand::SubBass => self
                         .audio_trigger_data
                         .band_energies
-                        .get(0)
+                        .first()
                         .copied()
                         .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Bass => self
@@ -2553,14 +2545,11 @@ impl ModuleCanvas {
                             .selected_text(current_name)
                             .width(160.0)
                             .show_ui(ui, |ui| {
-                                if ui
-                                    .selectable_value(
-                                        &mut self.active_module_id,
-                                        None,
-                                        "— None —",
-                                    )
-                                    .clicked()
-                                {}
+                                ui.selectable_value(
+                                    &mut self.active_module_id,
+                                    None,
+                                    "— None —",
+                                );
                                 ui.separator();
                                 for (id, name) in &module_names {
                                     if ui
@@ -3515,7 +3504,11 @@ impl ModuleCanvas {
         if response.hovered() || ui.input(|i| i.modifiers.ctrl) {
             let scroll = ui.input(|i| i.raw_scroll_delta.y);
             if scroll != 0.0 {
-                let speed = if ui.input(|i| i.modifiers.ctrl) { 0.004 } else { 0.001 };
+                let speed = if ui.input(|i| i.modifiers.ctrl) {
+                    0.004
+                } else {
+                    0.001
+                };
                 self.zoom *= 1.0 + scroll * speed;
                 self.zoom = self.zoom.clamp(0.1, 5.0);
             }
