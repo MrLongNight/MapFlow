@@ -34,6 +34,7 @@ fn default_saturation() -> f32 {
 fn default_scale() -> f32 {
     1.0
 }
+
 fn default_next_part_id() -> ModulePartId {
     1
 }
@@ -54,7 +55,8 @@ pub struct MapFlowModule {
     /// How the module plays back
     /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
-    /// Next available Part ID
+
+    /// Counter for generating part IDs (persistent)
     #[serde(default = "default_next_part_id")]
     pub next_part_id: ModulePartId,
 }
@@ -1796,13 +1798,9 @@ impl ModuleManager {
         part_type: PartType,
         position: (f32, f32),
     ) -> Option<ModulePartId> {
-        if let Some(module) = self.modules.get_mut(&module_id) {
-            let _id = self.next_part_id;
-            self.next_part_id += 1;
-            Some(module.add_part(part_type, position))
-        } else {
-            None
-        }
+        self.modules
+            .get_mut(&module_id)
+            .map(|module| module.add_part(part_type, position))
     }
 
     /// Create a new module

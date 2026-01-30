@@ -1348,12 +1348,11 @@ impl App {
                         PathBuf::from(path),
                     ));
                 }
-                mapmap_ui::UIAction::AssignMediaFile(module_id, part_id, path_str) => {
-                    let path = PathBuf::from(path_str);
-                    let _ = self
-                        .action_sender
-                        .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
+                mapmap_ui::UIAction::PickMediaFile(module_id, part_id, _) => {
+                    self.ui_state.module_canvas.active_module_id = Some(module_id);
+                    self.ui_state.module_canvas.editing_part_id = Some(part_id);
                 }
+
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -1534,7 +1533,124 @@ impl App {
                         }
                     }
                 }
-                // TODO: Handle other actions (AddLayer, etc.) here or delegating to state
+                mapmap_ui::UIAction::SetLayerOpacity(id, opacity) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.opacity = opacity;
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::SetLayerBlendMode(id, mode) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.blend_mode = mode;
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::SetLayerVisibility(id, visible) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.visible = visible;
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::AddLayer => {
+                    let count = self.state.layer_manager.len();
+                    self.state
+                        .layer_manager
+                        .create_layer(format!("Layer {}", count + 1));
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::RemoveLayer(id) => {
+                    self.state.layer_manager.remove_layer(id);
+                    self.state.dirty = true;
+                    // Deselect if removed
+                    if self.ui_state.selected_layer_id == Some(id) {
+                        self.ui_state.selected_layer_id = None;
+                    }
+                }
+                mapmap_ui::UIAction::DuplicateLayer(id) => {
+                    if let Some(new_id) = self.state.layer_manager.duplicate_layer(id) {
+                        self.ui_state.selected_layer_id = Some(new_id);
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::RenameLayer(id, name) => {
+                    if self.state.layer_manager.rename_layer(id, name) {
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::ToggleLayerSolo(id) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.toggle_solo();
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::ToggleLayerBypass(id) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.toggle_bypass();
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::EjectAllLayers => {
+                    self.state.layer_manager.eject_all();
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::SetLayerTransform(id, transform) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.transform = transform;
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::ApplyResizeMode(id, mode) => {
+                    // We need source content size and target size.
+                    // For now, let's assume composition size as target.
+                    // Source size is trickier without paint info, but we might check paint manager.
+                    let target_size = mapmap_core::Vec2::new(
+                        self.state.layer_manager.composition.size.0 as f32,
+                        self.state.layer_manager.composition.size.1 as f32,
+                    );
+
+                    // We need a way to get source size.
+                    // Layer has paint_id. PaintManager has paints. Paint has source.
+                    let mut source_size = mapmap_core::Vec2::ONE; // Default
+                    if let Some(layer) = self.state.layer_manager.get_layer(id) {
+                        if let Some(paint_id) = layer.paint_id {
+                            if let Some(_paint) = self.state.paint_manager.get_paint(paint_id) {
+                                // This requires Paint to have size info or we fetch it from source
+                                // For now, let's just use target_size as placeholder or 1920x1080 if not known
+                                // TODO: Fetch actual media size
+                                source_size = target_size;
+                            }
+                        }
+                    }
+
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.set_transform_with_resize(mode, source_size, target_size);
+                        self.state.dirty = true;
+                    }
+                }
+                mapmap_ui::UIAction::SetMasterOpacity(val) => {
+                    self.state.layer_manager.composition.set_master_opacity(val);
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::SetMasterSpeed(val) => {
+                    self.state.layer_manager.composition.set_master_speed(val);
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::SetCompositionName(name) => {
+                    self.state.layer_manager.composition.name = name;
+                    self.state.dirty = true;
+                }
+                // Phase 2 output actions (placeholders for now)
+                mapmap_ui::UIAction::AddOutput(..) => {
+                    warn!("AddOutput not implemented in main");
+                }
+                mapmap_ui::UIAction::RemoveOutput(..) => {
+                    warn!("RemoveOutput not implemented in main");
+                }
+                mapmap_ui::UIAction::ConfigureOutput(..) => {
+                    warn!("ConfigureOutput not implemented in main");
+                }
+
+                // Fallback
                 _ => {}
             }
         }
@@ -2785,7 +2901,7 @@ impl App {
                                                                             self.ui_state.module_canvas.active_module_id,
                                                                             self.ui_state.module_canvas.editing_part_id
                                                                         ) {
-                                                                            self.ui_state.actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                                                            self.ui_state.actions.push(mapmap_ui::UIAction::SetMediaFile(
                                                                                 module_id,
                                                                                 part_id,
                                                                                 path.to_string_lossy().to_string()

@@ -9,7 +9,7 @@
 
 #![warn(missing_docs)]
 
-use glam::{Mat4, Vec2, Vec3};
+pub use glam::{Mat4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
