@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+<<<<<<< HEAD
 - 2026-01-26: docs: Fix broken links in README and CONTRIBUTING (Scribe)
+=======
+- 2026-01-26: docs: Fix broken links in README and CONTRIBUTING (Scribe) (#410)
+>>>>>>> main
 - 2026-01-26: fix(ci): Ensure FFmpeg development libraries are installed in CI-01 pre-checks job to fix ffmpeg-sys-next build errors
 - 2026-01-26: fix(ci): Improve library verification in CI-01 with robust pkg-config check loop and detailed diagnostics
 - 2026-01-26: fix(ci): Fix missing FFmpeg DLLs in WiX installer by explicitly verifying and copying each required DLL to target/release in CI-09
