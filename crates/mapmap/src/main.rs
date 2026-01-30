@@ -1785,7 +1785,9 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
                 for part in &module_ref.parts {
-                    if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+                    if let mapmap_core::module::ModulePartType::Output(output_type) =
+                        &part.part_type
+                    {
                         // Use part.id for consistency with render pipeline
                         let output_id = part.id;
 
@@ -1867,8 +1869,7 @@ impl App {
                                             mapmap_io::format::VideoFormat {
                                                 width,
                                                 height,
-                                                pixel_format:
-                                                    mapmap_io::format::PixelFormat::BGRA8,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
                                                 frame_rate: 60.0,
                                             },
                                         ) {
@@ -1877,7 +1878,10 @@ impl App {
                                                 self.ndi_senders.insert(output_id, sender);
                                             }
                                             Err(e) => {
-                                                error!("Failed to create NDI sender {}: {}", _name, e)
+                                                error!(
+                                                    "Failed to create NDI sender {}: {}",
+                                                    _name, e
+                                                )
                                             }
                                         }
                                     }
