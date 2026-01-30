@@ -80,7 +80,8 @@ mod tests_evaluator {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
-        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerType,
+        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, PartType, SourceType,
+        TriggerType,
     };
     use std::time::Duration;
 
@@ -92,6 +93,7 @@ mod tests_evaluator {
             parts: vec![],
             connections: vec![],
             playback_mode: crate::module::ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         }
     }
 
@@ -182,7 +184,7 @@ mod tests_evaluator {
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
         // 2. Source (Target)
-        let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
+        let s_id = module.add_part(PartType::Source, (200.0, 0.0));
         module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
         let _result = evaluator.evaluate(&module);
@@ -223,7 +225,7 @@ mod tests_evaluator {
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
         // 2. Source
-        let s_id = module.add_part(crate::module::PartType::Source, (100.0, 0.0));
+        let s_id = module.add_part(PartType::Source, (100.0, 0.0));
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
             {
@@ -232,10 +234,10 @@ mod tests_evaluator {
         }
 
         // 3. Layer
-        let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
+        let l_id = module.add_part(PartType::Layer, (200.0, 0.0));
 
         // 4. Output
-        let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
+        let o_id = module.add_part(PartType::Output, (300.0, 0.0));
 
         // Connections
         module.add_connection(t_id, 0, s_id, 0); // Trigger -> Source Trigger
@@ -301,7 +303,7 @@ mod tests_evaluator {
         module.add_connection(t_id, 0, m_id, 0);
 
         // Slave Node (Layer)
-        let s_id = module.add_part(crate::module::PartType::Layer, (100.0, 0.0));
+        let s_id = module.add_part(PartType::Layer, (100.0, 0.0));
         // Configure as Slave
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             part.link_data.mode = LinkMode::Slave;
@@ -1254,6 +1256,7 @@ mod tests_logic {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         }
     }
 

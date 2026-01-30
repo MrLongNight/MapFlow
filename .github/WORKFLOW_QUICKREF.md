@@ -13,7 +13,7 @@
 | **CI-05** PR Auto-Merge | PR events/Checks | Merged PR oder benachrichtigt @jules | Sekunden |
 | **CI-06** Update Changelog | PR merged | Aktualisiert CHANGELOG.md | Sekunden |
 | **CI-07** Post-Merge | PR merged | Issue close, Roadmap, Next Session | Sekunden |
-| **CI-08** Monitor Session | Scheduled/Manual | Überwacht Jules Sessions | Sekunden |
+| **CI-08** Monitor Session | On-demand/Manual | Überwacht Jules Sessions | Sekunden |
 | **CI-ADMIN-01** Sync Labels | Manual | Synchronisiert Labels | Sekunden |
 
 ## 🚀 Häufige Kommandos
