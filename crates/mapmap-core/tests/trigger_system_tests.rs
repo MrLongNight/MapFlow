@@ -74,7 +74,7 @@ fn test_trigger_system_update_volume_beats() {
 
     // 2. Stimulate
     let audio_data = AudioTriggerData {
-        rms_volume: 0.6, // > 0.5
+        rms_volume: 0.6,  // > 0.5
         peak_volume: 0.4, // < 0.5
         beat_detected: true,
         ..Default::default()

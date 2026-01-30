@@ -1869,8 +1869,7 @@ impl App {
                                             mapmap_io::format::VideoFormat {
                                                 width,
                                                 height,
-                                                pixel_format:
-                                                    mapmap_io::format::PixelFormat::BGRA8,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
                                                 frame_rate: 60.0,
                                             },
                                         ) {
@@ -1879,7 +1878,10 @@ impl App {
                                                 self.ndi_senders.insert(output_id, sender);
                                             }
                                             Err(e) => {
-                                                error!("Failed to create NDI sender {}: {}", _name, e)
+                                                error!(
+                                                    "Failed to create NDI sender {}: {}",
+                                                    _name, e
+                                                )
                                             }
                                         }
                                     }
