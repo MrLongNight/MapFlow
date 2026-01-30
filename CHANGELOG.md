@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-26: fix(ci): Improve library verification in CI-01 with robust pkg-config check loop and detailed diagnostics
 - 2026-01-26: fix(ci): Fix missing FFmpeg DLLs in WiX installer by explicitly verifying and copying each required DLL to target/release in CI-09
 - 2026-01-26: fix(scripts): Add missing libswresample-dev to install-ffmpeg-dev.sh
+- 2026-01-26: fix(ci): Enforce unconditional Windows Build & Tests on all PRs in CI-01 and make Windows failure blocking for Success Gate
 - 2026-01-26: fix(ci): Harden CI-01 workflow by ensuring X11 and system dependencies are installed across all jobs (pre-checks, quality), fixing build failures in non-release steps
 - 2026-01-26: fix(ci): Resolve WiX installer errors in CI-09 by implementing robust wildcard copy for FFmpeg DLLs, eliminating version-mismatch failures
 - 2026-01-26: fix(ci): Integrate pre-commit hooks into CI-01 to automatically fix formatting issues (trailing whitespace, etc.) in PRs
