@@ -49,19 +49,22 @@ pub struct MapFlowModule {
     /// List of wires (connections)
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
+    /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
+    /// Counter for generating part IDs (persistent)
+    #[serde(default = "default_next_part_id")]
+    pub next_part_id: ModulePartId,
+}
+
+fn default_next_part_id() -> ModulePartId {
+    1
 }
 
 impl MapFlowModule {
     /// Add a part to this module with proper socket configuration
-    /// Note: This is now a lower-level method. Use ModuleManager::add_part_to_module instead.
-    /// Add a part to this module with proper socket configuration (Internal use)
-    pub fn add_part(
-        &mut self,
-        id: ModulePartId,
-        part_type: PartType,
-        position: (f32, f32),
-    ) -> ModulePartId {
+    pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
+        let id = self.next_part_id;
+        self.next_part_id += 1;
         let module_part_type = match part_type {
             PartType::Trigger => ModulePartType::Trigger(TriggerType::Beat),
             PartType::Source => ModulePartType::Source(SourceType::MediaFile {
@@ -1808,20 +1811,16 @@ impl ModuleManager {
         }
     }
 
-    /// Add a part to a specific module, handling ID generation
+    /// Add a part to a specific module
     pub fn add_part_to_module(
         &mut self,
         module_id: ModuleId,
         part_type: PartType,
         position: (f32, f32),
     ) -> Option<ModulePartId> {
-        if let Some(module) = self.modules.get_mut(&module_id) {
-            let id = self.next_part_id;
-            self.next_part_id += 1;
-            Some(module.add_part(id, part_type, position))
-        } else {
-            None
-        }
+        self.modules
+            .get_mut(&module_id)
+            .map(|module| module.add_part(part_type, position))
     }
 
     /// Create a new module
@@ -1839,6 +1838,7 @@ impl ModuleManager {
             parts: Vec::new(),
             connections: Vec::new(),
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
         self.modules.insert(id, module);
@@ -1940,7 +1940,7 @@ mod tests {
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
         };
 
-        let part_id = module.add_part(1, PartType::Trigger, (0.0, 0.0));
+        let part_id = module.add_part(PartType::Trigger, (0.0, 0.0));
         let part = module
             .parts
             .iter()
@@ -1964,8 +1964,8 @@ mod tests {
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
         };
 
-        let p1 = module.add_part(1, PartType::Trigger, (0.0, 0.0));
-        let p2 = module.add_part(2, PartType::Layer, (100.0, 0.0));
+        let p1 = module.add_part(PartType::Trigger, (0.0, 0.0));
+        let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         module.add_connection(p1, 0, p2, 1); // Connect Trigger Out to Layer Trigger In
 
@@ -2001,7 +2001,7 @@ mod tests {
 
         let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
         let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
-        let p2 = module.add_part(2, PartType::Layer, (100.0, 0.0));
+        let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         // Connect SubBass (index 0) and Air (index 8)
         module.add_connection(p1, 0, p2, 1);
@@ -2235,7 +2235,7 @@ fn test_update_part_position() {
         playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
     };
 
-    let pid = module.add_part(1, PartType::Trigger, (0.0, 0.0));
+    let pid = module.add_part(PartType::Trigger, (0.0, 0.0));
     module.update_part_position(pid, (100.0, 200.0));
 
     let part = module.parts.first().unwrap();
