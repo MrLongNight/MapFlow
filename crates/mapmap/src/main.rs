@@ -792,6 +792,9 @@ impl App {
                     info!("Exit autosave successful to {:?}", autosave_path);
                 }
             }
+            winit::event::Event::NewEvents(_) => {
+                // (Reset moved to AboutToWait to ensure single reset per game loop tick)
+            }
             winit::event::Event::AboutToWait => {
                 // --- Non-blocking Frame Limiter ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
@@ -843,14 +846,13 @@ impl App {
                 }
 
                 // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
-                // This ensures output windows update immediately, not after event dispatch
-                let output_ids: Vec<u64> =
-                    self.window_manager.iter().map(|wc| wc.output_id).collect();
-                for output_id in output_ids {
-                    if let Err(e) = self.render(output_id) {
-                        error!("Render error on output {}: {}", output_id, e);
-                    }
-                }
+                // Reset frame-local caches HERE, exactly once per frame update loop.
+                // This prevents race conditions where NewEvents fires multiple times (e.g. input events).
+
+                // Note: We removed the manual 'render()' loop here because we call 'request_redraw()'
+                // at the end of this block/update cycle (lines 1311+).
+                // Rendering here AND in RedrawRequested caused double-rendering and potential race conditions.
+                // Now we rely on the OS event loop to trigger RedrawRequested -> render().
 
                 // Process audio
                 // Process audio
@@ -1202,10 +1204,6 @@ impl App {
                                 .entry(*id)
                                 .or_default()
                                 .push(tex_name.clone());
-                            self.output_assignments
-                                .entry(op.output_part_id)
-                                .or_default()
-                                .push(tex_name);
                         }
                     }
                 }
@@ -1301,9 +1299,27 @@ impl App {
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update Effect Automation
-                // Redraw all windows - Optimized to avoid allocation
+                // Update Effect Automation
+                // Redraw policy:
+                // - Main Window (ID 0): Use request_redraw() to play nice with winit/egui event loop.
+                // - Projector Outputs (ID > 0): FORCE render immediately. Relying on request_redraw()
+                //   causes freezing when the main loop is blocked by UI interaction (e.g. mouse drag).
+
+                // 1. Collect IDs and handle request_redraw for ID 0
+                let mut outputs_to_force_render = Vec::new();
                 for window_context in self.window_manager.iter() {
-                    window_context.window.request_redraw();
+                    if window_context.output_id == 0 {
+                        window_context.window.request_redraw();
+                    } else {
+                        outputs_to_force_render.push(window_context.output_id);
+                    }
+                }
+
+                // 2. Force render outputs (mutable borrow requires ending previous iteration)
+                for output_id in outputs_to_force_render {
+                    if let Err(e) = self.render(output_id) {
+                        error!("Render error on output {}: {}", output_id, e);
+                    }
                 }
 
                 // Also ensure egui updates for previews
@@ -1773,7 +1789,9 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
                 for part in &module_ref.parts {
-                    if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+                    if let mapmap_core::module::ModulePartType::Output(output_type) =
+                        &part.part_type
+                    {
                         // Use part.id for consistency with render pipeline
                         let output_id = part.id;
 
@@ -1792,8 +1810,7 @@ impl App {
                                 let window_id = *projector_id;
                                 active_window_ids.insert(window_id);
 
-                                if let Some(window_context) = self.window_manager.get(window_id)
-                                {
+                                if let Some(window_context) = self.window_manager.get(window_id) {
                                     // Update existing
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
@@ -1807,7 +1824,7 @@ impl App {
                                     window_context.window.set_cursor_visible(!*hide_cursor);
                                 } else {
                                     // Create new
-                                    self.window_manager.create_projector_window(
+                                    if let Err(e) = self.window_manager.create_projector_window(
                                         elwt,
                                         &self.backend,
                                         window_id,
@@ -1815,11 +1832,17 @@ impl App {
                                         *fullscreen,
                                         *hide_cursor,
                                         *target_screen,
-                                    )?;
-                                    info!(
-                                        "Created projector window for output {} (Part {})",
-                                        window_id, output_id
-                                    );
+                                    ) {
+                                        error!(
+                                            "Failed to create projector window for output {} (Part {}): {}",
+                                            window_id, output_id, e
+                                        );
+                                    } else {
+                                        info!(
+                                            "Created projector window for output {} (Part {})",
+                                            window_id, output_id
+                                        );
+                                    }
                                 }
 
                                 // 2. Extra Preview Window
@@ -1828,7 +1851,7 @@ impl App {
                                     active_window_ids.insert(preview_id);
 
                                     if self.window_manager.get(preview_id).is_none() {
-                                        self.window_manager.create_projector_window(
+                                        if let Err(e) = self.window_manager.create_projector_window(
                                             elwt,
                                             &self.backend,
                                             preview_id,
@@ -1836,11 +1859,17 @@ impl App {
                                             false, // Always windowed
                                             false, // Show cursor
                                             0,     // Default screen (0)
-                                        )?;
-                                        info!(
-                                            "Created preview window for output {}",
-                                            window_id
-                                        );
+                                        ) {
+                                            error!(
+                                                "Failed to create preview window for output {}: {}",
+                                                window_id, e
+                                            );
+                                        } else {
+                                            info!(
+                                                "Created preview window for output {}",
+                                                window_id
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -1859,8 +1888,7 @@ impl App {
                                             mapmap_io::format::VideoFormat {
                                                 width,
                                                 height,
-                                                pixel_format:
-                                                    mapmap_io::format::PixelFormat::BGRA8,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
                                                 frame_rate: 60.0,
                                             },
                                         ) {
@@ -2005,15 +2033,7 @@ impl App {
 
                 // Upload to GPU if data is on CPU
                 if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                    if log_this_frame {
-                        tracing::info!(
-                            "Frame upload: mod={} part={} size={}x{}",
-                            mod_id,
-                            part_id,
-                            frame.format.width,
-                            frame.format.height
-                        );
-                    }
+                    // (Log removed to reduce spam)
                     texture_pool.upload_data(
                         queue,
                         &tex_name,
@@ -2072,7 +2092,9 @@ impl App {
                 ) = &part.part_type
                 {
                     active_preview_sources.push((
-                        part.id,
+                        module.id,
+                        part.id, // Target (The Node in UI)
+                        part.id, // Source (The Texture Owner)
                         *brightness,
                         *contrast,
                         *saturation,
@@ -2085,6 +2107,38 @@ impl App {
                         *offset_x,
                         *offset_y,
                     ));
+                } else if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector {
+                        show_in_preview_panel,
+                        ..
+                    },
+                ) = &part.part_type
+                {
+                    if *show_in_preview_panel {
+                        // Find connected input
+                        // We need to look at module.connections
+                        // Find connection where to_part == part.id
+                        // For Projector, input is usually socket 0 ("Layer In")
+                        if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id)
+                        {
+                            active_preview_sources.push((
+                                module.id,
+                                part.id,        // Target (Output Node)
+                                conn.from_part, // Source (The plugged in layer/media)
+                                0.0,            // Brightness default
+                                1.0,            // Contrast default
+                                1.0,            // Saturation default
+                                0.0,            // Hue default
+                                false,          // Flip H
+                                false,          // Flip V
+                                0.0,            // Rotation
+                                1.0,            // Scale X
+                                1.0,            // Scale Y
+                                0.0,            // Offset X
+                                0.0,            // Offset Y
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -2094,7 +2148,6 @@ impl App {
 
         // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
-        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
 
         let mut preview_encoder =
             self.backend
@@ -2106,7 +2159,9 @@ impl App {
         let mut has_preview_work = false;
 
         for (
-            part_id,
+            module_id,
+            target_part_id,
+            source_part_id,
             brightness,
             contrast,
             saturation,
@@ -2120,12 +2175,12 @@ impl App {
             offset_y,
         ) in active_preview_sources
         {
-            let raw_tex_name = format!("part_{}", part_id);
+            let raw_tex_name = format!("part_{}_{}", module_id, source_part_id);
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
                 // Create/Get preview texture (fixed small resolution)
-                let preview_tex_name = format!("preview_{}", part_id);
+                let preview_tex_name = format!("preview_{}", target_part_id);
                 // Ensure it exists with correct size
                 self.texture_pool.ensure_texture(
                     &preview_tex_name,
@@ -2196,7 +2251,7 @@ impl App {
                 has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
-                let texture_id = match self.preview_texture_cache.entry(part_id) {
+                let texture_id = match self.preview_texture_cache.entry(target_part_id) {
                     std::collections::hash_map::Entry::Occupied(mut entry) => {
                         let (cached_id, cached_view) = entry.get();
                         if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
@@ -2223,7 +2278,7 @@ impl App {
                     }
                 };
 
-                current_frame_previews.insert(part_id, texture_id);
+                current_frame_previews.insert(target_part_id, texture_id);
             }
         }
 
@@ -2327,10 +2382,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { .. },
+                    mapmap_core::module::OutputType::Projector { id, .. },
                 ) = &part.part_type
                 {
-                    Some(part.id) // Use part.id for consistency with render pipeline
+                    Some(*id) // Use logical Projector ID to match Window ID
                 } else {
                     None
                 }
@@ -2403,7 +2458,9 @@ impl App {
                         // For Phase 6 demo: Create a default graph if ID not found?
                         // Better: Ensure graph exists via other means (Graph Manager UI).
                         // For now we assume call is valid or we create empty.
-                        if let std::collections::hash_map::Entry::Vacant(e) = self.state.shader_graphs.entry(graph_id) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.state.shader_graphs.entry(graph_id)
+                        {
                             let new_graph = mapmap_core::shader_graph::ShaderGraph::new(
                                 graph_id,
                                 "New Graph".to_string(),
@@ -2741,11 +2798,29 @@ impl App {
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
                                                         .show(ui, |ui| {
-                                                            let _ = self.ui_state.media_browser.ui(
+                                                            if let Some(action) = self.ui_state.media_browser.ui(
                                                                 ui,
                                                                 &self.ui_state.i18n,
                                                                 self.ui_state.icon_manager.as_ref(),
-                                                            );
+                                                            ) {
+                                                                use mapmap_ui::media_browser::MediaBrowserAction;
+                                                                match action {
+                                                                    MediaBrowserAction::FileSelected(path) | MediaBrowserAction::FileDoubleClicked(path) => {
+                                                                        // Update active part if one is being edited
+                                                                        if let (Some(module_id), Some(part_id)) = (
+                                                                            self.ui_state.module_canvas.active_module_id,
+                                                                            self.ui_state.module_canvas.editing_part_id
+                                                                        ) {
+                                                                            actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                                                                module_id,
+                                                                                part_id,
+                                                                                path.to_string_lossy().to_string()
+                                                                            ));
+                                                                        }
+                                                                    }
+                                                                    _ => {}
+                                                                }
+                                                            }
                                                         });
 
                                                     // Audio Section
@@ -3531,16 +3606,18 @@ impl App {
 
                 // A. Prepare Mesh Target
                 let mesh_target_view_ref;
-                let mesh_output_tex_name = &self.layer_ping_pong[1];
+                // Use unique texture name per output to prevent race conditions!
+                let mesh_output_tex_name =
+                    format!("{}_out_{}", &self.layer_ping_pong[1], output_id);
                 let mut _mesh_intermediate_view: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
                 if needs_post_processing {
                     let width = window_context.surface_config.width;
                     let height = window_context.surface_config.height;
                     self.texture_pool
-                        .resize_if_needed(mesh_output_tex_name, width, height);
+                        .resize_if_needed(&mesh_output_tex_name, width, height);
                     _mesh_intermediate_view =
-                        Some(self.texture_pool.get_view(mesh_output_tex_name));
+                        Some(self.texture_pool.get_view(&mesh_output_tex_name));
                     mesh_target_view_ref = _mesh_intermediate_view.as_deref().unwrap();
                 } else {
                     mesh_target_view_ref = &view;
@@ -3566,8 +3643,8 @@ impl App {
                 }
 
                 // C. Process and Render Each Op (Accumulate)
-                self.mesh_renderer.begin_frame();
-                for (module_id, op) in target_ops {
+                // self.mesh_renderer.begin_frame(); // MOVED to NewEvents to prevent reset per output!
+                for (op_index, (module_id, op)) in target_ops.iter().enumerate() {
                     // Determine source texture view
                     let owned_source_view = if let Some(src_id) = op.source_part_id {
                         let tex_name = format!("part_{}_{}", module_id, src_id);
@@ -3685,7 +3762,14 @@ impl App {
                             }
                         }
 
-                        // --- Render Mesh (Warping) ---
+                        // --- Render to Output ---
+                        // Use Load for 2nd+ layer to accumulate
+                        let load_op = if op_index == 0 {
+                            wgpu::LoadOp::Clear(wgpu::Color::BLACK)
+                        } else {
+                            wgpu::LoadOp::Load
+                        };
+
                         {
                             let (vertex_buffer, index_buffer, index_count) =
                                 self.mesh_buffer_cache.get_buffers(
@@ -3711,14 +3795,14 @@ impl App {
                             let texture_bind_group =
                                 self.mesh_renderer.create_texture_bind_group(final_view);
 
-                            let mut render_pass =
+                            let mut rpass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Mesh Render Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                                         view: mesh_target_view_ref,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load, // ACCUMULATE
+                                            load: load_op,
                                             store: wgpu::StoreOp::Store,
                                         },
                                         depth_slice: None,
@@ -3727,8 +3811,9 @@ impl App {
                                     occlusion_query_set: None,
                                     timestamp_writes: None,
                                 });
+
                             self.mesh_renderer.draw(
-                                &mut render_pass,
+                                &mut rpass,
                                 vertex_buffer,
                                 index_buffer,
                                 index_count,
@@ -3737,10 +3822,8 @@ impl App {
                                 true,
                             );
                         }
-                    } else {
-                        // Log missing view?
                     }
-                } // End Loop
+                }
 
                 // D. Post-Processing
                 if needs_post_processing {
