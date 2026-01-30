@@ -2811,7 +2811,7 @@ impl App {
                                                                             self.ui_state.module_canvas.active_module_id,
                                                                             self.ui_state.module_canvas.editing_part_id
                                                                         ) {
-                                                                            actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                                                            self.ui_state.queue_action(mapmap_ui::UIAction::PickMediaFile(
                                                                                 module_id,
                                                                                 part_id,
                                                                                 path.to_string_lossy().to_string()

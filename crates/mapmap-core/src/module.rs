@@ -1938,9 +1938,10 @@ mod tests {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
-        let part_id = module.add_part(1, PartType::Trigger, (0.0, 0.0));
+        let part_id = module.add_part(PartType::Trigger, (0.0, 0.0));
         let part = module
             .parts
             .iter()
@@ -1962,10 +1963,11 @@ mod tests {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
-        let p1 = module.add_part(1, PartType::Trigger, (0.0, 0.0));
-        let p2 = module.add_part(2, PartType::Layer, (100.0, 0.0));
+        let p1 = module.add_part(PartType::Trigger, (0.0, 0.0));
+        let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         module.add_connection(p1, 0, p2, 1); // Connect Trigger Out to Layer Trigger In
 
@@ -1986,6 +1988,7 @@ mod tests {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         };
 
         // Create AudioFFT trigger with all bands (many outputs)
@@ -2233,9 +2236,10 @@ fn test_update_part_position() {
         parts: vec![],
         connections: vec![],
         playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
     };
 
-    let pid = module.add_part(1, PartType::Trigger, (0.0, 0.0));
+    let pid = module.add_part(PartType::Trigger, (0.0, 0.0));
     module.update_part_position(pid, (100.0, 200.0));
 
     let part = module.parts.first().unwrap();
