@@ -5627,10 +5627,8 @@ impl ModuleCanvas {
                 let bar_x = rect.min.x + 10.0 * self.zoom;
 
                 // Background
-                let bar_bg = Rect::from_min_size(
-                    Pos2::new(bar_x, bar_y),
-                    Vec2::new(bar_width, bar_height),
-                );
+                let bar_bg =
+                    Rect::from_min_size(Pos2::new(bar_x, bar_y), Vec2::new(bar_width, bar_height));
                 painter.rect_filled(bar_bg, 2.0 * self.zoom, Color32::from_gray(30));
 
                 // Progress
