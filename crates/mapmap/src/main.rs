@@ -152,8 +152,8 @@ struct App {
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
     /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
-    /// Cache for output preview textures (OutputID -> EguiTextureId)
-    output_preview_cache: HashMap<u64, egui::TextureId>,
+    /// Cache for output preview textures (OutputID -> (EguiTextureId, View))
+    output_preview_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
     /// Philips Hue Controller
@@ -2063,7 +2063,7 @@ impl App {
         }
     }
 
-    fn prepare_texture_previews(&mut self) {
+    fn prepare_texture_previews(&mut self, encoder: &mut wgpu::CommandEncoder) {
         // Sync Texture Previews for Module Canvas
         // Identify active sources and gather their properties
         let mut active_preview_sources = Vec::new();
@@ -2148,7 +2148,7 @@ impl App {
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
         self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
 
-        let mut preview_encoder =
+        let mut encoder =
             self.backend
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -2216,22 +2216,21 @@ impl App {
 
                 // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
-                    let mut render_pass =
-                        preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: Some("Preview Pass"),
-                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: &preview_view,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                    store: wgpu::StoreOp::Store,
-                                },
-                                depth_slice: None,
-                            })],
-                            depth_stencil_attachment: None,
-                            timestamp_writes: None,
-                            occlusion_query_set: None,
-                        });
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Preview Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &preview_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
 
                     // Use the pre-allocated quad buffers
                     let (vb, ib, index_count) = &self.preview_quad_buffers;
@@ -2246,8 +2245,6 @@ impl App {
                         false,
                     );
                 }
-
-                has_preview_work = true;
 
                 // Register the PROCESSED preview texture for UI
                 let texture_id = match self.preview_texture_cache.entry(target_part_id) {
@@ -2281,10 +2278,6 @@ impl App {
             }
         }
 
-        if has_preview_work {
-            self.backend.queue.submit(Some(preview_encoder.finish()));
-        }
-
         // Cleanup stale cache entries
         self.preview_texture_cache.retain(|id, (tex_id, _)| {
             if !current_frame_previews.contains_key(id) {
@@ -2307,25 +2300,40 @@ impl App {
                 if self.texture_pool.has_texture(tex_name) {
                     let tex_view = self.texture_pool.get_view(tex_name);
 
-                    let texture_id =
-                        if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
-                            cached_id
-                        } else {
+                    // ⚡ Bolt Optimization: Use Arc::ptr_eq to avoid unnecessary re-registration
+                    let texture_id = match self.output_preview_cache.entry(*output_id) {
+                        std::collections::hash_map::Entry::Occupied(mut entry) => {
+                            let (cached_id, cached_view) = entry.get();
+                            if std::sync::Arc::ptr_eq(cached_view, &tex_view) {
+                                *cached_id
+                            } else {
+                                self.egui_renderer.free_texture(cached_id);
+                                let new_id = self.egui_renderer.register_native_texture(
+                                    &self.backend.device,
+                                    &tex_view,
+                                    wgpu::FilterMode::Linear,
+                                );
+                                entry.insert((new_id, tex_view.clone()));
+                                new_id
+                            }
+                        }
+                        std::collections::hash_map::Entry::Vacant(entry) => {
                             let new_id = self.egui_renderer.register_native_texture(
                                 &self.backend.device,
                                 &tex_view,
                                 wgpu::FilterMode::Linear,
                             );
-                            self.output_preview_cache.insert(*output_id, new_id);
+                            entry.insert((new_id, tex_view.clone()));
                             new_id
-                        };
+                        }
+                    };
 
                     current_output_previews.insert(*output_id, texture_id);
                 }
             }
         }
 
-        self.output_preview_cache.retain(|id, tex_id| {
+        self.output_preview_cache.retain(|id, (tex_id, _)| {
             if !current_output_previews.contains_key(id) {
                 self.egui_renderer.free_texture(tex_id);
                 false
@@ -2542,9 +2550,20 @@ impl App {
     }
 
     fn render(&mut self, output_id: OutputId) -> Result<()> {
+        // Clone device Arc to create encoder without borrowing self
+        let device = self.backend.device.clone();
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
+
+        // ⚡ Bolt Optimization: Batch render passes.
+        // We call begin_frame() once here to reset the uniform cache index for the entire batch.
+        self.mesh_renderer.begin_frame();
+
         if output_id == 0 {
-            // Sync Texture Previews for Module Canvas
-            self.prepare_texture_previews();
+            // Sync Texture Previews for Module Canvas (renders into preview textures using main encoder)
+            self.prepare_texture_previews(&mut encoder);
         }
 
         let window_context = self.window_manager.get(output_id).unwrap();
@@ -2554,14 +2573,6 @@ impl App {
         let view = surface_texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-
-        // Encoder vorbereiten
-        let mut encoder =
-            self.backend
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
 
         let mut egui_render_data = None;
 
@@ -3023,7 +3034,7 @@ impl App {
                                                                 name: name.clone(),
                                                                 show_in_panel: *show_in_preview_panel,
                                                                 texture_name: self.output_assignments.get(id).and_then(|v| v.last().cloned()),
-                                                                texture_id: self.output_preview_cache.get(id).copied(),
+                                                                texture_id: self.output_preview_cache.get(id).map(|(id, _)| *id),
                                                             })
                                                         }
                                                         _ => None,
@@ -3941,23 +3952,15 @@ impl App {
         }
 
         // 1. Submit Main Rendering Commands
-        let command_buffer = encoder.finish();
-        self.backend.queue.submit(Some(command_buffer));
+        // We merged egui submission into this one
 
-        // 2. Egui Render Pass (Sequential)
+        // 2. Egui Render Pass (Sequential - using shared encoder)
         if let Some((tris, screen_descriptor)) = egui_render_data {
-            let backend = &self.backend;
             let egui_renderer = &self.egui_renderer;
 
-            let mut egui_encoder =
-                backend
-                    .device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Egui Render Encoder"),
-                    });
-
+            // Use the main encoder instead of creating a new one
             {
-                let mut render_pass = egui_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Egui Render Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &view,
@@ -3969,15 +3972,12 @@ impl App {
                         depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
-                    occlusion_query_set: None,
                     timestamp_writes: None,
+                    occlusion_query_set: None,
                 });
 
                 // SAFETY: We transmute BOTH the renderer and the render pass reference to break
                 // the lifetime dependency inferred by the compiler.
-                // 1. We treat the renderer as 'static to satisfy the 'rp requirement on self.
-                // 2. We treat the render_pass as having a matching 'static lifetime.
-                // This prevents the compiler from extending the borrow of egui_encoder beyond the block.
                 let renderer_static: &'static egui_wgpu::Renderer =
                     unsafe { std::mem::transmute(egui_renderer) };
 
@@ -3986,9 +3986,11 @@ impl App {
 
                 renderer_static.render(render_pass_static, &tris, &screen_descriptor);
             }
-
-            backend.queue.submit(Some(egui_encoder.finish()));
         }
+
+        // Final single submit
+        let command_buffer = encoder.finish();
+        self.backend.queue.submit(Some(command_buffer));
 
         surface_texture.present();
 
