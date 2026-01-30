@@ -106,7 +106,7 @@ where
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    queue.submit(Some(encoder.finish()));
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -116,12 +116,7 @@ where
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
-    device
-        .poll(wgpu::PollType::Wait {
-            submission_index: Some(index),
-            timeout: None,
-        })
-        .unwrap();
+    // device.poll(wgpu::Maintain::Wait);
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)
@@ -146,17 +141,7 @@ async fn test_passthrough_no_effects() {
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("Test Encoder"),
                 });
-            let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                0.0,
-                1,
-                1,
-            );
+            renderer.apply_chain(&mut encoder, input, output, &chain, 0.0, 1, 1);
             renderer.queue().submit(Some(encoder.finish()));
         })
         .await;
@@ -180,17 +165,7 @@ async fn test_single_invert_effect() {
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("Test Encoder"),
                 });
-            let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                0.0,
-                1,
-                1,
-            );
+            renderer.apply_chain(&mut encoder, input, output, &chain, 0.0, 1, 1);
             renderer.queue().submit(Some(encoder.finish()));
         })
         .await;
@@ -224,17 +199,7 @@ async fn test_multiple_effects() {
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("Test Encoder"),
                 });
-            let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                0.0,
-                1,
-                1,
-            );
+            renderer.apply_chain(&mut encoder, input, output, &chain, 0.0, 1, 1);
             renderer.queue().submit(Some(encoder.finish()));
         })
         .await;
@@ -254,23 +219,13 @@ async fn test_stability_multiple_frames() {
         chain.add_effect(EffectType::Blur);
         chain.add_effect(EffectType::FilmGrain);
 
-        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
         for i in 0..10 {
             let mut encoder = renderer
                 .device()
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some(&format!("Test Encoder Frame {}", i)),
                 });
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                i as f32,
-                1,
-                1,
-            );
+            renderer.apply_chain(&mut encoder, input, output, &chain, i as f32, 1, 1);
             renderer.queue().submit(Some(encoder.finish()));
         }
     })

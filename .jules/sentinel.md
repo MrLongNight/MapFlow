@@ -22,8 +22,3 @@
 **Vulnerability:** The web server treated an empty list of `allowed_origins` as "Allow All" (wildcard), intended as a permissive default. This meant that configurations intending to restrict access (by providing an empty list) inadvertently opened the API to all origins.
 **Learning:** "Empty means None" is the standard semantic expectation for security allowlists. "Empty means All" is a dangerous anti-pattern that leads to accidental exposure.
 **Prevention:** Treat empty allowlists as "Deny All". Require explicit `*` or `Any` markers for permissive modes. Ensure secure defaults (empty/deny) in configuration structs.
-
-## 2026-10-25 - Missing File Extension Validation in MCP
-**Vulnerability:** The MCP server's file operations (`project_save`, `project_load`) blocked path traversal but allowed arbitrary file extensions. This could allow an agent to overwrite sensitive system files (e.g., `.bashrc`, `.env`) if they resided in the working directory.
-**Learning:** Preventing path traversal (`..`) is insufficient for file security. Restricting file types by extension is a critical second layer of defense (defense-in-depth) to prevent malicious file creation or loading.
-**Prevention:** Use `validate_path_with_extensions` helper for all file-based MCP tools, enforcing a strict whitelist of allowed extensions (e.g., `["mapmap", "json"]`).

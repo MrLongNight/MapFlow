@@ -8,7 +8,7 @@
 //! - Effect chain post-processing
 //! - Preset system for effect chains
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 use thiserror::Error;
 

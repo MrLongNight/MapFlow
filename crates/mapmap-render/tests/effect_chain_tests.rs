@@ -106,7 +106,7 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    queue.submit(Some(encoder.finish()));
 
     // Map the buffer
     let slice = buffer.slice(..);
@@ -114,12 +114,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    device
-        .poll(wgpu::PollType::Wait {
-            submission_index: Some(index),
-            timeout: None,
-        })
-        .unwrap();
+    // device.poll(wgpu::Maintain::Wait);
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.
@@ -278,7 +273,6 @@ async fn test_empty_chain_is_passthrough() {
 
         let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
         let chain = EffectChain::new(); // Empty chain
-        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
 
         let mut encoder = device.create_command_encoder(&Default::default());
         renderer.apply_chain(
@@ -286,7 +280,6 @@ async fn test_empty_chain_is_passthrough() {
             &source_view,
             &output_view,
             &chain,
-            &shader_graph_manager,
             0.0,
             width,
             height,
@@ -334,7 +327,6 @@ async fn test_blur_plus_coloradjust_chain() {
         let mut chain = EffectChain::new();
         let blur_id = chain.add_effect(EffectType::Blur);
         let color_id = chain.add_effect(EffectType::ColorAdjust);
-        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
 
         // Make blur negligible but present
         chain
@@ -353,7 +345,6 @@ async fn test_blur_plus_coloradjust_chain() {
             &source_view,
             &output_view,
             &chain,
-            &shader_graph_manager,
             0.0,
             width,
             height,
@@ -416,11 +407,11 @@ async fn test_vignette_plus_filmgrain_chain() {
             view_formats: &[],
         });
         let output_view = output.create_view(&Default::default());
+
         let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
         let mut chain = EffectChain::new();
         let vignette_id = chain.add_effect(EffectType::Vignette);
         let grain_id = chain.add_effect(EffectType::FilmGrain);
-        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
 
         // Set aggressive parameters to make effects obvious
         let vignette = chain.get_effect_mut(vignette_id).unwrap();
@@ -436,7 +427,6 @@ async fn test_vignette_plus_filmgrain_chain() {
             &source_view,
             &output_view,
             &chain,
-            &shader_graph_manager,
             1.23,
             width,
             height,

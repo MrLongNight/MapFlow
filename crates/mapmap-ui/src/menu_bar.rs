@@ -232,13 +232,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         ui_state.i18n.t("check-show-stats"),
                     );
                     ui.checkbox(&mut ui_state.show_timeline, "Timeline");
-                    if ui
-                        .checkbox(&mut ui_state.show_shader_graph, "Shader Graph")
-                        .changed()
-                        && ui_state.show_shader_graph
-                    {
-                        actions.push(UIAction::OpenShaderGraph(1));
-                    }
+                    ui.checkbox(&mut ui_state.show_shader_graph, "Shader Graph");
                     ui.checkbox(&mut ui_state.show_toolbar, "Werkzeugleiste");
                     ui.checkbox(&mut ui_state.icon_demo_panel.visible, "Icon Gallery");
                     ui.separator();

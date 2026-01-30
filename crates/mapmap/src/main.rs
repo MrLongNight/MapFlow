@@ -152,8 +152,8 @@ struct App {
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
     /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
     preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
-    /// Cache for output preview textures (OutputID -> (EguiTextureId, View))
-    output_preview_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Cache for output preview textures (OutputID -> EguiTextureId)
+    output_preview_cache: HashMap<u64, egui::TextureId>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
     preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
     /// Philips Hue Controller
@@ -1124,13 +1124,10 @@ impl App {
                                     }
                                 }
                             }
-                            mapmap_core::SourceCommand::NdiInput {
-                                source_name: _source_name,
-                                ..
-                            } =>
+                            mapmap_core::SourceCommand::NdiInput { source_name, .. } =>
                             {
                                 #[cfg(feature = "ndi")]
-                                if let Some(src_name) = _source_name {
+                                if let Some(src_name) = source_name {
                                     let receiver =
                                         self.ndi_receivers.entry(*part_id).or_insert_with(|| {
                                             mapmap_io::ndi::NdiReceiver::new()
@@ -1202,6 +1199,10 @@ impl App {
                                 .entry(*id)
                                 .or_default()
                                 .push(tex_name.clone());
+                            self.output_assignments
+                                .entry(op.output_part_id)
+                                .or_default()
+                                .push(tex_name);
                         }
                     }
                 }
@@ -1275,7 +1276,7 @@ impl App {
                     beat_detected: analysis_v2.beat_detected,
                     beat_strength: analysis_v2.beat_strength,
                     onset_detected: false, // Not implemented in V2 yet
-                    tempo_bpm: analysis_v2.tempo_bpm,
+                    tempo_bpm: Some(analysis_v2.tempo_bpm),
                     waveform: analysis_v2.waveform.clone(),
                 };
 
@@ -1290,7 +1291,7 @@ impl App {
                         peak_volume: analysis_v2.peak_volume,
                         beat_detected: analysis_v2.beat_detected,
                         beat_strength: analysis_v2.beat_strength,
-                        bpm: analysis_v2.tempo_bpm,
+                        bpm: Some(analysis_v2.tempo_bpm),
                     });
 
                 // Update BPM in toolbar
@@ -1349,40 +1350,24 @@ impl App {
                         }
                     }
                 }
-                mapmap_ui::UIAction::PickMediaFile(module_id, part_id, path_str) => {
-                    if !path_str.is_empty() {
-                        let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
-                            module_id,
-                            part_id,
-                            std::path::PathBuf::from(path_str),
-                        ));
-                    } else {
-                        let sender = self.action_sender.clone();
-                        self.tokio_runtime.spawn(async move {
-                            if let Some(handle) = rfd::AsyncFileDialog::new()
-                                .add_filter(
-                                    "Media",
-                                    &[
-                                        "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg",
-                                        "jpeg",
-                                    ],
-                                )
-                                .pick_file()
-                                .await
-                            {
-                                let path = handle.path().to_path_buf();
-                                let _ = sender
-                                    .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
-                            }
-                        });
-                    }
-                }
-                mapmap_ui::UIAction::SetMediaFile(module_id, part_id, path) => {
-                    let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
-                        module_id,
-                        part_id,
-                        PathBuf::from(path),
-                    ));
+                mapmap_ui::UIAction::PickMediaFile(module_id, part_id) => {
+                    let sender = self.action_sender.clone();
+                    self.tokio_runtime.spawn(async move {
+                        if let Some(handle) = rfd::AsyncFileDialog::new()
+                            .add_filter(
+                                "Media",
+                                &[
+                                    "mp4", "mov", "avi", "mkv", "webm", "gif", "png", "jpg", "jpeg",
+                                ],
+                            )
+                            .pick_file()
+                            .await
+                        {
+                            let path = handle.path().to_path_buf();
+                            let _ = sender
+                                .send(McpAction::SetModuleSourcePath(module_id, part_id, path));
+                        }
+                    });
                 }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
@@ -1785,114 +1770,120 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
                 for part in &module_ref.parts {
-                    if let mapmap_core::module::ModulePartType::Output(output_type) =
-                        &part.part_type
-                    {
-                        // Use part.id for consistency with render pipeline
-                        let output_id = part.id;
+                    match &part.part_type {
+                        mapmap_core::module::ModulePartType::Output(output_type) => {
+                            // Use part.id for consistency with render pipeline
+                            let output_id = part.id;
 
-                        match output_type {
-                            OutputType::Projector {
-                                id: projector_id,
-                                name,
-                                fullscreen,
-                                hide_cursor,
-                                target_screen,
-                                show_in_preview_panel: _,
-                                extra_preview_window,
-                                ..
-                            } => {
-                                // 1. Primary Window - Use Logical ID (projector_id) not Part ID
-                                let window_id = *projector_id;
-                                active_window_ids.insert(window_id);
+                            match output_type {
+                                OutputType::Projector {
+                                    id: projector_id,
+                                    name,
+                                    fullscreen,
+                                    hide_cursor,
+                                    target_screen,
+                                    show_in_preview_panel: _,
+                                    extra_preview_window,
+                                    ..
+                                } => {
+                                    // 1. Primary Window - Use Logical ID (projector_id) not Part ID
+                                    let window_id = *projector_id;
+                                    active_window_ids.insert(window_id);
 
-                                if let Some(window_context) = self.window_manager.get(window_id) {
-                                    // Update existing
-                                    let is_fullscreen =
-                                        window_context.window.fullscreen().is_some();
-                                    if is_fullscreen != *fullscreen {
-                                        window_context.window.set_fullscreen(if *fullscreen {
-                                            Some(winit::window::Fullscreen::Borderless(None))
-                                        } else {
-                                            None
-                                        });
-                                    }
-                                    window_context.window.set_cursor_visible(!*hide_cursor);
-                                } else {
-                                    // Create new
-                                    self.window_manager.create_projector_window(
-                                        elwt,
-                                        &self.backend,
-                                        window_id,
-                                        name,
-                                        *fullscreen,
-                                        *hide_cursor,
-                                        *target_screen,
-                                    )?;
-                                    info!(
-                                        "Created projector window for output {} (Part {})",
-                                        window_id, output_id
-                                    );
-                                }
-
-                                // 2. Extra Preview Window
-                                if *extra_preview_window {
-                                    let preview_id = window_id | PREVIEW_FLAG;
-                                    active_window_ids.insert(preview_id);
-
-                                    if self.window_manager.get(preview_id).is_none() {
+                                    if let Some(window_context) = self.window_manager.get(window_id)
+                                    {
+                                        // Update existing
+                                        let is_fullscreen =
+                                            window_context.window.fullscreen().is_some();
+                                        if is_fullscreen != *fullscreen {
+                                            window_context.window.set_fullscreen(if *fullscreen {
+                                                Some(winit::window::Fullscreen::Borderless(None))
+                                            } else {
+                                                None
+                                            });
+                                        }
+                                        window_context.window.set_cursor_visible(!*hide_cursor);
+                                    } else {
+                                        // Create new
                                         self.window_manager.create_projector_window(
                                             elwt,
                                             &self.backend,
-                                            preview_id,
-                                            &format!("Preview: {}", name),
-                                            false, // Always windowed
-                                            false, // Show cursor
-                                            0,     // Default screen (0)
+                                            window_id,
+                                            name,
+                                            *fullscreen,
+                                            *hide_cursor,
+                                            *target_screen,
                                         )?;
-                                        info!("Created preview window for output {}", window_id);
+                                        info!(
+                                            "Created projector window for output {} (Part {})",
+                                            window_id, output_id
+                                        );
                                     }
-                                }
-                            }
-                            OutputType::NdiOutput { name: _name } => {
-                                // For NDI, use part.id as the unique identifier
-                                let output_id = part.id;
-                                active_sender_ids.insert(output_id);
 
-                                #[cfg(feature = "ndi")]
-                                {
-                                    if !self.ndi_senders.contains_key(&output_id) {
-                                        let width = 1920;
-                                        let height = 1080;
-                                        match mapmap_io::ndi::NdiSender::new(
-                                            _name.clone(),
-                                            mapmap_io::format::VideoFormat {
-                                                width,
-                                                height,
-                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
-                                                frame_rate: 60.0,
-                                            },
-                                        ) {
-                                            Ok(sender) => {
-                                                info!("Created NDI sender: {}", _name);
-                                                self.ndi_senders.insert(output_id, sender);
-                                            }
-                                            Err(e) => error!(
-                                                "Failed to create NDI sender {}: {}",
-                                                _name, e
-                                            ),
+                                    // 2. Extra Preview Window
+                                    if *extra_preview_window {
+                                        let preview_id = window_id | PREVIEW_FLAG;
+                                        active_window_ids.insert(preview_id);
+
+                                        if self.window_manager.get(preview_id).is_none() {
+                                            self.window_manager.create_projector_window(
+                                                elwt,
+                                                &self.backend,
+                                                preview_id,
+                                                &format!("Preview: {}", name),
+                                                false, // Always windowed
+                                                false, // Show cursor
+                                                0,     // Default screen (0)
+                                            )?;
+                                            info!(
+                                                "Created preview window for output {}",
+                                                window_id
+                                            );
                                         }
                                     }
                                 }
-                            }
-                            #[cfg(target_os = "windows")]
-                            OutputType::Spout { .. } => {
-                                // TODO: Spout Sender
-                            }
-                            OutputType::Hue { .. } => {
-                                // Hue integration handled via separate controller, no window needed
+                                OutputType::NdiOutput { name: _name } => {
+                                    // For NDI, use part.id as the unique identifier
+                                    let output_id = part.id;
+                                    active_sender_ids.insert(output_id);
+
+                                    #[cfg(feature = "ndi")]
+                                    {
+                                        if !self.ndi_senders.contains_key(&output_id) {
+                                            let width = 1920;
+                                            let height = 1080;
+                                            match mapmap_io::ndi::NdiSender::new(
+                                                _name.clone(),
+                                                mapmap_io::format::VideoFormat {
+                                                    width,
+                                                    height,
+                                                    pixel_format:
+                                                        mapmap_io::format::PixelFormat::BGRA8,
+                                                    frame_rate: 60.0,
+                                                },
+                                            ) {
+                                                Ok(sender) => {
+                                                    info!("Created NDI sender: {}", _name);
+                                                    self.ndi_senders.insert(output_id, sender);
+                                                }
+                                                Err(e) => error!(
+                                                    "Failed to create NDI sender {}: {}",
+                                                    _name, e
+                                                ),
+                                            }
+                                        }
+                                    }
+                                }
+                                #[cfg(target_os = "windows")]
+                                OutputType::Spout { .. } => {
+                                    // TODO: Spout Sender
+                                }
+                                OutputType::Hue { .. } => {
+                                    // Hue integration handled via separate controller, no window needed
+                                }
                             }
                         }
+                        _ => {}
                     }
                 }
             }
@@ -2057,7 +2048,7 @@ impl App {
         }
     }
 
-    fn prepare_texture_previews(&mut self, _encoder: &mut wgpu::CommandEncoder) {
+    fn prepare_texture_previews(&mut self) {
         // Sync Texture Previews for Module Canvas
         // Identify active sources and gather their properties
         let mut active_preview_sources = Vec::new();
@@ -2080,57 +2071,20 @@ impl App {
                     },
                 ) = &part.part_type
                 {
-                    // Find source connection
-                    if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
-                        active_preview_sources.push((
-                            module.id,
-                            part.id,        // Target (Output Node)
-                            conn.from_part, // Source (The plugged in layer/media)
-                            *brightness,
-                            *contrast,
-                            *saturation,
-                            *hue_shift,
-                            *flip_horizontal,
-                            *flip_vertical,
-                            *rotation,
-                            *scale_x,
-                            *scale_y,
-                            *offset_x,
-                            *offset_y,
-                        ));
-                    }
-                } else if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector {
-                        show_in_preview_panel,
-                        ..
-                    },
-                ) = &part.part_type
-                {
-                    if *show_in_preview_panel {
-                        // Find connected input
-                        // We need to look at module.connections
-                        // Find connection where to_part == part.id
-                        // For Projector, input is usually socket 0 ("Layer In")
-                        if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id)
-                        {
-                            active_preview_sources.push((
-                                module.id,
-                                part.id,        // Target (Output Node)
-                                conn.from_part, // Source (The plugged in layer/media)
-                                0.0,            // Brightness default
-                                1.0,            // Contrast default
-                                1.0,            // Saturation default
-                                0.0,            // Hue default
-                                false,          // Flip H
-                                false,          // Flip V
-                                0.0,            // Rotation
-                                1.0,            // Scale X
-                                1.0,            // Scale Y
-                                0.0,            // Offset X
-                                0.0,            // Offset Y
-                            ));
-                        }
-                    }
+                    active_preview_sources.push((
+                        part.id,
+                        *brightness,
+                        *contrast,
+                        *saturation,
+                        *hue_shift,
+                        *flip_horizontal,
+                        *flip_vertical,
+                        *rotation,
+                        *scale_x,
+                        *scale_y,
+                        *offset_x,
+                        *offset_y,
+                    ));
                 }
             }
         }
@@ -2142,19 +2096,17 @@ impl App {
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
         self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
 
-        let mut encoder =
+        let mut preview_encoder =
             self.backend
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Preview Encoder (Batched)"),
                 });
 
-        let mut _has_preview_work = false;
+        let mut has_preview_work = false;
 
         for (
-            module_id,
-            target_part_id,
-            source_part_id,
+            part_id,
             brightness,
             contrast,
             saturation,
@@ -2168,12 +2120,12 @@ impl App {
             offset_y,
         ) in active_preview_sources
         {
-            let raw_tex_name = format!("part_{}_{}", module_id, source_part_id);
+            let raw_tex_name = format!("part_{}", part_id);
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
                 // Create/Get preview texture (fixed small resolution)
-                let preview_tex_name = format!("preview_{}", target_part_id);
+                let preview_tex_name = format!("preview_{}", part_id);
                 // Ensure it exists with correct size
                 self.texture_pool.ensure_texture(
                     &preview_tex_name,
@@ -2210,21 +2162,22 @@ impl App {
 
                 // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Preview Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &preview_view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                store: wgpu::StoreOp::Store,
-                            },
-                            depth_slice: None,
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
+                    let mut render_pass =
+                        preview_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Preview Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: &preview_view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                                depth_slice: None,
+                            })],
+                            depth_stencil_attachment: None,
+                            timestamp_writes: None,
+                            occlusion_query_set: None,
+                        });
 
                     // Use the pre-allocated quad buffers
                     let (vb, ib, index_count) = &self.preview_quad_buffers;
@@ -2240,8 +2193,10 @@ impl App {
                     );
                 }
 
+                has_preview_work = true;
+
                 // Register the PROCESSED preview texture for UI
-                let texture_id = match self.preview_texture_cache.entry(target_part_id) {
+                let texture_id = match self.preview_texture_cache.entry(part_id) {
                     std::collections::hash_map::Entry::Occupied(mut entry) => {
                         let (cached_id, cached_view) = entry.get();
                         if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
@@ -2268,8 +2223,12 @@ impl App {
                     }
                 };
 
-                current_frame_previews.insert(target_part_id, texture_id);
+                current_frame_previews.insert(part_id, texture_id);
             }
+        }
+
+        if has_preview_work {
+            self.backend.queue.submit(Some(preview_encoder.finish()));
         }
 
         // Cleanup stale cache entries
@@ -2294,40 +2253,25 @@ impl App {
                 if self.texture_pool.has_texture(tex_name) {
                     let tex_view = self.texture_pool.get_view(tex_name);
 
-                    // ⚡ Bolt Optimization: Use Arc::ptr_eq to avoid unnecessary re-registration
-                    let texture_id = match self.output_preview_cache.entry(*output_id) {
-                        std::collections::hash_map::Entry::Occupied(mut entry) => {
-                            let (cached_id, cached_view) = entry.get();
-                            if std::sync::Arc::ptr_eq(cached_view, &tex_view) {
-                                *cached_id
-                            } else {
-                                self.egui_renderer.free_texture(cached_id);
-                                let new_id = self.egui_renderer.register_native_texture(
-                                    &self.backend.device,
-                                    &tex_view,
-                                    wgpu::FilterMode::Linear,
-                                );
-                                entry.insert((new_id, tex_view.clone()));
-                                new_id
-                            }
-                        }
-                        std::collections::hash_map::Entry::Vacant(entry) => {
+                    let texture_id =
+                        if let Some(&cached_id) = self.output_preview_cache.get(output_id) {
+                            cached_id
+                        } else {
                             let new_id = self.egui_renderer.register_native_texture(
                                 &self.backend.device,
                                 &tex_view,
                                 wgpu::FilterMode::Linear,
                             );
-                            entry.insert((new_id, tex_view.clone()));
+                            self.output_preview_cache.insert(*output_id, new_id);
                             new_id
-                        }
-                    };
+                        };
 
                     current_output_previews.insert(*output_id, texture_id);
                 }
             }
         }
 
-        self.output_preview_cache.retain(|id, (tex_id, _)| {
+        self.output_preview_cache.retain(|id, tex_id| {
             if !current_output_previews.contains_key(id) {
                 self.egui_renderer.free_texture(tex_id);
                 false
@@ -2339,8 +2283,6 @@ impl App {
 
     /// Global update loop (physics/logic), independent of render rate per window.
     fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
-        let _ = self.handle_ui_actions();
-
         // --- Media Player Update ---
         self.sync_media_players();
         self.update_media_players(dt);
@@ -2441,125 +2383,10 @@ impl App {
             };
         }
     }
-    /// Handle global UI actions
-    fn handle_ui_actions(&mut self) -> Result<()> {
-        let actions = self.ui_state.take_actions();
-        for action in actions {
-            match action {
-                mapmap_ui::UIAction::NodeAction(node_action) => {
-                    self.handle_node_action(node_action)?;
-                }
-                mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
-                    self.ui_state.show_shader_graph = true;
-                    if let Some(graph) = self.state.shader_graphs.get(&graph_id) {
-                        self.ui_state.node_editor_panel.load_graph(graph);
-                    } else {
-                        // Create if not exists (lazy creation for testing)
-                        // Or log warning
-                        // For Phase 6 demo: Create a default graph if ID not found?
-                        // Better: Ensure graph exists via other means (Graph Manager UI).
-                        // For now we assume call is valid or we create empty.
-                        if let std::collections::hash_map::Entry::Vacant(e) =
-                            self.state.shader_graphs.entry(graph_id)
-                        {
-                            let new_graph = mapmap_core::shader_graph::ShaderGraph::new(
-                                graph_id,
-                                "New Graph".to_string(),
-                            );
-                            e.insert(new_graph.clone());
-                            self.ui_state.node_editor_panel.load_graph(&new_graph);
-                        }
-                    }
-                }
-                _ => {
-                    // Ignore other actions or let them fall through if not handled here
-                    // Ideally we should have a centralized handler. Both AppUI and App might handle different actions.
-                    // But AppUI actions are usually handled by the caller (Main).
-                }
-            }
-        }
-        Ok(())
-    }
-
-    /// Handle Node Editor actions
-    fn handle_node_action(&mut self, action: mapmap_ui::NodeEditorAction) -> Result<()> {
-        if let Some(graph_id) = self.ui_state.node_editor_panel.graph_id {
-            if let Some(graph) = self.state.shader_graphs.get_mut(&graph_id) {
-                use mapmap_ui::NodeEditorAction;
-                let mut needs_update = false;
-
-                match action {
-                    NodeEditorAction::AddNode(node_type, pos) => {
-                        let _id = graph.add_node(node_type);
-                        // TODO: Update position in Core logic if possible.
-                        // Core ShaderNode has `position: (f32, f32)`.
-                        if let Some(node) = graph.nodes.get_mut(&_id) {
-                            node.position = (pos.x, pos.y);
-                        }
-                        needs_update = true;
-                    }
-                    NodeEditorAction::RemoveNode(node_id) => {
-                        graph.remove_node(node_id);
-                        needs_update = true;
-                    }
-                    NodeEditorAction::SelectNode(_) => {
-                        // Selection is handled in UI state mostly.
-                    }
-                    NodeEditorAction::AddConnection(_from, from_socket, to, to_socket) => {
-                        // Note: UI NodeEditorAction provides NodeId and socket name
-                        if let Err(e) = graph.connect(_from, &from_socket, to, &to_socket) {
-                            tracing::warn!("Failed to connect nodes: {}", e);
-                        } else {
-                            needs_update = true;
-                        }
-                    }
-                    NodeEditorAction::RemoveConnection(_from, _sub_idx, to, to_socket) => {
-                        if let Err(e) = graph.disconnect(to, &to_socket) {
-                            tracing::warn!("Failed to disconnect nodes: {}", e);
-                        } else {
-                            needs_update = true;
-                        }
-                    }
-                    NodeEditorAction::UpdateGraph(_) => {
-                        needs_update = true;
-                    }
-                }
-
-                if needs_update {
-                    // Sync back to UI to maintain consistency
-                    self.ui_state.node_editor_panel.load_graph(graph);
-                    self.state.dirty = true;
-
-                    // Compile Graph
-                    if let Err(e) = self
-                        .effect_chain_renderer
-                        .update_shader_graph(&mut self.shader_graph_manager, graph_id)
-                    {
-                        tracing::error!("Shader Compile Error: {}", e);
-                    } else {
-                        tracing::info!("Shader Graph {} compiled successfully", graph_id);
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn render(&mut self, output_id: OutputId) -> Result<()> {
-        // Clone device Arc to create encoder without borrowing self
-        let device = self.backend.device.clone();
-
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
-
-        // ⚡ Bolt Optimization: Batch render passes.
-        // We call begin_frame() once here to reset the uniform cache index for the entire batch.
-        self.mesh_renderer.begin_frame();
-
         if output_id == 0 {
-            // Sync Texture Previews for Module Canvas (renders into preview textures using main encoder)
-            self.prepare_texture_previews(&mut encoder);
+            // Sync Texture Previews for Module Canvas
+            self.prepare_texture_previews();
         }
 
         let window_context = self.window_manager.get(output_id).unwrap();
@@ -2569,6 +2396,14 @@ impl App {
         let view = surface_texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
+
+        // Encoder vorbereiten
+        let mut encoder =
+            self.backend
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
         let mut egui_render_data = None;
 
@@ -2802,29 +2637,11 @@ impl App {
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
                                                         .show(ui, |ui| {
-                                                            if let Some(action) = self.ui_state.media_browser.ui(
+                                                            let _ = self.ui_state.media_browser.ui(
                                                                 ui,
                                                                 &self.ui_state.i18n,
                                                                 self.ui_state.icon_manager.as_ref(),
-                                                            ) {
-                                                                use mapmap_ui::media_browser::MediaBrowserAction;
-                                                                match action {
-                                                                    MediaBrowserAction::FileSelected(path) | MediaBrowserAction::FileDoubleClicked(path) => {
-                                                                        // Update active part if one is being edited
-                                                                        if let (Some(module_id), Some(part_id)) = (
-                                                                            self.ui_state.module_canvas.active_module_id,
-                                                                            self.ui_state.module_canvas.editing_part_id
-                                                                        ) {
-                                                                            self.ui_state.actions.push(mapmap_ui::UIAction::PickMediaFile(
-                                                                                module_id,
-                                                                                part_id,
-                                                                                path.to_string_lossy().to_string()
-                                                                            ));
-                                                                        }
-                                                                    }
-                                                                    _ => {}
-                                                                }
-                                                            }
+                                                            );
                                                         });
 
                                                     // Audio Section
@@ -3030,7 +2847,7 @@ impl App {
                                                                 name: name.clone(),
                                                                 show_in_panel: *show_in_preview_panel,
                                                                 texture_name: self.output_assignments.get(id).and_then(|v| v.last().cloned()),
-                                                                texture_id: self.output_preview_cache.get(id).map(|(id, _)| *id),
+                                                                texture_id: self.output_preview_cache.get(id).copied(),
                                                             })
                                                         }
                                                         _ => None,
@@ -3061,14 +2878,6 @@ impl App {
                             });
                     }
 
-                    // === RIGHT PANEL: Inspector ===
-                    self.ui_state.render_inspector(
-                        ctx,
-                        &mut self.state.module_manager,
-                        &self.state.layer_manager,
-                        &self.state.output_manager,
-                    );
-
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default().show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
@@ -3094,9 +2903,6 @@ impl App {
                             });
                         }
                     });
-
-                    // === 6. Node Editor (Phase 6b) ===
-                    self.ui_state.render_node_editor(ctx);
 
                     // === Settings Window (only modal allowed) ===
                     let mut show_settings = self.ui_state.show_settings;
@@ -3257,7 +3063,7 @@ impl App {
                                 ui.separator();
 
                                 // Philips Hue Settings
-                                let body_returned = egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
+                                egui::CollapsingHeader::new(format!("💡 {}", "Philips Hue"))
                                     .default_open(true)
                                     .show(ui, |ui| {
                                         let mut changed = false;
@@ -3369,9 +3175,8 @@ impl App {
                                         ui.label(egui::RichText::new("Note: Press Link Button on Bridge before linking/connecting for the first time.").small());
                                         (changed, connect_clicked, disconnect_clicked, discover_clicked, register_clicked)
                                     })
-                                    .body_returned;
-
-                                    if let Some((changed, connect, disconnect, discover, register)) = body_returned {
+                                    .body_returned
+                                    .map(|(changed, connect, disconnect, discover, register)| {
                                         if register {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::RegisterHue);
                                         }
@@ -3397,7 +3202,7 @@ impl App {
                                         if discover {
                                             self.ui_state.actions.push(mapmap_ui::UIAction::DiscoverHueBridges);
                                         }
-                                    }
+                                    });
 
                                 ui.separator();
 
@@ -3730,9 +3535,6 @@ impl App {
                                         mapmap_core::module::EffectType::Mirror => {
                                             Some(mapmap_core::effects::EffectType::Mirror)
                                         }
-                                        mapmap_core::module::EffectType::ShaderGraph(id) => {
-                                            Some(mapmap_core::effects::EffectType::ShaderGraph(*id))
-                                        }
                                         _ => {
                                             tracing::warn!(
                                                 "Effect {:?} not implemented",
@@ -3763,7 +3565,6 @@ impl App {
                                     src_view,
                                     &target_view,
                                     &chain,
-                                    &self.shader_graph_manager,
                                     time,
                                     w,
                                     h,
@@ -3948,15 +3749,23 @@ impl App {
         }
 
         // 1. Submit Main Rendering Commands
-        // We merged egui submission into this one
+        let command_buffer = encoder.finish();
+        self.backend.queue.submit(Some(command_buffer));
 
-        // 2. Egui Render Pass (Sequential - using shared encoder)
+        // 2. Egui Render Pass (Sequential)
         if let Some((tris, screen_descriptor)) = egui_render_data {
+            let backend = &self.backend;
             let egui_renderer = &self.egui_renderer;
 
-            // Use the main encoder instead of creating a new one
+            let mut egui_encoder =
+                backend
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Egui Render Encoder"),
+                    });
+
             {
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                let mut render_pass = egui_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Egui Render Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &view,
@@ -3968,12 +3777,15 @@ impl App {
                         depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
-                    timestamp_writes: None,
                     occlusion_query_set: None,
+                    timestamp_writes: None,
                 });
 
                 // SAFETY: We transmute BOTH the renderer and the render pass reference to break
                 // the lifetime dependency inferred by the compiler.
+                // 1. We treat the renderer as 'static to satisfy the 'rp requirement on self.
+                // 2. We treat the render_pass as having a matching 'static lifetime.
+                // This prevents the compiler from extending the borrow of egui_encoder beyond the block.
                 let renderer_static: &'static egui_wgpu::Renderer =
                     unsafe { std::mem::transmute(egui_renderer) };
 
@@ -3982,11 +3794,9 @@ impl App {
 
                 renderer_static.render(render_pass_static, &tris, &screen_descriptor);
             }
-        }
 
-        // Final single submit
-        let command_buffer = encoder.finish();
-        self.backend.queue.submit(Some(command_buffer));
+            backend.queue.submit(Some(egui_encoder.finish()));
+        }
 
         surface_texture.present();
 

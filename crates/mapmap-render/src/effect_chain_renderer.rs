@@ -446,7 +446,6 @@ impl EffectChainRenderer {
         input_view: &wgpu::TextureView,
         output_view: &wgpu::TextureView,
         chain: &EffectChain,
-        shader_graph_manager: &crate::ShaderGraphManager,
         time: f32,
         width: u32,
         height: u32,
@@ -489,20 +488,13 @@ impl EffectChainRenderer {
         for (i, effect) in enabled_effects.iter().enumerate() {
             let is_last = i == enabled_effects.len() - 1;
 
-            // Determine if this is a custom shader graph
-            let is_custom_graph = matches!(effect.effect_type, EffectType::ShaderGraph(_));
-
-            // Get the pipeline for this effect (if standard)
-            let pipeline = if !is_custom_graph {
-                match self.pipelines.get(&effect.effect_type) {
-                    Some(p) => Some(p),
-                    None => {
-                        warn!("No pipeline for effect type: {:?}", effect.effect_type);
-                        continue;
-                    }
+            // Get the pipeline for this effect
+            let pipeline = match self.pipelines.get(&effect.effect_type) {
+                Some(p) => p,
+                None => {
+                    warn!("No pipeline for effect type: {:?}", effect.effect_type);
+                    continue;
                 }
-            } else {
-                None
             };
 
             // Create effect parameters
@@ -557,9 +549,6 @@ impl EffectChainRenderer {
                 EffectType::Pixelate => {
                     params.param_a = effect.get_param("pixel_size", 8.0);
                 }
-                // Custom graphs handle params differently (via Uniform nodes usually),
-                // but we can map standard params to defaults if needed.
-                // For now, custom graphs will rely on their compiled bindings.
                 _ => {}
             }
 
@@ -584,56 +573,31 @@ impl EffectChainRenderer {
                 &ping_pong.views[1 - current_idx]
             };
 
-            if let EffectType::ShaderGraph(graph_id) = effect.effect_type {
-                // --- CUSTOM SHADER GRAPH PATH ---
-                use crate::ShaderGraphRendering; // Trait must be in scope
+            // Render pass
+            {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some(&format!("Effect Pass: {:?}", effect.effect_type)),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: render_target,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
 
-                if let Some(compiled) = shader_graph_manager.get_compiled(graph_id) {
-                    if compiled.is_ready() {
-                        self.apply_shader_graph(
-                            encoder,
-                            compiled,
-                            current_input,
-                            render_target,
-                            &input_bind_group,
-                            &uniform_bind_group,
-                        );
-                    } else {
-                        // Fallback if not ready: Passthrough
-                        // (Just draw a quad with input texture using QuadRenderer would be best, but we are inside complex loop)
-                        // For now, since we cleared to BLACK at start of pass (in standard path below), skipping might result in black.
-                        // But we didn't start a render pass yet here.
-                    }
-                } else {
-                    warn!("Shader Graph {} not found or not compiled", graph_id);
-                }
-            } else {
-                // --- STANDARD FIXED PIPELINE PATH ---
-                if let Some(pipeline) = pipeline {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some(&format!("Effect Pass: {:?}", effect.effect_type)),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: render_target,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                store: wgpu::StoreOp::Store,
-                            },
-                            depth_slice: None,
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
-
-                    render_pass.set_pipeline(pipeline);
-                    render_pass.set_bind_group(0, &input_bind_group, &[]);
-                    render_pass.set_bind_group(1, &uniform_bind_group, &[]);
-                    render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-                    render_pass
-                        .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                    render_pass.draw_indexed(0..6, 0, 0..1);
-                }
+                render_pass.set_pipeline(pipeline);
+                render_pass.set_bind_group(0, &input_bind_group, &[]);
+                render_pass.set_bind_group(1, &uniform_bind_group, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                render_pass
+                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..6, 0, 0..1);
             }
 
             // Swap ping-pong for next iteration
@@ -659,23 +623,6 @@ impl EffectChainRenderer {
         info!("Custom shader {} compiled successfully", effect_id);
 
         Ok(())
-    }
-
-    /// Update and compile a shader graph using the renderer's layouts
-    pub fn update_shader_graph(
-        &self,
-        manager: &mut crate::ShaderGraphManager,
-        graph_id: mapmap_core::shader_graph::GraphId,
-    ) -> crate::Result<()> {
-        manager
-            .compile_for_gpu(
-                graph_id,
-                &self.device,
-                &self.bind_group_layout,
-                &self.uniform_bind_group_layout,
-                self.target_format,
-            )
-            .map_err(|e| crate::RenderError::ShaderCompilation(e.to_string()))
     }
 
     /// Get the wgpu device.

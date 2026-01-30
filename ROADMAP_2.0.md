@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-30 06:00
+> **Stand:** 2026-01-20 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -822,15 +822,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   - ✅ Toolchain-Updates (stable verwendet, dtolnay/rust-toolchain@stable)
   - ✅ Windows-Build-Fixes (vcpkg-Pfade, git-ownership)
   - ✅ Audio-Feature in CI aktiviert
-  - ✅ FFmpeg in CI-Builds aktiviert (COMPLETED 2026-01-26)
-  - ✅ Library Verification & Pre-checks Hardening (COMPLETED 2026-01-26)
-  - ✅ Pre-commit Hooks Integration (COMPLETED 2026-01-26)
+  - ⬜ FFmpeg in CI-Builds aktivieren fehlt
   - ✅ Windows-CI-Builds (COMPLETED 2025-12-21, non-blocking)
   - ⬜ macOS-CI-Builds fehlen (optional)
 
 - 🟡 **Packaging**
   - 🟡 Windows-Installer (WiX) – Konfiguration (`crates/mapmap/wix/main.wxs`) vorhanden
-  - ✅ WiX Installer FFmpeg DLLs Fix (COMPLETED 2026-01-26)
   - ✅ App Icon Embedding (`winres` in `build.rs` konfiguriert)
   - ⬜ Linux Packaging (.deb)
   - ⬜ Linux-AppImage/Flatpak/Snap
