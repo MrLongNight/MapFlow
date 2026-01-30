@@ -1452,18 +1452,18 @@ impl App {
                         error!("Failed to connect to NDI source: {}", e);
                     }
                 }
-                mapmap_ui::UIAction::SetMidiAssignment(element_id, target_id) => {
+                mapmap_ui::UIAction::SetMidiAssignment(_element_id, _target_id) => {
                     #[cfg(feature = "midi")]
                     {
                         use mapmap_ui::config::MidiAssignmentTarget;
                         self.ui_state.user_config.set_midi_assignment(
-                            &element_id,
-                            MidiAssignmentTarget::MapFlow(target_id.clone()),
+                            &_element_id,
+                            MidiAssignmentTarget::MapFlow(_target_id.clone()),
                         );
                         tracing::info!(
                             "MIDI Assignment set via Global Learn: {} -> {}",
-                            element_id,
-                            target_id
+                            _element_id,
+                            _target_id
                         );
                     }
                 }
