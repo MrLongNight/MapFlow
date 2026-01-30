@@ -249,7 +249,7 @@ pub struct ModuleCanvas {
     /// Available outputs (id, name) for output node selection
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
-    editing_part_id: Option<ModulePartId>,
+    pub editing_part_id: Option<ModulePartId>,
     /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
     pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
     /// Pending playback commands (Part ID, Command)
@@ -400,41 +400,27 @@ impl ModuleCanvas {
     }
 
     /// Renders the property editor popup for the currently selected node.
-    fn render_properties_popup(
+    /// Get the ID of the selected part
+    pub fn get_selected_part_id(&self) -> Option<ModulePartId> {
+        self.selected_parts.last().copied()
+    }
+
+    pub fn render_inspector_for_part(
         &mut self,
-        ctx: &egui::Context,
-        module: &mut mapmap_core::module::MapFlowModule,
+        ui: &mut Ui,
+        part: &mut mapmap_core::module::ModulePart,
         actions: &mut Vec<UIAction>,
+        module_id: mapmap_core::module::ModuleId,
     ) {
-        let mut changed_part_id = None;
-        if let Some(part_id) = self.editing_part_id {
-            let part_exists = module.parts.iter().any(|p| p.id == part_id);
+        use mapmap_core::module::*;
+        let part_id = part.id;
+        let mut changed_part_id: Option<ModulePartId> = None;
 
-            if !part_exists {
-                self.editing_part_id = None;
-                return;
-            }
-
-            let mut is_open = true;
-            let part = module.parts.iter().find(|p| p.id == part_id).unwrap();
-            let (_, _, icon, type_name) = Self::get_part_style(&part.part_type);
-
-            egui::Window::new(format!("{} {} Properties", icon, type_name))
-                .open(&mut is_open)
-                .default_pos(ctx.content_rect().center())
-                .resizable(true)
-                .vscroll(true)
-                .show(ctx, |ui| {
-                    // Find the part to edit from the module's parts list
-                    if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                        use mapmap_core::module::*;
-
-                        // The property UI code from the old side panel starts here
-                        egui::ScrollArea::vertical()
-                            .auto_shrink([false, false])
-                            .show(ui, |ui| {
-                                // --- Input Configuration ---
-                                self.render_trigger_config_ui(ui, part);
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                // --- Input Configuration ---
+                self.render_trigger_config_ui(ui, part);
                                 ui.separator();
 
                                 match &mut part.part_type {
@@ -942,7 +928,7 @@ impl ModuleCanvas {
                                                                 .desired_width(160.0),
                                                         );
                                                         if ui.button("📂").on_hover_text("Select Media File").clicked() {
-                                                            actions.push(crate::UIAction::PickMediaFile(module.id, part_id));
+                                                            actions.push(crate::UIAction::PickMediaFile(module_id, part_id));
                                                         }
                                                     });
                                                 });
@@ -2087,13 +2073,6 @@ impl ModuleCanvas {
                                 ui.label(format!("Inputs: {}", part.inputs.len()));
                                 ui.label(format!("Outputs: {}", part.outputs.len()));
                             });
-                    }
-                });
-
-            if !is_open {
-                self.editing_part_id = None;
-            }
-        }
     }
 
     fn load_svg_icon(path: &std::path::Path, ctx: &egui::Context) -> Option<TextureHandle> {
@@ -2377,7 +2356,7 @@ impl ModuleCanvas {
         ui: &mut Ui,
         manager: &mut ModuleManager,
         locale: &LocaleManager,
-        actions: &mut Vec<crate::UIAction>,
+        _actions: &mut [crate::UIAction],
     ) {
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
@@ -3211,8 +3190,7 @@ impl ModuleCanvas {
         if let Some(module) = active_module {
             // Render the canvas taking up the full available space
             self.render_canvas(ui, module, locale);
-            // The properties popup is now rendered at the top level
-            self.render_properties_popup(ui.ctx(), module, actions);
+            // Properties popup removed - moved to docked inspector
         } else {
             // Show a message if no module is selected
             ui.centered_and_justified(|ui| {
@@ -3968,7 +3946,9 @@ impl ModuleCanvas {
             ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
                 ui.vertical(|ui| {
                     if ui.button("⚙ Open Properties").clicked() {
-                        self.editing_part_id = Some(part_id);
+                        // Select the part to show it in the inspector
+                        self.selected_parts.clear();
+                        self.selected_parts.push(part_id);
                         self.context_menu_part = None;
                         self.context_menu_pos = None;
                     }
