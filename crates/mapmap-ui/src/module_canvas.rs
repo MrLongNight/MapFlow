@@ -2358,6 +2358,38 @@ impl ModuleCanvas {
         locale: &LocaleManager,
         _actions: &mut [crate::UIAction],
     ) {
+        // === KEYBOARD SHORTCUTS ===
+        if !self.selected_parts.is_empty() && !ui.memory(|m| m.focused().is_some()) {
+            if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space)) {
+                if let Some(module_id) = self.active_module_id {
+                    if let Some(module) = manager.get_module_mut(module_id) {
+                        for part_id in &self.selected_parts {
+                            if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                                if let mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { .. },
+                                ) = part.part_type
+                                {
+                                    // Toggle playback
+                                    let is_playing = self
+                                        .player_info
+                                        .get(part_id)
+                                        .map(|info| info.is_playing)
+                                        .unwrap_or(false);
+
+                                    let command = if is_playing {
+                                        MediaPlaybackCommand::Pause
+                                    } else {
+                                        MediaPlaybackCommand::Play
+                                    };
+                                    self.pending_playback_commands.push((*part_id, command));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // === APPLY LEARNED MIDI VALUES ===
         if let Some((part_id, channel, cc_or_note, is_note)) = self.learned_midi.take() {
             if let Some(module_id) = self.active_module_id {
@@ -5576,6 +5608,46 @@ impl ModuleCanvas {
                 egui::FontId::proportional(10.0 * self.zoom),
                 Color32::from_gray(180), // Slightly brighter for readability
             );
+        }
+
+        // Draw Media Playback Progress Bar
+        if let mapmap_core::module::ModulePartType::Source(
+            mapmap_core::module::SourceType::MediaFile { .. },
+        ) = &part.part_type
+        {
+            if let Some(info) = self.player_info.get(&part.id) {
+                let duration = info.duration.max(0.001);
+                let progress = (info.current_time / duration).clamp(0.0, 1.0) as f32;
+                let is_playing = info.is_playing;
+
+                let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
+                let bar_height = 4.0 * self.zoom;
+                let bar_y = rect.max.y - (offset_from_bottom * self.zoom) - bar_height;
+                let bar_width = rect.width() - 20.0 * self.zoom;
+                let bar_x = rect.min.x + 10.0 * self.zoom;
+
+                // Background
+                let bar_bg = Rect::from_min_size(
+                    Pos2::new(bar_x, bar_y),
+                    Vec2::new(bar_width, bar_height),
+                );
+                painter.rect_filled(bar_bg, 2.0 * self.zoom, Color32::from_gray(30));
+
+                // Progress
+                let progress_width = (progress * bar_width).max(2.0 * self.zoom);
+                let progress_rect = Rect::from_min_size(
+                    Pos2::new(bar_x, bar_y),
+                    Vec2::new(progress_width, bar_height),
+                );
+
+                let color = if is_playing {
+                    Color32::from_rgb(100, 255, 100) // Green
+                } else {
+                    Color32::from_rgb(255, 200, 50) // Yellow/Orange
+                };
+
+                painter.rect_filled(progress_rect, 2.0 * self.zoom, color);
+            }
         }
 
         // Draw audio trigger VU meter and live value display
