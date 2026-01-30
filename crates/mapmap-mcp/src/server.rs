@@ -1320,9 +1320,7 @@ mod tests {
         let error = resp.error.unwrap();
         assert!(error.message.contains("Invalid path"));
         // Could be traversal or extension error depending on order, but we check generic "Invalid path" prefix
-        assert!(
-            error.message.contains("Path traversal") || error.message.contains("Extension")
-        );
+        assert!(error.message.contains("Path traversal") || error.message.contains("Extension"));
 
         // Verify NO action was sent
         assert!(rx.try_recv().is_err());
@@ -1341,7 +1339,11 @@ mod tests {
         });
         let ext_resp = server.handle_request(&ext_req.to_string()).await.unwrap();
         assert!(ext_resp.error.is_some());
-        assert!(ext_resp.error.unwrap().message.contains("Extension 'sh' is not allowed"));
+        assert!(ext_resp
+            .error
+            .unwrap()
+            .message
+            .contains("Extension 'sh' is not allowed"));
 
         // Test valid path
         let valid_req = json!({

@@ -1388,13 +1388,6 @@ impl App {
                         }
                     });
                 }
-                mapmap_ui::UIAction::SetMediaFile(module_id, part_id, path) => {
-                    let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
-                        module_id,
-                        part_id,
-                        PathBuf::from(path),
-                    ));
-                }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -2818,10 +2811,10 @@ impl App {
                                                                             self.ui_state.module_canvas.active_module_id,
                                                                             self.ui_state.module_canvas.editing_part_id
                                                                         ) {
-                                            self.ui_state.actions.push(mapmap_ui::UIAction::SetMediaFile(
+                                                                            let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
                                                                                 module_id,
                                                                                 part_id,
-                                                                                path.to_string_lossy().to_string()
+                                                                                path.clone()
                                                                             ));
                                                                         }
                                                                     }

@@ -364,6 +364,11 @@ impl Default for ModuleCanvas {
 }
 
 impl ModuleCanvas {
+    /// Returns the ID of the part currently being edited
+    pub fn get_editing_part_id(&self) -> Option<ModulePartId> {
+        self.editing_part_id
+    }
+
     fn ensure_icons_loaded(&mut self, ctx: &egui::Context) {
         if !self.plug_icons.is_empty() {
             return;
