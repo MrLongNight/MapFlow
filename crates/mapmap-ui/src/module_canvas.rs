@@ -249,7 +249,7 @@ pub struct ModuleCanvas {
     /// Available outputs (id, name) for output node selection
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
-    editing_part_id: Option<ModulePartId>,
+    pub editing_part_id: Option<ModulePartId>,
     /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
     pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
     /// Pending playback commands (Part ID, Command)
