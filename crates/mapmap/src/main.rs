@@ -792,6 +792,9 @@ impl App {
                     info!("Exit autosave successful to {:?}", autosave_path);
                 }
             }
+            winit::event::Event::NewEvents(_) => {
+                // (Reset moved to AboutToWait to ensure single reset per game loop tick)
+            }
             winit::event::Event::AboutToWait => {
                 // --- Non-blocking Frame Limiter ---
                 let target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
@@ -843,14 +846,13 @@ impl App {
                 }
 
                 // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
-                // This ensures output windows update immediately, not after event dispatch
-                let output_ids: Vec<u64> =
-                    self.window_manager.iter().map(|wc| wc.output_id).collect();
-                for output_id in output_ids {
-                    if let Err(e) = self.render(output_id) {
-                        error!("Render error on output {}: {}", output_id, e);
-                    }
-                }
+                // Reset frame-local caches HERE, exactly once per frame update loop.
+                // This prevents race conditions where NewEvents fires multiple times (e.g. input events).
+
+                // Note: We removed the manual 'render()' loop here because we call 'request_redraw()'
+                // at the end of this block/update cycle (lines 1311+).
+                // Rendering here AND in RedrawRequested caused double-rendering and potential race conditions.
+                // Now we rely on the OS event loop to trigger RedrawRequested -> render().
 
                 // Process audio
                 // Process audio
@@ -1301,9 +1303,27 @@ impl App {
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update Effect Automation
-                // Redraw all windows - Optimized to avoid allocation
+                // Update Effect Automation
+                // Redraw policy:
+                // - Main Window (ID 0): Use request_redraw() to play nice with winit/egui event loop.
+                // - Projector Outputs (ID > 0): FORCE render immediately. Relying on request_redraw()
+                //   causes freezing when the main loop is blocked by UI interaction (e.g. mouse drag).
+
+                // 1. Collect IDs and handle request_redraw for ID 0
+                let mut outputs_to_force_render = Vec::new();
                 for window_context in self.window_manager.iter() {
-                    window_context.window.request_redraw();
+                    if window_context.output_id == 0 {
+                        window_context.window.request_redraw();
+                    } else {
+                        outputs_to_force_render.push(window_context.output_id);
+                    }
+                }
+
+                // 2. Force render outputs (mutable borrow requires ending previous iteration)
+                for output_id in outputs_to_force_render {
+                    if let Err(e) = self.render(output_id) {
+                        error!("Render error on output {}: {}", output_id, e);
+                    }
                 }
 
                 // Also ensure egui updates for previews
@@ -2017,15 +2037,7 @@ impl App {
 
                 // Upload to GPU if data is on CPU
                 if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                    if log_this_frame {
-                        tracing::info!(
-                            "Frame upload: mod={} part={} size={}x{}",
-                            mod_id,
-                            part_id,
-                            frame.format.width,
-                            frame.format.height
-                        );
-                    }
+                    // (Log removed to reduce spam)
                     texture_pool.upload_data(
                         queue,
                         &tex_name,
@@ -2084,6 +2096,7 @@ impl App {
                 ) = &part.part_type
                 {
                     active_preview_sources.push((
+                        module.id,
                         part.id,
                         *brightness,
                         *contrast,
@@ -2106,7 +2119,6 @@ impl App {
 
         // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
-        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
 
         let mut preview_encoder =
             self.backend
@@ -2118,6 +2130,7 @@ impl App {
         let mut has_preview_work = false;
 
         for (
+            module_id,
             part_id,
             brightness,
             contrast,
@@ -2132,7 +2145,7 @@ impl App {
             offset_y,
         ) in active_preview_sources
         {
-            let raw_tex_name = format!("part_{}", part_id);
+            let raw_tex_name = format!("part_{}_{}", module_id, part_id);
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
@@ -2339,10 +2352,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { .. },
+                    mapmap_core::module::OutputType::Projector { id, .. },
                 ) = &part.part_type
                 {
-                    Some(part.id) // Use part.id for consistency with render pipeline
+                    Some(*id) // Use logical Projector ID to match Window ID
                 } else {
                     None
                 }
@@ -3591,8 +3604,8 @@ impl App {
                 }
 
                 // C. Process and Render Each Op (Accumulate)
-                self.mesh_renderer.begin_frame();
-                for (module_id, op) in target_ops {
+                // self.mesh_renderer.begin_frame(); // MOVED to NewEvents to prevent reset per output!
+                for (op_index, (module_id, op)) in target_ops.iter().enumerate() {
                     // Determine source texture view
                     let owned_source_view = if let Some(src_id) = op.source_part_id {
                         let tex_name = format!("part_{}_{}", module_id, src_id);
@@ -3710,7 +3723,14 @@ impl App {
                             }
                         }
 
-                        // --- Render Mesh (Warping) ---
+                        // --- Render to Output ---
+                        // Use Load for 2nd+ layer to accumulate
+                        let load_op = if op_index == 0 {
+                            wgpu::LoadOp::Clear(wgpu::Color::BLACK)
+                        } else {
+                            wgpu::LoadOp::Load
+                        };
+
                         {
                             let (vertex_buffer, index_buffer, index_count) =
                                 self.mesh_buffer_cache.get_buffers(
@@ -3736,14 +3756,14 @@ impl App {
                             let texture_bind_group =
                                 self.mesh_renderer.create_texture_bind_group(final_view);
 
-                            let mut render_pass =
+                            let mut rpass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Mesh Render Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                                         view: mesh_target_view_ref,
                                         resolve_target: None,
                                         ops: wgpu::Operations {
-                                            load: wgpu::LoadOp::Load, // ACCUMULATE
+                                            load: load_op,
                                             store: wgpu::StoreOp::Store,
                                         },
                                         depth_slice: None,
@@ -3752,8 +3772,9 @@ impl App {
                                     occlusion_query_set: None,
                                     timestamp_writes: None,
                                 });
+
                             self.mesh_renderer.draw(
-                                &mut render_pass,
+                                &mut rpass,
                                 vertex_buffer,
                                 index_buffer,
                                 index_count,
@@ -3762,10 +3783,8 @@ impl App {
                                 true,
                             );
                         }
-                    } else {
-                        // Log missing view?
                     }
-                } // End Loop
+                }
 
                 // D. Post-Processing
                 if needs_post_processing {
