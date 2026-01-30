@@ -2149,7 +2149,7 @@ impl App {
         // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
 
-        let mut preview_encoder =
+        let mut encoder =
             self.backend
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
