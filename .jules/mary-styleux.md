@@ -26,7 +26,3 @@ This pattern should be applied to other time-based nodes (e.g., Timeline, Sequen
 2. Dispatch this action from the UI (instead of calling blocking code).
 3. Handle the action in the main event loop by spawning a `tokio` task.
 4. Send the result back to the main thread via an internal channel (e.g., `McpAction` or dedicated channel).
-
-## 2026-01-28 – [Docked Inspector Preference]
-**Learning:** Floating property popups (`egui::Window`) in a node graph environment obscure the context (the graph connections) and are unpredictable in positioning/focus management, making them unsafe for live tweaking.
-**Action:** Migrated "Node Properties" from a popup to a dedicated, docked `InspectorPanel` on the right side. This ensures the node graph remains visible while editing, and provides a stable, predictable target for mouse interaction. Future node-based editors (e.g., Shader Graph) should follow this pattern.

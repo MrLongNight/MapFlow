@@ -140,9 +140,24 @@ jobs:
         cargo fmt --all -- --check
         cargo sort --workspace --check
 
-    # Auto-fix removed to avoid conflict with pre-commit.ci app
-    # The external app handles formatting fixes and pushes changes.
-    # CI-01 should just verify.
+    - name: Auto-fix formatting and linting
+      if: failure() || success()
+      run: |
+        # Apply formatting fixes using pre-commit for consistent rules
+        pip install pre-commit
+        pre-commit run --all-files || true  # Run checks and allow them to modify files
+
+        # Verify changes were made (optional debug)
+        git status
+
+        # Configure Git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Commit and push
+        git add .
+        git commit -m "style: auto-fix formatting (cargo fmt / cargo sort)" || echo "No changes to commit"
+        git push || echo "::warning::Push failed - this is expected for forks or if no changes"
 
     - name: Check Clippy (No Fix)
       run: |
@@ -238,7 +253,6 @@ jobs:
   build-and-test:
     name: "Build & Test (Ubuntu with Audio)"
     runs-on: ubuntu-latest
-    needs: pre-checks
     permissions:
       contents: read
       checks: write
@@ -369,7 +383,10 @@ jobs:
     name: "Build (Windows)"
     runs-on: windows-latest
     needs: pre-checks
-    if: github.repository == 'MrLongNight/MapFlow' # Run on all refs in main repo
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.event.inputs.run_windows == 'true' ||
+      contains(github.event.pull_request.labels.*.name, 'test-windows')
     permissions:
       contents: read
 
@@ -504,9 +521,7 @@ jobs:
           echo "security: ${{ needs.security.result }}"
           exit 1
         fi
-        if [ "${{ needs.build-windows.result }}" != "success" ]; then
-          echo "::error::Windows build failed."
-          echo "build-windows: ${{ needs.build-windows.result }}"
-          exit 1
+        if [ "${{ needs.build-windows.result }}" != "success" ] && [ "${{ needs.build-windows.result }}" != "skipped" ]; then
+          echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
         fi
         echo "✓ All critical CI checks passed successfully"

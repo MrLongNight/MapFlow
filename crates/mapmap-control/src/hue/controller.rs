@@ -213,9 +213,11 @@ impl HueController {
                 }
             }
 
-            if !stream_updates.is_empty() && (tx.send(stream_updates).await).is_err() {
-                error!("Hue stream channel closed unexpectedly");
-                self.is_connected = false;
+            if !stream_updates.is_empty() {
+                if let Err(_) = tx.send(stream_updates).await {
+                    error!("Hue stream channel closed unexpectedly");
+                    self.is_connected = false;
+                }
             }
         }
     }

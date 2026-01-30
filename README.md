@@ -35,7 +35,7 @@ MapFlow is now a fully functional Rust application. The migration from ImGui to 
 
 ## 🗺️ Roadmap Overview
 
-For a detailed status, see the [ROADMAP](ROADMAP_2.0.md).
+For a detailed status, see the [ROADMAP](ROADMAP.md).
 
 **Phase 1: Core Engine**
 -   [x] Layer system with transforms, opacity, and blend modes
@@ -112,7 +112,7 @@ crates/
 
 ## 🤝 Contributing
 
-See the [Contributing Guidelines](CONTRIBUTING.md).
+See the [Contributing Guidelines](docs/02-CONTRIBUTING/CONTRIBUTING.md).
 
 ## 📄 License
 
