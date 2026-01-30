@@ -1303,9 +1303,27 @@ impl App {
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update Effect Automation
-                // Redraw all windows - Optimized to avoid allocation
+                // Update Effect Automation
+                // Redraw policy:
+                // - Main Window (ID 0): Use request_redraw() to play nice with winit/egui event loop.
+                // - Projector Outputs (ID > 0): FORCE render immediately. Relying on request_redraw()
+                //   causes freezing when the main loop is blocked by UI interaction (e.g. mouse drag).
+
+                // 1. Collect IDs and handle request_redraw for ID 0
+                let mut outputs_to_force_render = Vec::new();
                 for window_context in self.window_manager.iter() {
-                    window_context.window.request_redraw();
+                    if window_context.output_id == 0 {
+                        window_context.window.request_redraw();
+                    } else {
+                        outputs_to_force_render.push(window_context.output_id);
+                    }
+                }
+
+                // 2. Force render outputs (mutable borrow requires ending previous iteration)
+                for output_id in outputs_to_force_render {
+                    if let Err(e) = self.render(output_id) {
+                        error!("Render error on output {}: {}", output_id, e);
+                    }
                 }
 
                 // Also ensure egui updates for previews
@@ -2078,6 +2096,7 @@ impl App {
                 ) = &part.part_type
                 {
                     active_preview_sources.push((
+                        module.id,
                         part.id,
                         *brightness,
                         *contrast,
@@ -2111,6 +2130,7 @@ impl App {
         let mut has_preview_work = false;
 
         for (
+            module_id,
             part_id,
             brightness,
             contrast,
@@ -2125,7 +2145,7 @@ impl App {
             offset_y,
         ) in active_preview_sources
         {
-            let raw_tex_name = format!("part_{}", part_id);
+            let raw_tex_name = format!("part_{}_{}", module_id, part_id);
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
