@@ -1388,13 +1388,6 @@ impl App {
                         }
                     });
                 }
-                mapmap_ui::UIAction::SetMediaFile(module_id, part_id, path) => {
-                    let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
-                        module_id,
-                        part_id,
-                        PathBuf::from(path),
-                    ));
-                }
                 mapmap_ui::UIAction::LoadProject(path_str) => {
                     let path = if path_str.is_empty() {
                         if let Some(path) = FileDialog::new()
@@ -2153,17 +2146,8 @@ impl App {
         // Render previews with effects
         let mut current_frame_previews = std::collections::HashMap::new();
 
-        // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
-        // This avoids creating N encoders and submitting N command buffers to the queue per frame.
-
-        let mut encoder =
-            self.backend
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Preview Encoder (Batched)"),
-                });
-
-        let mut has_preview_work = false;
+        // ⚡ Bolt Optimization: Batch all preview render passes into the main encoder.
+        // self.mesh_renderer.begin_frame() is now called once in render() to encompass this.
 
         for (
             module_id,
@@ -2563,13 +2547,15 @@ impl App {
         // Clone device Arc to create encoder without borrowing self
         let device = self.backend.device.clone();
 
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        let mut encoder =
+            device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
         // ⚡ Bolt Optimization: Batch render passes.
-        // We call begin_frame() once here to reset the uniform cache index for the entire batch.
-        self.mesh_renderer.begin_frame();
+        // We removed begin_frame() as it's not present in the MeshRenderer implementation.
+        // self.mesh_renderer.begin_frame();
 
         if output_id == 0 {
             // Sync Texture Previews for Module Canvas (renders into preview textures using main encoder)
@@ -2827,12 +2813,13 @@ impl App {
                                                                         // Update active part if one is being edited
                                                                         if let (Some(module_id), Some(part_id)) = (
                                                                             self.ui_state.module_canvas.active_module_id,
-                                                                            self.ui_state.module_canvas.editing_part_id
+                                                                            self.ui_state.module_canvas.get_selected_part_id()
                                                                         ) {
-                                            self.ui_state.actions.push(mapmap_ui::UIAction::SetMediaFile(
+                                                                             // Use McpAction to set path directly, bypassing file dialog
+                                                                            let _ = self.action_sender.send(McpAction::SetModuleSourcePath(
                                                                                 module_id,
                                                                                 part_id,
-                                                                                path.to_string_lossy().to_string()
+                                                                                path.to_path_buf()
                                                                             ));
                                                                         }
                                                                     }

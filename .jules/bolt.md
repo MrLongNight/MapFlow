@@ -21,3 +21,7 @@
 ## 2026-06-15 - Queue Submission Batching
 **Learning:** Submitting command buffers to the `wgpu` queue inside a loop (e.g. for generating N previews) causes significant driver overhead due to repeated synchronization and validation.
 **Action:** Batch multiple render passes into a single `CommandEncoder` and submit once at the end of the loop. Use `begin_frame` (if available) to reset resource caches before the batch starts to ensure optimal buffer reuse.
+
+## 2026-01-04 - Handling Git Conflict Markers in Tools
+**Learning:** The `replace_with_git_merge_diff` tool parses `<<<<<<<`, `=======`, `>>>>>>>` delimiters. If the file content *already* contains these markers (e.g., from a failed merge), using them inside the `SEARCH` block causes ambiguity and tool failure.
+**Action:** When resolving merge conflicts that are already in the file, do not use `replace_with_git_merge_diff`. Instead, use `sed` to delete the marker lines by line number (found via `grep -n`), or rewrite the file completely if safe.

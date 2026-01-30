@@ -41,7 +41,3 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-19 - Conflict Resolution & Missing Features Audit
 **Erkenntnis:** Merge-Konflikt in `ROADMAP.md` entdeckt und behoben (Version 1.9.2). Zwei bedeutende Features (Hue Integration, Node Module System) fehlten im Changelog.
 **Aktion:** ROADMAP-Status für FFmpeg/CI und Hue aktualisiert. Fehlende Changelog-Einträge für Commits #b8dd83b und #484c78e nachgetragen.
-
-## 2026-01-30 - Missing PR Link for #410
-**Erkenntnis:** PR #410 (docs: Fix broken links) was in CHANGELOG but missing the PR number link. Roadmap "Stand" was outdated (20th vs 30th).
-**Aktion:** Added (#410) to CHANGELOG entry and updated ROADMAP Stand date to 2026-01-30.
