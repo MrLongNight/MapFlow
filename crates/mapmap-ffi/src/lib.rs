@@ -1,13 +1,13 @@
-//! MapFlow FFI - Foreign Function Interface Bridge
+//! MapFlow FFI - Foreign Function Interface
 //!
-//! This crate provides FFI bindings to external SDKs including:
-//! - NDI (Network Device Interface)
-//! - DeckLink SDI
-//! - Spout (Windows)
-//! - Syphon (macOS)
+//! This crate provides C-compatible bindings for the MapFlow core, enabling
+//! integration with external applications (e.g. legacy C++ systems).
 //!
-//! NOTE: This is a placeholder for Phase 0.
-//! Full implementation will be completed in Phase 5.
+//! It uses `cbindgen` to generate the C header file (`mapflow.h`).
+//!
+//! ## Status
+//!
+//! 🚧 **Alpha** - The ABI is currently unstable and subject to change.
 
 use thiserror::Error;
 

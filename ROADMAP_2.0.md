@@ -903,6 +903,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 | `mapmap-media` | Medien-Handling | `ffmpeg-next`, `image` | ✅ Beta |
 | `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
 | `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
+| `mapmap-ffi` | C/C++ Foreign Function Interface | `cbindgen` | 🚧 Alpha |
 | `mapmap-mcp` | MCP-Server Integration | `serde_json` | ✅ Beta |
 
 ### Modul-Abhängigkeiten

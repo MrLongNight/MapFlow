@@ -44,6 +44,7 @@ docs/
 ├── 07-TUTORIALS/           Learning Resources
 ├── 08-TECHNICAL/           Deep Technical Reference
 ├── 09-RESOURCES/           FAQ, Glossary, Links
+├── 10-OSC-CONTROL/         OSC Protocol & Implementation
 └── assets/                 Images, Diagrams, Media
 ```
 
@@ -61,7 +62,8 @@ docs/
 | Roadmap | `06-ROADMAP/PROJECT-PHASES.md` | Phase overview |
 | Features | `02-USER-GUIDE/FEATURES.md` | What MapFlow can do |
 | Tutorials | `07-TUTORIALS/README.md` | Learning path |
+| OSC Control | `10-OSC-CONTROL/` | OSC Protocol & Setup |
 
 ---
 
-Last Updated: 2026-01-20
+Last Updated: 2026-01-30
