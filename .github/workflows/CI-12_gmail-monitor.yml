@@ -1,0 +1,303 @@
+name: "CI-12: Gmail Jules Monitor"
+
+# ═══════════════════════════════════════════════════════════════
+# GMAIL TRIGGER: Monitors Jules email notifications for faster response
+# Alternative to API polling - triggers on email events
+# ═══════════════════════════════════════════════════════════════
+
+on:
+  schedule:
+    # Run every 5 minutes to check for new Jules emails
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug logging'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  JULES_AUTOMATION_ENABLED: true
+  # Email sender to filter for
+  JULES_EMAIL_SENDER: "noreply@github.com"
+  # How far back to check for emails (in minutes)
+  EMAIL_CHECK_WINDOW_MINUTES: 10
+
+jobs:
+  check-enabled:
+    name: Check Automation Status
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+      has_credentials: ${{ steps.check-creds.outputs.has_credentials }}
+    steps:
+      - name: Check if automation is enabled
+        id: check
+        run: |
+          if [ "${{ env.JULES_AUTOMATION_ENABLED }}" == "true" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "⏹️ Jules automation is DISABLED"
+          fi
+
+      - name: Check Gmail credentials
+        id: check-creds
+        run: |
+          if [ -n "${{ secrets.GMAIL_REFRESH_TOKEN }}" ]; then
+            echo "has_credentials=true" >> $GITHUB_OUTPUT
+            echo "✅ Gmail credentials configured"
+          else
+            echo "has_credentials=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Gmail credentials NOT configured - workflow will skip"
+          fi
+
+  monitor-emails:
+    name: Check Jules Emails
+    runs-on: ubuntu-latest
+    needs: check-enabled
+    if: needs.check-enabled.outputs.enabled == 'true' && needs.check-enabled.outputs.has_credentials == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install googleapis
+
+      - name: Check Gmail for Jules notifications
+        id: check-gmail
+        uses: actions/github-script@v7
+        env:
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          DEBUG_MODE: ${{ github.event.inputs.debug || 'false' }}
+        with:
+          script: |
+            const { google } = require('googleapis');
+
+            const debug = process.env.DEBUG_MODE === 'true';
+
+            if (!process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET || !process.env.GMAIL_REFRESH_TOKEN) {
+              core.warning('Gmail credentials not fully configured');
+              return;
+            }
+
+            // Setup OAuth2 client
+            const oauth2Client = new google.auth.OAuth2(
+              process.env.GMAIL_CLIENT_ID,
+              process.env.GMAIL_CLIENT_SECRET
+            );
+
+            oauth2Client.setCredentials({
+              refresh_token: process.env.GMAIL_REFRESH_TOKEN
+            });
+
+            const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+            // Calculate time window (last 10 minutes)
+            const checkWindow = parseInt('${{ env.EMAIL_CHECK_WINDOW_MINUTES }}') || 10;
+            const afterDate = new Date(Date.now() - checkWindow * 60 * 1000);
+            const afterTimestamp = Math.floor(afterDate.getTime() / 1000);
+
+            // Search for Jules-related emails
+            const repoName = context.repo.repo;
+            const query = `subject:${repoName} after:${afterTimestamp} (subject:PR OR subject:Jules OR from:noreply@github.com)`;
+
+            if (debug) core.info(`Query: ${query}`);
+
+            try {
+              const response = await gmail.users.messages.list({
+                userId: 'me',
+                q: query,
+                maxResults: 10
+              });
+
+              const messages = response.data.messages || [];
+              core.info(`Found ${messages.length} relevant emails`);
+
+              if (messages.length === 0) {
+                core.info('No new Jules emails to process');
+                return;
+              }
+
+              // Email patterns for Jules notifications
+              const patterns = {
+                prCreated: /\[.+\].*\(PR #(\d+)\)/,
+                sessionPaused: /waiting for input|needs input|paused/i,
+                sessionFailed: /failed|error|exception/i,
+                planReady: /plan ready|review.*plan/i
+              };
+
+              // Process each email
+              for (const msg of messages) {
+                const email = await gmail.users.messages.get({
+                  userId: 'me',
+                  id: msg.id,
+                  format: 'full'
+                });
+
+                const headers = email.data.payload.headers;
+                const subject = headers.find(h => h.name === 'Subject')?.value || '';
+                const from = headers.find(h => h.name === 'From')?.value || '';
+
+                // Get email body
+                let body = '';
+                if (email.data.payload.body?.data) {
+                  body = Buffer.from(email.data.payload.body.data, 'base64').toString('utf-8');
+                } else if (email.data.payload.parts) {
+                  for (const part of email.data.payload.parts) {
+                    if (part.mimeType === 'text/plain' && part.body?.data) {
+                      body = Buffer.from(part.body.data, 'base64').toString('utf-8');
+                      break;
+                    }
+                  }
+                }
+
+                if (debug) {
+                  core.info(`Email: ${subject}`);
+                  core.info(`From: ${from}`);
+                }
+
+                // Detect email type
+                let emailType = 'UNKNOWN';
+                let prNumber = null;
+                let issueNumber = null;
+
+                // Check for PR created
+                const prMatch = subject.match(patterns.prCreated) || body.match(/PR #(\d+)/);
+                if (prMatch) {
+                  prNumber = prMatch[1];
+                  emailType = 'PR_CREATED';
+                }
+
+                // Check for session states
+                if (patterns.sessionPaused.test(body)) {
+                  emailType = 'NEEDS_INPUT';
+                }
+                if (patterns.sessionFailed.test(subject) || patterns.sessionFailed.test(body)) {
+                  emailType = 'FAILED';
+                }
+                if (patterns.planReady.test(body)) {
+                  emailType = 'PLAN_READY';
+                }
+
+                // Extract issue number from body
+                const issueMatch = body.match(/issue[s]?\s*#?(\d+)/i) || body.match(/closes?\s*#(\d+)/i);
+                if (issueMatch) {
+                  issueNumber = issueMatch[1];
+                }
+
+                core.info(`Detected: ${emailType} | PR: ${prNumber || 'N/A'} | Issue: ${issueNumber || 'N/A'}`);
+
+                // Take action based on email type
+                switch (emailType) {
+                  case 'PR_CREATED':
+                    if (prNumber) {
+                      core.info(`✅ PR #${prNumber} detected - triggering auto-merge check`);
+
+                      // Add auto-merge label to PR
+                      try {
+                        await github.rest.issues.addLabels({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: parseInt(prNumber),
+                          labels: ['jules-pr', 'auto-merge']
+                        });
+                        core.info(`Added labels to PR #${prNumber}`);
+                      } catch (labelErr) {
+                        core.warning(`Could not add labels: ${labelErr.message}`);
+                      }
+                    }
+                    break;
+
+                  case 'NEEDS_INPUT':
+                    core.warning(`⚠️ Jules needs input - check session`);
+
+                    // Find related issue and add comment
+                    if (issueNumber) {
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: parseInt(issueNumber),
+                        body: `⚠️ **Jules wartet auf Eingabe**\n\nDie Jules-Session ist pausiert und benötigt Input.\n\n**Email-Inhalt (Auszug):**\n> ${body.slice(0, 500)}...\n\nBitte überprüfe die Session und antworte entsprechend.`
+                      });
+                    }
+                    break;
+
+                  case 'FAILED':
+                    core.error(`❌ Jules session failed`);
+
+                    if (issueNumber) {
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: parseInt(issueNumber),
+                        body: `❌ **Jules Session fehlgeschlagen**\n\n**Fehlermeldung:**\n\`\`\`\n${body.slice(0, 1000)}\n\`\`\`\n\nBitte überprüfe die Session und starte ggf. neu.`
+                      });
+                    }
+                    break;
+
+                  case 'PLAN_READY':
+                    core.info(`📋 Plan ready for review`);
+                    // Plans are auto-approved via API, but log for visibility
+                    break;
+                }
+
+                // Mark email as read (optional - prevents reprocessing)
+                try {
+                  await gmail.users.messages.modify({
+                    userId: 'me',
+                    id: msg.id,
+                    requestBody: {
+                      removeLabelIds: ['UNREAD']
+                    }
+                  });
+                } catch (markErr) {
+                  if (debug) core.warning(`Could not mark as read: ${markErr.message}`);
+                }
+              }
+
+            } catch (error) {
+              core.error(`Gmail API error: ${error.message}`);
+              throw error;
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📧 CI-12: Gmail Jules Monitor" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Check window:** ${{ env.EMAIL_CHECK_WINDOW_MINUTES }} minutes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  fallback-notice:
+    name: Credentials Not Configured
+    runs-on: ubuntu-latest
+    needs: check-enabled
+    if: needs.check-enabled.outputs.enabled == 'true' && needs.check-enabled.outputs.has_credentials == 'false'
+    steps:
+      - name: Notice
+        run: |
+          echo "⚠️ Gmail credentials not configured"
+          echo ""
+          echo "To enable Gmail monitoring, add these secrets to your repository:"
+          echo "  - GMAIL_CLIENT_ID"
+          echo "  - GMAIL_CLIENT_SECRET"
+          echo "  - GMAIL_REFRESH_TOKEN"
+          echo ""
+          echo "See: https://developers.google.com/gmail/api/quickstart"
