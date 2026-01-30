@@ -2547,11 +2547,9 @@ impl App {
         // Clone device Arc to create encoder without borrowing self
         let device = self.backend.device.clone();
 
-        let mut encoder =
-            device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
 
         // ⚡ Bolt Optimization: Batch render passes.
         // We removed begin_frame() as it's not present in the MeshRenderer implementation.
