@@ -54,28 +54,15 @@ pub struct MapFlowModule {
     /// How the module plays back
     /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
-<<<<<<< HEAD
-    /// Counter for generating part IDs (persistent)
-    #[serde(default = "default_next_part_id")]
-    pub next_part_id: ModulePartId,
-}
-
-fn default_next_part_id() -> ModulePartId {
-    1
-=======
     /// Next available Part ID
     #[serde(default = "default_next_part_id")]
     pub next_part_id: ModulePartId,
->>>>>>> main
 }
 
 impl MapFlowModule {
     /// Add a part to this module with proper socket configuration
-<<<<<<< HEAD
-=======
     /// Note: This is now a lower-level method. Use ModuleManager::add_part_to_module instead.
     /// Add a part to this module with proper socket configuration (Internal use)
->>>>>>> main
     pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
         let id = self.next_part_id;
         self.next_part_id += 1;
@@ -1809,11 +1796,6 @@ impl ModuleManager {
         part_type: PartType,
         position: (f32, f32),
     ) -> Option<ModulePartId> {
-<<<<<<< HEAD
-        self.modules
-            .get_mut(&module_id)
-            .map(|module| module.add_part(part_type, position))
-=======
         if let Some(module) = self.modules.get_mut(&module_id) {
             let _id = self.next_part_id;
             self.next_part_id += 1;
@@ -1821,7 +1803,6 @@ impl ModuleManager {
         } else {
             None
         }
->>>>>>> main
     }
 
     /// Create a new module
@@ -2003,13 +1984,8 @@ mod tests {
             output_config: config,
         });
 
-<<<<<<< HEAD
-        let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
-        let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
-=======
         let p1 = module.add_part_with_type(fft_part_type.clone(), (0.0, 0.0));
         let _unused_p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
->>>>>>> main
         let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         // Connect SubBass (index 0) and Air (index 8)

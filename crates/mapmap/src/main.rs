@@ -2821,11 +2821,7 @@ impl App {
                                                                             self.ui_state.module_canvas.active_module_id,
                                                                             self.ui_state.module_canvas.editing_part_id
                                                                         ) {
-<<<<<<< HEAD
-                                                                            self.ui_state.actions.push(mapmap_ui::UIAction::AssignMediaFile(
-=======
                                                                             self.ui_state.actions.push(mapmap_ui::UIAction::PickMediaFile(
->>>>>>> main
                                                                                 module_id,
                                                                                 part_id,
                                                                                 path.to_string_lossy().to_string()
