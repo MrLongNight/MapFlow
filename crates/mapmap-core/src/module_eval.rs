@@ -92,6 +92,7 @@ mod tests_evaluator {
             parts: vec![],
             connections: vec![],
             playback_mode: crate::module::ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         }
     }
 
@@ -1254,6 +1255,7 @@ mod tests_logic {
             parts: vec![],
             connections: vec![],
             playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
         }
     }
 
