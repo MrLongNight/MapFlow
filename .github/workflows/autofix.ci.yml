@@ -41,5 +41,7 @@ jobs:
       run: cargo clippy --fix --allow-dirty --allow-staged --workspace --no-default-features --features audio -- -A warnings
       continue-on-error: true
 
-    - name: Autofix anwenden
-      uses: autofix-ci/action@8bc06253bec489732e5f9c52884c7cace15c0160
+    - name: Commit changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "style: autofix code style [skip ci]"

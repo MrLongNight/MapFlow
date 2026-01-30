@@ -2197,7 +2197,7 @@ impl ModuleCanvas {
                     mapmap_core::module::AudioBand::SubBass => self
                         .audio_trigger_data
                         .band_energies
-                        .first()
+                        .get(0)
                         .copied()
                         .unwrap_or(0.0),
                     mapmap_core::module::AudioBand::Bass => self
@@ -2438,13 +2438,14 @@ impl ModuleCanvas {
                             .selected_text(current_name)
                             .width(160.0)
                             .show_ui(ui, |ui| {
-                                ui
+                                if ui
                                     .selectable_value(
                                         &mut self.active_module_id,
                                         None,
                                         "— None —",
                                     )
-                                    .clicked();
+                                    .clicked()
+                                {}
                                 ui.separator();
                                 for (id, name) in &module_names {
                                     if ui
@@ -3071,28 +3072,9 @@ impl ModuleCanvas {
                         ui.menu_button("📺 Output", |ui| {
                             ui.set_min_width(180.0);
                             if (show_all || "projector".contains(&filter)) && ui.button("📽️ Projector").clicked() {
-                                // Calculate next available ID
-                                let mut next_id = 1;
-                                if let Some(module_id) = self.active_module_id {
-                                    if let Some(module) = manager.get_module(module_id) {
-                                        let used_ids: Vec<u64> = module.parts.iter()
-                                            .filter_map(|p| {
-                                                if let ModulePartType::Output(OutputType::Projector { id, .. }) = &p.part_type {
-                                                    Some(*id)
-                                                } else {
-                                                    None
-                                                }
-                                            })
-                                            .collect();
-                                        while used_ids.contains(&next_id) {
-                                            next_id += 1;
-                                        }
-                                    }
-                                }
-
                                 self.add_module_node(manager, ModulePartType::Output(OutputType::Projector {
-                                    id: next_id,
-                                    name: format!("Projector {}", next_id),
+                                    id: 1,
+                                    name: "Projector 1".to_string(),
                                     fullscreen: false,
                                     hide_cursor: true,
                                     target_screen: 0,
@@ -3105,7 +3087,6 @@ impl ModuleCanvas {
                                 self.search_filter.clear();
                                 ui.close();
                             }
-
                         });
                     }
 
