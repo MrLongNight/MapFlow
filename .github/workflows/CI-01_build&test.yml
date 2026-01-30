@@ -253,6 +253,7 @@ jobs:
   build-and-test:
     name: "Build & Test (Ubuntu with Audio)"
     runs-on: ubuntu-latest
+    needs: pre-checks
     permissions:
       contents: read
       checks: write
