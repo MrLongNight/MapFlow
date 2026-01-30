@@ -95,7 +95,6 @@ pub enum UIAction {
     PickMediaFile(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
-        String,
     ),
     SetMediaFile(
         mapmap_core::module::ModuleId,

@@ -45,7 +45,3 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-30 - Missing PR Link for #410
 **Erkenntnis:** PR #410 (docs: Fix broken links) was in CHANGELOG but missing the PR number link. Roadmap "Stand" was outdated (20th vs 30th).
 **Aktion:** Added (#410) to CHANGELOG entry and updated ROADMAP Stand date to 2026-01-30.
-
-## 2026-01-26 - CI/CD & Packaging Fixes Documentation
-**Erkenntnis:** Several CI/CD and Installer fixes were merged and documented in CHANGELOG.md but missing from ROADMAP_2.0.md.
-**Aktion:** Updated ROADMAP_2.0.md to reflect the completion of FFmpeg integration in CI, pre-checks hardening, and WiX installer fixes.

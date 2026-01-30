@@ -34,9 +34,6 @@ fn default_saturation() -> f32 {
 fn default_scale() -> f32 {
     1.0
 }
-fn default_next_part_id() -> ModulePartId {
-    1
-}
 
 /// Represents a complete visual programming graph (Scene/Module)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -52,16 +49,19 @@ pub struct MapFlowModule {
     /// List of wires (connections)
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
+    /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
-    /// Next available Part ID
+    /// Counter for generating part IDs (persistent)
     #[serde(default = "default_next_part_id")]
     pub next_part_id: ModulePartId,
 }
 
+fn default_next_part_id() -> ModulePartId {
+    1
+}
+
 impl MapFlowModule {
     /// Add a part to this module with proper socket configuration
-    /// Note: This is now a lower-level method. Use ModuleManager::add_part_to_module instead.
-    /// Add a part to this module with proper socket configuration (Internal use)
     pub fn add_part(&mut self, part_type: PartType, position: (f32, f32)) -> ModulePartId {
         let id = self.next_part_id;
         self.next_part_id += 1;
@@ -113,18 +113,40 @@ impl MapFlowModule {
                 effect: None,
                 effect_active: false,
             }),
-            PartType::Output => ModulePartType::Output(OutputType::Projector {
-                id: 0,
-                name: "Output".to_string(),
-                fullscreen: false,
-                hide_cursor: true,
-                target_screen: 0,
-                show_in_preview_panel: true,
-                extra_preview_window: false,
-                output_width: 0,
-                output_height: 0,
-                output_fps: 60.0,
-            }),
+            PartType::Output => {
+                // Auto-assign next available Output ID
+                let used_ids: Vec<u64> = self
+                    .parts
+                    .iter()
+                    .filter_map(|p| {
+                        if let ModulePartType::Output(OutputType::Projector { id, .. }) =
+                            &p.part_type
+                        {
+                            Some(*id)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                let mut next_id = 1;
+                while used_ids.contains(&next_id) {
+                    next_id += 1;
+                }
+
+                ModulePartType::Output(OutputType::Projector {
+                    id: next_id,
+                    name: format!("Output {}", next_id),
+                    fullscreen: false,
+                    hide_cursor: true,
+                    target_screen: 0,
+                    show_in_preview_panel: true,
+                    extra_preview_window: false,
+                    output_width: 0,
+                    output_height: 0,
+                    output_fps: 60.0,
+                })
+            }
         };
 
         let mut part = ModulePart {
@@ -153,8 +175,9 @@ impl MapFlowModule {
         part_type: ModulePartType,
         position: (f32, f32),
     ) -> ModulePartId {
-        let id = self.next_part_id;
-        self.next_part_id += 1;
+        static NEXT_PART_ID: std::sync::atomic::AtomicU64 =
+            std::sync::atomic::AtomicU64::new(10000);
+        let id = NEXT_PART_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let mut part = ModulePart {
             id,
@@ -1795,13 +1818,9 @@ impl ModuleManager {
         part_type: PartType,
         position: (f32, f32),
     ) -> Option<ModulePartId> {
-        if let Some(module) = self.modules.get_mut(&module_id) {
-            let _id = self.next_part_id;
-            self.next_part_id += 1;
-            Some(module.add_part(part_type, position))
-        } else {
-            None
-        }
+        self.modules
+            .get_mut(&module_id)
+            .map(|module| module.add_part(part_type, position))
     }
 
     /// Create a new module
@@ -1983,8 +2002,10 @@ mod tests {
             output_config: config,
         });
 
+        // Use clone to avoid move error if add_part_with_type takes ownership
         let p1 = module.add_part_with_type(fft_part_type.clone(), (0.0, 0.0));
-        let _unused_p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
+        // Add a second part with the same type (simulating duplicate/multiple triggers)
+        let _p3 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
         let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         // Connect SubBass (index 0) and Air (index 8)
