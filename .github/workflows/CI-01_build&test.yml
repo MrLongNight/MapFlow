@@ -136,34 +136,13 @@ jobs:
 
     - name: Check Formatting & Sort
       id: fmt
-      continue-on-error: true
       run: |
         cargo fmt --all -- --check
         cargo sort --workspace --check
 
-    - name: Auto-fix formatting and linting
-      if: failure() || success()
-      run: |
-        # Apply formatting fixes using pre-commit for consistent rules
-        pip install pre-commit
-        pre-commit run --all-files || true  # Run checks and allow them to modify files
-
-        # Verify changes were made (optional debug)
-        git status
-
-        # Configure Git
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-        # Commit and push
-        git add .
-        git commit -m "style: auto-fix formatting (cargo fmt / cargo sort)" || echo "No changes to commit"
-
-        # Pull latest changes to avoid conflicts if other jobs pushed
-        git pull --rebase origin ${{ github.head_ref || github.ref_name }} || echo "Rebase failed or unnecessary"
-
-        git push || echo "::warning::Push failed - this is expected for forks or if no changes"
-        exit 0
+    # Auto-fix removed to avoid conflict with pre-commit.ci app
+    # The external app handles formatting fixes and pushes changes.
+    # CI-01 should just verify.
 
     - name: Check Clippy (No Fix)
       run: |
@@ -259,6 +238,7 @@ jobs:
   build-and-test:
     name: "Build & Test (Ubuntu with Audio)"
     runs-on: ubuntu-latest
+    needs: pre-checks
     permissions:
       contents: read
       checks: write

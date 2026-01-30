@@ -2798,11 +2798,29 @@ impl App {
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
                                                         .show(ui, |ui| {
-                                                            let _ = self.ui_state.media_browser.ui(
+                                                            if let Some(action) = self.ui_state.media_browser.ui(
                                                                 ui,
                                                                 &self.ui_state.i18n,
                                                                 self.ui_state.icon_manager.as_ref(),
-                                                            );
+                                                            ) {
+                                                                use mapmap_ui::media_browser::MediaBrowserAction;
+                                                                match action {
+                                                                    MediaBrowserAction::FileSelected(path) | MediaBrowserAction::FileDoubleClicked(path) => {
+                                                                        // Update active part if one is being edited
+                                                                        if let (Some(module_id), Some(part_id)) = (
+                                                                            self.ui_state.module_canvas.active_module_id,
+                                                                            self.ui_state.module_canvas.editing_part_id
+                                                                        ) {
+                                                                            actions.push(mapmap_ui::UIAction::PickMediaFile(
+                                                                                module_id,
+                                                                                part_id,
+                                                                                path.to_string_lossy().to_string()
+                                                                            ));
+                                                                        }
+                                                                    }
+                                                                    _ => {}
+                                                                }
+                                                            }
                                                         });
 
                                                     // Audio Section
