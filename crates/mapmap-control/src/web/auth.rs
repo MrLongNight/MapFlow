@@ -81,11 +81,7 @@ impl AuthConfig {
         // subtle::ct_eq works on byte slices
         let mut is_valid = false;
         for stored_hash in &self.api_keys {
-            if stored_hash
-                .as_bytes()
-                .ct_eq(input_hash.as_bytes())
-                .into()
-            {
+            if stored_hash.as_bytes().ct_eq(input_hash.as_bytes()).into() {
                 is_valid = true;
             }
         }
