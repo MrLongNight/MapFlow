@@ -82,11 +82,7 @@ impl AuthConfig {
         for stored_hash in &self.api_keys {
             // Both hashes are hex-encoded SHA-256 (64 chars), so lengths should match.
             // Using subtle::ConstantTimeEq ensures safe comparison.
-            if stored_hash
-                .as_bytes()
-                .ct_eq(input_hash.as_bytes())
-                .into()
-            {
+            if stored_hash.as_bytes().ct_eq(input_hash.as_bytes()).into() {
                 is_valid = true;
             }
         }
@@ -133,7 +129,6 @@ pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Optio
 
     None
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -183,7 +178,6 @@ mod tests {
         let key = extract_api_key(&headers, Some("foo=bar&api_key=test_key"));
         assert_eq!(key, None);
     }
-
 
     #[test]
     fn test_legacy_config_deserialization() {
