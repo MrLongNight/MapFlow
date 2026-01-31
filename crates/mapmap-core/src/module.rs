@@ -116,18 +116,40 @@ impl MapFlowModule {
                 effect: None,
                 effect_active: false,
             }),
-            PartType::Output => ModulePartType::Output(OutputType::Projector {
-                id: 0,
-                name: "Output".to_string(),
-                fullscreen: false,
-                hide_cursor: true,
-                target_screen: 0,
-                show_in_preview_panel: true,
-                extra_preview_window: false,
-                output_width: 0,
-                output_height: 0,
-                output_fps: 60.0,
-            }),
+            PartType::Output => {
+                // Auto-assign next available Output ID
+                let used_ids: Vec<u64> = self
+                    .parts
+                    .iter()
+                    .filter_map(|p| {
+                        if let ModulePartType::Output(OutputType::Projector { id, .. }) =
+                            &p.part_type
+                        {
+                            Some(*id)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                let mut next_id = 1;
+                while used_ids.contains(&next_id) {
+                    next_id += 1;
+                }
+
+                ModulePartType::Output(OutputType::Projector {
+                    id: next_id,
+                    name: format!("Output {}", next_id),
+                    fullscreen: false,
+                    hide_cursor: true,
+                    target_screen: 0,
+                    show_in_preview_panel: true,
+                    extra_preview_window: false,
+                    output_width: 0,
+                    output_height: 0,
+                    output_fps: 60.0,
+                })
+            }
         };
 
         let mut part = ModulePart {
@@ -1982,8 +2004,7 @@ mod tests {
             output_config: config,
         });
 
-        let p1 = module.add_part_with_type(fft_part_type.clone(), (0.0, 0.0));
-        let _unused_p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
+        let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
         let p2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
         // Connect SubBass (index 0) and Air (index 8)

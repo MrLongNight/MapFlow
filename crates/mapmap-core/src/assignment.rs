@@ -110,3 +110,101 @@ impl AssignmentManager {
         &self.assignments
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_control_source_creation() {
+        let midi = ControlSource::Midi {
+            channel: 0,
+            note: 60,
+        };
+        let osc = ControlSource::Osc {
+            address: "/test".to_string(),
+        };
+        let dmx = ControlSource::Dmx {
+            universe: 1,
+            channel: 1,
+        };
+
+        assert!(matches!(midi, ControlSource::Midi { .. }));
+        assert!(matches!(osc, ControlSource::Osc { .. }));
+        assert!(matches!(dmx, ControlSource::Dmx { .. }));
+    }
+
+    #[test]
+    fn test_assignment_new() {
+        let source = ControlSource::Midi {
+            channel: 1,
+            note: 10,
+        };
+        let target = ControlTarget::LayerOpacity { layer_id: 100 };
+
+        let assignment = Assignment::new(source.clone(), target.clone());
+
+        assert!(!assignment.id.is_nil());
+        assert_eq!(assignment.source, source);
+        assert_eq!(assignment.target, target);
+        assert!(assignment.enabled);
+    }
+
+    #[test]
+    fn test_manager_add_remove() {
+        let mut manager = AssignmentManager::new();
+        assert!(manager.assignments().is_empty());
+
+        let a1 = Assignment::new(
+            ControlSource::Midi {
+                channel: 0,
+                note: 0,
+            },
+            ControlTarget::LayerOpacity { layer_id: 1 },
+        );
+        let id1 = a1.id;
+
+        manager.add(a1);
+        assert_eq!(manager.assignments().len(), 1);
+        assert_eq!(manager.assignments()[0].id, id1);
+
+        let a2 = Assignment::new(
+            ControlSource::Osc {
+                address: "/test".into(),
+            },
+            ControlTarget::LayerOpacity { layer_id: 2 },
+        );
+        let id2 = a2.id;
+        manager.add(a2);
+        assert_eq!(manager.assignments().len(), 2);
+
+        // Remove first
+        manager.remove(id1);
+        assert_eq!(manager.assignments().len(), 1);
+        assert_eq!(manager.assignments()[0].id, id2);
+
+        // Remove non-existent (should be safe)
+        manager.remove(id1);
+        assert_eq!(manager.assignments().len(), 1);
+
+        // Remove second
+        manager.remove(id2);
+        assert!(manager.assignments().is_empty());
+    }
+
+    #[test]
+    fn test_serialization() {
+        let source = ControlSource::Midi {
+            channel: 5,
+            note: 64,
+        };
+        let target = ControlTarget::LayerOpacity { layer_id: 42 };
+        let original = Assignment::new(source, target);
+
+        let json = serde_json::to_string(&original).expect("Failed to serialize");
+        let deserialized: Assignment = serde_json::from_str(&json).expect("Failed to deserialize");
+
+        assert_eq!(original, deserialized);
+        assert_eq!(original.id, deserialized.id);
+    }
+}
