@@ -454,13 +454,16 @@ impl AppUI {
             .default_width(280.0)
             .min_width(200.0)
             .max_width(400.0)
-            .frame(egui::Frame::new().fill(egui::Color32::TRANSPARENT).inner_margin(0.0))
+            .frame(
+                egui::Frame::new()
+                    .fill(egui::Color32::TRANSPARENT)
+                    .inner_margin(0.0),
+            )
             .show(ctx, |ui| {
-                if let Some(action) = self.media_browser.ui(
-                    ui,
-                    &self.i18n,
-                    self.icon_manager.as_ref(),
-                ) {
+                if let Some(action) =
+                    self.media_browser
+                        .ui(ui, &self.i18n, self.icon_manager.as_ref())
+                {
                     match action {
                         MediaBrowserAction::Close => {
                             self.show_media_browser = false;

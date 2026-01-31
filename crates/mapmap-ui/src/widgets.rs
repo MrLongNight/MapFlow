@@ -315,19 +315,14 @@ pub fn panel_container(
                         .max_rect(button_rect)
                         .layout(egui::Layout::left_to_right(egui::Align::Center)),
                 );
-                if child_ui
-                    .add(egui::Button::new("✕").frame(false))
-                    .clicked()
-                {
+                if child_ui.add(egui::Button::new("✕").frame(false)).clicked() {
                     close_clicked = true;
                 }
             }
 
             // Content
             ui.add_space(4.0);
-            egui::Frame::new()
-                .inner_margin(4.0)
-                .show(ui, add_contents);
+            egui::Frame::new().inner_margin(4.0).show(ui, add_contents);
         });
 
     close_clicked
