@@ -2578,7 +2578,7 @@ impl App {
     fn handle_ui_actions(&mut self) -> Result<bool> {
         let actions = self.ui_state.take_actions();
         let mut needs_sync = false;
-        
+
         for action in actions {
             match action {
                 mapmap_ui::UIAction::NodeAction(node_action) => {
@@ -2587,7 +2587,7 @@ impl App {
                         eprintln!("Error handling node action: {}", e);
                     }
                 }
-            
+
             // Fix: Sync Projector Fullscreen
             mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
                 needs_sync = true;
@@ -3220,7 +3220,7 @@ impl App {
                                             })
                                         })
                                         .collect();
-                                    
+
                                     // Fix: Deduplicate output previews by ID to prevent multiple windows for same projector
                                     let mut unique_output_infos: Vec<mapmap_ui::OutputPreviewInfo> = Vec::new();
                                     let mut seen_ids = std::collections::HashSet::new();
@@ -3229,7 +3229,7 @@ impl App {
                                             unique_output_infos.push(info);
                                         }
                                     }
-                                    
+
                                     self.ui_state.preview_panel.update_outputs(unique_output_infos);
                                     // Ensure continuous repaint for live preview
                                     if self.ui_state.show_preview_panel {
