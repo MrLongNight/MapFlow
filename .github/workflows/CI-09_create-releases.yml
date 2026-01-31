@@ -63,48 +63,6 @@ jobs:
         run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
 
-      - name: Download und Kopiere FFmpeg DLLs korrekt
-        shell: pwsh
-        run: |
-          $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/7.0.2/ffmpeg-7.0.2-full_build-shared.7z"
-          $ffmpegArchive = "$env:RUNNER_TEMP\ffmpeg.7z"
-          $ffmpegDir = "$env:RUNNER_TEMP\ffmpeg"
-          $outPath = "${{ github.workspace }}\target\release"
-
-          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
-
-          7z x $ffmpegArchive -o"$ffmpegDir" -y
-
-          # Sucht rekursiv den ersten "bin"-Ordner (typisch für GyanD-Build)
-          $binDir = Get-ChildItem -Path $ffmpegDir -Directory -Recurse | Where-Object { $_.Name -eq "bin" } | Select-Object -First 1
-          if (!$binDir) { Write-Error "Bin directory not found"; exit 1 }
-
-          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
-
-          if (!(Test-Path $outPath)) { New-Item -ItemType Directory -Force -Path $outPath }
-
-          foreach ($dll in $dlls) {
-            $src = Join-Path $binDir.FullName $dll
-            if (Test-Path $src) { Copy-Item $src $outPath -Force; Write-Host "Copied $dll" }
-            else { Write-Error "Missing $dll in $($binDir.FullName)"; exit 1 }
-          }
-
-      - name: Prüfe DLLs in target\release
-        shell: pwsh
-        run: |
-          Write-Host "Inhalt von target\release:"
-          Get-ChildItem "${{ github.workspace }}\target\release\*.dll" | ForEach-Object { Write-Host $_.Name }
-          
-          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
-          $missing = $false
-          foreach ($dll in $dlls) {
-            if (-not (Test-Path "${{ github.workspace }}\target\release\$dll")) {
-              Write-Error "$dll fehlt in target\release!"
-              $missing = $true
-            }
-          }
-          if ($missing) { exit 1 }
-
       - name: Check if binary exists and package
         run: |
           if (!(Test-Path "target\release\MapFlow.exe")) {
@@ -114,9 +72,13 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target\release\MapFlow.exe dist\MapFlow.exe
 
-          # Copy DLLs from target/release (populated by previous step)
-          Copy-Item target\release\*.dll dist\
-          Write-Host "Copied DLLs to dist"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
+          if (Test-Path $vcpkgBin) {
+            Copy-Item "$vcpkgBin\*.dll" dist\
+            Write-Host "Copied FFmpeg DLLs to dist"
+          } else {
+            Write-Host "Warning: vcpkg bin directory not found at $vcpkgBin"
+          }
         shell: pwsh
 
       - name: Prepare ZIP
@@ -173,43 +135,40 @@ jobs:
 
         shell: pwsh
 
-      - name: Download und Kopiere FFmpeg DLLs korrekt
+      - name: Kopiere vcpkg FFmpeg DLLs nach target/release
         shell: pwsh
         run: |
-          $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/7.0.2/ffmpeg-7.0.2-full_build-shared.7z"
-          $ffmpegArchive = "$env:RUNNER_TEMP\ffmpeg.7z"
-          $ffmpegDir = "$env:RUNNER_TEMP\ffmpeg"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           $outPath = "${{ github.workspace }}\target\release"
-
-          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
-
-          7z x $ffmpegArchive -o"$ffmpegDir" -y
-
-          # Sucht rekursiv den ersten "bin"-Ordner (typisch für GyanD-Build)
-          $binDir = Get-ChildItem -Path $ffmpegDir -Directory -Recurse | Where-Object { $_.Name -eq "bin" } | Select-Object -First 1
-          if (!$binDir) { Write-Error "Bin directory not found"; exit 1 }
-
-          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
-
-          if (!(Test-Path $outPath)) { New-Item -ItemType Directory -Force -Path $outPath }
-
-          foreach ($dll in $dlls) {
-            $src = Join-Path $binDir.FullName $dll
-            if (Test-Path $src) { Copy-Item $src $outPath -Force; Write-Host "Copied $dll" }
-            else { Write-Error "Missing $dll in $($binDir.FullName)"; exit 1 }
+          
+          if (!(Test-Path $vcpkgBin)) {
+            Write-Error "FEHLER: vcpkg bin Verzeichnis nicht gefunden!"
+            exit 1
           }
 
-      - name: Prüfe DLLs in target\release
-        shell: pwsh
-        run: |
-          Write-Host "Inhalt von target\release:"
-          Get-ChildItem "${{ github.workspace }}\target\release\*.dll" | ForEach-Object { Write-Host $_.Name }
+          if (!(Test-Path $outPath)) {
+             New-Item -ItemType Directory -Force -Path $outPath
+          }
           
-          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
+          # Kopiere ALLE DLLs aus vcpkg nach target/release (für WiX)
+          Copy-Item "$vcpkgBin\*.dll" -Destination $outPath -Force
+          Write-Host "Alle DLLs aus vcpkg nach target/release kopiert."
+
+          # Explizite Prüfung der Dateien, die in main.wxs referenziert werden
+          $required = @(
+            "avcodec-61.dll",
+            "avdevice-61.dll",
+            "avfilter-10.dll",
+            "avformat-61.dll",
+            "avutil-59.dll",
+            "swresample-5.dll",
+            "swscale-8.dll"
+          )
+          
           $missing = $false
-          foreach ($dll in $dlls) {
-            if (-not (Test-Path "${{ github.workspace }}\target\release\$dll")) {
-              Write-Error "$dll fehlt in target\release!"
+          foreach ($dll in $required) {
+            if (!(Test-Path "$outPath\$dll")) {
+              Write-Error "FEHLER: $dll fehlt in $outPath!"
               $missing = $true
             }
           }

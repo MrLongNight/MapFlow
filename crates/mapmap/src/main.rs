@@ -2765,11 +2765,12 @@ impl App {
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
-                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
-                    // Apply the theme at the beginning of each UI render pass
+// ---------------------------------------------------------------------
+                    // 1. GLOBAL THEME & SETUP
+                    // ---------------------------------------------------------------------
                     self.ui_state.user_config.theme.apply(ctx);
 
-                    // Update performance and audio values for toolbar display
+                    // Update performance and audio values
                     self.ui_state.current_fps = self.current_fps;
                     self.ui_state.current_frame_time_ms = self.current_frame_time_ms;
                     self.ui_state.target_fps = self.ui_state.user_config.target_fps.unwrap_or(60.0);
@@ -2800,150 +2801,22 @@ impl App {
                     let audio_analysis = self.audio_analyzer.get_latest_analysis();
                     self.ui_state.current_audio_level = audio_analysis.rms_volume;
 
-                    // MIDI Controller Overlay
+                    // MIDI Controller Overlay (Draws on top of everything essentially, but logically here is fine)
                     #[cfg(feature = "midi")]
                     {
                         let midi_connected = self.midi_handler.as_ref().map(|h| h.is_connected()).unwrap_or(false);
                         self.ui_state.controller_overlay.show(ctx, self.ui_state.show_controller_overlay, midi_connected, &mut self.ui_state.user_config);
                     }
 
-                    // === 1. TOP PANEL: Menu Bar + Toolbar ===
+                    // ---------------------------------------------------------------------
+                    // 2. DOCKED PANELS (Must be rendered BEFORE CentralPanel and Windows)
+                    // ---------------------------------------------------------------------
+
+                    // === Top Panel: Menu Bar + Toolbar ===
                     let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
                     self.ui_state.actions.extend(menu_actions);
 
-                    // === Effect Chain Panel ===
-                    self.ui_state.effect_chain_panel.ui(
-                        ctx,
-                        &self.ui_state.i18n,
-                        self.ui_state.icon_manager.as_ref(),
-                        Some(&mut self.recent_effect_configs),
-                    );
-
-                    // Render Oscillator Panel
-                    self.ui_state.oscillator_panel.render(
-                        ctx,
-                        &self.ui_state.i18n,
-                        &mut self.state.oscillator_config,
-                    );
-
-                    // Handle Effect Chain Actions
-                    for action in self.ui_state.effect_chain_panel.take_actions() {
-                        use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectType};
-                        use mapmap_core::EffectType as RenderEffectType;
-
-                        match action {
-                            EffectChainAction::AddEffectWithParams(ui_type, params) => {
-                                let render_type = match ui_type {
-                                    UIEffectType::Blur => RenderEffectType::Blur,
-                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
-                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
-                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
-                                    UIEffectType::Glow => RenderEffectType::Glow,
-                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
-                                    UIEffectType::Invert => RenderEffectType::Invert,
-                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
-                                    UIEffectType::Vignette => RenderEffectType::Vignette,
-                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
-                                    UIEffectType::Wave => RenderEffectType::Wave,
-                                    UIEffectType::Glitch => RenderEffectType::Glitch,
-                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
-                                    UIEffectType::Mirror => RenderEffectType::Mirror,
-                                    UIEffectType::HueShift => RenderEffectType::HueShift,
-                                    UIEffectType::Custom => RenderEffectType::Custom,
-                                };
-
-                                let id = self.state.effect_chain.add_effect(render_type);
-                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
-                                    for (k, v) in &params {
-                                        effect.set_param(k, *v);
-                                    }
-                                }
-
-                                self.recent_effect_configs.add_float_config(&format!("{:?}", ui_type), params);
-                            }
-                            EffectChainAction::AddEffect(ui_type) => {
-                                let render_type = match ui_type {
-                                    UIEffectType::Blur => RenderEffectType::Blur,
-                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
-                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
-                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
-                                    UIEffectType::Glow => RenderEffectType::Glow,
-                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
-                                    UIEffectType::Invert => RenderEffectType::Invert,
-                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
-                                    UIEffectType::Vignette => RenderEffectType::Vignette,
-                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
-                                    UIEffectType::Wave => RenderEffectType::Wave,
-                                    UIEffectType::Glitch => RenderEffectType::Glitch,
-                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
-                                    UIEffectType::Mirror => RenderEffectType::Mirror,
-                                    UIEffectType::HueShift => RenderEffectType::HueShift,
-                                    UIEffectType::Custom => RenderEffectType::Custom,
-                                };
-                                self.state.effect_chain.add_effect(render_type);
-                            }
-                            EffectChainAction::ClearAll => {
-                                self.state.effect_chain.effects.clear();
-                            }
-                            EffectChainAction::RemoveEffect(id) => {
-                                self.state.effect_chain.remove_effect(id);
-                            }
-                            EffectChainAction::MoveUp(id) => {
-                                self.state.effect_chain.move_up(id);
-                            }
-                            EffectChainAction::MoveDown(id) => {
-                                self.state.effect_chain.move_down(id);
-                            }
-                            EffectChainAction::ToggleEnabled(id) => {
-                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
-                                    effect.enabled = !effect.enabled;
-                                }
-                            }
-                            EffectChainAction::SetIntensity(id, val) => {
-                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
-                                    effect.intensity = val;
-                                }
-                            }
-                            EffectChainAction::SetParameter(id, name, val) => {
-                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
-                                    effect.set_param(&name, val);
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
-                    if self.ui_state.show_timeline {
-                        egui::TopBottomPanel::bottom("timeline_panel")
-                            .resizable(true)
-                            .default_height(180.0)
-                            .min_height(100.0)
-                            .max_height(350.0)
-                            .show(ctx, |ui| {
-                                ui.horizontal(|ui| {
-                                    ui.heading("Timeline");
-                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                        if ui.button("✕").clicked() {
-                                            self.ui_state.show_timeline = false;
-                                        }
-                                    });
-                                });
-                                ui.separator();
-
-                                if let Some(action) = self.ui_state.timeline_panel.ui(ui, &mut self.state.effect_animator) {
-                                     use mapmap_ui::timeline_v2::TimelineAction;
-                                     match action {
-                                         TimelineAction::Play => self.state.effect_animator.play(),
-                                         TimelineAction::Pause => self.state.effect_animator.pause(),
-                                         TimelineAction::Stop => self.state.effect_animator.stop(),
-                                         TimelineAction::Seek(t) => self.state.effect_animator.seek(t as f64),
-                                     }
-                                }
-                            });
-                    }
-
-                    // === UNIFIED LEFT SIDEBAR ===
+                    // === Left Panel: Unified Sidebar ===
                     // Two independent collapsible panels: Controls (top) and Preview (bottom)
                     if self.ui_state.show_left_sidebar {
                         egui::SidePanel::left("unified_left_sidebar")
@@ -3269,6 +3142,38 @@ impl App {
                         &self.state.layer_manager,
                         &self.state.output_manager,
                     );
+
+                    // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
+                    if self.ui_state.show_timeline {
+                        egui::TopBottomPanel::bottom("timeline_panel")
+                            .resizable(true)
+                            .default_height(180.0)
+                            .min_height(100.0)
+                            .max_height(350.0)
+                            .show(ctx, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.heading("Timeline");
+                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                        if ui.button("✕").clicked() {
+                                            self.ui_state.show_timeline = false;
+                                        }
+                                    });
+                                });
+                                ui.separator();
+
+                                if let Some(action) = self.ui_state.timeline_panel.ui(ui, &mut self.state.effect_animator) {
+                                     use mapmap_ui::timeline_v2::TimelineAction;
+                                     match action {
+                                         TimelineAction::Play => self.state.effect_animator.play(),
+                                         TimelineAction::Pause => self.state.effect_animator.pause(),
+                                         TimelineAction::Stop => self.state.effect_animator.stop(),
+                                         TimelineAction::Seek(t) => self.state.effect_animator.seek(t as f64),
+                                     }
+                                }
+                            });
+                    }
+
+
 
                     // === 5. CENTRAL PANEL: Module Canvas ===
                     egui::CentralPanel::default()
@@ -3816,6 +3721,114 @@ impl App {
                             self.ui_state.icon_manager.as_ref(),
                             &self.ui_state.i18n,
                         );
+                    }
+                    // ---------------------------------------------------------------------
+                    // 3. FLOATING WINDOWS (Rendered LAST = On Top)
+                    // ---------------------------------------------------------------------
+
+                    // === Dashboard ===
+                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
+
+                    // === Effect Chain Panel ===
+                    self.ui_state.effect_chain_panel.ui(
+                        ctx,
+                        &self.ui_state.i18n,
+                        self.ui_state.icon_manager.as_ref(),
+                        Some(&mut self.recent_effect_configs),
+                    );
+
+                    // Render Oscillator Panel
+                    self.ui_state.oscillator_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.oscillator_config,
+                    );
+
+                    // Handle Effect Chain Actions
+                    for action in self.ui_state.effect_chain_panel.take_actions() {
+                        use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectType};
+                        use mapmap_core::EffectType as RenderEffectType;
+
+                        match action {
+                            EffectChainAction::AddEffectWithParams(ui_type, params) => {
+                                let render_type = match ui_type {
+                                    UIEffectType::Blur => RenderEffectType::Blur,
+                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
+                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
+                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
+                                    UIEffectType::Glow => RenderEffectType::Glow,
+                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
+                                    UIEffectType::Invert => RenderEffectType::Invert,
+                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
+                                    UIEffectType::Vignette => RenderEffectType::Vignette,
+                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Wave => RenderEffectType::Wave,
+                                    UIEffectType::Glitch => RenderEffectType::Glitch,
+                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
+                                    UIEffectType::Mirror => RenderEffectType::Mirror,
+                                    UIEffectType::HueShift => RenderEffectType::HueShift,
+                                    UIEffectType::Custom => RenderEffectType::Custom,
+                                };
+
+                                let id = self.state.effect_chain.add_effect(render_type);
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    for (k, v) in &params {
+                                        effect.set_param(k, *v);
+                                    }
+                                }
+
+                                self.recent_effect_configs.add_float_config(&format!("{:?}", ui_type), params);
+                            }
+                            EffectChainAction::AddEffect(ui_type) => {
+                                let render_type = match ui_type {
+                                    UIEffectType::Blur => RenderEffectType::Blur,
+                                    UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
+                                    UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
+                                    UIEffectType::EdgeDetect => RenderEffectType::EdgeDetect,
+                                    UIEffectType::Glow => RenderEffectType::Glow,
+                                    UIEffectType::Kaleidoscope => RenderEffectType::Kaleidoscope,
+                                    UIEffectType::Invert => RenderEffectType::Invert,
+                                    UIEffectType::Pixelate => RenderEffectType::Pixelate,
+                                    UIEffectType::Vignette => RenderEffectType::Vignette,
+                                    UIEffectType::FilmGrain => RenderEffectType::FilmGrain,
+                                    UIEffectType::Wave => RenderEffectType::Wave,
+                                    UIEffectType::Glitch => RenderEffectType::Glitch,
+                                    UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
+                                    UIEffectType::Mirror => RenderEffectType::Mirror,
+                                    UIEffectType::HueShift => RenderEffectType::HueShift,
+                                    UIEffectType::Custom => RenderEffectType::Custom,
+                                };
+                                self.state.effect_chain.add_effect(render_type);
+                            }
+                            EffectChainAction::ClearAll => {
+                                self.state.effect_chain.effects.clear();
+                            }
+                            EffectChainAction::RemoveEffect(id) => {
+                                self.state.effect_chain.remove_effect(id);
+                            }
+                            EffectChainAction::MoveUp(id) => {
+                                self.state.effect_chain.move_up(id);
+                            }
+                            EffectChainAction::MoveDown(id) => {
+                                self.state.effect_chain.move_down(id);
+                            }
+                            EffectChainAction::ToggleEnabled(id) => {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    effect.enabled = !effect.enabled;
+                                }
+                            }
+                            EffectChainAction::SetIntensity(id, val) => {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    effect.intensity = val;
+                                }
+                            }
+                            EffectChainAction::SetParameter(id, name, val) => {
+                                if let Some(effect) = self.state.effect_chain.get_effect_mut(id) {
+                                    effect.set_param(&name, val);
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                 });
 

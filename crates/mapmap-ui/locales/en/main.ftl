@@ -203,6 +203,9 @@ btn-remove = Remove
 btn-add-layer = Add Layer
 btn-eject-all = Eject All (X)
 
+dashboard-audio-section = Audio
+dashboard-open-audio-panel = Open Audio Settings
+
 # Paints
 panel-paints = Paints
 label-total-paints = Total Paints: { $count }
