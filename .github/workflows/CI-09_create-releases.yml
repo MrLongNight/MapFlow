@@ -94,7 +94,7 @@ jobs:
         run: |
           Write-Host "Inhalt von target\release:"
           Get-ChildItem "${{ github.workspace }}\target\release\*.dll" | ForEach-Object { Write-Host $_.Name }
-          
+
           $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
           $missing = $false
           foreach ($dll in $dlls) {
@@ -204,7 +204,7 @@ jobs:
         run: |
           Write-Host "Inhalt von target\release:"
           Get-ChildItem "${{ github.workspace }}\target\release\*.dll" | ForEach-Object { Write-Host $_.Name }
-          
+
           $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
           $missing = $false
           foreach ($dll in $dlls) {
