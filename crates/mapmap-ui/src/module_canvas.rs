@@ -3730,7 +3730,6 @@ impl ModuleCanvas {
             }
         }
 
-
         // Handle box selection start (on empty canvas)
         if clicked && self.creating_connection.is_none() && self.dragging_part.is_none() {
             if let Some(pos) = pointer_pos {
