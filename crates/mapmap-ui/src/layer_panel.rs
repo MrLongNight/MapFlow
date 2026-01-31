@@ -4,26 +4,27 @@ use crate::widgets;
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{BlendMode, LayerManager};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum LayerPanelAction {
     AddLayer,
+    CreateGroup,
     RemoveLayer(u64),
     DuplicateLayer(u64),
+    ReparentLayer(u64, Option<u64>),
+    SwapLayers(u64, u64),
+    ToggleGroupCollapsed(u64),
     RenameLayer(u64, String),
     ToggleLayerBypass(u64),
     ToggleLayerSolo(u64),
     SetLayerOpacity(u64, f32),
     EjectAllLayers,
-    // Note: Reordering is handled directly on LayerManager or via custom action if needed
-    // MoveLayerUp(u64),
-    // MoveLayerDown(u64),
 }
 
 #[derive(Debug, Default)]
 pub struct LayerPanel {
     pub visible: bool,
-    // selected_layer_id is managed by AppUI but we accept it as a param to sync
 }
 
 impl LayerPanel {
@@ -58,177 +59,246 @@ impl LayerPanel {
                 ui.separator();
 
                 // Layer list area
-                let mut move_up_id = None;
-                let mut move_down_id = None;
+                // We build a tree structure (parent_id -> list of child IDs)
+                // The order in the list is preserved from the main layer list, so reordering works.
+                let mut children_map: HashMap<Option<u64>, Vec<u64>> = HashMap::new();
+                for layer in layer_manager.layers() {
+                    children_map
+                        .entry(layer.parent_id)
+                        .or_default()
+                        .push(layer.id);
+                }
 
                 egui::ScrollArea::vertical()
-                    .max_height(300.0) // Limit height to leave room for bottom buttons
+                    .max_height(300.0)
                     .show(ui, |ui| {
-                        // Iterate over layer IDs to avoid borrow issues while mutating
-                        // We need indices to determine if move up/down is possible
-                        let layer_ids: Vec<u64> =
-                            layer_manager.layers().iter().map(|l| l.id).collect();
-                        let total_layers = layer_ids.len();
-
-                        for (index, layer_id) in layer_ids.iter().enumerate() {
-                            let is_first = index == 0;
-                            let is_last = index == total_layers - 1;
-
-                            if let Some(layer) = layer_manager.get_layer_mut(*layer_id) {
-                                ui.push_id(layer.id, |ui| {
-                                    // Layer Row
-                                    let is_selected = *selected_layer_id == Some(layer.id);
-                                    let bg_color = if is_selected {
-                                        ui.visuals().selection.bg_fill.linear_multiply(0.2)
-                                    // Subtle selection background
-                                    } else if index % 2 == 1 {
-                                        ui.visuals().faint_bg_color // Zebra striping
-                                    } else {
-                                        Color32::TRANSPARENT
-                                    };
-
-                                    egui::Frame::new().fill(bg_color).inner_margin(4.0).show(
-                                        ui,
-                                        |ui| {
-                                            ui.horizontal(|ui| {
-                                                // Reorder buttons (Vertical stack)
-                                                ui.vertical(|ui| {
-                                                    ui.add_enabled_ui(!is_first, |ui| {
-                                                        if widgets::move_up_button(ui).clicked() {
-                                                            move_up_id = Some(layer.id);
-                                                        }
-                                                    });
-                                                    ui.add_enabled_ui(!is_last, |ui| {
-                                                        if widgets::move_down_button(ui).clicked() {
-                                                            move_down_id = Some(layer.id);
-                                                        }
-                                                    });
-                                                });
-
-                                                // Visibility initialization
-                                                let mut visible = layer.visible;
-                                                if ui.checkbox(&mut visible, "").changed() {
-                                                    actions.push(UIAction::SetLayerVisibility(
-                                                        layer.id, visible,
-                                                    ));
-                                                }
-
-                                                // Name and Selection
-                                                if ui
-                                                    .selectable_label(is_selected, &layer.name)
-                                                    .clicked()
-                                                {
-                                                    *selected_layer_id = Some(layer.id);
-                                                }
-
-                                                ui.with_layout(
-                                                    egui::Layout::right_to_left(
-                                                        egui::Align::Center,
-                                                    ),
-                                                    |ui| {
-                                                        // Phase 1: Layer management buttons (Delete, Duplicate, Solo, Bypass)
-                                                        // Right-aligned, so order is reversed: Delete, Duplicate, Solo, Bypass
-
-                                                        if widgets::delete_button(ui).clicked() {
-                                                            actions.push(UIAction::RemoveLayer(
-                                                                layer.id,
-                                                            ));
-                                                        }
-
-                                                        ui.add_space(4.0);
-
-                                                        if widgets::duplicate_button(ui).clicked() {
-                                                            actions.push(UIAction::DuplicateLayer(
-                                                                layer.id,
-                                                            ));
-                                                        }
-
-                                                        ui.add_space(4.0);
-
-                                                        // Use newly added styled widgets for state toggles
-                                                        if widgets::solo_button(ui, layer.solo)
-                                                            .clicked()
-                                                        {
-                                                            layer.solo = !layer.solo;
-                                                        }
-
-                                                        ui.add_space(4.0);
-
-                                                        if widgets::bypass_button(ui, layer.bypass)
-                                                            .clicked()
-                                                        {
-                                                            layer.bypass = !layer.bypass;
-                                                        }
-                                                    },
-                                                );
-                                            });
-
-                                            // Indented properties
-                                            ui.indent("layer_props", |ui| {
-                                                // Opacity
-                                                let mut opacity = layer.opacity;
-                                                if ui
-                                                    .add(
-                                                        Slider::new(&mut opacity, 0.0..=1.0)
-                                                            .text(i18n.t("label-master-opacity")),
-                                                    )
-                                                    .changed()
-                                                {
-                                                    actions.push(UIAction::SetLayerOpacity(
-                                                        layer.id, opacity,
-                                                    ));
-                                                }
-
-                                                // Blend Mode
-                                                let blend_modes = BlendMode::all();
-                                                let current_mode = layer.blend_mode;
-                                                let mut selected_mode = current_mode;
-
-                                                egui::ComboBox::from_id_salt(format!(
-                                                    "blend_{}",
-                                                    layer.id
-                                                ))
-                                                .selected_text(format!("{:?}", current_mode))
-                                                .show_ui(ui, |ui| {
-                                                    for mode in blend_modes {
-                                                        ui.selectable_value(
-                                                            &mut selected_mode,
-                                                            *mode,
-                                                            format!("{:?}", mode),
-                                                        );
-                                                    }
-                                                });
-
-                                                if selected_mode != current_mode {
-                                                    actions.push(UIAction::SetLayerBlendMode(
-                                                        layer.id,
-                                                        selected_mode,
-                                                    ));
-                                                }
-                                            });
-                                        },
-                                    );
-                                });
-                            }
-                        }
+                        Self::render_tree(
+                            ui,
+                            None,
+                            &children_map,
+                            layer_manager,
+                            selected_layer_id,
+                            actions,
+                            i18n,
+                        );
                     });
-
-                // Apply reordering
-                if let Some(id) = move_up_id {
-                    layer_manager.move_layer_up(id);
-                }
-                if let Some(id) = move_down_id {
-                    layer_manager.move_layer_down(id);
-                }
 
                 ui.separator();
 
-                // Add Layer Button
-                if ui.button(i18n.t("btn-add-layer")).clicked() {
-                    actions.push(UIAction::AddLayer);
-                }
+                // Add Layer / Group Buttons
+                ui.horizontal(|ui| {
+                    if ui.button(i18n.t("btn-add-layer")).clicked() {
+                        actions.push(UIAction::AddLayer);
+                    }
+                    if ui.button("+ Group").clicked() {
+                        actions.push(UIAction::CreateGroup);
+                    }
+                });
             });
 
         self.visible = open;
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn render_tree(
+        ui: &mut egui::Ui,
+        parent_id: Option<u64>,
+        children_map: &HashMap<Option<u64>, Vec<u64>>,
+        layer_manager: &LayerManager,
+        selected_layer_id: &mut Option<u64>,
+        actions: &mut Vec<UIAction>,
+        i18n: &LocaleManager,
+    ) {
+        if let Some(children) = children_map.get(&parent_id) {
+            let count = children.len();
+            for (idx, &layer_id) in children.iter().enumerate() {
+                if let Some(layer) = layer_manager.get_layer(layer_id) {
+                    ui.push_id(layer.id, |ui| {
+                        let is_selected = *selected_layer_id == Some(layer.id);
+                        let is_group = layer.is_group;
+                        let collapsed = layer.collapsed;
+
+                        let bg_color = if is_selected {
+                            ui.visuals().selection.bg_fill.linear_multiply(0.2)
+                        } else {
+                            Color32::TRANSPARENT
+                        };
+
+                        egui::Frame::new()
+                            .fill(bg_color)
+                            .inner_margin(4.0)
+                            .show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                // Reorder Buttons (Move Up/Down)
+                                    ui.vertical(|ui| {
+                                        // Move Up
+                                    ui.add_enabled_ui(idx > 0, |ui| {
+                                            if widgets::move_up_button(ui).clicked() {
+                                            if idx > 0 {
+                                                let prev_id = children[idx - 1];
+                                                actions.push(UIAction::SwapLayers(layer.id, prev_id));
+                                            }
+                                            }
+                                    });
+                                        // Move Down
+                                    ui.add_enabled_ui(idx < count - 1, |ui| {
+                                            if widgets::move_down_button(ui).clicked() {
+                                            if idx < count - 1 {
+                                                let next_id = children[idx + 1];
+                                                actions.push(UIAction::SwapLayers(layer.id, next_id));
+                                            }
+                                            }
+                                    });
+                                    });
+
+                                    // Indent/Unindent
+                                    ui.vertical(|ui| {
+                                        // Unindent (Left)
+                                        if layer.parent_id.is_some() {
+                                            if ui.button("⬅").on_hover_text("Unindent").clicked()
+                                            {
+                                                if let Some(pid) = layer.parent_id {
+                                                    if let Some(parent) =
+                                                        layer_manager.get_layer(pid)
+                                                    {
+                                                        actions.push(UIAction::ReparentLayer(
+                                                            layer.id,
+                                                            parent.parent_id,
+                                                        ));
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Indent (Right)
+                                        if idx > 0 {
+                                            if ui.button("➡").on_hover_text("Indent").clicked() {
+                                                let prev_sibling_id = children[idx - 1];
+                                                if let Some(prev) =
+                                                    layer_manager.get_layer(prev_sibling_id)
+                                                {
+                                                    if prev.is_group {
+                                                        actions.push(UIAction::ReparentLayer(
+                                                            layer.id,
+                                                            Some(prev.id),
+                                                        ));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+
+                                    // Group Expander
+                                    if is_group {
+                                        let icon = if collapsed { "▶" } else { "▼" };
+                                        if ui.add(Button::new(icon).frame(false)).clicked() {
+                                            actions.push(UIAction::ToggleGroupCollapsed(layer.id));
+                                        }
+                                    } else {
+                                        ui.add_space(16.0);
+                                    }
+
+                                    // Visibility
+                                    let mut visible = layer.visible;
+                                    if ui.checkbox(&mut visible, "").changed() {
+                                        actions
+                                            .push(UIAction::SetLayerVisibility(layer.id, visible));
+                                    }
+
+                                    // Name
+                                    let name_label = if is_group {
+                                        RichText::new(&layer.name).strong()
+                                    } else {
+                                        RichText::new(&layer.name)
+                                    };
+
+                                    if ui.selectable_label(is_selected, name_label).clicked() {
+                                        *selected_layer_id = Some(layer.id);
+                                    }
+
+                                    ui.with_layout(
+                                        egui::Layout::right_to_left(egui::Align::Center),
+                                        |ui| {
+                                            if widgets::delete_button(ui).clicked() {
+                                                actions.push(UIAction::RemoveLayer(layer.id));
+                                            }
+
+                                            if !is_group && widgets::duplicate_button(ui).clicked()
+                                            {
+                                                actions.push(UIAction::DuplicateLayer(layer.id));
+                                            }
+
+                                            ui.add_space(4.0);
+                                            if widgets::solo_button(ui, layer.solo).clicked() {
+                                                actions.push(UIAction::ToggleLayerSolo(layer.id));
+                                            }
+
+                                            ui.add_space(4.0);
+                                            if widgets::bypass_button(ui, layer.bypass).clicked() {
+                                                actions.push(UIAction::ToggleLayerBypass(layer.id));
+                                            }
+                                        },
+                                    );
+                                });
+
+                                // Inline Properties for Selected Layer
+                                if is_selected {
+                                    ui.indent("props", |ui| {
+                                        // Opacity
+                                        let mut opacity = layer.opacity;
+                                        if ui
+                                            .add(
+                                                Slider::new(&mut opacity, 0.0..=1.0)
+                                                    .text(i18n.t("label-master-opacity")),
+                                            )
+                                            .changed()
+                                        {
+                                            actions
+                                                .push(UIAction::SetLayerOpacity(layer.id, opacity));
+                                        }
+
+                                        // Blend Mode
+                                        let blend_modes = BlendMode::all();
+                                        let current_mode = layer.blend_mode;
+                                        let mut selected_mode = current_mode;
+                                        egui::ComboBox::from_id_salt(format!("blend_{}", layer.id))
+                                            .selected_text(format!("{:?}", current_mode))
+                                            .show_ui(ui, |ui| {
+                                                for mode in blend_modes {
+                                                    ui.selectable_value(
+                                                        &mut selected_mode,
+                                                        *mode,
+                                                        format!("{:?}", mode),
+                                                    );
+                                                }
+                                            });
+                                        if selected_mode != current_mode {
+                                            actions.push(UIAction::SetLayerBlendMode(
+                                                layer.id,
+                                                selected_mode,
+                                            ));
+                                        }
+                                    });
+                                }
+                            });
+
+                        // Children
+                        if is_group && !collapsed {
+                            ui.indent(format!("group_{}", layer.id), |ui| {
+                                Self::render_tree(
+                                    ui,
+                                    Some(layer.id),
+                                    children_map,
+                                    layer_manager,
+                                    selected_layer_id,
+                                    actions,
+                                    i18n,
+                                );
+                            });
+                        }
+                    });
+                }
+            }
+        }
     }
 }

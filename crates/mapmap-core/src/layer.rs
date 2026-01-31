@@ -271,6 +271,16 @@ pub struct Layer {
     /// Legacy transform matrix (for backward compatibility)
     #[serde(skip)]
     pub legacy_transform: Mat4,
+
+    /// Parent Layer ID (if part of a group)
+    #[serde(default)]
+    pub parent_id: Option<u64>,
+    /// Whether this layer is a group
+    #[serde(default)]
+    pub is_group: bool,
+    /// UI State: whether the group is collapsed
+    #[serde(default)]
+    pub collapsed: bool,
 }
 
 impl Layer {
@@ -290,6 +300,9 @@ impl Layer {
             transform: Transform::default(),
             effect_chain: super::effects::EffectChain::default(),
             legacy_transform: Mat4::IDENTITY,
+            parent_id: None,
+            is_group: false,
+            collapsed: false,
         }
     }
 
@@ -470,13 +483,72 @@ impl LayerManager {
         id
     }
 
-    /// Remove a layer by ID
+    /// Create and add a new layer group
+    pub fn create_group(&mut self, name: impl Into<String>) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        let mut layer = Layer::new(id, name);
+        layer.is_group = true;
+        self.layers.push(layer);
+        id
+    }
+
+    /// Remove a layer by ID.
+    ///
+    /// If the layer is a group, children will be orphaned (parent_id set to None).
     pub fn remove_layer(&mut self, id: u64) -> Option<Layer> {
+        // Orphan children first
+        for layer in &mut self.layers {
+            if layer.parent_id == Some(id) {
+                layer.parent_id = None;
+            }
+        }
+
         if let Some(index) = self.layers.iter().position(|l| l.id == id) {
             Some(self.layers.remove(index))
         } else {
             None
         }
+    }
+
+    /// Reparent a layer to a new parent group
+    pub fn reparent_layer(&mut self, layer_id: u64, new_parent_id: Option<u64>) {
+        // Validation: Prevent cycles
+        if let Some(pid) = new_parent_id {
+            if pid == layer_id {
+                return; // Cannot parent to self
+            }
+            if self.is_descendant(pid, layer_id) {
+                return; // Cannot parent to a descendant (cycle)
+            }
+        }
+
+        if let Some(layer) = self.get_layer_mut(layer_id) {
+            layer.parent_id = new_parent_id;
+        }
+    }
+
+    /// Check if `layer_a` is a descendant of `layer_b` (b -> ... -> a)
+    pub fn is_descendant(&self, layer_a: u64, layer_b: u64) -> bool {
+        let mut current_id = layer_a;
+        // Simple cycle detection limit to avoid infinite loops if state is already bad
+        let mut depth = 0;
+        while let Some(layer) = self.get_layer(current_id) {
+            if depth > 100 {
+                return false;
+            }
+            depth += 1;
+
+            if let Some(pid) = layer.parent_id {
+                if pid == layer_b {
+                    return true;
+                }
+                current_id = pid;
+            } else {
+                return false;
+            }
+        }
+        false
     }
 
     /// Get a layer by ID
@@ -585,6 +657,19 @@ impl LayerManager {
         }
     }
 
+    /// Swap two layers by ID
+    pub fn swap_layers(&mut self, id1: u64, id2: u64) -> bool {
+        let pos1 = self.layers.iter().position(|l| l.id == id1);
+        let pos2 = self.layers.iter().position(|l| l.id == id2);
+
+        if let (Some(p1), Some(p2)) = (pos1, pos2) {
+            self.layers.swap(p1, p2);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Eject all content (X) - remove paint from all layers (Phase 1, Month 4)
     pub fn eject_all(&mut self) {
         for layer in &mut self.layers {
@@ -592,9 +677,27 @@ impl LayerManager {
         }
     }
 
-    /// Get effective opacity for a layer (layer opacity × master opacity)
+    /// Get effective opacity for a layer (layer opacity × parent opacity × master opacity)
     pub fn get_effective_opacity(&self, layer: &Layer) -> f32 {
-        layer.opacity * self.composition.master_opacity
+        let mut opacity = layer.opacity;
+        let mut current_id = layer.parent_id;
+        let mut depth = 0;
+
+        while let Some(pid) = current_id {
+            if depth > 100 {
+                break;
+            } // Safety break
+            depth += 1;
+
+            if let Some(parent) = self.get_layer(pid) {
+                opacity *= parent.opacity;
+                current_id = parent.parent_id;
+            } else {
+                break;
+            }
+        }
+
+        opacity * self.composition.master_opacity
     }
 
     /// Get effective speed (layer speed × master speed)
@@ -978,5 +1081,63 @@ mod tests {
 
         assert_eq!(manager.get_layer(id1).unwrap().paint_id, None);
         assert_eq!(manager.get_layer(id2).unwrap().paint_id, None);
+    }
+
+    #[test]
+    fn test_layer_groups_and_hierarchy() {
+        let mut manager = LayerManager::new();
+        let group_id = manager.create_group("Group");
+        let layer_id = manager.create_layer("Child");
+
+        assert!(manager.get_layer(group_id).unwrap().is_group);
+
+        // Reparent
+        manager.reparent_layer(layer_id, Some(group_id));
+        assert_eq!(
+            manager.get_layer(layer_id).unwrap().parent_id,
+            Some(group_id)
+        );
+
+        // Check is_descendant
+        assert!(manager.is_descendant(layer_id, group_id));
+        assert!(!manager.is_descendant(group_id, layer_id));
+    }
+
+    #[test]
+    fn test_cycle_prevention() {
+        let mut manager = LayerManager::new();
+        let group1 = manager.create_group("G1");
+        let group2 = manager.create_group("G2");
+        let group3 = manager.create_group("G3");
+
+        // G1 -> G2 -> G3
+        manager.reparent_layer(group2, Some(group1));
+        manager.reparent_layer(group3, Some(group2));
+
+        assert!(manager.is_descendant(group3, group1));
+
+        // Try to make G1 a child of G3 (Cycle)
+        manager.reparent_layer(group1, Some(group3));
+
+        // Should be ignored
+        assert_eq!(manager.get_layer(group1).unwrap().parent_id, None);
+    }
+
+    #[test]
+    fn test_hierarchy_opacity() {
+        let mut manager = LayerManager::new();
+        manager.composition.set_master_opacity(1.0);
+
+        let group_id = manager.create_group("Group");
+        let layer_id = manager.create_layer("Layer");
+
+        manager.get_layer_mut(group_id).unwrap().opacity = 0.5;
+        manager.get_layer_mut(layer_id).unwrap().opacity = 0.5;
+
+        manager.reparent_layer(layer_id, Some(group_id));
+
+        let layer = manager.get_layer(layer_id).unwrap();
+        // 0.5 * 0.5 * 1.0 = 0.25
+        assert_eq!(manager.get_effective_opacity(layer), 0.25);
     }
 }
