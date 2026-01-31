@@ -242,6 +242,18 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui.checkbox(&mut ui_state.show_toolbar, "Werkzeugleiste");
                     ui.checkbox(&mut ui_state.icon_demo_panel.visible, "Icon Gallery");
                     ui.separator();
+                    if ui
+                        .checkbox(
+                            &mut ui_state.user_config.global_fullscreen,
+                            "📽️ Projectors Fullscreen",
+                        )
+                        .changed()
+                    {
+                        actions.push(UIAction::SetGlobalFullscreen(
+                            ui_state.user_config.global_fullscreen,
+                        ));
+                    }
+                    ui.separator();
                     if menu_item(
                         ui,
                         ui_state.i18n.t("btn-fullscreen"),
@@ -297,7 +309,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             // --- Toolbar ---
             if ui_state.show_toolbar {
                 egui::ScrollArea::horizontal()
-                    .auto_shrink([false, true])
+                    .auto_shrink([false, false])
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);

@@ -167,6 +167,11 @@ pub struct UserConfig {
     /// Philips Hue Configuration
     #[serde(default)]
     pub hue_config: HueConfig,
+
+    // === Global Output Settings ===
+    /// Enable fullscreen for all projectors
+    #[serde(default)]
+    pub global_fullscreen: bool,
 }
 
 fn default_true() -> bool {
@@ -200,6 +205,7 @@ impl Default for UserConfig {
             show_module_canvas: false,
             show_controller_overlay: false,
             hue_config: HueConfig::default(),
+            global_fullscreen: false,
         }
     }
 }
@@ -361,7 +367,9 @@ mod tests {
             show_media_browser: true,
             show_module_canvas: false,
             show_controller_overlay: false,
+
             hue_config: HueConfig::default(),
+            global_fullscreen: true,
         };
 
         let json = serde_json::to_string(&config).unwrap();

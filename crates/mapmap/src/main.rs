@@ -1911,6 +1911,7 @@ impl App {
         // Track active IDs for cleanup
         let mut active_window_ids = std::collections::HashSet::new();
         let mut active_sender_ids = std::collections::HashSet::new();
+        let global_fullscreen = self.ui_state.user_config.global_fullscreen;
 
         self.output_assignments.clear();
 
@@ -1928,7 +1929,6 @@ impl App {
                             OutputType::Projector {
                                 id: projector_id,
                                 name,
-                                fullscreen,
                                 hide_cursor,
                                 target_screen,
                                 show_in_preview_panel: _,
@@ -1943,13 +1943,18 @@ impl App {
                                     // Update existing
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
-                                    if is_fullscreen != *fullscreen {
-                                        info!("Toggling fullscreen for window {}: {}", window_id, *fullscreen);
-                                        window_context.window.set_fullscreen(if *fullscreen {
-                                            Some(winit::window::Fullscreen::Borderless(None))
-                                        } else {
-                                            None
-                                        });
+                                    if is_fullscreen != global_fullscreen {
+                                        info!(
+                                            "Toggling fullscreen for window {}: {}",
+                                            window_id, global_fullscreen
+                                        );
+                                        window_context.window.set_fullscreen(
+                                            if global_fullscreen {
+                                                Some(winit::window::Fullscreen::Borderless(None))
+                                            } else {
+                                                None
+                                            },
+                                        );
                                     }
                                     window_context.window.set_cursor_visible(!*hide_cursor);
                                 } else {
@@ -1959,7 +1964,7 @@ impl App {
                                         &self.backend,
                                         window_id,
                                         name,
-                                        *fullscreen,
+                                        global_fullscreen,
                                         *hide_cursor,
                                         *target_screen,
                                         self.ui_state.user_config.vsync_mode,
@@ -2581,30 +2586,26 @@ impl App {
     fn handle_ui_actions(&mut self) -> Result<bool> {
         let actions = self.ui_state.take_actions();
         let mut needs_sync = false;
-        
+
         for action in actions {
             match action {
                 mapmap_ui::UIAction::NodeAction(node_action) => {
-                    self.ui_state.node_editor_panel.handle_action(node_action.clone());
+                    self.ui_state
+                        .node_editor_panel
+                        .handle_action(node_action.clone());
                     if let Err(e) = self.handle_node_action(node_action) {
                         eprintln!("Error handling node action: {}", e);
                     }
                 }
-            
-            // Fix: Sync Projector Fullscreen
-            mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
-                needs_sync = true;
-                // Iterate all modules and parts to find matching projectors
-                for module in self.state.module_manager.modules_mut() {
-                    for part in &mut module.parts {
-                        if let mapmap_core::module::ModulePartType::Output(mapmap_core::module::OutputType::Projector { id, fullscreen, .. }) = &mut part.part_type {
-                            if *id == proj_id {
-                                *fullscreen = is_fullscreen;
-                            }
-                        }
-                    }
+
+                // Global Fullscreen Setting
+                mapmap_ui::UIAction::SetGlobalFullscreen(is_fullscreen) => {
+                    needs_sync = true;
+                    // Update config
+                    self.ui_state.user_config.global_fullscreen = is_fullscreen;
+                    let _ = self.ui_state.user_config.save();
+                    info!("Global fullscreen set to: {}", is_fullscreen);
                 }
-            }
                 mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
                     self.ui_state.show_shader_graph = true;
                     if let Some(graph) = self.state.shader_graphs.get(&graph_id) {
@@ -2650,7 +2651,7 @@ impl App {
                 mapmap_ui::UIAction::Play => self.state.effect_animator.play(),
                 mapmap_ui::UIAction::Pause => self.state.effect_animator.pause(),
                 mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
-                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s as f32),
+                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s),
                 _ => {
                     // Other actions
                 }
@@ -2801,8 +2802,12 @@ impl App {
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
-                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
-                    self.ui_state.actions.extend(menu_actions);
+                    egui::TopBottomPanel::top("app_header_panel")
+                        .resizable(false)
+                        .show(ctx, |_ui| {
+                            let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                            self.ui_state.actions.extend(menu_actions);
+                        });
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
@@ -3219,7 +3224,7 @@ impl App {
                                             })
                                         })
                                         .collect();
-                                    
+
                                     // Fix: Deduplicate output previews by ID to prevent multiple windows for same projector
                                     let mut unique_output_infos: Vec<mapmap_ui::OutputPreviewInfo> = Vec::new();
                                     let mut seen_ids = std::collections::HashSet::new();
@@ -3228,7 +3233,7 @@ impl App {
                                             unique_output_infos.push(info);
                                         }
                                     }
-                                    
+
                                     self.ui_state.preview_panel.update_outputs(unique_output_infos);
                                     // Ensure continuous repaint for live preview
                                     if self.ui_state.show_preview_panel {
