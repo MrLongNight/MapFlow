@@ -52,7 +52,7 @@ pub struct CustomColors {
     pub error: [u8; 4],
 }
 
-/// Shared color constants for the Cyber Dark (Resolume) theme
+/// Shared color constants for the refined Cyber Dark palette (Deep Navy tones)
 pub mod colors {
     use egui::Color32;
 
