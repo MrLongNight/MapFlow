@@ -2856,8 +2856,15 @@ impl App {
                                             egui::Layout::top_down(egui::Align::LEFT),
                                             |ui| {
                                                 egui::ScrollArea::vertical().id_salt("controls_scroll").show(ui, |ui| {
-                                                    // Module Sidebar
-                                                    self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
+                                                    // Master Controls (Embedded)
+                                                    self.ui_state.render_master_controls_embedded(ui, &mut self.state.layer_manager);
+                                                    ui.separator();
+
+                                                    // Dashboard (Embedded)
+                                                    if let Some(action) = self.ui_state.dashboard.render_contents(ui, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref()) {
+                                                        dashboard_action = Some(action);
+                                                    }
+                                                    ui.separator();
 
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
@@ -3678,8 +3685,7 @@ impl App {
 
                     // === 7. Floating Windows / Modals ===
 
-                    // Master Controls Panel
-                    self.ui_state.render_master_controls(ctx, &mut self.state.layer_manager);
+                    // Master Controls moved to sidebar
 
                     // Icon Demo Panel
                     self.ui_state.render_icon_demo(ctx);
@@ -3726,8 +3732,7 @@ impl App {
                     // 3. FLOATING WINDOWS (Rendered LAST = On Top)
                     // ---------------------------------------------------------------------
 
-                    // === Dashboard ===
-                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
+
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
