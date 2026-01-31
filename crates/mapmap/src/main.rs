@@ -2837,14 +2837,7 @@ impl App {
                                 ui.separator();
 
                                 // === CONTROLS PANEL (Top) ===
-                                // Header with toggle button
-                                ui.horizontal(|ui| {
-                                    let arrow = if self.ui_state.show_control_panel { "▼" } else { "▶" };
-                                    if ui.button(arrow).on_hover_text("Controls ein-/ausklappen").clicked() {
-                                        self.ui_state.show_control_panel = !self.ui_state.show_control_panel;
-                                    }
-                                    ui.heading("⚙ Controls");
-                                });
+
 
                                 if self.ui_state.show_control_panel {
                                     // Use fixed height when both panels are open
