@@ -2777,12 +2777,8 @@ impl App {
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
-                    egui::TopBottomPanel::top("app_header_panel")
-                        .resizable(false)
-                        .show(ctx, |_ui| {
-                            let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
-                            self.ui_state.actions.extend(menu_actions);
-                        });
+                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                    self.ui_state.actions.extend(menu_actions);
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
