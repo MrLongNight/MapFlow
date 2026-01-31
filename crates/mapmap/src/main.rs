@@ -2761,7 +2761,6 @@ impl App {
 
             // --------- egui: UI separat zeichnen ---------
 
-
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
@@ -3908,7 +3907,6 @@ impl App {
             egui_render_data = Some((tris, screen_descriptor));
 
             // Handle Dashboard actions
-
 
             // Handle TransformPanel actions
             if let Some(action) = self.ui_state.transform_panel.take_action() {
