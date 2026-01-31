@@ -2474,3 +2474,92 @@ fn test_output_type_hue_serialization() {
         panic!("Wrong output variant");
     }
 }
+
+#[cfg(test)]
+mod trigger_config_tests {
+    use super::*;
+
+    #[test]
+    fn test_trigger_config_direct_mapping() {
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::Direct,
+            min_value: 0.0,
+            max_value: 100.0,
+            invert: false,
+            ..Default::default()
+        };
+
+        // 0.0 -> 0.0
+        assert_eq!(config.apply(0.0), 0.0);
+        // 0.5 -> 50.0
+        assert_eq!(config.apply(0.5), 50.0);
+        // 1.0 -> 100.0
+        assert_eq!(config.apply(1.0), 100.0);
+    }
+
+    #[test]
+    fn test_trigger_config_direct_inverted() {
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::Direct,
+            min_value: 0.0,
+            max_value: 100.0,
+            invert: true,
+            ..Default::default()
+        };
+
+        // 0.0 -> 1.0 (internal) -> 100.0
+        assert_eq!(config.apply(0.0), 100.0);
+        // 1.0 -> 0.0 (internal) -> 0.0
+        assert_eq!(config.apply(1.0), 0.0);
+    }
+
+    #[test]
+    fn test_trigger_config_fixed_mode() {
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::Fixed,
+            min_value: 10.0,
+            max_value: 90.0,
+            threshold: 0.5,
+            ..Default::default()
+        };
+
+        // Below threshold -> min_value
+        assert_eq!(config.apply(0.4), 10.0);
+        // Above threshold -> max_value
+        assert_eq!(config.apply(0.6), 90.0);
+    }
+
+    #[test]
+    fn test_trigger_config_random_mode() {
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::RandomInRange,
+            min_value: 10.0,
+            max_value: 20.0,
+            ..Default::default()
+        };
+
+        // If value > 0, should be random in range
+        let val = config.apply(1.0);
+        assert!(val >= 10.0 && val <= 20.0);
+
+        // If value <= 0, returns min_value (implementation detail: "if value > 0.0")
+        // Wait, the implementation says: if value > 0.0 { random } else { min_value }
+        assert_eq!(config.apply(0.0), 10.0);
+    }
+
+    #[test]
+    fn test_trigger_config_smoothed_fallback() {
+        // Currently smoothed falls back to direct
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::Smoothed {
+                attack: 0.1,
+                release: 0.1,
+            },
+            min_value: 0.0,
+            max_value: 100.0,
+            ..Default::default()
+        };
+
+        assert_eq!(config.apply(0.5), 50.0);
+    }
+}
