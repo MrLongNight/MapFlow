@@ -310,7 +310,7 @@ mod tests {
     #[test]
     fn test_color_calibration_renderer_creation() {
         pollster::block_on(async {
-            let backend = crate::WgpuBackend::new().await;
+            let backend = crate::WgpuBackend::new(None).await;
             if let Ok(backend) = backend {
                 let renderer = ColorCalibrationRenderer::new(
                     backend.device.clone(),
