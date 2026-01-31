@@ -27,3 +27,8 @@
 **Vulnerability:** The MCP server's file operations (`project_save`, `project_load`) blocked path traversal but allowed arbitrary file extensions. This could allow an agent to overwrite sensitive system files (e.g., `.bashrc`, `.env`) if they resided in the working directory.
 **Learning:** Preventing path traversal (`..`) is insufficient for file security. Restricting file types by extension is a critical second layer of defense (defense-in-depth) to prevent malicious file creation or loading.
 **Prevention:** Use `validate_path_with_extensions` helper for all file-based MCP tools, enforcing a strict whitelist of allowed extensions (e.g., `["mapmap", "json"]`).
+
+## 2026-10-26 - Missing Input Validation in WebSocket Handler
+**Vulnerability:** The WebSocket message handler (`handle_text_message`) deserialized JSON into strictly typed structs (`ControlTarget`, `ControlValue`) but failed to invoke their defined `.validate()` methods. This allowed malicious payloads (e.g., infinite strings, invalid control characters) to bypass the validation logic intended by the type definitions.
+**Learning:** Defining validation logic on a type is not enough; it must be explicitly invoked at the IO boundary. Serde deserialization handles structure but not semantic validity (lengths, ranges, content rules).
+**Prevention:** Always pair `serde::from_str` with explicit validation calls (`.validate()`) immediately after deserialization at the system boundary. Enforce this pattern in all request handlers.
