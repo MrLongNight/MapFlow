@@ -338,7 +338,7 @@ mod tests {
             show_media_browser: true,
             show_module_canvas: false,
             show_controller_overlay: false,
-            show_controller_overlay: false,
+
             hue_config: HueConfig::default(),
             global_fullscreen: true,
         };
