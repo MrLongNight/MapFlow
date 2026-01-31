@@ -2549,7 +2549,7 @@ impl ModuleCanvas {
                     ui.spacing_mut().item_spacing.x = 4.0;
 
                     ui.spacing_mut().item_spacing.x = 4.0;
-                    
+
                     // Fix: Wrapped in ScrollArea for responsive layout (Fixes UI Overlap)
                     egui::ScrollArea::horizontal().id_salt("toolbar_scroll").show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -2656,7 +2656,7 @@ impl ModuleCanvas {
                     }); // End module_context ID
                         }); // End inner horizontal (inside ScrollArea)
                     }); // End ScrollArea
-                    
+
                     ui.add_space(16.0); // Spacing between groups
 
                     // --- CENTER: Action Tools ---

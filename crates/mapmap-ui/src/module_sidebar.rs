@@ -1,5 +1,4 @@
 use crate::i18n::LocaleManager;
-use crate::widgets::panel_container;
 use egui::{Color32, Pos2, Rect, Response, Sense, Ui, Vec2};
 use mapmap_core::module::{MapFlowModule, ModuleManager};
 
@@ -17,7 +16,10 @@ impl ModuleSidebar {
     ) -> Option<ModuleSidebarAction> {
         let mut action = None;
 
-        let closed = panel_container(ui, &locale.t("panel-modules"), true, |ui| {
+        ui.vertical(|ui| {
+            ui.heading(locale.t("panel-modules"));
+            ui.separator();
+
             // Button to add a new module
             if ui.button(locale.t("btn-add-module")).clicked() {
                 action = Some(ModuleSidebarAction::AddModule);
@@ -81,10 +83,6 @@ impl ModuleSidebar {
             }
         });
 
-        if closed {
-            action = Some(ModuleSidebarAction::Close);
-        }
-
         action
     }
 
@@ -128,5 +126,5 @@ pub enum ModuleSidebarAction {
     AddModule,
     DeleteModule(u64),
     SetColor(u64, [f32; 4]),
-    Close,
+    // Other actions like Rename, Duplicate etc.
 }
