@@ -2761,10 +2761,11 @@ impl App {
 
             // --------- egui: UI separat zeichnen ---------
 
-            let dashboard_action = None;
+            let mut dashboard_action = None;
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
+                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
                     // Apply the theme at the beginning of each UI render pass
                     self.ui_state.user_config.theme.apply(ctx);
 
@@ -2982,6 +2983,9 @@ impl App {
                                             egui::Layout::top_down(egui::Align::LEFT),
                                             |ui| {
                                                 egui::ScrollArea::vertical().id_salt("controls_scroll").show(ui, |ui| {
+                                                    // Module Sidebar
+                                                    self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
+
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
@@ -3100,6 +3104,9 @@ impl App {
                                     } else {
                                         // Controls only - full height
                                         egui::ScrollArea::vertical().id_salt("inspector_scroll_full").show(ui, |ui| {
+                                            // Module Sidebar
+                                            self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
+
                                             // Media Browser Section
                                             egui::CollapsingHeader::new("📁 Media")
                                                 .default_open(false)
@@ -3763,6 +3770,53 @@ impl App {
                         show_settings = false;
                     }
                     self.ui_state.show_settings = show_settings;
+
+                    // === 7. Floating Windows / Modals ===
+                    
+                    // Master Controls Panel
+                    self.ui_state.render_master_controls(ctx, &mut self.state.layer_manager);
+                    
+                    // Icon Demo Panel
+                    self.ui_state.render_icon_demo(ctx);
+
+                    // Paint Panel
+                    self.ui_state.paint_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.paint_manager,
+                        self.ui_state.icon_manager.as_ref(),
+                    );
+
+                    // Mapping Panel
+                    self.ui_state.mapping_panel.show(
+                        ctx,
+                        &mut self.state.mapping_manager,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                    );
+
+                    // Output Panel
+                    self.ui_state.output_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.output_manager,
+                        &[], // Monitors placeholder
+                    );
+
+                    // Edge Blend Panel
+                    self.ui_state.edge_blend_panel.show(ctx, &self.ui_state.i18n);
+
+                    // Assignment Panel
+                    self.ui_state.assignment_panel.show(ctx, &self.state.assignment_manager);
+
+                    // Icon Demo Panel
+                    if self.ui_state.icon_demo_panel.visible {
+                        self.ui_state.icon_demo_panel.ui(
+                            ctx,
+                            self.ui_state.icon_manager.as_ref(),
+                            &self.ui_state.i18n,
+                        );
+                    }
                 });
 
                 self.egui_state
