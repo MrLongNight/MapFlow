@@ -2471,7 +2471,7 @@ impl App {
 
     /// Global update loop (physics/logic), independent of render rate per window.
     fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
-        let _ = self.handle_ui_actions();
+        let ui_needs_sync = self.handle_ui_actions().unwrap_or(false);
 
         // --- Media Player Update ---
         self.sync_media_players();
@@ -2535,7 +2535,7 @@ impl App {
 
         // Only sync if module graph's projector set changed
         // Only sync if module graph's projector set changed
-        if current_output_ids != prev_output_ids {
+        if ui_needs_sync || current_output_ids != prev_output_ids {
             tracing::info!(
                 "Output set changed: {:?} -> {:?}",
                 prev_output_ids,
@@ -2574,8 +2574,10 @@ impl App {
         }
     }
     /// Handle global UI actions
-    fn handle_ui_actions(&mut self) -> Result<()> {
+    fn handle_ui_actions(&mut self) -> Result<bool> {
         let actions = self.ui_state.take_actions();
+        let mut needs_sync = false;
+        
         for action in actions {
             match action {
                 mapmap_ui::UIAction::NodeAction(node_action) => {
@@ -2587,6 +2589,7 @@ impl App {
             
             // Fix: Sync Projector Fullscreen
             mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
+                needs_sync = true;
                 // Iterate all modules and parts to find matching projectors
                 for module in self.state.module_manager.modules_mut() {
                     for part in &mut module.parts {
@@ -2645,11 +2648,11 @@ impl App {
                 mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
                 mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s as f32),
                 _ => {
-                    // Other actions might be handled elsewhere or are not yet implemented
+                    // Other actions
                 }
             }
         }
-        Ok(())
+        Ok(needs_sync)
     }
 
     /// Handle Node Editor actions
