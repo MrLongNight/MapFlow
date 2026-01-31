@@ -256,3 +256,79 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
+
+/// A standard panel container with Cyber Dark styling
+pub fn panel_container(
+    ui: &mut Ui,
+    title: &str,
+    closable: bool,
+    add_contents: impl FnOnce(&mut Ui),
+) -> bool {
+    let mut close_clicked = false;
+
+    egui::Frame::new()
+        .fill(colors::DARK_GREY)
+        .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+        .inner_margin(0.0)
+        .show(ui, |ui| {
+            // Header
+            let desired_size = Vec2::new(ui.available_width(), 24.0);
+            let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
+
+            let painter = ui.painter();
+
+            // Header Background
+            painter.rect_filled(
+                rect,
+                egui::CornerRadius::same(0),
+                colors::DARKER_GREY, // Slightly darker for header
+            );
+
+            // Accent Stripe
+            let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
+            painter.rect_filled(
+                stripe_rect,
+                egui::CornerRadius::same(0),
+                colors::CYAN_ACCENT,
+            );
+
+            // Title
+            let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
+            painter.text(
+                text_pos,
+                egui::Align2::LEFT_CENTER,
+                title,
+                egui::FontId::proportional(14.0),
+                ui.visuals().text_color(),
+            );
+
+            // Close Button
+            if closable {
+                let button_size = 24.0;
+                let button_rect = Rect::from_min_size(
+                    Pos2::new(rect.max.x - button_size, rect.min.y),
+                    Vec2::new(button_size, button_size),
+                );
+
+                let mut child_ui = ui.new_child(
+                    egui::UiBuilder::new()
+                        .max_rect(button_rect)
+                        .layout(egui::Layout::left_to_right(egui::Align::Center)),
+                );
+                if child_ui
+                    .add(egui::Button::new("✕").frame(false))
+                    .clicked()
+                {
+                    close_clicked = true;
+                }
+            }
+
+            // Content
+            ui.add_space(4.0);
+            egui::Frame::new()
+                .inner_margin(4.0)
+                .show(ui, add_contents);
+        });
+
+    close_clicked
+}

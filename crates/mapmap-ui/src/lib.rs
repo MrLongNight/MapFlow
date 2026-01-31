@@ -454,19 +454,32 @@ impl AppUI {
             .default_width(280.0)
             .min_width(200.0)
             .max_width(400.0)
+            .frame(egui::Frame::new().fill(egui::Color32::TRANSPARENT).inner_margin(0.0))
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading(self.i18n.t("panel-media-browser"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("✕").clicked() {
+                if let Some(action) = self.media_browser.ui(
+                    ui,
+                    &self.i18n,
+                    self.icon_manager.as_ref(),
+                ) {
+                    match action {
+                        MediaBrowserAction::Close => {
                             self.show_media_browser = false;
                         }
-                    });
-                });
-                ui.separator();
-                let _ = self
-                    .media_browser
-                    .ui(ui, &self.i18n, self.icon_manager.as_ref());
+                        MediaBrowserAction::FileDoubleClicked(path) => {
+                            if let (Some(module_id), Some(part_id)) = (
+                                self.module_canvas.active_module_id,
+                                self.module_canvas.editing_part_id,
+                            ) {
+                                self.actions.push(UIAction::SetMediaFile(
+                                    module_id,
+                                    part_id,
+                                    path.to_string_lossy().to_string(),
+                                ));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
             });
     }
 
