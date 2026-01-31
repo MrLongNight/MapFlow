@@ -9,7 +9,7 @@ struct TestEnvironment {
 }
 
 async fn setup_test_environment() -> Option<TestEnvironment> {
-    match WgpuBackend::new().await {
+    match WgpuBackend::new(None).await {
         Ok(backend) => Some(TestEnvironment {
             device: backend.device.clone(),
             queue: backend.queue.clone(),
