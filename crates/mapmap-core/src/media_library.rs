@@ -79,7 +79,11 @@ impl MediaLibrary {
 
                         let item = MediaItem {
                             path: path.to_path_buf(),
-                            name: path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                            name: path
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .to_string(),
                             media_type,
                             metadata: Some(MediaMetadata {
                                 duration: None, // Requires FFmpeg

@@ -36,6 +36,7 @@ pub mod effect_animation;
 pub mod effects;
 pub mod logging;
 pub mod lut;
+pub mod media_library;
 pub mod module;
 pub mod module_eval;
 pub mod oscillator;
@@ -43,7 +44,6 @@ pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
 pub mod trigger_system;
-pub mod media_library;
 
 // --- Re-exports grouped by category ---
 

@@ -1,5 +1,5 @@
-use egui::{Ui, Color32, Sense, Vec2, Id};
-use mapmap_core::media_library::{MediaLibrary, MediaType, MediaItem};
+use egui::{Color32, Id, Sense, Ui, Vec2};
+use mapmap_core::media_library::{MediaItem, MediaLibrary, MediaType};
 
 pub struct MediaManagerUI {
     pub visible: bool, // Toggle visibility
@@ -69,14 +69,23 @@ impl MediaManagerUI {
 
             ui.separator();
 
-            if ui.selectable_label(self.selected_playlist.is_none(), "All Media").clicked() {
+            if ui
+                .selectable_label(self.selected_playlist.is_none(), "All Media")
+                .clicked()
+            {
                 self.selected_playlist = None;
             }
 
             let mut to_remove = None;
             for playlist in &library.playlists {
                 ui.horizontal(|ui| {
-                    if ui.selectable_label(self.selected_playlist.as_ref() == Some(&playlist.name), &playlist.name).clicked() {
+                    if ui
+                        .selectable_label(
+                            self.selected_playlist.as_ref() == Some(&playlist.name),
+                            &playlist.name,
+                        )
+                        .clicked()
+                    {
                         self.selected_playlist = Some(playlist.name.clone());
                     }
                     if ui.small_button("x").clicked() {
@@ -102,10 +111,16 @@ impl MediaManagerUI {
                 ui.text_edit_singleline(&mut self.search_query);
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.selectable_label(self.view_mode == ViewMode::List, "List").clicked() {
+                    if ui
+                        .selectable_label(self.view_mode == ViewMode::List, "List")
+                        .clicked()
+                    {
                         self.view_mode = ViewMode::List;
                     }
-                    if ui.selectable_label(self.view_mode == ViewMode::Grid, "Grid").clicked() {
+                    if ui
+                        .selectable_label(self.view_mode == ViewMode::Grid, "Grid")
+                        .clicked()
+                    {
                         self.view_mode = ViewMode::Grid;
                     }
                     ui.add(egui::Slider::new(&mut self.thumbnail_size, 50.0..=200.0).text("Size"));
@@ -126,8 +141,14 @@ impl MediaManagerUI {
             // Content Area
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let items = if let Some(playlist_name) = &self.selected_playlist {
-                    if let Some(playlist) = library.playlists.iter().find(|p| &p.name == playlist_name) {
-                        playlist.items.iter().filter_map(|path| library.items.get(path)).collect::<Vec<_>>()
+                    if let Some(playlist) =
+                        library.playlists.iter().find(|p| &p.name == playlist_name)
+                    {
+                        playlist
+                            .items
+                            .iter()
+                            .filter_map(|path| library.items.get(path))
+                            .collect::<Vec<_>>()
                     } else {
                         vec![]
                     }
@@ -135,9 +156,16 @@ impl MediaManagerUI {
                     library.get_items()
                 };
 
-                let filtered_items: Vec<&MediaItem> = items.into_iter().filter(|item| {
-                    self.search_query.is_empty() || item.name.to_lowercase().contains(&self.search_query.to_lowercase())
-                }).collect();
+                let filtered_items: Vec<&MediaItem> = items
+                    .into_iter()
+                    .filter(|item| {
+                        self.search_query.is_empty()
+                            || item
+                                .name
+                                .to_lowercase()
+                                .contains(&self.search_query.to_lowercase())
+                    })
+                    .collect();
 
                 match self.view_mode {
                     ViewMode::Grid => self.render_grid(ui, &filtered_items),
@@ -172,20 +200,38 @@ impl MediaManagerUI {
                         MediaType::Audio => "🔊",
                         MediaType::Unknown => "?",
                     };
-                    ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, icon, egui::FontId::proportional(size.y * 0.5), Color32::WHITE);
+                    ui.painter().text(
+                        rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        icon,
+                        egui::FontId::proportional(size.y * 0.5),
+                        Color32::WHITE,
+                    );
 
                     // Name
-                    ui.painter().text(rect.center() + Vec2::new(0.0, size.y * 0.4), egui::Align2::CENTER_BOTTOM, &item.name, egui::FontId::proportional(12.0), Color32::WHITE);
+                    ui.painter().text(
+                        rect.center() + Vec2::new(0.0, size.y * 0.4),
+                        egui::Align2::CENTER_BOTTOM,
+                        &item.name,
+                        egui::FontId::proportional(12.0),
+                        Color32::WHITE,
+                    );
 
                     // Hover effect
                     if response.hovered() {
-                        ui.painter().rect_stroke(rect, 2.0, egui::Stroke::new(2.0, Color32::LIGHT_BLUE), egui::StrokeKind::Outside);
+                        ui.painter().rect_stroke(
+                            rect,
+                            2.0,
+                            egui::Stroke::new(2.0, Color32::LIGHT_BLUE),
+                            egui::StrokeKind::Outside,
+                        );
                     }
                 }
 
                 // Drag Source
                 if response.drag_started() {
-                    ui.ctx().data_mut(|d| d.insert_temp(Id::new("media_path"), item.path.clone()));
+                    ui.ctx()
+                        .data_mut(|d| d.insert_temp(Id::new("media_path"), item.path.clone()));
                 }
             }
         });
@@ -203,11 +249,14 @@ impl MediaManagerUI {
                 ui.label(icon);
 
                 let response = ui.label(&item.name).interact(Sense::click_and_drag());
-                ui.label(format_size(item.metadata.as_ref().map(|m| m.file_size).unwrap_or(0)));
+                ui.label(format_size(
+                    item.metadata.as_ref().map(|m| m.file_size).unwrap_or(0),
+                ));
 
                 // Drag Source
                 if response.drag_started() {
-                    ui.ctx().data_mut(|d| d.insert_temp(Id::new("media_path"), item.path.clone()));
+                    ui.ctx()
+                        .data_mut(|d| d.insert_temp(Id::new("media_path"), item.path.clone()));
                 }
             });
         }

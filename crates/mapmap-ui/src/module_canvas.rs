@@ -3366,7 +3366,13 @@ impl ModuleCanvas {
         }
     }
 
-    fn render_canvas(&mut self, ui: &mut Ui, module: &mut MapFlowModule, _locale: &LocaleManager, actions: &mut Vec<crate::UIAction>) {
+    fn render_canvas(
+        &mut self,
+        ui: &mut Ui,
+        module: &mut MapFlowModule,
+        _locale: &LocaleManager,
+        actions: &mut Vec<crate::UIAction>,
+    ) {
         self.ensure_icons_loaded(ui.ctx());
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
@@ -5678,16 +5684,31 @@ impl ModuleCanvas {
         painter.rect_filled(rect, 0, neutral_bg);
 
         // Handle drag and drop for Media Files
-        if let mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::MediaFile { .. }) = &part.part_type {
-             if ui.rect_contains_pointer(rect) {
-                 if let Some(dropped_path) = ui.ctx().data(|d| d.get_temp::<std::path::PathBuf>(egui::Id::new("media_path"))) {
-                     painter.rect_stroke(rect, 0, egui::Stroke::new(2.0, egui::Color32::YELLOW), egui::StrokeKind::Outside);
+        if let mapmap_core::module::ModulePartType::Source(
+            mapmap_core::module::SourceType::MediaFile { .. },
+        ) = &part.part_type
+        {
+            if ui.rect_contains_pointer(rect) {
+                if let Some(dropped_path) = ui
+                    .ctx()
+                    .data(|d| d.get_temp::<std::path::PathBuf>(egui::Id::new("media_path")))
+                {
+                    painter.rect_stroke(
+                        rect,
+                        0,
+                        egui::Stroke::new(2.0, egui::Color32::YELLOW),
+                        egui::StrokeKind::Outside,
+                    );
 
-                     if ui.input(|i| i.pointer.any_released()) {
-                         actions.push(UIAction::SetMediaFile(module_id, part.id, dropped_path.to_string_lossy().to_string()));
-                     }
-                 }
-             }
+                    if ui.input(|i| i.pointer.any_released()) {
+                        actions.push(UIAction::SetMediaFile(
+                            module_id,
+                            part.id,
+                            dropped_path.to_string_lossy().to_string(),
+                        ));
+                    }
+                }
+            }
         }
 
         // Node border - colored by type for quick identification

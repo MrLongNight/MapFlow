@@ -4,8 +4,8 @@
 
 #![warn(missing_docs)]
 
-mod window_manager;
 mod media_manager_ui;
+mod window_manager;
 
 use anyhow::Result;
 use egui_wgpu::Renderer;
@@ -27,7 +27,9 @@ use mapmap_core::{
 use mapmap_mcp::{McpAction, McpServer};
 // Define McpAction locally or import if we move it to core later -> Removed local definition
 
+use crate::media_manager_ui::MediaManagerUI;
 use crossbeam_channel::{unbounded, Receiver};
+use mapmap_core::media_library::MediaLibrary;
 use mapmap_core::module::{ModulePartId, ModulePartType, SourceType};
 use mapmap_io::{load_project, save_project};
 use mapmap_media::player::{PlaybackCommand, VideoPlayer};
@@ -36,8 +38,6 @@ use mapmap_render::{
     MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
 };
 use mapmap_ui::{menu_bar, AppUI, EdgeBlendAction};
-use crate::media_manager_ui::MediaManagerUI;
-use mapmap_core::media_library::MediaLibrary;
 use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
