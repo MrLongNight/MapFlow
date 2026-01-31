@@ -205,8 +205,10 @@ pub enum UIAction {
     StopCue,
 
     // Shader Graph (Phase 6b)
-    NodeAction(NodeEditorAction),
     OpenShaderGraph(mapmap_core::GraphId),
+
+    // MIDI
+    ToggleMidiLearn,
 }
 
 use mapmap_control::ControlTarget;

@@ -1665,8 +1665,32 @@ impl App {
                 mapmap_ui::UIAction::RemoveOutput(..) => {
                     warn!("RemoveOutput not implemented in main");
                 }
-                mapmap_ui::UIAction::ConfigureOutput(..) => {
-                    warn!("ConfigureOutput not implemented in main");
+                mapmap_ui::UIAction::ConfigureOutput(id, mut config) => {
+                    // Collect sync for fullscreen
+                    let fs = config.fullscreen;
+
+                    // Update the target output
+                    self.state.output_manager.update_output(id, config.clone());
+
+                    // SYNC Logic: If this is an output node, we might want to sync fullscreen across all projectors
+                    // This prevents desync where one projector is FS and another is windowed.
+                    let all_ids: Vec<_> = self
+                        .state
+                        .output_manager
+                        .list_outputs()
+                        .iter()
+                        .map(|o| o.id)
+                        .collect();
+                    for oid in all_ids {
+                        if let Some(other) = self.state.output_manager.get_output_mut(oid) {
+                            if other.fullscreen != fs {
+                                other.fullscreen = fs;
+                                info!("Syncing fullscreen state for output {} -> {}", oid, fs);
+                            }
+                        }
+                    }
+
+                    self.state.dirty = true;
                 }
 
                 // Fallback
@@ -3677,7 +3701,7 @@ impl App {
             const PREVIEW_FLAG: u64 = 1u64 << 63;
             let real_output_id = output_id & !PREVIEW_FLAG;
 
-            let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
+            let mut target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
                 .render_ops
                 .iter()
                 .filter(|(_, op)| match &op.output_type {
@@ -3686,6 +3710,14 @@ impl App {
                 })
                 .map(|(mid, op)| (*mid, op))
                 .collect();
+
+            // 2. Sort RenderOps: Layer 1 (Lowest ID) should be processed Last (Top)
+            // Projector nodes (base) have id 0 or lowest priority.
+            target_ops.sort_by(|(_, a), (_, b)| {
+                let id_a = a.output_part_id;
+                let id_b = b.output_part_id;
+                id_b.cmp(&id_a) // Descending: Higher IDs first (Bottom), Lower IDs last (Top)
+            });
 
             // Debug: Log number of ops per output
             if target_ops.len() > 1 {
