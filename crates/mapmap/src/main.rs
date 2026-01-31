@@ -4132,6 +4132,7 @@ impl App {
                             let (vertex_buffer, index_buffer, index_count) =
                                 self.mesh_buffer_cache.get_buffers(
                                     &self.backend.device,
+                                    &self.backend.queue,
                                     op.layer_part_id,
                                     &op.mesh.to_mesh(),
                                 );
