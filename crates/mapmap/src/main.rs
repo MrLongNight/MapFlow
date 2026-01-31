@@ -1426,6 +1426,11 @@ impl App {
                             target_id
                         );
                     }
+                    #[cfg(not(feature = "midi"))]
+                    {
+                        let _ = element_id;
+                        let _ = target_id;
+                    }
                 }
                 mapmap_ui::UIAction::RegisterHue => {
                     info!("Linking with Philips Hue Bridge...");
