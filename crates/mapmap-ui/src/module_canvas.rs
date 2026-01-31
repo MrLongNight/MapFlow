@@ -1869,7 +1869,6 @@ impl ModuleCanvas {
                                                 target_screen,
                                                 show_in_preview_panel,
                                                 extra_preview_window,
-                                                fullscreen,
                                                 ..
                                             } => {
                                                 ui.label("📽️ Projector Output");
@@ -1903,9 +1902,6 @@ impl ModuleCanvas {
                                                         });
                                                 });
 
-                                                if ui.checkbox(fullscreen, "🖼️ Fullscreen").changed() {
-                                                    actions.push(crate::UIAction::SyncProjectorFullscreen(*id, *fullscreen));
-                                                }
                                                 ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
 
                                                 ui.separator();
@@ -3214,7 +3210,7 @@ impl ModuleCanvas {
                                 self.add_module_node(manager, ModulePartType::Output(OutputType::Projector {
                                     id: 1,
                                     name: "Projector 1".to_string(),
-                                    fullscreen: false,
+
                                     hide_cursor: true,
                                     target_screen: 0,
                                     show_in_preview_panel: true,
@@ -5163,7 +5159,7 @@ impl ModuleCanvas {
                             *output_type = OutputType::Projector {
                                 id: 1,
                                 name: "Projector 1".to_string(),
-                                fullscreen: false,
+
                                 hide_cursor: true,
                                 target_screen: 0,
                                 show_in_preview_panel: true,
@@ -5220,7 +5216,7 @@ impl ModuleCanvas {
                 // Properties for Projector output type
                 if let OutputType::Projector {
                     name,
-                    fullscreen,
+
                     target_screen,
                     output_width,
                     output_height,
@@ -5310,7 +5306,7 @@ impl ModuleCanvas {
                     ui.add_space(4.0);
 
                     // Toggles
-                    ui.checkbox(fullscreen, "Fullscreen");
+
                     ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
                     ui.checkbox(extra_preview_window, "Extra Preview Window");
                 }
@@ -6513,7 +6509,7 @@ impl ModuleCanvas {
                         ModulePartType::Output(OutputType::Projector {
                             id: 1,
                             name: "Projector 1".to_string(),
-                            fullscreen: false,
+
                             hide_cursor: true,
                             target_screen: 0,
                             show_in_preview_panel: true,
@@ -6556,7 +6552,7 @@ impl ModuleCanvas {
                         ModulePartType::Output(OutputType::Projector {
                             id: 1,
                             name: "Projector 1".to_string(),
-                            fullscreen: false,
+
                             hide_cursor: true,
                             target_screen: 0,
                             show_in_preview_panel: true,
@@ -6612,7 +6608,7 @@ impl ModuleCanvas {
                         ModulePartType::Output(OutputType::Projector {
                             id: 1,
                             name: "Projector 1".to_string(),
-                            fullscreen: false,
+
                             hide_cursor: true,
                             target_screen: 0,
                             show_in_preview_panel: true,
@@ -6654,7 +6650,7 @@ impl ModuleCanvas {
                         ModulePartType::Output(OutputType::Projector {
                             id: 1,
                             name: "Projector 1".to_string(),
-                            fullscreen: false,
+
                             hide_cursor: true,
                             target_screen: 0,
                             show_in_preview_panel: true,
@@ -6691,7 +6687,7 @@ impl ModuleCanvas {
                         ModulePartType::Output(OutputType::Projector {
                             id: 1,
                             name: "Projector 1".to_string(),
-                            fullscreen: false,
+
                             hide_cursor: true,
                             target_screen: 0,
                             show_in_preview_panel: true,
@@ -6757,7 +6753,7 @@ impl ModuleCanvas {
                         ModulePartType::Output(OutputType::Projector {
                             id: 1,
                             name: "Projector 1".to_string(),
-                            fullscreen: false,
+
                             hide_cursor: true,
                             target_screen: 0,
                             show_in_preview_panel: true,
