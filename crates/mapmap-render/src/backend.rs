@@ -31,14 +31,18 @@ impl WgpuBackend {
     /// This implementation is robust against initialization failures on specific backends
     /// (like GL panicking on headless systems). It prioritizes modern backends (Vulkan, Metal, DX12, DX11)
     /// and falls back to GL only if necessary.
-    pub async fn new() -> Result<Self> {
+    pub async fn new(preferred_gpu: Option<&str>) -> Result<Self> {
         // 1. Try all backends EXCEPT GL first.
         // This includes Vulkan, Metal, DX12, and DX11.
         // We explicitly exclude GL to avoid the "BadDisplay" panic on headless systems
         // where wgpu tries to initialize EGL/GLX eagerly.
         let safe_backends = wgpu::Backends::all() & !wgpu::Backends::GL;
-        let primary_result =
-            Self::new_with_options(safe_backends, wgpu::PowerPreference::HighPerformance).await;
+        let primary_result = Self::new_with_options(
+            safe_backends,
+            wgpu::PowerPreference::HighPerformance,
+            preferred_gpu,
+        )
+        .await;
 
         if primary_result.is_ok() {
             return primary_result;
@@ -49,13 +53,19 @@ impl WgpuBackend {
         // 2. Fallback to GL if PRIMARY failed
         // Note: This step might still panic on headless systems if GL is selected but unavailable,
         // but it's a necessary fallback for older hardware.
-        Self::new_with_options(wgpu::Backends::GL, wgpu::PowerPreference::HighPerformance).await
+        Self::new_with_options(
+            wgpu::Backends::GL,
+            wgpu::PowerPreference::HighPerformance,
+            preferred_gpu,
+        )
+        .await
     }
 
     /// Create a new wgpu backend with specific options
     pub async fn new_with_options(
         backends: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
+        preferred_gpu: Option<&str>,
     ) -> Result<Self> {
         info!("Initializing wgpu backend");
 
@@ -64,14 +74,41 @@ impl WgpuBackend {
             ..Default::default()
         });
 
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference,
-                compatible_surface: None,
-                force_fallback_adapter: false,
-            })
-            .await
-            .map_err(|e| RenderError::DeviceError(e.to_string()))?;
+        let mut adapter = None;
+
+        if let Some(gpu_name) = preferred_gpu {
+            if !gpu_name.is_empty() {
+                let adapters = instance.enumerate_adapters(backends);
+                for a in adapters {
+                    let info = a.get_info();
+                    if info.name == gpu_name {
+                        info!("Found preferred adapter: {}", info.name);
+                        adapter = Some(a);
+                        break;
+                    }
+                }
+                if adapter.is_none() {
+                    tracing::warn!(
+                        "Preferred GPU '{}' not found, falling back to auto-selection.",
+                        gpu_name
+                    );
+                }
+            }
+        }
+
+        if adapter.is_none() {
+            adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference,
+                    compatible_surface: None,
+                    force_fallback_adapter: false,
+                })
+                .await
+                .ok();
+        }
+
+        let adapter =
+            adapter.ok_or_else(|| RenderError::DeviceError("No adapter found".to_string()))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -285,7 +322,7 @@ mod tests {
     #[test]
     fn test_backend_creation() {
         pollster::block_on(async {
-            let backend = WgpuBackend::new().await;
+            let backend = WgpuBackend::new(None).await;
             if backend.is_err() {
                 // Skipping test on CI/Headless systems without GPU support.
                 eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
@@ -304,7 +341,7 @@ mod tests {
         pollster::block_on(async {
             // This test ensures that trying to create a backend doesn't panic,
             // even if it fails.
-            let result = WgpuBackend::new().await;
+            let result = WgpuBackend::new(None).await;
             match result {
                 Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
                 Err(e) => println!("Backend init failed gracefully: {}", e),

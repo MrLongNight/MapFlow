@@ -25,6 +25,25 @@ impl fmt::Display for AudioMeterStyle {
     }
 }
 
+/// Vertical Synchronization Mode
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum VSyncMode {
+    #[default]
+    Auto,
+    On,
+    Off,
+}
+
+impl fmt::Display for VSyncMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Auto => write!(f, "Auto"),
+            Self::On => write!(f, "On (VSync)"),
+            Self::Off => write!(f, "Off (No Limit)"),
+        }
+    }
+}
+
 /// MIDI element assignment target
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MidiAssignmentTarget {
@@ -92,6 +111,12 @@ pub struct UserConfig {
     /// Target frame rate (FPS)
     #[serde(default)]
     pub target_fps: Option<f32>,
+    /// Preferred GPU Adapter Name
+    #[serde(default)]
+    pub preferred_gpu: Option<String>,
+    /// Vertical Sync Mode
+    #[serde(default)]
+    pub vsync_mode: VSyncMode,
     /// Audio meter style
     #[serde(default)]
     pub meter_style: AudioMeterStyle,
@@ -156,6 +181,8 @@ impl Default for UserConfig {
             recent_files: Vec::new(),
             theme: ThemeConfig::default(),
             target_fps: Some(60.0),
+            preferred_gpu: None,
+            vsync_mode: VSyncMode::default(),
             meter_style: AudioMeterStyle::default(),
             midi_assignments: Vec::new(),
             selected_audio_device: None,
@@ -318,6 +345,8 @@ mod tests {
             recent_files: vec!["file1.mp4".to_string(), "file2.mp4".to_string()],
             theme: ThemeConfig::default(),
             target_fps: Some(60.0),
+            preferred_gpu: None,
+            vsync_mode: VSyncMode::default(),
             meter_style: AudioMeterStyle::Digital,
             midi_assignments: Vec::new(),
             selected_audio_device: None,

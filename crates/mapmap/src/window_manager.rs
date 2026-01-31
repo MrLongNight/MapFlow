@@ -7,6 +7,7 @@
 use anyhow::Result;
 use mapmap_core::{OutputId, OutputManager};
 use mapmap_render::WgpuBackend;
+use mapmap_ui::config::VSyncMode;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
@@ -14,6 +15,14 @@ use winit::{
     event_loop::ActiveEventLoop,
     window::{Fullscreen, Window, WindowAttributes, WindowId},
 };
+
+fn vsync_mode_to_present_mode(mode: VSyncMode) -> wgpu::PresentMode {
+    match mode {
+        VSyncMode::Auto => wgpu::PresentMode::AutoVsync,
+        VSyncMode::On => wgpu::PresentMode::Fifo,
+        VSyncMode::Off => wgpu::PresentMode::Immediate,
+    }
+}
 
 /// Context for a single window, containing the `winit` window, `wgpu` surface,
 /// and other related configuration.
@@ -57,7 +66,16 @@ impl WindowManager {
         backend: &WgpuBackend,
     ) -> Result<OutputId> {
         // Use default size
-        self.create_main_window_with_geometry(event_loop, backend, None, None, None, None, false)
+        self.create_main_window_with_geometry(
+            event_loop,
+            backend,
+            None,
+            None,
+            None,
+            None,
+            false,
+            VSyncMode::Auto,
+        )
     }
 
     /// Creates the main control window with optional saved geometry.
@@ -71,6 +89,7 @@ impl WindowManager {
         x: Option<i32>,
         y: Option<i32>,
         maximized: bool,
+        vsync_mode: VSyncMode,
     ) -> Result<OutputId> {
         let default_width = width.unwrap_or(1920);
         let default_height = height.unwrap_or(1080);
@@ -103,7 +122,7 @@ impl WindowManager {
             format: wgpu::TextureFormat::Bgra8Unorm,
             width: default_width,
             height: default_height,
-            present_mode: wgpu::PresentMode::AutoNoVsync,
+            present_mode: vsync_mode_to_present_mode(vsync_mode),
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
@@ -217,6 +236,7 @@ impl WindowManager {
         fullscreen: bool,
         hide_cursor: bool,
         target_screen: u8,
+        vsync_mode: VSyncMode,
     ) -> Result<()> {
         // Skip if window already exists
         if self.windows.contains_key(&output_id) {
@@ -293,7 +313,7 @@ impl WindowManager {
             format: backend.surface_format(),
             width: default_width,
             height: default_height,
-            present_mode: wgpu::PresentMode::Fifo, // VSync for synchronized output
+            present_mode: vsync_mode_to_present_mode(vsync_mode), // VSync for synchronized output
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
