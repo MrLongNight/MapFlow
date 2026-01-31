@@ -2761,7 +2761,7 @@ impl App {
 
             // --------- egui: UI separat zeichnen ---------
 
-            let mut dashboard_action = None;
+
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
@@ -3908,21 +3908,7 @@ impl App {
             egui_render_data = Some((tris, screen_descriptor));
 
             // Handle Dashboard actions
-            if let Some(action) = dashboard_action {
-                match action {
-                    mapmap_ui::DashboardAction::ToggleAudioPanel => {
-                        self.ui_state.show_audio = !self.ui_state.show_audio;
-                    }
-                    mapmap_ui::DashboardAction::AudioDeviceChanged(_device) => {}
-                    mapmap_ui::DashboardAction::SendCommand(_cmd) => {
-                        // TODO: Implement playback commands if not handled elsewhere
-                        // Currently PlaybackCommand handling seems missing in main.rs or handled via Mcp?
-                        // "McpAction::MediaPlay" has TODO.
-                        // This suggests buttons in Dashboard might do nothing currently!
-                        // But fixing playback is not my task.
-                    }
-                }
-            }
+
 
             // Handle TransformPanel actions
             if let Some(action) = self.ui_state.transform_panel.take_action() {
