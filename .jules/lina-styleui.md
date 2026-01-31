@@ -1,39 +1,5 @@
-# Lina StyleUI Journal
+# 📓 LINA STYLEUI JOURNAL
 
-## 2024-05-22 – [Visual Gap Analysis]
-**Learning:** MapFlow's current UI is "flat dark" but lacks the "Cyber Dark" structure found in industry standards (Resolume, MadMapper).
-- **Problem:** Visual Hierarchy is weak. Panels blend together. Lists are dense and unstyled. Active states are low-contrast.
-- **Reference Standard:** Resolume/MadMapper use:
-    - **Strong Borders:** Panels are clearly contained.
-    - **Neon Accents:** Active states (play, selected) are high-contrast Cyan or Orange.
-    - **Headers:** Content vs. Controls is strictly separated.
-**Action:** Implement "Cyber Dark" theme:
-1.  **Container Strategy:** Use `egui::Frame` with visible strokes/rounding for panels.
-2.  **Accent Strategy:** Define a "Cyber Cyan" or "Neon Orange" for `Visuals.selection`.
-3.  **Typography:** Ensure headers are distinct (e.g., Bold/Different Color) from data.
-
-## 2024-05-22 – [Theme Definition]
-**Learning:** `egui` default dark theme is functional but too "gray".
-**Action:** Will look for `ctx.set_visuals` to inject:
-- Background: Darker (almost black).
-- Panel Background: Dark Gray.
-- Stroke: Lighter Gray for definition.
-- Accent: High saturation.
-
-## 2024-05-23 – [Hierarchy via Color Depth]
-**Learning:** To create hierarchy without adding layout complexity (margins/padding), color depth is effective.
-- **Insight:** Separating `window_fill` (Background) and `panel_fill` (Foreground) creates a "floating panel" effect even with standard `egui` layouts.
-- **Palette:**
-    - Window: `(5, 5, 8)` (Almost Black/Navy)
-    - Panel: `(18, 18, 24)` (Deep Navy)
-    - Border: `(80, 80, 90)` (Blue-Grey)
-**Action:** Applied these constants to `Theme::Resolume`. Future panels should respect `ui.visuals().panel_fill` to inherit this depth automatically.
-
-## 2024-05-24 – [List & Table Patterns]
-**Learning:** Using `ui.group` for list items creates excessive visual noise ("box-in-box").
-- **Insight:** Clean lists use `egui::Frame` with subtle background variations (zebra striping) and no stroke for individual rows.
-- **Pattern:**
-    - **Selection:** `Visuals.selection.bg_fill.linear_multiply(0.2)` for row background.
-    - **Striping:** `Visuals.faint_bg_color` for odd rows.
-    - **Buttons:** Consolidate repeated widget logic into helpers (e.g., `icon_button`) to enforce consistent active/hover states.
-**Action:** Refactored `LayerPanel` to use this pattern, removing nested groups and aligning controls horizontally.
+## 2024-05-23 👁 Initial Observation
+**Learning:** The current `LayerPanel` uses `ui.group()` for every layer, creating a "boxed" look that wastes space and adds visual noise ("box-in-box" syndrome). Professional VJ software (Resolume, HeavyM) typically uses flat, alternating-color rows for lists to maximize density and readability.
+**Action:** Replace `ui.group()` with flat, striped rows. Use selection highlights (Mint/Cyan) to indicate active layer instead of a box.

@@ -79,8 +79,7 @@ impl LayerPanel {
                                     // Layer Row
                                     let is_selected = *selected_layer_id == Some(layer.id);
                                     let bg_color = if is_selected {
-                                        ui.visuals().selection.bg_fill.linear_multiply(0.2)
-                                    // Subtle selection background
+                                        ui.visuals().selection.bg_fill
                                     } else if index % 2 == 1 {
                                         ui.visuals().faint_bg_color // Zebra striping
                                     } else {
@@ -91,18 +90,29 @@ impl LayerPanel {
                                         ui,
                                         |ui| {
                                             ui.horizontal(|ui| {
-                                                // Reorder buttons (Vertical stack)
+                                                // Reorder buttons (Compact)
                                                 ui.vertical(|ui| {
-                                                    ui.add_enabled_ui(!is_first, |ui| {
-                                                        if widgets::move_up_button(ui).clicked() {
-                                                            move_up_id = Some(layer.id);
-                                                        }
-                                                    });
-                                                    ui.add_enabled_ui(!is_last, |ui| {
-                                                        if widgets::move_down_button(ui).clicked() {
-                                                            move_down_id = Some(layer.id);
-                                                        }
-                                                    });
+                                                    ui.spacing_mut().item_spacing.y = 0.0; // Tighten vertical spacing
+                                                    if ui
+                                                        .add_enabled(
+                                                            !is_first,
+                                                            egui::Button::new("▲").small().frame(false),
+                                                        )
+                                                        .on_hover_text("Move Layer Up")
+                                                        .clicked()
+                                                    {
+                                                        move_up_id = Some(layer.id);
+                                                    }
+                                                    if ui
+                                                        .add_enabled(
+                                                            !is_last,
+                                                            egui::Button::new("▼").small().frame(false),
+                                                        )
+                                                        .on_hover_text("Move Layer Down")
+                                                        .clicked()
+                                                    {
+                                                        move_down_id = Some(layer.id);
+                                                    }
                                                 });
 
                                                 // Visibility initialization
@@ -164,39 +174,48 @@ impl LayerPanel {
                                             });
 
                                             // Indented properties
+                                            ui.allocate_space(egui::vec2(0.0, 4.0)); // Spacing before properties
                                             ui.indent("layer_props", |ui| {
-                                                // Opacity
-                                                let mut opacity = layer.opacity;
-                                                if ui
-                                                    .add(
-                                                        Slider::new(&mut opacity, 0.0..=1.0)
-                                                            .text(i18n.t("label-master-opacity")),
-                                                    )
-                                                    .changed()
-                                                {
-                                                    actions.push(UIAction::SetLayerOpacity(
-                                                        layer.id, opacity,
-                                                    ));
-                                                }
+                                                ui.horizontal(|ui| {
+                                                    // Opacity
+                                                    let mut opacity = layer.opacity;
+                                                    if ui
+                                                        .add(
+                                                            Slider::new(&mut opacity, 0.0..=1.0)
+                                                                .text(i18n.t("label-master-opacity"))
+                                                                .show_value(false), // Cleaner look
+                                                        )
+                                                        .changed()
+                                                    {
+                                                        actions.push(UIAction::SetLayerOpacity(
+                                                            layer.id, opacity,
+                                                        ));
+                                                    }
+                                                    // Value display manual for better alignment
+                                                    ui.label(format!("{:.0}%", opacity * 100.0));
+                                                });
 
                                                 // Blend Mode
                                                 let blend_modes = BlendMode::all();
                                                 let current_mode = layer.blend_mode;
                                                 let mut selected_mode = current_mode;
 
-                                                egui::ComboBox::from_id_salt(format!(
-                                                    "blend_{}",
-                                                    layer.id
-                                                ))
-                                                .selected_text(format!("{:?}", current_mode))
-                                                .show_ui(ui, |ui| {
-                                                    for mode in blend_modes {
-                                                        ui.selectable_value(
-                                                            &mut selected_mode,
-                                                            *mode,
-                                                            format!("{:?}", mode),
-                                                        );
-                                                    }
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Blend:");
+                                                    egui::ComboBox::from_id_salt(format!(
+                                                        "blend_{}",
+                                                        layer.id
+                                                    ))
+                                                    .selected_text(format!("{:?}", current_mode))
+                                                    .show_ui(ui, |ui| {
+                                                        for mode in blend_modes {
+                                                            ui.selectable_value(
+                                                                &mut selected_mode,
+                                                                *mode,
+                                                                format!("{:?}", mode),
+                                                            );
+                                                        }
+                                                    });
                                                 });
 
                                                 if selected_mode != current_mode {
