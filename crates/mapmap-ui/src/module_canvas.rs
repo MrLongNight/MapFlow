@@ -1425,17 +1425,43 @@ impl ModuleCanvas {
                                         ui.label("Modulator:");
                                         match mod_type {
                                             ModulizerType::Effect { effect_type: effect, params } => {
-                                                // High contrast header
-                                                ui.add_space(5.0);
-                                                ui.vertical_centered(|ui| {
-                                                    ui.heading(egui::RichText::new(effect.name()).color(Color32::WHITE).strong());
-                                                });
+                                                // === LIVE HEADER ===
                                                 ui.add_space(5.0);
 
-                                                // Reset Defaults Button
-                                                if ui.button("↺ Reset Defaults").clicked() {
-                                                     Self::set_default_effect_params(*effect, params);
-                                                }
+                                                // 1. Big Title
+                                                ui.vertical_centered(|ui| {
+                                                    ui.label(
+                                                        egui::RichText::new(effect.name())
+                                                            .size(22.0)
+                                                            .color(Color32::from_rgb(100, 200, 255))
+                                                            .strong(),
+                                                    );
+                                                });
+                                                ui.add_space(10.0);
+
+                                                // 2. Safe Reset Button (Prominent)
+                                                ui.vertical_centered(|ui| {
+                                                    if ui
+                                                        .add(
+                                                            egui::Button::new(
+                                                                egui::RichText::new("⟲ Safe Reset")
+                                                                    .size(14.0),
+                                                            )
+                                                            .min_size(Vec2::new(140.0, 32.0)),
+                                                        )
+                                                        .on_hover_text(
+                                                            "Reset all parameters to safe defaults",
+                                                        )
+                                                        .clicked()
+                                                    {
+                                                        Self::set_default_effect_params(
+                                                            *effect, params,
+                                                        );
+                                                    }
+                                                });
+
+                                                ui.add_space(10.0);
+                                                ui.separator();
 
                                                 let mut changed_type = None;
 
@@ -5484,7 +5510,7 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let shadow_color = Color32::from_black_alpha(100);
+                let glow_color = cable_color.linear_multiply(0.3);
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
@@ -5528,17 +5554,17 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
-                // Shadow
-                let shadow_stroke = Stroke::new(5.0 * self.zoom, shadow_color);
+                // Glow (Behind)
+                let glow_stroke = Stroke::new(6.0 * self.zoom, glow_color);
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
-                    shadow_stroke,
+                    glow_stroke,
                 ));
 
-                // Cable
-                let cable_stroke = Stroke::new(3.0 * self.zoom, cable_color);
+                // Core Cable (Front)
+                let cable_stroke = Stroke::new(2.0 * self.zoom, cable_color);
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
@@ -5662,21 +5688,17 @@ impl ModuleCanvas {
         let title_height = 28.0 * self.zoom;
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), title_height));
 
-        // Title bar with subtle gradient or solid color
+        // Title bar background (Dark)
         painter.rect_filled(
             title_rect,
             0, // Sharp corners
-            title_color,
+            Color32::from_rgb(32, 32, 38),
         );
 
-        // Title bar top highlight (bevel effect)
-        painter.line_segment(
-            [
-                Pos2::new(rect.min.x + 2.0, rect.min.y + 1.0),
-                Pos2::new(rect.max.x - 2.0, rect.min.y + 1.0),
-            ],
-            Stroke::new(1.0 * self.zoom, Color32::from_white_alpha(50)),
-        );
+        // Title bar Top Accent Stripe (Type Identifier)
+        let stripe_height = 3.0 * self.zoom;
+        let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), stripe_height));
+        painter.rect_filled(stripe_rect, 0, title_color);
 
         // Title separator line - make it sharper
         painter.line_segment(
@@ -5684,7 +5706,7 @@ impl ModuleCanvas {
                 Pos2::new(rect.min.x, rect.min.y + title_height),
                 Pos2::new(rect.max.x, rect.min.y + title_height),
             ],
-            Stroke::new(1.0, Color32::from_black_alpha(80)),
+            Stroke::new(1.0, Color32::from_black_alpha(100)),
         );
 
         // Enhanced Title Rendering (Icon | Category | Name)
