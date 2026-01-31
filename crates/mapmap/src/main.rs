@@ -2578,9 +2578,12 @@ impl App {
         let actions = self.ui_state.take_actions();
         for action in actions {
             match action {
-                mapmap_ui::UIAction::NodeAction(action) => {
-                self.ui_state.node_editor_panel.handle_action(action);
-            }
+                mapmap_ui::UIAction::NodeAction(node_action) => {
+                    self.ui_state.node_editor_panel.handle_action(node_action.clone());
+                    if let Err(e) = self.handle_node_action(node_action) {
+                        eprintln!("Error handling node action: {}", e);
+                    }
+                }
             
             // Fix: Sync Projector Fullscreen
             mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
