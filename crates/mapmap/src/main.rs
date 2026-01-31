@@ -2207,8 +2207,9 @@ impl App {
 
     fn prepare_texture_previews(&mut self, encoder: &mut wgpu::CommandEncoder) {
         // Sync Texture Previews for Module Canvas (Node Thumbnails) AND Output Panels (Sidebar)
-        
+
         struct PreviewRequest {
+            #[allow(dead_code)]
             module_id: u64,
             target_id: u64, // The ID to register the preview under (PartID or OutputID)
             tex_name: String, // The source texture to sample
@@ -2230,17 +2231,28 @@ impl App {
         let mut active_previews = Vec::new();
 
         // Debug Log Control
-        static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let log_this = PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+        static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+            std::sync::atomic::AtomicU32::new(0);
+        let log_this =
+            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
 
         // 1. Collect NODE Previews (Media Files, etc.)
         for module in self.state.module_manager.modules() {
             for part in &module.parts {
                 if let mapmap_core::module::ModulePartType::Source(
                     mapmap_core::module::SourceType::MediaFile {
-                        brightness, contrast, saturation, hue_shift,
-                        flip_horizontal, flip_vertical, rotation,
-                        scale_x, scale_y, offset_x, offset_y, ..
+                        brightness,
+                        contrast,
+                        saturation,
+                        hue_shift,
+                        flip_horizontal,
+                        flip_vertical,
+                        rotation,
+                        scale_x,
+                        scale_y,
+                        offset_x,
+                        offset_y,
+                        ..
                     },
                 ) = &part.part_type
                 {
@@ -2264,22 +2276,34 @@ impl App {
                         offset_y: *offset_y,
                     });
                 } else if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { show_in_preview_panel, .. },
+                    mapmap_core::module::OutputType::Projector {
+                        show_in_preview_panel,
+                        ..
+                    },
                 ) = &part.part_type
                 {
                     // Projector Node Thumbnail (Node Canvas)
                     if *show_in_preview_panel {
                         // Find connected input (usually Layer output)
-                        if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
+                        if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id)
+                        {
                             let tex_name = format!("part_{}_{}", module.id, conn.from_part);
                             active_previews.push(PreviewRequest {
                                 module_id: module.id,
                                 target_id: part.id,
                                 tex_name,
                                 is_output: false,
-                                brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
-                                flip_h: false, flip_v: false, rotation: 0.0,
-                                scale_x: 1.0, scale_y: 1.0, offset_x: 0.0, offset_y: 0.0,
+                                brightness: 0.0,
+                                contrast: 1.0,
+                                saturation: 1.0,
+                                hue_shift: 0.0,
+                                flip_h: false,
+                                flip_v: false,
+                                rotation: 0.0,
+                                scale_x: 1.0,
+                                scale_y: 1.0,
+                                offset_x: 0.0,
+                                offset_y: 0.0,
                             });
                         }
                     }
@@ -2297,25 +2321,43 @@ impl App {
                     target_id: *output_id,
                     tex_name: tex_name.clone(),
                     is_output: true,
-                    brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
-                    flip_h: false, flip_v: false, rotation: 0.0,
-                    scale_x: 1.0, scale_y: 1.0, offset_x: 0.0, offset_y: 0.0,
+                    brightness: 0.0,
+                    contrast: 1.0,
+                    saturation: 1.0,
+                    hue_shift: 0.0,
+                    flip_h: false,
+                    flip_v: false,
+                    rotation: 0.0,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
                 });
             }
         }
 
         // 3. Process All Previews
-        let mut current_frame_previews: std::collections::HashMap<u64, egui::TextureId> = std::collections::HashMap::new();
-        let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> = std::collections::HashMap::new();
-       
+        let mut current_frame_previews: std::collections::HashMap<u64, egui::TextureId> =
+            std::collections::HashMap::new();
+        let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
+            std::collections::HashMap::new();
+
         if log_this {
-            tracing::info!("prepare_texture_previews: processing {} requests", active_previews.len());
+            tracing::info!(
+                "prepare_texture_previews: processing {} requests",
+                active_previews.len()
+            );
         }
 
         for req in active_previews {
             if log_this {
-                 tracing::info!("  Preview Req: target={} is_output={} tex='{}' (exists: {})", 
-                     req.target_id, req.is_output, req.tex_name, self.texture_pool.has_texture(&req.tex_name));
+                tracing::info!(
+                    "  Preview Req: target={} is_output={} tex='{}' (exists: {})",
+                    req.target_id,
+                    req.is_output,
+                    req.tex_name,
+                    self.texture_pool.has_texture(&req.tex_name)
+                );
             }
 
             if self.texture_pool.has_texture(&req.tex_name) {
@@ -2323,9 +2365,13 @@ impl App {
 
                 // Create/Get preview texture (fixed small resolution)
                 // Use distinct prefix for Outputs to avoid collision if IDs overlap (though unlikely)
-                let prefix = if req.is_output { "out_preview" } else { "preview" };
+                let prefix = if req.is_output {
+                    "out_preview"
+                } else {
+                    "preview"
+                };
                 let preview_tex_name = format!("{}_{}", prefix, req.target_id);
-                
+
                 // Ensure it exists with correct size
                 self.texture_pool.ensure_texture(
                     &preview_tex_name,
@@ -2391,14 +2437,17 @@ impl App {
                 }
 
                 // Register function
-                let register_texture = |cache: &mut std::collections::HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>| {
-                     match cache.entry(req.target_id) {
+                let mut register_texture = |cache: &mut std::collections::HashMap<
+                    u64,
+                    (egui::TextureId, std::sync::Arc<wgpu::TextureView>),
+                >| {
+                    match cache.entry(req.target_id) {
                         std::collections::hash_map::Entry::Occupied(mut entry) => {
                             let (cached_id, cached_view) = entry.get();
                             if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
                                 *cached_id
                             } else {
-                                self.egui_renderer.free_texture(*cached_id);
+                                self.egui_renderer.free_texture(cached_id);
                                 let new_id = self.egui_renderer.register_native_texture(
                                     &self.backend.device,
                                     &preview_view,
@@ -2435,19 +2484,20 @@ impl App {
         self.ui_state.module_canvas.node_previews = current_frame_previews;
 
         // Cleanup stale cache entries
+        // Cleanup stale cache entries
         self.preview_texture_cache.retain(|id, (tex_id, _)| {
             if !self.ui_state.module_canvas.node_previews.contains_key(id) {
-                self.egui_renderer.free_texture(*tex_id);
+                self.egui_renderer.free_texture(tex_id);
                 false
             } else {
                 true
             }
         });
-        
+
         self.output_preview_cache.retain(|id, (tex_id, _)| {
             // Only retain entries that were generated/found in the current frame
             if !current_output_previews.contains_key(id) {
-                self.egui_renderer.free_texture(*tex_id);
+                self.egui_renderer.free_texture(tex_id);
                 false
             } else {
                 true
