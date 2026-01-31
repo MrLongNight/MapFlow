@@ -544,7 +544,8 @@ impl App {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
-            let view = std::sync::Arc::new(texture.create_view(&wgpu::TextureViewDescriptor::default()));
+            let view =
+                std::sync::Arc::new(texture.create_view(&wgpu::TextureViewDescriptor::default()));
             (texture, view)
         };
 

@@ -303,7 +303,8 @@ fn test_individual_output_transforms() {
             let color = [0, 255, 0, 255]; // Green
 
             let source_texture = create_solid_color_texture(&device, &queue, width, height, color);
-            let source_view = Arc::new(source_texture.create_view(&wgpu::TextureViewDescriptor::default()));
+            let source_view =
+                Arc::new(source_texture.create_view(&wgpu::TextureViewDescriptor::default()));
 
             let output_texture = device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Transform Output Texture"),
