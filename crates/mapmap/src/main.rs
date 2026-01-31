@@ -2590,7 +2590,7 @@ impl App {
 
             // Fix: Sync Projector Fullscreen
             mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
-            
+
             // Global Fullscreen Setting
             mapmap_ui::UIAction::SetGlobalFullscreen(is_fullscreen) => {
                 needs_sync = true;
