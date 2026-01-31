@@ -43,6 +43,7 @@ pub mod recent_effect_configs;
 pub mod shader_graph;
 pub mod state;
 pub mod trigger_system;
+pub mod media_library;
 
 // --- Re-exports grouped by category ---
 

@@ -169,6 +169,7 @@ pub enum UIAction {
     ResetLayout,
     ToggleModuleCanvas,
     ToggleControllerOverlay,
+    ToggleMediaManager,
 
     // Audio actions
     SelectAudioDevice(String),
