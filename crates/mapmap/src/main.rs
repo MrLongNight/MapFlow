@@ -3257,6 +3257,44 @@ impl App {
                                         });
 
                                         ui.horizontal(|ui| {
+                                            ui.label("Theme:");
+                                            let current_theme = self.ui_state.user_config.theme.theme;
+                                            let theme_name = match current_theme {
+                                                mapmap_ui::theme::Theme::Resolume => "Cyber Dark",
+                                                mapmap_ui::theme::Theme::Dark => "Professional Dark",
+                                                mapmap_ui::theme::Theme::Light => "Light",
+                                                mapmap_ui::theme::Theme::Synthwave => "Synthwave",
+                                                mapmap_ui::theme::Theme::HighContrast => "High Contrast",
+                                                mapmap_ui::theme::Theme::Custom => "Custom",
+                                            };
+
+                                            egui::ComboBox::from_id_salt("theme_select")
+                                                .selected_text(theme_name)
+                                                .show_ui(ui, |ui| {
+                                                    let themes = [
+                                                        (mapmap_ui::theme::Theme::Resolume, "Cyber Dark"),
+                                                        (mapmap_ui::theme::Theme::Dark, "Professional Dark"),
+                                                        (mapmap_ui::theme::Theme::Light, "Light"),
+                                                        (mapmap_ui::theme::Theme::Synthwave, "Synthwave"),
+                                                        (mapmap_ui::theme::Theme::HighContrast, "High Contrast"),
+                                                    ];
+
+                                                    for (theme, name) in themes {
+                                                        if ui
+                                                            .selectable_value(
+                                                                &mut self.ui_state.user_config.theme.theme,
+                                                                theme,
+                                                                name,
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            let _ = self.ui_state.user_config.save();
+                                                        }
+                                                    }
+                                                });
+                                        });
+
+                                        ui.horizontal(|ui| {
                                             ui.label("Audio Meter:");
                                             let current = self.ui_state.user_config.meter_style;
                                             egui::ComboBox::from_id_salt("meter_style_select")

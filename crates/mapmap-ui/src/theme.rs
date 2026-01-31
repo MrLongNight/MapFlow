@@ -19,6 +19,8 @@ pub enum Theme {
     Custom,
     /// Resolume Arena-like theme
     Resolume,
+    /// Synthwave (Neon/Retro)
+    Synthwave,
 }
 
 /// Theme configuration
@@ -75,6 +77,7 @@ impl ThemeConfig {
             Theme::Light => Self::light_visuals(),
             Theme::HighContrast => Self::high_contrast_visuals(),
             Theme::Resolume => Self::resolume_visuals(),
+            Theme::Synthwave => Self::synthwave_visuals(),
             Theme::Custom => self.custom_visuals(),
         };
 
@@ -350,6 +353,76 @@ impl ThemeConfig {
             ..Default::default()
         }
     }
+
+    /// Synthwave visuals (Neon/Retro)
+    fn synthwave_visuals() -> Visuals {
+        let neon_pink = Color32::from_rgb(255, 0, 179);
+        let neon_cyan = Color32::from_rgb(0, 243, 255);
+        let deep_purple = Color32::from_rgb(20, 13, 33);
+        let mid_purple = Color32::from_rgb(37, 22, 58);
+        let light_purple = Color32::from_rgb(58, 35, 90);
+
+        Visuals {
+            dark_mode: true,
+            override_text_color: Some(Color32::from_rgb(240, 230, 255)),
+            widgets: egui::style::Widgets {
+                noninteractive: egui::style::WidgetVisuals {
+                    bg_fill: deep_purple,
+                    weak_bg_fill: deep_purple,
+                    bg_stroke: egui::Stroke::new(1.0, light_purple),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 160, 200)),
+                    corner_radius: egui::CornerRadius::same(4),
+                    expansion: 0.0,
+                },
+                inactive: egui::style::WidgetVisuals {
+                    bg_fill: mid_purple,
+                    weak_bg_fill: mid_purple,
+                    bg_stroke: egui::Stroke::new(1.0, light_purple),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(200, 200, 255)),
+                    corner_radius: egui::CornerRadius::same(4),
+                    expansion: 0.0,
+                },
+                hovered: egui::style::WidgetVisuals {
+                    bg_fill: light_purple,
+                    weak_bg_fill: light_purple,
+                    bg_stroke: egui::Stroke::new(1.0, neon_cyan),
+                    fg_stroke: egui::Stroke::new(1.5, neon_cyan),
+                    corner_radius: egui::CornerRadius::same(4),
+                    expansion: 1.0,
+                },
+                active: egui::style::WidgetVisuals {
+                    bg_fill: neon_pink.linear_multiply(0.5),
+                    weak_bg_fill: neon_pink.linear_multiply(0.5),
+                    bg_stroke: egui::Stroke::new(1.0, neon_pink),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::same(4),
+                    expansion: 1.0,
+                },
+                open: egui::style::WidgetVisuals {
+                    bg_fill: mid_purple,
+                    weak_bg_fill: mid_purple,
+                    bg_stroke: egui::Stroke::new(1.0, light_purple),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::same(4),
+                    expansion: 0.0,
+                },
+            },
+            selection: egui::style::Selection {
+                bg_fill: neon_pink.linear_multiply(0.4),
+                stroke: egui::Stroke::new(1.0, neon_pink),
+            },
+            hyperlink_color: neon_cyan,
+            faint_bg_color: deep_purple,
+            extreme_bg_color: Color32::BLACK,
+            code_bg_color: mid_purple,
+            warn_fg_color: Color32::from_rgb(255, 180, 0),
+            error_fg_color: Color32::from_rgb(255, 50, 50),
+            window_fill: deep_purple.linear_multiply(0.95),
+            panel_fill: deep_purple,
+            window_stroke: egui::Stroke::new(1.0, neon_cyan.linear_multiply(0.5)),
+            ..Default::default()
+        }
+    }
 }
 
 /// Theme picker widget
@@ -365,6 +438,9 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
             .clicked();
         changed |= ui
             .selectable_value(theme, Theme::Resolume, "Resolume")
+            .clicked();
+        changed |= ui
+            .selectable_value(theme, Theme::Synthwave, "Synthwave")
             .clicked();
     });
 
