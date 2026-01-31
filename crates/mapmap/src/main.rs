@@ -2090,6 +2090,10 @@ impl App {
                             std::collections::hash_map::Entry::Vacant(e) => {
                                 match mapmap_media::open_path(path) {
                                     Ok(mut player) => {
+                                        info!(
+                                            "Created media player for module={} part={} path='{}'",
+                                            module.id, part.id, path
+                                        );
                                         if let Err(e) = player.play() {
                                             error!(
                                                 "Failed to start playback for source {}:{} : {}",
@@ -2314,6 +2318,24 @@ impl App {
         ) in active_preview_sources
         {
             let raw_tex_name = format!("part_{}_{}", module_id, source_part_id);
+
+            // Debug: Log texture lookup attempt
+            static DEBUG_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+                std::sync::atomic::AtomicU32::new(0);
+            let log_this = DEBUG_LOG_COUNTER
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                .is_multiple_of(120);
+            if log_this {
+                tracing::info!(
+                    "Preview lookup: module={} target={} source={} tex='{}' exists={}",
+                    module_id,
+                    target_part_id,
+                    source_part_id,
+                    raw_tex_name,
+                    self.texture_pool.has_texture(&raw_tex_name)
+                );
+            }
+
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
