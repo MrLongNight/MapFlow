@@ -102,7 +102,7 @@ struct App {
     /// A dummy texture used as input for effects when no other source is available.
     dummy_texture: Option<wgpu::Texture>,
     /// A view of the dummy texture.
-    dummy_view: Option<wgpu::TextureView>,
+    dummy_view: Option<std::sync::Arc<wgpu::TextureView>>,
     /// Module evaluator
     module_evaluator: ModuleEvaluator,
     /// Active media players for source nodes ((ModuleID, PartID) -> Player)
@@ -544,7 +544,8 @@ impl App {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
-            let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let view =
+                std::sync::Arc::new(texture.create_view(&wgpu::TextureViewDescriptor::default()));
             (texture, view)
         };
 
@@ -670,7 +671,9 @@ impl App {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
-        self.dummy_view = Some(texture.create_view(&wgpu::TextureViewDescriptor::default()));
+        self.dummy_view = Some(std::sync::Arc::new(
+            texture.create_view(&wgpu::TextureViewDescriptor::default()),
+        ));
         self.dummy_texture = Some(texture);
     }
     /// Handles a window event.
@@ -2335,7 +2338,7 @@ impl App {
                     hue_shift,
                 );
 
-                let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
+                let texture_bg = self.mesh_renderer.get_texture_bind_group(&raw_view);
 
                 // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
@@ -3804,7 +3807,7 @@ impl App {
                     } else {
                         None
                     };
-                    let source_view_ref = owned_source_view.as_deref();
+                    let source_view_ref = owned_source_view.as_ref();
                     let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
                     if let Some(src_view) = effective_view {
@@ -3934,7 +3937,7 @@ impl App {
                                     op.source_props.hue_shift,
                                 );
                             let texture_bind_group =
-                                self.mesh_renderer.create_texture_bind_group(final_view);
+                                self.mesh_renderer.get_texture_bind_group(final_view);
 
                             let mut render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

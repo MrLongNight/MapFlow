@@ -6,7 +6,8 @@ use crate::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::Mat4;
 use mapmap_core::{Mesh, MeshVertex};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Weak};
 use tracing::info;
 use wgpu::util::DeviceExt;
 
@@ -60,6 +61,7 @@ pub struct MeshRenderer {
     // Caching
     uniform_cache: Vec<CachedMeshUniform>,
     current_cache_index: usize,
+    texture_bind_group_cache: HashMap<usize, (Weak<wgpu::TextureView>, Arc<wgpu::BindGroup>)>,
 }
 
 impl MeshRenderer {
@@ -234,6 +236,7 @@ impl MeshRenderer {
             device,
             uniform_cache: Vec::new(),
             current_cache_index: 0,
+            texture_bind_group_cache: HashMap::new(),
         })
     }
 
@@ -310,6 +313,10 @@ impl MeshRenderer {
     /// Reset cache index at start of frame
     pub fn begin_frame(&mut self) {
         self.current_cache_index = 0;
+
+        // Prune dead texture bind groups
+        self.texture_bind_group_cache
+            .retain(|_, (weak, _)| weak.strong_count() > 0);
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources
@@ -470,9 +477,23 @@ impl MeshRenderer {
 
         bind_group
     }
-    /// Create a texture bind group
-    pub fn create_texture_bind_group(&self, texture_view: &wgpu::TextureView) -> wgpu::BindGroup {
-        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    /// Get a cached texture bind group or create a new one
+    pub fn get_texture_bind_group(
+        &mut self,
+        texture_view: &Arc<wgpu::TextureView>,
+    ) -> Arc<wgpu::BindGroup> {
+        let key = Arc::as_ptr(texture_view) as usize;
+
+        if let Some((weak, bind_group)) = self.texture_bind_group_cache.get(&key) {
+            if let Some(upgraded) = weak.upgrade() {
+                // Verify it's strictly the same object (should be implied by address + liveness)
+                if Arc::ptr_eq(&upgraded, texture_view) {
+                    return bind_group.clone();
+                }
+            }
+        }
+
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Mesh Texture Bind Group"),
             layout: &self.texture_bind_group_layout,
             entries: &[
@@ -485,7 +506,13 @@ impl MeshRenderer {
                     resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
             ],
-        })
+        });
+
+        let bg = Arc::new(bind_group);
+        self.texture_bind_group_cache
+            .insert(key, (Arc::downgrade(texture_view), bg.clone()));
+
+        bg
     }
 
     /// Render a mesh

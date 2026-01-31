@@ -5,24 +5,36 @@ use mapmap_core::module::{
 use mapmap_core::trigger_system::TriggerSystem;
 
 #[test]
-fn test_trigger_system_initialization() {
+fn test_initialization() {
     let system = TriggerSystem::new();
     assert!(system.get_active_triggers().is_empty());
 }
 
 #[test]
-fn test_trigger_system_update_basic() {
+fn test_update_empty_manager() {
+    let mut system = TriggerSystem::new();
+    let module_manager = ModuleManager::new();
+    let audio_data = AudioTriggerData::default();
+
+    system.update(&module_manager, &audio_data);
+    assert!(system.get_active_triggers().is_empty());
+}
+
+#[test]
+fn test_update_audio_fft_bands() {
     // 1. Setup
     let mut system = TriggerSystem::new();
     let mut module_manager = ModuleManager::new();
     let module_id = module_manager.create_module("Test Module".to_string());
     let module = module_manager.get_module_mut(module_id).unwrap();
 
-    // Add AudioFFT Trigger (Bass Band, Threshold 0.5)
+    // Add AudioFFT Trigger with all frequency bands enabled
     let config = AudioTriggerOutputConfig {
         frequency_bands: true,
         ..Default::default()
     };
+    // The band parameter here is technically the "primary" band,
+    // but the output_config enables all individual band outputs.
     let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
         band: AudioBand::Bass,
         threshold: 0.5,
@@ -30,27 +42,27 @@ fn test_trigger_system_update_basic() {
     });
     let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
 
-    // 2. Stimulate with High Bass Energy
-    let mut audio_data = AudioTriggerData::default();
-    audio_data.band_energies[1] = 0.8; // Bass is index 1
+    // 2. Test each band individually
+    for i in 0..9 {
+        let mut audio_data = AudioTriggerData::default();
+        audio_data.band_energies[i] = 0.8; // Trigger threshold is 0.5
 
-    // 3. Update
-    system.update(&module_manager, &audio_data);
+        system.update(&module_manager, &audio_data);
 
-    // 4. Assert
-    // Bass output is socket index 1 in AudioTriggerOutputConfig::generate_outputs
-    assert!(
-        system.is_active(part_id, 1),
-        "Bass trigger (socket 1) should be active"
-    );
-    assert!(
-        !system.is_active(part_id, 0),
-        "SubBass trigger (socket 0) should NOT be active"
-    );
+        assert!(
+            system.is_active(part_id, i),
+            "Band index {} should be active",
+            i
+        );
+
+        // Ensure others are not active (basic check)
+        let active_count = system.get_active_triggers().len();
+        assert_eq!(active_count, 1, "Only one band should be active");
+    }
 }
 
 #[test]
-fn test_trigger_system_update_volume_beats() {
+fn test_update_audio_volume_beat() {
     // 1. Setup
     let mut system = TriggerSystem::new();
     let mut module_manager = ModuleManager::new();
@@ -99,6 +111,37 @@ fn test_trigger_system_update_volume_beats() {
 }
 
 #[test]
+fn test_update_clears_previous_state() {
+    // 1. Setup
+    let mut system = TriggerSystem::new();
+    let mut module_manager = ModuleManager::new();
+    let module_id = module_manager.create_module("Test Module".to_string());
+    let module = module_manager.get_module_mut(module_id).unwrap();
+
+    let config = AudioTriggerOutputConfig {
+        beat_output: true,
+        ..Default::default()
+    };
+    let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: AudioBand::Bass,
+        threshold: 0.5,
+        output_config: config,
+    });
+    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
+
+    // 2. Activate
+    let mut audio_data = AudioTriggerData::default();
+    audio_data.beat_detected = true;
+    system.update(&module_manager, &audio_data);
+    assert!(system.is_active(part_id, 11)); // Beat is socket 11
+
+    // 3. Deactivate (next frame)
+    audio_data.beat_detected = false;
+    system.update(&module_manager, &audio_data);
+    assert!(!system.is_active(part_id, 11));
+}
+
+#[test]
 fn test_trigger_system_update_thresholds() {
     // 1. Setup
     let mut system = TriggerSystem::new();
@@ -127,35 +170,4 @@ fn test_trigger_system_update_thresholds() {
     audio_data.band_energies[1] = 0.81;
     system.update(&module_manager, &audio_data);
     assert!(system.is_active(part_id, 1));
-}
-
-#[test]
-fn test_trigger_system_clearing() {
-    // 1. Setup
-    let mut system = TriggerSystem::new();
-    let mut module_manager = ModuleManager::new();
-    let module_id = module_manager.create_module("Test Module".to_string());
-    let module = module_manager.get_module_mut(module_id).unwrap();
-
-    let config = AudioTriggerOutputConfig {
-        beat_output: true,
-        ..Default::default()
-    };
-    let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
-        band: AudioBand::Bass,
-        threshold: 0.5,
-        output_config: config,
-    });
-    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
-
-    // 2. Activate
-    let mut audio_data = AudioTriggerData::default();
-    audio_data.beat_detected = true;
-    system.update(&module_manager, &audio_data);
-    assert!(system.is_active(part_id, 11)); // Beat is socket 11
-
-    // 3. Deactivate (next frame)
-    audio_data.beat_detected = false;
-    system.update(&module_manager, &audio_data);
-    assert!(!system.is_active(part_id, 11));
 }
