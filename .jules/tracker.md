@@ -49,3 +49,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-26 - CI/CD & Packaging Fixes Documentation
 **Erkenntnis:** Several CI/CD and Installer fixes were merged and documented in CHANGELOG.md but missing from ROADMAP_2.0.md.
 **Aktion:** Updated ROADMAP_2.0.md to reflect the completion of FFmpeg integration in CI, pre-checks hardening, and WiX installer fixes.
+
+## 2026-01-30 - ROADMAP Conflict Resolution
+**Erkenntnis:** Merge-Konflikte in `ROADMAP_2.0.md` entdeckt (HEAD vs. Incoming Status für Windows Installer).
+**Aktion:** Konflikte behoben, `Stand` aktualisiert, und Windows Installer Status konsolidiert (Completed + Detailed Checklist).

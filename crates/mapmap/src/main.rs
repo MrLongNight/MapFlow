@@ -3772,10 +3772,10 @@ impl App {
                     self.ui_state.show_settings = show_settings;
 
                     // === 7. Floating Windows / Modals ===
-                    
+
                     // Master Controls Panel
                     self.ui_state.render_master_controls(ctx, &mut self.state.layer_manager);
-                    
+
                     // Icon Demo Panel
                     self.ui_state.render_icon_demo(ctx);
 
