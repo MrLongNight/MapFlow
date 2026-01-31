@@ -2853,10 +2853,8 @@ impl App {
                                                     self.ui_state.render_master_controls_embedded(ui, &mut self.state.layer_manager);
                                                     ui.separator();
 
-                                                    // Dashboard (Embedded)
-                                                    if let Some(action) = self.ui_state.dashboard.render_contents(ui, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref()) {
-                                                        dashboard_action = Some(action);
-                                                    }
+                                                    // Module List (Module Sidebar)
+                                                    self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
                                                     ui.separator();
 
                                                     // Media Browser Section
