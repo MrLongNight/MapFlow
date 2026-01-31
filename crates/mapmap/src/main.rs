@@ -2226,25 +2226,24 @@ impl App {
                     },
                 ) = &part.part_type
                 {
-                    // Find source connection
-                    if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
-                        active_preview_sources.push((
-                            module.id,
-                            part.id,        // Target (Output Node)
-                            conn.from_part, // Source (The plugged in layer/media)
-                            *brightness,
-                            *contrast,
-                            *saturation,
-                            *hue_shift,
-                            *flip_horizontal,
-                            *flip_vertical,
-                            *rotation,
-                            *scale_x,
-                            *scale_y,
-                            *offset_x,
-                            *offset_y,
-                        ));
-                    }
+                    // MediaFile is a SOURCE node - it produces video frames
+                    // The texture is stored under its own part.id, no connection needed
+                    active_preview_sources.push((
+                        module.id,
+                        part.id, // Target (the MediaFile node for preview output)
+                        part.id, // Source texture is under this same part's ID
+                        *brightness,
+                        *contrast,
+                        *saturation,
+                        *hue_shift,
+                        *flip_horizontal,
+                        *flip_vertical,
+                        *rotation,
+                        *scale_x,
+                        *scale_y,
+                        *offset_x,
+                        *offset_y,
+                    ));
                 } else if let mapmap_core::module::ModulePartType::Output(
                     mapmap_core::module::OutputType::Projector {
                         show_in_preview_panel,
@@ -2286,7 +2285,7 @@ impl App {
 
         // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
-        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
+        // Note: begin_frame() is already called by render() before this function.
 
         let mut encoder =
             self.backend
