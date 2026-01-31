@@ -1,5 +1,7 @@
 # Project Phases (0-7)
 
+> **NOTE:** This document is kept for historical reference. For the most up-to-date roadmap and feature status, please verify [ROADMAP_2.0.md](../../ROADMAP_2.0.md) in the project root.
+
 This document outlines the complete project roadmap for the MapFlow Rust rewrite, from the initial core engine development to the final polish and release.
 
 ## Phase Overview
