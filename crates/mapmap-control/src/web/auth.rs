@@ -5,6 +5,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
+use subtle::ConstantTimeEq;
 
 /// Authentication configuration
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -79,7 +80,13 @@ impl AuthConfig {
         // Use constant-time comparison to prevent timing attacks
         let mut is_valid = false;
         for stored_hash in &self.api_keys {
-            if constant_time_eq(stored_hash, &input_hash) {
+            // Both hashes are hex-encoded SHA-256 (64 chars), so lengths should match.
+            // Using subtle::ConstantTimeEq ensures safe comparison.
+            if stored_hash
+                .as_bytes()
+                .ct_eq(input_hash.as_bytes())
+                .into()
+            {
                 is_valid = true;
             }
         }
@@ -127,31 +134,6 @@ pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Optio
     None
 }
 
-/// Constant-time string comparison to mitigate timing attacks
-///
-/// Returns true if the two strings are identical.
-/// Note: This comparison runs in time proportional to the length of `a` (the stored secret).
-/// This prevents attackers from guessing the length of the secret by observing the time taken
-/// to verify an invalid key of a certain length.
-fn constant_time_eq(a: &str, b: &str) -> bool {
-    let a_bytes = a.as_bytes();
-    let b_bytes = b.as_bytes();
-
-    // Initialize result based on length comparison.
-    // If lengths differ, start with 1 (fail).
-    // Note: We deliberately do NOT return early here to ensure constant execution time
-    // dependent only on the stored key length.
-    let mut result = if a.len() != b.len() { 1u8 } else { 0u8 };
-
-    for (i, &byte) in a_bytes.iter().enumerate() {
-        // Safe access to b's bytes. If b is shorter, use 0 (which likely mismatches).
-        // This keeps the loop running for exactly a.len() iterations regardless of b's length.
-        let b_byte = *b_bytes.get(i).unwrap_or(&0);
-        result |= byte ^ b_byte;
-    }
-
-    result == 0
-}
 
 #[cfg(test)]
 mod tests {
@@ -202,18 +184,6 @@ mod tests {
         assert_eq!(key, None);
     }
 
-    #[test]
-    fn test_constant_time_eq() {
-        assert!(constant_time_eq("secret", "secret"));
-        assert!(!constant_time_eq("secret", "secreT"));
-        assert!(!constant_time_eq("secret", "public"));
-        assert!(!constant_time_eq("secret", "secret1"));
-        assert!(!constant_time_eq("secret", "secre"));
-        // New case: b is longer
-        assert!(!constant_time_eq("secret", "secret_long"));
-        assert!(!constant_time_eq("", "secret"));
-        assert!(constant_time_eq("", ""));
-    }
 
     #[test]
     fn test_legacy_config_deserialization() {
