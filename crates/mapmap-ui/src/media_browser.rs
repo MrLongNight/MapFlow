@@ -344,229 +344,224 @@ impl MediaBrowser {
     ) -> Option<MediaBrowserAction> {
         let mut action = None;
 
-        let closed = panel_container(
-            ui,
-            &locale.t("panel-media-browser"),
-            true,
-            |ui| {
-                // Compact toolbar with navigation
-                ui.horizontal(|ui| {
-                    // Navigation buttons (compact, icons only)
-                    ui.add_enabled_ui(self.history_index > 0, |ui| {
-                        if ui
-                            .button("◀")
-                            .on_hover_text(locale.t("media-browser-back"))
-                            .clicked()
-                        {
-                            self.navigate_back();
-                        }
-                    });
-
-                    ui.add_enabled_ui(self.history_index < self.history.len() - 1, |ui| {
-                        if ui
-                            .button("▶")
-                            .on_hover_text(locale.t("media-browser-forward"))
-                            .clicked()
-                        {
-                            self.navigate_forward();
-                        }
-                    });
-
+        let closed = panel_container(ui, &locale.t("panel-media-browser"), true, |ui| {
+            // Compact toolbar with navigation
+            ui.horizontal(|ui| {
+                // Navigation buttons (compact, icons only)
+                ui.add_enabled_ui(self.history_index > 0, |ui| {
                     if ui
-                        .button("⬆")
-                        .on_hover_text(locale.t("media-browser-up"))
+                        .button("◀")
+                        .on_hover_text(locale.t("media-browser-back"))
                         .clicked()
                     {
-                        self.navigate_up();
-                    }
-
-                    if ui
-                        .button("🔄")
-                        .on_hover_text(locale.t("media-browser-refresh"))
-                        .clicked()
-                    {
-                        self.refresh();
-                    }
-
-                    if ui.button("⚙").on_hover_text("Folder Settings").clicked() {
-                        self.show_folder_settings = !self.show_folder_settings;
-                    }
-
-                    ui.separator();
-
-                    // Editable path input
-                    let path_response = ui.add(
-                        egui::TextEdit::singleline(&mut self.path_input)
-                            .desired_width(ui.available_width() - 30.0)
-                            .hint_text("Enter path..."),
-                    );
-
-                    if path_response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                        let new_path = PathBuf::from(&self.path_input);
-                        if new_path.is_dir() {
-                            self.navigate_to(new_path);
-                        }
+                        self.navigate_back();
                     }
                 });
 
-                // Folder Settings Panel (collapsible)
-                if self.show_folder_settings {
-                    ui.group(|ui| {
-                        ui.label("📁 Media Folder Settings");
-                        ui.separator();
+                ui.add_enabled_ui(self.history_index < self.history.len() - 1, |ui| {
+                    if ui
+                        .button("▶")
+                        .on_hover_text(locale.t("media-browser-forward"))
+                        .clicked()
+                    {
+                        self.navigate_forward();
+                    }
+                });
 
-                        ui.horizontal(|ui| {
-                            ui.label("🎬 Video:");
-                            let mut video_path = self.media_folders.video_folder.display().to_string();
-                            if ui.text_edit_singleline(&mut video_path).changed() {
-                                self.media_folders.video_folder = PathBuf::from(video_path);
-                            }
-                            if ui.button("📂").on_hover_text("Browse").clicked() {
-                                // Would trigger folder dialog
-                            }
-                        });
+                if ui
+                    .button("⬆")
+                    .on_hover_text(locale.t("media-browser-up"))
+                    .clicked()
+                {
+                    self.navigate_up();
+                }
 
-                        ui.horizontal(|ui| {
-                            ui.label("🖼 Image:");
-                            let mut image_path = self.media_folders.image_folder.display().to_string();
-                            if ui.text_edit_singleline(&mut image_path).changed() {
-                                self.media_folders.image_folder = PathBuf::from(image_path);
-                            }
-                            if ui.button("📂").on_hover_text("Browse").clicked() {
-                                // Would trigger folder dialog
-                            }
-                        });
+                if ui
+                    .button("🔄")
+                    .on_hover_text(locale.t("media-browser-refresh"))
+                    .clicked()
+                {
+                    self.refresh();
+                }
 
-                        ui.horizontal(|ui| {
-                            ui.label("🎵 Audio:");
-                            let mut audio_path = self.media_folders.audio_folder.display().to_string();
-                            if ui.text_edit_singleline(&mut audio_path).changed() {
-                                self.media_folders.audio_folder = PathBuf::from(audio_path);
-                            }
-                            if ui.button("📂").on_hover_text("Browse").clicked() {
-                                // Would trigger folder dialog
-                            }
-                        });
-
-                        ui.horizontal(|ui| {
-                            if ui.button("Apply Video Folder").clicked() {
-                                let path = self.media_folders.video_folder.clone();
-                                self.navigate_to(path);
-                            }
-                            if ui.button("Apply Image Folder").clicked() {
-                                let path = self.media_folders.image_folder.clone();
-                                self.navigate_to(path);
-                            }
-                            if ui.button("Apply Audio Folder").clicked() {
-                                let path = self.media_folders.audio_folder.clone();
-                                self.navigate_to(path);
-                            }
-                        });
-                    });
+                if ui.button("⚙").on_hover_text("Folder Settings").clicked() {
+                    self.show_folder_settings = !self.show_folder_settings;
                 }
 
                 ui.separator();
 
-                // Search and filter bar
-                ui.horizontal(|ui| {
-                    ui.label("🔍");
-                    let search_response = ui.text_edit_singleline(&mut self.search_query);
-                    if search_response.changed() {
-                        // Search query changed
+                // Editable path input
+                let path_response = ui.add(
+                    egui::TextEdit::singleline(&mut self.path_input)
+                        .desired_width(ui.available_width() - 30.0)
+                        .hint_text("Enter path..."),
+                );
+
+                if path_response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    let new_path = PathBuf::from(&self.path_input);
+                    if new_path.is_dir() {
+                        self.navigate_to(new_path);
                     }
+                }
+            });
 
+            // Folder Settings Panel (collapsible)
+            if self.show_folder_settings {
+                ui.group(|ui| {
+                    ui.label("📁 Media Folder Settings");
                     ui.separator();
 
-                    ui.label(locale.t("media-browser-filter"));
-                    ui.selectable_value(&mut self.filter_type, None, locale.t("media-browser-all"));
-                    ui.selectable_value(
-                        &mut self.filter_type,
-                        Some(MediaType::Video),
-                        locale.t("media-browser-video"),
-                    );
-                    ui.selectable_value(
-                        &mut self.filter_type,
-                        Some(MediaType::Image),
-                        locale.t("media-browser-image"),
-                    );
-                    ui.selectable_value(
-                        &mut self.filter_type,
-                        Some(MediaType::Audio),
-                        locale.t("media-browser-audio"),
-                    );
+                    ui.horizontal(|ui| {
+                        ui.label("🎬 Video:");
+                        let mut video_path = self.media_folders.video_folder.display().to_string();
+                        if ui.text_edit_singleline(&mut video_path).changed() {
+                            self.media_folders.video_folder = PathBuf::from(video_path);
+                        }
+                        if ui.button("📂").on_hover_text("Browse").clicked() {
+                            // Would trigger folder dialog
+                        }
+                    });
 
-                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label("🖼 Image:");
+                        let mut image_path = self.media_folders.image_folder.display().to_string();
+                        if ui.text_edit_singleline(&mut image_path).changed() {
+                            self.media_folders.image_folder = PathBuf::from(image_path);
+                        }
+                        if ui.button("📂").on_hover_text("Browse").clicked() {
+                            // Would trigger folder dialog
+                        }
+                    });
 
-                    // View mode
-                    ui.selectable_value(
-                        &mut self.view_mode,
-                        ViewMode::Grid,
-                        locale.t("media-browser-view-grid"),
-                    );
-                    ui.selectable_value(
-                        &mut self.view_mode,
-                        ViewMode::List,
-                        locale.t("media-browser-view-list"),
-                    );
+                    ui.horizontal(|ui| {
+                        ui.label("🎵 Audio:");
+                        let mut audio_path = self.media_folders.audio_folder.display().to_string();
+                        if ui.text_edit_singleline(&mut audio_path).changed() {
+                            self.media_folders.audio_folder = PathBuf::from(audio_path);
+                        }
+                        if ui.button("📂").on_hover_text("Browse").clicked() {
+                            // Would trigger folder dialog
+                        }
+                    });
 
-                    ui.separator();
-
-                    // Sort mode
-                    egui::ComboBox::from_label(locale.t("media-browser-sort"))
-                        .selected_text(format!("{:?}", self.sort_mode))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.sort_mode,
-                                SortMode::Name,
-                                locale.t("media-browser-sort-name"),
-                            );
-                            ui.selectable_value(
-                                &mut self.sort_mode,
-                                SortMode::Type,
-                                locale.t("media-browser-sort-type"),
-                            );
-                            ui.selectable_value(
-                                &mut self.sort_mode,
-                                SortMode::Size,
-                                locale.t("media-browser-sort-size"),
-                            );
-                        });
+                    ui.horizontal(|ui| {
+                        if ui.button("Apply Video Folder").clicked() {
+                            let path = self.media_folders.video_folder.clone();
+                            self.navigate_to(path);
+                        }
+                        if ui.button("Apply Image Folder").clicked() {
+                            let path = self.media_folders.image_folder.clone();
+                            self.navigate_to(path);
+                        }
+                        if ui.button("Apply Audio Folder").clicked() {
+                            let path = self.media_folders.audio_folder.clone();
+                            self.navigate_to(path);
+                        }
+                    });
                 });
+            }
+
+            ui.separator();
+
+            // Search and filter bar
+            ui.horizontal(|ui| {
+                ui.label("🔍");
+                let search_response = ui.text_edit_singleline(&mut self.search_query);
+                if search_response.changed() {
+                    // Search query changed
+                }
 
                 ui.separator();
 
-                // Content area
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    // Collect indices to avoid borrowing issues
-                    let entry_indices: Vec<usize> = self
-                        .filtered_entries()
-                        .into_iter()
-                        .map(|(i, _)| i)
-                        .collect();
+                ui.label(locale.t("media-browser-filter"));
+                ui.selectable_value(&mut self.filter_type, None, locale.t("media-browser-all"));
+                ui.selectable_value(
+                    &mut self.filter_type,
+                    Some(MediaType::Video),
+                    locale.t("media-browser-video"),
+                );
+                ui.selectable_value(
+                    &mut self.filter_type,
+                    Some(MediaType::Image),
+                    locale.t("media-browser-image"),
+                );
+                ui.selectable_value(
+                    &mut self.filter_type,
+                    Some(MediaType::Audio),
+                    locale.t("media-browser-audio"),
+                );
 
-                    if entry_indices.is_empty() {
-                        ui.vertical_centered(|ui| {
-                            ui.add_space(40.0);
-                            // Differentiate between empty folder and no search results
-                            if self.entries.is_empty() {
-                                ui.label(locale.t("media-browser-empty-folder"));
-                            } else {
-                                ui.label(locale.t("media-browser-no-results"));
-                            }
-                        });
-                    } else {
-                        match self.view_mode {
-                            ViewMode::Grid => {
-                                action = self.render_grid_view(ui, &entry_indices, icons);
-                            }
-                            ViewMode::List => {
-                                action = self.render_list_view(ui, &entry_indices, icons);
-                            }
+                ui.separator();
+
+                // View mode
+                ui.selectable_value(
+                    &mut self.view_mode,
+                    ViewMode::Grid,
+                    locale.t("media-browser-view-grid"),
+                );
+                ui.selectable_value(
+                    &mut self.view_mode,
+                    ViewMode::List,
+                    locale.t("media-browser-view-list"),
+                );
+
+                ui.separator();
+
+                // Sort mode
+                egui::ComboBox::from_label(locale.t("media-browser-sort"))
+                    .selected_text(format!("{:?}", self.sort_mode))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut self.sort_mode,
+                            SortMode::Name,
+                            locale.t("media-browser-sort-name"),
+                        );
+                        ui.selectable_value(
+                            &mut self.sort_mode,
+                            SortMode::Type,
+                            locale.t("media-browser-sort-type"),
+                        );
+                        ui.selectable_value(
+                            &mut self.sort_mode,
+                            SortMode::Size,
+                            locale.t("media-browser-sort-size"),
+                        );
+                    });
+            });
+
+            ui.separator();
+
+            // Content area
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                // Collect indices to avoid borrowing issues
+                let entry_indices: Vec<usize> = self
+                    .filtered_entries()
+                    .into_iter()
+                    .map(|(i, _)| i)
+                    .collect();
+
+                if entry_indices.is_empty() {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(40.0);
+                        // Differentiate between empty folder and no search results
+                        if self.entries.is_empty() {
+                            ui.label(locale.t("media-browser-empty-folder"));
+                        } else {
+                            ui.label(locale.t("media-browser-no-results"));
+                        }
+                    });
+                } else {
+                    match self.view_mode {
+                        ViewMode::Grid => {
+                            action = self.render_grid_view(ui, &entry_indices, icons);
+                        }
+                        ViewMode::List => {
+                            action = self.render_list_view(ui, &entry_indices, icons);
                         }
                     }
-                });
-            },
-        );
+                }
+            });
+        });
 
         if closed {
             action = Some(MediaBrowserAction::Close);
