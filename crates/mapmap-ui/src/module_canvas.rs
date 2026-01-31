@@ -719,42 +719,45 @@ impl ModuleCanvas {
                                                 });
                                                 ui.add_space(10.0);
 
-                                                // 2. CONSOLIDATED TRANSPORT BAR
+                                                // 2. CONSOLIDATED TRANSPORT BAR (UX Improved)
                                                 ui.horizontal(|ui| {
                                                     ui.style_mut().spacing.item_spacing.x = 8.0;
-                                                    let button_height = 40.0;
-                                                    let big_btn_size = Vec2::new(60.0, button_height);
+                                                    let button_height = 42.0;
+                                                    let big_btn_size = Vec2::new(70.0, button_height);
                                                     let small_btn_size = Vec2::new(40.0, button_height);
 
-                                                    // PLAY
-                                                    let play_btn = egui::Button::new(egui::RichText::new("▶").size(20.0))
+                                                    // PLAY (Primary Action - Green)
+                                                    let play_btn = egui::Button::new(egui::RichText::new("▶").size(24.0))
                                                         .min_size(big_btn_size)
-                                                        .fill(if is_playing { Color32::from_rgb(40, 160, 60) } else { Color32::from_gray(50) });
+                                                        .fill(if is_playing { Color32::from_rgb(40, 180, 60) } else { Color32::from_gray(50) });
                                                     if ui.add(play_btn).on_hover_text("Play").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Play));
                                                     }
 
-                                                    // PAUSE
-                                                    let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(20.0))
+                                                    // PAUSE (Secondary Action - Yellow)
+                                                    let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(24.0))
                                                         .min_size(big_btn_size)
-                                                        .fill(if !is_playing && current_pos > 0.1 { Color32::from_rgb(180, 140, 40) } else { Color32::from_gray(50) });
+                                                        .fill(if !is_playing && current_pos > 0.1 { Color32::from_rgb(200, 160, 40) } else { Color32::from_gray(50) });
                                                     if ui.add(pause_btn).on_hover_text("Pause").clicked() {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Pause));
                                                     }
 
-                                                    // STOP
-                                                    if ui.add(egui::Button::new(egui::RichText::new("⏹").size(20.0)).min_size(big_btn_size).fill(Color32::from_gray(50)))
-                                                        .on_hover_text("Stop (Reset)").clicked()
+                                                    // Safety Spacer
+                                                    ui.add_space(24.0);
+                                                    ui.separator();
+                                                    ui.add_space(8.0);
+
+                                                    // STOP (Destructive Action - Separated)
+                                                    let stop_btn = egui::Button::new(egui::RichText::new("⏹").size(20.0))
+                                                        .min_size(small_btn_size)
+                                                        .fill(Color32::from_gray(45));
+                                                    if ui.add(stop_btn).on_hover_text("Stop & Reset").clicked()
                                                     {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
                                                     }
 
-                                                    ui.add_space(8.0);
-                                                    ui.separator();
-                                                    ui.add_space(8.0);
-
                                                     // LOOP
-                                                    let loop_color = if *loop_enabled { Color32::from_rgb(80, 150, 255) } else { Color32::from_gray(50) };
+                                                    let loop_color = if *loop_enabled { Color32::from_rgb(80, 150, 255) } else { Color32::from_gray(45) };
                                                     if ui.add(egui::Button::new(egui::RichText::new("🔁").size(18.0)).min_size(small_btn_size).fill(loop_color))
                                                         .on_hover_text("Toggle Loop").clicked()
                                                     {
@@ -763,7 +766,7 @@ impl ModuleCanvas {
                                                     }
 
                                                     // REVERSE
-                                                    let rev_color = if *reverse_playback { Color32::from_rgb(200, 80, 80) } else { Color32::from_gray(50) };
+                                                    let rev_color = if *reverse_playback { Color32::from_rgb(200, 80, 80) } else { Color32::from_gray(45) };
                                                     if ui.add(egui::Button::new(egui::RichText::new("⏪").size(18.0)).min_size(small_btn_size).fill(rev_color))
                                                         .on_hover_text("Toggle Reverse Playback").clicked()
                                                     {
@@ -1038,23 +1041,26 @@ impl ModuleCanvas {
                                                     "🌈 Color Correction",
                                                     false,
                                                     |ui| {
-                                                        ui.add(
-                                                            egui::Slider::new(brightness, -1.0..=1.0)
-                                                                .text("Brightness"),
-                                                        );
-                                                        ui.add(
-                                                            egui::Slider::new(contrast, 0.0..=2.0)
-                                                                .text("Contrast"),
-                                                        );
-                                                        ui.add(
-                                                            egui::Slider::new(saturation, 0.0..=2.0)
-                                                                .text("Saturation"),
-                                                        );
-                                                        ui.add(
-                                                            egui::Slider::new(hue_shift, -180.0..=180.0)
-                                                                .text("Hue Shift")
-                                                                .suffix("°"),
-                                                        );
+                                                        ui.columns(2, |columns| {
+                                                            columns[0].add(
+                                                                egui::Slider::new(brightness, -1.0..=1.0)
+                                                                    .text("Brightness"),
+                                                            );
+                                                            columns[0].add(
+                                                                egui::Slider::new(contrast, 0.0..=2.0)
+                                                                    .text("Contrast"),
+                                                            );
+
+                                                            columns[1].add(
+                                                                egui::Slider::new(saturation, 0.0..=2.0)
+                                                                    .text("Saturation"),
+                                                            );
+                                                            columns[1].add(
+                                                                egui::Slider::new(hue_shift, -180.0..=180.0)
+                                                                    .text("Hue Shift")
+                                                                    .suffix("°"),
+                                                            );
+                                                        });
                                                     },
                                                 ) {
                                                     *brightness = 0.0;
@@ -1069,37 +1075,29 @@ impl ModuleCanvas {
                                                     "📐 Transform",
                                                     false,
                                                     |ui| {
-                                                        ui.horizontal(|ui| {
-                                                            ui.label("Scale:");
-                                                            ui.add(
-                                                                egui::DragValue::new(scale_x)
-                                                                    .speed(0.01)
-                                                                    .prefix("X: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(scale_y)
-                                                                    .speed(0.01)
-                                                                    .prefix("Y: "),
-                                                            );
+                                                        ui.columns(2, |columns| {
+                                                            // Scale Controls
+                                                            columns[0].label("Scale:");
+                                                            columns[0].horizontal(|ui| {
+                                                                ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
+                                                                ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
+                                                            });
+
+                                                            // Offset Controls
+                                                            columns[1].label("Offset:");
+                                                            columns[1].horizontal(|ui| {
+                                                                ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
+                                                                ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
+                                                            });
                                                         });
+
+                                                        ui.add_space(4.0);
+
                                                         ui.add(
                                                             egui::Slider::new(rotation, -180.0..=180.0)
                                                                 .text("Rotation")
                                                                 .suffix("°"),
                                                         );
-                                                        ui.horizontal(|ui| {
-                                                            ui.label("Offset:");
-                                                            ui.add(
-                                                                egui::DragValue::new(offset_x)
-                                                                    .speed(1.0)
-                                                                    .prefix("X: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(offset_y)
-                                                                    .speed(1.0)
-                                                                    .prefix("Y: "),
-                                                            );
-                                                        });
 
                                                         ui.separator();
                                                         ui.label("Mirror / Flip:");
