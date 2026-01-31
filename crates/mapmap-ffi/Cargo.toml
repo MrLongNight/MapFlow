@@ -1,11 +1,13 @@
 [package]
 name = "mapmap-ffi"
+description = "MapFlow C/C++ Foreign Function Interface bindings."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+readme = "README.md"
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
