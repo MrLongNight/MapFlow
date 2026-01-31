@@ -2852,9 +2852,7 @@ impl App {
                                                     self.ui_state.render_master_controls_embedded(ui, &mut self.state.layer_manager);
                                                     ui.separator();
 
-                                                    // Module List (Module Sidebar)
-                                                    self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
-                                                    ui.separator();
+
 
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
