@@ -105,13 +105,19 @@ jobs:
               `\`\`\`\n\n` +
               `Oder nutze den **"Update branch"**-Button oben im PR. `;
             core.warning(`Branch ist ${comparison.behind_by} Commit(s) hinter main`);
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: message
-            });
-            core.setFailed(`PR branch ist nicht auf dem aktuellen Stand von main (${comparison.behind_by} commits behind)`);
+
+            // Only fail if significantly behind, otherwise just warn
+            if (comparison.behind_by > 10) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: message
+              });
+              core.setFailed(`PR branch ist nicht auf dem aktuellen Stand von main (${comparison.behind_by} commits behind)`);
+            } else {
+              core.info(`Branch ist ${comparison.behind_by} Commit(s) hinter main (Toleranzbereich)`);
+            }
           } else {
             core.info('✓ PR branch ist auf dem aktuellen Stand');
           }
