@@ -1918,8 +1918,6 @@ impl App {
         let mut active_sender_ids = std::collections::HashSet::new();
         let global_fullscreen = self.ui_state.user_config.global_fullscreen;
 
-        self.output_assignments.clear();
-
         // 1. Iterate over ALL modules to collect required outputs
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
