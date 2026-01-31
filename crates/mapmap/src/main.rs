@@ -2211,8 +2211,29 @@ impl App {
         // Sync Texture Previews for Module Canvas
         // Identify active sources and gather their properties
         let mut active_preview_sources = Vec::new();
+
+        // Debug: Log module/part counts at start
+        static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+            std::sync::atomic::AtomicU32::new(0);
+        let log_this =
+            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+
         for module in self.state.module_manager.modules() {
+            if log_this {
+                tracing::info!(
+                    "prepare_texture_previews: module={} parts_count={}",
+                    module.id,
+                    module.parts.len()
+                );
+            }
             for part in &module.parts {
+                if log_this {
+                    tracing::info!(
+                        "  Part id={} type={:?}",
+                        part.id,
+                        std::mem::discriminant(&part.part_type)
+                    );
+                }
                 if let mapmap_core::module::ModulePartType::Source(
                     mapmap_core::module::SourceType::MediaFile {
                         brightness,
