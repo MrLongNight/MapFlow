@@ -2626,7 +2626,7 @@ impl App {
                 mapmap_ui::UIAction::Play => self.state.effect_animator.play(),
                 mapmap_ui::UIAction::Pause => self.state.effect_animator.pause(),
                 mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
-                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s as f32),
+                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s),
                 _ => {
                     // Other actions might be handled elsewhere or are not yet implemented
                 }
