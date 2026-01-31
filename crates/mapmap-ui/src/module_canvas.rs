@@ -1536,10 +1536,6 @@ impl ModuleCanvas {
                                                         });
                                                 });
                                                 ui.add(
-                                                    egui::Slider::new(&mut 1.0_f32, 0.0..=2.0)
-                                                        .text("Sensitivity"),
-                                                );
-                                                ui.add(
                                                     egui::Slider::new(&mut 0.1_f32, 0.0..=1.0)
                                                         .text("Smoothing"),
                                                 );

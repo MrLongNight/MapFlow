@@ -51,7 +51,24 @@ impl PreviewPanel {
 
     /// Update the list of outputs to preview
     pub fn update_outputs(&mut self, outputs: Vec<OutputPreviewInfo>) {
-        self.outputs = outputs;
+        // Deduplicate: If multiple entries for the same name/id exist, prefer the one with texture_id
+        use std::collections::HashMap;
+        let mut best_previews: HashMap<u64, OutputPreviewInfo> = HashMap::new();
+
+        for out in outputs {
+            if let Some(existing) = best_previews.get(&out.id) {
+                // If existing has no texture but current has, replace it
+                if existing.texture_id.is_none() && out.texture_id.is_some() {
+                    best_previews.insert(out.id, out);
+                }
+            } else {
+                best_previews.insert(out.id, out);
+            }
+        }
+
+        let mut final_outputs: Vec<_> = best_previews.into_values().collect();
+        final_outputs.sort_by(|a, b| a.id.cmp(&b.id));
+        self.outputs = final_outputs;
     }
 
     /// Show the preview panel UI
