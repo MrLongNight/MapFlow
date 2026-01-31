@@ -163,13 +163,13 @@ jobs:
 
           # Explizite Prüfung der Dateien, die in main.wxs referenziert werden
           $required = @(
-            "avcodec-61.dll",
-            "avdevice-61.dll",
-            "avfilter-10.dll",
-            "avformat-61.dll",
-            "avutil-59.dll",
-            "swresample-5.dll",
-            "swscale-8.dll"
+            "avcodec-62.dll",
+            "avdevice-62.dll",
+            "avfilter-11.dll",
+            "avformat-62.dll",
+            "avutil-60.dll",
+            "swresample-6.dll",
+            "swscale-9.dll"
           )
           $missing = $false
           foreach ($dll in $required) {
