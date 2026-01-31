@@ -79,14 +79,25 @@ impl WgpuBackend {
             adapter_info.name, adapter_info.backend
         );
 
+        // Query supported features
+        let supported_features = adapter.features();
+        let mut required_features = wgpu::Features::empty();
+
+        // Optional features: Enable only if supported
+        // TIMESTAMP_QUERY is useful for profiling but not critical for functionality
+        if supported_features.contains(wgpu::Features::TIMESTAMP_QUERY) {
+            required_features |= wgpu::Features::TIMESTAMP_QUERY;
+        }
+
+        // PUSH_CONSTANTS removed as mandatory requirement to fix startup crashes on some platforms
+        // (e.g. older Metal, DX11, WebGPU).
+        // If needed in future, check supported_features before adding.
+
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("MapFlow Device"),
-                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
-                required_limits: wgpu::Limits {
-                    max_push_constant_size: 128,
-                    ..Default::default()
-                },
+                required_features,
+                required_limits: wgpu::Limits::default(),
                 memory_hints: Default::default(),
                 ..Default::default()
             })

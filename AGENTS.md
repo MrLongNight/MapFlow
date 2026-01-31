@@ -34,7 +34,7 @@ This file provides context and instructions for AI agents working on the MapFlow
 3.  **UI Migration:** New UI panels use `egui`. Legacy panels use `imgui`. The goal is full `egui` migration.
 4.  **Formatting:** Run `cargo fmt` and `cargo clippy` before every commit.
 5.  **Documentation:** Keep `README.md` and `docs/` updated. Refer to the project as **MapFlow**, but acknowledge the legacy **MapMap** (C++/Qt) project where appropriate.
-6.  **Versioning:** Strictly adhere to `wgpu` 0.19 and `winit` 0.29. Do not update dependencies without explicit instruction.
+6.  **Versioning:** Strictly adhere to `wgpu` 27 and `winit` 0.30 (as required by `egui` 0.33 migration). Do not update dependencies without explicit instruction.
 
 ## 📜 Logging Standards
 
