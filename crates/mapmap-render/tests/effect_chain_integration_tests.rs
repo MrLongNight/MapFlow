@@ -18,7 +18,7 @@ async fn run_test_with_texture<F>(
 where
     F: FnOnce(&mut EffectChainRenderer, &wgpu::TextureView, &wgpu::TextureView),
 {
-    let backend = WgpuBackend::new().await.unwrap();
+    let backend = WgpuBackend::new(None).await.unwrap();
     let device = &backend.device;
     let queue = &backend.queue;
     let format = wgpu::TextureFormat::Rgba8UnormSrgb;

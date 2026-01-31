@@ -717,4 +717,65 @@ mod tests {
         );
         assert!(analysis.beat_strength > 0.0);
     }
+
+    #[test]
+    fn test_bpm_estimation_simulation() {
+        let config = AudioAnalyzerV2Config {
+            sample_rate: 44100,
+            fft_size: 1024,
+            smoothing: 0.0,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        let sample_rate = 44100.0;
+        let kick_freq = 60.0;
+        let bpm = 120.0;
+        let beat_interval_samples = (sample_rate * 60.0 / bpm) as usize; // 22050 samples
+        let kick_duration = 2000; // Short kick
+
+        // Simulate 10 seconds of audio (should be enough for ~20 beats)
+        // We process in chunks of 512 samples
+        let total_samples = beat_interval_samples * 20;
+        let chunk_size = 512;
+        let mut current_sample_idx = 0;
+
+        let mut bpm_found = false;
+
+        while current_sample_idx < total_samples {
+            let mut chunk = Vec::with_capacity(chunk_size);
+            for i in 0..chunk_size {
+                let absolute_idx = current_sample_idx + i;
+                let position_in_beat = absolute_idx % beat_interval_samples;
+
+                let sample = if position_in_beat < kick_duration {
+                    // Kick
+                    (2.0 * std::f32::consts::PI * kick_freq * position_in_beat as f32 / sample_rate)
+                        .sin()
+                } else {
+                    0.0
+                };
+                chunk.push(sample);
+            }
+
+            let timestamp = current_sample_idx as f64 / sample_rate as f64;
+            analyzer.process_samples(&chunk, timestamp);
+
+            if let Some(detected_bpm) = analyzer.get_latest_analysis().tempo_bpm {
+                // Allow some tolerance because simulation isn't perfect
+                if (detected_bpm - bpm).abs() < 2.0 {
+                    bpm_found = true;
+                    break;
+                }
+            }
+
+            current_sample_idx += chunk_size;
+        }
+
+        assert!(
+            bpm_found,
+            "Failed to detect 120 BPM. Last detected: {:?}",
+            analyzer.get_latest_analysis().tempo_bpm
+        );
+    }
 }

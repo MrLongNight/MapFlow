@@ -831,6 +831,8 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 - 🟡 **Packaging**
   - ✅ Windows-Installer (WiX) – Konfiguration (`crates/mapmap/wix/main.wxs`) vorhanden
     - ✅ WiX Installer FFmpeg DLLs Fix (COMPLETED 2026-01-26)
+  - ✅ Windows-Installer (WiX) – Konfiguration (`crates/mapmap/wix/main.wxs`) vorhanden (COMPLETED 2026-01-26)
+  - ✅ WiX Installer FFmpeg DLLs Fix (COMPLETED 2026-01-26)
   - ✅ App Icon Embedding (`winres` in `build.rs` konfiguriert)
   - ⬜ Linux Packaging (.deb)
   - ⬜ Linux-AppImage/Flatpak/Snap
