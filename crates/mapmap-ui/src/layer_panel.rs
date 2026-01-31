@@ -129,26 +129,30 @@ impl LayerPanel {
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
-                                // Reorder Buttons (Move Up/Down)
+                                    // Reorder Buttons (Move Up/Down)
                                     ui.vertical(|ui| {
                                         // Move Up
-                                    ui.add_enabled_ui(idx > 0, |ui| {
+                                        ui.add_enabled_ui(idx > 0, |ui| {
                                             if widgets::move_up_button(ui).clicked() {
-                                            if idx > 0 {
-                                                let prev_id = children[idx - 1];
-                                                actions.push(UIAction::SwapLayers(layer.id, prev_id));
+                                                if idx > 0 {
+                                                    let prev_id = children[idx - 1];
+                                                    actions.push(UIAction::SwapLayers(
+                                                        layer.id, prev_id,
+                                                    ));
+                                                }
                                             }
-                                            }
-                                    });
+                                        });
                                         // Move Down
-                                    ui.add_enabled_ui(idx < count - 1, |ui| {
+                                        ui.add_enabled_ui(idx < count - 1, |ui| {
                                             if widgets::move_down_button(ui).clicked() {
-                                            if idx < count - 1 {
-                                                let next_id = children[idx + 1];
-                                                actions.push(UIAction::SwapLayers(layer.id, next_id));
+                                                if idx < count - 1 {
+                                                    let next_id = children[idx + 1];
+                                                    actions.push(UIAction::SwapLayers(
+                                                        layer.id, next_id,
+                                                    ));
+                                                }
                                             }
-                                            }
-                                    });
+                                        });
                                     });
 
                                     // Indent/Unindent
