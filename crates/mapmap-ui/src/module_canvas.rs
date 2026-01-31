@@ -406,6 +406,44 @@ impl ModuleCanvas {
         self.selected_parts.last().copied()
     }
 
+    /// Sets default parameters for a given effect type
+    pub fn set_default_effect_params(
+        effect_type: ModuleEffectType,
+        params: &mut std::collections::HashMap<String, f32>,
+    ) {
+        use mapmap_core::module::EffectType;
+        params.clear();
+        match effect_type {
+            EffectType::Blur => {
+                params.insert("radius".to_string(), 5.0);
+                params.insert("samples".to_string(), 9.0);
+            }
+            EffectType::Pixelate => {
+                params.insert("pixel_size".to_string(), 8.0);
+            }
+            EffectType::FilmGrain => {
+                params.insert("amount".to_string(), 0.1);
+                params.insert("speed".to_string(), 1.0);
+            }
+            EffectType::Vignette => {
+                params.insert("radius".to_string(), 0.5);
+                params.insert("softness".to_string(), 0.5);
+            }
+            EffectType::ChromaticAberration => {
+                params.insert("amount".to_string(), 0.01);
+            }
+            EffectType::EdgeDetect => {
+                // Usually no params, or threshold?
+            }
+            EffectType::Brightness | EffectType::Contrast | EffectType::Saturation => {
+                params.insert("brightness".to_string(), 0.0);
+                params.insert("contrast".to_string(), 1.0);
+                params.insert("saturation".to_string(), 1.0);
+            }
+            _ => {}
+        }
+    }
+
     pub fn render_inspector_for_part(
         &mut self,
         ui: &mut Ui,
@@ -1389,11 +1427,22 @@ impl ModuleCanvas {
                                         ui.label("Modulator:");
                                         match mod_type {
                                             ModulizerType::Effect { effect_type: effect, params } => {
-                                                ui.label("✨ Effect");
+                                                // High contrast header
+                                                ui.add_space(5.0);
+                                                ui.vertical_centered(|ui| {
+                                                    ui.heading(egui::RichText::new(effect.name()).color(Color32::WHITE).strong());
+                                                });
+                                                ui.add_space(5.0);
+
+                                                // Reset Defaults Button
+                                                if ui.button("↺ Reset Defaults").clicked() {
+                                                     Self::set_default_effect_params(*effect, params);
+                                                }
+
                                                 let mut changed_type = None;
 
                                                 egui::ComboBox::from_id_salt(format!("{}_effect", part_id))
-                                                    .selected_text(format!("{:?}", effect))
+                                                    .selected_text(effect.name())
                                                     .show_ui(ui, |ui| {
                                                         ui.label("--- Basic ---");
                                                         if ui.selectable_label(matches!(effect, ModuleEffectType::Blur), "Blur").clicked() { changed_type = Some(ModuleEffectType::Blur); }
@@ -1426,35 +1475,7 @@ impl ModuleCanvas {
 
                                                 if let Some(new_type) = changed_type {
                                                     *effect = new_type;
-                                                    params.clear();
-                                                    // Set defaults
-                                                    match new_type {
-                                                        ModuleEffectType::Blur => {
-                                                            params.insert("radius".to_string(), 5.0);
-                                                            params.insert("samples".to_string(), 9.0);
-                                                        }
-                                                        ModuleEffectType::Pixelate => { params.insert("pixel_size".to_string(), 8.0); }
-                                                        ModuleEffectType::FilmGrain => {
-                                                            params.insert("amount".to_string(), 0.1);
-                                                            params.insert("speed".to_string(), 1.0);
-                                                        }
-                                                        ModuleEffectType::Vignette => {
-                                                            params.insert("radius".to_string(), 0.5);
-                                                            params.insert("softness".to_string(), 0.5);
-                                                        }
-                                                        ModuleEffectType::ChromaticAberration => {
-                                                            params.insert("amount".to_string(), 0.01);
-                                                        }
-                                                        ModuleEffectType::EdgeDetect => {
-                                                            // Usually no params, or threshold?
-                                                        }
-                                                        ModuleEffectType::Brightness | ModuleEffectType::Contrast | ModuleEffectType::Saturation => {
-                                                            params.insert("brightness".to_string(), 0.0);
-                                                            params.insert("contrast".to_string(), 1.0);
-                                                            params.insert("saturation".to_string(), 1.0);
-                                                        }
-                                                        _ => {}
-                                                    }
+                                                    Self::set_default_effect_params(new_type, params);
                                                 }
 
                                                 ui.separator();
