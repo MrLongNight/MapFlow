@@ -5465,7 +5465,13 @@ impl ModuleCanvas {
         }
     }
 
-    fn draw_part_with_delete(&self, ui: &Ui, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
+    fn draw_part_with_delete(
+        &self,
+        ui: &Ui,
+        painter: &egui::Painter,
+        part: &ModulePart,
+        rect: Rect,
+    ) {
         // Get part color and name based on type
         let (_bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
         let category = Self::get_part_category(&part.part_type);
