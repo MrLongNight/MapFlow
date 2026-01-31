@@ -2590,6 +2590,14 @@ impl App {
 
             // Fix: Sync Projector Fullscreen
             mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
+                if let Some(window_context) = self.window_manager.get(proj_id) {
+                    window_context.window.set_fullscreen(if is_fullscreen {
+                        Some(winit::window::Fullscreen::Borderless(None))
+                    } else {
+                        None
+                    });
+                }
+            }
 
             // Global Fullscreen Setting
             mapmap_ui::UIAction::SetGlobalFullscreen(is_fullscreen) => {

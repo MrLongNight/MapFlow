@@ -107,7 +107,7 @@ jobs:
             core.warning(`Branch ist ${comparison.behind_by} Commit(s) hinter main`);
 
             // Only fail if significantly behind, otherwise just warn
-            if (comparison.behind_by > 10) {
+            if (comparison.behind_by > 100) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
