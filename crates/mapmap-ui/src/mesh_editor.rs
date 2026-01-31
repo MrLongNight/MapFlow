@@ -288,8 +288,7 @@ impl MeshEditor {
                             let pos = vertex.position + ctrl_in;
                             if pos.distance(pointer_pos) < 6.0 {
                                 let offset = pos - pointer_pos;
-                                self.dragging_element =
-                                    Some(DragElement::ControlIn(idx, offset));
+                                self.dragging_element = Some(DragElement::ControlIn(idx, offset));
                                 found = true;
                                 break;
                             }
@@ -298,8 +297,7 @@ impl MeshEditor {
                             let pos = vertex.position + ctrl_out;
                             if pos.distance(pointer_pos) < 6.0 {
                                 let offset = pos - pointer_pos;
-                                self.dragging_element =
-                                    Some(DragElement::ControlOut(idx, offset));
+                                self.dragging_element = Some(DragElement::ControlOut(idx, offset));
                                 found = true;
                                 break;
                             }
@@ -566,8 +564,11 @@ mod tests {
 
         // Should be dragging ControlOut of vertex 0
         match editor.dragging_element {
-            Some(DragElement::ControlOut(0, _)) => {},
-            _ => panic!("Should be dragging ControlOut, got {:?}", editor.dragging_element),
+            Some(DragElement::ControlOut(0, _)) => {}
+            _ => panic!(
+                "Should be dragging ControlOut, got {:?}",
+                editor.dragging_element
+            ),
         }
 
         // 2. Test Dragging
@@ -588,7 +589,11 @@ mod tests {
 
         let v = &editor.vertices[0];
         let ctrl_out = v.control_out.unwrap();
-        assert!((ctrl_out.x - 48.0).abs() < 0.001, "Expected 48.0, got {}", ctrl_out.x);
+        assert!(
+            (ctrl_out.x - 48.0).abs() < 0.001,
+            "Expected 48.0, got {}",
+            ctrl_out.x
+        );
 
         // 3. Test Drag Stop
         let input_stop = InteractionInput {
