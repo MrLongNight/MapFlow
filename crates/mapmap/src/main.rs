@@ -2578,9 +2578,23 @@ impl App {
         let actions = self.ui_state.take_actions();
         for action in actions {
             match action {
-                mapmap_ui::UIAction::NodeAction(node_action) => {
-                    self.handle_node_action(node_action)?;
+                mapmap_ui::UIAction::NodeAction(action) => {
+                self.ui_state.node_editor_panel.handle_action(action);
+            }
+            
+            // Fix: Sync Projector Fullscreen
+            mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
+                // Iterate all modules and parts to find matching projectors
+                for module in self.state.module_manager.modules_mut() {
+                    for part in &mut module.parts {
+                        if let mapmap_core::module::ModulePartType::Output(mapmap_core::module::OutputType::Projector { id, fullscreen, .. }) = &mut part.part_type {
+                            if *id == proj_id {
+                                *fullscreen = is_fullscreen;
+                            }
+                        }
+                    }
                 }
+            }
                 mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
                     self.ui_state.show_shader_graph = true;
                     if let Some(graph) = self.state.shader_graphs.get(&graph_id) {
@@ -3195,7 +3209,17 @@ impl App {
                                             })
                                         })
                                         .collect();
-                                    self.ui_state.preview_panel.update_outputs(output_infos);
+                                    
+                                    // Fix: Deduplicate output previews by ID to prevent multiple windows for same projector
+                                    let mut unique_output_infos: Vec<mapmap_ui::OutputPreviewInfo> = Vec::new();
+                                    let mut seen_ids = std::collections::HashSet::new();
+                                    for info in output_infos {
+                                        if seen_ids.insert(info.id) {
+                                            unique_output_infos.push(info);
+                                        }
+                                    }
+                                    
+                                    self.ui_state.preview_panel.update_outputs(unique_output_infos);
                                     // Ensure continuous repaint for live preview
                                     if self.ui_state.show_preview_panel {
                                         ctx.request_repaint();

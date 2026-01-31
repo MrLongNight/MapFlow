@@ -1903,7 +1903,9 @@ impl ModuleCanvas {
                                                         });
                                                 });
 
-                                                ui.checkbox(fullscreen, "🖼️ Fullscreen");
+                                                if ui.checkbox(fullscreen, "🖼️ Fullscreen").changed() {
+                                                    actions.push(crate::UIAction::SyncProjectorFullscreen(*id, *fullscreen));
+                                                }
                                                 ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
 
                                                 ui.separator();
@@ -2550,12 +2552,11 @@ impl ModuleCanvas {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
 
-                    // Zoom control
-                    ui.label("🔍");
-                    ui.add(
-                        egui::Slider::new(&mut self.zoom, 0.2..=3.0)
-                            .show_value(false),
-                    );
+                    ui.spacing_mut().item_spacing.x = 4.0;
+                    
+                    // Fix: Wrapped in ScrollArea for responsive layout (Fixes UI Overlap)
+                    egui::ScrollArea::horizontal().id_salt("toolbar_scroll").show(ui, |ui| {
+                        ui.horizontal(|ui| {
                     // --- LEFT: Module Context ---
                     ui.push_id("module_context", |ui| {
                         // Module Selector
@@ -2656,8 +2657,10 @@ impl ModuleCanvas {
                                 }
                             }
                         }
-                    });
-
+                    }); // End module_context ID
+                        }); // End inner horizontal (inside ScrollArea)
+                    }); // End ScrollArea
+                    
                     ui.add_space(16.0); // Spacing between groups
 
                     // --- CENTER: Action Tools ---

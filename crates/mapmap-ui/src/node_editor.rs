@@ -273,6 +273,36 @@ impl NodeEditor {
         false
     }
 
+    /// Handle actions triggered by the UI or external events
+    pub fn handle_action(&mut self, action: NodeEditorAction) {
+        match action {
+            NodeEditorAction::AddNode(node_type, pos) => {
+                self.add_node(node_type, pos);
+            }
+            NodeEditorAction::RemoveNode(node_id) => {
+                self.remove_node(node_id);
+            }
+            NodeEditorAction::SelectNode(node_id) => {
+                self.selected_nodes.clear();
+                self.selected_nodes.push(node_id);
+            }
+            NodeEditorAction::AddConnection(from, from_socket, to, to_socket) => {
+                self.add_connection(from, from_socket, to, to_socket);
+            }
+            NodeEditorAction::RemoveConnection(from, from_socket, to, to_socket) => {
+                self.connections.retain(|c| {
+                    !(c.from_node == from
+                        && c.from_socket == from_socket
+                        && c.to_node == to
+                        && c.to_socket == to_socket)
+                });
+            }
+            NodeEditorAction::UpdateGraph(_) => {
+                // Handled by main app logic usually, but here for completeness
+            }
+        }
+    }
+
     // UI Helpers (Static/Associated functions to avoid &self borrows during iteration)
 
     fn get_socket_pos(node: &Node, socket_idx: usize, is_input: bool) -> Pos2 {
