@@ -1121,64 +1121,132 @@ impl ModuleCanvas {
                                             SourceType::NdiInput { source_name } => {
                                                 ui.label("📡 NDI Input");
 
-                                                // Display current source
-                                                let display_name = source_name.clone().unwrap_or_else(|| "Not Connected".to_string());
-                                                ui.label(format!("Current: {}", display_name));
-
-                                                // Discover button
-                                                ui.horizontal(|ui| {
-                                                    if ui.button("🔍 Discover Sources").clicked() {
-                                                        // Start async discovery
-                                                        let (tx, rx) = std::sync::mpsc::channel();
-                                                        self.ndi_discovery_rx = Some(rx);
-                                                        mapmap_io::ndi::NdiInputHandler::discover_sources_async(tx);
-                                                        self.ndi_sources.clear();
-                                                        ui.ctx().request_repaint();
-                                                    }
-
-                                                    // Check for discovery results
-                                                    if let Some(rx) = &self.ndi_discovery_rx {
-                                                        if let Ok(sources) = rx.try_recv() {
-                                                            self.ndi_sources = sources;
-                                                            self.ndi_discovery_rx = None;
+                                                // Smart Empty State
+                                                if source_name.is_none()
+                                                    && self.ndi_sources.is_empty()
+                                                    && self.ndi_discovery_rx.is_none()
+                                                {
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(10.0);
+                                                        if ui
+                                                            .add(
+                                                                egui::Button::new(
+                                                                    "🔍 Discover Sources",
+                                                                )
+                                                                .min_size(egui::vec2(150.0, 30.0)),
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            // Start async discovery
+                                                            let (tx, rx) =
+                                                                std::sync::mpsc::channel();
+                                                            self.ndi_discovery_rx = Some(rx);
+                                                            mapmap_io::ndi::NdiInputHandler::discover_sources_async(tx);
+                                                            self.ndi_sources.clear();
+                                                            ui.ctx().request_repaint();
                                                         }
-                                                    }
+                                                        ui.label(
+                                                            egui::RichText::new(
+                                                                "No NDI source selected",
+                                                            )
+                                                            .weak(),
+                                                        );
+                                                        ui.add_space(10.0);
+                                                    });
+                                                } else {
+                                                    // Display current source
+                                                    let display_name = source_name
+                                                        .clone()
+                                                        .unwrap_or_else(|| {
+                                                            "Not Connected".to_string()
+                                                        });
+                                                    ui.label(format!("Current: {}", display_name));
 
-                                                    // Show spinner if discovering
-                                                    if self.ndi_discovery_rx.is_some() {
-                                                        ui.spinner();
-                                                        ui.label("Searching...");
-                                                    }
-                                                });
+                                                    // Discover button
+                                                    ui.horizontal(|ui| {
+                                                        if ui
+                                                            .button("🔍 Discover Sources")
+                                                            .clicked()
+                                                        {
+                                                            // Start async discovery
+                                                            let (tx, rx) =
+                                                                std::sync::mpsc::channel();
+                                                            self.ndi_discovery_rx = Some(rx);
+                                                            mapmap_io::ndi::NdiInputHandler::discover_sources_async(tx);
+                                                            self.ndi_sources.clear();
+                                                            ui.ctx().request_repaint();
+                                                        }
 
-                                                // Source selection dropdown
-                                                if !self.ndi_sources.is_empty() {
-                                                    ui.separator();
-                                                    ui.label("Available Sources:");
+                                                        // Check for discovery results
+                                                        if let Some(rx) = &self.ndi_discovery_rx {
+                                                            if let Ok(sources) = rx.try_recv() {
+                                                                self.ndi_sources = sources;
+                                                                self.ndi_discovery_rx = None;
+                                                            }
+                                                        }
 
-                                                    egui::ComboBox::from_id_salt("ndi_source_select")
+                                                        // Show spinner if discovering
+                                                        if self.ndi_discovery_rx.is_some() {
+                                                            ui.spinner();
+                                                            ui.label("Searching...");
+                                                        }
+                                                    });
+
+                                                    // Source selection dropdown
+                                                    if !self.ndi_sources.is_empty() {
+                                                        ui.separator();
+                                                        ui.label("Available Sources:");
+
+                                                        egui::ComboBox::from_id_salt(
+                                                            "ndi_source_select",
+                                                        )
                                                         .selected_text(display_name.clone())
                                                         .show_ui(ui, |ui| {
                                                             // Option to disconnect
-                                                            if ui.selectable_label(source_name.is_none(), "❌ None (Disconnect)").clicked() {
+                                                            if ui
+                                                                .selectable_label(
+                                                                    source_name.is_none(),
+                                                                    "❌ None (Disconnect)",
+                                                                )
+                                                                .clicked()
+                                                            {
                                                                 *source_name = None;
                                                             }
 
                                                             // Available sources
                                                             for ndi_source in &self.ndi_sources {
-                                                                let selected = source_name.as_ref() == Some(&ndi_source.name);
-                                                                if ui.selectable_label(selected, &ndi_source.name).clicked() {
-                                                                    *source_name = Some(ndi_source.name.clone());
+                                                                let selected = source_name.as_ref()
+                                                                    == Some(&ndi_source.name);
+                                                                if ui
+                                                                    .selectable_label(
+                                                                        selected,
+                                                                        &ndi_source.name,
+                                                                    )
+                                                                    .clicked()
+                                                                {
+                                                                    *source_name = Some(
+                                                                        ndi_source.name.clone(),
+                                                                    );
 
                                                                     // Trigger connection action
-                                                                    self.pending_ndi_connect = Some((part_id, ndi_source.clone()));
+                                                                    self.pending_ndi_connect =
+                                                                        Some((
+                                                                            part_id,
+                                                                            ndi_source.clone(),
+                                                                        ));
                                                                 }
                                                             }
                                                         });
 
-                                                    ui.label(format!("Found {} source(s)", self.ndi_sources.len()));
-                                                } else if self.ndi_discovery_rx.is_none() {
-                                                    ui.label("Click 'Discover' to find NDI sources");
+                                                        ui.label(format!(
+                                                            "Found {} source(s)",
+                                                            self.ndi_sources.len()
+                                                        ));
+                                                    } else if self.ndi_discovery_rx.is_none() {
+                                                        ui.label(
+                                                            "Click 'Discover' to find NDI sources",
+                                                        );
+                                                    }
                                                 }
                                             }
                                             #[cfg(not(feature = "ndi"))]
@@ -1200,26 +1268,51 @@ impl ModuleCanvas {
                                         match mask {
                                             MaskType::File { path } => {
                                                 ui.label("📁 Mask File");
-                                                ui.horizontal(|ui| {
-                                                    ui.add(
-                                                        egui::TextEdit::singleline(path)
-                                                            .desired_width(120.0),
-                                                    );
-                                                    if ui.button("📂").on_hover_text("Select Mask File").clicked() {
-                                                        if let Some(picked) = rfd::FileDialog::new()
-                                                            .add_filter(
-                                                                "Image",
-                                                                &[
-                                                                    "png", "jpg", "jpeg", "webp",
-                                                                    "bmp",
-                                                                ],
-                                                            )
-                                                            .pick_file()
+                                                if path.is_empty() {
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(10.0);
+                                                        if ui.add(egui::Button::new("📂 Select Mask File")
+                                                            .min_size(egui::vec2(150.0, 30.0)))
+                                                            .clicked()
                                                         {
-                                                            *path = picked.display().to_string();
+                                                            if let Some(picked) = rfd::FileDialog::new()
+                                                                .add_filter(
+                                                                    "Image",
+                                                                    &[
+                                                                        "png", "jpg", "jpeg", "webp",
+                                                                        "bmp",
+                                                                    ],
+                                                                )
+                                                                .pick_file()
+                                                            {
+                                                                *path = picked.display().to_string();
+                                                            }
                                                         }
-                                                    }
-                                                });
+                                                        ui.label(egui::RichText::new("No mask loaded").weak());
+                                                        ui.add_space(10.0);
+                                                    });
+                                                } else {
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(
+                                                            egui::TextEdit::singleline(path)
+                                                                .desired_width(120.0),
+                                                        );
+                                                        if ui.button("📂").on_hover_text("Select Mask File").clicked() {
+                                                            if let Some(picked) = rfd::FileDialog::new()
+                                                                .add_filter(
+                                                                    "Image",
+                                                                    &[
+                                                                        "png", "jpg", "jpeg", "webp",
+                                                                        "bmp",
+                                                                    ],
+                                                                )
+                                                                .pick_file()
+                                                            {
+                                                                *path = picked.display().to_string();
+                                                            }
+                                                        }
+                                                    });
+                                                }
                                             }
                                             MaskType::Shape(shape) => {
                                                 ui.label("🔷 Shape Mask");
