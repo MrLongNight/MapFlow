@@ -11,8 +11,8 @@ fn test_create_window_manager() {
 #[test]
 #[ignore]
 fn test_create_main_window() {
-    let event_loop = EventLoop::new();
-    let backend = pollster::block_on(WgpuBackend::new()).unwrap();
+    let event_loop = EventLoop::new().unwrap();
+    let backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
     let mut wm = WindowManager::new();
     let main_window_id = wm.create_main_window(&event_loop, &backend).unwrap();
     assert_eq!(wm.main_window_id(), Some(main_window_id));

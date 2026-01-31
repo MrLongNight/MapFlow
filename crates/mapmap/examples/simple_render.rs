@@ -24,7 +24,7 @@ fn main() {
         .with_inner_size(winit::dpi::PhysicalSize::new(800, 600));
     let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 
-    let mut backend = pollster::block_on(WgpuBackend::new()).unwrap();
+    let mut backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
     let surface = backend.create_surface(window.clone()).unwrap();
 
     let surface_config = wgpu::SurfaceConfiguration {

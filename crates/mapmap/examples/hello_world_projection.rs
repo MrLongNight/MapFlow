@@ -32,7 +32,7 @@ fn main() {
     println!("✓ Window created (1280x720)");
 
     // Step 2: Initialize GPU backend
-    let mut backend = pollster::block_on(WgpuBackend::new()).unwrap();
+    let mut backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
     println!("✓ GPU Backend initialized");
     println!("  Adapter: {:?}", backend.adapter_info());
 
