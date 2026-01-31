@@ -133,8 +133,12 @@ pub enum UIAction {
 
     // Layer actions (Phase 1)
     AddLayer,
+    CreateGroup,
     RemoveLayer(u64),
     DuplicateLayer(u64),
+    ReparentLayer(u64, Option<u64>),
+    SwapLayers(u64, u64),
+    ToggleGroupCollapsed(u64),
     RenameLayer(u64, String),
     ToggleLayerBypass(u64),
     ToggleLayerSolo(u64),

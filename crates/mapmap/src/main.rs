@@ -1556,6 +1556,27 @@ impl App {
                         .create_layer(format!("Layer {}", count + 1));
                     self.state.dirty = true;
                 }
+                mapmap_ui::UIAction::CreateGroup => {
+                    let count = self.state.layer_manager.len();
+                    self.state
+                        .layer_manager
+                        .create_group(format!("Group {}", count + 1));
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::ReparentLayer(id, parent_id) => {
+                    self.state.layer_manager.reparent_layer(id, parent_id);
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::SwapLayers(id1, id2) => {
+                    self.state.layer_manager.swap_layers(id1, id2);
+                    self.state.dirty = true;
+                }
+                mapmap_ui::UIAction::ToggleGroupCollapsed(id) => {
+                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                        layer.collapsed = !layer.collapsed;
+                        self.state.dirty = true;
+                    }
+                }
                 mapmap_ui::UIAction::RemoveLayer(id) => {
                     self.state.layer_manager.remove_layer(id);
                     self.state.dirty = true;
