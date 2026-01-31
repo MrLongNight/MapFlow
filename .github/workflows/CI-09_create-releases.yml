@@ -63,7 +63,7 @@ jobs:
         run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
 
-      - name: Download FFmpeg DLLs
+      - name: Download und Kopiere FFmpeg DLLs korrekt
         shell: pwsh
         run: |
           $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/7.0.2/ffmpeg-7.0.2-full_build-shared.7z"
@@ -71,13 +71,12 @@ jobs:
           $ffmpegDir = "$env:RUNNER_TEMP\ffmpeg"
           $outPath = "${{ github.workspace }}\target\release"
 
-          Write-Host "Downloading FFmpeg from $ffmpegUrl..."
           Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
 
-          Write-Host "Extracting archive..."
           7z x $ffmpegArchive -o"$ffmpegDir" -y
 
-          $binDir = Get-ChildItem "$ffmpegDir\**\bin" -Directory -Recurse | Select-Object -First 1
+          # Sucht rekursiv den ersten "bin"-Ordner (typisch für GyanD-Build)
+          $binDir = Get-ChildItem -Path $ffmpegDir -Directory -Recurse | Where-Object { $_.Name -eq "bin" } | Select-Object -First 1
           if (!$binDir) { Write-Error "Bin directory not found"; exit 1 }
 
           $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
@@ -86,9 +85,25 @@ jobs:
 
           foreach ($dll in $dlls) {
             $src = Join-Path $binDir.FullName $dll
-            if (Test-Path $src) { Copy-Item $src $outPath; Write-Host "Copied $dll" }
-            else { Write-Error "Missing $dll"; exit 1 }
+            if (Test-Path $src) { Copy-Item $src $outPath -Force; Write-Host "Copied $dll" }
+            else { Write-Error "Missing $dll in $($binDir.FullName)"; exit 1 }
           }
+
+      - name: Prüfe DLLs in target\release
+        shell: pwsh
+        run: |
+          Write-Host "Inhalt von target\release:"
+          Get-ChildItem "${{ github.workspace }}\target\release\*.dll" | ForEach-Object { Write-Host $_.Name }
+
+          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
+          $missing = $false
+          foreach ($dll in $dlls) {
+            if (-not (Test-Path "${{ github.workspace }}\target\release\$dll")) {
+              Write-Error "$dll fehlt in target\release!"
+              $missing = $true
+            }
+          }
+          if ($missing) { exit 1 }
 
       - name: Check if binary exists and package
         run: |
@@ -158,7 +173,7 @@ jobs:
 
         shell: pwsh
 
-      - name: Download FFmpeg DLLs
+      - name: Download und Kopiere FFmpeg DLLs korrekt
         shell: pwsh
         run: |
           $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/7.0.2/ffmpeg-7.0.2-full_build-shared.7z"
@@ -166,13 +181,12 @@ jobs:
           $ffmpegDir = "$env:RUNNER_TEMP\ffmpeg"
           $outPath = "${{ github.workspace }}\target\release"
 
-          Write-Host "Downloading FFmpeg from $ffmpegUrl..."
           Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
 
-          Write-Host "Extracting archive..."
           7z x $ffmpegArchive -o"$ffmpegDir" -y
 
-          $binDir = Get-ChildItem "$ffmpegDir\**\bin" -Directory -Recurse | Select-Object -First 1
+          # Sucht rekursiv den ersten "bin"-Ordner (typisch für GyanD-Build)
+          $binDir = Get-ChildItem -Path $ffmpegDir -Directory -Recurse | Where-Object { $_.Name -eq "bin" } | Select-Object -First 1
           if (!$binDir) { Write-Error "Bin directory not found"; exit 1 }
 
           $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
@@ -181,9 +195,25 @@ jobs:
 
           foreach ($dll in $dlls) {
             $src = Join-Path $binDir.FullName $dll
-            if (Test-Path $src) { Copy-Item $src $outPath; Write-Host "Copied $dll" }
-            else { Write-Error "Missing $dll"; exit 1 }
+            if (Test-Path $src) { Copy-Item $src $outPath -Force; Write-Host "Copied $dll" }
+            else { Write-Error "Missing $dll in $($binDir.FullName)"; exit 1 }
           }
+
+      - name: Prüfe DLLs in target\release
+        shell: pwsh
+        run: |
+          Write-Host "Inhalt von target\release:"
+          Get-ChildItem "${{ github.workspace }}\target\release\*.dll" | ForEach-Object { Write-Host $_.Name }
+
+          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
+          $missing = $false
+          foreach ($dll in $dlls) {
+            if (-not (Test-Path "${{ github.workspace }}\target\release\$dll")) {
+              Write-Error "$dll fehlt in target\release!"
+              $missing = $true
+            }
+          }
+          if ($missing) { exit 1 }
 
       - name: Install WiX Toolset
         run: choco install wixtoolset -y

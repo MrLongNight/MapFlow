@@ -165,7 +165,10 @@ struct App {
 impl App {
     /// Creates a new `App`.
     pub async fn new(elwt: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
-        let backend = WgpuBackend::new().await?;
+        // Load user config early to get preferences
+        let saved_config = mapmap_ui::config::UserConfig::load();
+
+        let backend = WgpuBackend::new(saved_config.preferred_gpu.as_deref()).await?;
 
         // Version marker to confirm correct build is running
         tracing::info!(">>> BUILD VERSION: 2026-01-04-FIX-RENDER-CHECK <<<");
@@ -207,9 +210,6 @@ impl App {
             .build()
             .expect("Failed to create Tokio runtime");
 
-        // Load user config to get saved window geometry
-        let saved_config = mapmap_ui::config::UserConfig::load();
-
         // Create main window with saved geometry
         let main_window_id = window_manager.create_main_window_with_geometry(
             elwt,
@@ -219,6 +219,7 @@ impl App {
             saved_config.window_x,
             saved_config.window_y,
             saved_config.window_maximized,
+            saved_config.vsync_mode,
         )?;
 
         let (width, height, format, main_window_for_egui) = {
@@ -1425,6 +1426,11 @@ impl App {
                             target_id
                         );
                     }
+                    #[cfg(not(feature = "midi"))]
+                    {
+                        let _ = element_id;
+                        let _ = target_id;
+                    }
                 }
                 mapmap_ui::UIAction::RegisterHue => {
                     info!("Linking with Philips Hue Bridge...");
@@ -1966,6 +1972,7 @@ impl App {
                                         global_fullscreen,
                                         *hide_cursor,
                                         *target_screen,
+                                        self.ui_state.user_config.vsync_mode,
                                     )?;
                                     info!(
                                         "Created projector window for output {} (Part {})",
@@ -1987,6 +1994,7 @@ impl App {
                                             false, // Always windowed
                                             false, // Show cursor
                                             0,     // Default screen (0)
+                                            self.ui_state.user_config.vsync_mode,
                                         )?;
                                         info!("Created preview window for output {}", window_id);
                                     }
@@ -2753,10 +2761,11 @@ impl App {
 
             // --------- egui: UI separat zeichnen ---------
 
-            let dashboard_action = None;
+            let mut dashboard_action = None;
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
+                    dashboard_action = self.ui_state.dashboard.ui(ctx, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref());
                     // Apply the theme at the beginning of each UI render pass
                     self.ui_state.user_config.theme.apply(ctx);
 
@@ -2799,12 +2808,8 @@ impl App {
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
-                    egui::TopBottomPanel::top("app_header_panel")
-                        .resizable(false)
-                        .show(ctx, |_ui| {
-                            let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
-                            self.ui_state.actions.extend(menu_actions);
-                        });
+                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                    self.ui_state.actions.extend(menu_actions);
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
@@ -2978,6 +2983,9 @@ impl App {
                                             egui::Layout::top_down(egui::Align::LEFT),
                                             |ui| {
                                                 egui::ScrollArea::vertical().id_salt("controls_scroll").show(ui, |ui| {
+                                                    // Module Sidebar
+                                                    self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
+
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
                                                         .default_open(false)
@@ -3096,6 +3104,9 @@ impl App {
                                     } else {
                                         // Controls only - full height
                                         egui::ScrollArea::vertical().id_salt("inspector_scroll_full").show(ui, |ui| {
+                                            // Module Sidebar
+                                            self.ui_state.module_sidebar.show(ui, &mut self.state.module_manager, &self.ui_state.i18n);
+
                                             // Media Browser Section
                                             egui::CollapsingHeader::new("📁 Media")
                                                 .default_open(false)
@@ -3357,6 +3368,102 @@ impl App {
                                                     }
                                                 });
                                         });
+                                    });
+
+                                ui.separator();
+
+                                // Graphics / Performance
+                                egui::CollapsingHeader::new(format!("🖥️ {}", "Graphics"))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        // Adapter Selection
+                                        ui.horizontal(|ui| {
+                                            ui.label("GPU Adapter:");
+                                            let current_gpu = self
+                                                .ui_state
+                                                .user_config
+                                                .preferred_gpu
+                                                .clone()
+                                                .unwrap_or_else(|| "Auto".to_string());
+
+                                            egui::ComboBox::from_id_salt("gpu_select")
+                                                .selected_text(&current_gpu)
+                                                .show_ui(ui, |ui| {
+                                                    if ui
+                                                        .selectable_label(
+                                                            self.ui_state.user_config.preferred_gpu.is_none(),
+                                                            "Auto",
+                                                        )
+                                                        .clicked()
+                                                    {
+                                                        self.ui_state.user_config.preferred_gpu = None;
+                                                        let _ = self.ui_state.user_config.save();
+                                                    }
+
+                                                    let adapters = self
+                                                        .backend
+                                                        .instance
+                                                        .enumerate_adapters(wgpu::Backends::all());
+                                                    for adapter in adapters {
+                                                        let info = adapter.get_info();
+                                                        let name = info.name;
+                                                        let is_selected = self
+                                                            .ui_state
+                                                            .user_config
+                                                            .preferred_gpu
+                                                            .as_ref()
+                                                            == Some(&name);
+                                                        if ui.selectable_label(is_selected, &name).clicked() {
+                                                            self.ui_state.user_config.preferred_gpu = Some(name);
+                                                            let _ = self.ui_state.user_config.save();
+                                                        }
+                                                    }
+                                                });
+                                        });
+                                        ui.label(
+                                            egui::RichText::new("⚠️ GPU change requires restart")
+                                                .color(egui::Color32::YELLOW)
+                                                .small(),
+                                        );
+
+                                        // VSync
+                                        ui.horizontal(|ui| {
+                                            ui.label("VSync Mode:");
+                                            egui::ComboBox::from_id_salt("vsync_select")
+                                                .selected_text(format!("{}", self.ui_state.user_config.vsync_mode))
+                                                .show_ui(ui, |ui| {
+                                                    use mapmap_ui::config::VSyncMode;
+                                                    let modes = [VSyncMode::Auto, VSyncMode::On, VSyncMode::Off];
+                                                    for mode in modes {
+                                                        if ui
+                                                            .selectable_value(
+                                                                &mut self.ui_state.user_config.vsync_mode,
+                                                                mode,
+                                                                format!("{}", mode),
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            let _ = self.ui_state.user_config.save();
+                                                        }
+                                                    }
+                                                });
+                                        });
+                                        ui.label(
+                                            egui::RichText::new("Note: VSync change might require restart")
+                                                .small(),
+                                        );
+
+                                        ui.separator();
+                                        ui.label(egui::RichText::new("Performance Metrics").strong());
+                                        ui.label(format!(
+                                            "Active GPU: {} ({:?})",
+                                            self.backend.adapter_info.name, self.backend.adapter_info.backend
+                                        ));
+                                        ui.label(format!("CPU Usage: {:.1}%", self.ui_state.cpu_usage));
+                                        ui.label(format!(
+                                            "RAM Usage: {:.1} MB",
+                                            self.ui_state.ram_usage_mb
+                                        ));
                                     });
 
                                 ui.separator();
@@ -3663,6 +3770,53 @@ impl App {
                         show_settings = false;
                     }
                     self.ui_state.show_settings = show_settings;
+
+                    // === 7. Floating Windows / Modals ===
+
+                    // Master Controls Panel
+                    self.ui_state.render_master_controls(ctx, &mut self.state.layer_manager);
+
+                    // Icon Demo Panel
+                    self.ui_state.render_icon_demo(ctx);
+
+                    // Paint Panel
+                    self.ui_state.paint_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.paint_manager,
+                        self.ui_state.icon_manager.as_ref(),
+                    );
+
+                    // Mapping Panel
+                    self.ui_state.mapping_panel.show(
+                        ctx,
+                        &mut self.state.mapping_manager,
+                        &mut self.ui_state.actions,
+                        &self.ui_state.i18n,
+                    );
+
+                    // Output Panel
+                    self.ui_state.output_panel.render(
+                        ctx,
+                        &self.ui_state.i18n,
+                        &mut self.state.output_manager,
+                        &[], // Monitors placeholder
+                    );
+
+                    // Edge Blend Panel
+                    self.ui_state.edge_blend_panel.show(ctx, &self.ui_state.i18n);
+
+                    // Assignment Panel
+                    self.ui_state.assignment_panel.show(ctx, &self.state.assignment_manager);
+
+                    // Icon Demo Panel
+                    if self.ui_state.icon_demo_panel.visible {
+                        self.ui_state.icon_demo_panel.ui(
+                            ctx,
+                            self.ui_state.icon_manager.as_ref(),
+                            &self.ui_state.i18n,
+                        );
+                    }
                 });
 
                 self.egui_state
