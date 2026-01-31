@@ -238,6 +238,18 @@ impl OutputManager {
         &self.outputs
     }
 
+    /// List all outputs (alias for outputs)
+    pub fn list_outputs(&self) -> &[OutputConfig] {
+        &self.outputs
+    }
+
+    /// Update an existing output
+    pub fn update_output(&mut self, id: OutputId, config: OutputConfig) {
+        if let Some(output) = self.get_output_mut(id) {
+            *output = config;
+        }
+    }
+
     /// Get canvas size
     pub fn canvas_size(&self) -> (u32, u32) {
         self.canvas_size

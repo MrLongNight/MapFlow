@@ -1644,7 +1644,7 @@ impl App {
                 mapmap_ui::UIAction::RemoveOutput(..) => {
                     warn!("RemoveOutput not implemented in main");
                 }
-                mapmap_ui::UIAction::ConfigureOutput(id, mut config) => {
+                mapmap_ui::UIAction::ConfigureOutput(id, config) => {
                     // Collect sync for fullscreen
                     let fs = config.fullscreen;
 

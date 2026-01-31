@@ -205,6 +205,9 @@ pub enum UIAction {
 
     // MIDI
     ToggleMidiLearn,
+
+    // Node Action (Phase 6)
+    NodeAction(NodeEditorAction),
 }
 
 use mapmap_control::ControlTarget;

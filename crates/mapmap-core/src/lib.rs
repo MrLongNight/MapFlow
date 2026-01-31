@@ -6,8 +6,8 @@
 //! - Project file format
 //! - Geometry primitives
 //! - Transform calculations
-
-#![warn(missing_docs)]
+//!
+//! #![warn(missing_docs)]
 
 pub use glam::{Mat4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
