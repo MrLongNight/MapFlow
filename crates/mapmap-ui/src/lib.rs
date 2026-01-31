@@ -212,6 +212,9 @@ pub enum UIAction {
 
     // Node Action (Phase 6)
     NodeAction(NodeEditorAction),
+
+    // Fix: Sync Projector Fullscreen (Fehler 5)
+    SyncProjectorFullscreen(u64, bool),
 }
 
 use mapmap_control::ControlTarget;

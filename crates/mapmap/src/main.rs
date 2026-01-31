@@ -1943,6 +1943,7 @@ impl App {
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
                                     if is_fullscreen != *fullscreen {
+                                        info!("Toggling fullscreen for window {}: {}", window_id, *fullscreen);
                                         window_context.window.set_fullscreen(if *fullscreen {
                                             Some(winit::window::Fullscreen::Borderless(None))
                                         } else {
@@ -2471,7 +2472,7 @@ impl App {
 
     /// Global update loop (physics/logic), independent of render rate per window.
     fn update(&mut self, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) {
-        let _ = self.handle_ui_actions();
+        let ui_needs_sync = self.handle_ui_actions().unwrap_or(false);
 
         // --- Media Player Update ---
         self.sync_media_players();
@@ -2515,10 +2516,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { .. },
+                    mapmap_core::module::OutputType::Projector { id, .. },
                 ) = &part.part_type
                 {
-                    Some(part.id) // Use part.id for consistency with render pipeline
+                    Some(*id) // Use Projector ID to match window_manager keys
                 } else {
                     None
                 }
@@ -2535,7 +2536,7 @@ impl App {
 
         // Only sync if module graph's projector set changed
         // Only sync if module graph's projector set changed
-        if current_output_ids != prev_output_ids {
+        if ui_needs_sync || current_output_ids != prev_output_ids {
             tracing::info!(
                 "Output set changed: {:?} -> {:?}",
                 prev_output_ids,
@@ -2574,13 +2575,33 @@ impl App {
         }
     }
     /// Handle global UI actions
-    fn handle_ui_actions(&mut self) -> Result<()> {
+    fn handle_ui_actions(&mut self) -> Result<bool> {
         let actions = self.ui_state.take_actions();
+        let mut needs_sync = false;
+        
         for action in actions {
             match action {
                 mapmap_ui::UIAction::NodeAction(node_action) => {
-                    self.handle_node_action(node_action)?;
+                    self.ui_state.node_editor_panel.handle_action(node_action.clone());
+                    if let Err(e) = self.handle_node_action(node_action) {
+                        eprintln!("Error handling node action: {}", e);
+                    }
                 }
+            
+            // Fix: Sync Projector Fullscreen
+            mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
+                needs_sync = true;
+                // Iterate all modules and parts to find matching projectors
+                for module in self.state.module_manager.modules_mut() {
+                    for part in &mut module.parts {
+                        if let mapmap_core::module::ModulePartType::Output(mapmap_core::module::OutputType::Projector { id, fullscreen, .. }) = &mut part.part_type {
+                            if *id == proj_id {
+                                *fullscreen = is_fullscreen;
+                            }
+                        }
+                    }
+                }
+            }
                 mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
                     self.ui_state.show_shader_graph = true;
                     if let Some(graph) = self.state.shader_graphs.get(&graph_id) {
@@ -2626,13 +2647,13 @@ impl App {
                 mapmap_ui::UIAction::Play => self.state.effect_animator.play(),
                 mapmap_ui::UIAction::Pause => self.state.effect_animator.pause(),
                 mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
-                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s as f32),
+                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s),
                 _ => {
-                    // Other actions might be handled elsewhere or are not yet implemented
+                    // Other actions
                 }
             }
         }
-        Ok(())
+        Ok(needs_sync)
     }
 
     /// Handle Node Editor actions
@@ -2777,8 +2798,12 @@ impl App {
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
-                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
-                    self.ui_state.actions.extend(menu_actions);
+                    egui::TopBottomPanel::top("app_header_panel")
+                        .resizable(false)
+                        .show(ctx, |_ui| {
+                            let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                            self.ui_state.actions.extend(menu_actions);
+                        });
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
@@ -3195,7 +3220,17 @@ impl App {
                                             })
                                         })
                                         .collect();
-                                    self.ui_state.preview_panel.update_outputs(output_infos);
+                                    
+                                    // Fix: Deduplicate output previews by ID to prevent multiple windows for same projector
+                                    let mut unique_output_infos: Vec<mapmap_ui::OutputPreviewInfo> = Vec::new();
+                                    let mut seen_ids = std::collections::HashSet::new();
+                                    for info in output_infos {
+                                        if seen_ids.insert(info.id) {
+                                            unique_output_infos.push(info);
+                                        }
+                                    }
+                                    
+                                    self.ui_state.preview_panel.update_outputs(unique_output_infos);
                                     // Ensure continuous repaint for live preview
                                     if self.ui_state.show_preview_panel {
                                         ctx.request_repaint();

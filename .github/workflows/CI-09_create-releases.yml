@@ -63,6 +63,33 @@ jobs:
         run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
 
+      - name: Download FFmpeg DLLs
+        shell: pwsh
+        run: |
+          $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/7.0.2/ffmpeg-7.0.2-full_build-shared.7z"
+          $ffmpegArchive = "$env:RUNNER_TEMP\ffmpeg.7z"
+          $ffmpegDir = "$env:RUNNER_TEMP\ffmpeg"
+          $outPath = "${{ github.workspace }}\target\release"
+
+          Write-Host "Downloading FFmpeg from $ffmpegUrl..."
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
+
+          Write-Host "Extracting archive..."
+          7z x $ffmpegArchive -o"$ffmpegDir" -y
+
+          $binDir = Get-ChildItem "$ffmpegDir\**\bin" -Directory -Recurse | Select-Object -First 1
+          if (!$binDir) { Write-Error "Bin directory not found"; exit 1 }
+
+          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
+
+          if (!(Test-Path $outPath)) { New-Item -ItemType Directory -Force -Path $outPath }
+
+          foreach ($dll in $dlls) {
+            $src = Join-Path $binDir.FullName $dll
+            if (Test-Path $src) { Copy-Item $src $outPath; Write-Host "Copied $dll" }
+            else { Write-Error "Missing $dll"; exit 1 }
+          }
+
       - name: Check if binary exists and package
         run: |
           if (!(Test-Path "target\release\MapFlow.exe")) {
@@ -72,13 +99,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item target\release\MapFlow.exe dist\MapFlow.exe
 
-          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
-          if (Test-Path $vcpkgBin) {
-            Copy-Item "$vcpkgBin\*.dll" dist\
-            Write-Host "Copied FFmpeg DLLs to dist"
-          } else {
-            Write-Host "Warning: vcpkg bin directory not found at $vcpkgBin"
-          }
+          # Copy DLLs from target/release (populated by previous step)
+          Copy-Item target\release\*.dll dist\
+          Write-Host "Copied DLLs to dist"
         shell: pwsh
 
       - name: Prepare ZIP
@@ -135,33 +158,31 @@ jobs:
 
         shell: pwsh
 
-      - name: Kopiere FFmpeg-DLLs für Installer
+      - name: Download FFmpeg DLLs
         shell: pwsh
         run: |
-          $ffmpegPath = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
+          $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/7.0.2/ffmpeg-7.0.2-full_build-shared.7z"
+          $ffmpegArchive = "$env:RUNNER_TEMP\ffmpeg.7z"
+          $ffmpegDir = "$env:RUNNER_TEMP\ffmpeg"
           $outPath = "${{ github.workspace }}\target\release"
-          $dlls = @(
-            "avcodec-61.dll",
-            "avdevice-61.dll",
-            "avfilter-10.dll",
-            "avformat-61.dll",
-            "avutil-59.dll",
-            "swresample-5.dll",
-            "swscale-8.dll"
-          )
 
-          if (!(Test-Path $outPath)) {
-            New-Item -ItemType Directory -Force -Path $outPath
-          }
+          Write-Host "Downloading FFmpeg from $ffmpegUrl..."
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegArchive
+
+          Write-Host "Extracting archive..."
+          7z x $ffmpegArchive -o"$ffmpegDir" -y
+
+          $binDir = Get-ChildItem "$ffmpegDir\**\bin" -Directory -Recurse | Select-Object -First 1
+          if (!$binDir) { Write-Error "Bin directory not found"; exit 1 }
+
+          $dlls = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
+
+          if (!(Test-Path $outPath)) { New-Item -ItemType Directory -Force -Path $outPath }
 
           foreach ($dll in $dlls) {
-            if (Test-Path "$ffmpegPath\$dll") {
-              Copy-Item "$ffmpegPath\$dll" $outPath
-              Write-Host "Kopiert: $dll"
-            } else {
-              Write-Host "WARNUNG: $dll nicht gefunden im $ffmpegPath!"
-              exit 1
-            }
+            $src = Join-Path $binDir.FullName $dll
+            if (Test-Path $src) { Copy-Item $src $outPath; Write-Host "Copied $dll" }
+            else { Write-Error "Missing $dll"; exit 1 }
           }
 
       - name: Install WiX Toolset
