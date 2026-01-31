@@ -98,7 +98,7 @@ impl Dashboard {
     }
 
     /// Renders the contents of the dashboard panel.
-    fn render_contents(
+    pub fn render_contents(
         &mut self,
         ui: &mut Ui,
         locale: &LocaleManager,
