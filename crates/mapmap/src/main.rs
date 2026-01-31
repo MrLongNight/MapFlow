@@ -2861,7 +2861,7 @@ impl App {
 
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
-                                                        .default_open(false)
+                                                        .default_open(true)
                                                         .show(ui, |ui| {
                                                             if let Some(action) = self.ui_state.media_browser.ui(
                                                                 ui,
@@ -2890,7 +2890,7 @@ impl App {
 
                                                     // Audio Section
                                                     egui::CollapsingHeader::new("🔊 Audio")
-                                                        .default_open(false)
+                                                        .default_open(true)
                                                         .show(ui, |ui| {
                                                             let analysis_v2 = self.audio_analyzer.get_latest_analysis();
                                                             let legacy_analysis = if self.audio_backend.is_some() {
@@ -2982,7 +2982,7 @@ impl App {
 
                                             // Media Browser Section
                                             egui::CollapsingHeader::new("📁 Media")
-                                                .default_open(false)
+                                                .default_open(true)
                                                 .show(ui, |ui| {
                                                     let _ = self.ui_state.media_browser.ui(
                                                         ui,
@@ -2993,7 +2993,7 @@ impl App {
 
                                             // Audio Section
                                             egui::CollapsingHeader::new("🔊 Audio")
-                                                .default_open(false)
+                                                .default_open(true)
                                                 .show(ui, |ui| {
                                                     let analysis_v2 = self.audio_analyzer.get_latest_analysis();
                                                     let legacy_analysis = if self.audio_backend.is_some() {
