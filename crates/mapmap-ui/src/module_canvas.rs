@@ -5673,10 +5673,7 @@ impl ModuleCanvas {
 
         // Title bar Top Accent Stripe (Type Identifier)
         let stripe_height = 3.0 * self.zoom;
-        let stripe_rect = Rect::from_min_size(
-            rect.min,
-            Vec2::new(rect.width(), stripe_height),
-        );
+        let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), stripe_height));
         painter.rect_filled(stripe_rect, 0, title_color);
 
         // Title separator line - make it sharper
