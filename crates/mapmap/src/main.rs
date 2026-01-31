@@ -1910,6 +1910,7 @@ impl App {
         // Track active IDs for cleanup
         let mut active_window_ids = std::collections::HashSet::new();
         let mut active_sender_ids = std::collections::HashSet::new();
+        let global_fullscreen = self.ui_state.user_config.global_fullscreen;
 
         self.output_assignments.clear();
 
@@ -1927,7 +1928,6 @@ impl App {
                             OutputType::Projector {
                                 id: projector_id,
                                 name,
-                                fullscreen,
                                 hide_cursor,
                                 target_screen,
                                 show_in_preview_panel: _,
@@ -1942,9 +1942,9 @@ impl App {
                                     // Update existing
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
-                                    if is_fullscreen != *fullscreen {
-                                        info!("Toggling fullscreen for window {}: {}", window_id, *fullscreen);
-                                        window_context.window.set_fullscreen(if *fullscreen {
+                                    if is_fullscreen != global_fullscreen {
+                                        info!("Toggling fullscreen for window {}: {}", window_id, global_fullscreen);
+                                        window_context.window.set_fullscreen(if global_fullscreen {
                                             Some(winit::window::Fullscreen::Borderless(None))
                                         } else {
                                             None
@@ -1958,7 +1958,7 @@ impl App {
                                         &self.backend,
                                         window_id,
                                         name,
-                                        *fullscreen,
+                                        global_fullscreen,
                                         *hide_cursor,
                                         *target_screen,
                                     )?;
@@ -2588,19 +2588,13 @@ impl App {
                     }
                 }
             
-            // Fix: Sync Projector Fullscreen
-            mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
+            // Global Fullscreen Setting
+            mapmap_ui::UIAction::SetGlobalFullscreen(is_fullscreen) => {
                 needs_sync = true;
-                // Iterate all modules and parts to find matching projectors
-                for module in self.state.module_manager.modules_mut() {
-                    for part in &mut module.parts {
-                        if let mapmap_core::module::ModulePartType::Output(mapmap_core::module::OutputType::Projector { id, fullscreen, .. }) = &mut part.part_type {
-                            if *id == proj_id {
-                                *fullscreen = is_fullscreen;
-                            }
-                        }
-                    }
-                }
+                // Update config
+                self.ui_state.user_config.global_fullscreen = is_fullscreen;
+                let _ = self.ui_state.user_config.save();
+                info!("Global fullscreen set to: {}", is_fullscreen);
             }
                 mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
                     self.ui_state.show_shader_graph = true;

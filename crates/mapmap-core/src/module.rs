@@ -140,7 +140,6 @@ impl MapFlowModule {
                 ModulePartType::Output(OutputType::Projector {
                     id: next_id,
                     name: format!("Output {}", next_id),
-                    fullscreen: false,
                     hide_cursor: true,
                     target_screen: 0,
                     show_in_preview_panel: true,
@@ -1675,9 +1674,6 @@ pub enum OutputType {
         id: u64,
         /// Display name
         name: String,
-        /// Enable fullscreen mode
-        #[serde(default)]
-        fullscreen: bool,
         /// Hide mouse cursor on this output
         #[serde(default)]
         hide_cursor: bool,
