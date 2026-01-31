@@ -1943,6 +1943,7 @@ impl App {
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
                                     if is_fullscreen != *fullscreen {
+                                        info!("Toggling fullscreen for window {}: {}", window_id, *fullscreen);
                                         window_context.window.set_fullscreen(if *fullscreen {
                                             Some(winit::window::Fullscreen::Borderless(None))
                                         } else {
@@ -2515,10 +2516,10 @@ impl App {
             .flat_map(|m| m.parts.iter())
             .filter_map(|part| {
                 if let mapmap_core::module::ModulePartType::Output(
-                    mapmap_core::module::OutputType::Projector { .. },
+                    mapmap_core::module::OutputType::Projector { id, .. },
                 ) = &part.part_type
                 {
-                    Some(part.id) // Use part.id for consistency with render pipeline
+                    Some(*id) // Use Projector ID to match window_manager keys
                 } else {
                     None
                 }
