@@ -102,7 +102,7 @@ struct App {
     /// A dummy texture used as input for effects when no other source is available.
     dummy_texture: Option<wgpu::Texture>,
     /// A view of the dummy texture.
-    dummy_view: Option<wgpu::TextureView>,
+    dummy_view: Option<std::sync::Arc<wgpu::TextureView>>,
     /// Module evaluator
     module_evaluator: ModuleEvaluator,
     /// Active media players for source nodes ((ModuleID, PartID) -> Player)
@@ -544,7 +544,8 @@ impl App {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
-            let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let view =
+                std::sync::Arc::new(texture.create_view(&wgpu::TextureViewDescriptor::default()));
             (texture, view)
         };
 
@@ -670,7 +671,9 @@ impl App {
                     | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
-        self.dummy_view = Some(texture.create_view(&wgpu::TextureViewDescriptor::default()));
+        self.dummy_view = Some(std::sync::Arc::new(
+            texture.create_view(&wgpu::TextureViewDescriptor::default()),
+        ));
         self.dummy_texture = Some(texture);
     }
     /// Handles a window event.
@@ -2335,7 +2338,7 @@ impl App {
                     hue_shift,
                 );
 
-                let texture_bg = self.mesh_renderer.create_texture_bind_group(&raw_view);
+                let texture_bg = self.mesh_renderer.get_texture_bind_group(&raw_view);
 
                 // Render Pass - Scope limits lifetime of render_pass borrow on encoder
                 {
@@ -2600,10 +2603,32 @@ impl App {
                         }
                     }
                 }
+                mapmap_ui::UIAction::ToggleModuleCanvas => {
+                    self.ui_state.show_module_canvas = !self.ui_state.show_module_canvas;
+                }
+                mapmap_ui::UIAction::ToggleFullscreen => {
+                    // Logic for fullscreen toggle is usually handled via window manager
+                    // or directly in the event loop. We set the state and trigger a resize/update.
+                    self.ui_state.user_config.window_maximized =
+                        !self.ui_state.user_config.window_maximized;
+                    let _ = self.ui_state.user_config.save();
+                }
+                mapmap_ui::UIAction::ToggleControllerOverlay => {
+                    self.ui_state.show_controller_overlay = !self.ui_state.show_controller_overlay;
+                }
+                mapmap_ui::UIAction::ResetLayout => {
+                    self.ui_state.show_left_sidebar = true;
+                    self.ui_state.show_timeline = true;
+                    self.ui_state.show_inspector = true;
+                    self.ui_state.show_media_browser = true;
+                    self.ui_state.show_module_canvas = false;
+                }
+                mapmap_ui::UIAction::Play => self.state.effect_animator.play(),
+                mapmap_ui::UIAction::Pause => self.state.effect_animator.pause(),
+                mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
+                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s as f32),
                 _ => {
-                    // Ignore other actions or let them fall through if not handled here
-                    // Ideally we should have a centralized handler. Both AppUI and App might handle different actions.
-                    // But AppUI actions are usually handled by the caller (Main).
+                    // Other actions might be handled elsewhere or are not yet implemented
                 }
             }
         }
@@ -2752,8 +2777,12 @@ impl App {
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
-                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
-                    self.ui_state.actions.extend(menu_actions);
+                    egui::TopBottomPanel::top("app_header_panel")
+                        .resizable(false)
+                        .show(ctx, |_ui| {
+                            let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                            self.ui_state.actions.extend(menu_actions);
+                        });
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(
@@ -3199,7 +3228,9 @@ impl App {
                     );
 
                     // === 5. CENTRAL PANEL: Module Canvas ===
-                    egui::CentralPanel::default().show(ctx, |ui| {
+                    egui::CentralPanel::default()
+                        .frame(egui::Frame::NONE.fill(ctx.style().visuals.panel_fill))
+                        .show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
                             // Update available outputs for the ModuleCanvas dropdown
                             self.ui_state.module_canvas.available_outputs = self
@@ -3804,7 +3835,7 @@ impl App {
                     } else {
                         None
                     };
-                    let source_view_ref = owned_source_view.as_deref();
+                    let source_view_ref = owned_source_view.as_ref();
                     let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
                     if let Some(src_view) = effective_view {
@@ -3934,7 +3965,7 @@ impl App {
                                     op.source_props.hue_shift,
                                 );
                             let texture_bind_group =
-                                self.mesh_renderer.create_texture_bind_group(final_view);
+                                self.mesh_renderer.get_texture_bind_group(final_view);
 
                             let mut render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
