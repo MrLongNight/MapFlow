@@ -213,6 +213,9 @@ pub enum UIAction {
     // Node Action (Phase 6)
     NodeAction(NodeEditorAction),
 
+    // Sync Projector Fullscreen state
+    SyncProjectorFullscreen(u64, bool),
+
     // Global Fullscreen Setting
     SetGlobalFullscreen(bool),
 }

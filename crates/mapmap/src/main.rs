@@ -1943,17 +1943,12 @@ impl App {
                                     let is_fullscreen =
                                         window_context.window.fullscreen().is_some();
                                     if is_fullscreen != global_fullscreen {
-                                        info!(
-                                            "Toggling fullscreen for window {}: {}",
-                                            window_id, global_fullscreen
-                                        );
-                                        window_context.window.set_fullscreen(
-                                            if global_fullscreen {
-                                                Some(winit::window::Fullscreen::Borderless(None))
-                                            } else {
-                                                None
-                                            },
-                                        );
+                                        info!("Toggling fullscreen for window {}: {}", window_id, global_fullscreen);
+                                        window_context.window.set_fullscreen(if global_fullscreen {
+                                            Some(winit::window::Fullscreen::Borderless(None))
+                                        } else {
+                                            None
+                                        });
                                     }
                                     window_context.window.set_cursor_visible(!*hide_cursor);
                                 } else {
@@ -2587,33 +2582,31 @@ impl App {
         for action in actions {
             match action {
                 mapmap_ui::UIAction::NodeAction(node_action) => {
-                    self.ui_state
-                        .node_editor_panel
-                        .handle_action(node_action.clone());
+                    self.ui_state.node_editor_panel.handle_action(node_action.clone());
                     if let Err(e) = self.handle_node_action(node_action) {
                         eprintln!("Error handling node action: {}", e);
                     }
                 }
 
-                // Fix: Sync Projector Fullscreen
-                mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
-                    if let Some(window_context) = self.window_manager.get(proj_id) {
-                        window_context.window.set_fullscreen(if is_fullscreen {
-                            Some(winit::window::Fullscreen::Borderless(None))
-                        } else {
-                            None
-                        });
-                    }
+            // Fix: Sync Projector Fullscreen
+            mapmap_ui::UIAction::SyncProjectorFullscreen(proj_id, is_fullscreen) => {
+                if let Some(window_context) = self.window_manager.get(proj_id) {
+                    window_context.window.set_fullscreen(if is_fullscreen {
+                        Some(winit::window::Fullscreen::Borderless(None))
+                    } else {
+                        None
+                    });
                 }
+            }
 
-                // Global Fullscreen Setting
-                mapmap_ui::UIAction::SetGlobalFullscreen(is_fullscreen) => {
-                    needs_sync = true;
-                    // Update config
-                    self.ui_state.user_config.global_fullscreen = is_fullscreen;
-                    let _ = self.ui_state.user_config.save();
-                    info!("Global fullscreen set to: {}", is_fullscreen);
-                }
+            // Global Fullscreen Setting
+            mapmap_ui::UIAction::SetGlobalFullscreen(is_fullscreen) => {
+                needs_sync = true;
+                // Update config
+                self.ui_state.user_config.global_fullscreen = is_fullscreen;
+                let _ = self.ui_state.user_config.save();
+                info!("Global fullscreen set to: {}", is_fullscreen);
+            }
                 mapmap_ui::UIAction::OpenShaderGraph(graph_id) => {
                     self.ui_state.show_shader_graph = true;
                     if let Some(graph) = self.state.shader_graphs.get(&graph_id) {
