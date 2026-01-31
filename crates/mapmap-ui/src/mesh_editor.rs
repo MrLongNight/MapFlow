@@ -392,8 +392,7 @@ impl MeshEditor {
                                 let pos = vertex.position + ctrl_in;
                                 if pos.distance(pointer_pos) < 6.0 {
                                     let offset = pos - pointer_pos;
-                                    self.dragging_element =
-                                        Some(DragElement::ControlIn(idx, offset));
+                                    self.dragging_element = Some(DragElement::ControlIn(idx, offset));
                                     found = true;
                                     break;
                                 }
@@ -402,8 +401,7 @@ impl MeshEditor {
                                 let pos = vertex.position + ctrl_out;
                                 if pos.distance(pointer_pos) < 6.0 {
                                     let offset = pos - pointer_pos;
-                                    self.dragging_element =
-                                        Some(DragElement::ControlOut(idx, offset));
+                                    self.dragging_element = Some(DragElement::ControlOut(idx, offset));
                                     found = true;
                                     break;
                                 }
