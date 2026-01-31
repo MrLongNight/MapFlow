@@ -9,7 +9,7 @@ repository.workspace = true
 
 [features]
 default = []
-ffmpeg = ["ffmpeg-next"]
+ffmpeg = ["ffmpeg-next", "ffmpeg-sys-next"]
 libmpv = ["dep:libmpv2"] # MPV-based video playback
 hap = ["snap", "ffmpeg"]
 
@@ -17,6 +17,7 @@ hap = ["snap", "ffmpeg"]
 crossbeam-channel = { workspace = true }
 # FFmpeg is optional - we have a test pattern fallback
 ffmpeg-next = { workspace = true, optional = true }
+ffmpeg-sys-next = { workspace = true, optional = true }
 # Image decoding for still images, GIF, and sequences
 image = { workspace = true }
 # libmpv2 for MPV-based playback

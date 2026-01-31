@@ -3199,6 +3199,7 @@ dependencies = [
  "criterion",
  "crossbeam-channel",
  "ffmpeg-next",
+ "ffmpeg-sys-next",
  "image 0.24.9",
  "libmpv2",
  "mapmap-io",
