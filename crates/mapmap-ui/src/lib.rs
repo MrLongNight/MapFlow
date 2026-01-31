@@ -682,61 +682,71 @@ impl AppUI {
         egui::Window::new(self.i18n.t("panel-master"))
             .default_size([360.0, 300.0])
             .show(ctx, |ui| {
-                self.render_master_controls_embedded(ui, layer_manager);
+                // Determine learning state (capture values to avoid borrow conflict)
+                let is_learning = self.is_midi_learn_mode;
+                // TODO: Shadow::tessellate was removed in egui 0.33, find replacement
+                // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
+                let last_active_element = self.controller_overlay.last_active_element.clone();
+                let last_active_time = self.controller_overlay.last_active_time;
+
+                ui.heading(self.i18n.t("header-master"));
+                ui.separator();
+
+                let composition = &mut layer_manager.composition;
+
+                // Composition name
+                ui.label(self.i18n.t("label-composition"));
+                ui.label(&composition.name);
+                ui.separator();
+
+                let old_master_opacity = composition.master_opacity;
+                let response = ui.add(
+                    egui::Slider::new(&mut composition.master_opacity, 0.0..=1.0)
+                        .text(self.i18n.t("label-master-opacity")),
+                );
+                Self::midi_learn_helper(
+                    ui,
+                    &response,
+                    mapmap_control::target::ControlTarget::MasterOpacity,
+                    is_learning,
+                    last_active_element.as_ref(),
+                    last_active_time,
+                    &mut self.actions,
+                );
+                if (composition.master_opacity - old_master_opacity).abs() > 0.001 {
+                    self.actions
+                        .push(UIAction::SetMasterOpacity(composition.master_opacity));
+                }
+
+                // Master Speed
+                let old_master_speed = composition.master_speed;
+                ui.add(
+                    egui::Slider::new(&mut composition.master_speed, 0.1..=10.0)
+                        .text(self.i18n.t("label-master-speed")),
+                );
+                if (composition.master_speed - old_master_speed).abs() > 0.001 {
+                    self.actions
+                        .push(UIAction::SetMasterSpeed(composition.master_speed));
+                }
+
+                ui.separator();
+                ui.label(format!(
+                    "{} {}x{}",
+                    self.i18n.t("label-size"),
+                    composition.size.0,
+                    composition.size.1
+                ));
+                ui.label(format!(
+                    "{} {:.1} fps",
+                    self.i18n.t("label-frame-rate"),
+                    composition.frame_rate
+                ));
+
+                ui.separator();
+                ui.label(self.i18n.t("label-effective-multipliers"));
+                ui.label(self.i18n.t("text-mult-opacity"));
+                ui.label(self.i18n.t("text-mult-speed"));
             });
-    }
-
-    /// Render master controls content (embedded)
-    pub fn render_master_controls_embedded(
-        &mut self,
-        ui: &mut egui::Ui,
-        layer_manager: &mut mapmap_core::LayerManager,
-    ) {
-        // Determine learning state (capture values to avoid borrow conflict)
-        let is_learning = self.is_midi_learn_mode;
-        let last_active_element = self.controller_overlay.last_active_element.clone();
-        let last_active_time = self.controller_overlay.last_active_time;
-
-        let composition = &mut layer_manager.composition;
-
-        let old_master_opacity = composition.master_opacity;
-        let response = ui.add(
-            egui::Slider::new(&mut composition.master_opacity, 0.0..=1.0)
-                .text(self.i18n.t("label-master-opacity")),
-        );
-        Self::midi_learn_helper(
-            ui,
-            &response,
-            mapmap_control::target::ControlTarget::MasterOpacity,
-            is_learning,
-            last_active_element.as_ref(),
-            last_active_time,
-            &mut self.actions,
-        );
-        if (composition.master_opacity - old_master_opacity).abs() > 0.001 {
-            self.actions
-                .push(UIAction::SetMasterOpacity(composition.master_opacity));
-        }
-
-        // Master Speed
-        let old_master_speed = composition.master_speed;
-        let response = ui.add(
-            egui::Slider::new(&mut composition.master_speed, 0.1..=10.0)
-                .text(self.i18n.t("label-master-speed")),
-        );
-        Self::midi_learn_helper(
-            ui,
-            &response,
-            mapmap_control::target::ControlTarget::PlaybackSpeed(None),
-            is_learning,
-            last_active_element.as_ref(),
-            last_active_time,
-            &mut self.actions,
-        );
-        if (composition.master_speed - old_master_speed).abs() > 0.001 {
-            self.actions
-                .push(UIAction::SetMasterSpeed(composition.master_speed));
-        }
     }
 
     /// Helper for Global MIDI Learn (Way 1)

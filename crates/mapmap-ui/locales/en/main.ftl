@@ -370,6 +370,3 @@ shortcuts-edit-dialog-title = Edit Shortcut
 shortcuts-edit-dialog-prompt = Press a new key combination for the shortcut.
 shortcuts-edit-dialog-cancel = Press Esc to cancel.
 shortcuts-edit-dialog-conflict-warning = This key combination is already in use.
-
-audio-panel-select-device = Please select an audio device.
-audio-panel-waiting-signal = Waiting for signal...
