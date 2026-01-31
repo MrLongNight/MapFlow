@@ -2626,7 +2626,7 @@ impl App {
                 mapmap_ui::UIAction::Play => self.state.effect_animator.play(),
                 mapmap_ui::UIAction::Pause => self.state.effect_animator.pause(),
                 mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
-                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s as f32),
+                mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s),
                 _ => {
                     // Other actions might be handled elsewhere or are not yet implemented
                 }
@@ -2777,8 +2777,12 @@ impl App {
                     }
 
                     // === 1. TOP PANEL: Menu Bar + Toolbar ===
-                    let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
-                    self.ui_state.actions.extend(menu_actions);
+                    egui::TopBottomPanel::top("app_header_panel")
+                        .resizable(false)
+                        .show(ctx, |_ui| {
+                            let menu_actions = menu_bar::show(ctx, &mut self.ui_state);
+                            self.ui_state.actions.extend(menu_actions);
+                        });
 
                     // === Effect Chain Panel ===
                     self.ui_state.effect_chain_panel.ui(

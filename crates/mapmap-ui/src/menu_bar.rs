@@ -297,7 +297,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             // --- Toolbar ---
             if ui_state.show_toolbar {
                 egui::ScrollArea::horizontal()
-                    .auto_shrink([false, true])
+                    .auto_shrink([false, false])
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
