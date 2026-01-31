@@ -2543,7 +2543,7 @@ impl ModuleCanvas {
                             .iter()
                             .map(|m| (m.id, m.name.clone()))
                             .collect();
-                        module_names.sort_by_key(|k| k.0);
+                        module_names.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
 
                         let current_name = self
                             .active_module_id
