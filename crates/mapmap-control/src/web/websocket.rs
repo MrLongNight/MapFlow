@@ -139,10 +139,25 @@ async fn handle_text_message(text: &str) -> Result<(), String> {
 
     match message {
         WsClientMessage::SetParameter { target, value } => {
+            // Security check: validate input
+            target
+                .validate()
+                .map_err(|e| format!("Invalid target: {}", e))?;
+            value
+                .validate()
+                .map_err(|e| format!("Invalid value: {}", e))?;
+
             tracing::debug!("WebSocket set parameter: {:?} = {:?}", target, value);
             // In a real implementation, this would update the project state
         }
         WsClientMessage::Subscribe { targets } => {
+            // Security check: validate targets
+            for target in &targets {
+                target
+                    .validate()
+                    .map_err(|e| format!("Invalid subscription target: {}", e))?;
+            }
+
             tracing::debug!("WebSocket subscribe: {:?}", targets);
             // In a real implementation, this would track subscriptions
         }
@@ -196,5 +211,49 @@ mod tests {
         let json = r#"{"type":"ping"}"#;
         let msg: WsClientMessage = serde_json::from_str(json).unwrap();
         matches!(msg, WsClientMessage::Ping);
+    }
+
+    #[cfg(feature = "http-api")]
+    #[tokio::test]
+    async fn test_validation_rejects_long_string() {
+        let long_str = "a".repeat(5000); // Limit is 4096
+        let msg = WsClientMessage::SetParameter {
+            target: ControlTarget::LayerOpacity(0),
+            value: ControlValue::String(long_str),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+
+        let result = handle_text_message(&json).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid value"));
+    }
+
+    #[cfg(feature = "http-api")]
+    #[tokio::test]
+    async fn test_validation_rejects_invalid_target() {
+        let long_name = "a".repeat(300); // Limit is 256
+        let msg = WsClientMessage::SetParameter {
+            target: ControlTarget::Custom(long_name),
+            value: ControlValue::Float(0.5),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+
+        let result = handle_text_message(&json).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid target"));
+    }
+
+    #[cfg(feature = "http-api")]
+    #[tokio::test]
+    async fn test_validation_rejects_invalid_subscription() {
+        let long_name = "a".repeat(300);
+        let msg = WsClientMessage::Subscribe {
+            targets: vec![ControlTarget::Custom(long_name)],
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+
+        let result = handle_text_message(&json).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid subscription target"));
     }
 }
