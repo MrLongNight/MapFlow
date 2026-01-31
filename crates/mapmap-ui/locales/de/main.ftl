@@ -373,3 +373,6 @@ shortcuts-edit-dialog-title = Tastenkürzel bearbeiten
 shortcuts-edit-dialog-prompt = Drücken Sie eine neue Tastenkombination für das Kürzel.
 shortcuts-edit-dialog-cancel = Drücken Sie Esc zum Abbrechen.
 shortcuts-edit-dialog-conflict-warning = Diese Tastenkombination wird bereits verwendet.
+
+audio-panel-select-device = Bitte wähle ein Audio-Gerät aus.
+audio-panel-waiting-signal = Warte auf Signal...

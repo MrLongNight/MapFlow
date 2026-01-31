@@ -1940,8 +1940,6 @@ impl App {
         let mut active_sender_ids = std::collections::HashSet::new();
         let global_fullscreen = self.ui_state.user_config.global_fullscreen;
 
-        self.output_assignments.clear();
-
         // 1. Iterate over ALL modules to collect required outputs
         for module in self.state.module_manager.list_modules() {
             if let Some(module_ref) = self.state.module_manager.get_module(module.id) {
@@ -2112,6 +2110,10 @@ impl App {
                             std::collections::hash_map::Entry::Vacant(e) => {
                                 match mapmap_media::open_path(path) {
                                     Ok(mut player) => {
+                                        info!(
+                                            "Created media player for module={} part={} path='{}'",
+                                            module.id, part.id, path
+                                        );
                                         if let Err(e) = player.play() {
                                             error!(
                                                 "Failed to start playback for source {}:{} : {}",
@@ -2229,8 +2231,29 @@ impl App {
         // Sync Texture Previews for Module Canvas
         // Identify active sources and gather their properties
         let mut active_preview_sources = Vec::new();
+
+        // Debug: Log module/part counts at start
+        static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+            std::sync::atomic::AtomicU32::new(0);
+        let log_this =
+            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+
         for module in self.state.module_manager.modules() {
+            if log_this {
+                tracing::info!(
+                    "prepare_texture_previews: module={} parts_count={}",
+                    module.id,
+                    module.parts.len()
+                );
+            }
             for part in &module.parts {
+                if log_this {
+                    tracing::info!(
+                        "  Part id={} type={:?}",
+                        part.id,
+                        std::mem::discriminant(&part.part_type)
+                    );
+                }
                 if let mapmap_core::module::ModulePartType::Source(
                     mapmap_core::module::SourceType::MediaFile {
                         brightness,
@@ -2248,25 +2271,24 @@ impl App {
                     },
                 ) = &part.part_type
                 {
-                    // Find source connection
-                    if let Some(conn) = module.connections.iter().find(|c| c.to_part == part.id) {
-                        active_preview_sources.push((
-                            module.id,
-                            part.id,        // Target (Output Node)
-                            conn.from_part, // Source (The plugged in layer/media)
-                            *brightness,
-                            *contrast,
-                            *saturation,
-                            *hue_shift,
-                            *flip_horizontal,
-                            *flip_vertical,
-                            *rotation,
-                            *scale_x,
-                            *scale_y,
-                            *offset_x,
-                            *offset_y,
-                        ));
-                    }
+                    // MediaFile is a SOURCE node - it produces video frames
+                    // The texture is stored under its own part.id, no connection needed
+                    active_preview_sources.push((
+                        module.id,
+                        part.id, // Target (the MediaFile node for preview output)
+                        part.id, // Source texture is under this same part's ID
+                        *brightness,
+                        *contrast,
+                        *saturation,
+                        *hue_shift,
+                        *flip_horizontal,
+                        *flip_vertical,
+                        *rotation,
+                        *scale_x,
+                        *scale_y,
+                        *offset_x,
+                        *offset_y,
+                    ));
                 } else if let mapmap_core::module::ModulePartType::Output(
                     mapmap_core::module::OutputType::Projector {
                         show_in_preview_panel,
@@ -2308,7 +2330,7 @@ impl App {
 
         // ⚡ Bolt Optimization: Batch all preview render passes into a single encoder submission
         // This avoids creating N encoders and submitting N command buffers to the queue per frame.
-        self.mesh_renderer.begin_frame(); // Reset uniform buffer cache index for this batch
+        // Note: begin_frame() is already called by render() before this function.
 
         let mut encoder =
             self.backend
@@ -2337,6 +2359,24 @@ impl App {
         ) in active_preview_sources
         {
             let raw_tex_name = format!("part_{}_{}", module_id, source_part_id);
+
+            // Debug: Log texture lookup attempt
+            static DEBUG_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+                std::sync::atomic::AtomicU32::new(0);
+            let log_this = DEBUG_LOG_COUNTER
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                .is_multiple_of(120);
+            if log_this {
+                tracing::info!(
+                    "Preview lookup: module={} target={} source={} tex='{}' exists={}",
+                    module_id,
+                    target_part_id,
+                    source_part_id,
+                    raw_tex_name,
+                    self.texture_pool.has_texture(&raw_tex_name)
+                );
+            }
+
             if self.texture_pool.has_texture(&raw_tex_name) {
                 let raw_view = self.texture_pool.get_view(&raw_tex_name);
 
@@ -2456,9 +2496,35 @@ impl App {
         // Register Output Preview Textures
         let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
             std::collections::HashMap::new();
+
+        static CHECK_LOG_COUNTER: std::sync::atomic::AtomicU32 =
+            std::sync::atomic::AtomicU32::new(0);
+        let do_log =
+            CHECK_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+
+        if do_log {
+            if self.output_assignments.is_empty() {
+                tracing::info!("prepare_texture_previews: output_assignments is EMPTY");
+            } else {
+                tracing::info!(
+                    "prepare_texture_previews: assigned outputs: {}",
+                    self.output_assignments.len()
+                );
+            }
+        }
+
         for (output_id, tex_names) in &self.output_assignments {
             // Use the last assigned texture for preview (topmost layer)
             if let Some(tex_name) = tex_names.last() {
+                if do_log {
+                    tracing::info!(
+                        "  Output {}: looking for texture '{}' (exists: {})",
+                        output_id,
+                        tex_name,
+                        self.texture_pool.has_texture(tex_name)
+                    );
+                }
+
                 if self.texture_pool.has_texture(tex_name) {
                     let tex_view = self.texture_pool.get_view(tex_name);
 
@@ -2783,7 +2849,6 @@ impl App {
 
             // --------- egui: UI separat zeichnen ---------
 
-            let mut dashboard_action = None;
             let (tris, screen_descriptor) = {
                 let raw_input = self.egui_state.take_egui_input(&window_context.window);
                 let full_output = self.egui_context.run(raw_input, |ctx| {
@@ -2875,15 +2940,11 @@ impl App {
                                                     self.ui_state.render_master_controls_embedded(ui, &mut self.state.layer_manager);
                                                     ui.separator();
 
-                                                    // Dashboard (Embedded)
-                                                    if let Some(action) = self.ui_state.dashboard.render_contents(ui, &self.ui_state.i18n, self.ui_state.icon_manager.as_ref()) {
-                                                        dashboard_action = Some(action);
-                                                    }
-                                                    ui.separator();
+
 
                                                     // Media Browser Section
                                                     egui::CollapsingHeader::new("📁 Media")
-                                                        .default_open(false)
+                                                        .default_open(true)
                                                         .show(ui, |ui| {
                                                             if let Some(action) = self.ui_state.media_browser.ui(
                                                                 ui,
@@ -2912,7 +2973,7 @@ impl App {
 
                                                     // Audio Section
                                                     egui::CollapsingHeader::new("🔊 Audio")
-                                                        .default_open(false)
+                                                        .default_open(true)
                                                         .show(ui, |ui| {
                                                             let analysis_v2 = self.audio_analyzer.get_latest_analysis();
                                                             let legacy_analysis = if self.audio_backend.is_some() {
@@ -3004,7 +3065,7 @@ impl App {
 
                                             // Media Browser Section
                                             egui::CollapsingHeader::new("📁 Media")
-                                                .default_open(false)
+                                                .default_open(true)
                                                 .show(ui, |ui| {
                                                     let _ = self.ui_state.media_browser.ui(
                                                         ui,
@@ -3015,7 +3076,7 @@ impl App {
 
                                             // Audio Section
                                             egui::CollapsingHeader::new("🔊 Audio")
-                                                .default_open(false)
+                                                .default_open(true)
                                                 .show(ui, |ui| {
                                                     let analysis_v2 = self.audio_analyzer.get_latest_analysis();
                                                     let legacy_analysis = if self.audio_backend.is_some() {
@@ -3276,6 +3337,44 @@ impl App {
                                             if ui.button("Deutsch").clicked() {
                                                 self.ui_state.actions.push(mapmap_ui::UIAction::SetLanguage("de".to_string()));
                                             }
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Theme:");
+                                            let current_theme = self.ui_state.user_config.theme.theme;
+                                            let theme_name = match current_theme {
+                                                mapmap_ui::theme::Theme::Resolume => "Cyber Dark",
+                                                mapmap_ui::theme::Theme::Dark => "Professional Dark",
+                                                mapmap_ui::theme::Theme::Light => "Light",
+                                                mapmap_ui::theme::Theme::Synthwave => "Synthwave",
+                                                mapmap_ui::theme::Theme::HighContrast => "High Contrast",
+                                                mapmap_ui::theme::Theme::Custom => "Custom",
+                                            };
+
+                                            egui::ComboBox::from_id_salt("theme_select")
+                                                .selected_text(theme_name)
+                                                .show_ui(ui, |ui| {
+                                                    let themes = [
+                                                        (mapmap_ui::theme::Theme::Resolume, "Cyber Dark"),
+                                                        (mapmap_ui::theme::Theme::Dark, "Professional Dark"),
+                                                        (mapmap_ui::theme::Theme::Light, "Light"),
+                                                        (mapmap_ui::theme::Theme::Synthwave, "Synthwave"),
+                                                        (mapmap_ui::theme::Theme::HighContrast, "High Contrast"),
+                                                    ];
+
+                                                    for (theme, name) in themes {
+                                                        if ui
+                                                            .selectable_value(
+                                                                &mut self.ui_state.user_config.theme.theme,
+                                                                theme,
+                                                                name,
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            let _ = self.ui_state.user_config.save();
+                                                        }
+                                                    }
+                                                });
                                         });
 
                                         ui.horizontal(|ui| {
@@ -3896,21 +3995,6 @@ impl App {
             egui_render_data = Some((tris, screen_descriptor));
 
             // Handle Dashboard actions
-            if let Some(action) = dashboard_action {
-                match action {
-                    mapmap_ui::DashboardAction::ToggleAudioPanel => {
-                        self.ui_state.show_audio = !self.ui_state.show_audio;
-                    }
-                    mapmap_ui::DashboardAction::AudioDeviceChanged(_device) => {}
-                    mapmap_ui::DashboardAction::SendCommand(_cmd) => {
-                        // TODO: Implement playback commands if not handled elsewhere
-                        // Currently PlaybackCommand handling seems missing in main.rs or handled via Mcp?
-                        // "McpAction::MediaPlay" has TODO.
-                        // This suggests buttons in Dashboard might do nothing currently!
-                        // But fixing playback is not my task.
-                    }
-                }
-            }
 
             // Handle TransformPanel actions
             if let Some(action) = self.ui_state.transform_panel.take_action() {

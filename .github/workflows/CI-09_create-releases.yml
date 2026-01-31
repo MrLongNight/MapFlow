@@ -63,36 +63,6 @@ jobs:
         run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
 
-      - name: Kopiere vcpkg FFmpeg DLLs nach target/release
-        shell: pwsh
-        run: |
-          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
-          $outPath = "${{ github.workspace }}\target\release"
-
-          if (!(Test-Path $vcpkgBin)) {
-            Write-Error "FEHLER: vcpkg bin Verzeichnis nicht gefunden!"
-            exit 1
-          }
-
-          if (!(Test-Path $outPath)) {
-            New-Item -ItemType Directory -Force -Path $outPath
-          }
-
-          # Kopiere ALLE DLLs aus vcpkg
-          Copy-Item "$vcpkgBin\*.dll" -Destination $outPath -Force
-          Write-Host "Alle DLLs aus vcpkg kopiert."
-
-          # Prüfung
-          $required = @("avcodec-61.dll", "avdevice-61.dll", "avfilter-10.dll", "avformat-61.dll", "avutil-59.dll", "swresample-5.dll", "swscale-8.dll")
-          $missing = $false
-          foreach ($dll in $required) {
-            if (!(Test-Path "$outPath\$dll")) {
-              Write-Host "Warnung: $dll fehlt (wird möglicherweise nicht benötigt oder Version abweichend)"
-              # Wir erzwingen hier keinen Exit, da vcpkg Versionen variieren können, aber Warnung ist gut
-            } else {
-              Write-Host "OK: $dll vorhanden."
-            }
-          }
       - name: Check if binary exists and package
         run: |
           if (!(Test-Path "target\release\MapFlow.exe")) {
@@ -171,18 +141,25 @@ jobs:
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-windows\bin"
           $outPath = "${{ github.workspace }}\target\release"
 
+          Write-Host "DIAGNOSE: Kopiere von '$vcpkgBin' nach '$outPath'"
+
           if (!(Test-Path $vcpkgBin)) {
             Write-Error "FEHLER: vcpkg bin Verzeichnis nicht gefunden!"
             exit 1
           }
 
           if (!(Test-Path $outPath)) {
-             New-Item -ItemType Directory -Force -Path $outPath
+            Write-Host "Erstelle Zielverzeichnis: $outPath"
+            New-Item -ItemType Directory -Force -Path $outPath
           }
 
           # Kopiere ALLE DLLs aus vcpkg nach target/release (für WiX)
           Copy-Item "$vcpkgBin\*.dll" -Destination $outPath -Force
           Write-Host "Alle DLLs aus vcpkg nach target/release kopiert."
+
+          # Diagnose-Output
+          Write-Host "--- ZEITSTEMPEL & GRÖSSE DER KOPIERTEN DATEIEN ---"
+          Get-ChildItem "$outPath\*.dll" | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize
 
           # Explizite Prüfung der Dateien, die in main.wxs referenziert werden
           $required = @(
@@ -196,9 +173,12 @@ jobs:
           )
           $missing = $false
           foreach ($dll in $required) {
-            if (!(Test-Path "$outPath\$dll")) {
+            $checkPath = Join-Path $outPath $dll
+            if (!(Test-Path $checkPath)) {
               Write-Error "FEHLER: $dll fehlt in $outPath!"
               $missing = $true
+            } else {
+              Write-Host "VOHANDEN: $dll"
             }
           }
           if ($missing) { exit 1 }
@@ -212,6 +192,15 @@ jobs:
         run: |
           $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
           $cargoTargetBinDir = "${{ github.workspace }}\target\release"
+
+          # --- ZUSÄTZLICHE DIAGNOSE (direkt vor WiX) ---
+          Write-Host "PRE-WIX CHECK: Inhalt von $cargoTargetBinDir :"
+          if (Test-Path $cargoTargetBinDir) {
+             Get-ChildItem "$cargoTargetBinDir\*.dll" | Select-Object Name, Length | Format-Table -AutoSize
+          } else {
+             Write-Error "FATAL: $cargoTargetBinDir existiert nicht!"
+          }
+          # ---------------------------------------------
 
           # Create a clean packaging directory
           $packageDir = "${{ github.workspace }}\package_staging"
