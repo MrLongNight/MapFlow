@@ -11,7 +11,7 @@ struct TestEnvironment {
 }
 
 async fn setup_test_environment() -> Option<TestEnvironment> {
-    WgpuBackend::new()
+    WgpuBackend::new(None)
         .await
         .ok()
         .map(|backend| TestEnvironment {
