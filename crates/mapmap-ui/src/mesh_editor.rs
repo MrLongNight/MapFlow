@@ -6,19 +6,29 @@
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use serde::{Deserialize, Serialize};
 
+/// Input state for mesh editor interactions
+#[derive(Debug, Clone, Copy)]
+pub struct InteractionInput {
+    pub pointer_pos: Pos2,
+    pub clicked: bool,
+    pub dragged: bool,
+    pub drag_delta: Vec2,
+    pub drag_started: bool,
+    pub drag_stopped: bool,
+}
+
 /// Advanced mesh editor
 pub struct MeshEditor {
     /// Mesh vertices
-    vertices: Vec<Vertex>,
-    /// Mesh faces (triangles)
+    pub vertices: Vec<Vertex>,
     /// Mesh faces (triangles)
     faces: Vec<Face>,
     /// Editor mode
-    mode: EditMode,
+    pub mode: EditMode,
     /// Symmetry settings
     symmetry: SymmetryMode,
     /// Snap settings
-    snap_to_grid: bool,
+    pub snap_to_grid: bool,
     grid_size: f32,
     /// Element currently being dragged
     dragging_element: Option<DragElement>,
@@ -182,28 +192,6 @@ impl MeshEditor {
         self.faces = new_faces;
     }
 
-    /// Apply symmetry to vertex movement
-    #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion dauerhaft benötigt wird!
-    fn apply_symmetry(&mut self, vertex_idx: usize, new_pos: Pos2) {
-        self.vertices[vertex_idx].position = new_pos;
-
-        match self.symmetry {
-            SymmetryMode::None => {}
-            SymmetryMode::Horizontal => {
-                // Find symmetric vertex across vertical axis
-                // TODO: Implement symmetric vertex finding
-            }
-            SymmetryMode::Vertical => {
-                // Find symmetric vertex across horizontal axis
-                // TODO: Implement symmetric vertex finding
-            }
-            SymmetryMode::Both => {
-                // Apply both symmetries
-                // TODO: Implement
-            }
-        }
-    }
-
     /// Snap position to grid
     fn snap_to_grid_pos(&self, pos: Pos2) -> Pos2 {
         if self.snap_to_grid {
@@ -214,6 +202,188 @@ impl MeshEditor {
         } else {
             pos
         }
+    }
+
+    /// Process interaction event
+    pub fn handle_interaction(&mut self, input: InteractionInput) -> Option<MeshEditorAction> {
+        let mut action = None;
+        let pointer_pos = input.pointer_pos;
+
+        match self.mode {
+            EditMode::Select => {
+                if input.clicked {
+                    // Select vertex under pointer
+                    let mut found = false;
+                    for vertex in self.vertices.iter_mut() {
+                        if vertex.position.distance(pointer_pos) < 10.0 {
+                            vertex.selected = !vertex.selected;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if !found {
+                        // Deselect all
+                        for vertex in &mut self.vertices {
+                            vertex.selected = false;
+                        }
+                    }
+                }
+
+                if input.dragged {
+                    // Drag selected vertices
+                    let delta = input.drag_delta;
+                    let snap_to_grid = self.snap_to_grid;
+                    let grid_size = self.grid_size;
+                    for vertex in &mut self.vertices {
+                        if vertex.selected {
+                            let new_pos = vertex.position + delta;
+                            // Inline snap_to_grid_pos logic to avoid borrow conflict
+                            vertex.position = if snap_to_grid {
+                                Pos2::new(
+                                    (new_pos.x / grid_size).round() * grid_size,
+                                    (new_pos.y / grid_size).round() * grid_size,
+                                )
+                            } else {
+                                new_pos
+                            };
+                        }
+                    }
+                }
+            }
+            EditMode::Add => {
+                if input.clicked {
+                    let pos = self.snap_to_grid_pos(pointer_pos);
+                    self.vertices.push(Vertex {
+                        position: pos,
+                        control_in: None,
+                        control_out: None,
+                        selected: false,
+                    });
+                    action = Some(MeshEditorAction::VertexAdded);
+                }
+            }
+            EditMode::Remove => {
+                if input.clicked {
+                    // Remove vertex under pointer
+                    if let Some(idx) = self
+                        .vertices
+                        .iter()
+                        .position(|v| v.position.distance(pointer_pos) < 10.0)
+                    {
+                        self.vertices.remove(idx);
+                        // Remove faces referencing this vertex
+                        self.faces.retain(|f| !f.vertices.contains(&idx));
+                        action = Some(MeshEditorAction::VertexRemoved);
+                    }
+                }
+            }
+            EditMode::Bezier => {
+                // Handle drag start
+                if input.drag_started {
+                    // Check control points first
+                    let mut found = false;
+                    for (idx, vertex) in self.vertices.iter().enumerate() {
+                        if let Some(ctrl_in) = vertex.control_in {
+                            let pos = vertex.position + ctrl_in;
+                            if pos.distance(pointer_pos) < 6.0 {
+                                let offset = pos - pointer_pos;
+                                self.dragging_element = Some(DragElement::ControlIn(idx, offset));
+                                found = true;
+                                break;
+                            }
+                        }
+                        if let Some(ctrl_out) = vertex.control_out {
+                            let pos = vertex.position + ctrl_out;
+                            if pos.distance(pointer_pos) < 6.0 {
+                                let offset = pos - pointer_pos;
+                                self.dragging_element = Some(DragElement::ControlOut(idx, offset));
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if !found {
+                        // Check vertices
+                        for (idx, vertex) in self.vertices.iter().enumerate() {
+                            if vertex.position.distance(pointer_pos) < 10.0 {
+                                let offset = vertex.position - pointer_pos;
+                                self.dragging_element = Some(DragElement::Vertex(idx, offset));
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Handle dragging
+                if input.dragged {
+                    if let Some(element) = self.dragging_element {
+                        let snap_to_grid = self.snap_to_grid;
+                        let grid_size = self.grid_size;
+
+                        let snap_pos = |pos: Pos2| -> Pos2 {
+                            if snap_to_grid {
+                                Pos2::new(
+                                    (pos.x / grid_size).round() * grid_size,
+                                    (pos.y / grid_size).round() * grid_size,
+                                )
+                            } else {
+                                pos
+                            }
+                        };
+
+                        match element {
+                            DragElement::Vertex(idx, offset) => {
+                                if let Some(vertex) = self.vertices.get_mut(idx) {
+                                    let target_pos = pointer_pos + offset;
+                                    vertex.position = snap_pos(target_pos);
+                                }
+                            }
+                            DragElement::ControlIn(idx, offset) => {
+                                if let Some(vertex) = self.vertices.get_mut(idx) {
+                                    if let Some(ctrl) = &mut vertex.control_in {
+                                        let target_abs_pos = pointer_pos + offset;
+                                        let snapped_abs = snap_pos(target_abs_pos);
+                                        *ctrl = snapped_abs - vertex.position;
+                                    }
+                                }
+                            }
+                            DragElement::ControlOut(idx, offset) => {
+                                if let Some(vertex) = self.vertices.get_mut(idx) {
+                                    if let Some(ctrl) = &mut vertex.control_out {
+                                        let target_abs_pos = pointer_pos + offset;
+                                        let snapped_abs = snap_pos(target_abs_pos);
+                                        *ctrl = snapped_abs - vertex.position;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Handle drag stop
+                if input.drag_stopped {
+                    self.dragging_element = None;
+                }
+
+                // Handle click (to add controls)
+                if input.clicked {
+                    for vertex in self.vertices.iter_mut() {
+                        if vertex.position.distance(pointer_pos) < 10.0 {
+                            // Add default controls if none exist
+                            if vertex.control_in.is_none() && vertex.control_out.is_none() {
+                                vertex.control_in = Some(Vec2::new(-30.0, 0.0));
+                                vertex.control_out = Some(Vec2::new(30.0, 0.0));
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        action
     }
 
     /// Render the mesh editor UI
@@ -313,180 +483,17 @@ impl MeshEditor {
 
         // Handle interactions
         if let Some(pointer_pos) = response.interact_pointer_pos() {
-            match self.mode {
-                EditMode::Select => {
-                    if response.clicked() {
-                        // Select vertex under pointer
-                        let mut found = false;
-                        for vertex in self.vertices.iter_mut() {
-                            if vertex.position.distance(pointer_pos) < 10.0 {
-                                vertex.selected = !vertex.selected;
-                                found = true;
-                                break;
-                            }
-                        }
+            let input = InteractionInput {
+                pointer_pos,
+                clicked: response.clicked(),
+                dragged: response.dragged(),
+                drag_delta: response.drag_delta(),
+                drag_started: response.drag_started(),
+                drag_stopped: response.drag_stopped(),
+            };
 
-                        if !found {
-                            // Deselect all
-                            for vertex in &mut self.vertices {
-                                vertex.selected = false;
-                            }
-                        }
-                    }
-
-                    if response.dragged() {
-                        // Drag selected vertices
-                        let delta = response.drag_delta();
-                        let snap_to_grid = self.snap_to_grid;
-                        let grid_size = self.grid_size;
-                        for vertex in &mut self.vertices {
-                            if vertex.selected {
-                                let new_pos = vertex.position + delta;
-                                // Inline snap_to_grid_pos logic to avoid borrow conflict
-                                vertex.position = if snap_to_grid {
-                                    Pos2::new(
-                                        (new_pos.x / grid_size).round() * grid_size,
-                                        (new_pos.y / grid_size).round() * grid_size,
-                                    )
-                                } else {
-                                    new_pos
-                                };
-                            }
-                        }
-                    }
-                }
-                EditMode::Add => {
-                    if response.clicked() {
-                        let pos = self.snap_to_grid_pos(pointer_pos);
-                        self.vertices.push(Vertex {
-                            position: pos,
-                            control_in: None,
-                            control_out: None,
-                            selected: false,
-                        });
-                        action = Some(MeshEditorAction::VertexAdded);
-                    }
-                }
-                EditMode::Remove => {
-                    if response.clicked() {
-                        // Remove vertex under pointer
-                        if let Some(idx) = self
-                            .vertices
-                            .iter()
-                            .position(|v| v.position.distance(pointer_pos) < 10.0)
-                        {
-                            self.vertices.remove(idx);
-                            // Remove faces referencing this vertex
-                            self.faces.retain(|f| !f.vertices.contains(&idx));
-                            action = Some(MeshEditorAction::VertexRemoved);
-                        }
-                    }
-                }
-                EditMode::Bezier => {
-                    // Handle drag start
-                    if response.drag_started() {
-                        // Check control points first
-                        let mut found = false;
-                        for (idx, vertex) in self.vertices.iter().enumerate() {
-                            if let Some(ctrl_in) = vertex.control_in {
-                                let pos = vertex.position + ctrl_in;
-                                if pos.distance(pointer_pos) < 6.0 {
-                                    let offset = pos - pointer_pos;
-                                    self.dragging_element =
-                                        Some(DragElement::ControlIn(idx, offset));
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if let Some(ctrl_out) = vertex.control_out {
-                                let pos = vertex.position + ctrl_out;
-                                if pos.distance(pointer_pos) < 6.0 {
-                                    let offset = pos - pointer_pos;
-                                    self.dragging_element =
-                                        Some(DragElement::ControlOut(idx, offset));
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if !found {
-                            // Check vertices
-                            for (idx, vertex) in self.vertices.iter().enumerate() {
-                                if vertex.position.distance(pointer_pos) < 10.0 {
-                                    let offset = vertex.position - pointer_pos;
-                                    self.dragging_element = Some(DragElement::Vertex(idx, offset));
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    // Handle dragging
-                    if response.dragged() {
-                        if let Some(element) = self.dragging_element {
-                            let snap_to_grid = self.snap_to_grid;
-                            let grid_size = self.grid_size;
-
-                            let snap_pos = |pos: Pos2| -> Pos2 {
-                                if snap_to_grid {
-                                    Pos2::new(
-                                        (pos.x / grid_size).round() * grid_size,
-                                        (pos.y / grid_size).round() * grid_size,
-                                    )
-                                } else {
-                                    pos
-                                }
-                            };
-
-                            match element {
-                                DragElement::Vertex(idx, offset) => {
-                                    if let Some(vertex) = self.vertices.get_mut(idx) {
-                                        let target_pos = pointer_pos + offset;
-                                        vertex.position = snap_pos(target_pos);
-                                    }
-                                }
-                                DragElement::ControlIn(idx, offset) => {
-                                    if let Some(vertex) = self.vertices.get_mut(idx) {
-                                        if let Some(ctrl) = &mut vertex.control_in {
-                                            let target_abs_pos = pointer_pos + offset;
-                                            let snapped_abs = snap_pos(target_abs_pos);
-                                            *ctrl = snapped_abs - vertex.position;
-                                        }
-                                    }
-                                }
-                                DragElement::ControlOut(idx, offset) => {
-                                    if let Some(vertex) = self.vertices.get_mut(idx) {
-                                        if let Some(ctrl) = &mut vertex.control_out {
-                                            let target_abs_pos = pointer_pos + offset;
-                                            let snapped_abs = snap_pos(target_abs_pos);
-                                            *ctrl = snapped_abs - vertex.position;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Handle drag stop
-                    if response.drag_stopped() {
-                        self.dragging_element = None;
-                    }
-
-                    // Handle click (to add controls)
-                    if response.clicked() {
-                        for vertex in self.vertices.iter_mut() {
-                            if vertex.position.distance(pointer_pos) < 10.0 {
-                                // Add default controls if none exist
-                                if vertex.control_in.is_none() && vertex.control_out.is_none() {
-                                    vertex.control_in = Some(Vec2::new(-30.0, 0.0));
-                                    vertex.control_out = Some(Vec2::new(30.0, 0.0));
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
+            if let Some(act) = self.handle_interaction(input) {
+                action = Some(act);
             }
         }
 
@@ -525,4 +532,150 @@ pub enum MeshEditorAction {
     VertexAdded,
     VertexRemoved,
     MeshSubdivided,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hit_detection_and_dragging() {
+        let mut editor = MeshEditor::new();
+        // Create a single vertex at (100, 100)
+        editor.vertices.push(Vertex {
+            position: Pos2::new(100.0, 100.0),
+            control_in: Some(Vec2::new(-20.0, 0.0)),
+            control_out: Some(Vec2::new(20.0, 0.0)),
+            selected: false,
+        });
+        editor.mode = EditMode::Bezier;
+
+        // 1. Test Hit Detection (Control Point)
+        // Click near control_out (100 + 20 = 120, 100)
+        let input_click = InteractionInput {
+            pointer_pos: Pos2::new(122.0, 100.0), // Within 6.0 radius
+            clicked: false,
+            dragged: false,
+            drag_delta: Vec2::ZERO,
+            drag_started: true,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_click);
+
+        // Should be dragging ControlOut of vertex 0
+        match editor.dragging_element {
+            Some(DragElement::ControlOut(0, _)) => {}
+            _ => panic!(
+                "Should be dragging ControlOut, got {:?}",
+                editor.dragging_element
+            ),
+        }
+
+        // 2. Test Dragging
+        // Drag to (150, 100).
+        // Original offset was (120, 100) - (122, 100) = (-2, 0).
+        // Target abs pos = (150, 100) + (-2, 0) = (148, 100).
+        // Snap OFF.
+        // New ctrl = (148, 100) - (100, 100) = (48, 0).
+        let input_drag = InteractionInput {
+            pointer_pos: Pos2::new(150.0, 100.0),
+            clicked: false,
+            dragged: true,
+            drag_delta: Vec2::new(28.0, 0.0),
+            drag_started: false,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_drag);
+
+        let v = &editor.vertices[0];
+        let ctrl_out = v.control_out.unwrap();
+        assert!(
+            (ctrl_out.x - 48.0).abs() < 0.001,
+            "Expected 48.0, got {}",
+            ctrl_out.x
+        );
+
+        // 3. Test Drag Stop
+        let input_stop = InteractionInput {
+            pointer_pos: Pos2::new(150.0, 100.0),
+            clicked: false,
+            dragged: false,
+            drag_delta: Vec2::ZERO,
+            drag_started: false,
+            drag_stopped: true,
+        };
+        editor.handle_interaction(input_stop);
+        assert!(editor.dragging_element.is_none());
+    }
+
+    #[test]
+    fn test_grid_snapping() {
+        let mut editor = MeshEditor::new();
+        editor.vertices.push(Vertex {
+            position: Pos2::new(100.0, 100.0),
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+        editor.mode = EditMode::Bezier;
+        editor.snap_to_grid = true;
+        editor.grid_size = 20.0;
+
+        // Start drag on vertex (100, 100)
+        let input_start = InteractionInput {
+            pointer_pos: Pos2::new(101.0, 101.0), // Slight offset
+            clicked: false,
+            dragged: false,
+            drag_delta: Vec2::ZERO,
+            drag_started: true,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_start);
+
+        // Drag to (115, 115)
+        // Offset = (100, 100) - (101, 101) = (-1, -1)
+        // Target = (115, 115) + (-1, -1) = (114, 114)
+        // Snap (114, 114) to grid 20 -> (120, 120) or (100, 120)?
+        // 114/20 = 5.7 -> 6 * 20 = 120.
+        let input_drag = InteractionInput {
+            pointer_pos: Pos2::new(115.0, 115.0),
+            clicked: false,
+            dragged: true,
+            drag_delta: Vec2::ZERO,
+            drag_started: false,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_drag);
+
+        let v = &editor.vertices[0];
+        assert_eq!(v.position, Pos2::new(120.0, 120.0));
+    }
+
+    #[test]
+    fn test_control_point_creation() {
+        let mut editor = MeshEditor::new();
+        editor.vertices.push(Vertex {
+            position: Pos2::new(100.0, 100.0),
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+        editor.mode = EditMode::Bezier;
+
+        // Click on vertex
+        let input_click = InteractionInput {
+            pointer_pos: Pos2::new(102.0, 102.0),
+            clicked: true,
+            dragged: false,
+            drag_delta: Vec2::ZERO,
+            drag_started: false,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_click);
+
+        let v = &editor.vertices[0];
+        assert!(v.control_in.is_some());
+        assert!(v.control_out.is_some());
+        assert_eq!(v.control_in.unwrap(), Vec2::new(-30.0, 0.0));
+    }
 }

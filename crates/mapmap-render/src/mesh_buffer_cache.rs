@@ -21,6 +21,7 @@ pub struct CachedMeshBuffers {
 /// Manages GPU buffers for meshes to avoid per-frame allocation
 pub struct MeshBufferCache {
     cache: HashMap<MappingId, CachedMeshBuffers>,
+    scratch_vertices: Vec<GpuVertex>,
 }
 
 impl MeshBufferCache {
@@ -28,6 +29,7 @@ impl MeshBufferCache {
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
+            scratch_vertices: Vec::with_capacity(1024), // Pre-allocate some space
         }
     }
 
@@ -35,21 +37,44 @@ impl MeshBufferCache {
     pub fn get_buffers(
         &mut self,
         device: &wgpu::Device,
+        queue: &wgpu::Queue,
         mapping_id: MappingId,
         mesh: &Mesh,
     ) -> (&wgpu::Buffer, &wgpu::Buffer, u32) {
-        // Check if we have a valid cached version
-        // We must check type and vertex count to handle "Revision 0" collisions when replacing meshes
-        let is_valid = if let Some(cached) = self.cache.get(&mapping_id) {
-            cached.mesh_revision == mesh.revision
-                && cached.mesh_type == mesh.mesh_type
+        // Check if we can reuse the existing buffers (same topology)
+        let can_reuse = if let Some(cached) = self.cache.get(&mapping_id) {
+            cached.mesh_type == mesh.mesh_type
                 && cached.vertex_count == mesh.vertices.len()
+                && cached.index_count == mesh.indices.len() as u32
         } else {
             false
         };
 
-        if is_valid {
-            let cached = self.cache.get(&mapping_id).unwrap();
+        if can_reuse {
+            let cached = self.cache.get_mut(&mapping_id).unwrap();
+
+            // If revision changed, update the content
+            if cached.mesh_revision != mesh.revision {
+                // Update Vertices (using scratch to avoid allocation)
+                self.scratch_vertices.clear();
+                self.scratch_vertices
+                    .extend(mesh.vertices.iter().map(GpuVertex::from_mesh_vertex));
+
+                queue.write_buffer(
+                    &cached.vertex_buffer,
+                    0,
+                    bytemuck::cast_slice(&self.scratch_vertices),
+                );
+
+                // Update Indices
+                // Note: We assume indices might change if revision changes, to be safe.
+                // Optimally we'd only update if they actually differ, but that requires readback or shadow copy.
+                // Write is cheap enough.
+                queue.write_buffer(&cached.index_buffer, 0, bytemuck::cast_slice(&mesh.indices));
+
+                cached.mesh_revision = mesh.revision;
+            }
+
             return (
                 &cached.vertex_buffer,
                 &cached.index_buffer,
@@ -57,23 +82,22 @@ impl MeshBufferCache {
             );
         }
 
-        // Cache miss or stale - create new buffers
-        let vertices: Vec<GpuVertex> = mesh
-            .vertices
-            .iter()
-            .map(GpuVertex::from_mesh_vertex)
-            .collect();
+        // Cache miss or topology change - create new buffers
+        // Use scratch buffer for initial creation too to avoid temp Vec allocation
+        self.scratch_vertices.clear();
+        self.scratch_vertices
+            .extend(mesh.vertices.iter().map(GpuVertex::from_mesh_vertex));
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("Mesh Vertex Buffer {}", mapping_id)),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&self.scratch_vertices),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("Mesh Index Buffer {}", mapping_id)),
             contents: bytemuck::cast_slice(&mesh.indices),
-            usage: wgpu::BufferUsages::INDEX,
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_count = mesh.indices.len() as u32;
