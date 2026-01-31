@@ -133,24 +133,20 @@ impl LayerPanel {
                                     ui.vertical(|ui| {
                                         // Move Up
                                         ui.add_enabled_ui(idx > 0, |ui| {
-                                            if widgets::move_up_button(ui).clicked() {
-                                                if idx > 0 {
-                                                    let prev_id = children[idx - 1];
-                                                    actions.push(UIAction::SwapLayers(
-                                                        layer.id, prev_id,
-                                                    ));
-                                                }
+                                            if widgets::move_up_button(ui).clicked() && idx > 0 {
+                                                let prev_id = children[idx - 1];
+                                                actions
+                                                    .push(UIAction::SwapLayers(layer.id, prev_id));
                                             }
                                         });
                                         // Move Down
                                         ui.add_enabled_ui(idx < count - 1, |ui| {
-                                            if widgets::move_down_button(ui).clicked() {
-                                                if idx < count - 1 {
-                                                    let next_id = children[idx + 1];
-                                                    actions.push(UIAction::SwapLayers(
-                                                        layer.id, next_id,
-                                                    ));
-                                                }
+                                            if widgets::move_down_button(ui).clicked()
+                                                && idx < count - 1
+                                            {
+                                                let next_id = children[idx + 1];
+                                                actions
+                                                    .push(UIAction::SwapLayers(layer.id, next_id));
                                             }
                                         });
                                     });
@@ -158,35 +154,32 @@ impl LayerPanel {
                                     // Indent/Unindent
                                     ui.vertical(|ui| {
                                         // Unindent (Left)
-                                        if layer.parent_id.is_some() {
-                                            if ui.button("⬅").on_hover_text("Unindent").clicked()
-                                            {
-                                                if let Some(pid) = layer.parent_id {
-                                                    if let Some(parent) =
-                                                        layer_manager.get_layer(pid)
-                                                    {
-                                                        actions.push(UIAction::ReparentLayer(
-                                                            layer.id,
-                                                            parent.parent_id,
-                                                        ));
-                                                    }
+                                        if layer.parent_id.is_some()
+                                            && ui.button("⬅").on_hover_text("Unindent").clicked()
+                                        {
+                                            if let Some(pid) = layer.parent_id {
+                                                if let Some(parent) = layer_manager.get_layer(pid) {
+                                                    actions.push(UIAction::ReparentLayer(
+                                                        layer.id,
+                                                        parent.parent_id,
+                                                    ));
                                                 }
                                             }
                                         }
 
                                         // Indent (Right)
-                                        if idx > 0 {
-                                            if ui.button("➡").on_hover_text("Indent").clicked() {
-                                                let prev_sibling_id = children[idx - 1];
-                                                if let Some(prev) =
-                                                    layer_manager.get_layer(prev_sibling_id)
-                                                {
-                                                    if prev.is_group {
-                                                        actions.push(UIAction::ReparentLayer(
-                                                            layer.id,
-                                                            Some(prev.id),
-                                                        ));
-                                                    }
+                                        if idx > 0
+                                            && ui.button("➡").on_hover_text("Indent").clicked()
+                                        {
+                                            let prev_sibling_id = children[idx - 1];
+                                            if let Some(prev) =
+                                                layer_manager.get_layer(prev_sibling_id)
+                                            {
+                                                if prev.is_group {
+                                                    actions.push(UIAction::ReparentLayer(
+                                                        layer.id,
+                                                        Some(prev.id),
+                                                    ));
                                                 }
                                             }
                                         }
