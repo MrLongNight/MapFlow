@@ -3871,7 +3871,7 @@ impl ModuleCanvas {
                 }
             }
 
-            self.draw_part_with_delete(&painter, part, part_screen_rect);
+            self.draw_part_with_delete(ui, &painter, part, part_screen_rect);
         }
 
         // Apply resize operations
@@ -5469,7 +5469,7 @@ impl ModuleCanvas {
         }
     }
 
-    fn draw_part_with_delete(&self, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
+    fn draw_part_with_delete(&self, ui: &Ui, painter: &egui::Painter, part: &ModulePart, rect: Rect) {
         // Get part color and name based on type
         let (_bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
         let category = Self::get_part_category(&part.part_type);
@@ -5574,16 +5574,47 @@ impl ModuleCanvas {
             Stroke::new(1.0, Color32::from_black_alpha(80)),
         );
 
-        // Title text with icon and category
-        let title_text = format!("{} {}: {}", icon, category, name);
-        painter.text(
-            Pos2::new(
-                title_rect.center().x - 8.0 * self.zoom,
-                title_rect.center().y,
-            ),
-            egui::Align2::CENTER_CENTER,
-            title_text,
+        // Enhanced Title Rendering (Icon | Category | Name)
+        let mut cursor_x = rect.min.x + 8.0 * self.zoom;
+        let center_y = title_rect.center().y;
+
+        // 1. Icon
+        let icon_galley = ui.painter().layout_no_wrap(
+            icon.to_string(),
+            egui::FontId::proportional(16.0 * self.zoom),
+            Color32::WHITE,
+        );
+        painter.galley(
+            Pos2::new(cursor_x, center_y - icon_galley.size().y / 2.0),
+            icon_galley.clone(),
+            Color32::WHITE,
+        );
+        cursor_x += icon_galley.size().x + 6.0 * self.zoom;
+
+        // 2. Category (Small Caps style, Dimmed)
+        let category_text = category.to_uppercase();
+        let category_color = Color32::from_white_alpha(160);
+        let category_galley = ui.painter().layout_no_wrap(
+            category_text,
+            egui::FontId::proportional(10.0 * self.zoom),
+            category_color,
+        );
+        painter.galley(
+            Pos2::new(cursor_x, center_y - category_galley.size().y / 2.0),
+            category_galley.clone(),
+            category_color,
+        );
+        cursor_x += category_galley.size().x + 6.0 * self.zoom;
+
+        // 3. Name (Bold/Bright)
+        let name_galley = ui.painter().layout_no_wrap(
+            name.to_string(),
             egui::FontId::proportional(14.0 * self.zoom),
+            Color32::WHITE,
+        );
+        painter.galley(
+            Pos2::new(cursor_x, center_y - name_galley.size().y / 2.0),
+            name_galley,
             Color32::WHITE,
         );
 
@@ -5703,11 +5734,25 @@ impl ModuleCanvas {
             // Socket "Port" style (dark hole with colored ring)
             let socket_color = Self::get_socket_color(&socket.socket_type);
 
+            // Check hover
+            let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                socket_pos.distance(pointer_pos) < socket_radius * 1.5
+            } else {
+                false
+            };
+
             // Outer ring (Socket Color)
             painter.circle_stroke(
                 socket_pos,
                 socket_radius,
-                Stroke::new(2.0 * self.zoom, socket_color),
+                Stroke::new(
+                    2.0 * self.zoom,
+                    if is_hovered {
+                        Color32::WHITE
+                    } else {
+                        socket_color
+                    },
+                ),
             );
             // Inner hole (Dark)
             painter.circle_filled(
@@ -5716,7 +5761,15 @@ impl ModuleCanvas {
                 Color32::from_gray(20),
             );
             // Inner dot (Connector contact)
-            painter.circle_filled(socket_pos, 2.0 * self.zoom, Color32::from_gray(100));
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                if is_hovered {
+                    socket_color
+                } else {
+                    Color32::from_gray(100)
+                },
+            );
 
             // Socket label
             painter.text(
@@ -5737,11 +5790,25 @@ impl ModuleCanvas {
             // Socket "Port" style
             let socket_color = Self::get_socket_color(&socket.socket_type);
 
+            // Check hover
+            let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                socket_pos.distance(pointer_pos) < socket_radius * 1.5
+            } else {
+                false
+            };
+
             // Outer ring (Socket Color)
             painter.circle_stroke(
                 socket_pos,
                 socket_radius,
-                Stroke::new(2.0 * self.zoom, socket_color),
+                Stroke::new(
+                    2.0 * self.zoom,
+                    if is_hovered {
+                        Color32::WHITE
+                    } else {
+                        socket_color
+                    },
+                ),
             );
             // Inner hole (Dark)
             painter.circle_filled(
@@ -5750,7 +5817,15 @@ impl ModuleCanvas {
                 Color32::from_gray(20),
             );
             // Inner dot (Connector contact)
-            painter.circle_filled(socket_pos, 2.0 * self.zoom, Color32::from_gray(100));
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                if is_hovered {
+                    socket_color
+                } else {
+                    Color32::from_gray(100)
+                },
+            );
 
             // Socket label
             painter.text(
