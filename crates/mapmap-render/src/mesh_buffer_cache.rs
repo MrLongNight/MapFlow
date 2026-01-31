@@ -57,11 +57,8 @@ impl MeshBufferCache {
             if cached.mesh_revision != mesh.revision {
                 // Update Vertices (using scratch to avoid allocation)
                 self.scratch_vertices.clear();
-                self.scratch_vertices.extend(
-                    mesh.vertices
-                        .iter()
-                        .map(GpuVertex::from_mesh_vertex),
-                );
+                self.scratch_vertices
+                    .extend(mesh.vertices.iter().map(GpuVertex::from_mesh_vertex));
 
                 queue.write_buffer(
                     &cached.vertex_buffer,
@@ -73,11 +70,7 @@ impl MeshBufferCache {
                 // Note: We assume indices might change if revision changes, to be safe.
                 // Optimally we'd only update if they actually differ, but that requires readback or shadow copy.
                 // Write is cheap enough.
-                queue.write_buffer(
-                    &cached.index_buffer,
-                    0,
-                    bytemuck::cast_slice(&mesh.indices),
-                );
+                queue.write_buffer(&cached.index_buffer, 0, bytemuck::cast_slice(&mesh.indices));
 
                 cached.mesh_revision = mesh.revision;
             }
@@ -92,11 +85,8 @@ impl MeshBufferCache {
         // Cache miss or topology change - create new buffers
         // Use scratch buffer for initial creation too to avoid temp Vec allocation
         self.scratch_vertices.clear();
-        self.scratch_vertices.extend(
-            mesh.vertices
-                .iter()
-                .map(GpuVertex::from_mesh_vertex),
-        );
+        self.scratch_vertices
+            .extend(mesh.vertices.iter().map(GpuVertex::from_mesh_vertex));
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("Mesh Vertex Buffer {}", mapping_id)),
