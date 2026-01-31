@@ -20,6 +20,15 @@ pub struct MeshEditor {
     /// Snap settings
     snap_to_grid: bool,
     grid_size: f32,
+    /// Element currently being dragged
+    dragging_element: Option<DragElement>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum DragElement {
+    Vertex(usize, Vec2),
+    ControlIn(usize, Vec2),
+    ControlOut(usize, Vec2),
 }
 
 /// Mesh vertex with Bezier control points
@@ -74,6 +83,7 @@ impl MeshEditor {
             symmetry: SymmetryMode::None,
             snap_to_grid: false,
             grid_size: 20.0,
+            dragging_element: None,
         }
     }
 
@@ -373,7 +383,107 @@ impl MeshEditor {
                     }
                 }
                 EditMode::Bezier => {
-                    // TODO: Implement Bezier control point editing
+                    // Handle drag start
+                    if response.drag_started() {
+                        // Check control points first
+                        let mut found = false;
+                        for (idx, vertex) in self.vertices.iter().enumerate() {
+                            if let Some(ctrl_in) = vertex.control_in {
+                                let pos = vertex.position + ctrl_in;
+                                if pos.distance(pointer_pos) < 6.0 {
+                                    let offset = pos - pointer_pos;
+                                    self.dragging_element = Some(DragElement::ControlIn(idx, offset));
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if let Some(ctrl_out) = vertex.control_out {
+                                let pos = vertex.position + ctrl_out;
+                                if pos.distance(pointer_pos) < 6.0 {
+                                    let offset = pos - pointer_pos;
+                                    self.dragging_element = Some(DragElement::ControlOut(idx, offset));
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if !found {
+                            // Check vertices
+                            for (idx, vertex) in self.vertices.iter().enumerate() {
+                                if vertex.position.distance(pointer_pos) < 10.0 {
+                                    let offset = vertex.position - pointer_pos;
+                                    self.dragging_element = Some(DragElement::Vertex(idx, offset));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Handle dragging
+                    if response.dragged() {
+                        if let Some(element) = self.dragging_element {
+                            let snap_to_grid = self.snap_to_grid;
+                            let grid_size = self.grid_size;
+
+                            let snap_pos = |pos: Pos2| -> Pos2 {
+                                if snap_to_grid {
+                                    Pos2::new(
+                                        (pos.x / grid_size).round() * grid_size,
+                                        (pos.y / grid_size).round() * grid_size,
+                                    )
+                                } else {
+                                    pos
+                                }
+                            };
+
+                            match element {
+                                DragElement::Vertex(idx, offset) => {
+                                    if let Some(vertex) = self.vertices.get_mut(idx) {
+                                        let target_pos = pointer_pos + offset;
+                                        vertex.position = snap_pos(target_pos);
+                                    }
+                                }
+                                DragElement::ControlIn(idx, offset) => {
+                                    if let Some(vertex) = self.vertices.get_mut(idx) {
+                                        if let Some(ctrl) = &mut vertex.control_in {
+                                            let target_abs_pos = pointer_pos + offset;
+                                            let snapped_abs = snap_pos(target_abs_pos);
+                                            *ctrl = snapped_abs - vertex.position;
+                                        }
+                                    }
+                                }
+                                DragElement::ControlOut(idx, offset) => {
+                                    if let Some(vertex) = self.vertices.get_mut(idx) {
+                                        if let Some(ctrl) = &mut vertex.control_out {
+                                            let target_abs_pos = pointer_pos + offset;
+                                            let snapped_abs = snap_pos(target_abs_pos);
+                                            *ctrl = snapped_abs - vertex.position;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Handle drag stop
+                    if response.drag_stopped() {
+                        self.dragging_element = None;
+                    }
+
+                    // Handle click (to add controls)
+                    if response.clicked() {
+                        for vertex in self.vertices.iter_mut() {
+                            if vertex.position.distance(pointer_pos) < 10.0 {
+                                // Add default controls if none exist
+                                if vertex.control_in.is_none() && vertex.control_out.is_none() {
+                                    vertex.control_in = Some(Vec2::new(-30.0, 0.0));
+                                    vertex.control_out = Some(Vec2::new(30.0, 0.0));
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
