@@ -1427,17 +1427,43 @@ impl ModuleCanvas {
                                         ui.label("Modulator:");
                                         match mod_type {
                                             ModulizerType::Effect { effect_type: effect, params } => {
-                                                // High contrast header
-                                                ui.add_space(5.0);
-                                                ui.vertical_centered(|ui| {
-                                                    ui.heading(egui::RichText::new(effect.name()).color(Color32::WHITE).strong());
-                                                });
+                                                // === LIVE HEADER ===
                                                 ui.add_space(5.0);
 
-                                                // Reset Defaults Button
-                                                if ui.button("↺ Reset Defaults").clicked() {
-                                                     Self::set_default_effect_params(*effect, params);
-                                                }
+                                                // 1. Big Title
+                                                ui.vertical_centered(|ui| {
+                                                    ui.label(
+                                                        egui::RichText::new(effect.name())
+                                                            .size(22.0)
+                                                            .color(Color32::from_rgb(100, 200, 255))
+                                                            .strong(),
+                                                    );
+                                                });
+                                                ui.add_space(10.0);
+
+                                                // 2. Safe Reset Button (Prominent)
+                                                ui.vertical_centered(|ui| {
+                                                    if ui
+                                                        .add(
+                                                            egui::Button::new(
+                                                                egui::RichText::new("⟲ Safe Reset")
+                                                                    .size(14.0),
+                                                            )
+                                                            .min_size(Vec2::new(140.0, 32.0)),
+                                                        )
+                                                        .on_hover_text(
+                                                            "Reset all parameters to safe defaults",
+                                                        )
+                                                        .clicked()
+                                                    {
+                                                        Self::set_default_effect_params(
+                                                            *effect, params,
+                                                        );
+                                                    }
+                                                });
+
+                                                ui.add_space(10.0);
+                                                ui.separator();
 
                                                 let mut changed_type = None;
 
