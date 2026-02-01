@@ -5578,33 +5578,65 @@ impl ModuleCanvas {
                     let steps = 20;
                     let threshold = 5.0 * self.zoom.max(1.0); // Adjust hit area with zoom
 
-                    // Iterative Bezier calculation (De Casteljau's algorithm logic unrolled/simplified)
-                    let mut prev_p = cable_start;
-                    for i in 1..=steps {
-                        let t = i as f32 / steps as f32;
+                    // OPTIMIZATION: Broad-phase AABB Check
+                    // Only perform expensive curve iteration if pointer is within the bounding box of the control points.
+                    let min_x = cable_start
+                        .x
+                        .min(cable_end.x)
+                        .min(ctrl1.x)
+                        .min(ctrl2.x)
+                        - threshold;
+                    let max_x = cable_start
+                        .x
+                        .max(cable_end.x)
+                        .max(ctrl1.x)
+                        .max(ctrl2.x)
+                        + threshold;
+                    let min_y = cable_start
+                        .y
+                        .min(cable_end.y)
+                        .min(ctrl1.y)
+                        .min(ctrl2.y)
+                        - threshold;
+                    let max_y = cable_start
+                        .y
+                        .max(cable_end.y)
+                        .max(ctrl1.y)
+                        .max(ctrl2.y)
+                        + threshold;
 
-                        // Cubic Bezier interpolation
-                        // B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t) t^2 P2 + t^3 P3
-                        // Let's use simple lerps which `Pos2` supports
-                        let l1 = cable_start.lerp(ctrl1, t);
-                        let l2 = ctrl1.lerp(ctrl2, t);
-                        let l3 = ctrl2.lerp(cable_end, t);
-                        let q1 = l1.lerp(l2, t);
-                        let q2 = l2.lerp(l3, t);
-                        let p = q1.lerp(q2, t);
+                    let in_aabb =
+                        pos.x >= min_x && pos.x <= max_x && pos.y >= min_y && pos.y <= max_y;
 
-                        // Distance to segment
-                        let segment = p - prev_p;
-                        let len_sq = segment.length_sq();
-                        if len_sq > 0.0 {
-                            let t_proj = ((pos - prev_p).dot(segment) / len_sq).clamp(0.0, 1.0);
-                            let closest = prev_p + segment * t_proj;
-                            if pos.distance(closest) < threshold {
-                                is_hovered = true;
-                                break;
+                    if in_aabb {
+                        // Iterative Bezier calculation (De Casteljau's algorithm logic unrolled/simplified)
+                        let mut prev_p = cable_start;
+                        for i in 1..=steps {
+                            let t = i as f32 / steps as f32;
+
+                            // Cubic Bezier interpolation
+                            // B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t) t^2 P2 + t^3 P3
+                            // Let's use simple lerps which `Pos2` supports
+                            let l1 = cable_start.lerp(ctrl1, t);
+                            let l2 = ctrl1.lerp(ctrl2, t);
+                            let l3 = ctrl2.lerp(cable_end, t);
+                            let q1 = l1.lerp(l2, t);
+                            let q2 = l2.lerp(l3, t);
+                            let p = q1.lerp(q2, t);
+
+                            // Distance to segment
+                            let segment = p - prev_p;
+                            let len_sq = segment.length_sq();
+                            if len_sq > 0.0 {
+                                let t_proj = ((pos - prev_p).dot(segment) / len_sq).clamp(0.0, 1.0);
+                                let closest = prev_p + segment * t_proj;
+                                if pos.distance(closest) < threshold {
+                                    is_hovered = true;
+                                    break;
+                                }
                             }
+                            prev_p = p;
                         }
-                        prev_p = p;
                     }
                 }
 
