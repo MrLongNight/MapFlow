@@ -11,7 +11,7 @@ This crate glues together all the specialized crates (`mapmap-core`, `mapmap-ren
 Full project documentation is available in the [`docs/`](../../docs/) directory.
 
 - [Getting Started](../../docs/01-GETTING-STARTED/)
-- [User Guide](../../docs/04-USER-GUIDE/)
+- [User Guide](../../docs/02-USER-GUIDE/)
 - [Architecture](../../docs/03-ARCHITECTURE/)
 
 ## Running MapFlow

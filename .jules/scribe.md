@@ -1,3 +1,21 @@
+# Scribe Journal - 2026-02-01
+
+## Documentation Fixes & Link Repair
+
+I have identified and fixed several broken links and inconsistencies in the documentation caused by the recent restructuring.
+
+### Actions Taken
+- **Fixed Broken Links**:
+  - Updated `crates/mapmap/README.md` to point to `docs/02-USER-GUIDE` instead of the non-existent `04-USER-GUIDE`.
+  - Corrected `docs/06-ROADMAP/README.md` to point to `ROADMAP_2.0.md` instead of `ROADMAP.md` (typo).
+- **Cleanup**:
+  - Removed duplicate text in `docs/06-ROADMAP/README.md`.
+- **Verification**:
+  - Checked `mapmap-core` documentation status: `#![warn(missing_docs)]` is enabled and effectively used.
+  - Checked other crates (`mapmap-ui`, `mapmap-media`): `#![allow(missing_docs)]` is currently set, which is acceptable for now given the rapid development phase.
+
+---
+
 # Scribe Journal - 2026-01-20
 
 ## Documentation Cleanup & Restructuring
