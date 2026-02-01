@@ -312,7 +312,8 @@ mod ffmpeg_impl {
 
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
                     // Handle hardware frame transfer
-                    if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI as i32 {
+                    if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI as i32
+                    {
                         let mut sw_frame = ffmpeg::util::frame::Video::empty();
                         unsafe {
                             let ret = ffmpeg_sys::av_hwframe_transfer_data(
