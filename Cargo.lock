@@ -3173,7 +3173,7 @@ dependencies = [
  "cc",
  "chrono",
  "cocoa",
- "core-foundation 0.9.4",
+ "core-foundation 0.10.1",
  "ffmpeg-next",
  "grafton-ndi",
  "image 0.24.9",
