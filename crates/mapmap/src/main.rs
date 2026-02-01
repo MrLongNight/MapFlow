@@ -492,10 +492,7 @@ impl App {
                 // Bottom-Right (1, 1) -> UV 1,1
                 mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 1.0), glam::Vec2::new(1.0, 1.0)),
                 // Bottom-Left (0, 1) -> UV 0,1
-                mapmap_core::MeshVertex::new(
-                    glam::Vec2::new(0.0, 1.0),
-                    glam::Vec2::new(0.0, 1.0),
-                ),
+                mapmap_core::MeshVertex::new(glam::Vec2::new(0.0, 1.0), glam::Vec2::new(0.0, 1.0)),
             ],
             indices: vec![0, 1, 2, 0, 2, 3],
             revision: 0,
