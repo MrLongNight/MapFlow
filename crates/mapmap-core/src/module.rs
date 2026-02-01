@@ -3,7 +3,7 @@
 //! Defines the graph structure of a MapFlow project, including Parts (nodes),
 //! Connections (edges), and their types (Source, Layer, Output, etc.).
 //!
-//! # Core Structures
+//! # Core Structures #
 //!
 //! - [`MapFlowModule`]: The top-level container for a visual programming graph.
 //! - [`ModulePart`]: A node in the graph (Source, Filter, Output).
