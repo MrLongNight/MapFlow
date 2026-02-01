@@ -26,7 +26,7 @@ anyhow = "1.0"
 arc-swap = "1.6"
 
 # HTTP API
-axum = "0.7"
+axum = "0.8"
 
 # Build dependencies
 bindgen = "0.72"
