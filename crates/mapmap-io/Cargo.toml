@@ -57,7 +57,7 @@ wgpu = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = { version = "0.26", optional = true }
-core-foundation = { version = "0.9", optional = true }
+core-foundation = { version = "0.10", optional = true }
 objc = { version = "0.2", optional = true }
 
 # Platform-specific dependencies
