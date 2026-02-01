@@ -5580,30 +5580,14 @@ impl ModuleCanvas {
 
                     // OPTIMIZATION: Broad-phase AABB Check
                     // Only perform expensive curve iteration if pointer is within the bounding box of the control points.
-                    let min_x = cable_start
-                        .x
-                        .min(cable_end.x)
-                        .min(ctrl1.x)
-                        .min(ctrl2.x)
-                        - threshold;
-                    let max_x = cable_start
-                        .x
-                        .max(cable_end.x)
-                        .max(ctrl1.x)
-                        .max(ctrl2.x)
-                        + threshold;
-                    let min_y = cable_start
-                        .y
-                        .min(cable_end.y)
-                        .min(ctrl1.y)
-                        .min(ctrl2.y)
-                        - threshold;
-                    let max_y = cable_start
-                        .y
-                        .max(cable_end.y)
-                        .max(ctrl1.y)
-                        .max(ctrl2.y)
-                        + threshold;
+                    let min_x =
+                        cable_start.x.min(cable_end.x).min(ctrl1.x).min(ctrl2.x) - threshold;
+                    let max_x =
+                        cable_start.x.max(cable_end.x).max(ctrl1.x).max(ctrl2.x) + threshold;
+                    let min_y =
+                        cable_start.y.min(cable_end.y).min(ctrl1.y).min(ctrl2.y) - threshold;
+                    let max_y =
+                        cable_start.y.max(cable_end.y).max(ctrl1.y).max(ctrl2.y) + threshold;
 
                     let in_aabb =
                         pos.x >= min_x && pos.x <= max_x && pos.y >= min_y && pos.y <= max_y;
