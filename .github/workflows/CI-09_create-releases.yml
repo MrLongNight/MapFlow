@@ -37,6 +37,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Set version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ github.event.inputs.version }}"
+          } else {
+            $tag = "${{ github.ref_name }}"
+          }
+          echo "VERSION=$tag" >> $env:GITHUB_ENV
+
       - name: Configure Git (post-checkout)
         run: |
           git config --global core.longpaths true
@@ -82,14 +92,14 @@ jobs:
         shell: pwsh
 
       - name: Prepare ZIP
-        run: Compress-Archive -Path dist\* -DestinationPath mapflow-windows-x64.zip
+        run: Compress-Archive -Path dist\* -DestinationPath mapflow-windows-${{ env.VERSION }}-x64.zip
         shell: pwsh
 
       - name: Upload ZIP Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mapflow-windows-portable-zip
-          path: mapflow-windows-x64.zip
+          path: mapflow-windows-${{ env.VERSION }}-x64.zip
 
   build-windows-installer:
     name: Windows (Installer MSI)
@@ -99,6 +109,16 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Set version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ github.event.inputs.version }}"
+          } else {
+            $tag = "${{ github.ref_name }}"
+          }
+          echo "VERSION=$tag" >> $env:GITHUB_ENV
 
       - name: Configure Git (post-checkout)
         run: |
@@ -223,14 +243,15 @@ jobs:
           candle.exe .\crates\mapmap\wix\main.wxs components.wxs -dPackageDir="$packageDir" -dCargoTargetBinDir="$cargoTargetBinDir" -out wixobj\ -ext WixUIExtension
 
           # Link
-          light.exe wixobj\main.wixobj wixobj\components.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
+          light.exe wixobj\main.wixobj wixobj\components.wixobj -out mapflow-windows-${{ env.VERSION }}-installer.msi -ext WixUIExtension
 
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
           name: mapflow-windows-installer-msi
-          path: mapflow-windows-installer.msi
+          path: mapflow-windows-${{ env.VERSION }}-installer.msi
+
 
   build-linux:
     name: Linux Release (${{ matrix.os }})
@@ -349,8 +370,8 @@ jobs:
           prerelease: ${{ github.event.inputs.pre_release == 'true' }}
           generate_release_notes: true
           files: |
-            artifacts/mapflow-windows-portable-zip/mapflow-windows-x64.zip
-            artifacts/mapflow-windows-installer-msi/mapflow-windows-installer.msi
+            artifacts/mapflow-windows-portable-zip/*.zip
+            artifacts/mapflow-windows-installer-msi/*.msi
             artifacts/mapflow-linux-*/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
