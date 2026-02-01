@@ -42,7 +42,7 @@ subtle = "2.6.1"
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tower = { version = "0.5", optional = true }
-tower-http = { version = "0.5", features = ["cors"], optional = true }
+tower-http = { version = "0.6", features = ["cors"], optional = true }
 tracing = { workspace = true }
 
 # DMX dependencies
