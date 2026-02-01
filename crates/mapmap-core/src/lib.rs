@@ -36,6 +36,7 @@ pub mod effect_animation;
 pub mod effects;
 pub mod logging;
 pub mod lut;
+/// Media asset management
 pub mod media_library;
 pub mod module;
 pub mod module_eval;
