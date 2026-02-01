@@ -2177,10 +2177,8 @@ impl App {
         static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
         #[allow(clippy::manual_is_multiple_of)]
-        let log_this_frame = FRAME_LOG_COUNTER
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-            % 60
-            == 0;
+        let log_this_frame =
+            FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 60 == 0;
 
         let texture_pool = &mut self.texture_pool;
         let queue = &self.backend.queue;
@@ -2265,10 +2263,8 @@ impl App {
         static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
         #[allow(clippy::manual_is_multiple_of)]
-        let log_this = PREP_LOG_COUNTER
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-            % 300
-            == 0;
+        let log_this =
+            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
 
         // 1. Collect NODE Previews (Media Files, etc.)
         for module in self.state.module_manager.modules() {
