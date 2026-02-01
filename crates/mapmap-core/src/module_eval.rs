@@ -988,7 +988,6 @@ impl ModuleEvaluator {
                             }
 
                             if let Some(mut props) = extracted_props {
-
                                 // Re-apply overrides since we just replaced with defaults
                                 // (This structure is slightly inefficient, re-doing logic)
                                 // Better: Apply overrides TO props.
@@ -1515,19 +1514,13 @@ mod tests_logic {
         let shared = crate::module::SharedMediaState::default();
 
         // Threshold check (< 0.1)
-        let cmd_low = evaluator.create_source_command(
-            &SourceType::LiveInput { device_id: 0 },
-            0.05,
-            &shared,
-        );
+        let cmd_low =
+            evaluator.create_source_command(&SourceType::LiveInput { device_id: 0 }, 0.05, &shared);
         assert!(cmd_low.is_none());
 
         // Valid command
-        let cmd_valid = evaluator.create_source_command(
-            &SourceType::LiveInput { device_id: 1 },
-            0.5,
-            &shared,
-        );
+        let cmd_valid =
+            evaluator.create_source_command(&SourceType::LiveInput { device_id: 1 }, 0.5, &shared);
         match cmd_valid {
             Some(SourceCommand::LiveInput {
                 device_id,
