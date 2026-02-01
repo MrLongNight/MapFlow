@@ -233,8 +233,11 @@ jobs:
           path: mapflow-windows-installer.msi
 
   build-linux:
-    name: Linux Release (tar.gz)
-    runs-on: ubuntu-24.04
+    name: Linux Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -271,6 +274,8 @@ jobs:
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-${{ matrix.os }}-cargo
 
       - name: Build Release (with ffmpeg - Linux)
         run: cargo build --release -p mapmap --features ffmpeg
@@ -286,13 +291,13 @@ jobs:
         run: |
           mkdir -p dist
           cp target/release/MapFlow dist/
-          tar -czvf mapflow-linux-x64.tar.gz -C dist MapFlow
+          tar -czvf mapflow-linux-${{ matrix.os }}-x64.tar.gz -C dist MapFlow
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mapflow-linux-tar
-          path: mapflow-linux-x64.tar.gz
+          name: mapflow-linux-${{ matrix.os }}-tar
+          path: mapflow-linux-${{ matrix.os }}-x64.tar.gz
 
   publish:
     name: "Create GitHub Release & Attach Assets"
@@ -346,6 +351,6 @@ jobs:
           files: |
             artifacts/mapflow-windows-portable-zip/mapflow-windows-x64.zip
             artifacts/mapflow-windows-installer-msi/mapflow-windows-installer.msi
-            artifacts/mapflow-linux-tar/mapflow-linux-x64.tar.gz
+            artifacts/mapflow-linux-*/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
