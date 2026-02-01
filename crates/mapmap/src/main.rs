@@ -150,8 +150,9 @@ struct App {
     color_calibration_renderer: Option<ColorCalibrationRenderer>,
     /// Temporary textures for output rendering (OutputID -> Texture)
     output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
-    /// Cache for egui textures to avoid re-registering every frame (PartId -> (EguiId, View))
-    preview_texture_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Cache for egui textures to avoid re-registering every frame ((ModuleId, PartId) -> (EguiId, View))
+    preview_texture_cache:
+        HashMap<(u64, u64), (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
     /// Cache for output preview textures (OutputID -> (EguiTextureId, View))
     output_preview_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
     /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
@@ -2308,33 +2309,12 @@ impl App {
             }
         }
 
-        // 2. Collect OUTPUT Previews (Sidebar)
-        // Use output_assignments which maps ProjectorID -> Final Output Texture chain
-        for (output_id, tex_names) in &self.output_assignments {
-            if let Some(tex_name) = tex_names.last() {
-                // Add to preview list - use default props (identity transform)
-                active_previews.push(PreviewRequest {
-                    module_id: 0, // Not used for outputs
-                    target_id: *output_id,
-                    tex_name: tex_name.clone(),
-                    is_output: true,
-                    brightness: 0.0,
-                    contrast: 1.0,
-                    saturation: 1.0,
-                    hue_shift: 0.0,
-                    flip_h: false,
-                    flip_v: false,
-                    rotation: 0.0,
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    offset_x: 0.0,
-                    offset_y: 0.0,
-                });
-            }
-        }
+        // 2. Collect OUTPUT Previews (Sidebar) - these need full scene composition
+        // We'll handle output previews separately after this loop since they require
+        // multi-layer rendering (not just sampling a single source texture)
 
         // 3. Process All Previews
-        let mut current_frame_previews: std::collections::HashMap<u64, egui::TextureId> =
+        let mut current_frame_previews: std::collections::HashMap<(u64, u64), egui::TextureId> =
             std::collections::HashMap::new();
         let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
             std::collections::HashMap::new();
@@ -2433,12 +2413,11 @@ impl App {
                     );
                 }
 
-                // Register function
-                let mut register_texture = |cache: &mut std::collections::HashMap<
-                    u64,
-                    (egui::TextureId, std::sync::Arc<wgpu::TextureView>),
-                >| {
-                    match cache.entry(req.target_id) {
+                // Register for UI - inline logic to avoid closure borrow issues
+                if req.is_output {
+                    // OUTPUT preview (single output_id key)
+                    let key = req.target_id;
+                    let tid = match self.output_preview_cache.entry(key) {
                         std::collections::hash_map::Entry::Occupied(mut entry) => {
                             let (cached_id, cached_view) = entry.get();
                             if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
@@ -2463,18 +2442,175 @@ impl App {
                             entry.insert((new_id, preview_view.clone()));
                             new_id
                         }
-                    }
-                };
-
-                // Register for UI
-                if req.is_output {
-                    let tid = register_texture(&mut self.output_preview_cache);
+                    };
                     current_output_previews.insert(req.target_id, tid);
                 } else {
-                    let tid = register_texture(&mut self.preview_texture_cache);
-                    current_frame_previews.insert(req.target_id, tid);
+                    // NODE preview (module_id, part_id tuple key)
+                    let key = (req.module_id, req.target_id);
+                    let tid = match self.preview_texture_cache.entry(key) {
+                        std::collections::hash_map::Entry::Occupied(mut entry) => {
+                            let (cached_id, cached_view) = entry.get();
+                            if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
+                                *cached_id
+                            } else {
+                                self.egui_renderer.free_texture(cached_id);
+                                let new_id = self.egui_renderer.register_native_texture(
+                                    &self.backend.device,
+                                    &preview_view,
+                                    wgpu::FilterMode::Linear,
+                                );
+                                entry.insert((new_id, preview_view.clone()));
+                                new_id
+                            }
+                        }
+                        std::collections::hash_map::Entry::Vacant(entry) => {
+                            let new_id = self.egui_renderer.register_native_texture(
+                                &self.backend.device,
+                                &preview_view,
+                                wgpu::FilterMode::Linear,
+                            );
+                            entry.insert((new_id, preview_view.clone()));
+                            new_id
+                        }
+                    };
+                    current_frame_previews.insert((req.module_id, req.target_id), tid);
                 }
             }
+        }
+
+        // 4. Render OUTPUT Previews with full scene composition (multi-layer)
+        // This renders the same composed scene as the Output Window, but at preview resolution
+        let output_ids: Vec<u64> = self.output_assignments.keys().copied().collect();
+
+        for output_id in output_ids {
+            // Create preview texture for this output
+            let preview_tex_name = format!("out_preview_{}", output_id);
+            self.texture_pool.ensure_texture(
+                &preview_tex_name,
+                320,
+                180,
+                self.backend.surface_format(),
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            );
+            let preview_view = self.texture_pool.get_view(&preview_tex_name);
+
+            // Filter render_ops for this output (same logic as main render)
+            let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
+                .render_ops
+                .iter()
+                .filter(|(_, op)| match &op.output_type {
+                    mapmap_core::module::OutputType::Projector { id, .. } => *id == output_id,
+                    _ => op.output_part_id == output_id,
+                })
+                .map(|(mid, op)| (*mid, op))
+                .collect();
+
+            // Clear preview texture
+            {
+                let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Output Preview Clear"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &preview_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+            }
+
+            // Render each layer to preview
+            for (module_id, op) in target_ops {
+                // Get source texture for this layer (use module_id from tuple, source_part_id from op)
+                let source_part_id = match op.source_part_id {
+                    Some(id) => id,
+                    None => continue, // No source, skip this layer
+                };
+                let source_tex_name = format!("part_{}_{}", module_id, source_part_id);
+                if !self.texture_pool.has_texture(&source_tex_name) {
+                    continue;
+                }
+                let source_view = self.texture_pool.get_view(&source_tex_name);
+
+                // Create mesh (use simple fullscreen quad for preview)
+                let (vb, ib, index_count) = &self.preview_quad_buffers;
+
+                // Create uniforms with layer transform
+                let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                    &self.backend.queue,
+                    glam::Mat4::IDENTITY, // No transform for preview (show full scene)
+                    op.source_props.opacity,
+                    op.source_props.flip_horizontal,
+                    op.source_props.flip_vertical,
+                    op.source_props.brightness,
+                    op.source_props.contrast,
+                    op.source_props.saturation,
+                    op.source_props.hue_shift,
+                );
+                let texture_bg = self.mesh_renderer.get_texture_bind_group(&source_view);
+
+                // Render pass (accumulate with alpha blending)
+                {
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Output Preview Layer"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &preview_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load, // Accumulate layers
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+                    self.mesh_renderer.draw(
+                        &mut render_pass,
+                        vb,
+                        ib,
+                        *index_count,
+                        &uniform_bg,
+                        &texture_bg,
+                        false, // Use standard pipeline
+                    );
+                }
+            }
+
+            // Register preview texture with egui
+            let tid = match self.output_preview_cache.entry(output_id) {
+                std::collections::hash_map::Entry::Occupied(mut entry) => {
+                    let (cached_id, cached_view) = entry.get();
+                    if std::sync::Arc::ptr_eq(cached_view, &preview_view) {
+                        *cached_id
+                    } else {
+                        self.egui_renderer.free_texture(cached_id);
+                        let new_id = self.egui_renderer.register_native_texture(
+                            &self.backend.device,
+                            &preview_view,
+                            wgpu::FilterMode::Linear,
+                        );
+                        entry.insert((new_id, preview_view.clone()));
+                        new_id
+                    }
+                }
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    let new_id = self.egui_renderer.register_native_texture(
+                        &self.backend.device,
+                        &preview_view,
+                        wgpu::FilterMode::Linear,
+                    );
+                    entry.insert((new_id, preview_view.clone()));
+                    new_id
+                }
+            };
+            current_output_previews.insert(output_id, tid);
         }
 
         // Update UI state maps

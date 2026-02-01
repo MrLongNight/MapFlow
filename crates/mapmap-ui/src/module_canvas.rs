@@ -251,8 +251,8 @@ pub struct ModuleCanvas {
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
     pub editing_part_id: Option<ModulePartId>,
-    /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
-    pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
+    /// Video Texture Previews for Media Nodes ((Module ID, Part ID) -> Egui Texture)
+    pub node_previews: std::collections::HashMap<(u64, u64), egui::TextureId>,
     /// Pending playback commands (Part ID, Command)
     pub pending_playback_commands: Vec<(ModulePartId, MediaPlaybackCommand)>,
     /// Last diagnostic check results
@@ -778,7 +778,7 @@ impl ModuleCanvas {
 
                                                 // 3. PREVIEW & INTERACTIVE TIMELINE
                                                 // Preview Image
-                                                if let Some(tex_id) = self.node_previews.get(&part_id) {
+                                                if let Some(tex_id) = self.node_previews.get(&(module_id, part_id)) {
                                                     let size = Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0); // Keep aspect ratio
                                                     ui.image((*tex_id, size));
                                                 }
