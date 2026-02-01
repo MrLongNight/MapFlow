@@ -11,3 +11,7 @@
 ## 2024-10-25 - BPM Estimation Simulation
 **Insight:** Verified that simulating audio buffers (chunked sine waves) effectively tests complex DSP logic like BPM detection without needing real audio files or hardware.
 **Action:** Use synthesized audio chunks for future audio analyzer tests to ensure deterministic behavior.
+
+## 2024-10-25 - TriggerSystem Unit Tests
+**Insight:** `TriggerSystem` logic (thresholds, band mapping) is complex enough to warrant dedicated unit tests within the module, not just integration tests.
+**Action:** Added comprehensive unit test suite to `crates/mapmap-core/src/trigger_system.rs` covering all trigger types (Band, RMS, Peak, Beat).
