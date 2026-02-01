@@ -89,7 +89,24 @@ pub enum HwAccelType {
 mod ffmpeg_impl {
     use super::*;
     use ffmpeg_next as ffmpeg;
+    use ffmpeg_sys_next as ffi;
     use std::path::PathBuf;
+
+    #[cfg(target_os = "windows")]
+    unsafe extern "C" fn get_format_callback(
+        ctx: *mut ffi::AVCodecContext,
+        fmt: *const ffi::AVPixelFormat,
+    ) -> ffi::AVPixelFormat {
+        let mut p = fmt;
+        while *p != ffi::AVPixelFormat::AV_PIX_FMT_NONE {
+            if *p == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 {
+                return *p;
+            }
+            p = p.offset(1);
+        }
+
+        ffi::avcodec_default_get_format(ctx, fmt)
+    }
 
     pub struct RealFFmpegDecoder {
         input_ctx: ffmpeg::format::context::Input,
@@ -230,17 +247,43 @@ mod ffmpeg_impl {
             _decoder: &mut ffmpeg::codec::decoder::Video,
             requested: HwAccelType,
         ) -> Result<HwAccelType> {
-            // Note: Hardware acceleration setup via ffmpeg-next is platform-specific
-            // and requires additional configuration. For Phase 1, we document the
-            // approach but return None as full implementation requires platform testing
             match requested {
                 HwAccelType::None => Ok(HwAccelType::None),
+                #[cfg(target_os = "windows")]
+                HwAccelType::D3D11VA => unsafe {
+                    let mut hw_device_ctx: *mut ffi::AVBufferRef = std::ptr::null_mut();
+                    let ret = ffi::av_hwdevice_ctx_create(
+                        &mut hw_device_ctx,
+                        ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA,
+                        std::ptr::null(),
+                        std::ptr::null_mut(),
+                        0,
+                    );
+
+                    if ret < 0 {
+                        warn!("Failed to create D3D11VA device context: {}", ret);
+                        return Ok(HwAccelType::None);
+                    }
+
+                    let codec_ctx = _decoder.as_mut_ptr();
+                    if codec_ctx.is_null() {
+                        warn!("Codec context is null");
+                        ffi::av_buffer_unref(&mut hw_device_ctx);
+                        return Ok(HwAccelType::None);
+                    }
+
+                    // Transfer ownership of hw_device_ctx to codec_ctx
+                    (*codec_ctx).hw_device_ctx = hw_device_ctx;
+                    (*codec_ctx).get_format = Some(get_format_callback);
+
+                    info!("D3D11VA hardware acceleration initialized");
+                    Ok(HwAccelType::D3D11VA)
+                },
                 _ => {
                     warn!(
                         "Hardware acceleration {:?} requested but not yet fully implemented",
                         requested
                     );
-                    // TODO: Implement platform-specific hw accel setup
                     Ok(HwAccelType::None)
                 }
             }
@@ -261,10 +304,38 @@ mod ffmpeg_impl {
                 let mut decoded = ffmpeg::util::frame::Video::empty();
 
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
+                    #[allow(unused_variables, unused_mut)]
+                    let mut sw_frame = ffmpeg::util::frame::Video::empty();
+                    let frame_ptr = if unsafe { (*decoded.as_ptr()).format == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 as i32 } {
+                        #[cfg(target_os = "windows")]
+                        unsafe {
+                            let ret = ffi::av_hwframe_transfer_data(
+                                sw_frame.as_mut_ptr(),
+                                decoded.as_ptr(),
+                                0,
+                            );
+                            if ret < 0 {
+                                return Err(MediaError::DecoderError(format!(
+                                    "Failed to transfer HW frame: {}",
+                                    ret
+                                )));
+                            }
+                            ffi::av_frame_copy_props(sw_frame.as_mut_ptr(), decoded.as_ptr());
+                            &sw_frame
+                        }
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            warn!("D3D11 frame format detected on non-Windows platform");
+                            &decoded
+                        }
+                    } else {
+                        &decoded
+                    };
+
                     // Scale to RGBA
                     let mut rgb_frame = ffmpeg::util::frame::Video::empty();
                     self.scaler
-                        .run(&decoded, &mut rgb_frame)
+                        .run(frame_ptr, &mut rgb_frame)
                         .map_err(|e| MediaError::DecoderError(e.to_string()))?;
 
                     let pts = Duration::from_secs_f64(
