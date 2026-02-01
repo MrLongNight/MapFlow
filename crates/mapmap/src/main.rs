@@ -2262,8 +2262,9 @@ impl App {
         // Debug Log Control
         static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
-        let log_this =
-            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+        let log_this = PREP_LOG_COUNTER
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .is_multiple_of(300);
 
         // 1. Collect NODE Previews (Media Files, etc.)
         for module in self.state.module_manager.modules() {
@@ -2672,8 +2673,7 @@ impl App {
     /// Process pending MCP actions (e.g. from UI or external clients)
     fn handle_mcp_actions(&mut self) {
         while let Ok(action) = self.mcp_receiver.try_recv() {
-            match action {
-                mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) => {
+                if let mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) = action {
                     info!(
                         "MCP: SetModuleSourcePath({}, {}, {:?})",
                         mod_id, part_id, path
@@ -2696,13 +2696,11 @@ impl App {
                                     // sync_media_players will recreate it with new path
                                     if self.media_players.remove(&(mod_id, part_id)).is_some() {
                                         info!("Removed player for {} to force reload", part_id);
-                                    }
                                 }
                             }
                         }
                     }
                 }
-                _ => {}
             }
         }
     }

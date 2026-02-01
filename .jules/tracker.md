@@ -53,3 +53,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-30 - ROADMAP Conflict Resolution
 **Erkenntnis:** Merge-Konflikte in `ROADMAP_2.0.md` entdeckt (HEAD vs. Incoming Status für Windows Installer).
 **Aktion:** Konflikte behoben, `Stand` aktualisiert, und Windows Installer Status konsolidiert (Completed + Detailed Checklist).
+
+## 2026-02-01 - Missing Changelog Entry for Commit 48dab43
+**Erkenntnis:** Commit 48dab43 ("feat(ci): include version in Windows artifact filenames") was found in git history but missing from CHANGELOG.md.
+**Aktion:** Added the missing entry to CHANGELOG.md and updated ROADMAP.md timestamp.
