@@ -2267,6 +2267,9 @@ impl App {
             PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
 
         // 1. Collect NODE Previews (Media Files, etc.)
+        let active_module_id = self.ui_state.module_canvas.active_module_id;
+        let selected_part_id = self.ui_state.module_canvas.get_selected_part_id();
+
         for module in self.state.module_manager.modules() {
             for part in &module.parts {
                 if let mapmap_core::module::ModulePartType::Source(
@@ -2287,24 +2290,30 @@ impl App {
                 ) = &part.part_type
                 {
                     // MediaFile Source - Preview the texture produced by this part
-                    let tex_name = format!("part_{}_{}", module.id, part.id);
-                    active_previews.push(PreviewRequest {
-                        module_id: module.id,
-                        target_id: part.id,
-                        tex_name,
-                        is_output: false,
-                        brightness: *brightness,
-                        contrast: *contrast,
-                        saturation: *saturation,
-                        hue_shift: *hue_shift,
-                        flip_h: *flip_horizontal,
-                        flip_v: *flip_vertical,
-                        rotation: *rotation,
-                        scale_x: *scale_x,
-                        scale_y: *scale_y,
-                        offset_x: *offset_x,
-                        offset_y: *offset_y,
-                    });
+                    // Optimization: Only generate preview if this is the currently inspected part
+                    let is_inspected =
+                        Some(module.id) == active_module_id && Some(part.id) == selected_part_id;
+
+                    if is_inspected {
+                        let tex_name = format!("part_{}_{}", module.id, part.id);
+                        active_previews.push(PreviewRequest {
+                            module_id: module.id,
+                            target_id: part.id,
+                            tex_name,
+                            is_output: false,
+                            brightness: *brightness,
+                            contrast: *contrast,
+                            saturation: *saturation,
+                            hue_shift: *hue_shift,
+                            flip_h: *flip_horizontal,
+                            flip_v: *flip_vertical,
+                            rotation: *rotation,
+                            scale_x: *scale_x,
+                            scale_y: *scale_y,
+                            offset_x: *offset_x,
+                            offset_y: *offset_y,
+                        });
+                    }
                 } else if let mapmap_core::module::ModulePartType::Output(
                     mapmap_core::module::OutputType::Projector {
                         show_in_preview_panel,
