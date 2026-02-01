@@ -218,11 +218,12 @@ jobs:
           # -dr INSTALLFOLDER: Directory Ref ID in main.wxs
           heat.exe dir "$packageDir" -gg -sfrag -cg MainComponents -dr INSTALLFOLDER -var "var.PackageDir" -out components.wxs
 
-          # Compile Main + Components
-          candle.exe .\crates\mapmap\wix\main.wxs components.wxs -dPackageDir="$packageDir" -dCargoTargetBinDir="$cargoTargetBinDir" -out mapflow.wixobj -out components.wixobj -ext WixUIExtension
+          # Compile Main + Components (output to directory, not individual files)
+          New-Item -ItemType Directory -Force -Path wixobj
+          candle.exe .\crates\mapmap\wix\main.wxs components.wxs -dPackageDir="$packageDir" -dCargoTargetBinDir="$cargoTargetBinDir" -out wixobj\ -ext WixUIExtension
 
           # Link
-          light.exe mapflow.wixobj components.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
+          light.exe wixobj\main.wixobj wixobj\components.wixobj -out mapflow-windows-installer.msi -ext WixUIExtension
 
 
       - name: Upload MSI
