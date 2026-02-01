@@ -60,6 +60,7 @@ docs/
 | Architecture | `03-ARCHITECTURE/ARCHITECTURE.md` | System design |
 | Contributing | `CONTRIBUTING.md` | Contribution Guidelines (Project Root) |
 | Development | `05-DEVELOPMENT/` | Development Setup & Standards |
+| CI/CD Strategy | `05-DEVELOPMENT/CI-CD-STRATEGY.md` | Automation pipeline |
 | Roadmap | `06-ROADMAP/PROJECT-PHASES.md` | Phase overview |
 | Features | `02-USER-GUIDE/FEATURES.md` | What MapFlow can do |
 | OSC Control | `10-OSC-CONTROL/COMMAND-REFERENCE.md` | OSC Address & Command Reference |
