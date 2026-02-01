@@ -101,7 +101,9 @@ mod tests {
         });
 
         // We use add_part_with_type to inject our specific config
-        let part_id = manager.get_module_mut(module_id).unwrap()
+        let part_id = manager
+            .get_module_mut(module_id)
+            .unwrap()
             .add_part_with_type(fft_type, (0.0, 0.0));
 
         // Create Audio Data with high energy in Bass (index 1)
@@ -112,8 +114,14 @@ mod tests {
         system.update(&manager, &audio_data);
 
         // Assert
-        assert!(system.is_active(part_id, 1), "Bass band (index 1) should be active");
-        assert!(!system.is_active(part_id, 0), "SubBass band (index 0) should NOT be active");
+        assert!(
+            system.is_active(part_id, 1),
+            "Bass band (index 1) should be active"
+        );
+        assert!(
+            !system.is_active(part_id, 0),
+            "SubBass band (index 0) should NOT be active"
+        );
     }
 
     #[test]
@@ -131,7 +139,9 @@ mod tests {
             threshold: 0.5,
             output_config: config,
         });
-        let part_id = manager.get_module_mut(module_id).unwrap()
+        let part_id = manager
+            .get_module_mut(module_id)
+            .unwrap()
             .add_part_with_type(fft_type, (0.0, 0.0));
 
         let mut audio_data = AudioTriggerData::default();
@@ -139,12 +149,18 @@ mod tests {
         // 1. Below Threshold
         audio_data.band_energies[1] = 0.4;
         system.update(&manager, &audio_data);
-        assert!(!system.is_active(part_id, 1), "Should not trigger below threshold");
+        assert!(
+            !system.is_active(part_id, 1),
+            "Should not trigger below threshold"
+        );
 
         // 2. Above Threshold
         audio_data.band_energies[1] = 0.51;
         system.update(&manager, &audio_data);
-        assert!(system.is_active(part_id, 1), "Should trigger above threshold");
+        assert!(
+            system.is_active(part_id, 1),
+            "Should trigger above threshold"
+        );
     }
 
     #[test]
@@ -162,7 +178,9 @@ mod tests {
             threshold: 0.5,
             output_config: config,
         });
-        let part_id = manager.get_module_mut(module_id).unwrap()
+        let part_id = manager
+            .get_module_mut(module_id)
+            .unwrap()
             .add_part_with_type(fft_type, (0.0, 0.0));
 
         let mut audio_data = AudioTriggerData::default();
@@ -175,7 +193,10 @@ mod tests {
         // Test Peak (Index 10)
         audio_data.peak_volume = 0.8;
         system.update(&manager, &audio_data);
-        assert!(system.is_active(part_id, 10), "Peak trigger should be active");
+        assert!(
+            system.is_active(part_id, 10),
+            "Peak trigger should be active"
+        );
     }
 
     #[test]
@@ -195,13 +216,18 @@ mod tests {
             threshold: 0.5,
             output_config: config,
         });
-        let part_id = manager.get_module_mut(module_id).unwrap()
+        let part_id = manager
+            .get_module_mut(module_id)
+            .unwrap()
             .add_part_with_type(fft_type, (0.0, 0.0));
 
         let mut audio_data = AudioTriggerData::default();
         audio_data.beat_detected = true;
 
         system.update(&manager, &audio_data);
-        assert!(system.is_active(part_id, 11), "Beat trigger should be active");
+        assert!(
+            system.is_active(part_id, 11),
+            "Beat trigger should be active"
+        );
     }
 }
