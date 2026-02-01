@@ -1290,10 +1290,7 @@ impl ModuleEvaluator {
         trigger_value: f32,
         shared_state: &SharedMediaState,
     ) -> Option<SourceCommand> {
-        // Only activate source if trigger is above threshold (0.1)
-        if trigger_value < 0.1 {
-            return None;
-        }
+        // Create command regardless of trigger value (main loop handles threshold/logic)
 
         match source_type {
             SourceType::MediaFile { path, .. }
