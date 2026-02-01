@@ -54,3 +54,12 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `pr397.patch` und `pr398.patch` nach `.temp-archive/2026-01-31-*` archiviert und via `git rm` aus dem Repository entfernt.
 - `docu/jules_gpu_ui.md` und `docu/jules_hw_accel.md` nach `.jules/` verschoben.
 - `docu/` Verzeichnis entfernt.
+
+## 2026-02-01 - Documentation Cleanup & CI/CD Strategy Move
+
+**Erkenntnis:** Eine CI/CD-Strategie-Dokumentation (`ci_cd_strategy.md`) befand sich in einem nicht-standardmäßigen Verzeichnis `docs/agent_rules/`. Das Repository ist ansonsten sauber.
+
+**Aktion:**
+- `docs/agent_rules/ci_cd_strategy.md` nach `docs/05-DEVELOPMENT/CI-CD-STRATEGY.md` verschoben (umbenannt für Konsistenz).
+- Verzeichnis `docs/agent_rules/` entfernt.
+- `docs/INDEX.md` aktualisiert, um das neue Dokument in der "Document Mapping"-Tabelle aufzuführen.
