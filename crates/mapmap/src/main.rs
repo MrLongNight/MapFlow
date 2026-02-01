@@ -62,6 +62,8 @@ struct App {
     _compositor: Compositor,
     /// The effect chain renderer.
     effect_chain_renderer: EffectChainRenderer,
+    /// The effect chain renderer for previews (avoids resizing buffers).
+    preview_effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
     mesh_renderer: MeshRenderer,
     /// Cache for mesh GPU buffers
@@ -187,6 +189,11 @@ impl App {
         let texture_pool = TexturePool::new(backend.device.clone());
         let compositor = Compositor::new(backend.device.clone(), backend.surface_format())?;
         let effect_chain_renderer = EffectChainRenderer::new(
+            backend.device.clone(),
+            backend.queue.clone(),
+            backend.surface_format(),
+        )?;
+        let preview_effect_chain_renderer = EffectChainRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),
             backend.surface_format(),
@@ -587,6 +594,7 @@ impl App {
             texture_pool,
             _compositor: compositor,
             effect_chain_renderer,
+            preview_effect_chain_renderer,
             mesh_renderer,
             mesh_buffer_cache,
             _quad_renderer: quad_renderer,
@@ -2515,34 +2523,52 @@ impl App {
         let output_ids: Vec<u64> = self.output_assignments.keys().copied().collect();
 
         for output_id in output_ids {
-            // Create preview texture for this output
+            let width = 320;
+            let height = 180;
+
+            // Create preview texture for this output (Final Target)
             let preview_tex_name = format!("out_preview_{}", output_id);
             self.texture_pool.ensure_texture(
                 &preview_tex_name,
-                320,
-                180,
+                width,
+                height,
                 self.backend.surface_format(),
                 wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             );
             let preview_view = self.texture_pool.get_view(&preview_tex_name);
 
-            // Filter render_ops for this output (same logic as main render)
-            let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
-                .render_ops
-                .iter()
-                .filter(|(_, op)| match &op.output_type {
-                    mapmap_core::module::OutputType::Projector { id, .. } => *id == output_id,
-                    _ => op.output_part_id == output_id,
-                })
-                .map(|(mid, op)| (*mid, op))
-                .collect();
+            // Determine if we need post-processing (Edge Blend / Color Calib)
+            // Note: We use the same renderers as main window, just targeting smaller texture
+            let output_config_opt = self.state.output_manager.get_output(output_id);
+            let use_edge_blend = output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+            let use_color_calib =
+                output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+            let needs_post_processing = use_edge_blend || use_color_calib;
 
-            // Clear preview texture
+            // Determine Accumulation Target
+            let accum_tex_name = format!("preview_accum_{}", output_id);
+
+            let accum_view_ref = if needs_post_processing {
+                // Render to intermediate texture first
+                self.texture_pool.ensure_texture(
+                    &accum_tex_name,
+                    width,
+                    height,
+                    self.backend.surface_format(),
+                    wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                );
+                self.texture_pool.get_view(&accum_tex_name)
+            } else {
+                // Render directly to preview texture
+                preview_view.clone()
+            };
+
+            // Clear Accumulation Target
             {
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Output Preview Clear"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &preview_view,
+                        view: &accum_view_ref,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -2556,45 +2582,177 @@ impl App {
                 });
             }
 
-            // Render each layer to preview
+            // Filter render_ops for this output
+            const PREVIEW_FLAG: u64 = 1u64 << 63;
+            let real_output_id = output_id & !PREVIEW_FLAG;
+
+            let mut target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
+                .render_ops
+                .iter()
+                .filter(|(_, op)| match &op.output_type {
+                    mapmap_core::module::OutputType::Projector { id, .. } => *id == real_output_id,
+                    _ => op.output_part_id == real_output_id,
+                })
+                .map(|(mid, op)| (*mid, op))
+                .collect();
+
+            // Sort Ops (Same logic as main render: Higher IDs first/Bottom)
+            target_ops.sort_by(|(_, a), (_, b)| {
+                let id_a = a.output_part_id;
+                let id_b = b.output_part_id;
+                id_b.cmp(&id_a)
+            });
+
+            // Render each layer to accumulation target
             for (module_id, op) in target_ops {
-                // Get source texture for this layer (use module_id from tuple, source_part_id from op)
-                let source_part_id = match op.source_part_id {
-                    Some(id) => id,
-                    None => continue, // No source, skip this layer
+                // Get source texture
+                let owned_source_view = if let Some(src_id) = op.source_part_id {
+                    let tex_name = format!("part_{}_{}", module_id, src_id);
+                    if self.texture_pool.has_texture(&tex_name) {
+                        Some(self.texture_pool.get_view(&tex_name))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 };
-                let source_tex_name = format!("part_{}_{}", module_id, source_part_id);
-                if !self.texture_pool.has_texture(&source_tex_name) {
-                    continue;
-                }
-                let source_view = self.texture_pool.get_view(&source_tex_name);
+                let source_view_ref = owned_source_view.as_ref();
+                let effective_view = source_view_ref.or(self.dummy_view.as_ref());
 
-                // Create mesh (use simple fullscreen quad for preview)
-                let (vb, ib, index_count) = &self.preview_quad_buffers;
+                if let Some(src_view) = effective_view {
+                    // Effect Chain
+                    let mut final_view = src_view;
+                    let mut _temp_view_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
 
-                // Create uniforms with layer transform
-                let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
-                    &self.backend.queue,
-                    glam::Mat4::IDENTITY, // No transform for preview (show full scene)
-                    op.source_props.opacity,
-                    op.source_props.flip_horizontal,
-                    op.source_props.flip_vertical,
-                    op.source_props.brightness,
-                    op.source_props.contrast,
-                    op.source_props.saturation,
-                    op.source_props.hue_shift,
-                );
-                let texture_bg = self.mesh_renderer.get_texture_bind_group(&source_view);
+                    if !op.effects.is_empty() {
+                        // Build Effect Chain
+                        let time = self.start_time.elapsed().as_secs_f32();
+                        let mut chain = mapmap_core::EffectChain::new();
 
-                // Render pass (accumulate with alpha blending)
-                {
+                        for modulizer in &op.effects {
+                            if let mapmap_core::module::ModulizerType::Effect {
+                                effect_type: mod_effect,
+                                params,
+                            } = modulizer
+                            {
+                                // Map Effect Type
+                                let core_effect = match mod_effect {
+                                    mapmap_core::module::EffectType::Blur => {
+                                        Some(mapmap_core::effects::EffectType::Blur)
+                                    }
+                                    mapmap_core::module::EffectType::Invert => {
+                                        Some(mapmap_core::effects::EffectType::Invert)
+                                    }
+                                    mapmap_core::module::EffectType::Pixelate => {
+                                        Some(mapmap_core::effects::EffectType::Pixelate)
+                                    }
+                                    mapmap_core::module::EffectType::Brightness
+                                    | mapmap_core::module::EffectType::Contrast
+                                    | mapmap_core::module::EffectType::Saturation
+                                    | mapmap_core::module::EffectType::Colorize => {
+                                        Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                    }
+                                    mapmap_core::module::EffectType::HueShift => {
+                                        Some(mapmap_core::effects::EffectType::HueShift)
+                                    }
+                                    mapmap_core::module::EffectType::ChromaticAberration
+                                    | mapmap_core::module::EffectType::RgbSplit => {
+                                        Some(mapmap_core::effects::EffectType::ChromaticAberration)
+                                    }
+                                    mapmap_core::module::EffectType::EdgeDetect => {
+                                        Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                    }
+                                    mapmap_core::module::EffectType::FilmGrain
+                                    | mapmap_core::module::EffectType::VHS => {
+                                        Some(mapmap_core::effects::EffectType::FilmGrain)
+                                    }
+                                    mapmap_core::module::EffectType::Vignette => {
+                                        Some(mapmap_core::effects::EffectType::Vignette)
+                                    }
+                                    mapmap_core::module::EffectType::Kaleidoscope => {
+                                        Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                    }
+                                    mapmap_core::module::EffectType::Wave => {
+                                        Some(mapmap_core::effects::EffectType::Wave)
+                                    }
+                                    mapmap_core::module::EffectType::Glitch => {
+                                        Some(mapmap_core::effects::EffectType::Glitch)
+                                    }
+                                    mapmap_core::module::EffectType::Mirror => {
+                                        Some(mapmap_core::effects::EffectType::Mirror)
+                                    }
+                                    mapmap_core::module::EffectType::ShaderGraph(id) => {
+                                        Some(mapmap_core::effects::EffectType::ShaderGraph(*id))
+                                    }
+                                    _ => None,
+                                };
+
+                                if let Some(et) = core_effect {
+                                    let effect_id = chain.add_effect(et);
+                                    if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                        effect.parameters = params.clone();
+                                    }
+                                }
+                            }
+                        }
+
+                        if chain.enabled_effects().count() > 0 {
+                            let temp_eff_name = format!("preview_eff_{}", output_id);
+                            self.texture_pool.ensure_texture(
+                                &temp_eff_name,
+                                width,
+                                height,
+                                self.backend.surface_format(),
+                                wgpu::TextureUsages::RENDER_ATTACHMENT
+                                    | wgpu::TextureUsages::TEXTURE_BINDING,
+                            );
+                            let target_view = self.texture_pool.get_view(&temp_eff_name);
+
+                            self.preview_effect_chain_renderer.apply_chain(
+                                encoder,
+                                src_view,
+                                &target_view,
+                                &chain,
+                                &self.shader_graph_manager,
+                                time,
+                                width,
+                                height,
+                            );
+                            _temp_view_holder = Some(target_view);
+                            final_view = _temp_view_holder.as_ref().unwrap();
+                        }
+                    }
+
+                    // Render Mesh (Accumulate)
+                    let (vertex_buffer, index_buffer, index_count) =
+                        self.mesh_buffer_cache.get_buffers(
+                            &self.backend.device,
+                            &self.backend.queue,
+                            op.layer_part_id,
+                            &op.mesh.to_mesh(),
+                        );
+
+                    let transform = glam::Mat4::IDENTITY;
+                    let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
+                        &self.backend.queue,
+                        transform,
+                        op.opacity * op.source_props.opacity,
+                        op.source_props.flip_horizontal,
+                        op.source_props.flip_vertical,
+                        op.source_props.brightness,
+                        op.source_props.contrast,
+                        op.source_props.saturation,
+                        op.source_props.hue_shift,
+                    );
+                    let texture_bg = self.mesh_renderer.get_texture_bind_group(final_view);
+
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Output Preview Layer"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &preview_view,
+                            view: &accum_view_ref,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load, // Accumulate layers
+                                load: wgpu::LoadOp::Load, // Accumulate
                                 store: wgpu::StoreOp::Store,
                             },
                             depth_slice: None,
@@ -2603,15 +2761,122 @@ impl App {
                         occlusion_query_set: None,
                         timestamp_writes: None,
                     });
+
+                    // Use true for perspective correction if needed, or false for simple.
+                    // Main render uses 'true'.
                     self.mesh_renderer.draw(
                         &mut render_pass,
-                        vb,
-                        ib,
-                        *index_count,
+                        vertex_buffer,
+                        index_buffer,
+                        index_count,
                         &uniform_bg,
                         &texture_bg,
-                        false, // Use standard pipeline
+                        true,
                     );
+                }
+            }
+
+            // Post Processing
+            if needs_post_processing {
+                // Input is accum_view_ref. Output is preview_view.
+                let config = output_config_opt.unwrap();
+
+                if use_edge_blend {
+                    let renderer = self.edge_blend_renderer.as_ref().unwrap();
+
+                    let target_view = if use_color_calib {
+                        // We need another temp.
+                        let temp_pp_name = format!("preview_pp_{}", output_id);
+                        self.texture_pool.ensure_texture(
+                            &temp_pp_name,
+                            width,
+                            height,
+                            self.backend.surface_format(),
+                            wgpu::TextureUsages::RENDER_ATTACHMENT
+                                | wgpu::TextureUsages::TEXTURE_BINDING,
+                        );
+                        self.texture_pool.get_view(&temp_pp_name)
+                    } else {
+                        preview_view.clone()
+                    };
+
+                    let bind_group = renderer.create_texture_bind_group(&accum_view_ref);
+                    let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
+                    let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    {
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Edge Blend"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
+
+                    if use_color_calib {
+                        // Input is now target_view (temp_pp)
+                        let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                        let input_view_cc = target_view; // Move
+
+                        let bind_group = renderer.create_texture_bind_group(&input_view_cc);
+                        let uniform_buffer =
+                            renderer.create_uniform_buffer(&config.color_calibration);
+                        let uniform_bind_group =
+                            renderer.create_uniform_bind_group(&uniform_buffer);
+
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Color Calib"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &preview_view, // Final
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
+                } else if use_color_calib {
+                    // Only Color Calib
+                    let renderer = self.color_calibration_renderer.as_ref().unwrap();
+
+                    let bind_group = renderer.create_texture_bind_group(&accum_view_ref);
+                    let uniform_buffer = renderer.create_uniform_buffer(&config.color_calibration);
+                    let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Preview Color Calib"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &preview_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+                    renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
                 }
             }
 
