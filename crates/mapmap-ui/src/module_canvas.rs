@@ -748,12 +748,14 @@ impl ModuleCanvas {
                                                     ui.add_space(8.0);
 
                                                     // STOP (Destructive Action - Separated)
-                                                    let stop_btn = egui::Button::new(egui::RichText::new("⏹").size(20.0))
-                                                        .min_size(small_btn_size)
-                                                        .fill(Color32::from_gray(45));
-                                                    if ui.add(stop_btn).on_hover_text("Stop & Reset").clicked()
-                                                    {
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop));
+                                                    // Mary StyleUX: Use hold-to-confirm for safety
+                                                    if crate::widgets::hold_to_action_button(
+                                                        ui,
+                                                        "⏹",
+                                                        Color32::from_rgb(255, 80, 80),
+                                                    ) {
+                                                        self.pending_playback_commands
+                                                            .push((part_id, MediaPlaybackCommand::Stop));
                                                     }
 
                                                     // LOOP
@@ -938,10 +940,11 @@ impl ModuleCanvas {
                                                         );
 
                                                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                             if ui.add(egui::Button::new("↺ Reset").small())
-                                                                .on_hover_text("Reset Clip Region")
-                                                                .clicked()
-                                                            {
+                                                            if crate::widgets::hold_to_action_button(
+                                                                ui,
+                                                                "↺ Reset",
+                                                                Color32::from_rgb(255, 180, 0),
+                                                            ) {
                                                                 *start_time = 0.0;
                                                                 *end_time = 0.0;
                                                             }
@@ -1441,19 +1444,11 @@ impl ModuleCanvas {
 
                                                 // 2. Safe Reset Button (Prominent)
                                                 ui.vertical_centered(|ui| {
-                                                    if ui
-                                                        .add(
-                                                            egui::Button::new(
-                                                                egui::RichText::new("⟲ Safe Reset")
-                                                                    .size(14.0),
-                                                            )
-                                                            .min_size(Vec2::new(140.0, 32.0)),
-                                                        )
-                                                        .on_hover_text(
-                                                            "Reset all parameters to safe defaults",
-                                                        )
-                                                        .clicked()
-                                                    {
+                                                    if crate::widgets::hold_to_action_button(
+                                                        ui,
+                                                        "⟲ Safe Reset",
+                                                        Color32::from_rgb(255, 180, 0),
+                                                    ) {
                                                         Self::set_default_effect_params(
                                                             *effect, params,
                                                         );
