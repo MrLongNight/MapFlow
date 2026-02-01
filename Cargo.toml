@@ -32,7 +32,7 @@ axum = "0.7"
 bindgen = "0.72"
 
 # Graphics utilities
-bytemuck = { version = "1.14", features = ["derive"] }
+bytemuck = { version = "1.25", features = ["derive"] }
 cbindgen = "0.29"
 cc = "1.2"
 chrono = { version = "0.4", features = ["serde"] }
