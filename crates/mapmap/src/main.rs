@@ -883,8 +883,6 @@ impl App {
                     }
                 }
 
-
-
                 // Autosave check (every 5 minutes)
                 if self.state.dirty
                     && self.last_autosave.elapsed() >= std::time::Duration::from_secs(300)
@@ -2408,9 +2406,7 @@ impl App {
                     if let Some(module) = self.state.module_manager.get_module(mod_id) {
                         if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
                             if let mapmap_core::module::ModulePartType::Source(
-                                mapmap_core::module::SourceType::MediaFile {
-                                    ref path, ..
-                                },
+                                mapmap_core::module::SourceType::MediaFile { ref path, .. },
                             ) = &part.part_type
                             {
                                 if !path.is_empty() {
@@ -2454,9 +2450,9 @@ impl App {
                                 .send(PlaybackCommand::SetLoopMode(mode));
                         }
                         mapmap_ui::MediaPlaybackCommand::Seek(seconds) => {
-                            let _ = player
-                                .command_sender()
-                                .send(PlaybackCommand::Seek(std::time::Duration::from_secs_f64(seconds)));
+                            let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                std::time::Duration::from_secs_f64(seconds),
+                            ));
                         }
                     }
                 }
@@ -2467,7 +2463,7 @@ impl App {
             let module_id = module.id;
             if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
                 let result = self.module_evaluator.evaluate(module_ref);
-                
+
                 // Update UI Trigger Visualization (only for active module)
                 if Some(module_id) == self.ui_state.module_canvas.active_module_id {
                     self.ui_state.module_canvas.last_trigger_values = result
@@ -2480,7 +2476,7 @@ impl App {
                 // Push (ModuleId, RenderOp) tuple
                 for op in &result.render_ops {
                     self.render_ops.push((module_id, op.clone()));
-                    
+
                     // Update Output Assignments
                     if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
                         if let Some(source_id) = op.source_part_id {
