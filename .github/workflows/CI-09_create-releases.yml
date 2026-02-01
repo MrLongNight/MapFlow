@@ -69,6 +69,21 @@ jobs:
         run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
+      - name: FFmpeg-Umgebungsvariablen für bindgen setzen
+        run: |
+          $vcpkgInclude = "${{ github.workspace }}\vcpkg\installed\x64-windows\include"
+          $vcpkgLib = "${{ github.workspace }}\vcpkg\installed\x64-windows\lib"
+          
+          echo "INCLUDE=$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "LIB=$vcpkgLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+          Write-Host "Umgebungsvariablen gesetzt:"
+          Write-Host "INCLUDE=$vcpkgInclude"
+          Write-Host "LIB=$vcpkgLib"
+          Write-Host "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude"
+        shell: pwsh
+
       - name: Build Release (mit FFMpeg)
         run: cargo build --release -p mapmap --features ffmpeg
         shell: pwsh
@@ -140,6 +155,21 @@ jobs:
 
       - name: VCPKG_ROOT setzen
         run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: FFmpeg-Umgebungsvariablen für bindgen setzen
+        run: |
+          $vcpkgInclude = "${{ github.workspace }}\vcpkg\installed\x64-windows\include"
+          $vcpkgLib = "${{ github.workspace }}\vcpkg\installed\x64-windows\lib"
+          
+          echo "INCLUDE=$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "LIB=$vcpkgLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+          Write-Host "Umgebungsvariablen gesetzt:"
+          Write-Host "INCLUDE=$vcpkgInclude"
+          Write-Host "LIB=$vcpkgLib"
+          Write-Host "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude"
         shell: pwsh
 
       - name: Build Release (mit FFMpeg)
