@@ -461,71 +461,75 @@ impl MediaBrowser {
 
         ui.separator();
 
-        // Search and filter bar
-        ui.horizontal(|ui| {
-            ui.label("🔍");
-            let search_response = ui.text_edit_singleline(&mut self.search_query);
-            if search_response.changed() {
-                // Search query changed
-            }
+        // Search and filter bar - wrapped in horizontal scroll to prevent forcing sidebar width
+        egui::ScrollArea::horizontal()
+            .id_salt("media_filter_scroll")
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("🔍");
+                    let search_response = ui.text_edit_singleline(&mut self.search_query);
+                    if search_response.changed() {
+                        // Search query changed
+                    }
 
-            ui.separator();
+                    ui.separator();
 
-            ui.label(locale.t("media-browser-filter"));
-            ui.selectable_value(&mut self.filter_type, None, locale.t("media-browser-all"));
-            ui.selectable_value(
-                &mut self.filter_type,
-                Some(MediaType::Video),
-                locale.t("media-browser-video"),
-            );
-            ui.selectable_value(
-                &mut self.filter_type,
-                Some(MediaType::Image),
-                locale.t("media-browser-image"),
-            );
-            ui.selectable_value(
-                &mut self.filter_type,
-                Some(MediaType::Audio),
-                locale.t("media-browser-audio"),
-            );
-
-            ui.separator();
-
-            // View mode
-            ui.selectable_value(
-                &mut self.view_mode,
-                ViewMode::Grid,
-                locale.t("media-browser-view-grid"),
-            );
-            ui.selectable_value(
-                &mut self.view_mode,
-                ViewMode::List,
-                locale.t("media-browser-view-list"),
-            );
-
-            ui.separator();
-
-            // Sort mode
-            egui::ComboBox::from_label(locale.t("media-browser-sort"))
-                .selected_text(format!("{:?}", self.sort_mode))
-                .show_ui(ui, |ui| {
+                    ui.label(locale.t("media-browser-filter"));
+                    ui.selectable_value(&mut self.filter_type, None, locale.t("media-browser-all"));
                     ui.selectable_value(
-                        &mut self.sort_mode,
-                        SortMode::Name,
-                        locale.t("media-browser-sort-name"),
+                        &mut self.filter_type,
+                        Some(MediaType::Video),
+                        locale.t("media-browser-video"),
                     );
                     ui.selectable_value(
-                        &mut self.sort_mode,
-                        SortMode::Type,
-                        locale.t("media-browser-sort-type"),
+                        &mut self.filter_type,
+                        Some(MediaType::Image),
+                        locale.t("media-browser-image"),
                     );
                     ui.selectable_value(
-                        &mut self.sort_mode,
-                        SortMode::Size,
-                        locale.t("media-browser-sort-size"),
+                        &mut self.filter_type,
+                        Some(MediaType::Audio),
+                        locale.t("media-browser-audio"),
                     );
+
+                    ui.separator();
+
+                    // View mode
+                    ui.selectable_value(
+                        &mut self.view_mode,
+                        ViewMode::Grid,
+                        locale.t("media-browser-view-grid"),
+                    );
+                    ui.selectable_value(
+                        &mut self.view_mode,
+                        ViewMode::List,
+                        locale.t("media-browser-view-list"),
+                    );
+
+                    ui.separator();
+
+                    // Sort mode
+                    egui::ComboBox::from_label(locale.t("media-browser-sort"))
+                        .selected_text(format!("{:?}", self.sort_mode))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.sort_mode,
+                                SortMode::Name,
+                                locale.t("media-browser-sort-name"),
+                            );
+                            ui.selectable_value(
+                                &mut self.sort_mode,
+                                SortMode::Type,
+                                locale.t("media-browser-sort-type"),
+                            );
+                            ui.selectable_value(
+                                &mut self.sort_mode,
+                                SortMode::Size,
+                                locale.t("media-browser-sort-size"),
+                            );
+                        });
                 });
-        });
+            });
 
         ui.separator();
 

@@ -89,7 +89,26 @@ pub enum HwAccelType {
 mod ffmpeg_impl {
     use super::*;
     use ffmpeg_next as ffmpeg;
+    use ffmpeg_sys_next as ffmpeg_sys;
     use std::path::PathBuf;
+
+    unsafe extern "C" fn get_vaapi_format(
+        _ctx: *mut ffmpeg_sys::AVCodecContext,
+        mut fmt: *const ffmpeg_sys::AVPixelFormat,
+    ) -> ffmpeg_sys::AVPixelFormat {
+        while *fmt != ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE {
+            if *fmt == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI {
+                return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI;
+            }
+            fmt = fmt.add(1);
+        }
+
+        // Fallback: Use YUV420P if available, or just return AV_PIX_FMT_NONE to let FFmpeg decide (if possible)
+        // or return a default. But get_format MUST return a value from the list or modify setup?
+        // Usually, if we return AV_PIX_FMT_NONE, decoding fails.
+        // Let's try to return YUV420P.
+        ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_YUV420P
+    }
 
     pub struct RealFFmpegDecoder {
         input_ctx: ffmpeg::format::context::Input,
@@ -227,20 +246,50 @@ mod ffmpeg_impl {
 
         /// Setup hardware acceleration
         fn setup_hw_accel(
-            _decoder: &mut ffmpeg::codec::decoder::Video,
+            decoder: &mut ffmpeg::codec::decoder::Video,
             requested: HwAccelType,
         ) -> Result<HwAccelType> {
-            // Note: Hardware acceleration setup via ffmpeg-next is platform-specific
-            // and requires additional configuration. For Phase 1, we document the
-            // approach but return None as full implementation requires platform testing
             match requested {
                 HwAccelType::None => Ok(HwAccelType::None),
+                #[cfg(target_os = "linux")]
+                HwAccelType::VAAPI => {
+                    unsafe {
+                        let mut device_ctx: *mut ffmpeg_sys::AVBufferRef = std::ptr::null_mut();
+                        let ret = ffmpeg_sys::av_hwdevice_ctx_create(
+                            &mut device_ctx,
+                            ffmpeg_sys::AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI,
+                            std::ptr::null(),
+                            std::ptr::null_mut(),
+                            0,
+                        );
+
+                        if ret < 0 {
+                            warn!("Failed to create VAAPI device context: {}", ret);
+                            return Ok(HwAccelType::None);
+                        }
+
+                        // Attach to codec context
+                        let codec_ctx = decoder.as_mut_ptr();
+                        if !codec_ctx.is_null() {
+                            (*codec_ctx).hw_device_ctx = device_ctx;
+                            (*codec_ctx).get_format = Some(get_vaapi_format);
+                        } else {
+                            ffmpeg_sys::av_buffer_unref(&mut device_ctx);
+                            return Err(MediaError::DecoderError(
+                                "Codec context is null".to_string(),
+                            ));
+                        }
+                    }
+
+                    info!("VAAPI hardware acceleration enabled");
+                    Ok(HwAccelType::VAAPI)
+                }
+                #[allow(unreachable_patterns)]
                 _ => {
                     warn!(
                         "Hardware acceleration {:?} requested but not yet fully implemented",
                         requested
                     );
-                    // TODO: Implement platform-specific hw accel setup
                     Ok(HwAccelType::None)
                 }
             }
@@ -261,6 +310,28 @@ mod ffmpeg_impl {
                 let mut decoded = ffmpeg::util::frame::Video::empty();
 
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
+                    // Handle hardware frame transfer
+                    if decoded.format() == ffmpeg::format::Pixel::VAAPI {
+                        let mut sw_frame = ffmpeg::util::frame::Video::empty();
+                        unsafe {
+                            let ret = ffmpeg_sys::av_hwframe_transfer_data(
+                                sw_frame.as_mut_ptr(),
+                                decoded.as_ptr(),
+                                0,
+                            );
+
+                            if ret < 0 {
+                                return Err(MediaError::DecoderError(format!(
+                                    "Failed to transfer hardware frame: {}",
+                                    ret
+                                )));
+                            }
+
+                            sw_frame.set_pts(decoded.pts());
+                            decoded = sw_frame;
+                        }
+                    }
+
                     // Scale to RGBA
                     let mut rgb_frame = ffmpeg::util::frame::Video::empty();
                     self.scaler

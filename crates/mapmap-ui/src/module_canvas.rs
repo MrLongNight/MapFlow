@@ -251,8 +251,8 @@ pub struct ModuleCanvas {
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
     pub editing_part_id: Option<ModulePartId>,
-    /// Video Texture Previews for Media Nodes (Part ID -> Egui Texture)
-    pub node_previews: std::collections::HashMap<ModulePartId, egui::TextureId>,
+    /// Video Texture Previews for Media Nodes ((Module ID, Part ID) -> Egui Texture)
+    pub node_previews: std::collections::HashMap<(u64, u64), egui::TextureId>,
     /// Pending playback commands (Part ID, Command)
     pub pending_playback_commands: Vec<(ModulePartId, MediaPlaybackCommand)>,
     /// Last diagnostic check results
@@ -778,7 +778,7 @@ impl ModuleCanvas {
 
                                                 // 3. PREVIEW & INTERACTIVE TIMELINE
                                                 // Preview Image
-                                                if let Some(tex_id) = self.node_previews.get(&part_id) {
+                                                if let Some(tex_id) = self.node_previews.get(&(module_id, part_id)) {
                                                     let size = Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0); // Keep aspect ratio
                                                     ui.image((*tex_id, size));
                                                 }
@@ -2504,7 +2504,7 @@ impl ModuleCanvas {
         ui: &mut Ui,
         manager: &mut ModuleManager,
         locale: &LocaleManager,
-        _actions: &mut [crate::UIAction],
+        actions: &mut Vec<crate::UIAction>,
     ) {
         // === KEYBOARD SHORTCUTS ===
         if !self.selected_parts.is_empty()
@@ -3350,7 +3350,7 @@ impl ModuleCanvas {
 
         if let Some(module) = active_module {
             // Render the canvas taking up the full available space
-            self.render_canvas(ui, module, locale);
+            self.render_canvas(ui, module, locale, actions);
             // Properties popup removed - moved to docked inspector
         } else {
             // Show a message if no module is selected
@@ -3366,7 +3366,13 @@ impl ModuleCanvas {
         }
     }
 
-    fn render_canvas(&mut self, ui: &mut Ui, module: &mut MapFlowModule, _locale: &LocaleManager) {
+    fn render_canvas(
+        &mut self,
+        ui: &mut Ui,
+        module: &mut MapFlowModule,
+        _locale: &LocaleManager,
+        actions: &mut Vec<crate::UIAction>,
+    ) {
         self.ensure_icons_loaded(ui.ctx());
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
@@ -3568,11 +3574,13 @@ impl ModuleCanvas {
             }
         }
 
+        let pan_offset = self.pan_offset;
+        let zoom = self.zoom;
         let to_screen =
-            |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + self.pan_offset) * self.zoom };
+            move |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + pan_offset) * zoom };
 
-        let _from_screen = |screen_pos: Pos2| -> Pos2 {
-            let v = (screen_pos - canvas_rect.min) / self.zoom - self.pan_offset;
+        let _from_screen = move |screen_pos: Pos2| -> Pos2 {
+            let v = (screen_pos - canvas_rect.min) / zoom - pan_offset;
             Pos2::new(v.x, v.y)
         };
 
@@ -3580,7 +3588,7 @@ impl ModuleCanvas {
         self.draw_grid(&painter, canvas_rect);
 
         // Draw connections first (behind nodes)
-        self.draw_connections(&painter, module, &to_screen);
+        self.draw_connections(ui, &painter, module, &to_screen);
 
         // Collect socket positions for hit detection
         let mut all_sockets: Vec<SocketInfo> = Vec::new();
@@ -3725,45 +3733,6 @@ impl ModuleCanvas {
 
                 // Draw endpoint circle at mouse
                 painter.circle_filled(mouse_pos, 6.0 * self.zoom, wire_color);
-            }
-        }
-
-        // Handle right-click for context menu
-        let right_clicked = ui.input(|i| i.pointer.button_clicked(egui::PointerButton::Secondary));
-        if right_clicked {
-            if let Some(pos) = pointer_pos {
-                // Check if clicking near a connection line
-                for (conn_idx, conn) in module.connections.iter().enumerate() {
-                    // Find positions of connected sockets
-                    if let (Some(from_part), Some(to_part)) = (
-                        module.parts.iter().find(|p| p.id == conn.from_part),
-                        module.parts.iter().find(|p| p.id == conn.to_part),
-                    ) {
-                        // Adjust for socket offset (approximation)
-                        let from_socket_y = 50.0 + conn.from_socket as f32 * 20.0;
-                        let from_screen_socket = to_screen(Pos2::new(
-                            from_part.position.0 + 180.0,
-                            from_part.position.1 + from_socket_y,
-                        ));
-
-                        let to_socket_y = 50.0 + conn.to_socket as f32 * 20.0;
-                        let to_screen_socket = to_screen(Pos2::new(
-                            to_part.position.0,
-                            to_part.position.1 + to_socket_y,
-                        ));
-
-                        // Simple distance check to bezier curve (approximate with line)
-                        let mid = Pos2::new(
-                            (from_screen_socket.x + to_screen_socket.x) / 2.0,
-                            (from_screen_socket.y + to_screen_socket.y) / 2.0,
-                        );
-                        if pos.distance(mid) < 20.0 * self.zoom {
-                            self.context_menu_pos = Some(pos);
-                            self.context_menu_connection = Some(conn_idx);
-                            break;
-                        }
-                    }
-                }
             }
         }
 
@@ -4004,7 +3973,7 @@ impl ModuleCanvas {
                 }
             }
 
-            self.draw_part_with_delete(ui, &painter, part, part_screen_rect);
+            self.draw_part_with_delete(ui, &painter, part, part_screen_rect, actions, module.id);
         }
 
         // Apply resize operations
@@ -4128,6 +4097,49 @@ impl ModuleCanvas {
                 && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
             {
                 self.context_menu_part = None;
+                self.context_menu_pos = None;
+            }
+        }
+
+        // Draw context menu for connections
+        if let (Some(conn_idx), Some(pos)) = (self.context_menu_connection, self.context_menu_pos) {
+            let menu_width = 150.0;
+            let menu_height = 40.0;
+            let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
+
+            // Draw menu background
+            let painter = ui.painter();
+            painter.rect_filled(
+                menu_rect,
+                0.0,
+                Color32::from_rgba_unmultiplied(40, 40, 50, 250),
+            );
+            painter.rect_stroke(
+                menu_rect,
+                0.0,
+                Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
+                egui::StrokeKind::Inside,
+            );
+
+            // Menu items
+            let inner_rect = menu_rect.shrink(4.0);
+            ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
+                ui.vertical(|ui| {
+                    if ui.button("🗑 Delete Connection").clicked() {
+                        if conn_idx < module.connections.len() {
+                            module.connections.remove(conn_idx);
+                        }
+                        self.context_menu_connection = None;
+                        self.context_menu_pos = None;
+                    }
+                });
+            });
+
+            // Close menu on click outside
+            if ui.input(|i| i.pointer.any_click())
+                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+            {
+                self.context_menu_connection = None;
                 self.context_menu_pos = None;
             }
         }
@@ -5485,17 +5497,23 @@ impl ModuleCanvas {
         }
     }
 
-    fn draw_connections<F>(&self, painter: &egui::Painter, module: &MapFlowModule, to_screen: &F)
-    where
+    fn draw_connections<F>(
+        &mut self,
+        ui: &Ui,
+        painter: &egui::Painter,
+        module: &MapFlowModule,
+        to_screen: &F,
+    ) where
         F: Fn(Pos2) -> Pos2,
     {
         let node_width = 200.0;
         let title_height = 28.0;
         let socket_offset_y = 10.0;
         let socket_spacing = 22.0;
-        // let socket_radius = 6.0; // Not used directly, we draw plugs from center
+        let pointer_pos = ui.input(|i| i.pointer.hover_pos());
+        let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
 
-        for conn in &module.connections {
+        for (conn_idx, conn) in module.connections.iter().enumerate() {
             // Find source and target parts
             let from_part = module.parts.iter().find(|p| p.id == conn.from_part);
             let to_part = module.parts.iter().find(|p| p.id == conn.to_part);
@@ -5544,7 +5562,7 @@ impl ModuleCanvas {
                     mapmap_core::module::ModuleSocketType::Link => "power-plug.svg",
                 };
 
-                // Draw Cable (Bezier) FIRST so plugs are on top
+                // Draw Cable (Bezier)
                 let cable_start = start_pos;
                 let cable_end = end_pos;
 
@@ -5554,8 +5572,58 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
+                // Hit Detection (Approximate Bezier with segments)
+                let mut is_hovered = false;
+                if let Some(pos) = pointer_pos {
+                    let steps = 20;
+                    let threshold = 5.0 * self.zoom.max(1.0); // Adjust hit area with zoom
+
+                    // Iterative Bezier calculation (De Casteljau's algorithm logic unrolled/simplified)
+                    let mut prev_p = cable_start;
+                    for i in 1..=steps {
+                        let t = i as f32 / steps as f32;
+
+                        // Cubic Bezier interpolation
+                        // B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t) t^2 P2 + t^3 P3
+                        // Let's use simple lerps which `Pos2` supports
+                        let l1 = cable_start.lerp(ctrl1, t);
+                        let l2 = ctrl1.lerp(ctrl2, t);
+                        let l3 = ctrl2.lerp(cable_end, t);
+                        let q1 = l1.lerp(l2, t);
+                        let q2 = l2.lerp(l3, t);
+                        let p = q1.lerp(q2, t);
+
+                        // Distance to segment
+                        let segment = p - prev_p;
+                        let len_sq = segment.length_sq();
+                        if len_sq > 0.0 {
+                            let t_proj = ((pos - prev_p).dot(segment) / len_sq).clamp(0.0, 1.0);
+                            let closest = prev_p + segment * t_proj;
+                            if pos.distance(closest) < threshold {
+                                is_hovered = true;
+                                break;
+                            }
+                        }
+                        prev_p = p;
+                    }
+                }
+
+                // Handle Interaction
+                if is_hovered && secondary_clicked {
+                    self.context_menu_connection = Some(conn_idx);
+                    self.context_menu_pos = pointer_pos;
+                    self.context_menu_part = None;
+                }
+
+                // Visual Style
+                let (stroke_width, stroke_color, glow_width) = if is_hovered {
+                    (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
+                } else {
+                    (2.0 * self.zoom, cable_color, 6.0 * self.zoom)
+                };
+
                 // Glow (Behind)
-                let glow_stroke = Stroke::new(6.0 * self.zoom, glow_color);
+                let glow_stroke = Stroke::new(glow_width, glow_color);
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
@@ -5564,7 +5632,7 @@ impl ModuleCanvas {
                 ));
 
                 // Core Cable (Front)
-                let cable_stroke = Stroke::new(2.0 * self.zoom, cable_color);
+                let cable_stroke = Stroke::new(stroke_width, stroke_color);
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
@@ -5608,6 +5676,8 @@ impl ModuleCanvas {
         painter: &egui::Painter,
         part: &ModulePart,
         rect: Rect,
+        actions: &mut Vec<UIAction>,
+        module_id: mapmap_core::module::ModuleId,
     ) {
         // Get part color and name based on type
         let (_bg_color, title_color, icon, name) = Self::get_part_style(&part.part_type);
@@ -5674,6 +5744,34 @@ impl ModuleCanvas {
         let neutral_bg = Color32::from_rgb(20, 20, 25);
         // Sharp corners for "Cyber" look
         painter.rect_filled(rect, 0, neutral_bg);
+
+        // Handle drag and drop for Media Files
+        if let mapmap_core::module::ModulePartType::Source(
+            mapmap_core::module::SourceType::MediaFile { .. },
+        ) = &part.part_type
+        {
+            if ui.rect_contains_pointer(rect) {
+                if let Some(dropped_path) = ui
+                    .ctx()
+                    .data(|d| d.get_temp::<std::path::PathBuf>(egui::Id::new("media_path")))
+                {
+                    painter.rect_stroke(
+                        rect,
+                        0,
+                        egui::Stroke::new(2.0, egui::Color32::YELLOW),
+                        egui::StrokeKind::Outside,
+                    );
+
+                    if ui.input(|i| i.pointer.any_released()) {
+                        actions.push(UIAction::SetMediaFile(
+                            module_id,
+                            part.id,
+                            dropped_path.to_string_lossy().to_string(),
+                        ));
+                    }
+                }
+            }
+        }
 
         // Node border - colored by type for quick identification
         // This replaces the generic gray border

@@ -168,7 +168,17 @@ impl AudioPanel {
                 ViewMode::Waveform => self.render_waveform(ui, &analysis.waveform),
             }
         } else {
-            ui.label(locale.t("audio-panel-no-data"));
+            ui.vertical_centered(|ui| {
+                ui.add_space(10.0);
+                if selected_audio_device.is_none() {
+                    ui.label(locale.t("audio-panel-select-device"));
+                    ui.label(egui::RichText::new("⚠️").size(24.0));
+                } else {
+                    ui.label(locale.t("audio-panel-waiting-signal"));
+                    ui.spinner();
+                }
+                ui.add_space(10.0);
+            });
         }
 
         action

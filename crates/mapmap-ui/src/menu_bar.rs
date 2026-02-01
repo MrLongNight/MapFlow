@@ -185,6 +185,9 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         &mut ui_state.show_module_canvas,
                         ui_state.i18n.t("panel-module-canvas"),
                     );
+                    if ui.button("Media Manager").clicked() {
+                        actions.push(UIAction::ToggleMediaManager);
+                    }
                     ui.checkbox(
                         &mut ui_state.show_controller_overlay,
                         "MIDI Controller Overlay",
