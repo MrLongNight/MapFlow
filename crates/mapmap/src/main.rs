@@ -485,15 +485,15 @@ impl App {
         let preview_mesh = mapmap_core::Mesh {
             mesh_type: mapmap_core::MeshType::Quad,
             vertices: vec![
-                // Top-Left (NDC -1, 1) -> UV 0,0
-                mapmap_core::MeshVertex::new(glam::Vec2::new(-1.0, 1.0), glam::Vec2::new(0.0, 0.0)),
-                // Top-Right (NDC 1, 1) -> UV 1,0
-                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 1.0), glam::Vec2::new(1.0, 0.0)),
-                // Bottom-Right (NDC 1, -1) -> UV 1,1
-                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, -1.0), glam::Vec2::new(1.0, 1.0)),
-                // Bottom-Left (NDC -1, -1) -> UV 0,1
+                // Top-Left (0, 0) -> UV 0,0
+                mapmap_core::MeshVertex::new(glam::Vec2::new(0.0, 0.0), glam::Vec2::new(0.0, 0.0)),
+                // Top-Right (1, 0) -> UV 1,0
+                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 0.0), glam::Vec2::new(1.0, 0.0)),
+                // Bottom-Right (1, 1) -> UV 1,1
+                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 1.0), glam::Vec2::new(1.0, 1.0)),
+                // Bottom-Left (0, 1) -> UV 0,1
                 mapmap_core::MeshVertex::new(
-                    glam::Vec2::new(-1.0, -1.0),
+                    glam::Vec2::new(0.0, 1.0),
                     glam::Vec2::new(0.0, 1.0),
                 ),
             ],
