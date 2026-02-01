@@ -2176,9 +2176,11 @@ impl App {
     fn update_media_players(&mut self, dt: f32) {
         static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
+        #[allow(clippy::manual_is_multiple_of)]
         let log_this_frame = FRAME_LOG_COUNTER
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-            .is_multiple_of(60);
+            % 60
+            == 0;
 
         let texture_pool = &mut self.texture_pool;
         let queue = &self.backend.queue;
@@ -2262,8 +2264,11 @@ impl App {
         // Debug Log Control
         static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
-        let log_this =
-            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+        #[allow(clippy::manual_is_multiple_of)]
+        let log_this = PREP_LOG_COUNTER
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            % 300
+            == 0;
 
         // 1. Collect NODE Previews (Media Files, etc.)
         for module in self.state.module_manager.modules() {
@@ -2672,37 +2677,34 @@ impl App {
     /// Process pending MCP actions (e.g. from UI or external clients)
     fn handle_mcp_actions(&mut self) {
         while let Ok(action) = self.mcp_receiver.try_recv() {
-            match action {
-                mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) => {
-                    info!(
-                        "MCP: SetModuleSourcePath({}, {}, {:?})",
-                        mod_id, part_id, path
-                    );
-                    if let Some(module) = self.state.module_manager.get_module_mut(mod_id) {
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                            if let mapmap_core::module::ModulePartType::Source(
-                                mapmap_core::module::SourceType::MediaFile {
-                                    path: ref mut current_path,
-                                    ..
-                                },
-                            ) = &mut part.part_type
-                            {
-                                let new_path_str = path.to_string_lossy().to_string();
-                                if *current_path != new_path_str {
-                                    *current_path = new_path_str;
-                                    self.state.dirty = true;
+            if let mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) = action {
+                info!(
+                    "MCP: SetModuleSourcePath({}, {}, {:?})",
+                    mod_id, part_id, path
+                );
+                if let Some(module) = self.state.module_manager.get_module_mut(mod_id) {
+                    if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                        if let mapmap_core::module::ModulePartType::Source(
+                            mapmap_core::module::SourceType::MediaFile {
+                                path: ref mut current_path,
+                                ..
+                            },
+                        ) = &mut part.part_type
+                        {
+                            let new_path_str = path.to_string_lossy().to_string();
+                            if *current_path != new_path_str {
+                                *current_path = new_path_str;
+                                self.state.dirty = true;
 
-                                    // Force player reload by removing existing instance
-                                    // sync_media_players will recreate it with new path
-                                    if self.media_players.remove(&(mod_id, part_id)).is_some() {
-                                        info!("Removed player for {} to force reload", part_id);
-                                    }
+                                // Force player reload by removing existing instance
+                                // sync_media_players will recreate it with new path
+                                if self.media_players.remove(&(mod_id, part_id)).is_some() {
+                                    info!("Removed player for {} to force reload", part_id);
                                 }
                             }
                         }
                     }
                 }
-                _ => {}
             }
         }
     }
