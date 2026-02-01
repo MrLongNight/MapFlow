@@ -32,3 +32,8 @@
 **Vulnerability:** The WebSocket message handler (`handle_text_message`) deserialized JSON into strictly typed structs (`ControlTarget`, `ControlValue`) but failed to invoke their defined `.validate()` methods. This allowed malicious payloads (e.g., infinite strings, invalid control characters) to bypass the validation logic intended by the type definitions.
 **Learning:** Defining validation logic on a type is not enough; it must be explicitly invoked at the IO boundary. Serde deserialization handles structure but not semantic validity (lengths, ranges, content rules).
 **Prevention:** Always pair `serde::from_str` with explicit validation calls (`.validate()`) immediately after deserialization at the system boundary. Enforce this pattern in all request handlers.
+
+## 2026-01-04 - Unsafe Buffer Over-read in VAAPI Format Negotiation
+**Vulnerability:** The `get_vaapi_format` C-callback function in `crates/mapmap-media/src/decoder.rs` iterated over a raw `AVPixelFormat` pointer assuming a null-terminated list. If the `ffmpeg` library or a malicious caller provided a non-terminated list, this would result in a buffer over-read (OOB access), potentially crashing the application or exposing memory.
+**Learning:** `unsafe` code interacting with C-APIs must be strictly defensive. We cannot assume the contract of the external library is always upheld, especially when the iteration count is unbounded.
+**Prevention:** Always impose a sane upper limit (e.g., `MAX_FORMATS`) on unbounded loops over raw pointers and check for null pointers before access. This ensures that even if the external data is malformed, the application remains stable.
