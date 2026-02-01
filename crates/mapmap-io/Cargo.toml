@@ -63,7 +63,7 @@ objc = { version = "0.2", optional = true }
 # Platform-specific dependencies
 [target.'cfg(windows)'.dependencies]
 rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
-windows = { version = "0.58", features = [
+windows = { version = "0.62", features = [
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Dxgi",
     "Win32_System_Com",
