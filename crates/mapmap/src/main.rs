@@ -100,6 +100,8 @@ struct App {
     control_manager: ControlManager,
     /// Flag to track if exit was requested
     exit_requested: bool,
+    /// Flag to track if restart was requested
+    restart_requested: bool,
     /// The oscillator distortion renderer.
     oscillator_renderer: Option<OscillatorRenderer>,
     /// A dummy texture used as input for effects when no other source is available.
@@ -604,6 +606,7 @@ impl App {
             action_sender,
             control_manager,
             exit_requested: false,
+            restart_requested: false,
             oscillator_renderer,
             dummy_texture: Some(dummy_texture),
             dummy_view: Some(dummy_view),
@@ -690,6 +693,10 @@ impl App {
         event: winit::event::Event<()>,
         elwt: &winit::event_loop::ActiveEventLoop,
     ) -> Result<()> {
+        if self.exit_requested {
+            elwt.exit();
+        }
+
         match &event {
             winit::event::Event::WindowEvent { event, window_id } => {
                 if let Some(main_window) = self.window_manager.get(0) {
@@ -801,6 +808,21 @@ impl App {
                     error!("Exit autosave failed: {}", e);
                 } else {
                     info!("Exit autosave successful to {:?}", autosave_path);
+                }
+
+                if self.restart_requested {
+                    info!("Restarting application...");
+                    if let Ok(current_exe) = std::env::current_exe() {
+                        let args: Vec<String> = std::env::args().collect();
+                        // Spawn new process detached
+                        match std::process::Command::new(current_exe)
+                            .args(&args[1..])
+                            .spawn()
+                        {
+                            Ok(_) => info!("Restart process spawned successfully."),
+                            Err(e) => error!("Failed to restart application: {}", e),
+                        }
+                    }
                 }
             }
             winit::event::Event::AboutToWait => {
@@ -3565,12 +3587,14 @@ impl App {
                                                         if ui.selectable_label(is_selected, &name).clicked() {
                                                             self.ui_state.user_config.preferred_gpu = Some(name);
                                                             let _ = self.ui_state.user_config.save();
+                                                            self.restart_requested = true;
+                                                            self.exit_requested = true;
                                                         }
                                                     }
                                                 });
                                         });
                                         ui.label(
-                                            egui::RichText::new("⚠️ GPU change requires restart")
+                                            egui::RichText::new("⚠️ GPU change will restart the app automatically")
                                                 .color(egui::Color32::YELLOW)
                                                 .small(),
                                         );
