@@ -92,6 +92,7 @@ mod ffmpeg_impl {
     use ffmpeg_sys_next as ffmpeg_sys;
     use std::path::PathBuf;
 
+    #[cfg(target_os = "linux")]
     unsafe extern "C" fn get_vaapi_format(
         _ctx: *mut ffmpeg_sys::AVCodecContext,
         mut fmt: *const ffmpeg_sys::AVPixelFormat,
@@ -246,7 +247,7 @@ mod ffmpeg_impl {
 
         /// Setup hardware acceleration
         fn setup_hw_accel(
-            decoder: &mut ffmpeg::codec::decoder::Video,
+            _decoder: &mut ffmpeg::codec::decoder::Video,
             requested: HwAccelType,
         ) -> Result<HwAccelType> {
             match requested {
@@ -269,7 +270,7 @@ mod ffmpeg_impl {
                         }
 
                         // Attach to codec context
-                        let codec_ctx = decoder.as_mut_ptr();
+                        let codec_ctx = _decoder.as_mut_ptr();
                         if !codec_ctx.is_null() {
                             (*codec_ctx).hw_device_ctx = device_ctx;
                             (*codec_ctx).get_format = Some(get_vaapi_format);
@@ -311,7 +312,7 @@ mod ffmpeg_impl {
 
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
                     // Handle hardware frame transfer
-                    if decoded.format() == ffmpeg::format::Pixel::VAAPI {
+                    if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI as i32 {
                         let mut sw_frame = ffmpeg::util::frame::Video::empty();
                         unsafe {
                             let ret = ffmpeg_sys::av_hwframe_transfer_data(
