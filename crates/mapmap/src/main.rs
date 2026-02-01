@@ -1381,6 +1381,12 @@ impl App {
                     self.state.dirty = true;
                 }
 
+                mapmap_ui::UIAction::MediaCommand(part_id, command) => {
+                    self.ui_state
+                        .module_canvas
+                        .pending_playback_commands
+                        .push((part_id, command));
+                }
                 // Fallback
                 _ => {}
             }
@@ -2818,7 +2824,7 @@ impl App {
                             .resizable(true)
                             .default_width(280.0)
                             .min_width(200.0)
-                            .max_width(500.0)
+                            .max_width(1000.0)
                             .show(ctx, |ui| {
                                 // Sidebar header with collapse button
                                 ui.horizontal(|ui| {
@@ -2960,13 +2966,37 @@ impl App {
                                             },
                                         );
 
-                                        // Splitter (resize handle)
-                                        let splitter_response = ui.add(egui::Separator::default().spacing(8.0));
-                                        if splitter_response.dragged() {
+                                        // Custom Horizontal Splitter (Resize Handle)
+                                        let splitter_height = 6.0;
+                                        let (splitter_rect, splitter_response) = ui.allocate_at_least(
+                                            egui::vec2(ui.available_width(), splitter_height),
+                                            egui::Sense::drag(),
+                                        );
+
+                                        // Draw the splitter handle
+                                        let is_hovered = splitter_response.hovered();
+                                        let is_dragged = splitter_response.dragged();
+                                        let color = if is_dragged {
+                                            ui.visuals().widgets.active.bg_fill
+                                        } else if is_hovered {
+                                            ui.visuals().widgets.hovered.bg_fill
+                                        } else {
+                                            ui.visuals().widgets.noninteractive.bg_fill
+                                        };
+
+                                        ui.painter().hline(
+                                            splitter_rect.left()..=splitter_rect.right(),
+                                            splitter_rect.center().y,
+                                            (2.0, color),
+                                        );
+
+                                        if is_dragged {
                                             self.ui_state.control_panel_height += splitter_response.drag_delta().y;
-                                            self.ui_state.control_panel_height = self.ui_state.control_panel_height.clamp(50.0, 500.0);
+                                            // Ensure minimum heights for both panels
+                                            let total_available = ui.available_height();
+                                            self.ui_state.control_panel_height = self.ui_state.control_panel_height.clamp(100.0, total_available - 150.0);
                                         }
-                                        if splitter_response.hovered() {
+                                        if is_hovered || is_dragged {
                                             ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
                                         }
                                     } else {
