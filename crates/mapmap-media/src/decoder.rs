@@ -103,10 +103,6 @@ mod ffmpeg_impl {
             fmt = fmt.add(1);
         }
 
-        // Fallback: Use YUV420P if available, or just return AV_PIX_FMT_NONE to let FFmpeg decide (if possible)
-        // or return a default. But get_format MUST return a value from the list or modify setup?
-        // Usually, if we return AV_PIX_FMT_NONE, decoding fails.
-        // Let's try to return YUV420P.
         ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_YUV420P
     }
 

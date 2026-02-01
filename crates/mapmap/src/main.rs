@@ -2213,8 +2213,9 @@ impl App {
         // Debug: Log module/part counts at start
         static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
-        let log_this =
-            PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
+        let log_this = PREP_LOG_COUNTER
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .is_multiple_of(300);
 
         for module in self.state.module_manager.modules() {
             if log_this {
@@ -2474,35 +2475,9 @@ impl App {
         // Register Output Preview Textures
         let mut current_output_previews: std::collections::HashMap<u64, egui::TextureId> =
             std::collections::HashMap::new();
-
-        static CHECK_LOG_COUNTER: std::sync::atomic::AtomicU32 =
-            std::sync::atomic::AtomicU32::new(0);
-        let do_log =
-            CHECK_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
-
-        if do_log {
-            if self.output_assignments.is_empty() {
-                tracing::info!("prepare_texture_previews: output_assignments is EMPTY");
-            } else {
-                tracing::info!(
-                    "prepare_texture_previews: assigned outputs: {}",
-                    self.output_assignments.len()
-                );
-            }
-        }
-
         for (output_id, tex_names) in &self.output_assignments {
             // Use the last assigned texture for preview (topmost layer)
             if let Some(tex_name) = tex_names.last() {
-                if do_log {
-                    tracing::info!(
-                        "  Output {}: looking for texture '{}' (exists: {})",
-                        output_id,
-                        tex_name,
-                        self.texture_pool.has_texture(tex_name)
-                    );
-                }
-
                 if self.texture_pool.has_texture(tex_name) {
                     let tex_view = self.texture_pool.get_view(tex_name);
 
