@@ -42,7 +42,7 @@ use rfd::FileDialog;
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::thread;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use window_manager::WindowManager;
 use winit::{event::WindowEvent, event_loop::EventLoop};
@@ -850,6 +850,23 @@ impl App {
                 // Always use Poll mode - VJ software needs continuous updates
                 elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
+                // --- AUDIO ANALYSIS ---
+                let timestamp = self.start_time.elapsed().as_secs_f64();
+                if let Some(backend) = &mut self.audio_backend {
+                    let samples = backend.get_samples();
+                    if !samples.is_empty() {
+                        self.audio_analyzer.process_samples(&samples, timestamp);
+                    }
+                }
+
+                // Get analysis results
+                let analysis_v2 = self.audio_analyzer.get_latest_analysis();
+
+                // --- MODULE EVALUATION STATE READY ---
+                self.module_evaluator.update_audio(&analysis_v2);
+                self.module_evaluator
+                    .update_keys(&self.ui_state.active_keys);
+
                 // --- Update State (Physics/Media) ---
                 let actual_dt = time_since_last.as_secs_f32();
                 self.update(elwt, actual_dt);
@@ -861,6 +878,16 @@ impl App {
                     while let Some(msg) = handler.poll_message() {
                         self.ui_state.controller_overlay.process_midi(msg);
                         self.ui_state.module_canvas.process_midi_message(msg);
+                    }
+                }
+
+                // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
+                // This ensures output windows update immediately, not after event dispatch
+                let output_ids: Vec<u64> =
+                    self.window_manager.iter().map(|wc| wc.output_id).collect();
+                for output_id in output_ids {
+                    if let Err(e) = self.render(output_id) {
+                        error!("Render error on output {}: {}", output_id, e);
                     }
                 }
 
@@ -882,383 +909,6 @@ impl App {
                         self.last_autosave = std::time::Instant::now();
                     }
                 }
-
-                // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
-                // This ensures output windows update immediately, not after event dispatch
-                let output_ids: Vec<u64> =
-                    self.window_manager.iter().map(|wc| wc.output_id).collect();
-                for output_id in output_ids {
-                    if let Err(e) = self.render(output_id) {
-                        error!("Render error on output {}: {}", output_id, e);
-                    }
-                }
-
-                // Process audio
-                // Process audio
-                let timestamp = self.start_time.elapsed().as_secs_f64();
-                if let Some(backend) = &mut self.audio_backend {
-                    let samples = backend.get_samples();
-                    if !samples.is_empty() {
-                        self.audio_analyzer.process_samples(&samples, timestamp);
-                    }
-                }
-
-                // Get analysis results
-                let analysis_v2 = self.audio_analyzer.get_latest_analysis();
-
-                // --- MODULE EVALUATION ---
-                self.module_evaluator.update_audio(&analysis_v2);
-                self.module_evaluator
-                    .update_keys(&self.ui_state.active_keys);
-
-                // Process pending playback commands from UI
-                for (part_id, cmd) in self
-                    .ui_state
-                    .module_canvas
-                    .pending_playback_commands
-                    .drain(..)
-                {
-                    info!(
-                        "Processing playback command {:?} for part_id={}",
-                        cmd, part_id
-                    );
-                    // If player doesn't exist and we get any command (except Reload), try to create it
-                    // Find the module that owns this part to construct the key
-                    let mut target_module_id = None;
-                    for module in self.state.module_manager.modules() {
-                        if module.parts.iter().any(|p| p.id == part_id) {
-                            target_module_id = Some(module.id);
-                            break;
-                        }
-                    }
-
-                    if let Some(mod_id) = target_module_id {
-                        let player_key = (mod_id, part_id);
-
-                        // If player doesn't exist and we get any command (except Reload), try to create it
-                        if !self.media_players.contains_key(&player_key)
-                            && cmd != mapmap_ui::MediaPlaybackCommand::Reload
-                        {
-                            info!(
-                                "Player doesn't exist for part_id={}, attempting to create...",
-                                part_id
-                            );
-                            // Find the source path
-                            if let Some(module) = self.state.module_manager.get_module(mod_id) {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        info!(
-                                            "Found media path: '{}' in module '{}'",
-                                            path, module.name
-                                        );
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Successfully created player for '{}'",
-                                                        path
-                                                    );
-                                                    self.media_players
-                                                        .insert(player_key, (path.clone(), player));
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to load media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if let Some((_, player)) = self.media_players.get_mut(&player_key) {
-                            match cmd {
-                                mapmap_ui::MediaPlaybackCommand::Play => {
-                                    let _ = player.command_sender().send(PlaybackCommand::Play);
-                                }
-                                mapmap_ui::MediaPlaybackCommand::Pause => {
-                                    let _ = player.command_sender().send(PlaybackCommand::Pause);
-                                }
-                                mapmap_ui::MediaPlaybackCommand::Stop => {
-                                    let _ = player.command_sender().send(PlaybackCommand::Stop);
-                                }
-                                mapmap_ui::MediaPlaybackCommand::Reload => {
-                                    // Remove existing player - it will be recreated with new path
-                                    info!("Reloading media player for part_id={}", part_id);
-                                    // (Player removal handled below)
-                                }
-                                mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
-                                    info!("Setting speed to {} for part_id={}", speed, part_id);
-                                    let _ = player
-                                        .command_sender()
-                                        .send(PlaybackCommand::SetSpeed(speed));
-                                }
-                                mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
-                                    info!("Setting loop to {} for part_id={}", enabled, part_id);
-                                    let mode = if enabled {
-                                        mapmap_media::LoopMode::Loop
-                                    } else {
-                                        mapmap_media::LoopMode::PlayOnce
-                                    };
-                                    let _ = player
-                                        .command_sender()
-                                        .send(PlaybackCommand::SetLoopMode(mode));
-                                }
-                                mapmap_ui::MediaPlaybackCommand::Seek(position) => {
-                                    info!("Seeking to {} for part_id={}", position, part_id);
-                                    let _ = player.command_sender().send(PlaybackCommand::Seek(
-                                        std::time::Duration::from_secs_f64(position),
-                                    ));
-                                }
-                            }
-                        }
-
-                        // Handle Reload by removing player and immediately recreating
-                        if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
-                            if self.media_players.remove(&player_key).is_some() {
-                                info!(
-                                    "Removed old media player for part_id={} for reload",
-                                    part_id
-                                );
-                            }
-                            // Immediately recreate the player
-                            if let Some(module) = self.state.module_manager.get_module(mod_id) {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Recreated player for '{}' after reload",
-                                                        path
-                                                    );
-                                                    // Auto-play after reload
-                                                    let _ = player
-                                                        .command_sender()
-                                                        .send(PlaybackCommand::Play);
-                                                    self.media_players
-                                                        .insert(player_key, (path.clone(), player));
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to reload media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        warn!("Could not find module owner for part_id={}", part_id);
-                    }
-                }
-
-                // Update all active media players and upload frames to texture pool
-                // This ensures previews work even without triggers connected
-
-                // (Redundant media player update removed - handled in regular update_media_players path)
-
-                // CLEAR render ops for the new frame
-                self.render_ops.clear();
-
-                // Evaluate ALL modules to support parallel output
-                for module in self.state.module_manager.list_modules() {
-                    // DEBUG: Log which module we're evaluating
-                    debug!(
-                        "Evaluating module '{}' (ID {}): parts={}, connections={}",
-                        module.name,
-                        module.id,
-                        module.parts.len(),
-                        module.connections.len()
-                    );
-
-                    let result = self.module_evaluator.evaluate(module);
-
-                    // Accumulate Render Ops
-                    let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
-                        .render_ops
-                        .iter()
-                        .cloned()
-                        .map(|op| (module.id, op))
-                        .collect();
-                    self.render_ops.append(&mut module_ops);
-
-                    // Update UI Trigger Visualization (only for active module)
-                    if Some(module.id) == self.ui_state.module_canvas.active_module_id {
-                        self.ui_state.module_canvas.last_trigger_values = result
-                            .trigger_values
-                            .iter()
-                            .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
-                            .collect();
-                    }
-
-                    // 1. Handle Source Commands for this module
-                    for (part_id, cmd) in &result.source_commands {
-                        match cmd {
-                            mapmap_core::SourceCommand::PlayMedia {
-                                path,
-                                trigger_value,
-                            } => {
-                                let path = path.clone();
-                                let part_id = *part_id;
-                                let player_key = (module.id, part_id);
-                                if path.is_empty() {
-                                    continue;
-                                }
-
-                                let player_needs_reload = if let Some((current_path, _)) =
-                                    self.media_players.get(&player_key)
-                                {
-                                    current_path != &path
-                                } else {
-                                    true
-                                };
-
-                                if player_needs_reload {
-                                    match mapmap_media::open_path(&path) {
-                                        Ok(player) => {
-                                            self.media_players
-                                                .insert(player_key, (path.clone(), player));
-                                        }
-                                        Err(e) => {
-                                            error!("Failed to load media '{}': {}", path, e);
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                if let Some((_, player)) = self.media_players.get_mut(&player_key) {
-                                    if *trigger_value > 0.1 {
-                                        let _ = player.command_sender().send(PlaybackCommand::Play);
-                                    }
-                                    if let Some(frame) =
-                                        player.update(std::time::Duration::from_millis(16))
-                                    {
-                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
-                                        {
-                                            let tex_name =
-                                                format!("part_{}_{}", module.id, part_id);
-                                            self.texture_pool.upload_data(
-                                                &self.backend.queue,
-                                                &tex_name,
-                                                data,
-                                                frame.format.width,
-                                                frame.format.height,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            mapmap_core::SourceCommand::NdiInput {
-                                source_name: _source_name,
-                                ..
-                            } =>
-                            {
-                                #[cfg(feature = "ndi")]
-                                if let Some(src_name) = _source_name {
-                                    let receiver =
-                                        self.ndi_receivers.entry(*part_id).or_insert_with(|| {
-                                            mapmap_io::ndi::NdiReceiver::new()
-                                                .expect("Failed to create NDI receiver")
-                                        });
-                                    if let Ok(Some(frame)) =
-                                        receiver.receive(std::time::Duration::from_millis(0))
-                                    {
-                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
-                                        {
-                                            let tex_name =
-                                                format!("part_{}_{}", module.id, part_id);
-                                            self.texture_pool.upload_data(
-                                                &self.backend.queue,
-                                                &tex_name,
-                                                data,
-                                                frame.format.width,
-                                                frame.format.height,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            mapmap_core::SourceCommand::HueOutput {
-                                brightness,
-                                hue,
-                                saturation,
-                                strobe,
-                                ids,
-                            } => {
-                                self.hue_controller.update_from_command(
-                                    ids.as_deref(),
-                                    *brightness,
-                                    *hue,
-                                    *saturation,
-                                    *strobe,
-                                );
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-
-                // Global render log (once per second)
-                static mut LAST_RENDER_LOG: u64 = 0;
-                let now_ms = (timestamp * 1000.0) as u64;
-                unsafe {
-                    if now_ms / 1000 > LAST_RENDER_LOG {
-                        LAST_RENDER_LOG = now_ms / 1000;
-                        debug!("=== Render Pipeline Status ===");
-                        debug!("  render_ops count: {}", self.render_ops.len());
-                        for (i, (mid, op)) in self.render_ops.iter().enumerate() {
-                            debug!(
-                                "  Op[{}]: mod={} source_part_id={:?}, output={:?}",
-                                i, mid, op.source_part_id, op.output_type
-                            );
-                        }
-                    }
-                }
-
-                // 2. Update Output Assignments for Preview/Window Mapping
-                self.output_assignments.clear();
-                for (mid, op) in &self.render_ops {
-                    if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
-                        if let Some(source_id) = op.source_part_id {
-                            let tex_name = format!("part_{}_{}", mid, source_id);
-                            // Insert both for UI panel and window manager
-                            self.output_assignments
-                                .entry(*id)
-                                .or_default()
-                                .push(tex_name.clone());
-                        }
-                    }
-                }
-
-                // 3. Sync output windows with evaluation result
-                let render_ops_temp = std::mem::take(&mut self.render_ops);
-                let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
-                    render_ops_temp.iter().map(|(_, op)| op.clone()).collect();
-                if let Err(e) = self.sync_output_windows(
-                    elwt,
-                    &ops_only,
-                    self.ui_state.module_canvas.active_module_id,
-                ) {
-                    error!("Failed to sync output windows: {}", e);
-                }
-                self.render_ops = render_ops_temp;
 
                 // Update BPM in toolbar
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;
@@ -2381,13 +2031,11 @@ impl App {
                 let raw_view = self.texture_pool.get_view(&req.tex_name);
 
                 // Create/Get preview texture (fixed small resolution)
-                // Use distinct prefix for Outputs to avoid collision if IDs overlap (though unlikely)
-                let prefix = if req.is_output {
-                    "out_preview"
+                let preview_tex_name = if req.is_output {
+                    format!("out_preview_{}", req.target_id)
                 } else {
-                    "preview"
+                    format!("preview_{}_{}", req.module_id, req.target_id)
                 };
-                let preview_tex_name = format!("{}_{}", prefix, req.target_id);
 
                 // Ensure it exists with correct size
                 self.texture_pool.ensure_texture(
@@ -2993,18 +2641,138 @@ impl App {
         // --- Module Graph Evaluation ---
         // Evaluate ALL modules and merge render_ops for multi-output support
         self.render_ops.clear();
+        self.output_assignments.clear();
+
+        // Process pending playback commands from UI
+        for (part_id, cmd) in self
+            .ui_state
+            .module_canvas
+            .pending_playback_commands
+            .drain(..)
+        {
+            // Find the module that owns this part to construct the key
+            let mut target_module_id = None;
+            for module in self.state.module_manager.modules() {
+                if module.parts.iter().any(|p| p.id == part_id) {
+                    target_module_id = Some(module.id);
+                    break;
+                }
+            }
+
+            if let Some(mod_id) = target_module_id {
+                let player_key = (mod_id, part_id);
+
+                // If player doesn't exist and we get any command (except Reload), try to create it
+                if !self.media_players.contains_key(&player_key)
+                    && cmd != mapmap_ui::MediaPlaybackCommand::Reload
+                {
+                    if let Some(module) = self.state.module_manager.get_module(mod_id) {
+                        if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                            if let mapmap_core::module::ModulePartType::Source(
+                                mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                            ) = &part.part_type
+                            {
+                                if !path.is_empty() {
+                                    if let Ok(player) = mapmap_media::open_path(path) {
+                                        self.media_players
+                                            .insert(player_key, (path.clone(), player));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some((_, player)) = self.media_players.get_mut(&player_key) {
+                    match cmd {
+                        mapmap_ui::MediaPlaybackCommand::Play => {
+                            let _ = player.command_sender().send(PlaybackCommand::Play);
+                        }
+                        mapmap_ui::MediaPlaybackCommand::Pause => {
+                            let _ = player.command_sender().send(PlaybackCommand::Pause);
+                        }
+                        mapmap_ui::MediaPlaybackCommand::Stop => {
+                            let _ = player.command_sender().send(PlaybackCommand::Stop);
+                        }
+                        mapmap_ui::MediaPlaybackCommand::Reload => {
+                            self.media_players.remove(&player_key);
+                        }
+                        mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
+                            let _ = player
+                                .command_sender()
+                                .send(PlaybackCommand::SetSpeed(speed));
+                        }
+                        mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
+                            let mode = if enabled {
+                                mapmap_media::LoopMode::Loop
+                            } else {
+                                mapmap_media::LoopMode::PlayOnce
+                            };
+                            let _ = player
+                                .command_sender()
+                                .send(PlaybackCommand::SetLoopMode(mode));
+                        }
+                        mapmap_ui::MediaPlaybackCommand::Seek(seconds) => {
+                            let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                std::time::Duration::from_secs_f64(seconds),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
         for module in self.state.module_manager.list_modules() {
             let module_id = module.id;
             if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
-                let eval_result = self.module_evaluator.evaluate(module_ref);
-                // Push (ModuleId, RenderOp) tuple
-                self.render_ops.extend(
-                    eval_result
-                        .render_ops
+                let result = self.module_evaluator.evaluate(module_ref);
+
+                // Update UI Trigger Visualization (only for active module)
+                if Some(module_id) == self.ui_state.module_canvas.active_module_id {
+                    self.ui_state.module_canvas.last_trigger_values = result
+                        .trigger_values
                         .iter()
-                        .cloned()
-                        .map(|op| (module_id, op)),
-                );
+                        .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
+                        .collect();
+                }
+
+                // Push (ModuleId, RenderOp) tuple
+                for op in &result.render_ops {
+                    self.render_ops.push((module_id, op.clone()));
+
+                    // Update Output Assignments
+                    if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
+                        if let Some(source_id) = op.source_part_id {
+                            let tex_name = format!("part_{}_{}", module_id, source_id);
+                            self.output_assignments
+                                .entry(*id)
+                                .or_default()
+                                .push(tex_name);
+                        }
+                    }
+                }
+
+                // Handle Source Commands (Hue, NDI, etc.)
+                for (_part_id, cmd) in &result.source_commands {
+                    match cmd {
+                        mapmap_core::SourceCommand::HueOutput {
+                            brightness,
+                            hue,
+                            saturation,
+                            strobe,
+                            ids,
+                        } => {
+                            self.hue_controller.update_from_command(
+                                ids.as_deref(),
+                                *brightness,
+                                *hue,
+                                *saturation,
+                                *strobe,
+                            );
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
 
@@ -3360,13 +3128,17 @@ impl App {
                                                                 match action {
                                                                     MediaBrowserAction::FileSelected(path) | MediaBrowserAction::FileDoubleClicked(path) => {
                                                                         // Update active part if one is being edited
-                                                                        if let (Some(module_id), Some(part_id)) = (
+                                                                        // Use editing_part_id if set (double click), otherwise use first selected part
+                                                                        let part_id = self.ui_state.module_canvas.editing_part_id
+                                                                            .or_else(|| self.ui_state.module_canvas.get_selected_part_id());
+
+                                                                        if let (Some(module_id), Some(id)) = (
                                                                             self.ui_state.module_canvas.active_module_id,
-                                                                            self.ui_state.module_canvas.editing_part_id
+                                                                            part_id
                                                                         ) {
                                                                             self.ui_state.actions.push(mapmap_ui::UIAction::SetMediaFile(
                                                                                 module_id,
-                                                                                part_id,
+                                                                                id,
                                                                                 path.to_string_lossy().to_string()
                                                                             ));
                                                                         }
