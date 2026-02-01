@@ -4,6 +4,7 @@
 
 #![warn(missing_docs)]
 
+mod media_manager_ui;
 mod window_manager;
 
 use anyhow::Result;
@@ -26,7 +27,9 @@ use mapmap_core::{
 use mapmap_mcp::{McpAction, McpServer};
 // Define McpAction locally or import if we move it to core later -> Removed local definition
 
+use crate::media_manager_ui::MediaManagerUI;
 use crossbeam_channel::{unbounded, Receiver};
+use mapmap_core::media_library::MediaLibrary;
 use mapmap_core::module::{ModulePartId, ModulePartType, SourceType};
 use mapmap_io::{load_project, save_project};
 use mapmap_media::player::{PlaybackCommand, VideoPlayer};
@@ -161,6 +164,10 @@ struct App {
     hue_controller: HueController,
     /// Tokio runtime for async operations
     tokio_runtime: tokio::runtime::Runtime,
+    /// Media Manager UI
+    media_manager_ui: MediaManagerUI,
+    /// Media Library
+    media_library: MediaLibrary,
 }
 
 impl App {
@@ -642,6 +649,8 @@ impl App {
             preview_quad_buffers,
             hue_controller,
             tokio_runtime,
+            media_manager_ui: MediaManagerUI::new(),
+            media_library: MediaLibrary::new(),
         };
 
         // Create initial dummy texture
@@ -2853,6 +2862,9 @@ impl App {
                 mapmap_ui::UIAction::Pause => self.state.effect_animator.pause(),
                 mapmap_ui::UIAction::Stop => self.state.effect_animator.stop(),
                 mapmap_ui::UIAction::SetSpeed(s) => self.state.effect_animator.set_speed(s),
+                mapmap_ui::UIAction::ToggleMediaManager => {
+                    self.media_manager_ui.visible = !self.media_manager_ui.visible;
+                }
                 _ => {
                     // Other actions
                 }
@@ -3396,6 +3408,9 @@ impl App {
 
                     // === 6. Node Editor (Phase 6b) ===
                     self.ui_state.render_node_editor(ctx);
+
+                    // === Media Manager ===
+                    self.media_manager_ui.ui(ctx, &mut self.media_library);
 
                     // === Settings Window (only modal allowed) ===
                     let mut show_settings = self.ui_state.show_settings;
