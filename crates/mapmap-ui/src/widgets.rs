@@ -275,10 +275,8 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         } else {
             ui.ctx().request_repaint(); // Animate
         }
-    } else {
-        if start_time.is_some() {
-            ui.data_mut(|d| d.remove_temp::<Option<f64>>(state_id));
-        }
+    } else if start_time.is_some() {
+        ui.data_mut(|d| d.remove_temp::<Option<f64>>(state_id));
     }
 
     // --- Visuals ---
