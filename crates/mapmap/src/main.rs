@@ -3303,8 +3303,8 @@ impl App {
                         egui::SidePanel::left("unified_left_sidebar")
                             .resizable(true)
                             .default_width(280.0)
-                            .min_width(200.0)
-                            .max_width(1000.0)
+                            .min_width(150.0)
+                            .max_width(1500.0)
                             .show(ctx, |ui| {
                                 // Sidebar header with collapse button
                                 ui.horizontal(|ui| {

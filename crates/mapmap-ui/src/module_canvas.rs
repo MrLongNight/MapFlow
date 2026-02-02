@@ -2745,7 +2745,7 @@ impl ModuleCanvas {
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     // --- ROW 1: Module Context & Adding Nodes ---
-                    ui.horizontal(|ui| {
+                    ui.horizontal_wrapped(|ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
 
                         // LEFT: Module Selector & Info
@@ -2839,7 +2839,7 @@ impl ModuleCanvas {
                     ui.add_space(2.0);
 
                     // --- ROW 2: View Controls & Utilities ---
-                    ui.horizontal(|ui| {
+                    ui.horizontal_wrapped(|ui| {
                         ui.spacing_mut().item_spacing.x = 8.0;
 
                         // Utility Buttons
