@@ -3,7 +3,7 @@
 //! Defines the graph structure of a MapFlow project, including Parts (nodes),
 //! Connections (edges), and their types (Source, Layer, Output, etc.).
 //!
-//! # Core Structures
+//! # Core Structures #
 //!
 //! - [`MapFlowModule`]: The top-level container for a visual programming graph.
 //! - [`ModulePart`]: A node in the graph (Source, Filter, Output).
@@ -1060,6 +1060,214 @@ pub enum SourceType {
         /// Sender name
         sender_name: String,
     },
+    /// Single-instance Video Source (Uni)
+    /// Behave like MediaFile but strictly for Video
+    VideoUni {
+        /// File path
+        path: String,
+        /// Playback speed multiplier (1.0 = normal)
+        #[serde(default = "default_speed")]
+        speed: f32,
+        /// Loop playback
+        #[serde(default)]
+        loop_enabled: bool,
+        /// Start time in seconds (for clips)
+        #[serde(default)]
+        start_time: f32,
+        /// End time in seconds (0 = full duration)
+        #[serde(default)]
+        end_time: f32,
+        /// Transparency/Opacity (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+        /// Blend mode for compositing
+        #[serde(default)]
+        blend_mode: Option<BlendModeType>,
+        /// Color correction:  Brightness (-1.0 to 1.0)
+        #[serde(default)]
+        brightness: f32,
+        /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_contrast")]
+        contrast: f32,
+        /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_saturation")]
+        saturation: f32,
+        /// Color correction: Hue shift (-180 to 180 degrees)
+        #[serde(default)]
+        hue_shift: f32,
+        /// Transform:  Scale X
+        #[serde(default = "default_scale")]
+        scale_x: f32,
+        /// Transform: Scale Y
+        #[serde(default = "default_scale")]
+        scale_y: f32,
+        /// Transform: Rotation in degrees
+        #[serde(default)]
+        rotation: f32,
+        /// Transform: Position offset X
+        #[serde(default)]
+        offset_x: f32,
+        /// Transform: Position offset Y
+        #[serde(default)]
+        offset_y: f32,
+        /// Target output width (None = use original resolution)
+        #[serde(default)]
+        target_width: Option<u32>,
+        /// Target output height (None = use original resolution)
+        #[serde(default)]
+        target_height: Option<u32>,
+        /// Target FPS override (None = use original FPS)
+        #[serde(default)]
+        target_fps: Option<f32>,
+        /// Flip video horizontally
+        #[serde(default)]
+        flip_horizontal: bool,
+        /// Flip video vertically
+        #[serde(default)]
+        flip_vertical: bool,
+        /// Play video in reverse
+        #[serde(default)]
+        reverse_playback: bool,
+    },
+    /// Multi-instance Shared Video Source (Multi)
+    /// References a shared media resource by ID
+    VideoMulti {
+        /// Shared Resource ID
+        shared_id: String,
+        /// Transparency/Opacity (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+        /// Blend mode for compositing
+        #[serde(default)]
+        blend_mode: Option<BlendModeType>,
+        /// Color correction:  Brightness (-1.0 to 1.0)
+        #[serde(default)]
+        brightness: f32,
+        /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_contrast")]
+        contrast: f32,
+        /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_saturation")]
+        saturation: f32,
+        /// Color correction: Hue shift (-180 to 180 degrees)
+        #[serde(default)]
+        hue_shift: f32,
+        /// Transform:  Scale X
+        #[serde(default = "default_scale")]
+        scale_x: f32,
+        /// Transform: Scale Y
+        #[serde(default = "default_scale")]
+        scale_y: f32,
+        /// Transform: Rotation in degrees
+        #[serde(default)]
+        rotation: f32,
+        /// Transform: Position offset X
+        #[serde(default)]
+        offset_x: f32,
+        /// Transform: Position offset Y
+        #[serde(default)]
+        offset_y: f32,
+        /// Flip video horizontally
+        #[serde(default)]
+        flip_horizontal: bool,
+        /// Flip video vertically
+        #[serde(default)]
+        flip_vertical: bool,
+    },
+    /// Single-instance Image Source (Uni)
+    ImageUni {
+        /// File path
+        path: String,
+        /// Transparency/Opacity (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+        /// Blend mode for compositing
+        #[serde(default)]
+        blend_mode: Option<BlendModeType>,
+        /// Color correction:  Brightness (-1.0 to 1.0)
+        #[serde(default)]
+        brightness: f32,
+        /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_contrast")]
+        contrast: f32,
+        /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_saturation")]
+        saturation: f32,
+        /// Color correction: Hue shift (-180 to 180 degrees)
+        #[serde(default)]
+        hue_shift: f32,
+        /// Transform:  Scale X
+        #[serde(default = "default_scale")]
+        scale_x: f32,
+        /// Transform: Scale Y
+        #[serde(default = "default_scale")]
+        scale_y: f32,
+        /// Transform: Rotation in degrees
+        #[serde(default)]
+        rotation: f32,
+        /// Transform: Position offset X
+        #[serde(default)]
+        offset_x: f32,
+        /// Transform: Position offset Y
+        #[serde(default)]
+        offset_y: f32,
+        /// Target output width (None = use original resolution)
+        #[serde(default)]
+        target_width: Option<u32>,
+        /// Target output height (None = use original resolution)
+        #[serde(default)]
+        target_height: Option<u32>,
+        /// Flip video horizontally
+        #[serde(default)]
+        flip_horizontal: bool,
+        /// Flip video vertically
+        #[serde(default)]
+        flip_vertical: bool,
+    },
+    /// Multi-instance Shared Image Source (Multi)
+    ImageMulti {
+        /// Shared Resource ID
+        shared_id: String,
+        /// Transparency/Opacity (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+        /// Blend mode for compositing
+        #[serde(default)]
+        blend_mode: Option<BlendModeType>,
+        /// Color correction:  Brightness (-1.0 to 1.0)
+        #[serde(default)]
+        brightness: f32,
+        /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_contrast")]
+        contrast: f32,
+        /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_saturation")]
+        saturation: f32,
+        /// Color correction: Hue shift (-180 to 180 degrees)
+        #[serde(default)]
+        hue_shift: f32,
+        /// Transform:  Scale X
+        #[serde(default = "default_scale")]
+        scale_x: f32,
+        /// Transform: Scale Y
+        #[serde(default = "default_scale")]
+        scale_y: f32,
+        /// Transform: Rotation in degrees
+        #[serde(default)]
+        rotation: f32,
+        /// Transform: Position offset X
+        #[serde(default)]
+        offset_x: f32,
+        /// Transform: Position offset Y
+        #[serde(default)]
+        offset_y: f32,
+        /// Flip video horizontally
+        #[serde(default)]
+        flip_horizontal: bool,
+        /// Flip video vertically
+        #[serde(default)]
+        flip_vertical: bool,
+    },
 }
 
 impl SourceType {
@@ -1777,6 +1985,64 @@ fn default_color_palette() -> Vec<[f32; 4]> {
     ]
 }
 
+/// Type of shared media
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum SharedMediaType {
+    /// Video media
+    Video,
+    /// Static image media
+    Image,
+}
+
+/// A shared media resource entry
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SharedMediaItem {
+    /// Unique ID
+    pub id: String,
+    /// File path
+    pub path: String,
+    /// Media Type
+    pub media_type: SharedMediaType,
+}
+
+/// Registry for shared media resources
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct SharedMediaState {
+    /// Map of ID -> Item
+    pub items: HashMap<String, SharedMediaItem>,
+}
+
+impl SharedMediaState {
+    /// Create a new shared media state
+    pub fn new() -> Self {
+        Self {
+            items: HashMap::new(),
+        }
+    }
+
+    /// Register a shared media item
+    pub fn register(&mut self, id: String, path: String, media_type: SharedMediaType) {
+        self.items.insert(
+            id.clone(),
+            SharedMediaItem {
+                id,
+                path,
+                media_type,
+            },
+        );
+    }
+
+    /// Get a shared media item by ID
+    pub fn get(&self, id: &str) -> Option<&SharedMediaItem> {
+        self.items.get(id)
+    }
+
+    /// Unregister a shared media item
+    pub fn unregister(&mut self, id: &str) {
+        self.items.remove(id);
+    }
+}
+
 /// Manages multiple modules (Scenes)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleManager {
@@ -1786,6 +2052,9 @@ pub struct ModuleManager {
     #[serde(skip, default = "default_color_palette")]
     color_palette: Vec<[f32; 4]>,
     next_color_index: usize,
+    /// Shared media registry
+    #[serde(default)]
+    pub shared_media: SharedMediaState,
 }
 
 impl PartialEq for ModuleManager {
@@ -1794,6 +2063,7 @@ impl PartialEq for ModuleManager {
             && self.next_module_id == other.next_module_id
             && self.next_part_id == other.next_part_id
             && self.next_color_index == other.next_color_index
+            && self.shared_media == other.shared_media
     }
 }
 
@@ -1806,6 +2076,7 @@ impl ModuleManager {
             next_part_id: 1,
             color_palette: default_color_palette(),
             next_color_index: 0,
+            shared_media: SharedMediaState::new(),
         }
     }
 
