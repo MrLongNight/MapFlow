@@ -230,120 +230,6 @@ pub fn move_down_button(ui: &mut Ui) -> Response {
         .on_hover_text("Move Layer Down")
 }
 
-/// A safety button that requires holding down for 0.6s to trigger (Mouse or Keyboard)
-pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
-    let hold_duration = 0.6; // seconds
-
-    // Small button size
-    let text_galley = ui.painter().layout_no_wrap(
-        text.to_string(),
-        egui::FontId::proportional(12.0),
-        ui.visuals().text_color(),
-    );
-    let size = Vec2::new(text_galley.size().x + 20.0, 20.0);
-
-    // Use Sense::click() for accessibility (focus/tab navigation)
-    let (rect, response) = ui.allocate_at_least(size, Sense::click());
-
-    // Use response.id for unique state storage to prevent collisions
-    let state_id = response.id.with("hold_state");
-
-    // Check inputs:
-    // 1. Mouse/Touch: is_pointer_button_down_on()
-    // 2. Keyboard: has_focus() && key_down(Space/Enter)
-    let is_interacting = response.is_pointer_button_down_on()
-        || (response.has_focus()
-            && (ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter))));
-
-    // Get or initialize start time
-    let mut start_time: Option<f64> = ui.data_mut(|d| d.get_temp(state_id));
-    let mut triggered = false;
-
-    if is_interacting {
-        let now = ui.input(|i| i.time);
-        if start_time.is_none() {
-            start_time = Some(now);
-            ui.data_mut(|d| d.insert_temp(state_id, start_time));
-        }
-
-        let elapsed = now - start_time.unwrap();
-        let progress = (elapsed as f32 / hold_duration).clamp(0.0, 1.0);
-
-        if progress >= 1.0 {
-            triggered = true;
-            ui.data_mut(|d| d.remove_temp::<Option<f64>>(state_id)); // Reset
-        } else {
-            ui.ctx().request_repaint(); // Animate
-        }
-    } else if start_time.is_some() {
-        ui.data_mut(|d| d.remove_temp::<Option<f64>>(state_id));
-    }
-
-    // --- Visuals ---
-    let visuals = ui.style().interact(&response);
-    let painter = ui.painter();
-
-    // 1. Background
-    painter.rect(
-        rect,
-        egui::CornerRadius::same(4),
-        visuals.bg_fill,
-        visuals.bg_stroke,
-        egui::StrokeKind::Inside,
-    );
-
-    // Draw focus ring if focused
-    if response.has_focus() {
-        painter.rect_stroke(
-            rect.expand(2.0),
-            egui::CornerRadius::same(6),
-            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Outside,
-        );
-    }
-
-    // 2. Progress Fill
-    if let Some(start) = start_time {
-        if is_interacting {
-            let now = ui.input(|i| i.time);
-            let elapsed = now - start;
-            let progress = (elapsed as f32 / hold_duration).clamp(0.0, 1.0);
-
-            if progress > 0.0 {
-                let mut fill_rect = rect;
-                fill_rect.max.x = rect.min.x + rect.width() * progress;
-                painter.rect_filled(
-                    fill_rect,
-                    egui::CornerRadius::same(4),
-                    color.linear_multiply(0.4), // Transparent version of action color
-                );
-            }
-        }
-    }
-
-    // 3. Text
-    let text_color = if triggered {
-        color
-    } else {
-        visuals.text_color()
-    };
-    painter.text(
-        rect.center(),
-        egui::Align2::CENTER_CENTER,
-        text,
-        egui::FontId::proportional(12.0),
-        text_color,
-    );
-
-    // Tooltip
-    if response.hovered() {
-        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-    }
-    response.on_hover_text("Hold to confirm (Mouse or Space/Enter)");
-
-    triggered
-}
-
 pub fn collapsing_header_with_reset(
     ui: &mut Ui,
     title: &str,
@@ -356,7 +242,11 @@ pub fn collapsing_header_with_reset(
         .show_header(ui, |ui| {
             ui.label(title);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+                if ui
+                    .add(egui::Button::new("↺ Reset").small())
+                    .on_hover_text(format!("Reset {} defaults", title))
+                    .clicked()
+                {
                     reset_clicked = true;
                 }
             });

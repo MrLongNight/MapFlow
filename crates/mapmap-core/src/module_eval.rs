@@ -7,8 +7,7 @@ use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{
     BlendModeType, LayerType, LinkBehavior, LinkMode, MapFlowModule, MaskType, MeshType,
-    ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
-    TriggerType,
+    ModulePartId, ModulePartType, ModulizerType, OutputType, SourceType, TriggerType,
 };
 use rand::Rng;
 use std::collections::HashMap;
@@ -106,7 +105,6 @@ mod tests_evaluator {
     #[test]
     fn test_trigger_fixed_interval() {
         let mut evaluator = ModuleEvaluator::new();
-        let shared = crate::module::SharedMediaState::default();
 
         let mut module = create_test_module();
         let trigger_part = ModulePartType::Trigger(TriggerType::Fixed {
@@ -116,7 +114,7 @@ mod tests_evaluator {
         let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
 
         // Initial eval - t=0, phase=0, duration=10, 0 < 10 -> 1.0
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module);
         let values = &result.trigger_values[&part_id];
         assert_eq!(values[0], 1.0);
 
@@ -126,7 +124,7 @@ mod tests_evaluator {
         // Ideally we'd refactor to inject time.
         std::thread::sleep(Duration::from_millis(20));
 
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module);
         let values = &result.trigger_values[&part_id];
         // 20ms > 10ms pulse duration -> 0.0
         assert_eq!(values[0], 0.0);
@@ -159,7 +157,7 @@ mod tests_evaluator {
 
         let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module);
         let values = &result.trigger_values[&part_id];
 
         // Order in generate_outputs:
@@ -188,8 +186,7 @@ mod tests_evaluator {
         let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
         module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
-        let shared = crate::module::SharedMediaState::default();
-        let _result = evaluator.evaluate(&module, &shared);
+        let _result = evaluator.evaluate(&module);
 
         // Should produce a SourceCommand because trigger > 0.1
         // (Source defaults to "MediaFile" with empty path, create_source_command checks empty path)
@@ -203,12 +200,12 @@ mod tests_evaluator {
             }
         }
 
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module);
         assert!(result.source_commands.contains_key(&s_id));
 
         // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module);
         assert!(!result.source_commands.contains_key(&s_id));
     }
 
@@ -246,7 +243,7 @@ mod tests_evaluator {
         module.add_connection(s_id, 0, l_id, 0); // Source Media -> Layer Input
         module.add_connection(l_id, 0, o_id, 0); // Layer Output -> Output Layer In
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module);
 
         // Verify RenderOp
         assert_eq!(result.render_ops.len(), 1);
@@ -320,7 +317,7 @@ mod tests_evaluator {
         // Slave Link In index: 2 (0=Media, 1=Trigger)
         module.add_connection(m_id, 1, s_id, 2);
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module);
 
         // Master ID in trigger_values should have 2 values: Trigger Out (1.0) and Link Out (1.0)
         let m_values = &result.trigger_values[&m_id];
@@ -395,15 +392,6 @@ pub enum SourceCommand {
         /// Path to media file
         path: String,
         /// Trigger value (opacity/intensity)
-        trigger_value: f32,
-    },
-    /// Play a shared media resource
-    PlaySharedMedia {
-        /// Shared ID
-        id: String,
-        /// Resolved path (from registry)
-        path: String,
-        /// Trigger value
         trigger_value: f32,
     },
     /// Play a shader with parameters
@@ -519,11 +507,7 @@ impl ModuleEvaluator {
 
     /// Evaluate a module for one frame
     /// Returns a reference to the reusable result buffer
-    pub fn evaluate(
-        &mut self,
-        module: &MapFlowModule,
-        shared_state: &SharedMediaState,
-    ) -> &ModuleEvalResult {
+    pub fn evaluate(&mut self, module: &MapFlowModule) -> &ModuleEvalResult {
         // Clear previous result for reuse
         self.cached_result.clear();
         // Since we cleared trigger_values via iteration (retaining keys),
@@ -628,9 +612,7 @@ impl ModuleEvaluator {
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
-                if let Some(cmd) =
-                    self.create_source_command(source_type, trigger_value, shared_state)
-                {
+                if let Some(cmd) = self.create_source_command(source_type, trigger_value) {
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
             }
@@ -874,120 +856,39 @@ impl ModuleEvaluator {
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
                             source_id = Some(part.id);
+                            // Extract SourceProperties from MediaFile
+                            if let SourceType::MediaFile {
+                                opacity,
+                                brightness,
+                                contrast,
+                                saturation,
+                                hue_shift,
+                                scale_x,
+                                scale_y,
+                                rotation,
+                                offset_x,
+                                offset_y,
+                                flip_horizontal,
+                                flip_vertical,
+                                ..
+                            } = source_type
+                            {
+                                // Apply defaults first
+                                let mut props = SourceProperties {
+                                    opacity: *opacity,
+                                    brightness: *brightness,
+                                    contrast: *contrast,
+                                    saturation: *saturation,
+                                    hue_shift: *hue_shift,
+                                    scale_x: *scale_x,
+                                    scale_y: *scale_y,
+                                    rotation: *rotation,
+                                    offset_x: *offset_x,
+                                    offset_y: *offset_y,
+                                    flip_horizontal: *flip_horizontal,
+                                    flip_vertical: *flip_vertical,
+                                };
 
-                            // Helper to extract props from any source variant that has them
-                            let mut extracted_props = None;
-
-                            match source_type {
-                                SourceType::MediaFile {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
-                                }
-                                | SourceType::VideoUni {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
-                                }
-                                | SourceType::ImageUni {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
-                                } => {
-                                    extracted_props = Some(SourceProperties {
-                                        opacity: *opacity,
-                                        brightness: *brightness,
-                                        contrast: *contrast,
-                                        saturation: *saturation,
-                                        hue_shift: *hue_shift,
-                                        scale_x: *scale_x,
-                                        scale_y: *scale_y,
-                                        rotation: *rotation,
-                                        offset_x: *offset_x,
-                                        offset_y: *offset_y,
-                                        flip_horizontal: *flip_horizontal,
-                                        flip_vertical: *flip_vertical,
-                                    });
-                                }
-                                SourceType::VideoMulti {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
-                                }
-                                | SourceType::ImageMulti {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
-                                } => {
-                                    extracted_props = Some(SourceProperties {
-                                        opacity: *opacity,
-                                        brightness: *brightness,
-                                        contrast: *contrast,
-                                        saturation: *saturation,
-                                        hue_shift: *hue_shift,
-                                        scale_x: *scale_x,
-                                        scale_y: *scale_y,
-                                        rotation: *rotation,
-                                        offset_x: *offset_x,
-                                        offset_y: *offset_y,
-                                        flip_horizontal: *flip_horizontal,
-                                        flip_vertical: *flip_vertical,
-                                    });
-                                }
-                                _ => {}
-                            }
-
-                            if let Some(mut props) = extracted_props {
                                 // Re-apply overrides since we just replaced with defaults
                                 // (This structure is slightly inefficient, re-doing logic)
                                 // Better: Apply overrides TO props.
@@ -1288,17 +1189,14 @@ impl ModuleEvaluator {
         &self,
         source_type: &SourceType,
         trigger_value: f32,
-        shared_state: &SharedMediaState,
     ) -> Option<SourceCommand> {
         // Only activate source if trigger is above threshold (0.1)
-        if trigger_value < 0.1f32 {
+        if trigger_value < 0.1 {
             return None;
         }
 
         match source_type {
-            SourceType::MediaFile { path, .. }
-            | SourceType::VideoUni { path, .. }
-            | SourceType::ImageUni { path, .. } => {
+            SourceType::MediaFile { path, .. } => {
                 if path.is_empty() {
                     return None;
                 }
@@ -1306,16 +1204,6 @@ impl ModuleEvaluator {
                     path: path.clone(),
                     trigger_value,
                 })
-            }
-            SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => {
-                // Resolve path from shared state
-                shared_state
-                    .get(shared_id)
-                    .map(|item| SourceCommand::PlaySharedMedia {
-                        id: shared_id.clone(),
-                        path: item.path.clone(),
-                        trigger_value,
-                    })
             }
             SourceType::Shader { name, params } => Some(SourceCommand::PlayShader {
                 name: name.clone(),
@@ -1509,16 +1397,15 @@ mod tests_logic {
     #[test]
     fn test_create_source_command() {
         let evaluator = ModuleEvaluator::new();
-        let shared = crate::module::SharedMediaState::default();
 
         // Threshold check (< 0.1)
         let cmd_low =
-            evaluator.create_source_command(&SourceType::LiveInput { device_id: 0 }, 0.05, &shared);
+            evaluator.create_source_command(&SourceType::LiveInput { device_id: 0 }, 0.05);
         assert!(cmd_low.is_none());
 
         // Valid command
         let cmd_valid =
-            evaluator.create_source_command(&SourceType::LiveInput { device_id: 1 }, 0.5, &shared);
+            evaluator.create_source_command(&SourceType::LiveInput { device_id: 1 }, 0.5);
         match cmd_valid {
             Some(SourceCommand::LiveInput {
                 device_id,
@@ -1578,7 +1465,7 @@ mod tests_logic {
         });
 
         // Run evaluate to populate internal caches
-        evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        evaluator.evaluate(&module);
 
         // Start trace from 1 using cached indices
         let chain = evaluator.trace_chain(1, &module);
@@ -1637,7 +1524,7 @@ mod tests_logic {
         // Layer(0) -> Output(0)
         module.add_connection(layer_id, 0, output_id, 0);
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module);
 
         assert_eq!(result.render_ops.len(), 1);
         let op = &result.render_ops[0];

@@ -57,14 +57,6 @@ jobs:
       pull-requests: write
 
     steps:
-    - name: Configure Git
-      run: git config --global --add safe.directory "*"
-
-    - uses: actions/checkout@v4
-      with:
-        ref: ${{ github.head_ref }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Installiere ALSA- und systemnahe Bibliotheken
       run: |
         sudo apt-get update -y
@@ -76,6 +68,20 @@ jobs:
           libasound2-dev libavcodec-dev libavformat-dev libavutil-dev \
           libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
           ffmpeg
+
+    - name: Prüfe FFmpeg-Dev-Libs und pkg-config (Pre-Check)
+      run: |
+        for lib in libavutil libavcodec libavformat libswscale libavdevice libavfilter libswresample; do
+          pkg-config --exists $lib && echo "✓ $lib gefunden" || (echo "✗ $lib NICHT gefunden"; exit 1)
+        done
+
+    - name: Configure Git
+      run: git config --global --add safe.directory "*"
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -92,6 +98,10 @@ jobs:
       run: |
         cargo fmt --all -- --check
         cargo sort --workspace --check
+
+    # Auto-fix removed to avoid conflict with pre-commit.ci app
+    # The external app handles formatting fixes and pushes changes.
+    # CI-01 should just verify.
 
     - name: Check Clippy (No Fix)
       run: |

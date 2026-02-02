@@ -97,28 +97,11 @@ mod ffmpeg_impl {
         _ctx: *mut ffmpeg_sys::AVCodecContext,
         mut fmt: *const ffmpeg_sys::AVPixelFormat,
     ) -> ffmpeg_sys::AVPixelFormat {
-        if fmt.is_null() {
-            return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE;
-        }
-
-        let mut count = 0;
-        // Limit to reasonable number of formats to prevent infinite loop/OOB read
-        const MAX_FORMATS: usize = 128;
-
         while *fmt != ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE {
-            if count >= MAX_FORMATS {
-                warn!(
-                    "VAAPI format search exceeded limit ({}), bailing out",
-                    MAX_FORMATS
-                );
-                break;
-            }
-
             if *fmt == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI {
                 return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI;
             }
             fmt = fmt.add(1);
-            count += 1;
         }
 
         // Fallback: Use YUV420P if available, or just return AV_PIX_FMT_NONE to let FFmpeg decide (if possible)

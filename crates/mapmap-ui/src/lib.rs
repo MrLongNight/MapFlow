@@ -216,12 +216,6 @@ pub enum UIAction {
 
     // Global Fullscreen Setting
     SetGlobalFullscreen(bool),
-
-    // Media commands for specific module parts
-    MediaCommand(
-        mapmap_core::module::ModulePartId,
-        crate::module_canvas::MediaPlaybackCommand,
-    ),
 }
 
 use mapmap_control::ControlTarget;

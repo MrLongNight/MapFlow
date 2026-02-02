@@ -21,7 +21,3 @@
 ## 2026-06-15 - Queue Submission Batching
 **Learning:** Submitting command buffers to the `wgpu` queue inside a loop (e.g. for generating N previews) causes significant driver overhead due to repeated synchronization and validation.
 **Action:** Batch multiple render passes into a single `CommandEncoder` and submit once at the end of the loop. Use `begin_frame` (if available) to reset resource caches before the batch starts to ensure optimal buffer reuse.
-
-## 2026-06-21 - Immediate Mode Geometry Checks
-**Learning:** In immediate mode UIs (`egui`), complex geometry checks (like iterative Bezier hit testing) running per-frame for every object (N connections) creates a linear CPU bottleneck. A simple AABB broad-phase check dramatically reduces the work for the vast majority of non-interacted objects.
-**Action:** Always implement a cheap broad-phase check (AABB, bounding circle) before performing expensive detailed hit testing in render loops.
