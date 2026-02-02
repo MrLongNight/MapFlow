@@ -37,3 +37,8 @@
 **Vulnerability:** The `get_vaapi_format` C-callback function in `crates/mapmap-media/src/decoder.rs` iterated over a raw `AVPixelFormat` pointer assuming a null-terminated list. If the `ffmpeg` library or a malicious caller provided a non-terminated list, this would result in a buffer over-read (OOB access), potentially crashing the application or exposing memory.
 **Learning:** `unsafe` code interacting with C-APIs must be strictly defensive. We cannot assume the contract of the external library is always upheld, especially when the iteration count is unbounded.
 **Prevention:** Always impose a sane upper limit (e.g., `MAX_FORMATS`) on unbounded loops over raw pointers and check for null pointers before access. This ensures that even if the external data is malformed, the application remains stable.
+
+## 2026-10-27 - Unbounded Resource Consumption in Image Sequence Loader
+**Vulnerability:** The `ImageSequenceDecoder` iterated over all files in a user-provided directory without limit. A directory with millions of files would cause the application to hang or crash (OOM), acting as a local Denial of Service vector.
+**Learning:** Iterators over external resources (like file systems) must always be bounded. "Users won't do that" is not a valid defense against accidental or malicious inputs.
+**Prevention:** Implement explicit `MAX_ITEMS` limits on all directory scanning or collection loops. Use `cfg(test)` to lower these limits for efficient unit testing.
