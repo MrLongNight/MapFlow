@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-02 10:00
+> **Stand:** 2026-01-30 06:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -205,7 +205,6 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   - ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   - ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   - ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
-  - ✅ Uni/Multi Source Type Support (COMPLETED 2026-02-02)
   - ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
 
 - ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
@@ -405,8 +404,6 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   - ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   - ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
   - ✅ Node Graph Visual Refinements (COMPLETED 2026-01-15)
-  - ✅ Sidebar Previews Pipeline (COMPLETED 2026-02-02)
-  - ✅ Cyber Dark Node Styles (COMPLETED 2026-02-02)
 
 - 🟡 **Advanced Layer Triggering & Linking** (PLANNED)
   - [ ] **Audio Trigger Node Enhancements**

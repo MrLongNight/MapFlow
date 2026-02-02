@@ -6,15 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- 2026-02-02: feat(ui): Implement sidebar previews pipeline (#492)
-- 2026-02-02: feat(media): Implement Media Node previews (#489)
-- 2026-02-02: feat(media): Support Uni/Multi Source Types (#488)
-- 2026-02-02: style(ui): Refine Cyber Dark nodes and connection styles (#477)
-- 2026-02-02: perf(core): Optimization connection AABB checks (#476)
-- 2026-02-02: fix(ui): Improve canvas toolbar layout and sidebar resizing (#493)
-- 2026-02-02: refactor: Extract Settings Window to UI Module (#494)
-- 2026-02-02: fix(ci): Robust bindsgen paths and safe decoder logging
-- 2026-02-02: fix(maintenance): Resolve unreachable patterns and CI lint warnings
 - 2026-01-31: feat: Implement the main application entry point and core orchestration logic for MapFlow
 - 2026-01-26: docs: Refine Cyber Dark theme documentation and fix duplicate match arm in EffectChainPanel
 - 2026-01-26: docs: Fix broken links in README and CONTRIBUTING (Scribe) (#410)
