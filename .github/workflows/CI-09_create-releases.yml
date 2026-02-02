@@ -1,4 +1,4 @@
-name: CI-09:Create Releases
+name: "CI-09: Create Releases"
 
 on:
   workflow_dispatch:
@@ -67,6 +67,21 @@ jobs:
 
       - name: VCPKG_ROOT setzen
         run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: FFmpeg-Umgebungsvariablen für bindgen setzen
+        run: |
+          $vcpkgInclude = "${{ github.workspace }}\vcpkg\installed\x64-windows\include"
+          $vcpkgLib = "${{ github.workspace }}\vcpkg\installed\x64-windows\lib"
+
+          echo "INCLUDE=$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "LIB=$vcpkgLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          Write-Host "Umgebungsvariablen gesetzt:"
+          Write-Host "INCLUDE=$vcpkgInclude"
+          Write-Host "LIB=$vcpkgLib"
+          Write-Host "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude"
         shell: pwsh
 
       - name: Build Release (mit FFMpeg)
@@ -140,6 +155,21 @@ jobs:
 
       - name: VCPKG_ROOT setzen
         run: echo "VCPKG_ROOT=${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: FFmpeg-Umgebungsvariablen für bindgen setzen
+        run: |
+          $vcpkgInclude = "${{ github.workspace }}\vcpkg\installed\x64-windows\include"
+          $vcpkgLib = "${{ github.workspace }}\vcpkg\installed\x64-windows\lib"
+
+          echo "INCLUDE=$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "LIB=$vcpkgLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          Write-Host "Umgebungsvariablen gesetzt:"
+          Write-Host "INCLUDE=$vcpkgInclude"
+          Write-Host "LIB=$vcpkgLib"
+          Write-Host "BINDGEN_EXTRA_CLANG_ARGS=-I$vcpkgInclude"
         shell: pwsh
 
       - name: Build Release (mit FFMpeg)
@@ -264,6 +294,15 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.version }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "VERSION=$TAG" >> $GITHUB_ENV
+
       - name: Configure Git (post-checkout)
         run: git config --global --add safe.directory ${{ github.workspace }}
 
@@ -312,13 +351,13 @@ jobs:
         run: |
           mkdir -p dist
           cp target/release/MapFlow dist/
-          tar -czvf mapflow-linux-${{ matrix.os }}-x64.tar.gz -C dist MapFlow
+          tar -czvf mapflow-linux-${{ env.VERSION }}-${{ matrix.os }}-x64.tar.gz -C dist MapFlow
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mapflow-linux-${{ matrix.os }}-tar
-          path: mapflow-linux-${{ matrix.os }}-x64.tar.gz
+          path: mapflow-linux-${{ env.VERSION }}-${{ matrix.os }}-x64.tar.gz
 
   publish:
     name: "Create GitHub Release & Attach Assets"

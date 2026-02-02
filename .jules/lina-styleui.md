@@ -37,3 +37,12 @@
     - **Striping:** `Visuals.faint_bg_color` for odd rows.
     - **Buttons:** Consolidate repeated widget logic into helpers (e.g., `icon_button`) to enforce consistent active/hover states.
 **Action:** Refactored `LayerPanel` to use this pattern, removing nested groups and aligning controls horizontally.
+
+## 2026-02-01 – [Node Visual Hierarchy]
+**Learning:** Hardcoded colors in custom painting code (like `module_canvas`) drift from the central theme, causing visual inconsistency.
+- **Insight:** Node editors are "Canvas" elements and should use the `Panel` color for bodies but require a distinct `Header` color to establish hierarchy within the node itself.
+- **Pattern:**
+    - **Node Body:** `colors::DARK_GREY` (matches panels).
+    - **Node Header:** `colors::LIGHTER_GREY` (creates contrast vs body).
+    - **Separator:** `colors::STROKE_GREY` (sharp definition).
+**Action:** Refactored `ModuleCanvas` to use `crate::theme::colors` constants, enforcing the Cyber Dark palette on the node graph.
