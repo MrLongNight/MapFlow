@@ -2494,24 +2494,22 @@ impl App {
                 }
 
                 // Handle Source Commands (Hue, NDI, etc.)
-                for (_part_id, cmd) in &result.source_commands {
-                    match cmd {
-                        mapmap_core::SourceCommand::HueOutput {
-                            brightness,
-                            hue,
-                            saturation,
-                            strobe,
-                            ids,
-                        } => {
-                            self.hue_controller.update_from_command(
-                                ids.as_deref(),
-                                *brightness,
-                                *hue,
-                                *saturation,
-                                *strobe,
-                            );
-                        }
-                        _ => {}
+                for cmd in result.source_commands.values() {
+                    if let mapmap_core::SourceCommand::HueOutput {
+                        brightness,
+                        hue,
+                        saturation,
+                        strobe,
+                        ids,
+                    } = cmd
+                    {
+                        self.hue_controller.update_from_command(
+                            ids.as_deref(),
+                            *brightness,
+                            *hue,
+                            *saturation,
+                            *strobe,
+                        );
                     }
                 }
             }
