@@ -1088,7 +1088,9 @@ impl App {
                         module.connections.len()
                     );
 
-                    let result = self.module_evaluator.evaluate(module, &self.state.module_manager.shared_media);
+                    let result = self
+                        .module_evaluator
+                        .evaluate(module, &self.state.module_manager.shared_media);
 
                     // Accumulate Render Ops
                     let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
@@ -2598,8 +2600,7 @@ impl App {
 
             // Check for Post-Processing requirements
             let output_config_opt = self.state.output_manager.get_output(output_id);
-            let use_edge_blend =
-                output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+            let use_edge_blend = output_config_opt.is_some() && self.edge_blend_renderer.is_some();
             let use_color_calib =
                 output_config_opt.is_some() && self.color_calibration_renderer.is_some();
             let needs_post_processing = use_edge_blend || use_color_calib;
@@ -2982,7 +2983,9 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             let module_id = module.id;
             if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
-                let eval_result = self.module_evaluator.evaluate(module_ref, &self.state.module_manager.shared_media);
+                let eval_result = self
+                    .module_evaluator
+                    .evaluate(module_ref, &self.state.module_manager.shared_media);
                 // Push (ModuleId, RenderOp) tuple
                 self.render_ops.extend(
                     eval_result
