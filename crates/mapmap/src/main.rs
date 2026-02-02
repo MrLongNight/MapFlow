@@ -62,6 +62,8 @@ struct App {
     _compositor: Compositor,
     /// The effect chain renderer.
     effect_chain_renderer: EffectChainRenderer,
+    /// Dedicated effect chain renderer for sidebar previews to avoid VRAM thrashing.
+    preview_effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
     mesh_renderer: MeshRenderer,
     /// Cache for mesh GPU buffers
@@ -187,6 +189,11 @@ impl App {
         let texture_pool = TexturePool::new(backend.device.clone());
         let compositor = Compositor::new(backend.device.clone(), backend.surface_format())?;
         let effect_chain_renderer = EffectChainRenderer::new(
+            backend.device.clone(),
+            backend.queue.clone(),
+            backend.surface_format(),
+        )?;
+        let preview_effect_chain_renderer = EffectChainRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),
             backend.surface_format(),
@@ -587,6 +594,7 @@ impl App {
             texture_pool,
             _compositor: compositor,
             effect_chain_renderer,
+            preview_effect_chain_renderer,
             mesh_renderer,
             mesh_buffer_cache,
             _quad_renderer: quad_renderer,
@@ -1080,7 +1088,7 @@ impl App {
                         module.connections.len()
                     );
 
-                    let result = self.module_evaluator.evaluate(module);
+                    let result = self.module_evaluator.evaluate(module, &self.state.module_manager.shared_media);
 
                     // Accumulate Render Ops
                     let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
@@ -2530,21 +2538,48 @@ impl App {
         // 4. Render OUTPUT Previews with full scene composition (multi-layer)
         // This renders the same composed scene as the Output Window, but at preview resolution
         let output_ids: Vec<u64> = self.output_assignments.keys().copied().collect();
+        let preview_width = 320;
+        let preview_height = 180;
+
+        // Ensure shared scratch textures exist for effects and post-processing
+        // We reuse these for each output loop iteration to save VRAM
+        let preview_effect_scratch = "preview_effect_scratch";
+        let preview_intermediate = "preview_intermediate";
+
+        self.texture_pool.ensure_texture(
+            preview_effect_scratch,
+            preview_width,
+            preview_height,
+            self.backend.surface_format(),
+            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        );
+
+        self.texture_pool.ensure_texture(
+            preview_intermediate,
+            preview_width,
+            preview_height,
+            self.backend.surface_format(),
+            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        );
 
         for output_id in output_ids {
             // Create preview texture for this output
             let preview_tex_name = format!("out_preview_{}", output_id);
             self.texture_pool.ensure_texture(
                 &preview_tex_name,
-                320,
-                180,
+                preview_width,
+                preview_height,
                 self.backend.surface_format(),
                 wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             );
+
+            // Views
             let preview_view = self.texture_pool.get_view(&preview_tex_name);
+            let scratch_view = self.texture_pool.get_view(preview_effect_scratch);
+            let intermediate_view = self.texture_pool.get_view(preview_intermediate);
 
             // Filter render_ops for this output (same logic as main render)
-            let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
+            let mut target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
                 .render_ops
                 .iter()
                 .filter(|(_, op)| match &op.output_type {
@@ -2554,12 +2589,36 @@ impl App {
                 .map(|(mid, op)| (*mid, op))
                 .collect();
 
-            // Clear preview texture
+            // Sort RenderOps: Layer 1 (Lowest ID) should be processed Last (Top)
+            target_ops.sort_by(|(_, a), (_, b)| {
+                let id_a = a.output_part_id;
+                let id_b = b.output_part_id;
+                id_b.cmp(&id_a) // Descending: Higher IDs first (Bottom), Lower IDs last (Top)
+            });
+
+            // Check for Post-Processing requirements
+            let output_config_opt = self.state.output_manager.get_output(output_id);
+            let use_edge_blend =
+                output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+            let use_color_calib =
+                output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+            let needs_post_processing = use_edge_blend || use_color_calib;
+
+            // Determine accumulation target
+            // If post-processing is needed, we accumulate into `intermediate_view`.
+            // If NOT, we accumulate directly into `preview_view`.
+            let accumulation_view = if needs_post_processing {
+                &intermediate_view
+            } else {
+                &preview_view
+            };
+
+            // Clear Accumulation Target
             {
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Output Preview Clear"),
+                    label: Some("Preview Accumulation Clear"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &preview_view,
+                        view: accumulation_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -2573,27 +2632,128 @@ impl App {
                 });
             }
 
-            // Render each layer to preview
+            // Render each layer
             for (module_id, op) in target_ops {
-                // Get source texture for this layer (use module_id from tuple, source_part_id from op)
+                // Get source texture for this layer
                 let source_part_id = match op.source_part_id {
                     Some(id) => id,
                     None => continue, // No source, skip this layer
                 };
                 let source_tex_name = format!("part_{}_{}", module_id, source_part_id);
-                if !self.texture_pool.has_texture(&source_tex_name) {
-                    continue;
+                // Check if texture exists, fallback to dummy
+                let source_view = if self.texture_pool.has_texture(&source_tex_name) {
+                    self.texture_pool.get_view(&source_tex_name)
+                } else {
+                    if let Some(dv) = &self.dummy_view {
+                        dv.clone()
+                    } else {
+                        continue;
+                    }
+                };
+
+                let mut current_view = source_view;
+                // Keep reference alive
+                let mut _temp_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
+
+                // --- Effect Chain ---
+                if !op.effects.is_empty() {
+                    let mut chain = mapmap_core::EffectChain::new();
+
+                    for modulizer in &op.effects {
+                        if let mapmap_core::module::ModulizerType::Effect {
+                            effect_type: mod_effect,
+                            params,
+                        } = modulizer
+                        {
+                            let core_effect = match mod_effect {
+                                mapmap_core::module::EffectType::Blur => {
+                                    Some(mapmap_core::effects::EffectType::Blur)
+                                }
+                                mapmap_core::module::EffectType::Invert => {
+                                    Some(mapmap_core::effects::EffectType::Invert)
+                                }
+                                mapmap_core::module::EffectType::Pixelate => {
+                                    Some(mapmap_core::effects::EffectType::Pixelate)
+                                }
+                                mapmap_core::module::EffectType::Brightness
+                                | mapmap_core::module::EffectType::Contrast
+                                | mapmap_core::module::EffectType::Saturation
+                                | mapmap_core::module::EffectType::Colorize => {
+                                    Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                }
+                                mapmap_core::module::EffectType::HueShift => {
+                                    Some(mapmap_core::effects::EffectType::HueShift)
+                                }
+                                mapmap_core::module::EffectType::ChromaticAberration
+                                | mapmap_core::module::EffectType::RgbSplit => {
+                                    Some(mapmap_core::effects::EffectType::ChromaticAberration)
+                                }
+                                mapmap_core::module::EffectType::EdgeDetect => {
+                                    Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                }
+                                mapmap_core::module::EffectType::FilmGrain
+                                | mapmap_core::module::EffectType::VHS => {
+                                    Some(mapmap_core::effects::EffectType::FilmGrain)
+                                }
+                                mapmap_core::module::EffectType::Vignette => {
+                                    Some(mapmap_core::effects::EffectType::Vignette)
+                                }
+                                mapmap_core::module::EffectType::Kaleidoscope => {
+                                    Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                }
+                                mapmap_core::module::EffectType::Wave => {
+                                    Some(mapmap_core::effects::EffectType::Wave)
+                                }
+                                mapmap_core::module::EffectType::Glitch => {
+                                    Some(mapmap_core::effects::EffectType::Glitch)
+                                }
+                                mapmap_core::module::EffectType::Mirror => {
+                                    Some(mapmap_core::effects::EffectType::Mirror)
+                                }
+                                mapmap_core::module::EffectType::ShaderGraph(id) => {
+                                    Some(mapmap_core::effects::EffectType::ShaderGraph(*id))
+                                }
+                                _ => None,
+                            };
+                            if let Some(et) = core_effect {
+                                let effect_id = chain.add_effect(et);
+                                if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                    effect.parameters = params.clone();
+                                }
+                            }
+                        }
+                    }
+
+                    if chain.enabled_effects().count() > 0 {
+                        let time = self.start_time.elapsed().as_secs_f32();
+                        self.preview_effect_chain_renderer.apply_chain(
+                            encoder,
+                            &current_view,
+                            &scratch_view,
+                            &chain,
+                            &self.shader_graph_manager,
+                            time,
+                            preview_width,
+                            preview_height,
+                        );
+                        _temp_holder = Some(scratch_view.clone());
+                        current_view = _temp_holder.as_ref().unwrap().clone();
+                    }
                 }
-                let source_view = self.texture_pool.get_view(&source_tex_name);
 
-                // Create mesh (use simple fullscreen quad for preview)
-                let (vb, ib, index_count) = &self.preview_quad_buffers;
+                // --- Mesh Warping ---
+                let (vb, ib, index_count) = self.mesh_buffer_cache.get_buffers(
+                    &self.backend.device,
+                    &self.backend.queue,
+                    op.layer_part_id,
+                    &op.mesh.to_mesh(),
+                );
 
-                // Create uniforms with layer transform
+                let transform = glam::Mat4::IDENTITY;
                 let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
-                    glam::Mat4::IDENTITY, // No transform for preview (show full scene)
-                    op.source_props.opacity,
+                    transform,
+                    op.opacity * op.source_props.opacity,
                     op.source_props.flip_horizontal,
                     op.source_props.flip_vertical,
                     op.source_props.brightness,
@@ -2601,17 +2761,16 @@ impl App {
                     op.source_props.saturation,
                     op.source_props.hue_shift,
                 );
-                let texture_bg = self.mesh_renderer.get_texture_bind_group(&source_view);
+                let texture_bg = self.mesh_renderer.get_texture_bind_group(&current_view);
 
-                // Render pass (accumulate with alpha blending)
                 {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Output Preview Layer"),
+                        label: Some("Preview Layer Mesh Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &preview_view,
+                            view: accumulation_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load, // Accumulate layers
+                                load: wgpu::LoadOp::Load, // Accumulate
                                 store: wgpu::StoreOp::Store,
                             },
                             depth_slice: None,
@@ -2624,11 +2783,86 @@ impl App {
                         &mut render_pass,
                         vb,
                         ib,
-                        *index_count,
+                        index_count,
                         &uniform_bg,
                         &texture_bg,
-                        false, // Use standard pipeline
+                        true, // Use mesh shader (warping)
                     );
+                }
+            } // End Layer Loop
+
+            // --- Post Processing ---
+            if needs_post_processing {
+                let config = output_config_opt.unwrap(); // Safe as checked above
+
+                // 1. Edge Blend (Intermediate -> Scratch OR Intermediate -> Preview)
+                // If we have both passes, EdgeBlend goes to Scratch, then ColorCalib goes to Preview.
+                // If only EdgeBlend, it goes to Preview.
+
+                if use_edge_blend {
+                    let renderer = self.edge_blend_renderer.as_ref().unwrap();
+                    let bind_group = renderer.create_texture_bind_group(&intermediate_view);
+                    let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
+                    let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    let target_view = if use_color_calib {
+                        &scratch_view
+                    } else {
+                        &preview_view
+                    };
+
+                    {
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Edge Blend Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
+                }
+
+                // 2. Color Calibration (Scratch -> Preview OR Intermediate -> Preview)
+                if use_color_calib {
+                    let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                    let input_view = if use_edge_blend {
+                        &scratch_view
+                    } else {
+                        &intermediate_view
+                    };
+                    let bind_group = renderer.create_texture_bind_group(input_view);
+                    let uniform_buffer = renderer.create_uniform_buffer(&config.color_calibration);
+                    let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    {
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Color Calib Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &preview_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
                 }
             }
 
@@ -2748,7 +2982,7 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             let module_id = module.id;
             if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
-                let eval_result = self.module_evaluator.evaluate(module_ref);
+                let eval_result = self.module_evaluator.evaluate(module_ref, &self.state.module_manager.shared_media);
                 // Push (ModuleId, RenderOp) tuple
                 self.render_ops.extend(
                     eval_result
