@@ -107,7 +107,7 @@ mod ffmpeg_impl {
 
         while *fmt != ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE {
             if count >= MAX_FORMATS {
-                warn!(
+                eprintln!(
                     "VAAPI format search exceeded limit ({}), bailing out",
                     MAX_FORMATS
                 );

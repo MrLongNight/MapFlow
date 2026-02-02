@@ -1268,6 +1268,7 @@ pub enum SourceType {
         #[serde(default)]
         flip_vertical: bool,
     },
+
 }
 
 impl SourceType {
@@ -2042,6 +2043,8 @@ impl SharedMediaState {
         self.items.remove(id);
     }
 }
+
+
 
 /// Manages multiple modules (Scenes)
 #[derive(Debug, Clone, Serialize, Deserialize)]
