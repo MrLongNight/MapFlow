@@ -128,6 +128,37 @@ mod ffmpeg_impl {
         ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_YUV420P
     }
 
+    #[cfg(target_os = "windows")]
+    unsafe extern "C" fn get_d3d11va_format(
+        _ctx: *mut ffmpeg_sys::AVCodecContext,
+        mut fmt: *const ffmpeg_sys::AVPixelFormat,
+    ) -> ffmpeg_sys::AVPixelFormat {
+        if fmt.is_null() {
+            return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE;
+        }
+
+        let mut count = 0;
+        const MAX_FORMATS: usize = 128;
+
+        while *fmt != ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE {
+            if count >= MAX_FORMATS {
+                eprintln!(
+                    "D3D11VA format search exceeded limit ({}), bailing out",
+                    MAX_FORMATS
+                );
+                break;
+            }
+
+            if *fmt == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_D3D11 {
+                return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_D3D11;
+            }
+            fmt = fmt.add(1);
+            count += 1;
+        }
+
+        ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_YUV420P
+    }
+
     pub struct RealFFmpegDecoder {
         input_ctx: ffmpeg::format::context::Input,
         decoder: ffmpeg::codec::decoder::Video,
@@ -302,6 +333,39 @@ mod ffmpeg_impl {
                     info!("VAAPI hardware acceleration enabled");
                     Ok(HwAccelType::VAAPI)
                 }
+                #[cfg(target_os = "windows")]
+                HwAccelType::D3D11VA => {
+                    unsafe {
+                        let mut device_ctx: *mut ffmpeg_sys::AVBufferRef = std::ptr::null_mut();
+                        let ret = ffmpeg_sys::av_hwdevice_ctx_create(
+                            &mut device_ctx,
+                            ffmpeg_sys::AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA,
+                            std::ptr::null(),
+                            std::ptr::null_mut(),
+                            0,
+                        );
+
+                        if ret < 0 {
+                            warn!("Failed to create D3D11VA device context: {}", ret);
+                            return Ok(HwAccelType::None);
+                        }
+
+                        // Attach to codec context
+                        let codec_ctx = _decoder.as_mut_ptr();
+                        if !codec_ctx.is_null() {
+                            (*codec_ctx).hw_device_ctx = device_ctx;
+                            (*codec_ctx).get_format = Some(get_d3d11va_format);
+                        } else {
+                            ffmpeg_sys::av_buffer_unref(&mut device_ctx);
+                            return Err(MediaError::DecoderError(
+                                "Codec context is null".to_string(),
+                            ));
+                        }
+                    }
+
+                    info!("D3D11VA hardware acceleration enabled");
+                    Ok(HwAccelType::D3D11VA)
+                }
                 #[allow(unreachable_patterns)]
                 _ => {
                     warn!(
@@ -330,6 +394,29 @@ mod ffmpeg_impl {
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
                     // Handle hardware frame transfer
                     if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI as i32
+                    {
+                        let mut sw_frame = ffmpeg::util::frame::Video::empty();
+                        unsafe {
+                            let ret = ffmpeg_sys::av_hwframe_transfer_data(
+                                sw_frame.as_mut_ptr(),
+                                decoded.as_ptr(),
+                                0,
+                            );
+
+                            if ret < 0 {
+                                return Err(MediaError::DecoderError(format!(
+                                    "Failed to transfer hardware frame: {}",
+                                    ret
+                                )));
+                            }
+
+                            sw_frame.set_pts(decoded.pts());
+                            decoded = sw_frame;
+                        }
+                    }
+
+                    #[cfg(target_os = "windows")]
+                    if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_D3D11 as i32
                     {
                         let mut sw_frame = ffmpeg::util::frame::Video::empty();
                         unsafe {

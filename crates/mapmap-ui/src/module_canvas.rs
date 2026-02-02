@@ -729,7 +729,7 @@ impl ModuleCanvas {
                                                 ui.add_space(10.0);
 
                                                 self.render_transport_controls(ui, part_id, is_playing, current_pos, loop_enabled, reverse_playback);
-                                                
+
                                                 ui.add_space(10.0);
 
                                                 // Preview
@@ -740,7 +740,7 @@ impl ModuleCanvas {
                                                 ui.add_space(4.0);
 
                                                 self.render_timeline(ui, part_id, video_duration, current_pos, start_time, end_time);
-                                                
+
                                                 ui.add_space(8.0);
                                                 ui.horizontal(|ui| {
                                                     ui.label("Playback Speed:");
@@ -781,7 +781,7 @@ impl ModuleCanvas {
                                                         });
                                                     });
                                                 }
-                                                
+
                                                 ui.separator();
                                                 Self::render_common_controls(
                                                     ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -803,7 +803,7 @@ impl ModuleCanvas {
                                                             }
                                                         });
                                                 });
-                                                
+
                                                 ui.separator();
                                                 Self::render_common_controls(
                                                     ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -825,7 +825,7 @@ impl ModuleCanvas {
                                                             }
                                                         });
                                                 });
-                                                
+
                                                 ui.separator();
                                                 Self::render_common_controls(
                                                     ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -5731,6 +5731,7 @@ impl ModuleCanvas {
             });
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn render_common_controls(
         ui: &mut Ui,
         opacity: &mut f32,

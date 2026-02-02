@@ -215,12 +215,12 @@ index 0cfcbbd..a981d3a 100644
 +        flip_vertical: bool,
 +    },
  }
- 
+
  impl SourceType {
 @@ -1777,6 +1985,64 @@ fn default_color_palette() -> Vec<[f32; 4]> {
      ]
  }
- 
+
 +/// Type of shared media
 +#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 +pub enum SharedMediaType {
@@ -290,7 +290,7 @@ index 0cfcbbd..a981d3a 100644
 +    #[serde(default)]
 +    pub shared_media: SharedMediaState,
  }
- 
+
  impl PartialEq for ModuleManager {
 @@ -1794,6 +2063,7 @@ impl PartialEq for ModuleManager {
              && self.next_module_id == other.next_module_id
@@ -299,7 +299,7 @@ index 0cfcbbd..a981d3a 100644
 +            && self.shared_media == other.shared_media
      }
  }
- 
+
 @@ -1806,6 +2076,7 @@ impl ModuleManager {
              next_part_id: 1,
              color_palette: default_color_palette(),
@@ -307,7 +307,7 @@ index 0cfcbbd..a981d3a 100644
 +            shared_media: SharedMediaState::new(),
          }
      }
- 
+
 diff --git a/crates/mapmap-core/src/module_eval.rs b/crates/mapmap-core/src/module_eval.rs
 index 552613f..ea186d6 100644
 --- a/crates/mapmap-core/src/module_eval.rs
@@ -327,77 +327,77 @@ index 552613f..ea186d6 100644
      fn test_trigger_fixed_interval() {
          let mut evaluator = ModuleEvaluator::new();
 +        let shared = crate::module::SharedMediaState::default();
- 
+
          let mut module = create_test_module();
          let trigger_part = ModulePartType::Trigger(TriggerType::Fixed {
 @@ -114,7 +116,7 @@ mod tests_evaluator {
          let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
- 
+
          // Initial eval - t=0, phase=0, duration=10, 0 < 10 -> 1.0
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &shared);
          let values = &result.trigger_values[&part_id];
          assert_eq!(values[0], 1.0);
- 
+
 @@ -124,7 +126,7 @@ mod tests_evaluator {
          // Ideally we'd refactor to inject time.
          std::thread::sleep(Duration::from_millis(20));
- 
+
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &shared);
          let values = &result.trigger_values[&part_id];
          // 20ms > 10ms pulse duration -> 0.0
          assert_eq!(values[0], 0.0);
 @@ -157,7 +159,7 @@ mod tests_evaluator {
- 
+
          let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
- 
+
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
          let values = &result.trigger_values[&part_id];
- 
+
          // Order in generate_outputs:
 @@ -186,7 +188,8 @@ mod tests_evaluator {
          let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
          module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
- 
+
 -        let _result = evaluator.evaluate(&module);
 +        let shared = crate::module::SharedMediaState::default();
 +        let _result = evaluator.evaluate(&module, &shared);
- 
+
          // Should produce a SourceCommand because trigger > 0.1
          // (Source defaults to "MediaFile" with empty path, create_source_command checks empty path)
 @@ -200,12 +203,12 @@ mod tests_evaluator {
              }
          }
- 
+
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &shared);
          assert!(result.source_commands.contains_key(&s_id));
- 
+
          // Now remove connection
          module.remove_connection(t_id, 0, s_id, 0);
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &shared);
          assert!(!result.source_commands.contains_key(&s_id));
      }
- 
+
 @@ -243,7 +246,7 @@ mod tests_evaluator {
          module.add_connection(s_id, 0, l_id, 0); // Source Media -> Layer Input
          module.add_connection(l_id, 0, o_id, 0); // Layer Output -> Output Layer In
- 
+
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
- 
+
          // Verify RenderOp
          assert_eq!(result.render_ops.len(), 1);
 @@ -317,7 +320,7 @@ mod tests_evaluator {
          // Slave Link In index: 2 (0=Media, 1=Trigger)
          module.add_connection(m_id, 1, s_id, 2);
- 
+
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
- 
+
          // Master ID in trigger_values should have 2 values: Trigger Out (1.0) and Link Out (1.0)
          let m_values = &result.trigger_values[&m_id];
 @@ -394,6 +397,15 @@ pub enum SourceCommand {
@@ -417,7 +417,7 @@ index 552613f..ea186d6 100644
      PlayShader {
          /// Shader name/ID
 @@ -507,7 +519,11 @@ impl ModuleEvaluator {
- 
+
      /// Evaluate a module for one frame
      /// Returns a reference to the reusable result buffer
 -    pub fn evaluate(&mut self, module: &MapFlowModule) -> &ModuleEvalResult {
@@ -476,7 +476,7 @@ index 552613f..ea186d6 100644
 -                                    flip_horizontal: *flip_horizontal,
 -                                    flip_vertical: *flip_vertical,
 -                                };
- 
+
 +                            // Helper to extract props from any source variant that has them
 +                            let mut extracted_props = None;
 +
@@ -603,7 +603,7 @@ index 552613f..ea186d6 100644
          if trigger_value < 0.1 {
 @@ -1196,7 +1296,9 @@ impl ModuleEvaluator {
          }
- 
+
          match source_type {
 -            SourceType::MediaFile { path, .. } => {
 +            SourceType::MediaFile { path, .. }
@@ -636,13 +636,13 @@ index 552613f..ea186d6 100644
      fn test_create_source_command() {
          let evaluator = ModuleEvaluator::new();
 +        let shared = crate::module::SharedMediaState::default();
- 
+
          // Threshold check (< 0.1)
          let cmd_low =
 -            evaluator.create_source_command(&SourceType::LiveInput { device_id: 0 }, 0.05);
 +            evaluator.create_source_command(&SourceType::LiveInput { device_id: 0 }, 0.05, &shared);
          assert!(cmd_low.is_none());
- 
+
          // Valid command
          let cmd_valid =
 -            evaluator.create_source_command(&SourceType::LiveInput { device_id: 1 }, 0.5);
@@ -652,20 +652,20 @@ index 552613f..ea186d6 100644
                  device_id,
 @@ -1465,7 +1580,7 @@ mod tests_logic {
          });
- 
+
          // Run evaluate to populate internal caches
 -        evaluator.evaluate(&module);
 +        evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
- 
+
          // Start trace from 1 using cached indices
          let chain = evaluator.trace_chain(1, &module);
 @@ -1524,7 +1639,7 @@ mod tests_logic {
          // Layer(0) -> Output(0)
          module.add_connection(layer_id, 0, output_id, 0);
- 
+
 -        let result = evaluator.evaluate(&module);
 +        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
- 
+
          assert_eq!(result.render_ops.len(), 1);
          let op = &result.render_ops[0];
 diff --git a/crates/mapmap-ui/src/module_canvas.rs b/crates/mapmap-ui/src/module_canvas.rs
@@ -916,12 +916,12 @@ index c34ae2f..a8eb207 100644
 +                                            let video_duration = player_info.duration.max(1.0) as f32;
 +                                            let current_pos = player_info.current_time as f32;
 +                                            let is_playing = player_info.is_playing;
- 
+
                                                  // Time Calculation
                                                  let current_min = (current_pos / 60.0) as u32;
 @@ -1139,6 +1326,166 @@ impl ModuleCanvas {
                                                  });
- 
+
                                              }
 +                                            SourceType::VideoMulti {
 +                                                opacity,
@@ -957,7 +957,7 @@ index c34ae2f..a8eb207 100644
 +                                            } => {
 +                                                ui.label("???? Shared Media Source");
 +                                                ui.label("Content controlled by Shared Registry");
-+                                                
++
 +                                                // === APPEARANCE ===
 +                                                ui.collapsing("???? Appearance", |ui| {
 +                                                    ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
@@ -1099,7 +1099,7 @@ index c34ae2f..a8eb207 100644
                      #[cfg(feature = "ndi")]
 @@ -4787,6 +5138,8 @@ impl ModuleCanvas {
                      });
- 
+
                  // Properties for SourceType
 +                // Helper to access path and scaling props if available
 +                // Split handling to satisfy borrow checker and type differences
@@ -1213,7 +1213,7 @@ index c34ae2f..a8eb207 100644
 @@ -6605,6 +7040,99 @@ impl ModuleCanvas {
          }
      }
- 
+
 +    /// Helper to render standard media source properties
 +    fn render_media_source_props(
 +        ui: &mut egui::Ui,
@@ -1310,4 +1310,3 @@ index c34ae2f..a8eb207 100644
      /// Create default presets/templates
      fn default_presets() -> Vec<ModulePreset> {
          use mapmap_core::module::*;
-
