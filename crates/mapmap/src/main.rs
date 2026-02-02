@@ -1844,24 +1844,7 @@ impl App {
         }
 
         // Process egui panel actions
-        if let Some(action) = self.ui_state.paint_panel.take_action() {
-            match action {
-                mapmap_ui::paint_panel::PaintPanelAction::AddPaint => {
-                    self.state
-                        .paint_manager
-                        .add_paint(mapmap_core::paint::Paint::color(
-                            0,
-                            "New Color",
-                            [1.0, 1.0, 1.0, 1.0],
-                        ));
-                    self.state.dirty = true;
-                }
-                mapmap_ui::paint_panel::PaintPanelAction::RemovePaint(id) => {
-                    self.state.paint_manager.remove_paint(id);
-                    self.state.dirty = true;
-                }
-            }
-        }
+        ui::panels::paint::handle_actions(&mut self.ui_state, &mut self.state);
 
         if let Some(action) = self.ui_state.edge_blend_panel.take_action() {
             match action {
@@ -3743,43 +3726,38 @@ impl App {
                     self.ui_state.render_icon_demo(ctx);
 
                     // Paint Panel
-                    self.ui_state.paint_panel.render(
-                        ctx,
-                        &self.ui_state.i18n,
-                        &mut self.state.paint_manager,
-                        self.ui_state.icon_manager.as_ref(),
-                    );
+                    ui::panels::paint::show(ctx, ui::panels::paint::PaintContext {
+                        ui_state: &mut self.ui_state,
+                        state: &mut self.state,
+                    });
 
                     // Mapping Panel
-                    self.ui_state.mapping_panel.show(
-                        ctx,
-                        &mut self.state.mapping_manager,
-                        &mut self.ui_state.actions,
-                        &self.ui_state.i18n,
-                    );
+                    ui::panels::mapping::show(ctx, ui::panels::mapping::MappingContext {
+                        ui_state: &mut self.ui_state,
+                        state: &mut self.state,
+                    });
 
                     // Output Panel
-                    self.ui_state.output_panel.render(
-                        ctx,
-                        &self.ui_state.i18n,
-                        &mut self.state.output_manager,
-                        &[], // Monitors placeholder
-                    );
+                    ui::panels::output::show(ctx, ui::panels::output::OutputContext {
+                        ui_state: &mut self.ui_state,
+                        state: &mut self.state,
+                    });
 
                     // Edge Blend Panel
-                    self.ui_state.edge_blend_panel.show(ctx, &self.ui_state.i18n);
+                    ui::panels::edge_blend::show(ctx, ui::panels::edge_blend::EdgeBlendContext {
+                        ui_state: &mut self.ui_state,
+                    });
 
                     // Assignment Panel
-                    self.ui_state.assignment_panel.show(ctx, &self.state.assignment_manager);
+                    ui::panels::assignment::show(ctx, ui::panels::assignment::AssignmentContext {
+                        ui_state: &mut self.ui_state,
+                        state: &mut self.state,
+                    });
 
                     // Icon Demo Panel
-                    if self.ui_state.icon_demo_panel.visible {
-                        self.ui_state.icon_demo_panel.ui(
-                            ctx,
-                            self.ui_state.icon_manager.as_ref(),
-                            &self.ui_state.i18n,
-                        );
-                    }
+                    ui::dialogs::icon_demo::show(ctx, ui::dialogs::icon_demo::IconDemoContext {
+                        ui_state: &mut self.ui_state,
+                    });
                     // ---------------------------------------------------------------------
                     // 3. FLOATING WINDOWS (Rendered LAST = On Top)
                     // ---------------------------------------------------------------------

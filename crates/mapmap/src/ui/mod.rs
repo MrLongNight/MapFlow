@@ -2,7 +2,10 @@
 //!
 //! This module contains the user interface components extracted from the main application loop.
 
+/// Settings and dialog windows.
 pub mod dialogs;
+/// Functional panels and sidebars.
+pub mod panels;
 
-/// Re-export settings for backward compatibility with main.rs
+/// Re-export settings for backward compatibility
 pub use dialogs::settings;
