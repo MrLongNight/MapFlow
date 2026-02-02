@@ -2741,11 +2741,11 @@ impl ModuleCanvas {
             .fill(ui.visuals().panel_fill)
             .show(ui, |ui| {
                 ui.vertical(|ui| {
-                    // --- ROW 1: Module Context & Adding Nodes ---
-                    ui.horizontal(|ui| {
+                    // --- ROW 1: Module Management ---
+                    ui.horizontal_wrapped(|ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
 
-                        // LEFT: Module Selector & Info
+                        // Module Selector & Info
                         ui.push_id("module_context", |ui| {
                             let mut module_names: Vec<(u64, String)> = manager
                                 .list_modules()
@@ -2813,31 +2813,23 @@ impl ModuleCanvas {
                                 }
                             }
                         });
-
-                        ui.separator();
-
-                        // CENTER/RIGHT (Top Row): Add Node Menu
-                        let has_module = self.active_module_id.is_some();
-                        ui.add_enabled_ui(has_module, |ui| {
-                            self.render_add_node_menu(ui, manager);
-                        });
-
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(
-                                egui::RichText::new("Canvas Editor")
-                                    .strong()
-                                    .color(ui.visuals().strong_text_color()),
-                            );
-                        });
                     });
 
                     ui.add_space(2.0);
                     ui.separator();
                     ui.add_space(2.0);
 
-                    // --- ROW 2: View Controls & Utilities ---
-                    ui.horizontal(|ui| {
+                    // --- ROW 2: Tools & View ---
+                    ui.horizontal_wrapped(|ui| {
                         ui.spacing_mut().item_spacing.x = 8.0;
+
+                        // Add Node Menu (Moved from Row 1)
+                        let has_module = self.active_module_id.is_some();
+                        ui.add_enabled_ui(has_module, |ui| {
+                            self.render_add_node_menu(ui, manager);
+                        });
+
+                        ui.separator();
 
                         // Utility Buttons
                         if self.active_module_id.is_some() {
@@ -2875,26 +2867,26 @@ impl ModuleCanvas {
                             }
                         }
 
-                        // Right Aligned View Controls
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("⊡").on_hover_text("Reset View").clicked() {
-                                self.zoom = 1.0;
-                                self.pan_offset = Vec2::ZERO;
-                            }
-                            ui.label(format!("{:.0}%", self.zoom * 100.0));
-                            if ui.button("+").on_hover_text("Zoom In").clicked() {
-                                self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
-                            }
-                            ui.add(
-                                egui::Slider::new(&mut self.zoom, 0.2..=3.0)
-                                    .show_value(false)
-                                    .trailing_fill(true),
-                            );
-                            if ui.button("−").on_hover_text("Zoom Out").clicked() {
-                                self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
-                            }
-                            ui.label("Zoom:");
-                        });
+                        ui.separator();
+
+                        // View Controls (Inline instead of right-aligned to support wrapping)
+                        ui.label("Zoom:");
+                        if ui.button("−").on_hover_text("Zoom Out").clicked() {
+                            self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
+                        }
+                        ui.add(
+                            egui::Slider::new(&mut self.zoom, 0.2..=3.0)
+                                .show_value(false)
+                                .trailing_fill(true),
+                        );
+                        if ui.button("+").on_hover_text("Zoom In").clicked() {
+                            self.zoom = (self.zoom + 0.1).clamp(0.2, 3.0);
+                        }
+                        ui.label(format!("{:.0}%", self.zoom * 100.0));
+                        if ui.button("⊡").on_hover_text("Reset View").clicked() {
+                            self.zoom = 1.0;
+                            self.pan_offset = Vec2::ZERO;
+                        }
                     });
                 });
             });

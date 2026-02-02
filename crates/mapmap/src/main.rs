@@ -2823,8 +2823,8 @@ impl App {
                         egui::SidePanel::left("unified_left_sidebar")
                             .resizable(true)
                             .default_width(280.0)
-                            .min_width(200.0)
-                            .max_width(1000.0)
+                            .min_width(150.0)
+                            .max_width(1500.0)
                             .show(ctx, |ui| {
                                 // Sidebar header with collapse button
                                 ui.horizontal(|ui| {
@@ -2967,7 +2967,7 @@ impl App {
                                         );
 
                                         // Custom Horizontal Splitter (Resize Handle)
-                                        let splitter_height = 6.0;
+                                        let splitter_height = 12.0;
                                         let (splitter_rect, splitter_response) = ui.allocate_at_least(
                                             egui::vec2(ui.available_width(), splitter_height),
                                             egui::Sense::drag(),
