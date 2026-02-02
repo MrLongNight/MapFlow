@@ -2644,12 +2644,10 @@ impl App {
                 // Check if texture exists, fallback to dummy
                 let source_view = if self.texture_pool.has_texture(&source_tex_name) {
                     self.texture_pool.get_view(&source_tex_name)
+                } else if let Some(dv) = &self.dummy_view {
+                    dv.clone()
                 } else {
-                    if let Some(dv) = &self.dummy_view {
-                        dv.clone()
-                    } else {
-                        continue;
-                    }
+                    continue;
                 };
 
                 let mut current_view = source_view;
