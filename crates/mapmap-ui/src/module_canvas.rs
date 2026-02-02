@@ -1298,6 +1298,9 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
+                                            _ => {
+                                                ui.label("Source settings not implemented");
+                                            }
                                         }
                                     }
                                     ModulePartType::Mask(mask) => {
@@ -4287,6 +4290,7 @@ impl ModuleCanvas {
                     SourceType::NdiInput { .. } => "NDI Input (Disabled)",
                     #[cfg(target_os = "windows")]
                     SourceType::SpoutInput { .. } => "Spout Input",
+                    _ => "Other Input",
                 };
                 egui::ComboBox::from_id_salt("source_type")
                     .selected_text(current)
@@ -5761,6 +5765,7 @@ impl ModuleCanvas {
                     SourceType::NdiInput { .. } => "NDI Input",
                     #[cfg(target_os = "windows")]
                     SourceType::SpoutInput { .. } => "Spout Input",
+                    _ => "Input",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5946,6 +5951,7 @@ impl ModuleCanvas {
                 }
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
+                _ => "Unknown Input".to_string(),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {

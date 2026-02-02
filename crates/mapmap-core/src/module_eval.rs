@@ -1309,15 +1309,13 @@ impl ModuleEvaluator {
             }
             SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => {
                 // Resolve path from shared state
-                if let Some(item) = shared_state.get(shared_id) {
-                    Some(SourceCommand::PlaySharedMedia {
+                shared_state
+                    .get(shared_id)
+                    .map(|item| SourceCommand::PlaySharedMedia {
                         id: shared_id.clone(),
                         path: item.path.clone(),
                         trigger_value,
                     })
-                } else {
-                    None // ID not found
-                }
             }
             SourceType::Shader { name, params } => Some(SourceCommand::PlayShader {
                 name: name.clone(),
