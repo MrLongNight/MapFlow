@@ -28,9 +28,9 @@ impl ModuleSidebar {
 
             // List of modules
             let modules = manager.list_modules();
-            let module_list: Vec<_> = modules.into_iter().cloned().collect();
-            for module in module_list {
-                let response = self.module_list_item(ui, &module);
+            // Optimization: Iterate over references to avoid deep cloning MapFlowModule every frame
+            for module in modules {
+                let response = self.module_list_item(ui, module);
                 response.context_menu(|ui| {
                     if ui.button(locale.t("menu-rename")).clicked() {
                         // TODO: Implement renaming
