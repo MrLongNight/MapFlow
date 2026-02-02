@@ -817,7 +817,11 @@ mod tests {
         // Results might be garbage (NaN), but process should survive
         // Just ensuring it didn't crash is the main test here.
         // Optionally, we could assert that NaNs propagate to output
-        assert!(analysis.rms_volume.is_nan() || analysis.rms_volume.is_infinite() || analysis.rms_volume >= 0.0);
+        assert!(
+            analysis.rms_volume.is_nan()
+                || analysis.rms_volume.is_infinite()
+                || analysis.rms_volume >= 0.0
+        );
     }
 
     #[test]
