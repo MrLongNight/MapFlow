@@ -7,6 +7,7 @@ use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
+    // Allocate space for the header
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
 
     let painter = ui.painter();
