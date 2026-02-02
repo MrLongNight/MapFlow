@@ -1,4 +1,5 @@
 use crate::i18n::LocaleManager;
+use crate::theme::colors;
 use crate::UIAction;
 use egui::epaint::CubicBezierShape;
 use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
@@ -5369,7 +5370,7 @@ impl ModuleCanvas {
 
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
-        let neutral_bg = Color32::from_rgb(20, 20, 25);
+        let neutral_bg = colors::DARK_GREY;
         // Sharp corners for "Cyber" look
         painter.rect_filled(rect, 0, neutral_bg);
 
@@ -5418,7 +5419,7 @@ impl ModuleCanvas {
         painter.rect_filled(
             title_rect,
             0, // Sharp corners
-            Color32::from_rgb(32, 32, 38),
+            colors::LIGHTER_GREY,
         );
 
         // Title bar Top Accent Stripe (Type Identifier)
@@ -5432,7 +5433,7 @@ impl ModuleCanvas {
                 Pos2::new(rect.min.x, rect.min.y + title_height),
                 Pos2::new(rect.max.x, rect.min.y + title_height),
             ],
-            Stroke::new(1.0, Color32::from_black_alpha(100)),
+            Stroke::new(1.0, colors::STROKE_GREY),
         );
 
         // Enhanced Title Rendering (Icon | Category | Name)
