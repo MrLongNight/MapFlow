@@ -5731,6 +5731,7 @@ impl ModuleCanvas {
             });
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn render_common_controls(
         ui: &mut Ui,
         opacity: &mut f32,
