@@ -10,7 +10,7 @@ use walkdir::WalkDir;
 /// Maximum number of frames to load in a sequence
 ///
 /// This limit prevents memory exhaustion and long loading times when users
-/// accidentally select a directory with thousands of files.
+/// accidentally (or maliciously) select a directory with thousands of files.
 #[cfg(not(test))]
 pub const MAX_SEQUENCE_FRAMES: usize = 5000;
 #[cfg(test)]
