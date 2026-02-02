@@ -25,3 +25,7 @@
 ## 2026-06-21 - Immediate Mode Geometry Checks
 **Learning:** In immediate mode UIs (`egui`), complex geometry checks (like iterative Bezier hit testing) running per-frame for every object (N connections) creates a linear CPU bottleneck. A simple AABB broad-phase check dramatically reduces the work for the vast majority of non-interacted objects.
 **Action:** Always implement a cheap broad-phase check (AABB, bounding circle) before performing expensive detailed hit testing in render loops.
+
+## 2026-10-24 - Deep Cloning in UI Loops
+**Learning:** `module_sidebar.rs` was performing `modules.into_iter().cloned().collect()` inside the `show()` method (called every frame). This deep-cloned the entire module graph (nodes, connections, strings) 60 times a second, creating massive unnecessary allocation traffic.
+**Action:** When iterating collections for UI display, always prefer iterating references (`&T`) directly. If a closure requires ownership of a field (like `id: u64`), capture just that field, not the whole struct.

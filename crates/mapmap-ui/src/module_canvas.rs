@@ -3234,17 +3234,51 @@ impl ModuleCanvas {
             }
 
             // Check for delete button click (× in top-right corner of title bar)
-            let delete_button_rect = Rect::from_min_size(
-                Pos2::new(rect.max.x - 20.0 * self.zoom, rect.min.y),
-                Vec2::splat(20.0 * self.zoom),
-            );
-            let delete_response = ui.interact(
-                delete_button_rect,
-                egui::Id::new((*part_id, "delete")),
-                Sense::click(),
-            );
-            if delete_response.clicked() {
-                delete_part_id = Some(*part_id);
+            let delete_button_rect = self.get_delete_button_rect(*rect);
+            let delete_id = egui::Id::new((*part_id, "delete"));
+            let delete_response = ui
+                .interact(delete_button_rect, delete_id, Sense::click())
+                .on_hover_text("Hold to delete (Mouse or Space/Enter)");
+
+            // Mary StyleUX: Hold-to-Confirm for Node Deletion (Safety)
+            if delete_response.hovered() {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+            }
+
+            let is_holding_delete = delete_response.is_pointer_button_down_on()
+                || (delete_response.has_focus()
+                    && ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter)));
+
+            let mut delete_start_time: Option<f64> =
+                ui.data_mut(|d| d.get_temp(delete_id.with("start_time")));
+
+            if is_holding_delete {
+                let now = ui.input(|i| i.time);
+                if delete_start_time.is_none() {
+                    delete_start_time = Some(now);
+                    ui.data_mut(|d| d.insert_temp(delete_id.with("start_time"), delete_start_time));
+                }
+
+                let elapsed = now - delete_start_time.unwrap();
+                let hold_duration = 0.6; // seconds
+
+                // Store progress for visualization
+                let progress = (elapsed as f32 / hold_duration as f32).clamp(0.0, 1.0);
+                ui.data_mut(|d| d.insert_temp(delete_id.with("progress"), progress));
+
+                if progress >= 1.0 {
+                    delete_part_id = Some(*part_id);
+                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
+                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
+                } else {
+                    ui.ctx().request_repaint(); // Animate progress
+                }
+            } else {
+                // Reset if released early
+                if delete_start_time.is_some() {
+                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
+                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
+                }
             }
         }
 
@@ -4228,6 +4262,17 @@ impl ModuleCanvas {
         }
     }
 
+    fn get_delete_button_rect(&self, part_rect: Rect) -> Rect {
+        let title_height = 28.0 * self.zoom;
+        Rect::from_center_size(
+            Pos2::new(
+                part_rect.max.x - 10.0 * self.zoom,
+                part_rect.min.y + title_height * 0.5,
+            ),
+            Vec2::splat(20.0 * self.zoom),
+        )
+    }
+
     fn draw_part_with_delete(
         &self,
         ui: &Ui,
@@ -4441,12 +4486,27 @@ impl ModuleCanvas {
         );
 
         // Delete button (× in top-right corner)
-        let delete_button_pos = Pos2::new(
-            rect.max.x - 12.0 * self.zoom,
-            rect.min.y + title_height * 0.5,
-        );
+        let delete_button_rect = self.get_delete_button_rect(rect);
+
+        // Retrieve hold progress for visualization (Mary StyleUX)
+        let delete_id = egui::Id::new((part.id, "delete"));
+        let progress = ui
+            .ctx()
+            .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
+            .unwrap_or(0.0);
+
+        if progress > 0.0 {
+            // Draw loading circle/fill
+            let radius = 10.0 * self.zoom * progress;
+            painter.circle_filled(
+                delete_button_rect.center(),
+                radius,
+                Color32::from_rgb(255, 50, 50).linear_multiply(0.8),
+            );
+        }
+
         painter.text(
-            delete_button_pos,
+            delete_button_rect.center(),
             egui::Align2::CENTER_CENTER,
             "×",
             egui::FontId::proportional(16.0 * self.zoom),

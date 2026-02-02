@@ -4,8 +4,17 @@ use crate::{MediaError, Result, VideoDecoder};
 use mapmap_io::VideoFrame;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use tracing::info;
+use tracing::{info, warn};
 use walkdir::WalkDir;
+
+/// Maximum number of frames to load in a sequence
+///
+/// This limit prevents memory exhaustion and long loading times when users
+/// accidentally (or maliciously) select a directory with thousands of files.
+#[cfg(not(test))]
+pub const MAX_SEQUENCE_FRAMES: usize = 5000;
+#[cfg(test)]
+pub const MAX_SEQUENCE_FRAMES: usize = 10;
 
 /// Decoder for image sequences (directory of numbered frames)
 ///
@@ -56,6 +65,15 @@ impl ImageSequenceDecoder {
             .into_iter()
             .filter_map(|e| e.ok())
         {
+            if frames.len() >= MAX_SEQUENCE_FRAMES {
+                warn!(
+                    "Image sequence exceeded limit of {} frames. Truncating sequence from {}",
+                    MAX_SEQUENCE_FRAMES,
+                    directory.display()
+                );
+                break;
+            }
+
             let path = entry.path();
             if path.is_file() && Self::is_supported_image(path) {
                 frames.push(path.to_path_buf());
@@ -211,5 +229,34 @@ mod tests {
         assert!(!ImageSequenceDecoder::is_supported_image(Path::new(
             "frame001.mp4"
         )));
+    }
+
+    #[test]
+    fn test_sequence_limit() {
+        use tempfile::tempdir;
+
+        let dir = tempdir().unwrap();
+        let dir_path = dir.path();
+
+        // 1. Create one valid image (so loading succeeds)
+        // We use the 'image' crate which is already a dependency
+        let valid_img_path = dir_path.join("frame_0000.png");
+        let img = image::ImageBuffer::<image::Rgba<u8>, Vec<u8>>::new(1, 1);
+        img.save(&valid_img_path).unwrap();
+
+        // 2. Create excess empty files (enough to trigger limit)
+        // Limit is 10 in test mode. We create 15 total (1 valid + 14 empty)
+        // We use .png extension so they are picked up
+        for i in 1..15 {
+            let p = dir_path.join(format!("frame_{:04}.png", i));
+            std::fs::write(&p, b"").unwrap();
+        }
+
+        // 3. Open decoder
+        let decoder = ImageSequenceDecoder::open(dir_path, 30.0).unwrap();
+
+        // 4. Verify limit
+        assert_eq!(decoder.frames.len(), MAX_SEQUENCE_FRAMES);
+        assert_eq!(decoder.frames.len(), 10);
     }
 }

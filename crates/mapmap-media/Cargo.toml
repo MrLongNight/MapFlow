@@ -32,6 +32,7 @@ walkdir = "2.4"
 
 [dev-dependencies]
 criterion = { workspace = true }
+tempfile = "3.8"
 
 [[bench]]
 name = "video_decode"
