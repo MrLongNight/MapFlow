@@ -2644,12 +2644,10 @@ impl App {
                 // Check if texture exists, fallback to dummy
                 let source_view = if self.texture_pool.has_texture(&source_tex_name) {
                     self.texture_pool.get_view(&source_tex_name)
+                } else if let Some(dv) = &self.dummy_view {
+                    dv.clone()
                 } else {
-                    if let Some(dv) = &self.dummy_view {
-                        dv.clone()
-                    } else {
-                        continue;
-                    }
+                    continue;
                 };
 
                 let mut current_view = source_view;
@@ -3303,8 +3301,8 @@ impl App {
                         egui::SidePanel::left("unified_left_sidebar")
                             .resizable(true)
                             .default_width(280.0)
-                            .min_width(200.0)
-                            .max_width(1000.0)
+                            .min_width(150.0)
+                            .max_width(1500.0)
                             .show(ctx, |ui| {
                                 // Sidebar header with collapse button
                                 ui.horizontal(|ui| {
