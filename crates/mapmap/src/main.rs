@@ -62,6 +62,8 @@ struct App {
     _compositor: Compositor,
     /// The effect chain renderer.
     effect_chain_renderer: EffectChainRenderer,
+    /// Dedicated effect chain renderer for sidebar previews to avoid VRAM thrashing.
+    preview_effect_chain_renderer: EffectChainRenderer,
     /// The mesh renderer.
     mesh_renderer: MeshRenderer,
     /// Cache for mesh GPU buffers
@@ -187,6 +189,11 @@ impl App {
         let texture_pool = TexturePool::new(backend.device.clone());
         let compositor = Compositor::new(backend.device.clone(), backend.surface_format())?;
         let effect_chain_renderer = EffectChainRenderer::new(
+            backend.device.clone(),
+            backend.queue.clone(),
+            backend.surface_format(),
+        )?;
+        let preview_effect_chain_renderer = EffectChainRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),
             backend.surface_format(),
@@ -587,6 +594,7 @@ impl App {
             texture_pool,
             _compositor: compositor,
             effect_chain_renderer,
+            preview_effect_chain_renderer,
             mesh_renderer,
             mesh_buffer_cache,
             _quad_renderer: quad_renderer,
@@ -1080,7 +1088,9 @@ impl App {
                         module.connections.len()
                     );
 
-                    let result = self.module_evaluator.evaluate(module);
+                    let result = self
+                        .module_evaluator
+                        .evaluate(module, &self.state.module_manager.shared_media);
 
                     // Accumulate Render Ops
                     let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
@@ -1101,7 +1111,9 @@ impl App {
                     }
 
                     // 1. Handle Source Commands for this module
+                    #[allow(clippy::for_kv_map)]
                     for (part_id, cmd) in &result.source_commands {
+                        #[allow(clippy::single_match)]
                         match cmd {
                             mapmap_core::SourceCommand::PlayMedia {
                                 path,
@@ -1731,6 +1743,12 @@ impl App {
                     self.state.dirty = true;
                 }
 
+                mapmap_ui::UIAction::MediaCommand(part_id, command) => {
+                    self.ui_state
+                        .module_canvas
+                        .pending_playback_commands
+                        .push((part_id, command));
+                }
                 // Fallback
                 _ => {}
             }
@@ -2262,10 +2280,14 @@ impl App {
         // Debug Log Control
         static PREP_LOG_COUNTER: std::sync::atomic::AtomicU32 =
             std::sync::atomic::AtomicU32::new(0);
+        #[allow(clippy::manual_is_multiple_of)]
         let log_this =
             PREP_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 300 == 0;
 
         // 1. Collect NODE Previews (Media Files, etc.)
+        let active_module_id = self.ui_state.module_canvas.active_module_id;
+        let selected_part_id = self.ui_state.module_canvas.get_selected_part_id();
+
         for module in self.state.module_manager.modules() {
             for part in &module.parts {
                 if let mapmap_core::module::ModulePartType::Source(
@@ -2286,24 +2308,30 @@ impl App {
                 ) = &part.part_type
                 {
                     // MediaFile Source - Preview the texture produced by this part
-                    let tex_name = format!("part_{}_{}", module.id, part.id);
-                    active_previews.push(PreviewRequest {
-                        module_id: module.id,
-                        target_id: part.id,
-                        tex_name,
-                        is_output: false,
-                        brightness: *brightness,
-                        contrast: *contrast,
-                        saturation: *saturation,
-                        hue_shift: *hue_shift,
-                        flip_h: *flip_horizontal,
-                        flip_v: *flip_vertical,
-                        rotation: *rotation,
-                        scale_x: *scale_x,
-                        scale_y: *scale_y,
-                        offset_x: *offset_x,
-                        offset_y: *offset_y,
-                    });
+                    // Optimization: Only generate preview if this is the currently inspected part
+                    let is_inspected =
+                        Some(module.id) == active_module_id && Some(part.id) == selected_part_id;
+
+                    if is_inspected {
+                        let tex_name = format!("part_{}_{}", module.id, part.id);
+                        active_previews.push(PreviewRequest {
+                            module_id: module.id,
+                            target_id: part.id,
+                            tex_name,
+                            is_output: false,
+                            brightness: *brightness,
+                            contrast: *contrast,
+                            saturation: *saturation,
+                            hue_shift: *hue_shift,
+                            flip_h: *flip_horizontal,
+                            flip_v: *flip_vertical,
+                            rotation: *rotation,
+                            scale_x: *scale_x,
+                            scale_y: *scale_y,
+                            offset_x: *offset_x,
+                            offset_y: *offset_y,
+                        });
+                    }
                 } else if let mapmap_core::module::ModulePartType::Output(
                     mapmap_core::module::OutputType::Projector {
                         show_in_preview_panel,
@@ -2512,21 +2540,48 @@ impl App {
         // 4. Render OUTPUT Previews with full scene composition (multi-layer)
         // This renders the same composed scene as the Output Window, but at preview resolution
         let output_ids: Vec<u64> = self.output_assignments.keys().copied().collect();
+        let preview_width = 320;
+        let preview_height = 180;
+
+        // Ensure shared scratch textures exist for effects and post-processing
+        // We reuse these for each output loop iteration to save VRAM
+        let preview_effect_scratch = "preview_effect_scratch";
+        let preview_intermediate = "preview_intermediate";
+
+        self.texture_pool.ensure_texture(
+            preview_effect_scratch,
+            preview_width,
+            preview_height,
+            self.backend.surface_format(),
+            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        );
+
+        self.texture_pool.ensure_texture(
+            preview_intermediate,
+            preview_width,
+            preview_height,
+            self.backend.surface_format(),
+            wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        );
 
         for output_id in output_ids {
             // Create preview texture for this output
             let preview_tex_name = format!("out_preview_{}", output_id);
             self.texture_pool.ensure_texture(
                 &preview_tex_name,
-                320,
-                180,
+                preview_width,
+                preview_height,
                 self.backend.surface_format(),
                 wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             );
+
+            // Views
             let preview_view = self.texture_pool.get_view(&preview_tex_name);
+            let scratch_view = self.texture_pool.get_view(preview_effect_scratch);
+            let intermediate_view = self.texture_pool.get_view(preview_intermediate);
 
             // Filter render_ops for this output (same logic as main render)
-            let target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
+            let mut target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = self
                 .render_ops
                 .iter()
                 .filter(|(_, op)| match &op.output_type {
@@ -2536,12 +2591,35 @@ impl App {
                 .map(|(mid, op)| (*mid, op))
                 .collect();
 
-            // Clear preview texture
+            // Sort RenderOps: Layer 1 (Lowest ID) should be processed Last (Top)
+            target_ops.sort_by(|(_, a), (_, b)| {
+                let id_a = a.output_part_id;
+                let id_b = b.output_part_id;
+                id_b.cmp(&id_a) // Descending: Higher IDs first (Bottom), Lower IDs last (Top)
+            });
+
+            // Check for Post-Processing requirements
+            let output_config_opt = self.state.output_manager.get_output(output_id);
+            let use_edge_blend = output_config_opt.is_some() && self.edge_blend_renderer.is_some();
+            let use_color_calib =
+                output_config_opt.is_some() && self.color_calibration_renderer.is_some();
+            let needs_post_processing = use_edge_blend || use_color_calib;
+
+            // Determine accumulation target
+            // If post-processing is needed, we accumulate into `intermediate_view`.
+            // If NOT, we accumulate directly into `preview_view`.
+            let accumulation_view = if needs_post_processing {
+                &intermediate_view
+            } else {
+                &preview_view
+            };
+
+            // Clear Accumulation Target
             {
                 let _rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Output Preview Clear"),
+                    label: Some("Preview Accumulation Clear"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &preview_view,
+                        view: accumulation_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -2555,27 +2633,128 @@ impl App {
                 });
             }
 
-            // Render each layer to preview
+            // Render each layer
             for (module_id, op) in target_ops {
-                // Get source texture for this layer (use module_id from tuple, source_part_id from op)
+                // Get source texture for this layer
                 let source_part_id = match op.source_part_id {
                     Some(id) => id,
                     None => continue, // No source, skip this layer
                 };
                 let source_tex_name = format!("part_{}_{}", module_id, source_part_id);
-                if !self.texture_pool.has_texture(&source_tex_name) {
-                    continue;
+                // Check if texture exists, fallback to dummy
+                let source_view = if self.texture_pool.has_texture(&source_tex_name) {
+                    self.texture_pool.get_view(&source_tex_name)
+                } else {
+                    if let Some(dv) = &self.dummy_view {
+                        dv.clone()
+                    } else {
+                        continue;
+                    }
+                };
+
+                let mut current_view = source_view;
+                // Keep reference alive
+                let mut _temp_holder: Option<std::sync::Arc<wgpu::TextureView>> = None;
+
+                // --- Effect Chain ---
+                if !op.effects.is_empty() {
+                    let mut chain = mapmap_core::EffectChain::new();
+
+                    for modulizer in &op.effects {
+                        if let mapmap_core::module::ModulizerType::Effect {
+                            effect_type: mod_effect,
+                            params,
+                        } = modulizer
+                        {
+                            let core_effect = match mod_effect {
+                                mapmap_core::module::EffectType::Blur => {
+                                    Some(mapmap_core::effects::EffectType::Blur)
+                                }
+                                mapmap_core::module::EffectType::Invert => {
+                                    Some(mapmap_core::effects::EffectType::Invert)
+                                }
+                                mapmap_core::module::EffectType::Pixelate => {
+                                    Some(mapmap_core::effects::EffectType::Pixelate)
+                                }
+                                mapmap_core::module::EffectType::Brightness
+                                | mapmap_core::module::EffectType::Contrast
+                                | mapmap_core::module::EffectType::Saturation
+                                | mapmap_core::module::EffectType::Colorize => {
+                                    Some(mapmap_core::effects::EffectType::ColorAdjust)
+                                }
+                                mapmap_core::module::EffectType::HueShift => {
+                                    Some(mapmap_core::effects::EffectType::HueShift)
+                                }
+                                mapmap_core::module::EffectType::ChromaticAberration
+                                | mapmap_core::module::EffectType::RgbSplit => {
+                                    Some(mapmap_core::effects::EffectType::ChromaticAberration)
+                                }
+                                mapmap_core::module::EffectType::EdgeDetect => {
+                                    Some(mapmap_core::effects::EffectType::EdgeDetect)
+                                }
+                                mapmap_core::module::EffectType::FilmGrain
+                                | mapmap_core::module::EffectType::VHS => {
+                                    Some(mapmap_core::effects::EffectType::FilmGrain)
+                                }
+                                mapmap_core::module::EffectType::Vignette => {
+                                    Some(mapmap_core::effects::EffectType::Vignette)
+                                }
+                                mapmap_core::module::EffectType::Kaleidoscope => {
+                                    Some(mapmap_core::effects::EffectType::Kaleidoscope)
+                                }
+                                mapmap_core::module::EffectType::Wave => {
+                                    Some(mapmap_core::effects::EffectType::Wave)
+                                }
+                                mapmap_core::module::EffectType::Glitch => {
+                                    Some(mapmap_core::effects::EffectType::Glitch)
+                                }
+                                mapmap_core::module::EffectType::Mirror => {
+                                    Some(mapmap_core::effects::EffectType::Mirror)
+                                }
+                                mapmap_core::module::EffectType::ShaderGraph(id) => {
+                                    Some(mapmap_core::effects::EffectType::ShaderGraph(*id))
+                                }
+                                _ => None,
+                            };
+                            if let Some(et) = core_effect {
+                                let effect_id = chain.add_effect(et);
+                                if let Some(effect) = chain.get_effect_mut(effect_id) {
+                                    effect.parameters = params.clone();
+                                }
+                            }
+                        }
+                    }
+
+                    if chain.enabled_effects().count() > 0 {
+                        let time = self.start_time.elapsed().as_secs_f32();
+                        self.preview_effect_chain_renderer.apply_chain(
+                            encoder,
+                            &current_view,
+                            &scratch_view,
+                            &chain,
+                            &self.shader_graph_manager,
+                            time,
+                            preview_width,
+                            preview_height,
+                        );
+                        _temp_holder = Some(scratch_view.clone());
+                        current_view = _temp_holder.as_ref().unwrap().clone();
+                    }
                 }
-                let source_view = self.texture_pool.get_view(&source_tex_name);
 
-                // Create mesh (use simple fullscreen quad for preview)
-                let (vb, ib, index_count) = &self.preview_quad_buffers;
+                // --- Mesh Warping ---
+                let (vb, ib, index_count) = self.mesh_buffer_cache.get_buffers(
+                    &self.backend.device,
+                    &self.backend.queue,
+                    op.layer_part_id,
+                    &op.mesh.to_mesh(),
+                );
 
-                // Create uniforms with layer transform
+                let transform = glam::Mat4::IDENTITY;
                 let uniform_bg = self.mesh_renderer.get_uniform_bind_group_with_source_props(
                     &self.backend.queue,
-                    glam::Mat4::IDENTITY, // No transform for preview (show full scene)
-                    op.source_props.opacity,
+                    transform,
+                    op.opacity * op.source_props.opacity,
                     op.source_props.flip_horizontal,
                     op.source_props.flip_vertical,
                     op.source_props.brightness,
@@ -2583,17 +2762,16 @@ impl App {
                     op.source_props.saturation,
                     op.source_props.hue_shift,
                 );
-                let texture_bg = self.mesh_renderer.get_texture_bind_group(&source_view);
+                let texture_bg = self.mesh_renderer.get_texture_bind_group(&current_view);
 
-                // Render pass (accumulate with alpha blending)
                 {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Output Preview Layer"),
+                        label: Some("Preview Layer Mesh Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &preview_view,
+                            view: accumulation_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load, // Accumulate layers
+                                load: wgpu::LoadOp::Load, // Accumulate
                                 store: wgpu::StoreOp::Store,
                             },
                             depth_slice: None,
@@ -2606,11 +2784,86 @@ impl App {
                         &mut render_pass,
                         vb,
                         ib,
-                        *index_count,
+                        index_count,
                         &uniform_bg,
                         &texture_bg,
-                        false, // Use standard pipeline
+                        true, // Use mesh shader (warping)
                     );
+                }
+            } // End Layer Loop
+
+            // --- Post Processing ---
+            if needs_post_processing {
+                let config = output_config_opt.unwrap(); // Safe as checked above
+
+                // 1. Edge Blend (Intermediate -> Scratch OR Intermediate -> Preview)
+                // If we have both passes, EdgeBlend goes to Scratch, then ColorCalib goes to Preview.
+                // If only EdgeBlend, it goes to Preview.
+
+                if use_edge_blend {
+                    let renderer = self.edge_blend_renderer.as_ref().unwrap();
+                    let bind_group = renderer.create_texture_bind_group(&intermediate_view);
+                    let uniform_buffer = renderer.create_uniform_buffer(&config.edge_blend);
+                    let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    let target_view = if use_color_calib {
+                        &scratch_view
+                    } else {
+                        &preview_view
+                    };
+
+                    {
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Edge Blend Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: target_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
+                }
+
+                // 2. Color Calibration (Scratch -> Preview OR Intermediate -> Preview)
+                if use_color_calib {
+                    let renderer = self.color_calibration_renderer.as_ref().unwrap();
+                    let input_view = if use_edge_blend {
+                        &scratch_view
+                    } else {
+                        &intermediate_view
+                    };
+                    let bind_group = renderer.create_texture_bind_group(input_view);
+                    let uniform_buffer = renderer.create_uniform_buffer(&config.color_calibration);
+                    let uniform_bind_group = renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    {
+                        let mut render_pass =
+                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Preview Color Calib Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &preview_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                    depth_slice: None,
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+                        renderer.render(&mut render_pass, &bind_group, &uniform_bind_group);
+                    }
                 }
             }
 
@@ -2669,40 +2922,37 @@ impl App {
         });
     }
 
-    /// Process pending MCP actions (e.g. from UI or external clients)
+    // Process pending MCP actions (e.g. from UI or external clients)
     fn handle_mcp_actions(&mut self) {
         while let Ok(action) = self.mcp_receiver.try_recv() {
-            match action {
-                mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) => {
-                    info!(
-                        "MCP: SetModuleSourcePath({}, {}, {:?})",
-                        mod_id, part_id, path
-                    );
-                    if let Some(module) = self.state.module_manager.get_module_mut(mod_id) {
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                            if let mapmap_core::module::ModulePartType::Source(
-                                mapmap_core::module::SourceType::MediaFile {
-                                    path: ref mut current_path,
-                                    ..
-                                },
-                            ) = &mut part.part_type
-                            {
-                                let new_path_str = path.to_string_lossy().to_string();
-                                if *current_path != new_path_str {
-                                    *current_path = new_path_str;
-                                    self.state.dirty = true;
+            if let mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) = action {
+                info!(
+                    "MCP: SetModuleSourcePath({}, {}, {:?})",
+                    mod_id, part_id, path
+                );
+                if let Some(module) = self.state.module_manager.get_module_mut(mod_id) {
+                    if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                        if let mapmap_core::module::ModulePartType::Source(
+                            mapmap_core::module::SourceType::MediaFile {
+                                path: ref mut current_path,
+                                ..
+                            },
+                        ) = &mut part.part_type
+                        {
+                            let new_path_str = path.to_string_lossy().to_string();
+                            if *current_path != new_path_str {
+                                *current_path = new_path_str;
+                                self.state.dirty = true;
 
-                                    // Force player reload by removing existing instance
-                                    // sync_media_players will recreate it with new path
-                                    if self.media_players.remove(&(mod_id, part_id)).is_some() {
-                                        info!("Removed player for {} to force reload", part_id);
-                                    }
+                                // Force player reload by removing existing instance
+                                // sync_media_players will recreate it with new path
+                                if self.media_players.remove(&(mod_id, part_id)).is_some() {
+                                    info!("Removed player for {} to force reload", part_id);
                                 }
                             }
                         }
                     }
                 }
-                _ => {}
             }
         }
     }
@@ -2733,7 +2983,9 @@ impl App {
         for module in self.state.module_manager.list_modules() {
             let module_id = module.id;
             if let Some(module_ref) = self.state.module_manager.get_module(module_id) {
-                let eval_result = self.module_evaluator.evaluate(module_ref);
+                let eval_result = self
+                    .module_evaluator
+                    .evaluate(module_ref, &self.state.module_manager.shared_media);
                 // Push (ModuleId, RenderOp) tuple
                 self.render_ops.extend(
                     eval_result
@@ -3052,7 +3304,7 @@ impl App {
                             .resizable(true)
                             .default_width(280.0)
                             .min_width(200.0)
-                            .max_width(500.0)
+                            .max_width(1000.0)
                             .show(ctx, |ui| {
                                 // Sidebar header with collapse button
                                 ui.horizontal(|ui| {
@@ -3190,13 +3442,37 @@ impl App {
                                             },
                                         );
 
-                                        // Splitter (resize handle)
-                                        let splitter_response = ui.add(egui::Separator::default().spacing(8.0));
-                                        if splitter_response.dragged() {
+                                        // Custom Horizontal Splitter (Resize Handle)
+                                        let splitter_height = 6.0;
+                                        let (splitter_rect, splitter_response) = ui.allocate_at_least(
+                                            egui::vec2(ui.available_width(), splitter_height),
+                                            egui::Sense::drag(),
+                                        );
+
+                                        // Draw the splitter handle
+                                        let is_hovered = splitter_response.hovered();
+                                        let is_dragged = splitter_response.dragged();
+                                        let color = if is_dragged {
+                                            ui.visuals().widgets.active.bg_fill
+                                        } else if is_hovered {
+                                            ui.visuals().widgets.hovered.bg_fill
+                                        } else {
+                                            ui.visuals().widgets.noninteractive.bg_fill
+                                        };
+
+                                        ui.painter().hline(
+                                            splitter_rect.left()..=splitter_rect.right(),
+                                            splitter_rect.center().y,
+                                            (2.0, color),
+                                        );
+
+                                        if is_dragged {
                                             self.ui_state.control_panel_height += splitter_response.drag_delta().y;
-                                            self.ui_state.control_panel_height = self.ui_state.control_panel_height.clamp(50.0, 500.0);
+                                            // Ensure minimum heights for both panels
+                                            let total_available = ui.available_height();
+                                            self.ui_state.control_panel_height = self.ui_state.control_panel_height.clamp(100.0, total_available - 150.0);
                                         }
-                                        if splitter_response.hovered() {
+                                        if is_hovered || is_dragged {
                                             ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
                                         }
                                     } else {
