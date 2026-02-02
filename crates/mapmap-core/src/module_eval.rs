@@ -1190,7 +1190,11 @@ impl ModuleEvaluator {
         source_type: &SourceType,
         trigger_value: f32,
     ) -> Option<SourceCommand> {
-        // Create command regardless of trigger value (main loop handles threshold/logic)
+        // Only activate source if trigger is above threshold
+        const TRIGGER_THRESHOLD: f32 = 0.1;
+        if trigger_value < TRIGGER_THRESHOLD {
+            return None;
+        }
 
         match source_type {
             SourceType::MediaFile { path, .. } => {
