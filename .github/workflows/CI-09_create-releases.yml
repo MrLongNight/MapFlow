@@ -74,11 +74,11 @@ jobs:
         run: |
           $vcpkgInclude = "${{ github.workspace }}\vcpkg\installed\x64-windows\include"
           $vcpkgLib = "${{ github.workspace }}\vcpkg\installed\x64-windows\lib"
-          
+
           echo "INCLUDE=$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "LIB=$vcpkgLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "BINDGEN_EXTRA_CLANG_ARGS=-I$($vcpkgInclude.Replace('\', '/'))" | Out-File -FilePath $env:GITHUB_ENV -Append
-          
+
           Write-Host "Umgebungsvariablen gesetzt:"
           Write-Host "INCLUDE=$vcpkgInclude"
           Write-Host "LIB=$vcpkgLib"
@@ -162,11 +162,11 @@ jobs:
         run: |
           $vcpkgInclude = "${{ github.workspace }}\vcpkg\installed\x64-windows\include"
           $vcpkgLib = "${{ github.workspace }}\vcpkg\installed\x64-windows\lib"
-          
+
           echo "INCLUDE=$vcpkgInclude" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "LIB=$vcpkgLib" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "BINDGEN_EXTRA_CLANG_ARGS=-I$($vcpkgInclude.Replace('\', '/'))" | Out-File -FilePath $env:GITHUB_ENV -Append
-          
+
           Write-Host "Umgebungsvariablen gesetzt:"
           Write-Host "INCLUDE=$vcpkgInclude"
           Write-Host "LIB=$vcpkgLib"
