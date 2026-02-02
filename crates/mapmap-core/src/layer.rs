@@ -1141,3 +1141,87 @@ mod tests {
         assert_eq!(manager.get_effective_opacity(layer), 0.25);
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn test_blend_mode_integrity() {
+        for mode in BlendMode::all() {
+            let func = mode.shader_function();
+            assert!(
+                !func.is_empty(),
+                "BlendMode {:?} has empty shader function",
+                mode
+            );
+            assert!(
+                func.starts_with("blend_"),
+                "BlendMode {:?} shader function '{}' should start with 'blend_'",
+                mode,
+                func
+            );
+        }
+    }
+
+    #[test]
+    fn test_resize_mode_advanced() {
+        // Landscape Source (200x100)
+        let src_landscape = Vec2::new(200.0, 100.0);
+        // Portrait Target (100x200)
+        let tgt_portrait = Vec2::new(100.0, 200.0);
+
+        // 1. FILL: Must cover the target completely.
+        // Scale X: 100/200 = 0.5
+        // Scale Y: 200/100 = 2.0
+        // Max(0.5, 2.0) = 2.0
+        // Result size: 400x200 (covers 100x200)
+        let (scale, pos) = ResizeMode::Fill.calculate_transform(src_landscape, tgt_portrait);
+        assert_eq!(scale, Vec2::splat(2.0));
+        assert_eq!(pos, Vec2::ZERO);
+
+        // 2. FIT: Must fit inside the target.
+        // Min(0.5, 2.0) = 0.5
+        // Result size: 100x50 (fits in 100x200)
+        let (scale, pos) = ResizeMode::Fit.calculate_transform(src_landscape, tgt_portrait);
+        assert_eq!(scale, Vec2::splat(0.5));
+        assert_eq!(pos, Vec2::ZERO);
+
+        // Portrait Source (100x200)
+        let src_portrait = Vec2::new(100.0, 200.0);
+        // Landscape Target (200x100)
+        let tgt_landscape = Vec2::new(200.0, 100.0);
+
+        // 3. FILL
+        // Scale X: 200/100 = 2.0
+        // Scale Y: 100/200 = 0.5
+        // Max = 2.0
+        let (scale, _) = ResizeMode::Fill.calculate_transform(src_portrait, tgt_landscape);
+        assert_eq!(scale, Vec2::splat(2.0));
+
+        // 4. FIT
+        // Min = 0.5
+        let (scale, _) = ResizeMode::Fit.calculate_transform(src_portrait, tgt_landscape);
+        assert_eq!(scale, Vec2::splat(0.5));
+    }
+
+    #[test]
+    fn test_layer_removal_orphans_children() {
+        let mut manager = LayerManager::new();
+        let group_id = manager.create_group("Parent Group");
+        let child_id = manager.create_layer("Child Layer");
+
+        // Establish relationship
+        manager.reparent_layer(child_id, Some(group_id));
+        assert_eq!(
+            manager.get_layer(child_id).unwrap().parent_id,
+            Some(group_id)
+        );
+
+        // Remove Parent
+        manager.remove_layer(group_id);
+
+        // Assert Child is orphaned (parent_id is None)
+        assert_eq!(manager.get_layer(child_id).unwrap().parent_id, None);
+    }
+}

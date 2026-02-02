@@ -2834,3 +2834,142 @@ mod trigger_config_tests {
         assert_eq!(config.apply(0.5), 50.0);
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn test_shared_media_registry() {
+        let mut state = SharedMediaState::new();
+
+        // 1. Register
+        state.register(
+            "vid_1".to_string(),
+            "/tmp/video.mp4".to_string(),
+            SharedMediaType::Video,
+        );
+        assert_eq!(state.items.len(), 1);
+
+        // 2. Get
+        let item = state.get("vid_1").expect("Should find item");
+        assert_eq!(item.path, "/tmp/video.mp4");
+        assert_eq!(item.media_type, SharedMediaType::Video);
+
+        // 3. Register another
+        state.register(
+            "img_1".to_string(),
+            "/tmp/image.png".to_string(),
+            SharedMediaType::Image,
+        );
+        assert_eq!(state.items.len(), 2);
+
+        // 4. Unregister
+        state.unregister("vid_1");
+        assert_eq!(state.items.len(), 1);
+        assert!(state.get("vid_1").is_none());
+        assert!(state.get("img_1").is_some());
+    }
+
+    #[test]
+    fn test_all_part_types_have_sockets() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
+        };
+
+        // Iterate all PartType variants
+        let part_types = [
+            PartType::Trigger,
+            PartType::Source,
+            PartType::Mask,
+            PartType::Modulator,
+            PartType::Mesh,
+            PartType::Layer,
+            PartType::Hue,
+            PartType::Output,
+        ];
+
+        for pt in part_types {
+            let id = module.add_part(pt, (0.0, 0.0));
+            let part = module.parts.iter().find(|p| p.id == id).unwrap();
+
+            // Every part must have at least one socket (Input OR Output) to be useful
+            let socket_count = part.inputs.len() + part.outputs.len();
+            assert!(
+                socket_count > 0,
+                "PartType {:?} generated 0 sockets! (Inputs: {}, Outputs: {})",
+                pt,
+                part.inputs.len(),
+                part.outputs.len()
+            );
+        }
+    }
+
+    #[test]
+    fn test_mapflow_module_serialization_roundtrip() {
+        let mut module = MapFlowModule {
+            id: 42,
+            name: "Complex Module".to_string(),
+            color: [0.5, 0.5, 0.5, 1.0],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::TimelineDuration { duration_ms: 5000 },
+            next_part_id: 1,
+        };
+
+        // Add some parts
+        let p1 = module.add_part(PartType::Trigger, (10.0, 10.0));
+        let p2 = module.add_part(PartType::Layer, (200.0, 10.0));
+
+        // Configure a trigger target on p2 (Layer)
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == p2) {
+            part.trigger_targets.insert(
+                0, // Index 0
+                TriggerConfig {
+                    target: TriggerTarget::Opacity,
+                    mode: TriggerMappingMode::Smoothed {
+                        attack: 0.1,
+                        release: 0.5,
+                    },
+                    min_value: 0.0,
+                    max_value: 1.0,
+                    invert: true,
+                    threshold: 0.5,
+                },
+            );
+        }
+
+        // Add connection
+        module.add_connection(p1, 0, p2, 1);
+
+        // Serialize
+        let json = serde_json::to_string(&module).expect("Serialization failed");
+
+        // Deserialize
+        let deserialized: MapFlowModule =
+            serde_json::from_str(&json).expect("Deserialization failed");
+
+        // Compare
+        assert_eq!(module, deserialized);
+
+        // Verify deep structure
+        assert_eq!(deserialized.id, 42);
+        assert_eq!(deserialized.parts.len(), 2);
+        assert_eq!(deserialized.connections.len(), 1);
+
+        // Verify Trigger Config persisted
+        let p2_deser = deserialized.parts.iter().find(|p| p.id == p2).unwrap();
+        let target = p2_deser.trigger_targets.get(&0).unwrap();
+        match target.target {
+            TriggerTarget::Opacity => {} // OK
+            _ => panic!("Wrong trigger target deserialized"),
+        }
+        assert!(target.invert);
+    }
+}
