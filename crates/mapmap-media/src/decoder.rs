@@ -89,74 +89,23 @@ pub enum HwAccelType {
 mod ffmpeg_impl {
     use super::*;
     use ffmpeg_next as ffmpeg;
-    use ffmpeg_sys_next as ffmpeg_sys;
+    use ffmpeg_sys_next as ffi;
     use std::path::PathBuf;
 
-    #[cfg(target_os = "linux")]
-    unsafe extern "C" fn get_vaapi_format(
-        _ctx: *mut ffmpeg_sys::AVCodecContext,
-        mut fmt: *const ffmpeg_sys::AVPixelFormat,
-    ) -> ffmpeg_sys::AVPixelFormat {
-        if fmt.is_null() {
-            return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE;
-        }
-
-        let mut count = 0;
-        // Limit to reasonable number of formats to prevent infinite loop/OOB read
-        const MAX_FORMATS: usize = 128;
-
-        while *fmt != ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE {
-            if count >= MAX_FORMATS {
-                eprintln!(
-                    "VAAPI format search exceeded limit ({}), bailing out",
-                    MAX_FORMATS
-                );
-                break;
-            }
-
-            if *fmt == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI {
-                return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI;
-            }
-            fmt = fmt.add(1);
-            count += 1;
-        }
-
-        // Fallback: Use YUV420P if available, or just return AV_PIX_FMT_NONE to let FFmpeg decide (if possible)
-        // or return a default. But get_format MUST return a value from the list or modify setup?
-        // Usually, if we return AV_PIX_FMT_NONE, decoding fails.
-        // Let's try to return YUV420P.
-        ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_YUV420P
-    }
-
     #[cfg(target_os = "windows")]
-    unsafe extern "C" fn get_d3d11va_format(
-        _ctx: *mut ffmpeg_sys::AVCodecContext,
-        mut fmt: *const ffmpeg_sys::AVPixelFormat,
-    ) -> ffmpeg_sys::AVPixelFormat {
-        if fmt.is_null() {
-            return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE;
+    unsafe extern "C" fn get_format_callback(
+        ctx: *mut ffi::AVCodecContext,
+        fmt: *const ffi::AVPixelFormat,
+    ) -> ffi::AVPixelFormat {
+        let mut p = fmt;
+        while *p != ffi::AVPixelFormat::AV_PIX_FMT_NONE {
+            if *p == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 {
+                return *p;
+            }
+            p = p.offset(1);
         }
 
-        let mut count = 0;
-        const MAX_FORMATS: usize = 128;
-
-        while *fmt != ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_NONE {
-            if count >= MAX_FORMATS {
-                eprintln!(
-                    "D3D11VA format search exceeded limit ({}), bailing out",
-                    MAX_FORMATS
-                );
-                break;
-            }
-
-            if *fmt == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_D3D11 {
-                return ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_D3D11;
-            }
-            fmt = fmt.add(1);
-            count += 1;
-        }
-
-        ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_YUV420P
+        ffi::avcodec_default_get_format(ctx, fmt)
     }
 
     pub struct RealFFmpegDecoder {
@@ -300,73 +249,36 @@ mod ffmpeg_impl {
         ) -> Result<HwAccelType> {
             match requested {
                 HwAccelType::None => Ok(HwAccelType::None),
-                #[cfg(target_os = "linux")]
-                HwAccelType::VAAPI => {
-                    unsafe {
-                        let mut device_ctx: *mut ffmpeg_sys::AVBufferRef = std::ptr::null_mut();
-                        let ret = ffmpeg_sys::av_hwdevice_ctx_create(
-                            &mut device_ctx,
-                            ffmpeg_sys::AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI,
-                            std::ptr::null(),
-                            std::ptr::null_mut(),
-                            0,
-                        );
-
-                        if ret < 0 {
-                            warn!("Failed to create VAAPI device context: {}", ret);
-                            return Ok(HwAccelType::None);
-                        }
-
-                        // Attach to codec context
-                        let codec_ctx = _decoder.as_mut_ptr();
-                        if !codec_ctx.is_null() {
-                            (*codec_ctx).hw_device_ctx = device_ctx;
-                            (*codec_ctx).get_format = Some(get_vaapi_format);
-                        } else {
-                            ffmpeg_sys::av_buffer_unref(&mut device_ctx);
-                            return Err(MediaError::DecoderError(
-                                "Codec context is null".to_string(),
-                            ));
-                        }
-                    }
-
-                    info!("VAAPI hardware acceleration enabled");
-                    Ok(HwAccelType::VAAPI)
-                }
                 #[cfg(target_os = "windows")]
-                HwAccelType::D3D11VA => {
-                    unsafe {
-                        let mut device_ctx: *mut ffmpeg_sys::AVBufferRef = std::ptr::null_mut();
-                        let ret = ffmpeg_sys::av_hwdevice_ctx_create(
-                            &mut device_ctx,
-                            ffmpeg_sys::AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA,
-                            std::ptr::null(),
-                            std::ptr::null_mut(),
-                            0,
-                        );
+                HwAccelType::D3D11VA => unsafe {
+                    let mut hw_device_ctx: *mut ffi::AVBufferRef = std::ptr::null_mut();
+                    let ret = ffi::av_hwdevice_ctx_create(
+                        &mut hw_device_ctx,
+                        ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA,
+                        std::ptr::null(),
+                        std::ptr::null_mut(),
+                        0,
+                    );
 
-                        if ret < 0 {
-                            warn!("Failed to create D3D11VA device context: {}", ret);
-                            return Ok(HwAccelType::None);
-                        }
-
-                        // Attach to codec context
-                        let codec_ctx = _decoder.as_mut_ptr();
-                        if !codec_ctx.is_null() {
-                            (*codec_ctx).hw_device_ctx = device_ctx;
-                            (*codec_ctx).get_format = Some(get_d3d11va_format);
-                        } else {
-                            ffmpeg_sys::av_buffer_unref(&mut device_ctx);
-                            return Err(MediaError::DecoderError(
-                                "Codec context is null".to_string(),
-                            ));
-                        }
+                    if ret < 0 {
+                        warn!("Failed to create D3D11VA device context: {}", ret);
+                        return Ok(HwAccelType::None);
                     }
 
-                    info!("D3D11VA hardware acceleration enabled");
+                    let codec_ctx = _decoder.as_mut_ptr();
+                    if codec_ctx.is_null() {
+                        warn!("Codec context is null");
+                        ffi::av_buffer_unref(&mut hw_device_ctx);
+                        return Ok(HwAccelType::None);
+                    }
+
+                    // Transfer ownership of hw_device_ctx to codec_ctx
+                    (*codec_ctx).hw_device_ctx = hw_device_ctx;
+                    (*codec_ctx).get_format = Some(get_format_callback);
+
+                    info!("D3D11VA hardware acceleration initialized");
                     Ok(HwAccelType::D3D11VA)
-                }
-                #[allow(unreachable_patterns)]
+                },
                 _ => {
                     warn!(
                         "Hardware acceleration {:?} requested but not yet fully implemented",
@@ -392,56 +304,38 @@ mod ffmpeg_impl {
                 let mut decoded = ffmpeg::util::frame::Video::empty();
 
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
-                    // Handle hardware frame transfer
-                    if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_VAAPI as i32
-                    {
-                        let mut sw_frame = ffmpeg::util::frame::Video::empty();
+                    #[allow(unused_variables, unused_mut)]
+                    let mut sw_frame = ffmpeg::util::frame::Video::empty();
+                    let frame_ptr = if unsafe { (*decoded.as_ptr()).format == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 as i32 } {
+                        #[cfg(target_os = "windows")]
                         unsafe {
-                            let ret = ffmpeg_sys::av_hwframe_transfer_data(
+                            let ret = ffi::av_hwframe_transfer_data(
                                 sw_frame.as_mut_ptr(),
                                 decoded.as_ptr(),
                                 0,
                             );
-
                             if ret < 0 {
                                 return Err(MediaError::DecoderError(format!(
-                                    "Failed to transfer hardware frame: {}",
+                                    "Failed to transfer HW frame: {}",
                                     ret
                                 )));
                             }
-
-                            sw_frame.set_pts(decoded.pts());
-                            decoded = sw_frame;
+                            ffi::av_frame_copy_props(sw_frame.as_mut_ptr(), decoded.as_ptr());
+                            &sw_frame
                         }
-                    }
-
-                    #[cfg(target_os = "windows")]
-                    if decoded.format() as i32 == ffmpeg_sys::AVPixelFormat::AV_PIX_FMT_D3D11 as i32
-                    {
-                        let mut sw_frame = ffmpeg::util::frame::Video::empty();
-                        unsafe {
-                            let ret = ffmpeg_sys::av_hwframe_transfer_data(
-                                sw_frame.as_mut_ptr(),
-                                decoded.as_ptr(),
-                                0,
-                            );
-
-                            if ret < 0 {
-                                return Err(MediaError::DecoderError(format!(
-                                    "Failed to transfer hardware frame: {}",
-                                    ret
-                                )));
-                            }
-
-                            sw_frame.set_pts(decoded.pts());
-                            decoded = sw_frame;
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            warn!("D3D11 frame format detected on non-Windows platform");
+                            &decoded
                         }
-                    }
+                    } else {
+                        &decoded
+                    };
 
                     // Scale to RGBA
                     let mut rgb_frame = ffmpeg::util::frame::Video::empty();
                     self.scaler
-                        .run(&decoded, &mut rgb_frame)
+                        .run(frame_ptr, &mut rgb_frame)
                         .map_err(|e| MediaError::DecoderError(e.to_string()))?;
 
                     let pts = Duration::from_secs_f64(
