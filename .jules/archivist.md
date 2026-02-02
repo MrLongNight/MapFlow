@@ -54,3 +54,12 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `pr397.patch` und `pr398.patch` nach `.temp-archive/2026-01-31-*` archiviert und via `git rm` aus dem Repository entfernt.
 - `docu/jules_gpu_ui.md` und `docu/jules_hw_accel.md` nach `.jules/` verschoben.
 - `docu/` Verzeichnis entfernt.
+
+## 2026-02-02 - Root Directory Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt mehrere FFmpeg-DLLs, temporäre Patch-Dateien und ein Build-Skript (`copy_ffmpeg_dlls.bat`), die dort nicht hingehören.
+
+**Aktion:**
+- `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben.
+- FFmpeg-DLLs (`avcodec-61.dll`, etc.) nach `.temp-archive/dlls_backup/` verschoben.
+- Patch-Dateien (`patch.diff`, `patch_ascii.diff`) nach `.temp-archive/patches/` verschoben.
