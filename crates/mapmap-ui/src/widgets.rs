@@ -10,6 +10,9 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
 
     let painter = ui.painter();
+    // Header background
+    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
+
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
     painter.rect_filled(
         stripe_rect,
@@ -65,7 +68,7 @@ pub fn styled_slider(
     ui.painter().rect(
         rect,
         egui::CornerRadius::same(0),
-        ui.visuals().widgets.inactive.bg_fill,
+        colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
         egui::StrokeKind::Inside,
     );
@@ -156,6 +159,8 @@ pub fn icon_button(
         active_color
     } else if response.hovered() && hover_color != Color32::TRANSPARENT {
         hover_color
+    } else if response.hovered() {
+        ui.visuals().widgets.hovered.bg_fill
     } else {
         visuals.bg_fill
     };
