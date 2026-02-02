@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-01-30 06:00
+> **Stand:** 2026-02-01 12:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -461,7 +461,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   - ✅ Hintergrundbild (`resources/controllers/ecler_nuo4/background.jpg`)
 
   ### Overlay UI Features
-  - ✅ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px)
+  - ⚠️ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px) (Asset fehlt)
   - ✅ **Skalierbares Panel** - Zoom 30%-100% via Slider
   - ⬜ **PNG-Assets für Elemente** - Knobs, Fader, Buttons (vom User bereitgestellt)
   - ⬜ **Exakte Platzierung** - Koordinaten aus `elements.json` auf Foto mappen
@@ -670,10 +670,10 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
-- 🟡 **NDI-Integration** (`mapmap-ndi/`)
+- 🟡 **NDI-Integration** (`mapmap-io/src/ndi/`)
   - ✅ `grafton-ndi` Rust Bindings integrieren
-  - ✅ NDI Sender (wgpu Texture → NDI Stream)
-  - ✅ NDI Receiver (NDI Stream → Fullscreen Texture)
+  - ⚠️ NDI Sender (wgpu Texture → NDI Stream) - Sending not fully implemented
+  - ⚠️ NDI Receiver (NDI Stream → Fullscreen Texture) - Rendering stubbed
   - 🟡 Multi-Source-Discovery (NDI Finder)
   - 🟡 Latenz-Optimierung (<100ms Ziel)
 

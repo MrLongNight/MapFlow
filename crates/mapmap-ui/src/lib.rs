@@ -609,12 +609,17 @@ impl AppUI {
         // 1. Module Selection
         if self.show_module_canvas {
             if let Some(module_id) = self.module_canvas.active_module_id {
+                // Collect shared media IDs before borrowing module mutably from manager
+                let shared_media_ids: Vec<String> =
+                    module_manager.shared_media.items.keys().cloned().collect();
+
                 if let Some(module) = module_manager.get_module_mut(module_id) {
                     if let Some(part_id) = self.module_canvas.get_selected_part_id() {
                         context = crate::InspectorContext::Module {
                             canvas: &mut self.module_canvas,
                             module,
                             part_id,
+                            shared_media_ids,
                         };
                     }
                 }
