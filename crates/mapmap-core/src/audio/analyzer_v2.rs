@@ -778,4 +778,81 @@ mod tests {
             analyzer.get_latest_analysis().tempo_bpm
         );
     }
+
+    #[test]
+    fn test_update_config_resizes_buffers() {
+        let mut config = AudioAnalyzerV2Config {
+            fft_size: 1024,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config.clone());
+
+        // Check initial sizes
+        assert_eq!(analyzer.input_buffer.len(), 1024);
+        assert_eq!(analyzer.magnitude_buffer.len(), 512);
+
+        // Update config
+        config.fft_size = 2048;
+        analyzer.update_config(config);
+
+        // Check new sizes
+        assert_eq!(analyzer.input_buffer.len(), 2048);
+        assert_eq!(analyzer.magnitude_buffer.len(), 1024);
+        assert_eq!(analyzer.fft_buffer.len(), 2048);
+        assert_eq!(analyzer.scratch_buffer.len(), 2048);
+    }
+
+    #[test]
+    fn test_resilience_to_bad_input() {
+        let config = AudioAnalyzerV2Config::default();
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // Feed NaN and Infinity
+        let bad_samples = vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.0];
+
+        // Should not panic
+        analyzer.process_samples(&bad_samples, 0.0);
+
+        let analysis = analyzer.get_latest_analysis();
+        // Results might be garbage (NaN), but process should survive
+        // Just ensuring it didn't crash is the main test here.
+        // Optionally, we could assert that NaNs propagate to output
+        assert!(analysis.rms_volume.is_nan() || analysis.rms_volume.is_infinite() || analysis.rms_volume >= 0.0);
+    }
+
+    #[test]
+    fn test_smoothing_behavior() {
+        let config = AudioAnalyzerV2Config {
+            sample_rate: 44100,
+            fft_size: 1024,
+            smoothing: 0.9, // High smoothing
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // Feed silence first
+        let silence = vec![0.0f32; 1024];
+        analyzer.process_samples(&silence, 0.0);
+        assert_eq!(analyzer.get_latest_analysis().rms_volume, 0.0);
+
+        // Feed Loud Signal (Amplitude 1.0)
+        let loud: Vec<f32> = vec![1.0; 1024]; // DC offset for max RMS calculation simplification
+
+        // Step 1
+        analyzer.process_samples(&loud, 1.0);
+        let rms1 = analyzer.get_latest_analysis().rms_volume;
+
+        // With smoothing 0.9: New = Old * 0.9 + Input * 0.1
+        // Input RMS is 1.0. Old is 0.0.
+        // rms1 should be approx 0.1
+        assert!(rms1 > 0.05 && rms1 < 0.2, "RMS1 was {}", rms1);
+
+        // Step 2
+        analyzer.process_samples(&loud, 2.0);
+        let rms2 = analyzer.get_latest_analysis().rms_volume;
+
+        // rms2 should be approx 0.1 * 0.9 + 1.0 * 0.1 = 0.09 + 0.1 = 0.19
+        assert!(rms2 > rms1, "RMS should increase over time with smoothing");
+        assert!(rms2 < 1.0, "RMS should not reach target instantly");
+    }
 }
