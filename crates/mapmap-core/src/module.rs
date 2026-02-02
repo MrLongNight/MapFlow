@@ -53,7 +53,6 @@ pub struct MapFlowModule {
     /// List of wires (connections)
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
-    /// How the module plays back
     pub playback_mode: ModulePlaybackMode,
 
     /// Counter for generating part IDs (persistent)
