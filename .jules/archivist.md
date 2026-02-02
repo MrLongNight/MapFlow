@@ -63,3 +63,5 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben.
 - FFmpeg-DLLs (`avcodec-61.dll`, etc.) nach `.temp-archive/dlls_backup/` verschoben.
 - Patch-Dateien (`patch.diff`, `patch_ascii.diff`) nach `.temp-archive/patches/` verschoben.
+
+**Korrektur:** Auf expliziten Benutzerwunsch (PR Kommentar) wurden die FFmpeg-DLLs wieder in das Root-Verzeichnis verschoben. Sie scheinen für die lokale Ausführung notwendig zu sein.
