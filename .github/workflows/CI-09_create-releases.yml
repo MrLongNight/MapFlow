@@ -26,6 +26,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  VERSION: '0.0.0'
 
 jobs:
   build-windows-portable:

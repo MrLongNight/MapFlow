@@ -122,7 +122,13 @@ impl InspectorPanel {
                         shared_media_ids,
                     } => {
                         if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                            canvas.render_inspector_for_part(ui, part, global_actions, module.id, &shared_media_ids);
+                            canvas.render_inspector_for_part(
+                                ui,
+                                part,
+                                global_actions,
+                                module.id,
+                                &shared_media_ids,
+                            );
                         } else {
                             self.show_no_selection(ui, i18n);
                         }
