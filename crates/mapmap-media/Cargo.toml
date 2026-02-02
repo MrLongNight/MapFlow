@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "mapmap-media"
 version.workspace = true
 edition.workspace = true

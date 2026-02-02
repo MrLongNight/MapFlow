@@ -306,7 +306,9 @@ mod ffmpeg_impl {
                 if self.decoder.receive_frame(&mut decoded).is_ok() {
                     #[allow(unused_variables, unused_mut)]
                     let mut sw_frame = ffmpeg::util::frame::Video::empty();
-                    let frame_ptr = if unsafe { (*decoded.as_ptr()).format == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 as i32 } {
+                    let frame_ptr = if unsafe {
+                        (*decoded.as_ptr()).format == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 as i32
+                    } {
                         #[cfg(target_os = "windows")]
                         unsafe {
                             let ret = ffi::av_hwframe_transfer_data(
