@@ -11,73 +11,19 @@
 
 #![allow(missing_docs)]
 
-// Phase 6: Advanced Authoring UI (egui-based)
-pub mod asset_manager;
-pub mod assignment_panel;
-pub mod audio_meter;
-pub mod audio_panel;
-pub mod config;
-pub mod controller_overlay_panel;
-pub mod cue_panel;
-pub mod dashboard;
-pub mod edge_blend_panel;
-pub mod effect_chain_panel;
-pub mod i18n;
-pub mod icon_demo_panel;
-pub mod icons;
-pub mod inspector_panel;
-pub mod layer_panel;
-pub mod mapping_panel;
-pub mod media_browser;
-pub mod menu_bar;
-pub mod mesh_editor;
-pub mod module_canvas;
-pub mod module_sidebar;
-pub mod node_editor;
-pub mod osc_panel;
-pub mod oscillator_panel;
-pub mod output_panel;
-pub mod paint_panel;
-pub mod preview_panel;
-pub mod shortcut_editor;
-pub mod theme;
-pub mod timeline_v2;
-pub mod transform_panel;
-pub mod undo_redo;
+// Categorized modules
+pub mod core;
+pub mod editors;
+pub mod panels;
+pub mod view;
 pub mod widgets;
 
-pub use controller_overlay_panel::ControllerOverlayPanel;
-pub use i18n::LocaleManager;
-
-// Phase 6 exports
-pub use asset_manager::{AssetManager, AssetManagerAction, EffectPreset, TransformPreset};
-pub use assignment_panel::AssignmentPanel;
-pub use audio_panel::AudioPanel;
-pub use config::UserConfig;
-pub use cue_panel::CuePanel;
-pub use dashboard::{Dashboard, DashboardAction};
-pub use edge_blend_panel::{EdgeBlendAction, EdgeBlendPanel};
-pub use effect_chain_panel::{
-    EffectChainAction, EffectChainPanel, PresetEntry, UIEffect, UIEffectChain,
-};
-
-pub use inspector_panel::{InspectorAction, InspectorContext, InspectorPanel};
-pub use layer_panel::{LayerPanel, LayerPanelAction};
-#[cfg(feature = "ndi")]
-pub use mapmap_io::ndi::NdiSource;
-pub use mapping_panel::MappingPanel;
-pub use media_browser::{MediaBrowser, MediaBrowserAction, MediaEntry, MediaType};
-pub use mesh_editor::{MeshEditor, MeshEditorAction};
-pub use module_canvas::{MediaPlaybackCommand, MediaPlayerInfo, ModuleCanvas};
-pub use module_sidebar::ModuleSidebar;
-pub use node_editor::{Node, NodeEditor, NodeEditorAction, NodeType};
-pub use oscillator_panel::OscillatorPanel;
-pub use paint_panel::PaintPanel;
-pub use preview_panel::{OutputPreviewInfo, PreviewPanel};
-pub use shortcut_editor::ShortcutEditor;
-pub use theme::{Theme, ThemeConfig};
-pub use transform_panel::{TransformAction, TransformPanel};
-pub use undo_redo::{Command, CommandError, EditorState, UndoManager};
+// Re-export categorized modules to maintain API compatibility
+pub use crate::core::*;
+pub use crate::editors::*;
+pub use crate::panels::*;
+pub use crate::view::*;
+pub use crate::widgets::*;
 
 /// UI actions that can be triggered by the user interface
 #[derive(Debug, Clone)]

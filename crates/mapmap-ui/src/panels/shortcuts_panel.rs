@@ -31,8 +31,10 @@ impl ShortcutsPanel {
                 if shortcuts[i].key == shortcuts[j].key
                     && shortcuts[i].modifiers == shortcuts[j].modifiers
                     && (shortcuts[i].context == shortcuts[j].context
-                        || shortcuts[i].context == mapmap_control::shortcuts::ShortcutContext::Global
-                        || shortcuts[j].context == mapmap_control::shortcuts::ShortcutContext::Global)
+                        || shortcuts[i].context
+                            == mapmap_control::shortcuts::ShortcutContext::Global
+                        || shortcuts[j].context
+                            == mapmap_control::shortcuts::ShortcutContext::Global)
                 {
                     self.conflicts.insert(i);
                     self.conflicts.insert(j);
@@ -114,9 +116,7 @@ impl ShortcutsPanel {
                         self.editing_shortcut_index = None;
                     } else if let Some(key) = input.events.iter().find_map(|e| match e {
                         egui::Event::Key {
-                            key,
-                            pressed: true,
-                            ..
+                            key, pressed: true, ..
                         } => Some(key),
                         _ => None,
                     }) {
