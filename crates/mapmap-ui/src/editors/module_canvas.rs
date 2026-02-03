@@ -6082,8 +6082,8 @@ impl ModuleCanvas {
                 // Fill progress
                 if let Some(start) = start_time {
                     if is_interacting {
-                        let progress = ((ui.input(|i| i.time) - start) as f32 / hold_duration)
-                            .clamp(0.0, 1.0);
+                        let progress =
+                            ((ui.input(|i| i.time) - start) as f32 / hold_duration).clamp(0.0, 1.0);
                         if progress > 0.0 {
                             let fill_w = rect.width() * progress;
                             painter.rect_filled(
@@ -6127,10 +6127,8 @@ impl ModuleCanvas {
                     .clicked()
                 {
                     *loop_enabled = !*loop_enabled;
-                    self.pending_playback_commands.push((
-                        part_id,
-                        MediaPlaybackCommand::SetLoop(*loop_enabled),
-                    ));
+                    self.pending_playback_commands
+                        .push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
                 }
 
                 // REVERSE
@@ -6247,7 +6245,9 @@ impl ModuleCanvas {
                 let s = (hover_time % 60.0) as u32;
                 let ms = ((hover_time * 100.0) % 100.0) as u32;
 
-                response.clone().on_hover_text(format!("{:02}:{:02}.{:02}", m, s, ms));
+                response
+                    .clone()
+                    .on_hover_text(format!("{:02}:{:02}.{:02}", m, s, ms));
             }
 
             if ui.input(|i| i.modifiers.shift)
