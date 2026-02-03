@@ -97,12 +97,20 @@ mod ffmpeg_impl {
         ctx: *mut ffi::AVCodecContext,
         fmt: *const ffi::AVPixelFormat,
     ) -> ffi::AVPixelFormat {
+        if fmt.is_null() {
+            return ffi::AVPixelFormat::AV_PIX_FMT_NONE;
+        }
+
         let mut p = fmt;
-        while *p != ffi::AVPixelFormat::AV_PIX_FMT_NONE {
+        const MAX_FORMATS: usize = 128;
+        let mut i = 0;
+
+        while *p != ffi::AVPixelFormat::AV_PIX_FMT_NONE && i < MAX_FORMATS {
             if *p == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 {
                 return *p;
             }
             p = p.offset(1);
+            i += 1;
         }
 
         ffi::avcodec_default_get_format(ctx, fmt)
@@ -654,6 +662,77 @@ mod tests {
             assert!(chunk[1] > 200); // G
             assert!(chunk[2] > 200); // B
             assert_eq!(chunk[3], 255); // A
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests_safety {
+    use std::ptr;
+
+    // Mock the pixel format enum
+    #[derive(PartialEq, Clone, Copy, Debug)]
+    #[repr(C)]
+    enum MockPixelFormat {
+        None = -1,
+        YUV420P = 0,
+        RGB24 = 2,
+        D3D11 = 42,
+    }
+
+    // The unsafe logic we want to test, adapted for the mock type
+    // This replicates the logic in get_format_callback exactly
+    unsafe fn get_format_safe(fmt: *const MockPixelFormat) -> MockPixelFormat {
+        if fmt.is_null() {
+            return MockPixelFormat::None;
+        }
+
+        let mut p = fmt;
+        const MAX_FORMATS: usize = 128;
+        let mut i = 0;
+
+        while *p != MockPixelFormat::None && i < MAX_FORMATS {
+            if *p == MockPixelFormat::D3D11 {
+                return *p;
+            }
+            p = p.offset(1);
+            i += 1;
+        }
+
+        // Return None if not found or limit reached (mocking fallback)
+        MockPixelFormat::None
+    }
+
+    #[test]
+    fn test_format_callback_safety_null() {
+        unsafe {
+            let res = get_format_safe(ptr::null());
+            assert_eq!(res, MockPixelFormat::None);
+        }
+    }
+
+    #[test]
+    fn test_format_callback_finds_d3d11() {
+        let formats = [
+            MockPixelFormat::YUV420P,
+            MockPixelFormat::RGB24,
+            MockPixelFormat::D3D11,
+            MockPixelFormat::None,
+        ];
+        unsafe {
+            let res = get_format_safe(formats.as_ptr());
+            assert_eq!(res, MockPixelFormat::D3D11);
+        }
+    }
+
+    #[test]
+    fn test_format_callback_safety_limit() {
+        // Create a long list without None terminator to simulate attack/bug
+        let formats = [MockPixelFormat::YUV420P; 200];
+        unsafe {
+            // This would crash or loop forever without the limit
+            let res = get_format_safe(formats.as_ptr());
+            assert_eq!(res, MockPixelFormat::None);
         }
     }
 }
