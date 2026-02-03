@@ -19,3 +19,11 @@
 ## 2024-10-26 - Audio Buffer Resizing
 **Insight:** Testing `update_config` in audio analyzers is critical because mismatched buffer sizes (e.g., between FFT and input buffers) are a common source of runtime panics or silent failures when users change settings.
 **Action:** Always include a "reconfiguration" test case for stateful processing components like audio analyzers or render pipelines.
+
+## 2024-10-27 - Disabled Pipeline Logic
+**Insight:** `mapmap-media/src/pipeline.rs` contains critical threading logic for video decoding but is currently disabled (commented out in `lib.rs`) and contains compilation errors in tests.
+**Action:** Flagged `pipeline.rs` for future repair. For now, focus testing on enabled components.
+
+## 2024-10-27 - NDI Feature Stub Verification
+**Insight:** Feature-gated modules like NDI often lack tests for their disabled state (stubs). This can lead to runtime errors or confusion when features are missing.
+**Action:** Added explicit tests for NDI stubs to verify they return correct errors when the feature is disabled, ensuring graceful degradation.
