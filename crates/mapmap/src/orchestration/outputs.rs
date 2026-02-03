@@ -122,6 +122,7 @@ pub fn sync_output_windows(
                             }
                         }
                         // Handle other output types or ignore them
+                        #[cfg(target_os = "windows")]
                         OutputType::Spout { .. } => {
                             // Spout not yet implemented in synchronization loop
                         }
