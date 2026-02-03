@@ -54,3 +54,11 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `pr397.patch` und `pr398.patch` nach `.temp-archive/2026-01-31-*` archiviert und via `git rm` aus dem Repository entfernt.
 - `docu/jules_gpu_ui.md` und `docu/jules_hw_accel.md` nach `.jules/` verschoben.
 - `docu/` Verzeichnis entfernt.
+
+## 2026-02-17 - Cleanup & DLL Policy Conflict
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt `copy_ffmpeg_dlls.bat`, das nach Projektstandards in `scripts/` gehört. Zudem befinden sich mehrere FFmpeg-DLLs (`avcodec-61.dll` etc.) direkt im Root. Dies verstößt gegen die strikte Regel "Keine DLLs im Root", wird aber durch eine Projekterinnerung ("explicit exception for local execution") als Ausnahme geführt. Da diese DLLs in Git getrackt sind, würde ein Löschen/Verschieben potenziell Dev-Environments brechen.
+
+**Aktion:**
+- `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben und Pfade (`%~dp0..\`) angepasst.
+- DLLs im Root belassen, aber als persistente Anomalie dokumentiert. Empfehlung: Klären, ob diese DLLs wirklich getrackt sein müssen oder ob `vcpkg` sie lokal bereitstellen sollte.
