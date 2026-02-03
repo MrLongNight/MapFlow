@@ -2389,7 +2389,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("📹 Live Input").clicked() {
+            if ui.button("📹 Live Input TEST").clicked() {
                 self.add_source_node(
                     manager,
                     SourceType::LiveInput { device_id: 0 },
@@ -2397,7 +2397,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("🎮 Bevy Scene").clicked() {
+            if ui.button("🎮 Bevy Scene TEST").clicked() {
                 self.add_source_node(manager, SourceType::Bevy, pos_override);
                 ui.close();
             }
