@@ -2138,10 +2138,16 @@ impl ModuleCanvas {
     pub fn process_midi_message(&mut self, _message: ()) {}
 
     /// Add a Trigger node with specified type
-    fn add_trigger_node(&mut self, manager: &mut ModuleManager, trigger_type: TriggerType) {
+    fn add_trigger_node(
+        &mut self,
+        manager: &mut ModuleManager,
+        trigger_type: TriggerType,
+        pos_override: Option<(f32, f32)>,
+    ) {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (100.0, 100.0));
+                let preferred_pos = pos_override.unwrap_or((100.0, 100.0));
+                let pos = Self::find_free_position(&module.parts, preferred_pos);
                 module.add_part_with_type(
                     mapmap_core::module::ModulePartType::Trigger(trigger_type),
                     pos,
@@ -2151,10 +2157,16 @@ impl ModuleCanvas {
     }
 
     /// Add a Source node with specified type
-    fn add_source_node(&mut self, manager: &mut ModuleManager, source_type: SourceType) {
+    fn add_source_node(
+        &mut self,
+        manager: &mut ModuleManager,
+        source_type: SourceType,
+        pos_override: Option<(f32, f32)>,
+    ) {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (200.0, 100.0));
+                let preferred_pos = pos_override.unwrap_or((200.0, 100.0));
+                let pos = Self::find_free_position(&module.parts, preferred_pos);
                 module.add_part_with_type(
                     mapmap_core::module::ModulePartType::Source(source_type),
                     pos,
@@ -2164,10 +2176,16 @@ impl ModuleCanvas {
     }
 
     /// Add a Mask node with specified type
-    fn add_mask_node(&mut self, manager: &mut ModuleManager, mask_type: MaskType) {
+    fn add_mask_node(
+        &mut self,
+        manager: &mut ModuleManager,
+        mask_type: MaskType,
+        pos_override: Option<(f32, f32)>,
+    ) {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (300.0, 100.0));
+                let preferred_pos = pos_override.unwrap_or((300.0, 100.0));
+                let pos = Self::find_free_position(&module.parts, preferred_pos);
                 module
                     .add_part_with_type(mapmap_core::module::ModulePartType::Mask(mask_type), pos);
             }
@@ -2175,10 +2193,16 @@ impl ModuleCanvas {
     }
 
     /// Add a Modulator node with specified type
-    fn add_modulator_node(&mut self, manager: &mut ModuleManager, mod_type: ModulizerType) {
+    fn add_modulator_node(
+        &mut self,
+        manager: &mut ModuleManager,
+        mod_type: ModulizerType,
+        pos_override: Option<(f32, f32)>,
+    ) {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (400.0, 100.0));
+                let preferred_pos = pos_override.unwrap_or((400.0, 100.0));
+                let pos = Self::find_free_position(&module.parts, preferred_pos);
                 module.add_part_with_type(
                     mapmap_core::module::ModulePartType::Modulizer(mod_type),
                     pos,
@@ -2188,292 +2212,331 @@ impl ModuleCanvas {
     }
 
     /// Add a Hue node with specified type
-    fn add_hue_node(&mut self, manager: &mut ModuleManager, hue_type: HueNodeType) {
+    fn add_hue_node(
+        &mut self,
+        manager: &mut ModuleManager,
+        hue_type: HueNodeType,
+        pos_override: Option<(f32, f32)>,
+    ) {
         if let Some(id) = self.active_module_id {
             if let Some(module) = manager.get_module_mut(id) {
-                let pos = Self::find_free_position(&module.parts, (500.0, 100.0));
+                let preferred_pos = pos_override.unwrap_or((500.0, 100.0));
+                let pos = Self::find_free_position(&module.parts, preferred_pos);
                 module.add_part_with_type(mapmap_core::module::ModulePartType::Hue(hue_type), pos);
             }
+        }
+    }
+
+    /// Content for the Add Node menu (used by both toolbar and context menu)
+    fn render_add_node_menu_content(
+        &mut self,
+        ui: &mut egui::Ui,
+        manager: &mut ModuleManager,
+        pos_override: Option<(f32, f32)>,
+    ) {
+        ui.set_min_width(150.0);
+
+        ui.menu_button("🎬 Sources", |ui| {
+            if ui.button("📹 Media File").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::MediaFile {
+                        path: String::new(),
+                        speed: 1.0,
+                        loop_enabled: true,
+                        start_time: 0.0,
+                        end_time: 0.0,
+                        opacity: 1.0,
+                        blend_mode: None,
+                        brightness: 0.0,
+                        contrast: 1.0,
+                        saturation: 1.0,
+                        hue_shift: 0.0,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        rotation: 0.0,
+                        offset_x: 0.0,
+                        offset_y: 0.0,
+                        target_width: None,
+                        target_height: None,
+                        target_fps: None,
+                        flip_horizontal: false,
+                        flip_vertical: false,
+                        reverse_playback: false,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("📹 Video Uni").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::VideoUni {
+                        path: String::new(),
+                        speed: 1.0,
+                        loop_enabled: true,
+                        start_time: 0.0,
+                        end_time: 0.0,
+                        opacity: 1.0,
+                        blend_mode: None,
+                        brightness: 0.0,
+                        contrast: 1.0,
+                        saturation: 1.0,
+                        hue_shift: 0.0,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        rotation: 0.0,
+                        offset_x: 0.0,
+                        offset_y: 0.0,
+                        target_width: None,
+                        target_height: None,
+                        target_fps: None,
+                        flip_horizontal: false,
+                        flip_vertical: false,
+                        reverse_playback: false,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🖼 Image Uni").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::ImageUni {
+                        path: String::new(),
+                        opacity: 1.0,
+                        blend_mode: None,
+                        brightness: 0.0,
+                        contrast: 1.0,
+                        saturation: 1.0,
+                        hue_shift: 0.0,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        rotation: 0.0,
+                        offset_x: 0.0,
+                        offset_y: 0.0,
+                        target_width: None,
+                        target_height: None,
+                        flip_horizontal: false,
+                        flip_vertical: false,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("📹 Video Multi").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::VideoMulti {
+                        shared_id: String::new(),
+                        opacity: 1.0,
+                        blend_mode: None,
+                        brightness: 0.0,
+                        contrast: 1.0,
+                        saturation: 1.0,
+                        hue_shift: 0.0,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        rotation: 0.0,
+                        offset_x: 0.0,
+                        offset_y: 0.0,
+                        flip_horizontal: false,
+                        flip_vertical: false,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🖼 Image Multi").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::ImageMulti {
+                        shared_id: String::new(),
+                        opacity: 1.0,
+                        blend_mode: None,
+                        brightness: 0.0,
+                        contrast: 1.0,
+                        saturation: 1.0,
+                        hue_shift: 0.0,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        rotation: 0.0,
+                        offset_x: 0.0,
+                        offset_y: 0.0,
+                        flip_horizontal: false,
+                        flip_vertical: false,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("📡 NDI Input").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::NdiInput { source_name: None },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🎨 Shader").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::Shader {
+                        name: "New Shader".to_string(),
+                        params: vec![],
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("📹 Live Input").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::LiveInput { device_id: 0 },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🎮 Bevy Scene").clicked() {
+                self.add_source_node(manager, SourceType::Bevy, pos_override);
+                ui.close();
+            }
+        });
+
+        ui.menu_button("⚡ Triggers", |ui| {
+            if ui.button("🎵 Audio FFT").clicked() {
+                self.add_trigger_node(
+                    manager,
+                    TriggerType::AudioFFT {
+                        band: mapmap_core::module::AudioBand::Bass,
+                        threshold: 0.5,
+                        output_config: mapmap_core::module::AudioTriggerOutputConfig::default(),
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🎲 Random").clicked() {
+                self.add_trigger_node(
+                    manager,
+                    TriggerType::Random {
+                        min_interval_ms: 500,
+                        max_interval_ms: 2000,
+                        probability: 0.5,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("⏱ Fixed").clicked() {
+                self.add_trigger_node(
+                    manager,
+                    TriggerType::Fixed {
+                        interval_ms: 1000,
+                        offset_ms: 0,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🎹 MIDI").clicked() {
+                self.add_trigger_node(
+                    manager,
+                    TriggerType::Midi {
+                        device: "Default".to_string(),
+                        channel: 1,
+                        note: 60,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+        });
+
+        ui.menu_button("🎭 Masks", |ui| {
+            if ui.button("⭕ Shape").clicked() {
+                self.add_mask_node(
+                    manager,
+                    MaskType::Shape(mapmap_core::module::MaskShape::Circle),
+                    pos_override,
+                );
+                ui.close();
+            }
+            if ui.button("🌈 Gradient").clicked() {
+                self.add_mask_node(
+                    manager,
+                    MaskType::Gradient {
+                        angle: 0.0,
+                        softness: 0.5,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+        });
+
+        ui.menu_button("🎛 Modulators", |ui| {
+            if ui.button("🎚 Blend Mode").clicked() {
+                self.add_modulator_node(
+                    manager,
+                    ModulizerType::BlendMode(mapmap_core::module::BlendModeType::Normal),
+                    pos_override,
+                );
+                ui.close();
+            }
+        });
+
+        ui.menu_button("💡 Philips Hue", |ui| {
+            if ui.button("💡 Single Lamp").clicked() {
+                self.add_hue_node(
+                    manager,
+                    HueNodeType::SingleLamp {
+                        id: String::new(),
+                        name: "New Lamp".to_string(),
+                        brightness: 1.0,
+                        color: [1.0, 1.0, 1.0],
+                        effect: None,
+                        effect_active: false,
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+        });
+
+        ui.separator();
+
+        if ui.button("🖼 Output").clicked() {
+            if let Some(id) = self.active_module_id {
+                if let Some(module) = manager.get_module_mut(id) {
+                    let preferred_pos = pos_override.unwrap_or((600.0, 100.0));
+                    let pos = Self::find_free_position(&module.parts, preferred_pos);
+                    module.add_part_with_type(
+                        mapmap_core::module::ModulePartType::Output(
+                            mapmap_core::module::OutputType::Projector {
+                                id: 1,
+                                name: "Projector 1".to_string(),
+                                hide_cursor: false,
+                                target_screen: 0,
+                                show_in_preview_panel: true,
+                                extra_preview_window: false,
+                                output_width: 0,
+                                output_height: 0,
+                                output_fps: 60.0,
+                            },
+                        ),
+                        pos,
+                    );
+                }
+            }
+            ui.close();
         }
     }
 
     /// Renders the menu to add new nodes to the canvas
     fn render_add_node_menu(&mut self, ui: &mut egui::Ui, manager: &mut ModuleManager) {
         ui.menu_button("➕ Add Node", |ui| {
-            ui.set_min_width(150.0);
-
-            ui.menu_button("🎬 Sources", |ui| {
-                if ui.button("📹 Media File").clicked() {
-                    self.add_source_node(
-                        manager,
-                        SourceType::MediaFile {
-                            path: String::new(),
-                            speed: 1.0,
-                            loop_enabled: true,
-                            start_time: 0.0,
-                            end_time: 0.0,
-                            opacity: 1.0,
-                            blend_mode: None,
-                            brightness: 0.0,
-                            contrast: 1.0,
-                            saturation: 1.0,
-                            hue_shift: 0.0,
-                            scale_x: 1.0,
-                            scale_y: 1.0,
-                            rotation: 0.0,
-                            offset_x: 0.0,
-                            offset_y: 0.0,
-                            target_width: None,
-                            target_height: None,
-                            target_fps: None,
-                            flip_horizontal: false,
-                            flip_vertical: false,
-                            reverse_playback: false,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("📹 Video Uni").clicked() {
-                    self.add_source_node(
-                        manager,
-                        SourceType::VideoUni {
-                            path: String::new(),
-                            speed: 1.0,
-                            loop_enabled: true,
-                            start_time: 0.0,
-                            end_time: 0.0,
-                            opacity: 1.0,
-                            blend_mode: None,
-                            brightness: 0.0,
-                            contrast: 1.0,
-                            saturation: 1.0,
-                            hue_shift: 0.0,
-                            scale_x: 1.0,
-                            scale_y: 1.0,
-                            rotation: 0.0,
-                            offset_x: 0.0,
-                            offset_y: 0.0,
-                            target_width: None,
-                            target_height: None,
-                            target_fps: None,
-                            flip_horizontal: false,
-                            flip_vertical: false,
-                            reverse_playback: false,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("🖼 Image Uni").clicked() {
-                    self.add_source_node(
-                        manager,
-                        SourceType::ImageUni {
-                            path: String::new(),
-                            opacity: 1.0,
-                            blend_mode: None,
-                            brightness: 0.0,
-                            contrast: 1.0,
-                            saturation: 1.0,
-                            hue_shift: 0.0,
-                            scale_x: 1.0,
-                            scale_y: 1.0,
-                            rotation: 0.0,
-                            offset_x: 0.0,
-                            offset_y: 0.0,
-                            target_width: None,
-                            target_height: None,
-                            flip_horizontal: false,
-                            flip_vertical: false,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("📹 Video Multi").clicked() {
-                    self.add_source_node(
-                        manager,
-                        SourceType::VideoMulti {
-                            shared_id: String::new(),
-                            opacity: 1.0,
-                            blend_mode: None,
-                            brightness: 0.0,
-                            contrast: 1.0,
-                            saturation: 1.0,
-                            hue_shift: 0.0,
-                            scale_x: 1.0,
-                            scale_y: 1.0,
-                            rotation: 0.0,
-                            offset_x: 0.0,
-                            offset_y: 0.0,
-                            flip_horizontal: false,
-                            flip_vertical: false,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("🖼 Image Multi").clicked() {
-                    self.add_source_node(
-                        manager,
-                        SourceType::ImageMulti {
-                            shared_id: String::new(),
-                            opacity: 1.0,
-                            blend_mode: None,
-                            brightness: 0.0,
-                            contrast: 1.0,
-                            saturation: 1.0,
-                            hue_shift: 0.0,
-                            scale_x: 1.0,
-                            scale_y: 1.0,
-                            rotation: 0.0,
-                            offset_x: 0.0,
-                            offset_y: 0.0,
-                            flip_horizontal: false,
-                            flip_vertical: false,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("📡 NDI Input").clicked() {
-                    self.add_source_node(manager, SourceType::NdiInput { source_name: None });
-                    ui.close();
-                }
-                if ui.button("🎨 Shader").clicked() {
-                    self.add_source_node(
-                        manager,
-                        SourceType::Shader {
-                            name: "New Shader".to_string(),
-                            params: vec![],
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("📹 Live Input").clicked() {
-                    self.add_source_node(manager, SourceType::LiveInput { device_id: 0 });
-                    ui.close();
-                }
-                if ui.button("🎮 Bevy Scene").clicked() {
-                    self.add_source_node(manager, SourceType::Bevy);
-                    ui.close();
-                }
-            });
-
-            ui.menu_button("⚡ Triggers", |ui| {
-                if ui.button("🎵 Audio FFT").clicked() {
-                    self.add_trigger_node(
-                        manager,
-                        TriggerType::AudioFFT {
-                            band: mapmap_core::module::AudioBand::Bass,
-                            threshold: 0.5,
-                            output_config: mapmap_core::module::AudioTriggerOutputConfig::default(),
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("🎲 Random").clicked() {
-                    self.add_trigger_node(
-                        manager,
-                        TriggerType::Random {
-                            min_interval_ms: 500,
-                            max_interval_ms: 2000,
-                            probability: 0.5,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("⏱ Fixed").clicked() {
-                    self.add_trigger_node(
-                        manager,
-                        TriggerType::Fixed {
-                            interval_ms: 1000,
-                            offset_ms: 0,
-                        },
-                    );
-                    ui.close();
-                }
-                if ui.button("🎹 MIDI").clicked() {
-                    self.add_trigger_node(
-                        manager,
-                        TriggerType::Midi {
-                            device: "Default".to_string(),
-                            channel: 1,
-                            note: 60,
-                        },
-                    );
-                    ui.close();
-                }
-            });
-
-            ui.menu_button("🎭 Masks", |ui| {
-                if ui.button("⭕ Shape").clicked() {
-                    self.add_mask_node(
-                        manager,
-                        MaskType::Shape(mapmap_core::module::MaskShape::Circle),
-                    );
-                    ui.close();
-                }
-                if ui.button("🌈 Gradient").clicked() {
-                    self.add_mask_node(
-                        manager,
-                        MaskType::Gradient {
-                            angle: 0.0,
-                            softness: 0.5,
-                        },
-                    );
-                    ui.close();
-                }
-            });
-
-            ui.menu_button("🎛 Modulators", |ui| {
-                if ui.button("🎚 Blend Mode").clicked() {
-                    self.add_modulator_node(
-                        manager,
-                        ModulizerType::BlendMode(mapmap_core::module::BlendModeType::Normal),
-                    );
-                    ui.close();
-                }
-            });
-
-            ui.menu_button("💡 Philips Hue", |ui| {
-                if ui.button("💡 Single Lamp").clicked() {
-                    self.add_hue_node(
-                        manager,
-                        HueNodeType::SingleLamp {
-                            id: String::new(),
-                            name: "New Lamp".to_string(),
-                            brightness: 1.0,
-                            color: [1.0, 1.0, 1.0],
-                            effect: None,
-                            effect_active: false,
-                        },
-                    );
-                    ui.close();
-                }
-            });
-
-            ui.separator();
-
-            if ui.button("🖼 Output").clicked() {
-                if let Some(id) = self.active_module_id {
-                    if let Some(module) = manager.get_module_mut(id) {
-                        let pos = Self::find_free_position(&module.parts, (600.0, 100.0));
-                        module.add_part_with_type(
-                            mapmap_core::module::ModulePartType::Output(
-                                mapmap_core::module::OutputType::Projector {
-                                    id: 1,
-                                    name: "Projector 1".to_string(),
-                                    hide_cursor: false,
-                                    target_screen: 0,
-                                    show_in_preview_panel: true,
-                                    extra_preview_window: false,
-                                    output_width: 0,
-                                    output_height: 0,
-                                    output_fps: 60.0,
-                                },
-                            ),
-                            pos,
-                        );
-                    }
-                }
-                ui.close();
-            }
+            self.render_add_node_menu_content(ui, manager, None);
         });
     }
 
@@ -2762,12 +2825,18 @@ impl ModuleCanvas {
             // Will be set to true if click was on empty canvas
             self.panning_canvas = false;
         }
-        if !response.dragged() {
-            self.panning_canvas = false;
-        }
-
         // Handle keyboard shortcuts
         let ctrl_held = ui.input(|i| i.modifiers.ctrl);
+
+        // Handle context menu triggering
+        if response.secondary_clicked()
+            && self.dragging_part.is_none()
+            && self.creating_connection.is_none()
+        {
+            if let Some(pointer_pos) = response.interact_pointer_pos() {
+                self.context_menu_pos = Some(pointer_pos);
+            }
+        }
         let shift_held = ui.input(|i| i.modifiers.shift);
 
         // Ctrl+C: Copy selected parts
