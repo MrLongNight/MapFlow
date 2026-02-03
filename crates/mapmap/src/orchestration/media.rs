@@ -81,7 +81,7 @@ pub fn sync_media_players(app: &mut App) {
                 let tex_name = format!("part_{}_{}", module.id, part.id);
                 // Alias bevy_output to this part's texture name
                 if app.texture_pool.has_texture("bevy_output") {
-                     app.texture_pool.alias_texture("bevy_output", &tex_name);
+                    app.texture_pool.alias_texture("bevy_output", &tex_name);
                 }
             }
         }

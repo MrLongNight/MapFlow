@@ -179,7 +179,7 @@ impl VideoPlayer {
                             }
                         }
                         LoopMode::PlayOnce => {
-                             // For 0 duration, if we hit EOF, we stop.
+                            // For 0 duration, if we hit EOF, we stop.
                             if duration > Duration::ZERO {
                                 self.current_time = duration;
                             }

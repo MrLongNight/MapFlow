@@ -205,7 +205,10 @@ mod ffmpeg_impl {
             let actual_hw_accel = match Self::setup_hw_accel(&mut decoder, hw_accel) {
                 Ok(accel) => accel,
                 Err(e) => {
-                    warn!("Failed to setup hardware acceleration {:?}: {}", hw_accel, e);
+                    warn!(
+                        "Failed to setup hardware acceleration {:?}: {}",
+                        hw_accel, e
+                    );
                     HwAccelType::None
                 }
             };
@@ -270,13 +273,18 @@ mod ffmpeg_impl {
 
                     if ret < 0 {
                         // Return error so we can log it properly in caller
-                        return Err(MediaError::DecoderError(format!("Failed to create D3D11VA device context: {}", ret)));
+                        return Err(MediaError::DecoderError(format!(
+                            "Failed to create D3D11VA device context: {}",
+                            ret
+                        )));
                     }
 
                     let codec_ctx = _decoder.as_mut_ptr();
                     if codec_ctx.is_null() {
                         ffi::av_buffer_unref(&mut hw_device_ctx);
-                        return Err(MediaError::DecoderError("Codec context is null".to_string()));
+                        return Err(MediaError::DecoderError(
+                            "Codec context is null".to_string(),
+                        ));
                     }
 
                     // Transfer ownership of hw_device_ctx to codec_ctx

@@ -149,7 +149,7 @@ impl TexturePool {
             self.textures
                 .write()
                 .insert(dest_name.to_string(), handle_clone);
-            
+
             // Also alias the view if it exists
             if let Some(view) = self.views.read().get(src_name).cloned() {
                 self.views.write().insert(dest_name.to_string(), view);

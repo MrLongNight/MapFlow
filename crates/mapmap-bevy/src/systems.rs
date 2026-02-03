@@ -134,7 +134,7 @@ pub fn setup_3d_scene(
                 colour: Color::srgb(1.0, 0.5, 0.0),
             },
             ..default()
-        }
+        },
     ));
 
     // Spawn Sphere
@@ -164,7 +164,7 @@ pub fn setup_3d_scene(
         hex_size: hexx::Vec2::splat(0.2),
         ..default()
     };
-    
+
     // Use Cuboid instead of Cylinder to ensure build passes (Cylinder resolution might handle differently in 0.14 primitives)
     // We want a hex column, but a box is fine for demo proof.
     let mesh = meshes.add(Cuboid::new(0.3, 0.2, 0.3));

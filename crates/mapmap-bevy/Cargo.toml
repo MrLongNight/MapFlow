@@ -18,12 +18,12 @@ bevy = { version = "0.14", default-features = false, features = [
     "tonemapping_luts",
 ] }
 
-mapmap-core = { path = "../mapmap-core" }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-wgpu = { workspace = true }
-
 # Extensions
 bevy_enoki = "0.2"
 bevy_mod_outline = "0.8"
 hexx = "0.17"
+
+mapmap-core = { path = "../mapmap-core" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+wgpu = { workspace = true }
