@@ -9,7 +9,7 @@
 //! - Effect Chain Panel (Phase 3)
 //! - Controller Overlay Panel (MIDI visualization)
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 // Categorized modules
 pub mod core;
