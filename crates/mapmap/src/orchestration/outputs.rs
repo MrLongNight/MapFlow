@@ -99,7 +99,9 @@ pub fn sync_output_windows(
 
                             #[cfg(feature = "ndi")]
                             {
-                                if !app.ndi_senders.contains_key(&output_id) {
+                                if let std::collections::hash_map::Entry::Vacant(e) =
+                                    app.ndi_senders.entry(output_id)
+                                {
                                     let width = 1920;
                                     let height = 1080;
                                     match mapmap_io::ndi::NdiSender::new(
@@ -112,7 +114,7 @@ pub fn sync_output_windows(
                                         },
                                     ) {
                                         Ok(sender) => {
-                                            app.ndi_senders.insert(output_id, sender);
+                                            e.insert(sender);
                                         }
                                         Err(e) => {
                                             tracing::error!("Failed to create NDI sender: {}", e);

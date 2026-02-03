@@ -25,6 +25,20 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         tracing::trace!("Effect updates: {}", param_updates.len());
     }
 
+    // --- Bevy Runner Update ---
+    if let Some(runner) = &mut app.bevy_runner {
+        let analysis = app.audio_analyzer.get_latest_analysis();
+        let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
+            band_energies: analysis.band_energies,
+            rms_volume: analysis.rms_volume,
+            peak_volume: analysis.peak_volume,
+            beat_detected: analysis.beat_detected,
+            beat_strength: analysis.beat_strength,
+            bpm: analysis.tempo_bpm,
+        };
+        runner.update(&trigger_data);
+    }
+
     // --- Module Graph Evaluation ---
     // Evaluate ALL modules and merge render_ops for multi-output support
     app.render_ops.clear();
@@ -140,7 +154,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // Periodic Cleanups (every 600 frames ~ 10s at 60fps)
-    if app.backend.queue.get_timestamp_period() as u64 % 600 == 0 { // Just using a periodic check via backend or frame count if available
+    if (app.backend.queue.get_timestamp_period() as u64).is_multiple_of(600) { // Just using a periodic check via backend or frame count if available
          // ... (This logic was implicit in main loop, here we might need frame count or timer)
     }
 

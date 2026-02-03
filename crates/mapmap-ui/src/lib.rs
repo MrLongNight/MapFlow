@@ -171,6 +171,8 @@ pub enum UIAction {
 }
 
 use mapmap_control::ControlTarget;
+#[cfg(feature = "ndi")]
+use mapmap_io::NdiSource;
 
 /// UI state for the application
 pub struct AppUI {

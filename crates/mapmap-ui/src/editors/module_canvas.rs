@@ -877,7 +877,7 @@ impl ModuleCanvas {
                                                             let (tx, rx) =
                                                                 std::sync::mpsc::channel();
                                                             self.ndi_discovery_rx = Some(rx);
-                                                            mapmap_io::ndi::NdiInputHandler::discover_sources_async(tx);
+                                                            mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
                                                             self.ndi_sources.clear();
                                                             ui.ctx().request_repaint();
                                                         }
@@ -908,7 +908,7 @@ impl ModuleCanvas {
                                                             let (tx, rx) =
                                                                 std::sync::mpsc::channel();
                                                             self.ndi_discovery_rx = Some(rx);
-                                                            mapmap_io::ndi::NdiInputHandler::discover_sources_async(tx);
+                                                            mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
                                                             self.ndi_sources.clear();
                                                             ui.ctx().request_repaint();
                                                         }

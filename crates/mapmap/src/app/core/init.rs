@@ -518,6 +518,7 @@ impl App {
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
             media_library: MediaLibrary::new(),
+            bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
 
         Ok(app)

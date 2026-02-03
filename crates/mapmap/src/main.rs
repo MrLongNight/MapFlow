@@ -509,12 +509,11 @@ impl App {
                                 }
                             }
                             mapmap_core::SourceCommand::NdiInput {
-                                source_name: _source_name,
+                                source_name: Some(_src_name),
                                 ..
-                            } =>
-                            {
+                            } => {
                                 #[cfg(feature = "ndi")]
-                                if let Some(src_name) = _source_name {
+                                {
                                     let receiver =
                                         self.ndi_receivers.entry(*part_id).or_insert_with(|| {
                                             mapmap_io::ndi::NdiReceiver::new()
@@ -1374,7 +1373,9 @@ impl App {
 
                                 #[cfg(feature = "ndi")]
                                 {
-                                    if !self.ndi_senders.contains_key(&output_id) {
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        self.ndi_senders.entry(output_id)
+                                    {
                                         let width = 1920;
                                         let height = 1080;
                                         match mapmap_io::ndi::NdiSender::new(
@@ -1388,7 +1389,7 @@ impl App {
                                         ) {
                                             Ok(sender) => {
                                                 info!("Created NDI sender: {}", _name);
-                                                self.ndi_senders.insert(output_id, sender);
+                                                e.insert(sender);
                                             }
                                             Err(e) => error!(
                                                 "Failed to create NDI sender {}: {}",
@@ -1446,10 +1447,6 @@ impl App {
             tracing::error!("Update error: {}", e);
         }
     }
-    /// Handle global UI actions
-
-    /// Handle Node Editor actions
-
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         crate::app::loops::render::render(self, output_id)
     }

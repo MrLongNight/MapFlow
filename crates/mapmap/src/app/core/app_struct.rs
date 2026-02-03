@@ -148,5 +148,8 @@ pub struct App {
     /// Media Manager UI
     pub media_manager_ui: MediaManagerUI,
     /// Media Library
+    /// Media Library
     pub media_library: MediaLibrary,
+    /// Bevy Integration Runner
+    pub bevy_runner: Option<mapmap_bevy::BevyRunner>,
 }
