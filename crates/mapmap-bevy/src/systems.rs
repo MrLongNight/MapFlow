@@ -109,7 +109,7 @@ pub fn setup_3d_scene(
         ..default()
     });
 
-    // Spawn Cube with AudioReactive
+    // Spawn Cube with AudioReactive and Outline
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Cuboid::default()),
@@ -126,6 +126,15 @@ pub fn setup_3d_scene(
             intensity: 0.5,
             base: 1.0,
         },
+        // Outline
+        bevy_mod_outline::OutlineBundle {
+            outline: bevy_mod_outline::OutlineVolume {
+                visible: true,
+                width: 5.0,
+                colour: Color::srgb(1.0, 0.5, 0.0),
+            },
+            ..default()
+        }
     ));
 
     // Spawn Sphere
@@ -146,6 +155,55 @@ pub fn setup_3d_scene(
             base: 0.0,
         },
     ));
+
+    // DEMO: Hexx Grid
+    // DEMO: Hexx Grid
+    // Force use of hexx's Vec2 alias if different, but they should be glam::Vec2.
+    // Explicitly constructing to avoid type interference.
+    let layout = hexx::HexLayout {
+        hex_size: hexx::Vec2::splat(0.2),
+        ..default()
+    };
+    
+    // Use Cuboid instead of Cylinder to ensure build passes (Cylinder resolution might handle differently in 0.14 primitives)
+    // We want a hex column, but a box is fine for demo proof.
+    let mesh = meshes.add(Cuboid::new(0.3, 0.2, 0.3));
+    let hex_material = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.2, 0.2, 0.8),
+        ..default()
+    });
+
+    // Spawn a small hex grid
+    for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, 3) {
+        let pos = layout.hex_to_world_pos(hex);
+        commands.spawn(PbrBundle {
+            mesh: mesh.clone(),
+            material: hex_material.clone(),
+            transform: Transform::from_xyz(pos.x, -2.0, pos.y), // Floor
+            ..default()
+        });
+    }
+
+    // DEMO: Enoki Particles
+    // Note: Enoki usage commented out due to API uncertainty (SpawnerBundle not found in 0.2).
+    // To enable, check correct API for bevy_enoki 0.2.
+    /*
+    commands.spawn((
+        bevy_enoki::prelude::SpawnerBundle {
+             spawn_effect: bevy_enoki::prelude::SpawnEffect {
+                 count: bevy_enoki::prelude::Emission::PerSecond(50.0),
+                 ..default()
+             },
+             ..default()
+        },
+        bevy_enoki::prelude::OneShot::default(),
+    ));
+
+    commands.spawn(bevy_enoki::prelude::SpawnerBundle {
+         transform: Transform::from_xyz(-2.0, 1.0, 0.0),
+         ..default()
+    });
+    */
 }
 
 use bevy::render::render_asset::RenderAssets;

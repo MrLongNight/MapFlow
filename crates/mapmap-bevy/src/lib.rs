@@ -38,6 +38,10 @@ impl BevyRunner {
         app.add_plugins(bevy::render::RenderPlugin::default());
         app.add_plugins(bevy::pbr::PbrPlugin::default()); // Includes StandardMaterial
 
+        // Register Extensions
+        app.add_plugins(bevy_enoki::EnokiPlugin);
+        app.add_plugins(bevy_mod_outline::OutlinePlugin);
+
         // Register resources
         app.init_resource::<AudioInputResource>();
         app.init_resource::<BevyRenderOutput>();

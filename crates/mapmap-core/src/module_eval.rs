@@ -437,6 +437,11 @@ pub enum SourceCommand {
         /// Trigger value
         trigger_value: f32,
     },
+    /// Bevy Scene Input
+    BevyInput {
+        /// Trigger value
+        trigger_value: f32,
+    },
     /// Philips Hue output (Trigger/Effect data)
     HueOutput {
         /// Brightness (0.0 - 1.0)
@@ -1335,6 +1340,7 @@ impl ModuleEvaluator {
                 sender_name: sender_name.clone(),
                 trigger_value,
             }),
+            SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }
 }

@@ -997,6 +997,11 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
+                                            SourceType::Bevy => {
+                                                ui.label("🎮 Bevy Scene");
+                                                ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
+                                                ui.small("The scene is rendered internally and available as 'bevy_output'");
+                                            }
 
                                         }
                                     }
@@ -2342,6 +2347,10 @@ impl ModuleCanvas {
                 }
                 if ui.button("📹 Live Input").clicked() {
                     self.add_source_node(manager, SourceType::LiveInput { device_id: 0 });
+                    ui.close();
+                }
+                if ui.button("🎮 Bevy Scene").clicked() {
+                    self.add_source_node(manager, SourceType::Bevy);
                     ui.close();
                 }
             });
@@ -4806,6 +4815,7 @@ impl ModuleCanvas {
                     SourceType::ImageUni { .. } => "Image (Uni)",
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
+                    SourceType::Bevy => "Bevy Scene",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -4989,6 +4999,7 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name } => {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
+                SourceType::Bevy => "🎮 Bevy Scene".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {

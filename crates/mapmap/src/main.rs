@@ -557,22 +557,8 @@ impl App {
                     }
                 }
 
-                // Global render log (once per second)
-                static mut LAST_RENDER_LOG: u64 = 0;
-                let now_ms = (timestamp * 1000.0) as u64;
-                unsafe {
-                    if now_ms / 1000 > LAST_RENDER_LOG {
-                        LAST_RENDER_LOG = now_ms / 1000;
-                        debug!("=== Render Pipeline Status ===");
-                        debug!("  render_ops count: {}", self.render_ops.len());
-                        for (i, (mid, op)) in self.render_ops.iter().enumerate() {
-                            debug!(
-                                "  Op[{}]: mod={} source_part_id={:?}, output={:?}",
-                                i, mid, op.source_part_id, op.output_type
-                            );
-                        }
-                    }
-                }
+                // Global render log removed to prevent spam
+                // static mut LAST_RENDER_LOG: u64 = 0; ...
 
                 // 2. Update Output Assignments for Preview/Window Mapping
                 self.output_assignments.clear();

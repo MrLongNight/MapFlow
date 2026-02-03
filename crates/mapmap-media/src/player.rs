@@ -140,12 +140,19 @@ impl VideoPlayer {
                     let _ = self.status_sender.send(PlaybackStatus::Looped);
                 }
                 LoopMode::PlayOnce => {
-                    self.current_time = duration; // Clamp to end
-                    let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
-                    let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
-                    return self.last_frame.clone();
+                    // Only stop if we are actually at the end
+                    if self.current_time >= duration {
+                        self.current_time = duration; // Clamp to end
+                        let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
+                        let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
+                        return self.last_frame.clone();
+                    }
                 }
             }
+        } else if duration == Duration::ZERO {
+            // For 0 duration (unknown/stream), we don't check time >= duration.
+            // We rely on decoder error/EOF.
+            // BUT: If it was PlayOnce, we should be careful not to loop if we hit EOF.
         }
 
         match self.decoder.next_frame() {
@@ -159,6 +166,7 @@ impl VideoPlayer {
                     match self.loop_mode {
                         LoopMode::Loop => {
                             self.current_time = Duration::ZERO;
+                            // If duration is 0, seeking to 0 might just reset the stream (works for some formats)
                             if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
                                 self.transition_to_error(seek_err);
                             } else {
@@ -171,7 +179,10 @@ impl VideoPlayer {
                             }
                         }
                         LoopMode::PlayOnce => {
-                            self.current_time = duration;
+                             // For 0 duration, if we hit EOF, we stop.
+                            if duration > Duration::ZERO {
+                                self.current_time = duration;
+                            }
                             let _ = self.transition_state(PlaybackState::Stopped);
                             let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
                         }

@@ -1053,6 +1053,8 @@ pub enum SourceType {
         /// If None, the first available source will be used.
         source_name: Option<String>,
     },
+    /// Bevy Engine Scene
+    Bevy,
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {

@@ -22,3 +22,8 @@ mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 wgpu = { workspace = true }
+
+# Extensions
+bevy_enoki = "0.2"
+bevy_mod_outline = "0.8"
+hexx = "0.17"
