@@ -28,21 +28,19 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // --- Module Graph Evaluation ---
     // Evaluate ALL modules and merge render_ops for multi-output support
     app.render_ops.clear();
-    for module in app.state.module_manager.list_modules() {
+    for module in app.state.module_manager.iter_modules() {
         let module_id = module.id;
-        if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
-            let eval_result = app
-                .module_evaluator
-                .evaluate(module_ref, &app.state.module_manager.shared_media);
-            // Push (ModuleId, RenderOp) tuple
-            app.render_ops.extend(
-                eval_result
-                    .render_ops
-                    .iter()
-                    .cloned()
-                    .map(|op| (module_id, op)),
-            );
-        }
+        let eval_result = app
+            .module_evaluator
+            .evaluate(module, &app.state.module_manager.shared_media);
+        // Push (ModuleId, RenderOp) tuple
+        app.render_ops.extend(
+            eval_result
+                .render_ops
+                .iter()
+                .cloned()
+                .map(|op| (module_id, op)),
+        );
     }
 
     // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
@@ -50,8 +48,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     let current_output_ids: HashSet<u64> = app
         .state
         .module_manager
-        .list_modules()
-        .iter()
+        .iter_modules()
         .flat_map(|m| m.parts.iter())
         .filter_map(|part| {
             if let ModulePartType::Output(OutputType::Projector { id, .. }) = &part.part_type {

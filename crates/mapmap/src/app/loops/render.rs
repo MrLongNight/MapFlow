@@ -349,8 +349,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     let module_output_infos: Vec<(u64, u64, String)> = app
         .state
         .module_manager
-        .list_modules()
-        .iter()
+        .iter_modules()
         .flat_map(|m| m.parts.iter().map(move |p| (m.id, p)))
         .filter_map(|(mid, part)| {
             if let mapmap_core::module::ModulePartType::Output(

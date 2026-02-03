@@ -27,9 +27,8 @@ impl ModuleSidebar {
             ui.separator();
 
             // List of modules
-            let modules = manager.list_modules();
             // Optimization: Iterate over references to avoid deep cloning MapFlowModule every frame
-            for module in modules {
+            for module in manager.iter_modules() {
                 let response = self.module_list_item(ui, module);
                 response.context_menu(|ui| {
                     if ui.button(locale.t("menu-rename")).clicked() {

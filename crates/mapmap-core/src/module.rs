@@ -2123,6 +2123,11 @@ impl ModuleManager {
         self.modules.values().collect()
     }
 
+    /// Iterate all modules
+    pub fn iter_modules(&self) -> impl Iterator<Item = &MapFlowModule> + Clone {
+        self.modules.values()
+    }
+
     /// Set module color
     pub fn set_module_color(&mut self, id: ModuleId, color: [f32; 4]) {
         if let Some(module) = self.modules.get_mut(&id) {
