@@ -12,8 +12,9 @@ pub mod ui;
 mod window_manager;
 
 use anyhow::Result;
+use mapmap_core::audio::backend::AudioBackend;
 #[cfg(feature = "midi")]
-use mapmap_core::{audio::backend::AudioBackend, audio_reactive::AudioTriggerData};
+use mapmap_core::audio_reactive::AudioTriggerData;
 
 // Define McpAction locally or import if we move it to core later -> Removed local definition
 
@@ -607,6 +608,7 @@ impl App {
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;
 
                 // Update module canvas with audio trigger data
+                #[cfg(feature = "midi")]
                 self.ui_state
                     .module_canvas
                     .set_audio_data(AudioTriggerData {
@@ -1451,7 +1453,10 @@ impl App {
     /// Handle Node Editor actions
 
     fn render(&mut self, output_id: OutputId) -> Result<()> {
-        crate::app::loops::render::render(self, output_id)
+        #[cfg(feature = "midi")]
+        return crate::app::loops::render::render(self, output_id);
+        #[cfg(not(feature = "midi"))]
+        Ok(())
     }
 }
 
