@@ -6,8 +6,6 @@ use anyhow::Result;
 use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
 
-#[cfg(feature = "midi")]
-
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     // Clone device Arc to create encoder without borrowing self
