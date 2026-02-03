@@ -3315,7 +3315,7 @@ impl ModuleCanvas {
                 painter.rect_stroke(
                     highlight_rect,
                     0, // Sharp corners
-                    Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
+                    Stroke::new(2.0 * self.zoom, colors::CYAN_ACCENT),
                     egui::StrokeKind::Inside,
                 );
 
@@ -3329,7 +3329,7 @@ impl ModuleCanvas {
                     Vec2::splat(handle_size),
                 );
                 // Cyan resize handle, sharp
-                painter.rect_filled(handle_rect, 0, Color32::from_rgb(0, 229, 255));
+                painter.rect_filled(handle_rect, 0, colors::CYAN_ACCENT);
                 // Draw diagonal lines for resize indicator
                 painter.line_segment(
                     [
@@ -4309,8 +4309,7 @@ impl ModuleCanvas {
         // Draw glow effect if active
         if is_active {
             let glow_intensity = (trigger_value * 2.0).min(1.0);
-            let base_color =
-                Color32::from_rgba_unmultiplied(255, (160.0 * glow_intensity) as u8, 0, 255);
+            let base_color = title_color; // Use the node's accent color for the glow
 
             // Cyber-Glow: Multi-layered sharp strokes
             for i in 1..=4 {
@@ -4345,7 +4344,7 @@ impl ModuleCanvas {
         if is_midi_learn {
             let time = ui.input(|i| i.time);
             let pulse = (time * 8.0).sin().abs() as f32;
-            let learn_color = Color32::from_rgb(0, 200, 255).linear_multiply(pulse);
+            let learn_color = colors::CYAN_ACCENT.linear_multiply(pulse);
 
             painter.rect_stroke(
                 rect.expand(4.0 * self.zoom),
@@ -4787,12 +4786,7 @@ impl ModuleCanvas {
                     TriggerType::Random { .. } => "Random",
                     TriggerType::Fixed { .. } => "Fixed Timer",
                 };
-                (
-                    Color32::from_rgb(60, 50, 70),
-                    Color32::from_rgb(130, 80, 180),
-                    "⚡",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_TRIGGER, "⚡", name)
             }
             ModulePartType::Source(source) => {
                 let name = match source {
@@ -4807,12 +4801,7 @@ impl ModuleCanvas {
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
                 };
-                (
-                    Color32::from_rgb(50, 60, 70),
-                    Color32::from_rgb(80, 140, 180),
-                    "🎬",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_SOURCE, "🎬", name)
             }
             ModulePartType::Mask(mask) => {
                 let name = match mask {
@@ -4826,12 +4815,7 @@ impl ModuleCanvas {
                     },
                     MaskType::Gradient { .. } => "Gradient",
                 };
-                (
-                    Color32::from_rgb(60, 55, 70),
-                    Color32::from_rgb(160, 100, 180),
-                    "🎭",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_MASK, "🎭", name)
             }
             ModulePartType::Modulizer(mod_type) => {
                 let name = match mod_type {
@@ -4876,31 +4860,16 @@ impl ModuleCanvas {
                     },
                     ModulizerType::AudioReactive { .. } => "Audio Reactive",
                 };
-                (
-                    egui::Color32::from_rgb(60, 60, 50),
-                    egui::Color32::from_rgb(180, 140, 60),
-                    "〰️",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_MODULATOR, "〰️", name)
             }
-            ModulePartType::Mesh(_) => (
-                egui::Color32::from_rgb(60, 60, 80),
-                egui::Color32::from_rgb(100, 100, 200),
-                "🕸️",
-                "Mesh",
-            ),
+            ModulePartType::Mesh(_) => (colors::DARK_GREY, colors::NODE_MESH, "🕸️", "Mesh"),
             ModulePartType::Layer(layer) => {
                 let name = match layer {
                     LayerType::Single { .. } => "Single Layer",
                     LayerType::Group { .. } => "Layer Group",
                     LayerType::All { .. } => "All Layers",
                 };
-                (
-                    Color32::from_rgb(50, 70, 60),
-                    Color32::from_rgb(80, 180, 120),
-                    "📑",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_LAYER, "📑", name)
             }
             ModulePartType::Output(output) => {
                 let name = match output {
@@ -4910,12 +4879,7 @@ impl ModuleCanvas {
                     OutputType::Spout { .. } => "Spout Output",
                     OutputType::Hue { .. } => "Philips Hue",
                 };
-                (
-                    Color32::from_rgb(70, 50, 50),
-                    Color32::from_rgb(180, 80, 80),
-                    "📺",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_OUTPUT, "📺", name)
             }
             ModulePartType::Hue(hue) => {
                 let name = match hue {
@@ -4925,12 +4889,7 @@ impl ModuleCanvas {
                         "Entertainment Group"
                     }
                 };
-                (
-                    Color32::from_rgb(60, 60, 40),
-                    Color32::from_rgb(200, 200, 100),
-                    "💡",
-                    name,
-                )
+                (colors::DARK_GREY, colors::NODE_HUE, "💡", name)
             }
         }
     }
@@ -4953,12 +4912,12 @@ impl ModuleCanvas {
     fn get_socket_color(socket_type: &mapmap_core::module::ModuleSocketType) -> Color32 {
         use mapmap_core::module::ModuleSocketType;
         match socket_type {
-            ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220),
-            ModuleSocketType::Media => Color32::from_rgb(100, 180, 220),
-            ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
-            ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
-            ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
-            ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
+            ModuleSocketType::Trigger => colors::SOCKET_TRIGGER,
+            ModuleSocketType::Media => colors::SOCKET_MEDIA,
+            ModuleSocketType::Effect => colors::SOCKET_EFFECT,
+            ModuleSocketType::Layer => colors::SOCKET_LAYER,
+            ModuleSocketType::Output => colors::SOCKET_OUTPUT,
+            ModuleSocketType::Link => colors::SOCKET_LINK,
         }
     }
 

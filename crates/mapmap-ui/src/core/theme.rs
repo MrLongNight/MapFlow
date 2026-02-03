@@ -66,6 +66,24 @@ pub mod colors {
     pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 8); // Window/Deep Background (Almost Black)
     pub const LIGHTER_GREY: Color32 = Color32::from_rgb(40, 40, 45); // Widget Background
     pub const STROKE_GREY: Color32 = Color32::from_rgb(80, 80, 90); // Borders (High Contrast)
+
+    // Node Colors (Cyber Dark Palette)
+    pub const NODE_TRIGGER: Color32 = Color32::from_rgb(130, 80, 180);
+    pub const NODE_SOURCE: Color32 = Color32::from_rgb(80, 140, 180);
+    pub const NODE_MASK: Color32 = Color32::from_rgb(160, 100, 180);
+    pub const NODE_MODULATOR: Color32 = Color32::from_rgb(180, 140, 60);
+    pub const NODE_MESH: Color32 = Color32::from_rgb(100, 100, 200);
+    pub const NODE_LAYER: Color32 = Color32::from_rgb(80, 180, 120);
+    pub const NODE_OUTPUT: Color32 = Color32::from_rgb(180, 80, 80);
+    pub const NODE_HUE: Color32 = Color32::from_rgb(200, 200, 100);
+
+    // Socket Colors
+    pub const SOCKET_TRIGGER: Color32 = Color32::from_rgb(180, 100, 220);
+    pub const SOCKET_MEDIA: Color32 = Color32::from_rgb(100, 180, 220);
+    pub const SOCKET_EFFECT: Color32 = Color32::from_rgb(220, 180, 100);
+    pub const SOCKET_LAYER: Color32 = Color32::from_rgb(100, 220, 140);
+    pub const SOCKET_OUTPUT: Color32 = Color32::from_rgb(220, 100, 100);
+    pub const SOCKET_LINK: Color32 = Color32::from_rgb(200, 200, 200);
 }
 
 impl ThemeConfig {
