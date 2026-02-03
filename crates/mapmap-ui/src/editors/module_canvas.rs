@@ -748,6 +748,10 @@ impl ModuleCanvas {
                                                     if speed_slider.changed() {
                                                         actions.push(UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetSpeed(*speed)));
                                                     }
+                                                    if ui.button("⟲").on_hover_text("Reset Speed (1.0x)").clicked() {
+                                                        *speed = 1.0;
+                                                        actions.push(UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetSpeed(1.0)));
+                                                    }
                                                 });
                                                 ui.separator();
 
@@ -5973,88 +5977,180 @@ impl ModuleCanvas {
         loop_enabled: &mut bool,
         reverse_playback: &mut bool,
     ) {
-        // 2. CONSOLIDATED TRANSPORT BAR (UX Improved)
+        // Mary StyleUX: Improved Transport Layout
+        // Split into two groups: Main Transport & Playback Options
+        let button_height = 40.0;
+        let big_btn_width = 60.0;
+        let small_btn_width = 40.0;
+
         ui.horizontal(|ui| {
-            ui.style_mut().spacing.item_spacing.x = 8.0;
-            let button_height = 42.0;
-            let big_btn_size = Vec2::new(70.0, button_height);
-            let small_btn_size = Vec2::new(40.0, button_height);
+            ui.style_mut().spacing.item_spacing.x = 4.0;
 
-            // PLAY (Primary Action - Green)
-            let play_btn = egui::Button::new(egui::RichText::new("▶").size(24.0))
-                .min_size(big_btn_size)
-                .fill(if is_playing {
-                    Color32::from_rgb(40, 180, 60)
+            // GROUP 1: Main Transport (Play, Pause, Stop)
+            ui.group(|ui| {
+                ui.style_mut().spacing.item_spacing.x = 2.0; // Tight spacing within group
+
+                // PLAY
+                let play_color = if is_playing {
+                    Color32::from_rgb(40, 200, 60) // Bright Green
                 } else {
-                    Color32::from_gray(50)
-                });
-            if ui.add(play_btn).on_hover_text("Play").clicked() {
-                self.pending_playback_commands
-                    .push((part_id, MediaPlaybackCommand::Play));
-            }
+                    Color32::from_gray(60)
+                };
+                if ui
+                    .add(
+                        egui::Button::new(egui::RichText::new("▶").size(20.0))
+                            .min_size(Vec2::new(big_btn_width, button_height))
+                            .fill(play_color),
+                    )
+                    .on_hover_text("Play")
+                    .clicked()
+                {
+                    self.pending_playback_commands
+                        .push((part_id, MediaPlaybackCommand::Play));
+                }
 
-            // PAUSE (Secondary Action - Yellow)
-            let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(24.0))
-                .min_size(big_btn_size)
-                .fill(if !is_playing && current_pos > 0.1 {
-                    Color32::from_rgb(200, 160, 40)
+                // PAUSE
+                let pause_color = if !is_playing && current_pos > 0.0 {
+                    Color32::from_rgb(220, 180, 40) // Yellow
                 } else {
-                    Color32::from_gray(50)
-                });
-            if ui.add(pause_btn).on_hover_text("Pause").clicked() {
-                self.pending_playback_commands
-                    .push((part_id, MediaPlaybackCommand::Pause));
-            }
+                    Color32::from_gray(60)
+                };
+                if ui
+                    .add(
+                        egui::Button::new(egui::RichText::new("⏸").size(20.0))
+                            .min_size(Vec2::new(big_btn_width, button_height))
+                            .fill(pause_color),
+                    )
+                    .on_hover_text("Pause")
+                    .clicked()
+                {
+                    self.pending_playback_commands
+                        .push((part_id, MediaPlaybackCommand::Pause));
+                }
 
-            // Safety Spacer
-            ui.add_space(24.0);
-            ui.separator();
+                // STOP (Safety Button - Custom Implementation for Layout Fit)
+                let stop_size = Vec2::new(big_btn_width, button_height);
+                let (rect, response) = ui.allocate_at_least(stop_size, Sense::click());
+                let stop_id = response.id.with("stop_hold");
+
+                let is_interacting = response.is_pointer_button_down_on()
+                    || (response.has_focus()
+                        && (ui.input(|i| {
+                            i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter)
+                        })));
+
+                let mut start_time: Option<f64> = ui.data_mut(|d| d.get_temp(stop_id));
+                let mut triggered = false;
+                let hold_duration = 0.6;
+
+                if is_interacting {
+                    let now = ui.input(|i| i.time);
+                    if start_time.is_none() {
+                        start_time = Some(now);
+                        ui.data_mut(|d| d.insert_temp(stop_id, start_time));
+                    }
+                    let progress =
+                        ((now - start_time.unwrap()) as f32 / hold_duration).clamp(0.0, 1.0);
+                    if progress >= 1.0 {
+                        triggered = true;
+                        ui.data_mut(|d| d.remove_temp::<Option<f64>>(stop_id));
+                    } else {
+                        ui.ctx().request_repaint();
+                    }
+                } else if start_time.is_some() {
+                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(stop_id));
+                }
+
+                if triggered {
+                    self.pending_playback_commands
+                        .push((part_id, MediaPlaybackCommand::Stop));
+                }
+
+                // Draw Stop Button
+                let painter = ui.painter();
+                let _visuals = ui.style().interact(&response);
+                painter.rect_filled(
+                    rect,
+                    4.0,
+                    if triggered {
+                        Color32::RED
+                    } else {
+                        Color32::from_gray(60)
+                    },
+                );
+
+                // Fill progress
+                if let Some(start) = start_time {
+                    if is_interacting {
+                        let progress = ((ui.input(|i| i.time) - start) as f32 / hold_duration)
+                            .clamp(0.0, 1.0);
+                        if progress > 0.0 {
+                            let fill_w = rect.width() * progress;
+                            painter.rect_filled(
+                                Rect::from_min_size(rect.min, Vec2::new(fill_w, rect.height())),
+                                4.0,
+                                Color32::RED.linear_multiply(0.5),
+                            );
+                        }
+                    }
+                }
+
+                painter.text(
+                    rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    "⏹",
+                    egui::FontId::proportional(20.0),
+                    Color32::WHITE,
+                );
+                response.on_hover_text("Hold to Stop");
+            });
+
             ui.add_space(8.0);
 
-            // STOP (Destructive Action - Separated)
-            // Mary StyleUX: Use hold-to-confirm for safety
-            if crate::widgets::hold_to_action_button(ui, "⏹", Color32::from_rgb(255, 80, 80)) {
-                self.pending_playback_commands
-                    .push((part_id, MediaPlaybackCommand::Stop));
-            }
+            // GROUP 2: Options (Loop, Reverse)
+            ui.group(|ui| {
+                ui.style_mut().spacing.item_spacing.x = 2.0;
 
-            // LOOP
-            let loop_color = if *loop_enabled {
-                Color32::from_rgb(80, 150, 255)
-            } else {
-                Color32::from_gray(45)
-            };
-            if ui
-                .add(
-                    egui::Button::new(egui::RichText::new("🔁").size(18.0))
-                        .min_size(small_btn_size)
-                        .fill(loop_color),
-                )
-                .on_hover_text("Toggle Loop")
-                .clicked()
-            {
-                *loop_enabled = !*loop_enabled;
-                self.pending_playback_commands
-                    .push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
-            }
+                // LOOP
+                let loop_color = if *loop_enabled {
+                    Color32::from_rgb(80, 150, 255)
+                } else {
+                    Color32::from_gray(50)
+                };
+                if ui
+                    .add(
+                        egui::Button::new(egui::RichText::new("🔁").size(18.0))
+                            .min_size(Vec2::new(small_btn_width, button_height))
+                            .fill(loop_color),
+                    )
+                    .on_hover_text("Loop")
+                    .clicked()
+                {
+                    *loop_enabled = !*loop_enabled;
+                    self.pending_playback_commands.push((
+                        part_id,
+                        MediaPlaybackCommand::SetLoop(*loop_enabled),
+                    ));
+                }
 
-            // REVERSE
-            let rev_color = if *reverse_playback {
-                Color32::from_rgb(200, 80, 80)
-            } else {
-                Color32::from_gray(45)
-            };
-            if ui
-                .add(
-                    egui::Button::new(egui::RichText::new("⏪").size(18.0))
-                        .min_size(small_btn_size)
-                        .fill(rev_color),
-                )
-                .on_hover_text("Toggle Reverse Playback")
-                .clicked()
-            {
-                *reverse_playback = !*reverse_playback;
-            }
+                // REVERSE
+                let rev_color = if *reverse_playback {
+                    Color32::from_rgb(255, 100, 100)
+                } else {
+                    Color32::from_gray(50)
+                };
+                if ui
+                    .add(
+                        egui::Button::new(egui::RichText::new("⏪").size(18.0))
+                            .min_size(Vec2::new(small_btn_width, button_height))
+                            .fill(rev_color),
+                    )
+                    .on_hover_text("Reverse")
+                    .clicked()
+                {
+                    *reverse_playback = !*reverse_playback;
+                }
+            });
         });
     }
 
@@ -6144,6 +6240,16 @@ impl ModuleCanvas {
 
         // 2. Body Interaction (Slide or Seek)
         if !handled && response.hovered() {
+            if let Some(pos) = response.hover_pos() {
+                let hover_norm = ((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0);
+                let hover_time = hover_norm * video_duration;
+                let m = (hover_time / 60.0) as u32;
+                let s = (hover_time % 60.0) as u32;
+                let ms = ((hover_time * 100.0) % 100.0) as u32;
+
+                response.clone().on_hover_text(format!("{:02}:{:02}.{:02}", m, s, ms));
+            }
+
             if ui.input(|i| i.modifiers.shift)
                 && region_rect.contains(response.hover_pos().unwrap_or_default())
             {
