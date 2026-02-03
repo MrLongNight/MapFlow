@@ -9,7 +9,7 @@
 //! - Effect Chain Panel (Phase 3)
 //! - Controller Overlay Panel (MIDI visualization)
 
-#![allow(missing_docs)]
+#![warn(missing_docs)]
 
 // Categorized modules
 pub mod core;
@@ -28,142 +28,229 @@ pub use crate::widgets::*;
 /// UI actions that can be triggered by the user interface
 #[derive(Debug, Clone)]
 pub enum UIAction {
-    // Playback actions
+    // --- Playback actions ---
+    /// Start playback
     Play,
+    /// Pause playback
     Pause,
+    /// Stop playback
     Stop,
+    /// Set playback speed multiplier
     SetSpeed(f32),
+    /// Set loop mode (Loop, PlayOnce)
     SetLoopMode(mapmap_media::LoopMode),
 
-    // File actions
+    // --- File actions ---
+    /// Create a new project
     NewProject,
+    /// Load a video file into the active module
     LoadVideo(String),
+    /// Open file picker for a specific media source
     PickMediaFile(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
         String,
     ),
+    /// Set media file for a specific media source
     SetMediaFile(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
         String,
     ),
 
+    /// Save current project to file
     SaveProject(String),
+    /// Open "Save As" dialog
     SaveProjectAs,
+    /// Load project from file
     LoadProject(String),
+    /// Load a recently used project
     LoadRecentProject(String),
+    /// Export project (not implemented)
     Export,
+    /// Open application settings
     OpenSettings,
+    /// Exit application
     Exit,
 
-    // Edit actions
+    // --- Edit actions ---
+    /// Undo last action
     Undo,
+    /// Redo last action
     Redo,
+    /// Cut selection
     Cut,
+    /// Copy selection
     Copy,
+    /// Paste from clipboard
     Paste,
+    /// Delete selection
     Delete,
+    /// Select all items
     SelectAll,
 
-    // Mapping actions
+    // --- Mapping actions ---
+    /// Add a new mapping
     AddMapping,
+    /// Remove a mapping by ID
     RemoveMapping(u64),
+    /// Toggle mapping visibility
     ToggleMappingVisibility(u64, bool),
+    /// Select a mapping for editing
     SelectMapping(u64),
+    /// Set MIDI assignment for a UI element
     SetMidiAssignment(String, String), // element_id, target_id
 
-    // Paint actions
+    // --- Paint actions ---
+    /// Add a new paint (source)
     AddPaint,
+    /// Remove a paint by ID
     RemovePaint(u64),
 
-    // Layer actions (Phase 1)
+    // --- Layer actions (Phase 1) ---
+    /// Add a new layer
     AddLayer,
+    /// Create a new layer group
     CreateGroup,
+    /// Remove a layer by ID
     RemoveLayer(u64),
+    /// Duplicate a layer by ID
     DuplicateLayer(u64),
+    /// Reparent a layer to a new parent group (or root)
     ReparentLayer(u64, Option<u64>),
+    /// Swap order of two layers
     SwapLayers(u64, u64),
+    /// Toggle group collapsed state
     ToggleGroupCollapsed(u64),
+    /// Rename a layer
     RenameLayer(u64, String),
+    /// Toggle layer bypass mode
     ToggleLayerBypass(u64),
+    /// Toggle layer solo mode
     ToggleLayerSolo(u64),
+    /// Set layer opacity (0.0-1.0)
     SetLayerOpacity(u64, f32),
+    /// Set layer blend mode
     SetLayerBlendMode(u64, mapmap_core::BlendMode),
+    /// Set layer visibility
     SetLayerVisibility(u64, bool),
+    /// Eject all content from layers
     EjectAllLayers,
 
-    // Transform actions (Phase 1)
+    // --- Transform actions (Phase 1) ---
+    /// Set transform properties for a layer
     SetLayerTransform(u64, mapmap_core::Transform),
+    /// Apply resize mode (Fill, Fit, etc.) to a layer
     ApplyResizeMode(u64, mapmap_core::ResizeMode),
 
-    // Master controls (Phase 1)
+    // --- Master controls (Phase 1) ---
+    /// Set master opacity
     SetMasterOpacity(f32),
+    /// Set master playback speed
     SetMasterSpeed(f32),
+    /// Set composition name
     SetCompositionName(String),
 
-    // Phase 2: Output management
+    // --- Phase 2: Output management ---
+    /// Add a new output window/projector
     AddOutput(String, mapmap_core::CanvasRegion, (u32, u32)),
+    /// Remove an output by ID
     RemoveOutput(u64),
+    /// Configure output properties
     ConfigureOutput(u64, mapmap_core::OutputConfig),
+    /// Configure edge blending for an output
     SetOutputEdgeBlend(u64, mapmap_core::EdgeBlendConfig),
+    /// Configure color calibration for an output
     SetOutputColorCalibration(u64, mapmap_core::ColorCalibration),
+    /// Create a 2x2 projector array configuration
     CreateProjectorArray2x2((u32, u32), f32),
 
-    // View actions
+    // --- View actions ---
+    /// Toggle fullscreen mode
     ToggleFullscreen,
+    /// Reset UI layout
     ResetLayout,
+    /// Toggle Module Canvas panel
     ToggleModuleCanvas,
+    /// Toggle Controller Overlay panel
     ToggleControllerOverlay,
+    /// Toggle Media Manager panel
     ToggleMediaManager,
 
-    // Audio actions
+    // --- Audio actions ---
+    /// Select audio input device
     SelectAudioDevice(String),
+    /// Update audio analysis configuration
     UpdateAudioConfig(mapmap_core::audio::AudioConfig),
+    /// Toggle Audio Panel visibility
     ToggleAudioPanel,
 
-    // Settings
+    // --- Settings ---
+    /// Set application language
     SetLanguage(String),
+    /// Connect to Philips Hue bridge
     ConnectHue,
+    /// Disconnect from Philips Hue bridge
     DisconnectHue,
+    /// Discover Hue bridges on network
     DiscoverHueBridges,
+    /// Fetch Hue groups from bridge
     FetchHueGroups,
+    /// Register app with Hue bridge (press button on bridge)
     RegisterHue,
 
-    // Help actions
+    // --- Help actions ---
+    /// Open documentation
     OpenDocs,
+    /// Open About dialog
     OpenAbout,
+    /// Open License information
     OpenLicense,
 
-    // Module actions
+    // --- Module actions ---
     #[cfg(feature = "ndi")]
+    /// Connect a module part to an NDI source
     ConnectNdiSource {
+        /// Module part ID
         part_id: mapmap_core::module::ModulePartId,
+        /// NDI source
         source: NdiSource,
     },
 
-    // Cue actions (Phase 7)
+    // --- Cue actions (Phase 7) ---
+    /// Add a new cue
     AddCue,
+    /// Remove a cue by index
     RemoveCue(u32),
+    /// Update an existing cue
     UpdateCue(Box<mapmap_control::cue::Cue>),
+    /// Trigger a specific cue
     GoCue(u32),
+    /// Trigger next cue
     NextCue,
+    /// Trigger previous cue
     PrevCue,
+    /// Stop current cue playback
     StopCue,
 
-    // Shader Graph (Phase 6b)
+    // --- Shader Graph (Phase 6b) ---
+    /// Open a shader graph for editing
     OpenShaderGraph(mapmap_core::GraphId),
 
-    // MIDI
+    // --- MIDI ---
+    /// Toggle MIDI Learn mode
     ToggleMidiLearn,
 
-    // Node Action (Phase 6)
+    // --- Node Action (Phase 6) ---
+    /// Action triggered from the Node Editor
     NodeAction(NodeEditorAction),
 
-    // Global Fullscreen Setting
+    // --- Global Fullscreen Setting ---
+    /// Set global fullscreen state
     SetGlobalFullscreen(bool),
 
-    // Media commands for specific module parts
+    // --- Media commands ---
+    /// Send playback command to specific media node
     MediaCommand(
         mapmap_core::module::ModulePartId,
         crate::module_canvas::MediaPlaybackCommand,
@@ -174,64 +261,114 @@ use mapmap_control::ControlTarget;
 
 /// UI state for the application
 pub struct AppUI {
+    /// Main menu bar component
     pub menu_bar: menu_bar::MenuBar,
+    /// Dashboard panel (main control center)
     pub dashboard: Dashboard,
+    /// Paint manager panel
     pub paint_panel: PaintPanel,
+    /// Show OSC configuration panel
     pub show_osc_panel: bool,
+    /// Currently selected control target for mapping
     pub selected_control_target: ControlTarget,
+    /// OSC port input buffer
     pub osc_port_input: String,
+    /// OSC client address input buffer
     pub osc_client_input: String,
+    /// Show legacy playback controls
     pub show_controls: bool,
+    /// Show performance statistics overlay
     pub show_stats: bool,
+    /// Show main toolbar
     pub show_toolbar: bool,
+    /// Show layers panel
     pub show_layers: bool,
 
+    /// Show timeline panel
     pub show_timeline: bool,
+    /// Show shader graph editor
     pub show_shader_graph: bool,
+    /// Layer management panel
     pub layer_panel: LayerPanel,
+    /// Show mapping configuration panel
     pub show_mappings: bool,
+    /// Mapping configuration panel
     pub mapping_panel: MappingPanel,
-    pub show_transforms: bool,      // Phase 1
-    pub show_master_controls: bool, // Phase 1
-    pub show_outputs: bool,         // Phase 2
+    /// Show transform controls (Phase 1)
+    pub show_transforms: bool,
+    /// Show master controls panel (Phase 1)
+    pub show_master_controls: bool,
+    /// Show output configuration panel (Phase 2)
+    pub show_outputs: bool,
+    /// Output configuration panel
     pub output_panel: output_panel::OutputPanel,
+    /// Edge blending configuration panel
     pub edge_blend_panel: EdgeBlendPanel,
+    /// Oscillator effect control panel
     pub oscillator_panel: OscillatorPanel,
+    /// Show audio analysis panel
     pub show_audio: bool,
+    /// Audio analysis and visualization panel
     pub audio_panel: AudioPanel,
+    /// Show cue list panel
     pub show_cue_panel: bool,
+    /// Assignment/Mapping panel
     pub assignment_panel: AssignmentPanel,
+    /// Show assignment panel
     pub show_assignment_panel: bool,
+    /// Global playback speed multiplier
     pub playback_speed: f32,
+    /// Global loop mode
     pub loop_mode: mapmap_media::LoopMode,
-    // Phase 1: Transform editing state
+    /// Currently selected layer ID (for Inspector)
     pub selected_layer_id: Option<u64>,
-    // Phase 2: Output configuration state
+    /// Currently selected output ID (for Inspector)
     pub selected_output_id: Option<u64>,
+    /// List of available audio input devices
     pub audio_devices: Vec<String>,
+    /// Currently selected audio device name
     pub selected_audio_device: Option<String>,
+    /// List of recently opened project paths
     pub recent_files: Vec<String>,
+    /// Queue of UI actions to be processed by the main loop
     pub actions: Vec<UIAction>,
+    /// Internationalization and localization manager
     pub i18n: LocaleManager,
+    /// Effect chain editor panel
     pub effect_chain_panel: EffectChainPanel,
+    /// Cue list editor panel
     pub cue_panel: CuePanel,
+    /// Timeline V2 editor panel
     pub timeline_panel: timeline_v2::TimelineV2,
+    /// Node-based shader editor panel
     pub node_editor_panel: node_editor::NodeEditor,
+    /// Transform properties panel
     pub transform_panel: TransformPanel,
+    /// Keyboard shortcut editor
     pub shortcut_editor: ShortcutEditor,
+    /// Icon asset manager (loaded on startup)
     pub icon_manager: Option<icons::IconManager>,
+    /// Icon demonstration panel (debug)
     pub icon_demo_panel: icon_demo_panel::IconDemoPanel,
+    /// User configuration settings
     pub user_config: config::UserConfig,
     /// Show settings window
     pub show_settings: bool,
+    /// Show media browser sidebar
     pub show_media_browser: bool,
+    /// Media file browser
     pub media_browser: MediaBrowser,
     /// Inspector panel for context-sensitive properties
     pub inspector_panel: InspectorPanel,
+    /// Show inspector panel
     pub show_inspector: bool,
+    /// Module sidebar (node library)
     pub module_sidebar: ModuleSidebar,
+    /// Show module sidebar
     pub show_module_sidebar: bool,
+    /// Module canvas (visual programming environment)
     pub module_canvas: ModuleCanvas,
+    /// Show module canvas
     pub show_module_canvas: bool,
     /// Left sidebar visibility (collapsible)
     pub show_left_sidebar: bool,
@@ -249,7 +386,9 @@ pub struct AppUI {
     pub gpu_usage: f32,
     /// RAM usage in MB
     pub ram_usage_mb: f32,
+    /// MIDI controller overlay panel
     pub controller_overlay: ControllerOverlayPanel,
+    /// Show controller overlay
     pub show_controller_overlay: bool,
     /// Global flag for "Hover" MIDI Learn Mode (Way 1)
     pub is_midi_learn_mode: bool,
