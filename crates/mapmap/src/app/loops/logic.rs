@@ -137,8 +137,10 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // Periodic Cleanups (every 600 frames ~ 10s at 60fps)
-    if app.backend.queue.get_timestamp_period() as u64 % 600 == 0 { // Just using a periodic check via backend or frame count if available
-         // ... (This logic was implicit in main loop, here we might need frame count or timer)
+    #[allow(clippy::manual_is_multiple_of)]
+    if app.backend.queue.get_timestamp_period() as u64 % 600 == 0 {
+        // Just using a periodic check via backend or frame count if available
+        // ... (This logic was implicit in main loop, here we might need frame count or timer)
     }
 
     Ok(())
