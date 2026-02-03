@@ -1449,9 +1449,7 @@ impl App {
         }
     }
     /// Handle global UI actions
-
     /// Handle Node Editor actions
-
     fn render(&mut self, output_id: OutputId) -> Result<()> {
         #[cfg(feature = "midi")]
         return crate::app::loops::render::render(self, output_id);
