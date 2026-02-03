@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-02-03 - Missing Documentation for Commit f99d269
+**Erkenntnis:** Commit f99d269 (Refactor: Cleanup unused code and imports) was found in git history but missing from CHANGELOG.md. This commit appears to be a large refactor or re-import.
+**Aktion:** Added entry to CHANGELOG.md and updated ROADMAP.md timestamp.
+
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
