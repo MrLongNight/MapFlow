@@ -3,8 +3,6 @@
 use crate::app::core::app_struct::App;
 use crate::orchestration::node_logic::load_project_file;
 use anyhow::Result;
-use mapmap_control::Action; // Used in MCP actions
-use mapmap_core::module::{ModulePartType, SourceType}; // Used in MCP actions inside handle_mcp_actions if not deleted there
 use mapmap_io::save_project;
 use mapmap_mcp::McpAction;
 use mapmap_ui::{NodeEditorAction, UIAction};

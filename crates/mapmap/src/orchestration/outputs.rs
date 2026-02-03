@@ -128,9 +128,6 @@ pub fn sync_output_windows(
                         OutputType::Hue { .. } => {
                             // Hue handled by HueController separately
                         }
-                        _ => {
-                            // Future proofing
-                        }
                     }
                 }
             }

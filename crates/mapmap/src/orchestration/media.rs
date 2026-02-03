@@ -1,7 +1,7 @@
 //! Video player and media orchestration.
 
 use crate::app::core::app_struct::App;
-use mapmap_core::module::{ModulePartId, ModulePartType, SourceType};
+use mapmap_core::module::{ModulePartType, SourceType};
 use tracing::{error, info};
 
 /// Synchronize media players with active source modules

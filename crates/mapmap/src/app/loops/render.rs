@@ -3,12 +3,10 @@
 use crate::app::core::app_struct::App;
 use crate::app::ui_layout;
 use anyhow::Result;
-use mapmap_core::module::{ModulePartType, OutputType::Projector};
+use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
-use tracing::{error, info};
 
 #[cfg(feature = "midi")]
-use mapmap_core::audio::backend::cpal_backend::CpalBackend;
 
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
@@ -219,7 +217,7 @@ fn render_content(
     let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
     let use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();
     let use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
-    let needs_post_processing = use_edge_blend || use_color_calib;
+    let _needs_post_processing = use_edge_blend || use_color_calib;
 
     let mesh_target_view_ref = view; // Simplified for now
 

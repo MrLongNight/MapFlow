@@ -1,6 +1,5 @@
 use crate::app::core::app_struct::App;
 use crate::ui;
-use anyhow::Result;
 use mapmap_core::audio::backend::cpal_backend::CpalBackend;
 use mapmap_core::audio::{analyzer_v2::AudioAnalyzerV2Config, backend::AudioBackend};
 use mapmap_core::effects::EffectType as RenderEffectType;
@@ -8,6 +7,7 @@ use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectTyp
 use mapmap_ui::menu_bar;
 use tracing::{error, info};
 
+/// Renders the implementation of the UI.
 pub fn show(app: &mut App, ctx: &egui::Context) {
     // 1. GLOBAL THEME & SETUP
     app.ui_state.user_config.theme.apply(ctx);
