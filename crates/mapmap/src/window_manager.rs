@@ -45,6 +45,12 @@ pub struct WindowManager {
     main_window_id: Option<OutputId>,
 }
 
+impl Default for WindowManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WindowManager {
     /// Creates a new, empty `WindowManager`.
     pub fn new() -> Self {
