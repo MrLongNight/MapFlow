@@ -3627,34 +3627,11 @@ impl App {
                     );
 
                     // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
-                    if self.ui_state.show_timeline {
-                        egui::TopBottomPanel::bottom("timeline_panel")
-                            .resizable(true)
-                            .default_height(180.0)
-                            .min_height(100.0)
-                            .max_height(350.0)
-                            .show(ctx, |ui| {
-                                ui.horizontal(|ui| {
-                                    ui.heading("Timeline");
-                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                        if ui.button("✕").clicked() {
-                                            self.ui_state.show_timeline = false;
-                                        }
-                                    });
-                                });
-                                ui.separator();
-
-                                if let Some(action) = self.ui_state.timeline_panel.ui(ui, &mut self.state.effect_animator) {
-                                     use mapmap_ui::timeline_v2::TimelineAction;
-                                     match action {
-                                         TimelineAction::Play => self.state.effect_animator.play(),
-                                         TimelineAction::Pause => self.state.effect_animator.pause(),
-                                         TimelineAction::Stop => self.state.effect_animator.stop(),
-                                         TimelineAction::Seek(t) => self.state.effect_animator.seek(t as f64),
-                                     }
-                                }
-                            });
-                    }
+                    // Timeline
+                    ui::editors::timeline::show(ctx, ui::editors::timeline::TimelineContext {
+                        ui_state: &mut self.ui_state,
+                        state: &mut self.state,
+                    });
 
 
 
@@ -3663,21 +3640,10 @@ impl App {
                         .frame(egui::Frame::NONE.fill(ctx.style().visuals.panel_fill))
                         .show(ctx, |ui| {
                         if self.ui_state.show_module_canvas {
-                            // Update available outputs for the ModuleCanvas dropdown
-                            self.ui_state.module_canvas.available_outputs = self
-                                .state
-                                .output_manager
-                                .outputs()
-                                .iter()
-                                .map(|o| (o.id, o.name.clone()))
-                                .collect();
-
-                            self.ui_state.module_canvas.show(
-                                ui,
-                                &mut self.state.module_manager,
-                                &self.ui_state.i18n,
-                                &mut self.ui_state.actions,
-                            );
+                            ui::editors::module_canvas::show(ui, ui::editors::module_canvas::ModuleCanvasContext {
+                                ui_state: &mut self.ui_state,
+                                state: &mut self.state,
+                            });
                         } else {
                             // Placeholder for normal canvas/viewport
                             ui.centered_and_justified(|ui| {
@@ -3686,11 +3652,16 @@ impl App {
                         }
                     });
 
-                    // === 6. Node Editor (Phase 6b) ===
-                    self.ui_state.render_node_editor(ctx);
+                    // Node Editor
+                    ui::editors::node_editor::show(ctx, ui::editors::node_editor::NodeEditorContext {
+                        ui_state: &mut self.ui_state,
+                    });
 
-                    // === Media Manager ===
-                    self.media_manager_ui.ui(ctx, &mut self.media_library);
+                    // Media Manager
+                    ui::view::media_manager::show(ctx, ui::view::media_manager::MediaManagerContext {
+                        ui: &mut self.media_manager_ui,
+                        library: &mut self.media_library,
+                    });
 
                     // === Settings Window (only modal allowed) ===
                     #[cfg(feature = "midi")]
@@ -3723,7 +3694,9 @@ impl App {
                     // Master Controls moved to sidebar
 
                     // Icon Demo Panel
-                    self.ui_state.render_icon_demo(ctx);
+                    ui::dialogs::icon_demo::show(ctx, ui::dialogs::icon_demo::IconDemoContext {
+                        ui_state: &mut self.ui_state,
+                    });
 
                     // Paint Panel
                     ui::panels::paint::show(ctx, ui::panels::paint::PaintContext {
