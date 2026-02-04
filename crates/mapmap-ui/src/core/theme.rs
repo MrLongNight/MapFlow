@@ -62,10 +62,10 @@ pub mod colors {
     pub const MINT_ACCENT: Color32 = Color32::from_rgb(0, 255, 170); // Mint for selection/alt
     pub const WARN_COLOR: Color32 = Color32::from_rgb(255, 170, 0); // Orange
     pub const ERROR_COLOR: Color32 = Color32::from_rgb(255, 50, 50); // Red
-    pub const DARK_GREY: Color32 = Color32::from_rgb(18, 18, 24); // Main Panel Background (Deep Navy)
-    pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 8); // Window/Deep Background (Almost Black)
+    pub const DARK_GREY: Color32 = Color32::from_rgb(15, 15, 20); // Main Panel Background (Deep Navy / Cyber Base)
+    pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 10); // Window/Deep Background (Almost Black)
     pub const LIGHTER_GREY: Color32 = Color32::from_rgb(40, 40, 45); // Widget Background
-    pub const STROKE_GREY: Color32 = Color32::from_rgb(80, 80, 90); // Borders (High Contrast)
+    pub const STROKE_GREY: Color32 = Color32::from_rgb(60, 60, 70); // Borders (High Contrast)
 }
 
 impl ThemeConfig {
@@ -338,8 +338,8 @@ impl ThemeConfig {
                 },
             },
             selection: egui::style::Selection {
-                bg_fill: colors::MINT_ACCENT.linear_multiply(0.3),
-                stroke: egui::Stroke::new(1.0, colors::MINT_ACCENT),
+                bg_fill: colors::CYAN_ACCENT.linear_multiply(0.2),
+                stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT),
             },
             hyperlink_color: colors::CYAN_ACCENT,
             faint_bg_color: colors::DARKER_GREY,
