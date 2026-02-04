@@ -6,11 +6,20 @@ use mapmap_control::shortcuts::KeyBindings;
 use std::collections::HashSet;
 
 /// Panel for viewing and configuring keyboard shortcuts
-#[derive(Default)]
 pub struct ShortcutsPanel {
     editing_shortcut_index: Option<usize>,
     conflicts: HashSet<usize>,
     show_conflict_warning: bool,
+}
+
+impl Default for ShortcutsPanel {
+    fn default() -> Self {
+        Self {
+            editing_shortcut_index: None,
+            conflicts: HashSet::new(),
+            show_conflict_warning: false,
+        }
+    }
 }
 
 impl ShortcutsPanel {

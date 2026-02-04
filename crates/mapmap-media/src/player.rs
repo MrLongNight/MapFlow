@@ -140,19 +140,12 @@ impl VideoPlayer {
                     let _ = self.status_sender.send(PlaybackStatus::Looped);
                 }
                 LoopMode::PlayOnce => {
-                    // Only stop if we are actually at the end
-                    if self.current_time >= duration {
-                        self.current_time = duration; // Clamp to end
-                        let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
-                        let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
-                        return self.last_frame.clone();
-                    }
+                    self.current_time = duration; // Clamp to end
+                    let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
+                    let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
+                    return self.last_frame.clone();
                 }
             }
-        } else if duration == Duration::ZERO {
-            // For 0 duration (unknown/stream), we don't check time >= duration.
-            // We rely on decoder error/EOF.
-            // BUT: If it was PlayOnce, we should be careful not to loop if we hit EOF.
         }
 
         match self.decoder.next_frame() {
@@ -166,27 +159,19 @@ impl VideoPlayer {
                     match self.loop_mode {
                         LoopMode::Loop => {
                             self.current_time = Duration::ZERO;
-                            // For 0 duration, seeking might not be supported or needed.
-                            // If we have a duration, we seek.
-                            if duration > Duration::ZERO {
-                                if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
-                                    self.transition_to_error(seek_err);
-                                    return self.last_frame.clone();
+                            if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
+                                self.transition_to_error(seek_err);
+                            } else {
+                                let _ = self.status_sender.send(PlaybackStatus::Looped);
+                                // Try to get the first frame again immediately so we don't drop a frame
+                                if let Ok(frame) = self.decoder.next_frame() {
+                                    self.last_frame = Some(frame.clone());
+                                    return Some(frame);
                                 }
-                            }
-
-                            let _ = self.status_sender.send(PlaybackStatus::Looped);
-                            // Try to get the first frame again immediately so we don't drop a frame
-                            if let Ok(frame) = self.decoder.next_frame() {
-                                self.last_frame = Some(frame.clone());
-                                return Some(frame);
                             }
                         }
                         LoopMode::PlayOnce => {
-                            // For 0 duration, if we hit EOF, we stop.
-                            if duration > Duration::ZERO {
-                                self.current_time = duration;
-                            }
+                            self.current_time = duration;
                             let _ = self.transition_state(PlaybackState::Stopped);
                             let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
                         }

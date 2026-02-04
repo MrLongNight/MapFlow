@@ -12,10 +12,10 @@ default = []
 # Individual features
 ndi = ["dep:grafton-ndi", "dep:tokio"] # NDI support (requires NDI SDK)
 decklink = [] # DeckLink SDI support (requires DeckLink SDK)
-# spout = [
-#     "dep:windows",
-#     "dep:rusty-spout",
-# ] # Spout texture sharing (Windows only)
+spout = [
+    "dep:windows",
+    "dep:rusty-spout",
+] # Spout texture sharing (Windows only)
 syphon = [
     "cocoa",
     "core-foundation",
@@ -28,7 +28,7 @@ virtual-camera = [] # Virtual camera output
 texture-sharing = [] # Enable on platforms that support it
 
 # Convenience features
-all-io = ["ndi", "decklink", "syphon", "stream", "virtual-camera"]
+all-io = ["ndi", "decklink", "spout", "syphon", "stream", "virtual-camera"]
 # CI-safe feature for Linux builds (excludes platform-specific: spout, syphon, ndi)
 ci-linux = ["stream", "virtual-camera"]
 
@@ -62,7 +62,7 @@ objc = { version = "0.2", optional = true }
 
 # Platform-specific dependencies
 [target.'cfg(windows)'.dependencies]
-# rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
+rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
 windows = { version = "0.58", features = [
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Dxgi",

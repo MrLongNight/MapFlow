@@ -238,8 +238,8 @@ fn decode_complex_frame(data: &[u8]) -> Result<Vec<u8>, HapError> {
 
 /// Calculate expected DXT texture size
 pub fn calculate_dxt_size(width: u32, height: u32, is_dxt5: bool) -> usize {
-    let block_width = width.div_ceil(4);
-    let block_height = height.div_ceil(4);
+    let block_width = (width + 3) / 4;
+    let block_height = (height + 3) / 4;
     let block_size = if is_dxt5 { 16 } else { 8 }; // DXT5=16 bytes, DXT1=8 bytes
     (block_width * block_height * block_size) as usize
 }

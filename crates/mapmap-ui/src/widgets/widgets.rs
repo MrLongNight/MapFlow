@@ -7,13 +7,9 @@ use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
-    // Allocate space for the header
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
 
     let painter = ui.painter();
-    // Header background
-    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
-
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
     painter.rect_filled(
         stripe_rect,
@@ -69,7 +65,7 @@ pub fn styled_slider(
     ui.painter().rect(
         rect,
         egui::CornerRadius::same(0),
-        colors::DARKER_GREY, // Track background
+        ui.visuals().widgets.inactive.bg_fill,
         visuals.bg_stroke,
         egui::StrokeKind::Inside,
     );
@@ -160,8 +156,6 @@ pub fn icon_button(
         active_color
     } else if response.hovered() && hover_color != Color32::TRANSPARENT {
         hover_color
-    } else if response.hovered() {
-        ui.visuals().widgets.hovered.bg_fill
     } else {
         visuals.bg_fill
     };

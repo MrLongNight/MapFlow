@@ -79,7 +79,6 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![allow(clippy::module_inception)]
-#![allow(unexpected_cfgs)]
 
 // Core modules (always available)
 pub mod converter;

@@ -137,11 +137,9 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
 
         // Setup Audio Analysis with a "Beat"
-        let analysis = AudioAnalysisV2 {
-            beat_detected: true,
-            rms_volume: 0.8,
-            ..Default::default()
-        };
+        let mut analysis = AudioAnalysisV2::default();
+        analysis.beat_detected = true;
+        analysis.rms_volume = 0.8;
 
         evaluator.update_audio(&analysis);
 
@@ -436,11 +434,6 @@ pub enum SourceCommand {
     SpoutInput {
         /// Sender name
         sender_name: String,
-        /// Trigger value
-        trigger_value: f32,
-    },
-    /// Bevy Scene Input
-    BevyInput {
         /// Trigger value
         trigger_value: f32,
     },
@@ -1342,10 +1335,6 @@ impl ModuleEvaluator {
                 sender_name: sender_name.clone(),
                 trigger_value,
             }),
-            SourceType::BevyAtmosphere { .. } => Some(SourceCommand::BevyInput { trigger_value }),
-            SourceType::BevyHexGrid { .. } => Some(SourceCommand::BevyInput { trigger_value }),
-            SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
-            SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }
 }
@@ -1362,13 +1351,12 @@ mod tests_logic {
     use std::time::{Duration, Instant};
 
     fn create_audio_data(beat: bool) -> AudioTriggerData {
-        AudioTriggerData {
-            beat_detected: beat,
-            rms_volume: 0.5,
-            peak_volume: 0.8,
-            band_energies: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-            ..Default::default()
-        }
+        let mut data = AudioTriggerData::default();
+        data.beat_detected = beat;
+        data.rms_volume = 0.5;
+        data.peak_volume = 0.8;
+        data.band_energies = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+        data
     }
 
     fn create_test_module() -> MapFlowModule {
@@ -1441,7 +1429,7 @@ mod tests_logic {
         // Volume (2 values): RMS (0.5), Peak (0.8)
         // Beat (1 value): 1.0
 
-        assert!(output.len() >= 12);
+        assert!(output.len() >= 9 + 2 + 1);
         assert!((output[0] - 0.1).abs() < 1e-6); // SubBass
         assert!((output[1] - 0.8).abs() < 1e-6); // Bass (Inverted: 1.0 - 0.2)
         assert!((output[9] - 0.5).abs() < 1e-6); // RMS

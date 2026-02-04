@@ -3,7 +3,6 @@
 resolver = "2"
 members = [
     "crates/mapmap",
-    "crates/mapmap-bevy",
     "crates/mapmap-control",
     "crates/mapmap-core",
     "crates/mapmap-ffi",
@@ -40,7 +39,6 @@ chrono = { version = "0.4", features = ["serde"] }
 
 # Audio
 cpal = { version = "0.17", default-features = false }
-ableton-link-rs = { version = "0.1" }
 criterion = "0.5"
 
 # Concurrency
