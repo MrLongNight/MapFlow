@@ -26,7 +26,6 @@ permissions:
 
 jobs:
   # Auto-merge for Jules PRs with failure handling
-  # Auto-merge for Jules PRs with failure handling
   auto-merge:
     name: Auto-Merge Jules PR
     runs-on: ubuntu-latest
@@ -209,14 +208,8 @@ jobs:
             ref: pr.head.sha
           });
 
-          if (checkSuites.check_suites.length === 0) {
-            console.log('⏳ No check suites found yet - waiting for workflows to start');
-            return;
-          }
-
           let allChecksPassed = true;
           let pendingChecks = false;
-
           for (const suite of checkSuites.check_suites) {
             // Skip the check suite for the auto-merge workflow itself if we can identify it
             // Typically, the suite.app.name for GitHub Actions is "GitHub Actions"
@@ -241,11 +234,6 @@ jobs:
 
           if (!allChecksPassed) {
             console.log('❌ Not all checks passed - cannot auto-merge');
-            return;
-          }
-
-          if (pendingChecks) {
-            console.log('⏳ Some checks are still pending - waiting for completion');
             return;
           }
 

@@ -63,9 +63,10 @@ struct StreamAction {
     action: String,
 }
 
-// Helper to build a client for communicating with the Hue Bridge
+// Helper to build a client that accepts self-signed Hue Bridge certificates
 fn build_client() -> Result<reqwest::Client, HueError> {
     reqwest::Client::builder()
+        .danger_accept_invalid_certs(true) // Hue bridges use self-signed certs
         .build()
         .map_err(HueError::Network)
 }
