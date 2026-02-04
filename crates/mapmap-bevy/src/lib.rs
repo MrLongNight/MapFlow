@@ -61,7 +61,10 @@ impl BevyRunner {
 
         // Register systems
         app.add_systems(Startup, setup_3d_scene);
-        app.add_systems(Update, (print_status_system, audio_reaction_system, hex_grid_system)); // Removed sync_atmosphere_system, particle_system
+        app.add_systems(
+            Update,
+            (print_status_system, audio_reaction_system, hex_grid_system),
+        ); // Removed sync_atmosphere_system, particle_system
 
         // Add readback system to the RENDER APP, not the main app
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
@@ -101,50 +104,82 @@ impl BevyRunner {
     pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
         use mapmap_core::module::{ModulePartType, SourceType};
 
-        self.app.world_mut().resource_scope(|world, mut mapping: Mut<BevyNodeMapping>| {
-            for part in &module.parts {
-                if let ModulePartType::Source(source_type) = &part.part_type {
-                    match source_type {
-                        SourceType::BevyAtmosphere { turbidity, rayleigh, mie_coeff, mie_directional_g, sun_position } => {
-                            let entity = *mapping.entities.entry(part.id).or_insert_with(|| {
-                                world.spawn(crate::components::BevyAtmosphere::default()).id()
-                            });
-                            if let Some(mut atmosphere) = world.get_mut::<crate::components::BevyAtmosphere>(entity) {
-                                atmosphere.turbidity = *turbidity;
-                                atmosphere.rayleigh = *rayleigh;
-                                atmosphere.mie_coeff = *mie_coeff;
-                                atmosphere.mie_directional_g = *mie_directional_g;
-                                atmosphere.sun_position = *sun_position;
+        self.app
+            .world_mut()
+            .resource_scope(|world, mut mapping: Mut<BevyNodeMapping>| {
+                for part in &module.parts {
+                    if let ModulePartType::Source(source_type) = &part.part_type {
+                        match source_type {
+                            SourceType::BevyAtmosphere {
+                                turbidity,
+                                rayleigh,
+                                mie_coeff,
+                                mie_directional_g,
+                                sun_position,
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world
+                                            .spawn(crate::components::BevyAtmosphere::default())
+                                            .id()
+                                    });
+                                if let Some(mut atmosphere) =
+                                    world.get_mut::<crate::components::BevyAtmosphere>(entity)
+                                {
+                                    atmosphere.turbidity = *turbidity;
+                                    atmosphere.rayleigh = *rayleigh;
+                                    atmosphere.mie_coeff = *mie_coeff;
+                                    atmosphere.mie_directional_g = *mie_directional_g;
+                                    atmosphere.sun_position = *sun_position;
+                                }
                             }
-                        }
-                        SourceType::BevyHexGrid { radius, rings, pointy_top, spacing } => {
-                            let entity = *mapping.entities.entry(part.id).or_insert_with(|| {
-                                world.spawn(crate::components::BevyHexGrid::default()).id()
-                            });
-                            if let Some(mut hex) = world.get_mut::<crate::components::BevyHexGrid>(entity) {
-                                hex.radius = *radius;
-                                hex.rings = *rings;
-                                hex.pointy_top = *pointy_top;
-                                hex.spacing = *spacing;
+                            SourceType::BevyHexGrid {
+                                radius,
+                                rings,
+                                pointy_top,
+                                spacing,
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world.spawn(crate::components::BevyHexGrid::default()).id()
+                                    });
+                                if let Some(mut hex) =
+                                    world.get_mut::<crate::components::BevyHexGrid>(entity)
+                                {
+                                    hex.radius = *radius;
+                                    hex.rings = *rings;
+                                    hex.pointy_top = *pointy_top;
+                                    hex.spacing = *spacing;
+                                }
                             }
-                        }
-                        SourceType::BevyParticles { rate, lifetime, speed, color_start, color_end } => {
-                            let entity = *mapping.entities.entry(part.id).or_insert_with(|| {
-                                world.spawn(crate::components::BevyParticles::default()).id()
-                            });
-                            if let Some(mut p) = world.get_mut::<crate::components::BevyParticles>(entity) {
-                                p.rate = *rate;
-                                p.lifetime = *lifetime;
-                                p.speed = *speed;
-                                p.color_start = *color_start;
-                                p.color_end = *color_end;
+                            SourceType::BevyParticles {
+                                rate,
+                                lifetime,
+                                speed,
+                                color_start,
+                                color_end,
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world
+                                            .spawn(crate::components::BevyParticles::default())
+                                            .id()
+                                    });
+                                if let Some(mut p) =
+                                    world.get_mut::<crate::components::BevyParticles>(entity)
+                                {
+                                    p.rate = *rate;
+                                    p.lifetime = *lifetime;
+                                    p.speed = *speed;
+                                    p.color_start = *color_start;
+                                    p.color_end = *color_end;
+                                }
                             }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
-            }
-        });
+            });
     }
 }
 

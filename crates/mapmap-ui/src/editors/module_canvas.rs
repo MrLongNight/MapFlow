@@ -460,10 +460,7 @@ impl ModuleCanvas {
     }
 
     /// Apply mesh editor changes back to the selection
-    pub fn apply_mesh_editor_to_selection(
-        &mut self,
-        part: &mut mapmap_core::module::ModulePart,
-    ) {
+    pub fn apply_mesh_editor_to_selection(&mut self, part: &mut mapmap_core::module::ModulePart) {
         use mapmap_core::module::{LayerType, MeshType, ModulePartType};
 
         // Get mutable reference to mesh
@@ -488,10 +485,7 @@ impl ModuleCanvas {
             }
             MeshType::BezierSurface { control_points } => {
                 let points = self.mesh_editor.get_bezier_points();
-                *control_points = points
-                    .iter()
-                    .map(|(x, y)| (x / scale, y / scale))
-                    .collect();
+                *control_points = points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
             }
             _ => {
                 // Other types not yet supported for write-back
@@ -597,7 +591,8 @@ impl ModuleCanvas {
                 let scale = 200.0;
                 match mesh {
                     MeshType::Quad { tl, tr, br, bl } => {
-                        if let Some((p_tl, p_tr, p_br, p_bl)) = self.mesh_editor.get_quad_corners() {
+                        if let Some((p_tl, p_tr, p_br, p_bl)) = self.mesh_editor.get_quad_corners()
+                        {
                             *tl = (p_tl.x / scale, p_tl.y / scale);
                             *tr = (p_tr.x / scale, p_tr.y / scale);
                             *br = (p_br.x / scale, p_br.y / scale);
@@ -606,10 +601,8 @@ impl ModuleCanvas {
                     }
                     MeshType::BezierSurface { control_points } => {
                         let points = self.mesh_editor.get_bezier_points();
-                        *control_points = points
-                            .iter()
-                            .map(|(x, y)| (x / scale, y / scale))
-                            .collect();
+                        *control_points =
+                            points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
                     }
                     _ => {}
                 }
@@ -4525,12 +4518,17 @@ impl ModuleCanvas {
                     let threshold = 5.0 * self.zoom.max(1.0); // Adjust hit area with zoom
 
                     // OPTIMIZATION: Broad-phase AABB Check
-                    let min_x = cable_start.x.min(cable_end.x).min(ctrl1.x).min(ctrl2.x) - threshold;
-                    let max_x = cable_start.x.max(cable_end.x).max(ctrl1.x).max(ctrl2.x) + threshold;
-                    let min_y = cable_start.y.min(cable_end.y).min(ctrl1.y).min(ctrl2.y) - threshold;
-                    let max_y = cable_start.y.max(cable_end.y).max(ctrl1.y).max(ctrl2.y) + threshold;
+                    let min_x =
+                        cable_start.x.min(cable_end.x).min(ctrl1.x).min(ctrl2.x) - threshold;
+                    let max_x =
+                        cable_start.x.max(cable_end.x).max(ctrl1.x).max(ctrl2.x) + threshold;
+                    let min_y =
+                        cable_start.y.min(cable_end.y).min(ctrl1.y).min(ctrl2.y) - threshold;
+                    let max_y =
+                        cable_start.y.max(cable_end.y).max(ctrl1.y).max(ctrl2.y) + threshold;
 
-                    let in_aabb = pos.x >= min_x && pos.x <= max_x && pos.y >= min_y && pos.y <= max_y;
+                    let in_aabb =
+                        pos.x >= min_x && pos.x <= max_x && pos.y >= min_y && pos.y <= max_y;
 
                     if in_aabb {
                         // Iterative Bezier calculation (De Casteljau's algorithm logic unrolled/simplified)
