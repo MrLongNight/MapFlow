@@ -4463,7 +4463,7 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let glow_color = cable_color.linear_multiply(0.3);
+                // let glow_color = cable_color.linear_multiply(0.3); // Unused
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
@@ -4576,6 +4576,9 @@ impl ModuleCanvas {
                     Color32::TRANSPARENT,
                     glow_stroke,
                 ));
+
+                // The warning was about glow_color which was likely used here before.
+                // Let's remove the unused variable definition if it exists in the vicinity.
 
                 // Core Cable (Front)
                 let cable_stroke = Stroke::new(stroke_width, stroke_color);
@@ -5178,9 +5181,9 @@ impl ModuleCanvas {
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
                     SourceType::Bevy => "Bevy Scene",
-                SourceType::BevyAtmosphere { .. } => "Bevy Atmosphere",
-                SourceType::BevyHexGrid { .. } => "Bevy Hex Grid",
-                SourceType::BevyParticles { .. } => "Bevy Particles",
+                    SourceType::BevyAtmosphere { .. } => "Bevy Atmosphere",
+                    SourceType::BevyHexGrid { .. } => "Bevy Hex Grid",
+                    SourceType::BevyParticles { .. } => "Bevy Particles",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),

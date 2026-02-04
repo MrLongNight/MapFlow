@@ -349,8 +349,8 @@ mod tests {
 
     #[test]
     fn test_gif_frame_limit() {
-        use image::{Delay, Frame, RgbaImage};
         use image::codecs::gif::{GifEncoder, Repeat};
+        use image::{Delay, Frame, RgbaImage};
         use std::fs::File;
 
         // Create a temp file
@@ -365,7 +365,8 @@ mod tests {
         for _ in 0..15 {
             let frame = Frame::from_parts(
                 RgbaImage::new(10, 10),
-                0, 0,
+                0,
+                0,
                 Delay::from_numer_denom_ms(100, 1),
             );
             encoder.encode_frame(frame).unwrap();
