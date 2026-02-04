@@ -911,7 +911,7 @@ impl ModuleCanvas {
                                                     if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "📹 Media File").clicked() { next_type = Some("MediaFile"); }
                                                     if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "📹 Video (Uni)").clicked() { next_type = Some("VideoUni"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "🖼 Image (Uni)").clicked() { next_type = Some("ImageUni"); }
-                                                    
+
                                                     ui.label("--- Shared ---");
                                                     if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "🔗 Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "🔗 Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
@@ -1276,7 +1276,7 @@ impl ModuleCanvas {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Shared ID:");
                                                     ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
-                                                    
+
                                                     egui::ComboBox::from_id_salt("shared_media_video")
                                                         .selected_text("Select Existing")
                                                         .show_ui(ui, |ui| {
