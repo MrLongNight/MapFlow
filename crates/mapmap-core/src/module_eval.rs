@@ -1340,6 +1340,9 @@ impl ModuleEvaluator {
                 sender_name: sender_name.clone(),
                 trigger_value,
             }),
+            SourceType::BevyAtmosphere { .. } => Some(SourceCommand::BevyInput { trigger_value }),
+            SourceType::BevyHexGrid { .. } => Some(SourceCommand::BevyInput { trigger_value }),
+            SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }

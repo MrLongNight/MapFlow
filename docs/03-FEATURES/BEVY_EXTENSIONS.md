@@ -1,45 +1,43 @@
-# Bevy Extensions Integration
+# 🎮 Bevy Advanced Integration & Extensions
 
-This document outlines the integration status of various Bevy ecosystem crates into MapFlow, providing enhanced 3D rendering capabilities.
+Diese Dokumentation beschreibt die Vision und den aktuellen Stand der Bevy-Integration in MapFlow. Statt einer monolithischen "Bevy Scene" verfolgen wir einen modularen Ansatz, bei dem spezialisierte Bevy-Nodes nahtlos in den MapFlow-Graph integriert werden.
 
-## Integrated Extensions
+## 🚀 Die Vision: Modulares 3D-Compositing
+Jede Bevy-Extension wird als spezialisierter Node-Typ exponiert. Dies ermöglicht es VJs, komplexe 3D-Szenen prozedural im Graph aufzubauen, ohne Bevy-Code schreiben zu müssen.
 
-The following extensions have been successfully integrated and are available for use in the "Bevy Scene" source type.
+## 🛠 Geplante & Integrierte Nodes
 
-| Extension | Version | Status | Description | UI Availability |
+| Node Typ | Extension | Status | Beschreibung | Funktionen |
 | :--- | :--- | :--- | :--- | :--- |
-| **[hexx](https://github.com/ManevilleF/hexx)** | `0.17` | ✅ Active | Hexagonal grid utilities. Included in the default Demo Scene. | Visible as a hexagonal grid floor in the default Bevy scene. |
-| **[bevy_mod_outline](https://github.com/komadori/bevy_mod_outline)** | `0.8` | ✅ Active | Mesh outlining. Applied to the demo cube. | Visible as an orange outline around the central cube. |
-| **[bevy_enoki](https://github.com/Lommix/bevy_enoki)** | `0.2` | ⚠️ Pending | Particle system. Dependency added, but code currently disabled due to API changes (`SpawnerBundle`). | **Disabled** (Code commented out in `systems.rs`). Needs API adjustment to be enabled. |
-| **[bevy_rectray](https://github.com/mintlu8/bevy_rectray)** | `0.1` | ⬜ Planned | Ray casting for UI/Interaction. Compatible with Bevy 0.14. | Not yet implemented. Planned for interactive scene elements. |
+| **🌌 Atmosphere** | `bevy_atmosphere` | ✅ Aktiv | Prozeduraler Himmel & Licht. | Sun-Pos, Turbidity, Sky-Color. |
+| **⬡ Hex Grid** | `hexx` | ✅ Aktiv | Prozedurale hexagonale Strukturen. | Radius, Rings, Audio-Scale, Rotation. |
+| **✨ Particles** | `bevy_enoki` | 🔄 Dev | GPU-beschleunigte Partikel. | Spawn-Rate, Lifetime, Velocity, Attractors. |
+| **🎨 PostFX** | `bevy_mod_outline` | ✅ Aktiv | Mesh-Outlines & Border FX. | Width, Glow, Edge-Detection. |
+| **👆 Interaction** | `bevy_picking` | ⬜ Planned | Klickbare 3D-Elemente im Canvas. | Trigger-Emission auf Click. |
 
-## Incompatible / Skipped Extensions
+## 📐 Architektur: Wie es funktioniert
+1.  **Shared Engine**: MapFlow startet eine einzige Bevy-Instanz im Hintergrund.
+2.  **Node-to-Entity Mapping**: Jeder Bevy-Node im MapFlow-Graph entspricht einer Entity oder einer Gruppe von Entities in der Bevy-World.
+3.  **Parameter-Sync**: Änderungen an Node-Slidern werden in Echtzeit als Bevy-Resources oder Components an die Engine übertragen.
+4.  **Audio-Link**: MapFlow's FFT-Daten werden direkt als `AudioInputResource` in Bevy eingespeist, wo sie von spezialisierten Systemen (z.B. für das Hex-Grid) verarbeitet werden.
 
-The following extensions were evaluated but found incompatible or problematic with Bevy 0.14 at this time.
+## 📖 Node-Details
 
-| Extension | Issue | Recommendation |
-| :--- | :--- | :--- |
-| **[bevy-vfx-bag](https://github.com/torsteingrindvik/bevy-vfx-bag)** | Stuck on Bevy 0.10. | Avoid or fork for significant rewrite. |
-| **[bevy-ui-gradients](https://github.com/ickshonpe/bevy-ui-gradients)** | Incompatible with Bevy 0.14 UI rendering changes. | Use native Bevy gradients (0.17+) or MapFlow's internal UI overlay. |
+### Bevy Hex Grid
+Das Hex-Grid ist ideal für techno-visuelle Hintergründe.
+- **Audio-Modus**: Einzelne Kacheln pulsieren basierend auf den FFT-Bändern (Bass = Mitte, High = Rand).
+- **Prozedural**: Anpassbare Grid-Formen (Hexagon, Kreis, Rechteck).
 
-## Evaluation Pending
+### Bevy Particles
+Ein extrem performantes System für tausende Partikel.
+- **Trigger**: Verknüpfe den "Spawn"-Eingang mit einem Beat-Trigger für synchrone Bursts.
+- **Fields**: Definiere Gravitationsfelder oder Wind im 3D-Raum via Slider.
 
-| Extension | Status | Notes |
-| :--- | :--- | :--- |
-| **[bevy_smooth_pixel_camera](https://crates.io/crates/bevy_smooth_pixel_camera)** | ❓ Risk | Rated for Bevy 0.13. Might require a fork or patch. |
-| **[bevy_text_animation](https://crates.io/crates/bevy_text_animation)** | ❓ Unknown | Compatibility with 0.14 needs verification. |
+## ⚠️ Inkompatible Extensions
+- `bevy-vfx-bag`: Veraltet (Bevy 0.10). Wir implementieren eigene Shader-Nodes basierend auf WGPU.
+- `bevy-ui-gradients`: Inkompatibel mit 0.14. Native MapFlow UI-Gradients werden bevorzugt.
 
-## How to Use Bevy features in UI
-
-1.  **Add Bevy Source**:
-    *   Right-click in the Node Canvas.
-    *   Select **Add Node** -> **Sources** -> **🎮 Bevy Scene**.
-2.  **View Output**:
-    *   Connect the Bevy Node to an Output or view its preview.
-    *   You will see the demo scene containing the properties of the enabled extensions (Hex grid, Outlined Cube).
-3.  **Modify Scene**:
-    *   The scene logic is located in `crates/mapmap-bevy/src/systems.rs`. Edits here reflect immediately after recompilation.
-
-## Developer Notes
-*   **Enoki**: To enable particles, update `crates/mapmap-bevy/src/systems.rs` to use correct `bevy_enoki::prelude` types for version 0.2.
-*   **Repo**: Dependencies are managed in `crates/mapmap-bevy/Cargo.toml`.
+## 🔜 Nächste Schritte
+1.  **Node Expansion**: Implementierung der `SourceType` Varianten in `mapmap-core`.
+2.  **UI-Integration**: Erstellen von spezialisierten Inspector-Panels für jeden Bevy-Node.
+3.  **Renderer-Optimierung**: Verbessertes Readback der Bevy-Texture in den MapFlow-Main-Renderer.

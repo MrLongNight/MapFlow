@@ -860,10 +860,196 @@ impl ModuleCanvas {
                                                 }
 
                                                 ui.separator();
+<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                                                 Self::render_common_controls(
                                                     ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
                                                     scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
                                                 );
+=======
+
+                                                // === SMART EMPTY STATE ===
+                                                if path.is_empty() {
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(10.0);
+                                                        if ui.add(egui::Button::new("📂 Select Media File")
+                                                            .min_size(egui::vec2(150.0, 30.0)))
+                                                            .clicked()
+                                                        {
+                                                            actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
+                                                        }
+                                                        ui.label(egui::RichText::new("No media loaded").weak());
+                                                        ui.add_space(10.0);
+                                                    });
+                                                } else {
+                                                    // === FILE PATH ===
+                                                    ui.collapsing("📁 File Info", |ui| {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Path:");
+                                                            ui.add(
+                                                                egui::TextEdit::singleline(path)
+                                                                    .desired_width(160.0),
+                                                            );
+                                                            if ui.button("📂").on_hover_text("Select Media File").clicked() {
+                                                                actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
+                                                            }
+                                                        });
+                                                    });
+                                                }
+
+
+                                                // === APPEARANCE ===
+                                                ui.collapsing("🎨 Appearance", |ui| {
+                                                    ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+
+                                                    // Blend Mode selector
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Blend Mode:");
+                                                        egui::ComboBox::from_id_salt("blend_mode_selector")
+                                                            .selected_text(match blend_mode {
+                                                                Some(BlendModeType::Normal) => "Normal",
+                                                                Some(BlendModeType::Add) => "Add",
+                                                                Some(BlendModeType::Multiply) => "Multiply",
+                                                                Some(BlendModeType::Screen) => "Screen",
+                                                                Some(BlendModeType::Overlay) => "Overlay",
+                                                                Some(BlendModeType::Difference) => "Difference",
+                                                                Some(BlendModeType::Exclusion) => "Exclusion",
+                                                                None => "Normal",
+                                                            })
+                                                            .show_ui(ui, |ui| {
+                                                                if ui.selectable_label(blend_mode.is_none(), "Normal").clicked() {
+                                                                    *blend_mode = None;
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Add), "Add").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Add);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Multiply), "Multiply").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Multiply);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Screen), "Screen").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Screen);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Overlay), "Overlay").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Overlay);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Difference), "Difference").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Difference);
+                                                                }
+                                                                if ui.selectable_label(*blend_mode == Some(BlendModeType::Exclusion), "Exclusion").clicked() {
+                                                                    *blend_mode = Some(BlendModeType::Exclusion);
+                                                                }
+                                                            });
+                                                    });
+                                                });
+
+                                                // === COLOR CORRECTION ===
+                                                if crate::widgets::collapsing_header_with_reset(
+                                                    ui,
+                                                    "🌈 Color Correction",
+                                                    false,
+                                                    |ui| {
+                                                        ui.add(
+                                                            egui::Slider::new(brightness, -1.0..=1.0)
+                                                                .text("Brightness"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(contrast, 0.0..=2.0)
+                                                                .text("Contrast"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(saturation, 0.0..=2.0)
+                                                                .text("Saturation"),
+                                                        );
+                                                        ui.add(
+                                                            egui::Slider::new(hue_shift, -180.0..=180.0)
+                                                                .text("Hue Shift")
+                                                                .suffix("°"),
+                                                        );
+                                                    },
+                                                ) {
+                                                    *brightness = 0.0;
+                                                    *contrast = 1.0;
+                                                    *saturation = 1.0;
+                                                    *hue_shift = 0.0;
+                                                }
+
+                                                // === TRANSFORM ===
+                                                if crate::widgets::collapsing_header_with_reset(
+                                                    ui,
+                                                    "📐 Transform",
+                                                    false,
+                                                    |ui| {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Scale:");
+                                                            ui.add(
+                                                                egui::DragValue::new(scale_x)
+                                                                    .speed(0.01)
+                                                                    .prefix("X: "),
+                                                            );
+                                                            ui.add(
+                                                                egui::DragValue::new(scale_y)
+                                                                    .speed(0.01)
+                                                                    .prefix("Y: "),
+                                                            );
+                                                        });
+                                                        ui.add(
+                                                            egui::Slider::new(rotation, -180.0..=180.0)
+                                                                .text("Rotation")
+                                                                .suffix("°"),
+                                                        );
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Offset:");
+                                                            ui.add(
+                                                                egui::DragValue::new(offset_x)
+                                                                    .speed(1.0)
+                                                                    .prefix("X: "),
+                                                            );
+                                                            ui.add(
+                                                                egui::DragValue::new(offset_y)
+                                                                    .speed(1.0)
+                                                                    .prefix("Y: "),
+                                                            );
+                                                        });
+
+                                                        ui.separator();
+                                                        ui.label("Mirror / Flip:");
+                                                        ui.horizontal(|ui| {
+                                                            ui.checkbox(flip_horizontal, "↔️ Horizontal");
+                                                            ui.checkbox(flip_vertical, "↕️ Vertical");
+                                                        });
+                                                    },
+                                                ) {
+                                                    *scale_x = 1.0;
+                                                    *scale_y = 1.0;
+                                                    *rotation = 0.0;
+                                                    *offset_x = 0.0;
+                                                    *offset_y = 0.0;
+                                                    *flip_horizontal = false;
+                                                    *flip_vertical = false;
+                                                }
+
+                                                // === VIDEO OPTIONS ===
+                                                ui.collapsing("🎬 Video Options", |ui| {
+                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
+
+                                                    ui.separator();
+                                                    ui.label("Seek Position:");
+                                                    // Note: Actual seek requires video duration from player
+                                                    // For now, just show the control - needs integration with player state
+                                                    let mut seek_pos: f64 = 0.0;
+                                                    let seek_slider = ui.add(
+                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
+                                                            .text("Position")
+                                                            .suffix("%")
+                                                            .show_value(true)
+                                                    );
+                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
+                                                        // Convert percentage to duration-based seek
+                                                        // This will need actual video duration from player
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
+                                                    }
+                                                });
+
+>>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -4367,6 +4553,7 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
+<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                 // Hit Detection (Approximate Bezier with segments)
                 let mut is_hovered = false;
                 if let Some(pos) = pointer_pos {
@@ -4435,21 +4622,34 @@ impl ModuleCanvas {
 
                 // Glow (Behind)
                 let glow_stroke = Stroke::new(glow_width, glow_color);
+=======
+                // Shadow
+                let shadow_stroke = Stroke::new(5.0 * self.zoom, shadow_color);
+>>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
+<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                     glow_stroke,
                 ));
 
                 // Core Cable (Front)
                 let cable_stroke = Stroke::new(stroke_width, stroke_color);
+=======
+                    shadow_stroke,
+                ));
+
+                // Cable
+                let cable_stroke = Stroke::new(3.0 * self.zoom, cable_color);
+>>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
                     cable_stroke,
                 ));
+<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
 
                 // Add flow animation
                 if self.zoom > 0.6 {
@@ -4468,6 +4668,8 @@ impl ModuleCanvas {
                         Color32::from_rgba_unmultiplied(255, 255, 255, 150),
                     );
                 }
+=======
+>>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
 
                 // Draw Plugs on top of cable
                 if let Some(texture) = self.plug_icons.get(icon_name) {

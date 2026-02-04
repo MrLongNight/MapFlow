@@ -1,4 +1,4 @@
-use crate::components::{AudioReactive, AudioReactiveSource, AudioReactiveTarget};
+use crate::components::{AudioReactive, AudioReactiveTarget};
 use crate::resources::AudioInputResource;
 use bevy::prelude::*;
 
@@ -55,8 +55,6 @@ pub fn audio_reaction_system(
 
 pub fn setup_3d_scene(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
     mut render_output: ResMut<crate::resources::BevyRenderOutput>,
 ) {
@@ -67,7 +65,6 @@ pub fn setup_3d_scene(
         depth_or_array_layers: 1,
     };
 
-    // Create image
     let mut image = Image::new_fill(
         size,
         bevy::render::render_resource::TextureDimension::D2,
@@ -76,28 +73,29 @@ pub fn setup_3d_scene(
         bevy::render::render_asset::RenderAssetUsages::default(),
     );
 
-    // IMPORTANT: Enable RENDER_ATTACHMENT so we can draw to it
-    // And COPY_SRC if we want to read it back
     image.texture_descriptor.usage = bevy::render::render_resource::TextureUsages::RENDER_ATTACHMENT
         | bevy::render::render_resource::TextureUsages::COPY_SRC
         | bevy::render::render_resource::TextureUsages::TEXTURE_BINDING;
 
     let image_handle = images.add(image);
 
-    // Store handle in resource
     render_output.image_handle = image_handle.clone();
     render_output.width = 1280;
     render_output.height = 720;
 
-    // Spawn Camera rendering to texture
-    commands.spawn(Camera3dBundle {
-        camera: Camera {
-            target: bevy::render::camera::RenderTarget::Image(image_handle),
+    // Spawn Shared Engine Camera
+    commands.spawn((
+        Camera3dBundle {
+            camera: Camera {
+                target: bevy::render::camera::RenderTarget::Image(image_handle),
+                ..default()
+            },
+            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+        bevy_atmosphere::prelude::AtmosphereCamera::default(),
+        crate::components::SharedEngineCamera,
+    ));
 
     // Spawn Light
     commands.spawn(PointLightBundle {
@@ -108,102 +106,52 @@ pub fn setup_3d_scene(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..default()
     });
+}
 
-    // Spawn Cube with AudioReactive and Outline
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Cuboid::default()),
-            material: materials.add(StandardMaterial {
-                base_color: Color::srgb(0.8, 0.7, 0.6),
-                ..default()
-            }),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+pub fn hex_grid_system(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    query: Query<(Entity, &crate::components::BevyHexGrid), Changed<crate::components::BevyHexGrid>>,
+) {
+    for (entity, hex_config) in query.iter() {
+        // Clear existing children (tiles)
+        commands.entity(entity).despawn_descendants();
+
+        let layout = hexx::HexLayout {
+            hex_size: hexx::Vec2::splat(hex_config.radius),
+            orientation: if hex_config.pointy_top { hexx::HexOrientation::Pointy } else { hexx::HexOrientation::Flat },
             ..default()
-        },
-        AudioReactive {
-            target: AudioReactiveTarget::Scale,
-            source: AudioReactiveSource::Bass,
-            intensity: 0.5,
-            base: 1.0,
-        },
-        // Outline
-        bevy_mod_outline::OutlineBundle {
-            outline: bevy_mod_outline::OutlineVolume {
-                visible: true,
-                width: 5.0,
-                colour: Color::srgb(1.0, 0.5, 0.0),
-            },
-            ..default()
-        },
-    ));
+        };
 
-    // Spawn Sphere
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Sphere::new(0.5)),
-            material: materials.add(StandardMaterial {
-                base_color: Color::srgb(0.2, 0.8, 0.2),
-                ..default()
-            }),
-            transform: Transform::from_xyz(1.5, 0.0, 0.0),
-            ..default()
-        },
-        AudioReactive {
-            target: AudioReactiveTarget::PositionY,
-            source: AudioReactiveSource::High,
-            intensity: 1.0,
-            base: 0.0,
-        },
-    ));
-
-    // DEMO: Hexx Grid
-    // DEMO: Hexx Grid
-    // Force use of hexx's Vec2 alias if different, but they should be glam::Vec2.
-    // Explicitly constructing to avoid type interference.
-    let layout = hexx::HexLayout {
-        hex_size: hexx::Vec2::splat(0.2),
-        ..default()
-    };
-
-    // Use Cuboid instead of Cylinder to ensure build passes (Cylinder resolution might handle differently in 0.14 primitives)
-    // We want a hex column, but a box is fine for demo proof.
-    let mesh = meshes.add(Cuboid::new(0.3, 0.2, 0.3));
-    let hex_material = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.2, 0.2, 0.8),
-        ..default()
-    });
-
-    // Spawn a small hex grid
-    for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, 3) {
-        let pos = layout.hex_to_world_pos(hex);
-        commands.spawn(PbrBundle {
-            mesh: mesh.clone(),
-            material: hex_material.clone(),
-            transform: Transform::from_xyz(pos.x, -2.0, pos.y), // Floor
+        let mesh = meshes.add(Cuboid::from_size(Vec3::new(hex_config.radius * 1.5, 0.2, hex_config.radius * 1.5)));
+        let material = materials.add(StandardMaterial {
+            base_color: Color::srgb(0.2, 0.2, 0.8),
             ..default()
         });
+
+        commands.entity(entity).with_children(|parent| {
+            for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, hex_config.rings) {
+                let pos = layout.hex_to_world_pos(hex);
+                parent.spawn(PbrBundle {
+                    mesh: mesh.clone(),
+                    material: material.clone(),
+                    transform: Transform::from_xyz(pos.x, 0.0, pos.y),
+                    ..default()
+                });
+            }
+        });
     }
+}
 
-    // DEMO: Enoki Particles
-    // Note: Enoki usage commented out due to API uncertainty (SpawnerBundle not found in 0.2).
-    // To enable, check correct API for bevy_enoki 0.2.
-    /*
-    commands.spawn((
-        bevy_enoki::prelude::SpawnerBundle {
-             spawn_effect: bevy_enoki::prelude::SpawnEffect {
-                 count: bevy_enoki::prelude::Emission::PerSecond(50.0),
-                 ..default()
-             },
-             ..default()
-        },
-        bevy_enoki::prelude::OneShot::default(),
-    ));
-
-    commands.spawn(bevy_enoki::prelude::SpawnerBundle {
-         transform: Transform::from_xyz(-2.0, 1.0, 0.0),
-         ..default()
-    });
-    */
+pub fn particle_system(
+    mut commands: Commands,
+    query: Query<(Entity, &crate::components::BevyParticles), Changed<crate::components::BevyParticles>>,
+) {
+    for (entity, p_config) in query.iter() {
+        // Update particles logic (Simplified for now)
+        // In a real implementation, we would update the bevy_enoki components here.
+    }
 }
 
 use bevy::render::render_asset::RenderAssets;

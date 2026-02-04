@@ -27,6 +27,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
+        // First sync graph state
+        for module in app.state.module_manager.list_modules() {
+            runner.apply_graph_state(module);
+        }
+
         let analysis = app.audio_analyzer.get_latest_analysis();
         let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
             band_energies: analysis.band_energies,

@@ -548,16 +548,6 @@ impl ModulePartType {
                 };
                 (vec![], outputs) // No inputs - triggers are sources
             }
-            ModulePartType::Source(_) => (
-                vec![ModuleSocket {
-                    name: "Trigger In".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
             ModulePartType::Mask(_) => (
                 vec![
                     ModuleSocket {
@@ -604,6 +594,46 @@ impl ModulePartType {
                 vec![ModuleSocket {
                     name: "Output".to_string(),
                     socket_type: ModuleSocketType::Layer,
+                }],
+            ),
+            ModulePartType::Source(SourceType::BevyAtmosphere { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::Source(SourceType::BevyHexGrid { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::Source(SourceType::BevyParticles { .. }) => (
+                vec![ModuleSocket {
+                    name: "Spawn Trigger".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
+            ModulePartType::Source(_) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
                 }],
             ),
             ModulePartType::Output(out) => match out {
@@ -1053,8 +1083,45 @@ pub enum SourceType {
         /// If None, the first available source will be used.
         source_name: Option<String>,
     },
-    /// Bevy Engine Scene
+    /// Bevy Engine Scene (Monolith) - Kept for backward compatibility or complex scenes
     Bevy,
+    /// Specialized Bevy Atmosphere Control
+    BevyAtmosphere {
+        /// Turbidity (1.0 - 10.0)
+        turbidity: f32,
+        /// Rayleigh scattering coefficient
+        rayleigh: f32,
+        /// Mie scattering coefficient
+        mie_coeff: f32,
+        /// Mie directional anisotropy
+        mie_directional_g: f32,
+        /// Sun position (azimuth, elevation)
+        sun_position: (f32, f32),
+    },
+    /// Specialized Bevy Hex Grid Generator
+    BevyHexGrid {
+        /// Radius of individual hexagons
+        radius: f32,
+        /// Number of rings in the grid
+        rings: u32,
+        /// Orientation (True = Pointy Top, False = Flat Top)
+        pointy_top: bool,
+        /// Spread/Spacing between hexagons
+        spacing: f32,
+    },
+    /// Specialized Bevy Particle System
+    BevyParticles {
+        /// Number of particles to spawn per second
+        rate: f32,
+        /// Average lifetime of particles in seconds
+        lifetime: f32,
+        /// Initial speed
+        speed: f32,
+        /// Particle color start (RGBA)
+        color_start: [f32; 4],
+        /// Particle color end (RGBA)
+        color_end: [f32; 4],
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {

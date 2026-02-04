@@ -40,3 +40,8 @@ pub struct ReadbackBuffer {
     pub buffer: wgpu::Buffer,
     pub size: u64,
 }
+/// Maps MapFlow Node IDs to Bevy Entities
+#[derive(Resource, Default)]
+pub struct BevyNodeMapping {
+    pub entities: std::collections::HashMap<u64, Entity>,
+}
