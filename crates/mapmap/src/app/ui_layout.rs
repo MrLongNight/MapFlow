@@ -570,9 +570,14 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     );
 
     // Render Oscillator Panel
-    app.ui_state
+    // Sync state: Copy config to panel, show, then copy back if changed
+    app.ui_state.oscillator_panel.config = app.state.oscillator_config.clone();
+    if app.ui_state
         .oscillator_panel
-        .render(ctx, &app.ui_state.i18n, &mut app.state.oscillator_config);
+        .show(ctx, &app.ui_state.i18n)
+    {
+        app.state.oscillator_config = app.ui_state.oscillator_panel.config.clone();
+    }
 
     // Handle Effect Chain Actions
     for action in app.ui_state.effect_chain_panel.take_actions() {
