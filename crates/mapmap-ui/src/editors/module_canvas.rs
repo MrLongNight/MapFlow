@@ -667,7 +667,84 @@ impl ModuleCanvas {
                                         }
                                     }
                                     ModulePartType::Source(source) => {
-                                        ui.label("Source Type:");
+                                        ui.horizontal(|ui| {
+                                            ui.label("Source Type:");
+                                            let current_mode = match source {
+                                                SourceType::MediaFile { .. } => "📹 Media File",
+                                                SourceType::VideoUni { .. } => "📹 Video (Uni)",
+                                                SourceType::ImageUni { .. } => "🖼 Image (Uni)",
+                                                SourceType::VideoMulti { .. } => "🔗 Video (Multi)",
+                                                SourceType::ImageMulti { .. } => "🔗 Image (Multi)",
+                                                SourceType::Shader { .. } => "🎨 Shader",
+                                                SourceType::LiveInput { .. } => "📹 Live Input",
+                                                SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                SourceType::SpoutInput { .. } => "🚰 Spout Input",
+                                                SourceType::Bevy => "🎮 Bevy Scene",
+                                            };
+
+                                            let mut next_type = None;
+                                            egui::ComboBox::from_id_salt(format!("{}_source_type_picker", part_id))
+                                                .selected_text(current_mode)
+                                                .show_ui(ui, |ui| {
+                                                    ui.label("--- File Based ---");
+                                                    if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "📹 Media File").clicked() { next_type = Some("MediaFile"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "📹 Video (Uni)").clicked() { next_type = Some("VideoUni"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "🖼 Image (Uni)").clicked() { next_type = Some("ImageUni"); }
+                                                    
+                                                    ui.label("--- Shared ---");
+                                                    if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "🔗 Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "🔗 Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
+                                                });
+
+                                            if let Some(t) = next_type {
+                                                let path = match source {
+                                                    SourceType::MediaFile { path, .. } => path.clone(),
+                                                    SourceType::VideoUni { path, .. } => path.clone(),
+                                                    SourceType::ImageUni { path, .. } => path.clone(),
+                                                    _ => String::new(),
+                                                };
+                                                let shared_id = match source {
+                                                    SourceType::VideoMulti { shared_id, .. } => shared_id.clone(),
+                                                    SourceType::ImageMulti { shared_id, .. } => shared_id.clone(),
+                                                    _ => String::new(),
+                                                };
+
+                                                *source = match t {
+                                                    "MediaFile" => SourceType::new_media_file(if path.is_empty() { shared_id } else { path }),
+                                                    "VideoUni" => SourceType::VideoUni {
+                                                        path: if path.is_empty() { shared_id } else { path },
+                                                        speed: 1.0, loop_enabled: true, start_time: 0.0, end_time: 0.0,
+                                                        opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                                                        scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                                                        target_width: None, target_height: None, target_fps: None,
+                                                        flip_horizontal: false, flip_vertical: false, reverse_playback: false,
+                                                    },
+                                                    "ImageUni" => SourceType::ImageUni {
+                                                        path: if path.is_empty() { shared_id } else { path },
+                                                        opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                                                        scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                                                        target_width: None, target_height: None,
+                                                        flip_horizontal: false, flip_vertical: false,
+                                                    },
+                                                    "VideoMulti" => SourceType::VideoMulti {
+                                                        shared_id: if shared_id.is_empty() { path } else { shared_id },
+                                                        opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                                                        scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                                                        flip_horizontal: false, flip_vertical: false,
+                                                    },
+                                                    "ImageMulti" => SourceType::ImageMulti {
+                                                        shared_id: if shared_id.is_empty() { path } else { shared_id },
+                                                        opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                                                        scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                                                        flip_horizontal: false, flip_vertical: false,
+                                                    },
+                                                    _ => source.clone(),
+                                                };
+                                            }
+                                        });
+
+                                        ui.separator();
+
                                         match source {
                                             SourceType::MediaFile {
                                                 path, speed, loop_enabled, start_time, end_time, opacity, blend_mode,
@@ -2237,38 +2314,16 @@ impl ModuleCanvas {
         ui.set_min_width(150.0);
 
         ui.menu_button("🎬 Sources", |ui| {
+            ui.label("--- 📁 File Based ---");
             if ui.button("📹 Media File").clicked() {
                 self.add_source_node(
                     manager,
-                    SourceType::MediaFile {
-                        path: String::new(),
-                        speed: 1.0,
-                        loop_enabled: true,
-                        start_time: 0.0,
-                        end_time: 0.0,
-                        opacity: 1.0,
-                        blend_mode: None,
-                        brightness: 0.0,
-                        contrast: 1.0,
-                        saturation: 1.0,
-                        hue_shift: 0.0,
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        rotation: 0.0,
-                        offset_x: 0.0,
-                        offset_y: 0.0,
-                        target_width: None,
-                        target_height: None,
-                        target_fps: None,
-                        flip_horizontal: false,
-                        flip_vertical: false,
-                        reverse_playback: false,
-                    },
+                    SourceType::new_media_file(String::new()),
                     pos_override,
                 );
                 ui.close();
             }
-            if ui.button("📹 Video Uni").clicked() {
+            if ui.button("📹 Video (Uni)").clicked() {
                 self.add_source_node(
                     manager,
                     SourceType::VideoUni {
@@ -2299,7 +2354,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("🖼 Image Uni").clicked() {
+            if ui.button("🖼 Image (Uni)").clicked() {
                 self.add_source_node(
                     manager,
                     SourceType::ImageUni {
@@ -2324,7 +2379,10 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("📹 Video Multi").clicked() {
+
+            ui.add_space(4.0);
+            ui.label("--- 🔗 Shared (Multi) ---");
+            if ui.button("📹 Video (Multi)").clicked() {
                 self.add_source_node(
                     manager,
                     SourceType::VideoMulti {
@@ -2347,7 +2405,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("🖼 Image Multi").clicked() {
+            if ui.button("🖼 Image (Multi)").clicked() {
                 self.add_source_node(
                     manager,
                     SourceType::ImageMulti {
@@ -2370,6 +2428,17 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
+
+            ui.add_space(4.0);
+            ui.label("--- 📡 Hardware & Network ---");
+            if ui.button("📹 Live Input").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::LiveInput { device_id: 0 },
+                    pos_override,
+                );
+                ui.close();
+            }
             if ui.button("📡 NDI Input").clicked() {
                 self.add_source_node(
                     manager,
@@ -2378,6 +2447,20 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
+            #[cfg(target_os = "windows")]
+            if ui.button("🚰 Spout Input").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::SpoutInput {
+                        sender_name: String::new(),
+                    },
+                    pos_override,
+                );
+                ui.close();
+            }
+
+            ui.add_space(4.0);
+            ui.label("--- 🎨 Procedural & Misc ---");
             if ui.button("🎨 Shader").clicked() {
                 self.add_source_node(
                     manager,
@@ -2389,15 +2472,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("📹 Live Input TEST").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::LiveInput { device_id: 0 },
-                    pos_override,
-                );
-                ui.close();
-            }
-            if ui.button("🎮 Bevy Scene TEST").clicked() {
+            if ui.button("🎮 Bevy Scene").clicked() {
                 self.add_source_node(manager, SourceType::Bevy, pos_override);
                 ui.close();
             }
@@ -2772,14 +2847,9 @@ impl ModuleCanvas {
         ui.add_space(1.0);
         ui.separator();
 
-        // Find the active module
-        let active_module = self
-            .active_module_id
-            .and_then(|id| manager.get_module_mut(id));
-
-        if let Some(module) = active_module {
+        if let Some(module_id) = self.active_module_id {
             // Render the canvas taking up the full available space
-            self.render_canvas(ui, module, locale, actions);
+            self.render_canvas(ui, manager, module_id, locale, actions);
             // Properties popup removed - moved to docked inspector
         } else {
             // Show a message if no module is selected
@@ -2798,10 +2868,16 @@ impl ModuleCanvas {
     fn render_canvas(
         &mut self,
         ui: &mut Ui,
-        module: &mut MapFlowModule,
+        manager: &mut ModuleManager,
+        module_id: ModuleId,
         _locale: &LocaleManager,
         actions: &mut Vec<crate::UIAction>,
     ) {
+        let module = if let Some(m) = manager.get_module_mut(module_id) {
+            m
+        } else {
+            return;
+        };
         self.ensure_icons_loaded(ui.ctx());
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
@@ -2835,6 +2911,9 @@ impl ModuleCanvas {
         {
             if let Some(pointer_pos) = response.interact_pointer_pos() {
                 self.context_menu_pos = Some(pointer_pos);
+                // Clear specific targets, they will be set if a part or connection was clicked
+                self.context_menu_part = None;
+                self.context_menu_connection = None;
             }
         }
         let shift_held = ui.input(|i| i.modifiers.shift);
@@ -3014,8 +3093,8 @@ impl ModuleCanvas {
         let to_screen =
             move |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + pan_offset) * zoom };
 
-        let _from_screen = move |screen_pos: Pos2| -> Pos2 {
-            let v = (screen_pos - canvas_rect.min) / zoom - pan_offset;
+        let from_screen = move |screen_pos: Pos2| -> Pos2 {
+            let v = (screen_pos.to_vec2() - pan_offset) / zoom;
             Pos2::new(v.x, v.y)
         };
 
@@ -3609,6 +3688,53 @@ impl ModuleCanvas {
                 && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
             {
                 self.context_menu_connection = None;
+                self.context_menu_pos = None;
+            }
+        }
+
+        // Draw context menu for adding nodes (canvas level)
+        if self.context_menu_part.is_none()
+            && self.context_menu_connection.is_none()
+            && self.context_menu_pos.is_some()
+        {
+            let pos = self.context_menu_pos.unwrap();
+            let menu_width = 180.0;
+            let menu_height = 250.0; // Estimate or let it be dynamic
+            let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
+
+            // Draw menu background
+            let painter = ui.painter();
+            painter.rect_filled(
+                menu_rect,
+                4.0,
+                Color32::from_rgba_unmultiplied(30, 30, 40, 245),
+            );
+            painter.rect_stroke(
+                menu_rect,
+                4.0,
+                Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
+                egui::StrokeKind::Inside,
+            );
+
+            // Menu items
+            let inner_rect = menu_rect.shrink(8.0);
+            ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
+                ui.vertical(|ui| {
+                    ui.heading("➕ Add Node");
+                    ui.separator();
+
+                    // Convert screen position to canvas position for node placement
+                    let canvas_pos = from_screen(pos);
+                    let pos_tuple = (canvas_pos.x, canvas_pos.y);
+
+                    self.render_add_node_menu_content(ui, manager, Some(pos_tuple));
+                });
+            });
+
+            // Close menu on click outside
+            if ui.input(|i| i.pointer.any_click())
+                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+            {
                 self.context_menu_pos = None;
             }
         }
