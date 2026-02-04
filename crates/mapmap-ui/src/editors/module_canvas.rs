@@ -860,12 +860,10 @@ impl ModuleCanvas {
                                                 }
 
                                                 ui.separator();
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                                                 Self::render_common_controls(
                                                     ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
                                                     scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
                                                 );
-=======
 
                                                 // === SMART EMPTY STATE ===
                                                 if path.is_empty() {
@@ -1048,8 +1046,6 @@ impl ModuleCanvas {
                                                         self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
                                                     }
                                                 });
-
->>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -4668,8 +4664,6 @@ impl ModuleCanvas {
                         Color32::from_rgba_unmultiplied(255, 255, 255, 150),
                     );
                 }
-=======
->>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
 
                 // Draw Plugs on top of cable
                 if let Some(texture) = self.plug_icons.get(icon_name) {

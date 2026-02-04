@@ -84,28 +84,23 @@ pub fn setup_3d_scene(
     render_output.height = 720;
 
     // Spawn Shared Engine Camera
-    commands.spawn((
-        Camera3dBundle {
-            camera: Camera {
-                target: bevy::render::camera::RenderTarget::Image(image_handle),
-                ..default()
-            },
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+    commands.spawn(Camera3dBundle {
+        camera: Camera {
+            target: bevy::render::camera::RenderTarget::Image(image_handle),
             ..default()
         },
-        bevy_atmosphere::prelude::AtmosphereCamera::default(),
-        crate::components::SharedEngineCamera,
-    ));
+        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    }).insert(crate::components::SharedEngineCamera);
 
     // Spawn Light
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
+    commands.spawn((
+        PointLight {
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
+        Transform::from_xyz(4.0, 8.0, 4.0),
+    ));
 }
 
 pub fn hex_grid_system(

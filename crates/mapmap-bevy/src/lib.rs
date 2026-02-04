@@ -38,9 +38,10 @@ impl BevyRunner {
         app.add_plugins(bevy::render::RenderPlugin::default());
         app.add_plugins(bevy::pbr::PbrPlugin::default()); // Includes StandardMaterial
 
-        // Register Extensions
-        app.add_plugins(bevy_enoki::EnokiPlugin);
+        // Register Extensions (Temporarily disabled due to version mismatch)
+        // app.add_plugins(bevy_enoki::EnokiPlugin);
         app.add_plugins(bevy_mod_outline::OutlinePlugin);
+        // app.add_plugins(bevy_atmosphere::prelude::AtmospherePlugin);
 
         // Register resources
         app.init_resource::<AudioInputResource>();
@@ -60,7 +61,7 @@ impl BevyRunner {
 
         // Register systems
         app.add_systems(Startup, setup_3d_scene);
-        app.add_systems(Update, (print_status_system, audio_reaction_system, sync_atmosphere_system, hex_grid_system, particle_system));
+        app.add_systems(Update, (print_status_system, audio_reaction_system, hex_grid_system)); // Removed sync_atmosphere_system, particle_system
 
         // Add readback system to the RENDER APP, not the main app
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
@@ -147,20 +148,30 @@ impl BevyRunner {
     }
 }
 
+/*
 pub fn sync_atmosphere_system(
     query: Query<&crate::components::BevyAtmosphere, Changed<crate::components::BevyAtmosphere>>,
-    mut atmosphere_settings: ResMut<bevy_atmosphere::prelude::AtmosphereSettings>,
+    mut atmosphere: ResMut<bevy_atmosphere::prelude::AtmosphereModel>,
 ) {
     for settings in query.iter() {
-        // Sync to bevy_atmosphere resource
-        // Note: turbidity and rayleigh are part of AtmosphereSettings in 0.9
-        atmosphere_settings.turbidity = settings.turbidity;
-        atmosphere_settings.rayleigh = settings.rayleigh;
-        // mie_coeff and mie_directional_g are also supported
-        atmosphere_settings.mie_coefficient = settings.mie_coeff;
-        atmosphere_settings.mie_directional_g = settings.mie_directional_g;
+        if let Some(mut nishita) = atmosphere.to_mut::<bevy_atmosphere::prelude::Nishita>() {
+            nishita.turbidity = settings.turbidity;
+            nishita.rayleigh = settings.rayleigh;
+            nishita.mie_coefficient = settings.mie_coeff;
+            nishita.mie_directional_g = settings.mie_directional_g;
+            nishita.sun_position = Vec3::new(settings.sun_position.0, settings.sun_position.1, 1.0); // Simple Z-fallback
+        } else {
+            *atmosphere = bevy_atmosphere::prelude::AtmosphereModel::new(bevy_atmosphere::prelude::Nishita {
+                turbidity: settings.turbidity,
+                rayleigh: settings.rayleigh,
+                mie_coefficient: settings.mie_coeff,
+                mie_directional_g: settings.mie_directional_g,
+                sun_position: Vec3::new(settings.sun_position.0, settings.sun_position.1, 1.0),
+            });
+        }
     }
 }
+*/
 
 impl bevy::render::extract_resource::ExtractResource for BevyRenderOutput {
     type Source = Self;
