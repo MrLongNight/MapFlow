@@ -42,3 +42,8 @@
 **Vulnerability:** The `ImageSequenceDecoder` iterated over all files in a user-provided directory without limit. A directory with millions of files would cause the application to hang or crash (OOM), acting as a local Denial of Service vector.
 **Learning:** Iterators over external resources (like file systems) must always be bounded. "Users won't do that" is not a valid defense against accidental or malicious inputs.
 **Prevention:** Implement explicit `MAX_ITEMS` limits on all directory scanning or collection loops. Use `cfg(test)` to lower these limits for efficient unit testing.
+
+## 2026-10-28 - Unbounded Memory Allocation in GIF Decoder
+**Vulnerability:** The `GifDecoder` loaded all frames of an animated GIF into memory as uncompressed `Rgba8` buffers. A malicious user could supply a GIF with thousands of frames (or a zip-bomb equivalent) to exhaust system memory and crash the application (DoS). This was masked by a functional bug where the decoder failed to re-read raw pixels, causing it to crash on valid files before the memory limit could be reached.
+**Learning:** Functional bugs can sometimes mask security vulnerabilities. Just because a feature "fails early" doesn't mean the underlying logic is secure. Also, decoding media entirely into memory (rather than streaming) is inherently risky for user-generated content.
+**Prevention:** Enforce strict limits (`MAX_GIF_FRAMES`) on all in-memory collection loops. Ensure that media decoders operate on streams or have strict bounds on pre-loaded content.
