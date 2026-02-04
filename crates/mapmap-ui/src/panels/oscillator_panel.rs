@@ -31,7 +31,7 @@ impl OscillatorPanel {
     /// Shows the oscillator panel UI.
     ///
     /// Returns `true` if any value was changed by the user.
-    pub fn show(&mut self, ui: &mut Ui, locale: &LocaleManager) -> bool {
+    pub fn show(&mut self, ctx: &egui::Context, locale: &LocaleManager) -> bool {
         let mut changed = false;
         let mut is_open = self.visible;
 
@@ -43,7 +43,7 @@ impl OscillatorPanel {
             .open(&mut is_open)
             .resizable(true)
             .default_width(280.0)
-            .show(ui.ctx(), |ui| {
+            .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     changed |= ui
                         .toggle_value(&mut self.config.enabled, locale.t("oscillator-enable"))
