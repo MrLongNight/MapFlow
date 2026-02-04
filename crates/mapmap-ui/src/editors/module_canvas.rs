@@ -5399,9 +5399,7 @@ impl ModuleCanvas {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
                 SourceType::Bevy => "🎮 Bevy Scene".to_string(),
-                SourceType::BevyAtmosphere { .. }
-                | SourceType::BevyHexGrid { .. }
-                | SourceType::BevyParticles { .. } => "🎮 Bevy Proc".to_string(),
+                SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "🎮 Bevy Proc".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {

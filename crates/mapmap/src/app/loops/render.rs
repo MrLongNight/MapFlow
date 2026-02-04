@@ -6,7 +6,6 @@ use anyhow::Result;
 use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
 
-#[cfg(feature = "midi")]
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     // Clone device Arc to create encoder without borrowing self
@@ -282,8 +281,13 @@ fn render_content(
                     wgpu::TextureFormat::Rgba8UnormSrgb,
                     wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 );
-                ctx.texture_pool
-                    .upload_data(queue, &grid_tex_name, &data, width, height);
+                ctx.texture_pool.upload_data(
+                    queue,
+                    &grid_tex_name,
+                    &data,
+                    width,
+                    height,
+                );
             }
             (grid_tex_name, 1.0)
         } else if let Some(src_id) = op.source_part_id {
@@ -517,8 +521,8 @@ fn create_grid_texture(layer_id: u64) -> (u32, u32, Vec<u8>) {
             // Grid lines every 64 pixels
             let is_grid = x % 64 < 2 || y % 64 < 2;
             // Center crosshair
-            let is_center =
-                (x as i32 - width as i32 / 2).abs() < 4 || (y as i32 - height as i32 / 2).abs() < 4;
+            let is_center = (x as i32 - width as i32 / 2).abs() < 4
+                || (y as i32 - height as i32 / 2).abs() < 4;
             // Border
             let is_border = x < 4 || x > width - 5 || y < 4 || y > height - 5;
 
