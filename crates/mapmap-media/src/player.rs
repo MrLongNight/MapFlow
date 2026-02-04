@@ -166,16 +166,20 @@ impl VideoPlayer {
                     match self.loop_mode {
                         LoopMode::Loop => {
                             self.current_time = Duration::ZERO;
-                            // If duration is 0, seeking to 0 might just reset the stream (works for some formats)
-                            if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
-                                self.transition_to_error(seek_err);
-                            } else {
-                                let _ = self.status_sender.send(PlaybackStatus::Looped);
-                                // Try to get the first frame again immediately so we don't drop a frame
-                                if let Ok(frame) = self.decoder.next_frame() {
-                                    self.last_frame = Some(frame.clone());
-                                    return Some(frame);
+                            // For 0 duration, seeking might not be supported or needed.
+                            // If we have a duration, we seek.
+                            if duration > Duration::ZERO {
+                                if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
+                                    self.transition_to_error(seek_err);
+                                    return self.last_frame.clone();
                                 }
+                            }
+                            
+                            let _ = self.status_sender.send(PlaybackStatus::Looped);
+                            // Try to get the first frame again immediately so we don't drop a frame
+                            if let Ok(frame) = self.decoder.next_frame() {
+                                self.last_frame = Some(frame.clone());
+                                return Some(frame);
                             }
                         }
                         LoopMode::PlayOnce => {

@@ -206,7 +206,7 @@ mod ffmpeg_impl {
                 Ok(accel) => accel,
                 Err(e) => {
                     warn!(
-                        "Failed to setup hardware acceleration {:?}: {}",
+                        "Failed to setup hardware acceleration {:?}: {}. Falling back to software decoding.",
                         hw_accel, e
                     );
                     HwAccelType::None
@@ -520,7 +520,7 @@ pub enum FFmpegDecoder {
 impl FFmpegDecoder {
     /// Open a video file (uses FFmpeg if feature is enabled, test pattern otherwise)
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-        Self::open_with_hw_accel(path, HwAccelType::None)
+        Self::open_with_auto_hw_accel(path)
     }
 
     /// Open a video file with hardware acceleration
