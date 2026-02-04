@@ -319,6 +319,7 @@ pub enum CanvasAction {
     DeleteConnection {
         connection: mapmap_core::module::ModuleConnection,
     },
+    Batch(Vec<CanvasAction>),
 }
 
 impl Default for ModuleCanvas {
@@ -892,8 +893,12 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
+                                                SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
+                                                SourceType::BevyHexGrid { .. } => "🔷 Hex Grid",
+                                                SourceType::BevyParticles { .. } => "✨ Particles",
                                             };
 
                                             let mut next_type = None;
@@ -1239,27 +1244,6 @@ impl ModuleCanvas {
                                                     *flip_vertical = false;
                                                 }
 
-                                                // === VIDEO OPTIONS ===
-                                                ui.collapsing("🎬 Video Options", |ui| {
-                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-
-                                                    ui.separator();
-                                                    ui.label("Seek Position:");
-                                                    // Note: Actual seek requires video duration from player
-                                                    // For now, just show the control - needs integration with player state
-                                                    let mut seek_pos: f64 = 0.0;
-                                                    let seek_slider = ui.add(
-                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
-                                                            .text("Position")
-                                                            .suffix("%")
-                                                            .show_value(true)
-                                                    );
-                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
-                                                        // Convert percentage to duration-based seek
-                                                        // This will need actual video duration from player
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
-                                                    }
-                                                });
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -1480,6 +1464,9 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
+                                            SourceType::BevyAtmosphere { .. } => { ui.label("☁️ Atmosphere"); },
+                                            SourceType::BevyHexGrid { .. } => { ui.label("🔷 Hex Grid"); },
+                                            SourceType::BevyParticles { .. } => { ui.label("✨ Particles"); },
                                             SourceType::Bevy => {
                                                 ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
@@ -2636,6 +2623,9 @@ impl ModuleCanvas {
             );
             ui.close();
         }
+        if ui.button("☁️ Atmosphere").clicked() { self.add_source_node(manager, SourceType::BevyAtmosphere { turbidity: 2.0, rayleigh: 1.0, mie_coeff: 0.005, mie_directional_g: 0.8, sun_position: (0.0, 0.5) }, pos_override); ui.close(); }
+        if ui.button("🔷 Hex Grid").clicked() { self.add_source_node(manager, SourceType::BevyHexGrid { radius: 1.0, rings: 5, pointy_top: true, spacing: 0.1 }, pos_override); ui.close(); }
+        if ui.button("✨ Particles").clicked() { self.add_source_node(manager, SourceType::BevyParticles { rate: 10.0, lifetime: 2.0, speed: 1.0, color_start: [1.0, 1.0, 1.0, 1.0], color_end: [1.0, 1.0, 1.0, 0.0] }, pos_override); ui.close(); }
         if ui.button("🎮 Bevy Scene").clicked() {
             self.add_source_node(manager, SourceType::Bevy, pos_override);
             ui.close();
@@ -3059,6 +3049,113 @@ impl ModuleCanvas {
         let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
         let canvas_rect = response.rect;
 
+        // Ensure canvas can receive keyboard events
+        if response.clicked() || response.dragged() {
+            response.request_focus();
+        }
+
+        // --- Keyboard Navigation & Actions ---
+        if response.has_focus() || ui.memory(|m| m.focused().is_none()) {
+            // 1. Delete Selection (Safe Undo)
+            if ui.input(|i| i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace))
+            {
+                if !self.selected_parts.is_empty() {
+                    let mut undo_actions = Vec::new();
+                    // Clone to avoid borrow issues
+                    let parts_to_delete = self.selected_parts.clone();
+
+                    for part_id in parts_to_delete {
+                        // Connections
+                        let connections_to_remove: Vec<_> = module
+                            .connections
+                            .iter()
+                            .filter(|c| c.from_part == part_id || c.to_part == part_id)
+                            .cloned()
+                            .collect();
+
+                        for conn in connections_to_remove {
+                            undo_actions.push(CanvasAction::DeleteConnection { connection: conn });
+                        }
+
+                        // Part
+                        if let Some(part) = module.parts.iter().find(|p| p.id == part_id).cloned() {
+                            undo_actions.push(CanvasAction::DeletePart { part_data: part });
+                        }
+
+                        // Execute
+                        module
+                            .connections
+                            .retain(|c| c.from_part != part_id && c.to_part != part_id);
+                        module.parts.retain(|p| p.id != part_id);
+                    }
+
+                    if !undo_actions.is_empty() {
+                        self.undo_stack.push(CanvasAction::Batch(undo_actions));
+                        self.redo_stack.clear();
+                        self.selected_parts.clear();
+                    }
+                }
+            }
+
+            // 2. Arrow Key Navigation
+            let nav_direction = if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
+                Some(Vec2::new(0.0, -1.0))
+            } else if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
+                Some(Vec2::new(0.0, 1.0))
+            } else if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                Some(Vec2::new(-1.0, 0.0))
+            } else if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                Some(Vec2::new(1.0, 0.0))
+            } else {
+                None
+            };
+
+            if let Some(dir) = nav_direction {
+                if let Some(current_id) = self.selected_parts.last().copied() {
+                    if let Some(current_part) = module.parts.iter().find(|p| p.id == current_id) {
+                        let current_pos =
+                            Vec2::new(current_part.position.0, current_part.position.1);
+                        let mut best_candidate = None;
+                        let mut min_score = f32::MAX;
+
+                        for part in &module.parts {
+                            if part.id == current_id {
+                                continue;
+                            }
+                            let part_pos = Vec2::new(part.position.0, part.position.1);
+                            let vec_to_part = part_pos - current_pos;
+                            let dist = vec_to_part.length();
+
+                            if dist > 0.0 {
+                                let norm_dir = vec_to_part / dist;
+                                // Check if in roughly the right direction (45 deg cone)
+                                let alignment = norm_dir.dot(dir);
+                                if alignment > 0.5 {
+                                    // Score: Distance weighted heavily, but alignment matters too
+                                    // Lower is better
+                                    let score = dist * (2.0 - alignment);
+                                    if score < min_score {
+                                        min_score = score;
+                                        best_candidate = Some(part.id);
+                                    }
+                                }
+                            }
+                        }
+
+                        if let Some(next_id) = best_candidate {
+                            if !ui.input(|i| i.modifiers.shift) {
+                                self.selected_parts.clear();
+                            }
+                            self.selected_parts.push(next_id);
+                        }
+                    }
+                } else if !module.parts.is_empty() {
+                    // Select first if nothing selected
+                    self.selected_parts.push(module.parts[0].id);
+                }
+            }
+        }
+
         // Store drag_started state before we check parts
         let drag_started_on_empty = response.drag_started() && self.dragging_part.is_none();
 
@@ -3205,6 +3302,39 @@ impl ModuleCanvas {
                         // Undo delete connection = restore
                         module.connections.push(connection.clone());
                     }
+                    CanvasAction::Batch(actions) => {
+                        for sub_action in actions.iter().rev() {
+                            match sub_action {
+                                CanvasAction::AddPart { part_id, .. } => {
+                                    module.parts.retain(|p| p.id != *part_id);
+                                }
+                                CanvasAction::DeletePart { part_data } => {
+                                    module.parts.push(part_data.clone());
+                                }
+                                CanvasAction::MovePart {
+                                    part_id, old_pos, ..
+                                } => {
+                                    if let Some(part) =
+                                        module.parts.iter_mut().find(|p| p.id == *part_id)
+                                    {
+                                        part.position = *old_pos;
+                                    }
+                                }
+                                CanvasAction::AddConnection { connection } => {
+                                    module.connections.retain(|c| {
+                                        !(c.from_part == connection.from_part
+                                            && c.to_part == connection.to_part
+                                            && c.from_socket == connection.from_socket
+                                            && c.to_socket == connection.to_socket)
+                                    });
+                                }
+                                CanvasAction::DeleteConnection { connection } => {
+                                    module.connections.push(connection.clone());
+                                }
+                                CanvasAction::Batch(_) => {} // Nested batch not supported
+                            }
+                        }
+                    }
                 }
                 self.redo_stack.push(action);
             }
@@ -3242,6 +3372,39 @@ impl ModuleCanvas {
                                 && c.from_socket == connection.from_socket
                                 && c.to_socket == connection.to_socket)
                         });
+                    }
+                    CanvasAction::Batch(actions) => {
+                        for sub_action in actions.iter() {
+                            match sub_action {
+                                CanvasAction::AddPart { part_data, .. } => {
+                                    module.parts.push(part_data.clone());
+                                }
+                                CanvasAction::DeletePart { part_data } => {
+                                    module.parts.retain(|p| p.id != part_data.id);
+                                }
+                                CanvasAction::MovePart {
+                                    part_id, new_pos, ..
+                                } => {
+                                    if let Some(part) =
+                                        module.parts.iter_mut().find(|p| p.id == *part_id)
+                                    {
+                                        part.position = *new_pos;
+                                    }
+                                }
+                                CanvasAction::AddConnection { connection } => {
+                                    module.connections.push(connection.clone());
+                                }
+                                CanvasAction::DeleteConnection { connection } => {
+                                    module.connections.retain(|c| {
+                                        !(c.from_part == connection.from_part
+                                            && c.to_part == connection.to_part
+                                            && c.from_socket == connection.from_socket
+                                            && c.to_socket == connection.to_socket)
+                                    });
+                                }
+                                CanvasAction::Batch(_) => {}
+                            }
+                        }
                     }
                 }
                 self.undo_stack.push(action);
@@ -3616,14 +3779,38 @@ impl ModuleCanvas {
             }
         }
 
-        // Process pending deletion
+        // Process pending deletion (Safe with Undo)
         if let Some(part_id) = delete_part_id {
-            // Remove all connections involving this part
+            let mut undo_actions = Vec::new();
+
+            // 1. Identify connections to remove
+            let connections_to_remove: Vec<_> = module
+                .connections
+                .iter()
+                .filter(|c| c.from_part == part_id || c.to_part == part_id)
+                .cloned()
+                .collect();
+
+            for conn in connections_to_remove {
+                undo_actions.push(CanvasAction::DeleteConnection { connection: conn });
+            }
+
+            // 2. Identify part to remove
+            if let Some(part) = module.parts.iter().find(|p| p.id == part_id).cloned() {
+                undo_actions.push(CanvasAction::DeletePart { part_data: part });
+            }
+
+            // 3. Execute Deletion
             module
                 .connections
                 .retain(|c| c.from_part != part_id && c.to_part != part_id);
-            // Remove the part
             module.parts.retain(|p| p.id != part_id);
+
+            // 4. Record Undo
+            if !undo_actions.is_empty() {
+                self.undo_stack.push(CanvasAction::Batch(undo_actions));
+                self.redo_stack.clear();
+            }
         }
 
         // Resize operations to apply after the loop
@@ -4467,7 +4654,6 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let glow_color = cable_color.linear_multiply(0.3);
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
@@ -5182,6 +5368,9 @@ impl ModuleCanvas {
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
                     SourceType::Bevy => "Bevy Scene",
+                    SourceType::BevyAtmosphere { .. } => "Atmosphere",
+                    SourceType::BevyHexGrid { .. } => "Hex Grid",
+                    SourceType::BevyParticles { .. } => "Particles",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5366,6 +5555,9 @@ impl ModuleCanvas {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
                 SourceType::Bevy => "🎮 Bevy Scene".to_string(),
+                SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
+                SourceType::BevyHexGrid { .. } => "🔷 Hex Grid".to_string(),
+                SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {
