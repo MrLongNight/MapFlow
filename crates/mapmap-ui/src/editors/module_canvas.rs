@@ -2327,6 +2327,7 @@ impl ModuleCanvas {
     }
 
     /// Content for the Sources menu
+    #[rustfmt::skip]
     fn render_sources_menu_content(
         &mut self,
         ui: &mut egui::Ui,
