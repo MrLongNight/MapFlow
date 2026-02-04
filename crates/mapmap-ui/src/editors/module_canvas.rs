@@ -892,8 +892,10 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
-                                                SourceType::Bevy => "🎮 Bevy Scene",
+                                                SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "🎮 Bevy Scene",
+                    _ => "❓ Unknown",
                                             };
 
                                             let mut next_type = None;
@@ -1239,27 +1241,6 @@ impl ModuleCanvas {
                                                     *flip_vertical = false;
                                                 }
 
-                                                // === VIDEO OPTIONS ===
-                                                ui.collapsing("🎬 Video Options", |ui| {
-                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-
-                                                    ui.separator();
-                                                    ui.label("Seek Position:");
-                                                    // Note: Actual seek requires video duration from player
-                                                    // For now, just show the control - needs integration with player state
-                                                    let mut seek_pos: f64 = 0.0;
-                                                    let seek_slider = ui.add(
-                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
-                                                            .text("Position")
-                                                            .suffix("%")
-                                                            .show_value(true)
-                                                    );
-                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
-                                                        // Convert percentage to duration-based seek
-                                                        // This will need actual video duration from player
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
-                                                    }
-                                                });
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -1480,7 +1461,7 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
-                                            SourceType::Bevy => {
+                                            SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
                                                 ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
@@ -4467,7 +4448,7 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let glow_color = cable_color.linear_multiply(0.3);
+                let _glow_color = cable_color.linear_multiply(0.3);
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
@@ -5181,7 +5162,7 @@ impl ModuleCanvas {
                     SourceType::ImageUni { .. } => "Image (Uni)",
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
-                    SourceType::Bevy => "Bevy Scene",
+                    SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "Bevy Scene",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5365,7 +5346,7 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name } => {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
-                SourceType::Bevy => "🎮 Bevy Scene".to_string(),
+                SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "🎮 Bevy Scene".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {

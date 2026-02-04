@@ -316,7 +316,10 @@ impl Default for AppUI {
                 panel
             },
             edge_blend_panel: EdgeBlendPanel::default(),
-            oscillator_panel: OscillatorPanel { visible: false }, // Hide by default
+            oscillator_panel: OscillatorPanel {
+                visible: false,
+                ..Default::default()
+            }, // Hide by default
             show_audio: false, // Hide by default - use Dashboard toggle
             audio_panel: AudioPanel::default(),
             show_cue_panel: false, // Hide by default
