@@ -84,14 +84,16 @@ pub fn setup_3d_scene(
     render_output.height = 720;
 
     // Spawn Shared Engine Camera
-    commands.spawn(Camera3dBundle {
-        camera: Camera {
-            target: bevy::render::camera::RenderTarget::Image(image_handle),
+    commands
+        .spawn(Camera3dBundle {
+            camera: Camera {
+                target: bevy::render::camera::RenderTarget::Image(image_handle),
+                ..default()
+            },
+            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
-        },
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    }).insert(crate::components::SharedEngineCamera);
+        })
+        .insert(crate::components::SharedEngineCamera);
 
     // Spawn Light
     commands.spawn((
@@ -107,7 +109,10 @@ pub fn hex_grid_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    query: Query<(Entity, &crate::components::BevyHexGrid), Changed<crate::components::BevyHexGrid>>,
+    query: Query<
+        (Entity, &crate::components::BevyHexGrid),
+        Changed<crate::components::BevyHexGrid>,
+    >,
 ) {
     for (entity, hex_config) in query.iter() {
         // Clear existing children (tiles)
@@ -115,11 +120,19 @@ pub fn hex_grid_system(
 
         let layout = hexx::HexLayout {
             hex_size: hexx::Vec2::splat(hex_config.radius),
-            orientation: if hex_config.pointy_top { hexx::HexOrientation::Pointy } else { hexx::HexOrientation::Flat },
+            orientation: if hex_config.pointy_top {
+                hexx::HexOrientation::Pointy
+            } else {
+                hexx::HexOrientation::Flat
+            },
             ..default()
         };
 
-        let mesh = meshes.add(Cuboid::from_size(Vec3::new(hex_config.radius * 1.5, 0.2, hex_config.radius * 1.5)));
+        let mesh = meshes.add(Cuboid::from_size(Vec3::new(
+            hex_config.radius * 1.5,
+            0.2,
+            hex_config.radius * 1.5,
+        )));
         let material = materials.add(StandardMaterial {
             base_color: Color::srgb(0.2, 0.2, 0.8),
             ..default()
@@ -141,7 +154,10 @@ pub fn hex_grid_system(
 
 pub fn particle_system(
     mut commands: Commands,
-    query: Query<(Entity, &crate::components::BevyParticles), Changed<crate::components::BevyParticles>>,
+    query: Query<
+        (Entity, &crate::components::BevyParticles),
+        Changed<crate::components::BevyParticles>,
+    >,
 ) {
     for (entity, p_config) in query.iter() {
         // Update particles logic (Simplified for now)

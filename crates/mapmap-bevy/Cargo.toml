@@ -17,11 +17,11 @@ bevy = { version = "0.14", default-features = false, features = [
     "wayland",
     "tonemapping_luts",
 ] }
+bevy_atmosphere = "0.9"
 
 # Extensions
 bevy_enoki = "0.2"
 bevy_mod_outline = "0.8"
-bevy_atmosphere = "0.9"
 hexx = "0.17"
 
 mapmap-core = { path = "../mapmap-core" }

@@ -460,10 +460,7 @@ impl ModuleCanvas {
     }
 
     /// Apply mesh editor changes back to the selection
-    pub fn apply_mesh_editor_to_selection(
-        &mut self,
-        part: &mut mapmap_core::module::ModulePart,
-    ) {
+    pub fn apply_mesh_editor_to_selection(&mut self, part: &mut mapmap_core::module::ModulePart) {
         use mapmap_core::module::{LayerType, MeshType, ModulePartType};
 
         // Get mutable reference to mesh
@@ -488,10 +485,7 @@ impl ModuleCanvas {
             }
             MeshType::BezierSurface { control_points } => {
                 let points = self.mesh_editor.get_bezier_points();
-                *control_points = points
-                    .iter()
-                    .map(|(x, y)| (x / scale, y / scale))
-                    .collect();
+                *control_points = points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
             }
             _ => {
                 // Other types not yet supported for write-back
@@ -597,7 +591,8 @@ impl ModuleCanvas {
                 let scale = 200.0;
                 match mesh {
                     MeshType::Quad { tl, tr, br, bl } => {
-                        if let Some((p_tl, p_tr, p_br, p_bl)) = self.mesh_editor.get_quad_corners() {
+                        if let Some((p_tl, p_tr, p_br, p_bl)) = self.mesh_editor.get_quad_corners()
+                        {
                             *tl = (p_tl.x / scale, p_tl.y / scale);
                             *tr = (p_tr.x / scale, p_tr.y / scale);
                             *br = (p_br.x / scale, p_br.y / scale);
@@ -606,10 +601,8 @@ impl ModuleCanvas {
                     }
                     MeshType::BezierSurface { control_points } => {
                         let points = self.mesh_editor.get_bezier_points();
-                        *control_points = points
-                            .iter()
-                            .map(|(x, y)| (x / scale, y / scale))
-                            .collect();
+                        *control_points =
+                            points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
                     }
                     _ => {}
                 }
