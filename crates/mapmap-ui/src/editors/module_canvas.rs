@@ -894,9 +894,12 @@ impl ModuleCanvas {
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
                                                 #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
-                                                SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "🎮 Bevy Scene",
-                    _ => "❓ Unknown",
-                                            };
+                                            SourceType::Bevy
+                                            | SourceType::BevyAtmosphere { .. }
+                                            | SourceType::BevyHexGrid { .. }
+                                            | SourceType::BevyParticles { .. } => "🎮 Bevy Scene",
+                                            _ => "❓ Unknown",
+                                        };
 
                                             let mut next_type = None;
                                             egui::ComboBox::from_id_salt(format!("{}_source_type_picker", part_id))
