@@ -153,13 +153,10 @@ pub fn hex_grid_system(
 }
 
 pub fn particle_system(
-    mut commands: Commands,
-    query: Query<
-        (Entity, &crate::components::BevyParticles),
-        Changed<crate::components::BevyParticles>,
-    >,
+    _commands: Commands,
+    query: Query<(Entity, &crate::components::BevyParticles), Changed<crate::components::BevyParticles>>,
 ) {
-    for (entity, p_config) in query.iter() {
+    for (_entity, _p_config) in query.iter() {
         // Update particles logic (Simplified for now)
         // In a real implementation, we would update the bevy_enoki components here.
     }
