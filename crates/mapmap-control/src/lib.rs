@@ -52,6 +52,8 @@ pub mod osc;
 #[cfg(feature = "link")]
 pub mod link;
 
+pub mod hue;
+
 #[cfg(feature = "http-api")]
 pub mod web;
 
