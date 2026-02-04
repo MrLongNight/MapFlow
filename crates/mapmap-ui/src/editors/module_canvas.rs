@@ -892,8 +892,12 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
+                                                SourceType::BevyAtmosphere { .. } => "☁️ Bevy Atmosphere",
+                                                SourceType::BevyHexGrid { .. } => "🔷 Bevy Hex Grid",
+                                                SourceType::BevyParticles { .. } => "✨ Bevy Particles",
                                             };
 
                                             let mut next_type = None;
@@ -1239,27 +1243,6 @@ impl ModuleCanvas {
                                                     *flip_vertical = false;
                                                 }
 
-                                                // === VIDEO OPTIONS ===
-                                                ui.collapsing("🎬 Video Options", |ui| {
-                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-
-                                                    ui.separator();
-                                                    ui.label("Seek Position:");
-                                                    // Note: Actual seek requires video duration from player
-                                                    // For now, just show the control - needs integration with player state
-                                                    let mut seek_pos: f64 = 0.0;
-                                                    let seek_slider = ui.add(
-                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
-                                                            .text("Position")
-                                                            .suffix("%")
-                                                            .show_value(true)
-                                                    );
-                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
-                                                        // Convert percentage to duration-based seek
-                                                        // This will need actual video duration from player
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
-                                                    }
-                                                });
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -1484,6 +1467,18 @@ impl ModuleCanvas {
                                                 ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
+                                            }
+                                            SourceType::BevyAtmosphere { .. } => {
+                                                ui.label("☁️ Bevy Atmosphere");
+                                                ui.label(egui::RichText::new("Procedural Sky/Atmosphere").weak());
+                                            }
+                                            SourceType::BevyHexGrid { .. } => {
+                                                ui.label("🔷 Bevy Hex Grid");
+                                                ui.label(egui::RichText::new("3D Hexagonal Grid System").weak());
+                                            }
+                                            SourceType::BevyParticles { .. } => {
+                                                ui.label("✨ Bevy Particles");
+                                                ui.label(egui::RichText::new("GPU Particle System").weak());
                                             }
 
                                         }
@@ -1903,6 +1898,7 @@ impl ModuleCanvas {
                                                     // Handle discovery results
                                                     if let Some(rx) = &self.hue_discovery_rx {
                                                         if let Ok(result) = rx.try_recv() {
+                                                            let result: Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, String> = result;
                                                             self.hue_discovery_rx = None;
                                                             match result {
                                                                 Ok(bridges) => {
@@ -5182,6 +5178,9 @@ impl ModuleCanvas {
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
                     SourceType::Bevy => "Bevy Scene",
+                SourceType::BevyAtmosphere { .. } => "Bevy Atmosphere",
+                SourceType::BevyHexGrid { .. } => "Bevy Hex Grid",
+                SourceType::BevyParticles { .. } => "Bevy Particles",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5366,6 +5365,9 @@ impl ModuleCanvas {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
                 SourceType::Bevy => "🎮 Bevy Scene".to_string(),
+                SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
+                SourceType::BevyHexGrid { .. } => "🔷 Hex Grid".to_string(),
+                SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {
