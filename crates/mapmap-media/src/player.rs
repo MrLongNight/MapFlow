@@ -174,7 +174,7 @@ impl VideoPlayer {
                                     return self.last_frame.clone();
                                 }
                             }
-                            
+
                             let _ = self.status_sender.send(PlaybackStatus::Looped);
                             // Try to get the first frame again immediately so we don't drop a frame
                             if let Ok(frame) = self.decoder.next_frame() {

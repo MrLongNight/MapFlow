@@ -7,8 +7,8 @@ use mapmap_core::{
     audio_reactive::AudioTriggerData,
     module::{
         BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType, MapFlowModule,
-        MaskType, ModuleManager, ModulePart, ModulePartId, ModulePartType, ModuleSocketType,
-        ModulizerType, NodeLinkData, SourceType, TriggerType,
+        MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
+        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType,
     },
 };
 
@@ -872,14 +872,19 @@ impl ModuleCanvas {
                                                 ui.label("🔗 Shared Video Source");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Shared ID:");
+                                                    ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
+                                                    
                                                     egui::ComboBox::from_id_salt("shared_media_video")
-                                                        .selected_text(shared_id.clone())
+                                                        .selected_text("Select Existing")
                                                         .show_ui(ui, |ui| {
                                                             for id in shared_media_ids {
-                                                                ui.selectable_value(shared_id, id.clone(), id);
+                                                                if ui.selectable_label(shared_id == id, id).clicked() {
+                                                                    *shared_id = id.clone();
+                                                                }
                                                             }
                                                         });
                                                 });
+                                                ui.label(egui::RichText::new("Use the same ID to sync multiple nodes.").weak().small());
 
                                                 ui.separator();
                                                 Self::render_common_controls(
@@ -894,14 +899,19 @@ impl ModuleCanvas {
                                                  ui.label("🔗 Shared Image Source");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Shared ID:");
+                                                    ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
+
                                                     egui::ComboBox::from_id_salt("shared_media_image")
-                                                        .selected_text(shared_id.clone())
+                                                        .selected_text("Select Existing")
                                                         .show_ui(ui, |ui| {
                                                             for id in shared_media_ids {
-                                                                ui.selectable_value(shared_id, id.clone(), id);
+                                                                if ui.selectable_label(shared_id == id, id).clicked() {
+                                                                    *shared_id = id.clone();
+                                                                }
                                                             }
                                                         });
                                                 });
+                                                ui.label(egui::RichText::new("Use the same ID to sync multiple nodes.").weak().small());
 
                                                 ui.separator();
                                                 Self::render_common_controls(
@@ -1767,35 +1777,9 @@ impl ModuleCanvas {
                                                         }
                                                     }
 
-                                                    if ui.button("🔍 Discover Bridges").clicked() {
-                                                        let (tx, rx) = std::sync::mpsc::channel();
-                                                        self.hue_discovery_rx = Some(rx);
-                                                        // Spawn async task
-                                                        #[cfg(feature = "tokio")]
-                                                        {
-                                                            self.hue_status_message = Some("Searching...".to_string());
-                                                            tokio::spawn(async move {
-                                                                let result = mapmap_control::hue::api::discovery::discover_bridges().await
-                                                                    .map_err(|e| e.to_string());
-                                                                let _ = tx.send(result);
-                                                            });
-                                                        }
-                                                        #[cfg(not(feature = "tokio"))]
-                                                        {
-                                                            let _ = tx;
-                                                            self.hue_status_message = Some("Async runtime not available".to_string());
-                                                        }
-                                                    }
-
-                                                    if !self.hue_bridges.is_empty() {
-                                                        ui.separator();
-                                                        ui.label("Select Bridge:");
-                                                        for bridge in &self.hue_bridges {
-                                                            if ui.button(format!("{} ({})", bridge.id, bridge.ip)).clicked() {
-                                                                *bridge_ip = bridge.ip.clone();
-                                                            }
-                                                        }
-                                                    }
+                                                    // Using a block to allow attributes on expression
+                                                    // Hue Discovery Logic extracted to method to satisfy rustfmt
+                                                    self.render_hue_bridge_discovery(ui, bridge_ip);
 
                                                     ui.separator();
                                                     ui.label("Manual IP:");
@@ -2304,6 +2288,215 @@ impl ModuleCanvas {
         }
     }
 
+    /// Render Hue bridge discovery UI
+    #[rustfmt::skip]
+    fn render_hue_bridge_discovery(&mut self, ui: &mut egui::Ui, current_ip: &mut String) {
+        if ui.button("🔍 Discover Bridges").clicked() {
+            let (tx, rx) = std::sync::mpsc::channel();
+            self.hue_discovery_rx = Some(rx);
+            // Spawn async task
+            #[cfg(feature = "tokio")]
+            {
+                self.hue_status_message = Some("Searching...".to_string());
+                let task = async move {
+                    let result = mapmap_control::hue::api::discovery::discover_bridges().await
+                        .map_err(|e| e.to_string());
+                    let _ = tx.send(result);
+                };
+                tokio::spawn(task);
+            }
+            #[cfg(not(feature = "tokio"))]
+            {
+                let _ = tx;
+                self.hue_status_message = Some("Async runtime not available".to_string());
+            }
+        }
+
+        if !self.hue_bridges.is_empty() {
+            ui.separator();
+            ui.label("Select Bridge:");
+            for bridge in &self.hue_bridges {
+                if ui
+                    .button(format!("{} ({})", bridge.id, bridge.ip))
+                    .clicked()
+                {
+                    *current_ip = bridge.ip.clone();
+                }
+            }
+        }
+    }
+
+    /// Content for the Sources menu
+    fn render_sources_menu_content(
+        &mut self,
+        ui: &mut egui::Ui,
+        manager: &mut ModuleManager,
+        pos_override: Option<(f32, f32)>,
+    ) {
+        ui.label("--- 📁 File Based ---");
+        if ui.button("📹 Media File").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::new_media_file(String::new()),
+                pos_override,
+            );
+            ui.close();
+        }
+        if ui.button("📹 Video (Uni)").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::VideoUni {
+                    path: String::new(),
+                    speed: 1.0,
+                    loop_enabled: true,
+                    start_time: 0.0,
+                    end_time: 0.0,
+                    opacity: 1.0,
+                    blend_mode: None,
+                    brightness: 0.0,
+                    contrast: 1.0,
+                    saturation: 1.0,
+                    hue_shift: 0.0,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    rotation: 0.0,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    target_width: None,
+                    target_height: None,
+                    target_fps: None,
+                    flip_horizontal: false,
+                    flip_vertical: false,
+                    reverse_playback: false,
+                },
+                pos_override,
+            );
+            ui.close();
+        }
+        if ui.button("🖼 Image (Uni)").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::ImageUni {
+                    path: String::new(),
+                    opacity: 1.0,
+                    blend_mode: None,
+                    brightness: 0.0,
+                    contrast: 1.0,
+                    saturation: 1.0,
+                    hue_shift: 0.0,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    rotation: 0.0,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    target_width: None,
+                    target_height: None,
+                    flip_horizontal: false,
+                    flip_vertical: false,
+                },
+                pos_override,
+            );
+            ui.close();
+        }
+
+        ui.add_space(4.0);
+        ui.label("--- 🔗 Shared (Multi) ---");
+        if ui.button("📹 Video (Multi)").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::VideoMulti {
+                    shared_id: String::new(),
+                    opacity: 1.0,
+                    blend_mode: None,
+                    brightness: 0.0,
+                    contrast: 1.0,
+                    saturation: 1.0,
+                    hue_shift: 0.0,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    rotation: 0.0,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    flip_horizontal: false,
+                    flip_vertical: false,
+                },
+                pos_override,
+            );
+            ui.close();
+        }
+        if ui.button("🖼 Image (Multi)").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::ImageMulti {
+                    shared_id: String::new(),
+                    opacity: 1.0,
+                    blend_mode: None,
+                    brightness: 0.0,
+                    contrast: 1.0,
+                    saturation: 1.0,
+                    hue_shift: 0.0,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    rotation: 0.0,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    flip_horizontal: false,
+                    flip_vertical: false,
+                },
+                pos_override,
+            );
+            ui.close();
+        }
+
+        ui.add_space(4.0);
+        ui.label("--- 📡 Hardware & Network ---");
+        if ui.button("📹 Live Input").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::LiveInput { device_id: 0 },
+                pos_override,
+            );
+            ui.close();
+        }
+        if ui.button("📡 NDI Input").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::NdiInput { source_name: None },
+                pos_override,
+            );
+            ui.close();
+        }
+        #[cfg(target_os = "windows")]
+        if ui.button("🚰 Spout Input").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::SpoutInput {
+                    sender_name: String::new(),
+                },
+                pos_override,
+            );
+            ui.close();
+        }
+
+        ui.add_space(4.0);
+        ui.label("--- 🎨 Procedural & Misc ---");
+        if ui.button("🎨 Shader").clicked() {
+            self.add_source_node(
+                manager,
+                SourceType::Shader {
+                    name: "New Shader".to_string(),
+                    params: vec![],
+                },
+                pos_override,
+            );
+            ui.close();
+        }
+        if ui.button("🎮 Bevy Scene").clicked() {
+            self.add_source_node(manager, SourceType::Bevy, pos_override);
+            ui.close();
+        }
+    }
+
     /// Content for the Add Node menu (used by both toolbar and context menu)
     fn render_add_node_menu_content(
         &mut self,
@@ -2314,168 +2507,7 @@ impl ModuleCanvas {
         ui.set_min_width(150.0);
 
         ui.menu_button("🎬 Sources", |ui| {
-            ui.label("--- 📁 File Based ---");
-            if ui.button("📹 Media File").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::new_media_file(String::new()),
-                    pos_override,
-                );
-                ui.close();
-            }
-            if ui.button("📹 Video (Uni)").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::VideoUni {
-                        path: String::new(),
-                        speed: 1.0,
-                        loop_enabled: true,
-                        start_time: 0.0,
-                        end_time: 0.0,
-                        opacity: 1.0,
-                        blend_mode: None,
-                        brightness: 0.0,
-                        contrast: 1.0,
-                        saturation: 1.0,
-                        hue_shift: 0.0,
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        rotation: 0.0,
-                        offset_x: 0.0,
-                        offset_y: 0.0,
-                        target_width: None,
-                        target_height: None,
-                        target_fps: None,
-                        flip_horizontal: false,
-                        flip_vertical: false,
-                        reverse_playback: false,
-                    },
-                    pos_override,
-                );
-                ui.close();
-            }
-            if ui.button("🖼 Image (Uni)").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::ImageUni {
-                        path: String::new(),
-                        opacity: 1.0,
-                        blend_mode: None,
-                        brightness: 0.0,
-                        contrast: 1.0,
-                        saturation: 1.0,
-                        hue_shift: 0.0,
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        rotation: 0.0,
-                        offset_x: 0.0,
-                        offset_y: 0.0,
-                        target_width: None,
-                        target_height: None,
-                        flip_horizontal: false,
-                        flip_vertical: false,
-                    },
-                    pos_override,
-                );
-                ui.close();
-            }
-
-            ui.add_space(4.0);
-            ui.label("--- 🔗 Shared (Multi) ---");
-            if ui.button("📹 Video (Multi)").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::VideoMulti {
-                        shared_id: String::new(),
-                        opacity: 1.0,
-                        blend_mode: None,
-                        brightness: 0.0,
-                        contrast: 1.0,
-                        saturation: 1.0,
-                        hue_shift: 0.0,
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        rotation: 0.0,
-                        offset_x: 0.0,
-                        offset_y: 0.0,
-                        flip_horizontal: false,
-                        flip_vertical: false,
-                    },
-                    pos_override,
-                );
-                ui.close();
-            }
-            if ui.button("🖼 Image (Multi)").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::ImageMulti {
-                        shared_id: String::new(),
-                        opacity: 1.0,
-                        blend_mode: None,
-                        brightness: 0.0,
-                        contrast: 1.0,
-                        saturation: 1.0,
-                        hue_shift: 0.0,
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        rotation: 0.0,
-                        offset_x: 0.0,
-                        offset_y: 0.0,
-                        flip_horizontal: false,
-                        flip_vertical: false,
-                    },
-                    pos_override,
-                );
-                ui.close();
-            }
-
-            ui.add_space(4.0);
-            ui.label("--- 📡 Hardware & Network ---");
-            if ui.button("📹 Live Input").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::LiveInput { device_id: 0 },
-                    pos_override,
-                );
-                ui.close();
-            }
-            if ui.button("📡 NDI Input").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::NdiInput { source_name: None },
-                    pos_override,
-                );
-                ui.close();
-            }
-            #[cfg(target_os = "windows")]
-            if ui.button("🚰 Spout Input").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::SpoutInput {
-                        sender_name: String::new(),
-                    },
-                    pos_override,
-                );
-                ui.close();
-            }
-
-            ui.add_space(4.0);
-            ui.label("--- 🎨 Procedural & Misc ---");
-            if ui.button("🎨 Shader").clicked() {
-                self.add_source_node(
-                    manager,
-                    SourceType::Shader {
-                        name: "New Shader".to_string(),
-                        params: vec![],
-                    },
-                    pos_override,
-                );
-                ui.close();
-            }
-            if ui.button("🎮 Bevy Scene").clicked() {
-                self.add_source_node(manager, SourceType::Bevy, pos_override);
-                ui.close();
-            }
+            self.render_sources_menu_content(ui, manager, pos_override);
         });
 
         ui.menu_button("⚡ Triggers", |ui| {
@@ -3094,8 +3126,8 @@ impl ModuleCanvas {
             move |pos: Pos2| -> Pos2 { canvas_rect.min + (pos.to_vec2() + pan_offset) * zoom };
 
         let from_screen = move |screen_pos: Pos2| -> Pos2 {
-            let v = (screen_pos.to_vec2() - pan_offset) / zoom;
-            Pos2::new(v.x, v.y)
+            let canvas_pos = (screen_pos.to_vec2() - pan_offset) / zoom;
+            Pos2::new(canvas_pos.x, canvas_pos.y)
         };
 
         // Draw grid
