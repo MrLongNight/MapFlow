@@ -264,14 +264,14 @@ pub struct ModuleCanvas {
     pub player_info: std::collections::HashMap<ModulePartId, MediaPlayerInfo>,
 
     // Hue Integration
-    /// Discovered Hue bridges
-    pub hue_bridges: Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>,
-    /// Channel for Hue discovery results
-    pub hue_discovery_rx: Option<
-        std::sync::mpsc::Receiver<
-            Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, String>,
-        >,
-    >,
+    // /// Discovered Hue bridges
+    // pub hue_bridges: Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>,
+    // /// Channel for Hue discovery results
+    // pub hue_discovery_rx: Option<
+    //     std::sync::mpsc::Receiver<
+    //         Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, String>,
+    //     >,
+    // >,
     /// Status message for Hue operations
     pub hue_status_message: Option<String>,
     /// Last known trigger values for visualization (Part ID -> Value 0.0-1.0)
@@ -362,8 +362,8 @@ impl Default for ModuleCanvas {
             diagnostic_issues: Vec::new(),
             show_diagnostics: false,
             player_info: std::collections::HashMap::new(),
-            hue_bridges: Vec::new(),
-            hue_discovery_rx: None,
+            // hue_bridges: Vec::new(),
+            // hue_discovery_rx: None,
             hue_status_message: None,
             last_trigger_values: std::collections::HashMap::new(),
             mesh_editor: MeshEditor::new(),
@@ -581,6 +581,42 @@ impl ModuleCanvas {
                         self.last_mesh_edit_id = Some(part_id);
                     }
                 }
+            }
+
+            ui.separator();
+
+            // Procedural Mesh Parameters
+            match mesh {
+                MeshType::Grid { rows, cols } => {
+                    ui.label("Grid Resolution:");
+                    ui.add(egui::Slider::new(rows, 2..=100).text("Rows"));
+                    ui.add(egui::Slider::new(cols, 2..=100).text("Cols"));
+                }
+                MeshType::Circle {
+                    segments,
+                    arc_angle,
+                } => {
+                    ui.label("Circle Parameters:");
+                    ui.add(egui::Slider::new(segments, 3..=128).text("Segments"));
+                    ui.add(egui::Slider::new(arc_angle, 0.0..=std::f32::consts::TAU).text("Angle"));
+                }
+                MeshType::Cylinder { segments, height } => {
+                    ui.label("Cylinder Parameters:");
+                    ui.add(egui::Slider::new(segments, 3..=64).text("Segments"));
+                    ui.horizontal(|ui| {
+                        ui.label("Height:");
+                        ui.add(egui::DragValue::new(height).speed(0.1));
+                    });
+                }
+                MeshType::Sphere {
+                    lat_segments,
+                    lon_segments,
+                } => {
+                    ui.label("Sphere Parameters:");
+                    ui.add(egui::Slider::new(lat_segments, 3..=64).text("Lat Segments"));
+                    ui.add(egui::Slider::new(lon_segments, 3..=64).text("Lon Segments"));
+                }
+                _ => {}
             }
 
             ui.separator();
@@ -892,8 +928,10 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
+                                                _ => "🎮 Bevy Proc",
                                             };
 
                                             let mut next_type = None;
@@ -1240,26 +1278,7 @@ impl ModuleCanvas {
                                                 }
 
                                                 // === VIDEO OPTIONS ===
-                                                ui.collapsing("🎬 Video Options", |ui| {
-                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-
-                                                    ui.separator();
-                                                    ui.label("Seek Position:");
-                                                    // Note: Actual seek requires video duration from player
-                                                    // For now, just show the control - needs integration with player state
-                                                    let mut seek_pos: f64 = 0.0;
-                                                    let seek_slider = ui.add(
-                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
-                                                            .text("Position")
-                                                            .suffix("%")
-                                                            .show_value(true)
-                                                    );
-                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
-                                                        // Convert percentage to duration-based seek
-                                                        // This will need actual video duration from player
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
-                                                    }
-                                                });
+                                                // Removed for ImageUni
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -1484,6 +1503,11 @@ impl ModuleCanvas {
                                                 ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
+                                            }
+                                            // Handle remaining Bevy variants generically
+                                            SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
+                                                ui.label("🎮 Bevy Procedural Scene");
+                                                ui.label("Parameters configurable in future update.");
                                             }
 
                                         }
@@ -1777,11 +1801,13 @@ impl ModuleCanvas {
                                         };
 
                                         match layer {
-                                            LayerType::Single { id, name, opacity, blend_mode, mesh } => {
+                                            LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_mode } => {
                                                 ui.label("🔲 Single Layer");
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+
+                                                ui.checkbox(mapping_mode, "Mapping Mode (Grid + ID)");
 
                                                 // Blend mode
                                                 let blend_text = blend_mode.as_ref().map(|b| format!("{:?}", b)).unwrap_or_else(|| "None".to_string());
@@ -1794,10 +1820,11 @@ impl ModuleCanvas {
 
                                                 render_mesh_ui(ui, mesh, *id);
                                             }
-                                            LayerType::Group { name, opacity, mesh, .. } => {
+                                            LayerType::Group { name, opacity, mesh, mapping_mode, .. } => {
                                                 ui.label("📂 Group");
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+                                                ui.checkbox(mapping_mode, "Mapping Mode (Grid + ID)");
                                                 render_mesh_ui(ui, mesh, 9999); // Dummy ID
                                             }
                                             LayerType::All { opacity, .. } => {
@@ -1900,7 +1927,8 @@ impl ModuleCanvas {
                                                         ui.label(format!("Status: {}", msg));
                                                     }
 
-                                                    // Handle discovery results
+                                                    // Handle discovery results (Commented out due to broken dependency)
+                                                    /*
                                                     if let Some(rx) = &self.hue_discovery_rx {
                                                         if let Ok(result) = rx.try_recv() {
                                                             self.hue_discovery_rx = None;
@@ -1920,10 +1948,12 @@ impl ModuleCanvas {
                                                             });
                                                         }
                                                     }
+                                                    */
 
                                                     // Using a block to allow attributes on expression
                                                     // Hue Discovery Logic extracted to method to satisfy rustfmt
-                                                    self.render_hue_bridge_discovery(ui, bridge_ip);
+                                                    // self.render_hue_bridge_discovery(ui, bridge_ip);
+                                                    ui.label("Hue discovery disabled (compilation fix).");
 
                                                     ui.separator();
                                                     ui.label("Manual IP:");
@@ -2434,40 +2464,42 @@ impl ModuleCanvas {
 
     /// Render Hue bridge discovery UI
     #[rustfmt::skip]
-    fn render_hue_bridge_discovery(&mut self, ui: &mut egui::Ui, current_ip: &mut String) {
-        if ui.button("🔍 Discover Bridges").clicked() {
-            let (tx, rx) = std::sync::mpsc::channel();
-            self.hue_discovery_rx = Some(rx);
-            // Spawn async task
-            #[cfg(feature = "tokio")]
-            {
-                self.hue_status_message = Some("Searching...".to_string());
-                let task = async move {
-                    let result = mapmap_control::hue::api::discovery::discover_bridges().await
-                        .map_err(|e| e.to_string());
-                    let _ = tx.send(result);
-                };
-                tokio::spawn(task);
-            }
-            #[cfg(not(feature = "tokio"))]
-            {
-                let _ = tx;
-                self.hue_status_message = Some("Async runtime not available".to_string());
-            }
-        }
+    #[allow(dead_code)]
+    fn render_hue_bridge_discovery(&mut self, ui: &mut egui::Ui, _current_ip: &mut String) {
+        ui.label("Hue discovery temporarily disabled.");
+        // if ui.button("🔍 Discover Bridges").clicked() {
+        //     let (tx, rx) = std::sync::mpsc::channel();
+        //     self.hue_discovery_rx = Some(rx);
+        //     // Spawn async task
+        //     #[cfg(feature = "tokio")]
+        //     {
+        //         self.hue_status_message = Some("Searching...".to_string());
+        //         let task = async move {
+        //             let result = mapmap_control::hue::api::discovery::discover_bridges().await
+        //                 .map_err(|e| e.to_string());
+        //             let _ = tx.send(result);
+        //         };
+        //         tokio::spawn(task);
+        //     }
+        //     #[cfg(not(feature = "tokio"))]
+        //     {
+        //         let _ = tx;
+        //         self.hue_status_message = Some("Async runtime not available".to_string());
+        //     }
+        // }
 
-        if !self.hue_bridges.is_empty() {
-            ui.separator();
-            ui.label("Select Bridge:");
-            for bridge in &self.hue_bridges {
-                if ui
-                    .button(format!("{} ({})", bridge.id, bridge.ip))
-                    .clicked()
-                {
-                    *current_ip = bridge.ip.clone();
-                }
-            }
-        }
+        // if !self.hue_bridges.is_empty() {
+        //     ui.separator();
+        //     ui.label("Select Bridge:");
+        //     for bridge in &self.hue_bridges {
+        //         if ui
+        //             .button(format!("{} ({})", bridge.id, bridge.ip))
+        //             .clicked()
+        //         {
+        //             *current_ip = bridge.ip.clone();
+        //         }
+        //     }
+        // }
     }
 
     /// Content for the Sources menu
@@ -4467,7 +4499,7 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let glow_color = cable_color.linear_multiply(0.3);
+                let _glow_color = cable_color.linear_multiply(0.3);
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
@@ -5182,6 +5214,7 @@ impl ModuleCanvas {
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
                     SourceType::Bevy => "Bevy Scene",
+                    _ => "Bevy Proc",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5366,6 +5399,7 @@ impl ModuleCanvas {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
                 SourceType::Bevy => "🎮 Bevy Scene".to_string(),
+                SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "🎮 Bevy Proc".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {

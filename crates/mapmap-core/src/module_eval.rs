@@ -356,6 +356,8 @@ pub struct RenderOp {
     pub effects: Vec<ModulizerType>,
     /// Applied masks
     pub masks: Vec<MaskType>,
+    /// Whether to show mapping mode (grid + ID)
+    pub mapping_mode: bool,
 }
 
 /// Evaluation result for a single frame
@@ -718,6 +720,7 @@ impl ModuleEvaluator {
                                     mesh,
                                     opacity,
                                     blend_mode,
+                                    mapping_mode,
                                     ..
                                 } => {
                                     let chain = self.trace_chain(layer_part.id, module);
@@ -734,12 +737,14 @@ impl ModuleEvaluator {
                                         source_props: chain.source_props,
                                         effects: chain.effects,
                                         masks: chain.masks,
+                                        mapping_mode: *mapping_mode,
                                     });
                                 }
                                 LayerType::Group {
                                     opacity,
                                     blend_mode,
                                     mesh,
+                                    mapping_mode,
                                     ..
                                 } => {
                                     let chain = self.trace_chain(layer_part.id, module);
@@ -756,6 +761,7 @@ impl ModuleEvaluator {
                                         source_props: chain.source_props.clone(),
                                         effects: chain.effects,
                                         masks: chain.masks,
+                                        mapping_mode: *mapping_mode,
                                     });
                                 }
                                 LayerType::All { .. } => {

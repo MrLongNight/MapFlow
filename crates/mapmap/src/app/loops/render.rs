@@ -270,10 +270,31 @@ fn render_content(
     // Accumulate Layers
     mesh_renderer.begin_frame();
     for (module_id, op) in target_ops {
-        let tex_name = if let Some(src_id) = op.source_part_id {
-            format!("part_{}_{}", module_id, src_id)
+        let (tex_name, opacity_mult) = if op.mapping_mode {
+            let grid_tex_name = format!("system_grid_texture_{}", op.layer_part_id);
+            // Ensure grid texture exists for this layer ID
+            if !ctx.texture_pool.has_texture(&grid_tex_name) {
+                let (width, height, data) = create_grid_texture(op.layer_part_id);
+                ctx.texture_pool.ensure_texture(
+                    &grid_tex_name,
+                    width,
+                    height,
+                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                );
+                ctx.texture_pool.upload_data(
+                    queue,
+                    &grid_tex_name,
+                    &data,
+                    width,
+                    height,
+                );
+            }
+            (grid_tex_name, 1.0)
+        } else if let Some(src_id) = op.source_part_id {
+            (format!("part_{}_{}", module_id, src_id), op.opacity)
         } else {
-            "".to_string()
+            ("".to_string(), op.opacity)
         };
 
         // Use has_texture and get_view. Assuming dimensions are handled via UVs properly.
@@ -288,7 +309,7 @@ fn render_content(
             let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(
                 queue,
                 transform,
-                op.opacity * op.source_props.opacity,
+                opacity_mult * op.source_props.opacity,
                 op.source_props.flip_horizontal,
                 op.source_props.flip_vertical,
                 op.source_props.brightness,
@@ -481,6 +502,133 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                         &texture_bind_group,
                         false,
                     );
+                }
+            }
+        }
+    }
+}
+
+/// Creates a grid texture for mapping mode with Layer ID
+fn create_grid_texture(layer_id: u64) -> (u32, u32, Vec<u8>) {
+    let width = 512;
+    let height = 512;
+    let mut data = vec![0; (width * height * 4) as usize];
+
+    // Background Pattern
+    for y in 0..height {
+        for x in 0..width {
+            let idx = ((y * width + x) * 4) as usize;
+
+            // Grid lines every 64 pixels
+            let is_grid = x % 64 < 2 || y % 64 < 2;
+            // Center crosshair
+            let is_center = (x as i32 - width as i32 / 2).abs() < 4
+                || (y as i32 - height as i32 / 2).abs() < 4;
+            // Border
+            let is_border = x < 4 || x > width - 5 || y < 4 || y > height - 5;
+
+            if is_center {
+                // Red
+                data[idx] = 255;
+                data[idx + 1] = 0;
+                data[idx + 2] = 0;
+                data[idx + 3] = 255;
+            } else if is_border {
+                // Yellow
+                data[idx] = 255;
+                data[idx + 1] = 255;
+                data[idx + 2] = 0;
+                data[idx + 3] = 255;
+            } else if is_grid {
+                // Black
+                data[idx] = 0;
+                data[idx + 1] = 0;
+                data[idx + 2] = 0;
+                data[idx + 3] = 255;
+            } else {
+                // White/Grey checkerboard
+                let check = ((x / 32) + (y / 32)) % 2 == 0;
+                let val = if check { 255 } else { 220 };
+                data[idx] = val;
+                data[idx + 1] = val;
+                data[idx + 2] = val;
+                data[idx + 3] = 255;
+            }
+        }
+    }
+
+    // Draw ID Number
+    let id_str = format!("{}", layer_id);
+    let digit_scale = 8; // Scale up pixels
+    let digit_spacing = 40; // Pixels between digits
+    let start_x = (width / 2) as i32 - ((id_str.len() as i32 * digit_spacing) / 2);
+    let start_y = (height / 2) as i32 - 60; // Slightly above center
+
+    for (i, c) in id_str.chars().enumerate() {
+        if let Some(digit) = c.to_digit(10) {
+            draw_digit(
+                &mut data,
+                width,
+                height,
+                start_x + (i as i32 * digit_spacing),
+                start_y,
+                digit as usize,
+                digit_scale,
+            );
+        }
+    }
+
+    (width, height, data)
+}
+
+/// Helper to draw a digit into the texture buffer
+fn draw_digit(
+    data: &mut [u8],
+    width: u32,
+    height: u32,
+    pos_x: i32,
+    pos_y: i32,
+    digit: usize,
+    scale: i32,
+) {
+    // 3x5 Pixel Font Definitions (1 = On, 0 = Off)
+    const FONT: [[u8; 15]; 10] = [
+        [1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1], // 0
+        [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0], // 1
+        [1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1], // 2
+        [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1], // 3
+        [1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1], // 4
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1], // 5
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1], // 6
+        [1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], // 7
+        [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1], // 8
+        [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1], // 9
+    ];
+
+    if digit >= 10 {
+        return;
+    }
+
+    let pattern = &FONT[digit];
+
+    for fy in 0..5 {
+        for fx in 0..3 {
+            if pattern[fy * 3 + fx] == 1 {
+                // Draw scaled pixel block
+                for dy in 0..scale {
+                    for dx in 0..scale {
+                        let px = pos_x + (fx as i32 * scale) + dx;
+                        let py = pos_y + (fy as i32 * scale) + dy;
+
+                        if px >= 0 && px < width as i32 && py >= 0 && py < height as i32 {
+                            let idx = ((py as u32 * width + px as u32) * 4) as usize;
+                            // Draw Blue text
+                            data[idx] = 0;
+                            data[idx + 1] = 0;
+                            data[idx + 2] = 255;
+                            data[idx + 3] = 255;
+                        }
+                    }
                 }
             }
         }

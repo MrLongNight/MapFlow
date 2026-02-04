@@ -160,6 +160,78 @@ impl MeshEditor {
         }
     }
 
+    /// Create a default triangle mesh
+    pub fn create_triangle(&mut self, center: Pos2, size: f32) {
+        let half = size / 2.0;
+        let top = Pos2::new(center.x, center.y - half);
+        let br = Pos2::new(center.x + half, center.y + half);
+        let bl = Pos2::new(center.x - half, center.y + half);
+
+        self.vertices.clear();
+        self.faces.clear();
+
+        self.vertices.push(Vertex {
+            position: top,
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+        self.vertices.push(Vertex {
+            position: br,
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+        self.vertices.push(Vertex {
+            position: bl,
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+
+        self.faces.push(Face {
+            vertices: [0, 1, 2],
+        });
+    }
+
+    /// Create a circle mesh (approximated)
+    pub fn create_circle(&mut self, center: Pos2, radius: f32, segments: usize) {
+        self.vertices.clear();
+        self.faces.clear();
+
+        // Center vertex
+        self.vertices.push(Vertex {
+            position: center,
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+
+        // Perimeter
+        for i in 0..segments {
+            let angle = (i as f32 / segments as f32) * std::f32::consts::TAU;
+            let pos = Pos2::new(
+                center.x + radius * angle.cos(),
+                center.y + radius * angle.sin(),
+            );
+            self.vertices.push(Vertex {
+                position: pos,
+                control_in: None,
+                control_out: None,
+                selected: false,
+            });
+        }
+
+        // Faces
+        for i in 0..segments {
+            let v1 = i + 1;
+            let v2 = (i + 1) % segments + 1;
+            self.faces.push(Face {
+                vertices: [0, v1, v2],
+            });
+        }
+    }
+
     /// Populate mesh from a flattened list of bezier points (Pos, In, Out)
     pub fn set_from_bezier_points(&mut self, points: &[(f32, f32)]) {
         self.vertices.clear();

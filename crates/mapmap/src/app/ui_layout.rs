@@ -572,7 +572,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     // Render Oscillator Panel
     app.ui_state
         .oscillator_panel
-        .render(ctx, &app.ui_state.i18n, &mut app.state.oscillator_config);
+        .show(ctx, &app.ui_state.i18n, &mut app.state.oscillator_config);
 
     // Handle Effect Chain Actions
     for action in app.ui_state.effect_chain_panel.take_actions() {

@@ -105,6 +105,7 @@ impl MapFlowModule {
                 opacity: 1.0,
                 blend_mode: None,
                 mesh: default_mesh_quad(),
+                mapping_mode: false,
             }),
 
             PartType::Hue => ModulePartType::Hue(HueNodeType::SingleLamp {
@@ -1556,14 +1557,95 @@ impl MeshType {
                 Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
             }
             MeshType::BezierSurface { control_points } => {
-                // For Bezier surface, create a grid and warp it based on control points
-                // For now, use a simple grid as a placeholder until full Bezier implementation
-                if control_points.len() >= 4 {
-                    // TODO: Implement proper Bezier surface interpolation
-                    Mesh::create_grid(8, 8)
-                } else {
-                    Mesh::quad()
+                // Create high-res grid for smooth warping
+                let mut mesh = Mesh::create_grid(20, 20);
+
+                // If we have 16 points (4x4), treat as full Bezier Patch
+                if control_points.len() == 16 {
+                    use crate::mesh::BezierPatch;
+                    let mut patch = BezierPatch::new();
+
+                    // Populate control points
+                    for i in 0..4 {
+                        for j in 0..4 {
+                            let idx = i * 4 + j;
+                            let p = control_points[idx];
+                            patch.control_points[i][j] = Vec2::new(p.0, p.1);
+                        }
+                    }
+
+                    patch.apply_to_mesh(&mut mesh);
                 }
+                // If we have 12 points (4 verts * 3 [Pos, In, Out]), map to Bezier Patch (approximate Coons)
+                // Assuming order: TL, TR, BR, BL
+                else if control_points.len() == 12 {
+                    use crate::mesh::BezierPatch;
+                    let mut patch = BezierPatch::new();
+
+                    // Extract corners and handles
+                    // Flattened: [V0_pos, V0_in, V0_out, V1_pos, V1_in, V1_out, ...]
+                    // Indices:
+                    // TL: 0(Pos), 1(In), 2(Out)
+                    // TR: 3(Pos), 4(In), 5(Out)
+                    // BR: 6(Pos), 7(In), 8(Out)
+                    // BL: 9(Pos), 10(In), 11(Out)
+
+                    let get_v = |i: usize| Vec2::new(control_points[i].0, control_points[i].1);
+
+                    let tl = get_v(0);
+                    let tr = get_v(3);
+                    let br = get_v(6);
+                    let bl = get_v(9);
+
+                    // Map corners
+                    patch.control_points[0][0] = tl;
+                    patch.control_points[0][3] = tr;
+                    patch.control_points[3][3] = br;
+                    patch.control_points[3][0] = bl;
+
+                    // Map Edges (using Handles)
+                    // Top Edge: TL.Out -> TR.In (Approximate logic: Editor might not distinguish H/V handles)
+                    // If handles are absolute positions:
+                    patch.control_points[0][1] = get_v(2); // TL Out
+                    patch.control_points[0][2] = get_v(4); // TR In
+
+                    // Right Edge
+                    patch.control_points[1][3] = get_v(5); // TR Out (Rotated?) - Simplification
+                    patch.control_points[2][3] = get_v(7); // BR In
+
+                    // Bottom Edge
+                    patch.control_points[3][2] = get_v(8); // BR Out
+                    patch.control_points[3][1] = get_v(10); // BL In
+
+                    // Left Edge
+                    patch.control_points[2][0] = get_v(11); // BL Out
+                    patch.control_points[1][0] = get_v(1); // TL In
+
+                    // Internal points (Coons Patch Approximation)
+                    // Linearly interpolate from boundaries
+                    for i in 1..3 {
+                        for j in 1..3 {
+                            let u = j as f32 / 3.0;
+                            let v = i as f32 / 3.0;
+
+                            let top = patch.control_points[0][j];
+                            let bottom = patch.control_points[3][j];
+                            let left = patch.control_points[i][0];
+                            let right = patch.control_points[i][3];
+
+                            // Bilinear blend
+                            let p1 = top.lerp(bottom, v);
+                            let p2 = left.lerp(right, u);
+
+                            // Average
+                            patch.control_points[i][j] = (p1 + p2) * 0.5;
+                        }
+                    }
+
+                    patch.apply_to_mesh(&mut mesh);
+                }
+
+                mesh
             }
             MeshType::Polygon { vertices } => {
                 // Create a triangle fan from polygon vertices
@@ -1919,6 +2001,9 @@ pub enum LayerType {
         /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Whether to show mapping mode (grid + ID)
+        #[serde(default)]
+        mapping_mode: bool,
     },
     /// A group of layers
     Group {
@@ -1931,6 +2016,9 @@ pub enum LayerType {
         /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Whether to show mapping mode (grid + ID)
+        #[serde(default)]
+        mapping_mode: bool,
     },
     /// Special layer representing "All Layers"
     All {
