@@ -111,7 +111,7 @@ impl OscillatorPanel {
             sim_changed |= ui
                 .add(
                     DragValue::new(&mut self.config.kernel_radius)
-                        .clamp_range(1.0..=64.0)
+                        .range(1.0..=64.0)
                         .speed(0.5),
                 )
                 .changed();
@@ -122,7 +122,7 @@ impl OscillatorPanel {
             sim_changed |= ui
                 .add(
                     DragValue::new(&mut self.config.noise_amount)
-                        .clamp_range(0.0..=1.0)
+                        .range(0.0..=1.0)
                         .speed(0.01),
                 )
                 .changed();
@@ -139,7 +139,7 @@ impl OscillatorPanel {
             dist_changed |= ui
                 .add(
                     DragValue::new(&mut self.config.distortion_amount)
-                        .clamp_range(0.0..=1.0)
+                        .range(0.0..=1.0)
                         .speed(0.01),
                 )
                 .changed();
@@ -150,7 +150,7 @@ impl OscillatorPanel {
             dist_changed |= ui
                 .add(
                     DragValue::new(&mut self.config.distortion_scale)
-                        .clamp_range(0.0..=0.1)
+                        .range(0.0..=0.1)
                         .speed(0.001),
                 )
                 .changed();
@@ -161,7 +161,7 @@ impl OscillatorPanel {
             dist_changed |= ui
                 .add(
                     DragValue::new(&mut self.config.distortion_speed)
-                        .clamp_range(0.0..=4.0)
+                        .range(0.0..=4.0)
                         .speed(0.01),
                 )
                 .changed();
@@ -178,7 +178,7 @@ impl OscillatorPanel {
             viz_changed |= ui
                 .add(
                     DragValue::new(&mut self.config.overlay_opacity)
-                        .clamp_range(0.0..=1.0)
+                        .range(0.0..=1.0)
                         .speed(0.01),
                 )
                 .changed();
@@ -187,7 +187,7 @@ impl OscillatorPanel {
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-color-mode"));
             let selected_text = format!("{:?}", self.config.color_mode);
-            viz_changed |= ComboBox::from_id_source("color_mode")
+            viz_changed |= ComboBox::from_id_salt("color_mode")
                 .selected_text(selected_text)
                 .show_ui(ui, |ui| {
                     let mut changed = false;

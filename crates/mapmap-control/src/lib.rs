@@ -49,9 +49,6 @@ pub mod dmx;
 #[cfg(feature = "osc")]
 pub mod osc;
 
-#[cfg(feature = "link")]
-pub mod link;
-
 #[cfg(feature = "http-api")]
 pub mod web;
 
@@ -71,9 +68,6 @@ pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfi
 
 #[cfg(feature = "osc")]
 pub use osc::{OscClient, OscMapping, OscServer};
-
-#[cfg(feature = "link")]
-pub use link::AbletonLinkHandle;
 
 #[cfg(feature = "http-api")]
 pub use web::{WebServer, WebServerConfig};
