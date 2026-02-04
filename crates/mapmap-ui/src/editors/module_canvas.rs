@@ -898,7 +898,6 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "🎮 Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🎮 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "🎮 Particles",
-                                                _ => "❓ Unknown",
                                             };
 
                                             let mut next_type = None;
@@ -4459,7 +4458,7 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let glow_color = cable_color.linear_multiply(0.3);
+                let _glow_color = cable_color.linear_multiply(0.3);
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
@@ -5174,6 +5173,9 @@ impl ModuleCanvas {
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
                     SourceType::Bevy => "Bevy Scene",
+                    SourceType::BevyAtmosphere { .. } => "Atmosphere",
+                    SourceType::BevyHexGrid { .. } => "Hex Grid",
+                    SourceType::BevyParticles { .. } => "Particles",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
