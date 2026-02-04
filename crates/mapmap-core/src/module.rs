@@ -2192,6 +2192,11 @@ impl ModuleManager {
         self.modules.values().collect()
     }
 
+    /// Iterator over all modules
+    pub fn iter_modules(&self) -> impl Iterator<Item = &MapFlowModule> {
+        self.modules.values()
+    }
+
     /// Set module color
     pub fn set_module_color(&mut self, id: ModuleId, color: [f32; 4]) {
         if let Some(module) = self.modules.get_mut(&id) {
@@ -2496,6 +2501,20 @@ mod tests {
         manager.delete_module(id1);
         assert_eq!(manager.list_modules().len(), 1);
         assert!(manager.get_module(id1).is_none());
+    }
+
+    #[test]
+    fn test_iter_modules() {
+        let mut manager = ModuleManager::new();
+        manager.create_module("A".to_string());
+        manager.create_module("B".to_string());
+
+        let count = manager.iter_modules().count();
+        assert_eq!(count, 2);
+
+        let names: Vec<String> = manager.iter_modules().map(|m| m.name.clone()).collect();
+        assert!(names.contains(&"A".to_string()));
+        assert!(names.contains(&"B".to_string()));
     }
 }
 
