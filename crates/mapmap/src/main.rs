@@ -12,7 +12,6 @@ pub mod ui;
 mod window_manager;
 
 use anyhow::Result;
-#[cfg(feature = "midi")]
 use mapmap_core::{audio::backend::AudioBackend, audio_reactive::AudioTriggerData};
 
 // Define McpAction locally or import if we move it to core later -> Removed local definition

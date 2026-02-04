@@ -5162,10 +5162,7 @@ impl ModuleCanvas {
                     SourceType::ImageUni { .. } => "Image (Uni)",
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
-                    SourceType::Bevy
-                    | SourceType::BevyAtmosphere { .. }
-                    | SourceType::BevyHexGrid { .. }
-                    | SourceType::BevyParticles { .. } => "Bevy Scene",
+                    SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "Bevy Scene",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5349,10 +5346,7 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name } => {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
-                SourceType::Bevy
-                | SourceType::BevyAtmosphere { .. }
-                | SourceType::BevyHexGrid { .. }
-                | SourceType::BevyParticles { .. } => "🎮 Bevy Scene".to_string(),
+                SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => "🎮 Bevy Scene".to_string(),
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {

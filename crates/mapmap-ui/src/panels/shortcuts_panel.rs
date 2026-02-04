@@ -209,7 +209,9 @@ impl ShortcutsPanel {
                         self.editing_shortcut_index = None;
                     } else if let Some(key) = input.events.iter().find_map(|e| match e {
                         egui::Event::Key {
-                            key, pressed: true, ..
+                            key,
+                            pressed: true,
+                            ..
                         } => Some(key),
                         _ => None,
                     }) {
