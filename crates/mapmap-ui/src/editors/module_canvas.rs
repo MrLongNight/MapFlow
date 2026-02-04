@@ -899,8 +899,12 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
-                                                SourceType::Bevy => "🎮 Bevy Scene",
+                                                SourceType::Bevy
+                                                | SourceType::BevyAtmosphere { .. }
+                                                | SourceType::BevyHexGrid { .. }
+                                                | SourceType::BevyParticles { .. } => "🎮 Bevy Scene",
                                             };
 
                                             let mut next_type = None;
@@ -1246,27 +1250,6 @@ impl ModuleCanvas {
                                                     *flip_vertical = false;
                                                 }
 
-                                                // === VIDEO OPTIONS ===
-                                                ui.collapsing("🎬 Video Options", |ui| {
-                                                    ui.checkbox(reverse_playback, "⏪ Reverse Playback");
-
-                                                    ui.separator();
-                                                    ui.label("Seek Position:");
-                                                    // Note: Actual seek requires video duration from player
-                                                    // For now, just show the control - needs integration with player state
-                                                    let mut seek_pos: f64 = 0.0;
-                                                    let seek_slider = ui.add(
-                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
-                                                            .text("Position")
-                                                            .suffix("%")
-                                                            .show_value(true)
-                                                    );
-                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
-                                                        // Convert percentage to duration-based seek
-                                                        // This will need actual video duration from player
-                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
-                                                    }
-                                                });
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
@@ -1480,6 +1463,7 @@ impl ModuleCanvas {
                                                 ui.label("📡 NDI Input (Feature Disabled)");
                                             }
                                             #[cfg(target_os = "windows")]
+                                            #[cfg(target_os = "windows")]
                                             SourceType::SpoutInput { sender_name } => {
                                                 ui.label("🚰 Spout Input");
                                                 ui.horizontal(|ui| {
@@ -1487,7 +1471,10 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
-                                            SourceType::Bevy => {
+                                            SourceType::Bevy
+                                            | SourceType::BevyAtmosphere { .. }
+                                            | SourceType::BevyHexGrid { .. }
+                                            | SourceType::BevyParticles { .. } => {
                                                 ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
@@ -4518,7 +4505,6 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                 // Hit Detection (Approximate Bezier with segments)
                 let mut is_hovered = false;
                 if let Some(pos) = pointer_pos {
@@ -4587,34 +4573,21 @@ impl ModuleCanvas {
 
                 // Glow (Behind)
                 let glow_stroke = Stroke::new(glow_width, glow_color);
-=======
-                // Shadow
-                let shadow_stroke = Stroke::new(5.0 * self.zoom, shadow_color);
->>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                     glow_stroke,
                 ));
 
                 // Core Cable (Front)
                 let cable_stroke = Stroke::new(stroke_width, stroke_color);
-=======
-                    shadow_stroke,
-                ));
-
-                // Cable
-                let cable_stroke = Stroke::new(3.0 * self.zoom, cable_color);
->>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
                     cable_stroke,
                 ));
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
 
                 // Add flow animation
                 if self.zoom > 0.6 {
@@ -5203,12 +5176,16 @@ impl ModuleCanvas {
                     SourceType::LiveInput { .. } => "Live Input",
                     SourceType::NdiInput { .. } => "NDI Input",
                     #[cfg(target_os = "windows")]
+                    #[cfg(target_os = "windows")]
                     SourceType::SpoutInput { .. } => "Spout Input",
                     SourceType::VideoUni { .. } => "Video (Uni)",
                     SourceType::ImageUni { .. } => "Image (Uni)",
                     SourceType::VideoMulti { .. } => "Video (Multi)",
                     SourceType::ImageMulti { .. } => "Image (Multi)",
-                    SourceType::Bevy => "Bevy Scene",
+                    SourceType::Bevy
+                    | SourceType::BevyAtmosphere { .. }
+                    | SourceType::BevyHexGrid { .. }
+                    | SourceType::BevyParticles { .. } => "Bevy Scene",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5392,7 +5369,11 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name } => {
                     format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
-                SourceType::Bevy => "🎮 Bevy Scene".to_string(),
+                SourceType::Bevy
+                | SourceType::BevyAtmosphere { .. }
+                | SourceType::BevyHexGrid { .. }
+                | SourceType::BevyParticles { .. } => "🎮 Bevy Scene".to_string(),
+                #[cfg(target_os = "windows")]
                 #[cfg(target_os = "windows")]
                 SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {
@@ -5905,6 +5886,7 @@ impl ModuleCanvas {
                         None,
                     ),
                     (
+                        #[cfg(target_os = "windows")]
                         ModulePartType::Source(SourceType::SpoutInput {
                             sender_name: String::new(),
                         }),

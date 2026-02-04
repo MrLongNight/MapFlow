@@ -55,6 +55,7 @@ pub mod link;
 #[cfg(feature = "http-api")]
 pub mod web;
 
+pub mod hue;
 pub mod cue;
 pub mod shortcuts;
 
