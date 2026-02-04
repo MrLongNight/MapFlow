@@ -4518,7 +4518,6 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                 // Hit Detection (Approximate Bezier with segments)
                 let mut is_hovered = false;
                 if let Some(pos) = pointer_pos {
@@ -4526,28 +4525,18 @@ impl ModuleCanvas {
                     let threshold = 5.0 * self.zoom.max(1.0); // Adjust hit area with zoom
 
                     // OPTIMIZATION: Broad-phase AABB Check
-                    // Only perform expensive curve iteration if pointer is within the bounding box of the control points.
-                    let min_x =
-                        cable_start.x.min(cable_end.x).min(ctrl1.x).min(ctrl2.x) - threshold;
-                    let max_x =
-                        cable_start.x.max(cable_end.x).max(ctrl1.x).max(ctrl2.x) + threshold;
-                    let min_y =
-                        cable_start.y.min(cable_end.y).min(ctrl1.y).min(ctrl2.y) - threshold;
-                    let max_y =
-                        cable_start.y.max(cable_end.y).max(ctrl1.y).max(ctrl2.y) + threshold;
+                    let min_x = cable_start.x.min(cable_end.x).min(ctrl1.x).min(ctrl2.x) - threshold;
+                    let max_x = cable_start.x.max(cable_end.x).max(ctrl1.x).max(ctrl2.x) + threshold;
+                    let min_y = cable_start.y.min(cable_end.y).min(ctrl1.y).min(ctrl2.y) - threshold;
+                    let max_y = cable_start.y.max(cable_end.y).max(ctrl1.y).max(ctrl2.y) + threshold;
 
-                    let in_aabb =
-                        pos.x >= min_x && pos.x <= max_x && pos.y >= min_y && pos.y <= max_y;
+                    let in_aabb = pos.x >= min_x && pos.x <= max_x && pos.y >= min_y && pos.y <= max_y;
 
                     if in_aabb {
                         // Iterative Bezier calculation (De Casteljau's algorithm logic unrolled/simplified)
                         let mut prev_p = cable_start;
                         for i in 1..=steps {
                             let t = i as f32 / steps as f32;
-
-                            // Cubic Bezier interpolation
-                            // B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t) t^2 P2 + t^3 P3
-                            // Let's use simple lerps which `Pos2` supports
                             let l1 = cable_start.lerp(ctrl1, t);
                             let l2 = ctrl1.lerp(ctrl2, t);
                             let l3 = ctrl2.lerp(cable_end, t);
@@ -4586,35 +4575,22 @@ impl ModuleCanvas {
                 };
 
                 // Glow (Behind)
-                let glow_stroke = Stroke::new(glow_width, glow_color);
-=======
-                // Shadow
-                let shadow_stroke = Stroke::new(5.0 * self.zoom, shadow_color);
->>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
+                let glow_stroke = Stroke::new(glow_width, cable_color.linear_multiply(0.3));
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
                     glow_stroke,
                 ));
 
                 // Core Cable (Front)
                 let cable_stroke = Stroke::new(stroke_width, stroke_color);
-=======
-                    shadow_stroke,
-                ));
-
-                // Cable
-                let cable_stroke = Stroke::new(3.0 * self.zoom, cable_color);
->>>>>>> origin/jules/ux-smart-empty-state:crates/mapmap-ui/src/module_canvas.rs
                 painter.add(CubicBezierShape::from_points_stroke(
                     [cable_start, ctrl1, ctrl2, cable_end],
                     false,
                     Color32::TRANSPARENT,
                     cable_stroke,
                 ));
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas.rs
 
                 // Add flow animation
                 if self.zoom > 0.6 {
@@ -4633,7 +4609,6 @@ impl ModuleCanvas {
                         Color32::from_rgba_unmultiplied(255, 255, 255, 150),
                     );
                 }
-
                 // Draw Plugs on top of cable
                 if let Some(texture) = self.plug_icons.get(icon_name) {
                     // Source Plug at OUTPUT socket - pointing LEFT (into node)
