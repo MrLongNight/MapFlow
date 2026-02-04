@@ -1,3 +1,4 @@
+use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::UIAction;
@@ -275,6 +276,11 @@ pub struct ModuleCanvas {
     pub hue_status_message: Option<String>,
     /// Last known trigger values for visualization (Part ID -> Value 0.0-1.0)
     pub last_trigger_values: std::collections::HashMap<ModulePartId, f32>,
+
+    /// Advanced Mesh Editor instance
+    pub mesh_editor: MeshEditor,
+    /// ID of the part currently being edited in the mesh editor (to detect selection changes)
+    pub last_mesh_edit_id: Option<ModulePartId>,
 }
 
 pub type PresetPart = (
@@ -360,6 +366,8 @@ impl Default for ModuleCanvas {
             hue_discovery_rx: None,
             hue_status_message: None,
             last_trigger_values: std::collections::HashMap::new(),
+            mesh_editor: MeshEditor::new(),
+            last_mesh_edit_id: None,
         }
     }
 }
@@ -399,6 +407,216 @@ impl ModuleCanvas {
             }
         }
     }
+
+    /// Sync the mesh editor with the current selection's mesh
+    pub fn sync_mesh_editor_to_current_selection(
+        &mut self,
+        part: &mapmap_core::module::ModulePart,
+    ) {
+        use mapmap_core::module::{LayerType, MeshType, ModulePartType};
+
+        // Extract MeshType from part
+        let mesh = match &part.part_type {
+            ModulePartType::Layer(LayerType::Single { mesh, .. }) => mesh,
+            ModulePartType::Layer(LayerType::Group { mesh, .. }) => mesh,
+            ModulePartType::Mesh(mesh) => mesh,
+            _ => return, // Not a mesh-capable part
+        };
+
+        // Only reset if it's a different part
+        if self.last_mesh_edit_id == Some(part.id) {
+            return;
+        }
+
+        self.last_mesh_edit_id = Some(part.id);
+        self.mesh_editor.mode = crate::editors::mesh_editor::EditMode::Select;
+
+        // Visual scale for editor (0-1 -> 0-200)
+        let scale = 200.0;
+
+        match mesh {
+            MeshType::Quad { tl, tr, br, bl } => {
+                self.mesh_editor.set_from_quad(
+                    egui::Pos2::new(tl.0 * scale, tl.1 * scale),
+                    egui::Pos2::new(tr.0 * scale, tr.1 * scale),
+                    egui::Pos2::new(br.0 * scale, br.1 * scale),
+                    egui::Pos2::new(bl.0 * scale, bl.1 * scale),
+                );
+            }
+            MeshType::BezierSurface { control_points } => {
+                // Deserialize scaled points
+                let points: Vec<(f32, f32)> = control_points
+                    .iter()
+                    .map(|(x, y)| (x * scale, y * scale))
+                    .collect();
+                self.mesh_editor.set_from_bezier_points(&points);
+            }
+            // Fallback for unsupported types - reset to default quad for now
+            _ => {
+                self.mesh_editor
+                    .create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
+            }
+        }
+    }
+
+    /// Apply mesh editor changes back to the selection
+    pub fn apply_mesh_editor_to_selection(
+        &mut self,
+        part: &mut mapmap_core::module::ModulePart,
+    ) {
+        use mapmap_core::module::{LayerType, MeshType, ModulePartType};
+
+        // Get mutable reference to mesh
+        let mesh = match &mut part.part_type {
+            ModulePartType::Layer(LayerType::Single { mesh, .. }) => mesh,
+            ModulePartType::Layer(LayerType::Group { mesh, .. }) => mesh,
+            ModulePartType::Mesh(mesh) => mesh,
+            _ => return,
+        };
+
+        let scale = 200.0;
+
+        // Try to update current mesh type
+        match mesh {
+            MeshType::Quad { tl, tr, br, bl } => {
+                if let Some((p_tl, p_tr, p_br, p_bl)) = self.mesh_editor.get_quad_corners() {
+                    *tl = (p_tl.x / scale, p_tl.y / scale);
+                    *tr = (p_tr.x / scale, p_tr.y / scale);
+                    *br = (p_br.x / scale, p_br.y / scale);
+                    *bl = (p_bl.x / scale, p_bl.y / scale);
+                }
+            }
+            MeshType::BezierSurface { control_points } => {
+                let points = self.mesh_editor.get_bezier_points();
+                *control_points = points
+                    .iter()
+                    .map(|(x, y)| (x / scale, y / scale))
+                    .collect();
+            }
+            _ => {
+                // Other types not yet supported for write-back
+            }
+        }
+    }
+
+    /// Render the unified mesh editor UI for a given mesh
+    pub fn render_mesh_editor_ui(
+        &mut self,
+        ui: &mut Ui,
+        mesh: &mut mapmap_core::module::MeshType,
+        part_id: mapmap_core::module::ModulePartId,
+        id_salt: u64,
+    ) {
+        use mapmap_core::module::MeshType;
+
+        ui.add_space(8.0);
+        ui.group(|ui| {
+            ui.label(egui::RichText::new("🕸️ Mesh/Geometry").strong());
+            ui.separator();
+
+            egui::ComboBox::from_id_salt(format!("mesh_type_{}", id_salt))
+                .selected_text(match mesh {
+                    MeshType::Quad { .. } => "Quad",
+                    MeshType::Grid { .. } => "Grid",
+                    MeshType::BezierSurface { .. } => "Bezier",
+                    MeshType::Polygon { .. } => "Polygon",
+                    MeshType::TriMesh => "Triangle",
+                    MeshType::Circle { .. } => "Circle",
+                    MeshType::Cylinder { .. } => "Cylinder",
+                    MeshType::Sphere { .. } => "Sphere",
+                    MeshType::Custom { .. } => "Custom",
+                })
+                .show_ui(ui, |ui| {
+                    if ui
+                        .selectable_label(matches!(mesh, MeshType::Quad { .. }), "Quad")
+                        .clicked()
+                    {
+                        *mesh = MeshType::Quad {
+                            tl: (0.0, 0.0),
+                            tr: (1.0, 0.0),
+                            br: (1.0, 1.0),
+                            bl: (0.0, 1.0),
+                        };
+                        self.last_mesh_edit_id = None; // Trigger resync
+                    }
+                    if ui
+                        .selectable_label(matches!(mesh, MeshType::Grid { .. }), "Grid")
+                        .clicked()
+                    {
+                        *mesh = MeshType::Grid { rows: 4, cols: 4 };
+                        self.last_mesh_edit_id = None; // Trigger resync
+                    }
+                    if ui
+                        .selectable_label(matches!(mesh, MeshType::BezierSurface { .. }), "Bezier")
+                        .clicked()
+                    {
+                        // Default bezier
+                        *mesh = MeshType::BezierSurface {
+                            control_points: vec![],
+                        };
+                        self.last_mesh_edit_id = None;
+                    }
+                });
+
+            // Resync logic if type changed (handled by caller passing part, but here we just have mesh)
+            if self.last_mesh_edit_id.is_none() {
+                let scale = 200.0;
+                match mesh {
+                    MeshType::Quad { tl, tr, br, bl } => {
+                        self.mesh_editor.set_from_quad(
+                            egui::Pos2::new(tl.0 * scale, tl.1 * scale),
+                            egui::Pos2::new(tr.0 * scale, tr.1 * scale),
+                            egui::Pos2::new(br.0 * scale, br.1 * scale),
+                            egui::Pos2::new(bl.0 * scale, bl.1 * scale),
+                        );
+                        self.last_mesh_edit_id = Some(part_id);
+                    }
+                    MeshType::BezierSurface { control_points } => {
+                        // Deserialize scaled points
+                        let points: Vec<(f32, f32)> = control_points
+                            .iter()
+                            .map(|(x, y)| (x * scale, y * scale))
+                            .collect();
+                        self.mesh_editor.set_from_bezier_points(&points);
+                        self.last_mesh_edit_id = Some(part_id);
+                    }
+                    _ => {
+                        // Fallback
+                        self.mesh_editor
+                            .create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
+                        self.last_mesh_edit_id = Some(part_id);
+                    }
+                }
+            }
+
+            ui.separator();
+            ui.label("Visual Editor:");
+
+            if let Some(_action) = self.mesh_editor.ui(ui) {
+                // Sync back
+                let scale = 200.0;
+                match mesh {
+                    MeshType::Quad { tl, tr, br, bl } => {
+                        if let Some((p_tl, p_tr, p_br, p_bl)) = self.mesh_editor.get_quad_corners() {
+                            *tl = (p_tl.x / scale, p_tl.y / scale);
+                            *tr = (p_tr.x / scale, p_tr.y / scale);
+                            *br = (p_br.x / scale, p_br.y / scale);
+                            *bl = (p_bl.x / scale, p_bl.y / scale);
+                        }
+                    }
+                    MeshType::BezierSurface { control_points } => {
+                        let points = self.mesh_editor.get_bezier_points();
+                        *control_points = points
+                            .iter()
+                            .map(|(x, y)| (x / scale, y / scale))
+                            .collect();
+                    }
+                    _ => {}
+                }
+            }
+        });
+    }
+
     /// Takes all pending playback commands and clears the internal buffer.
     pub fn take_playback_commands(&mut self) -> Vec<(ModulePartId, MediaPlaybackCommand)> {
         std::mem::take(&mut self.pending_playback_commands)
@@ -456,6 +674,9 @@ impl ModuleCanvas {
         module_id: mapmap_core::module::ModuleId,
         shared_media_ids: &[String],
     ) {
+        // Sync mesh editor state if needed
+        self.sync_mesh_editor_to_current_selection(part);
+
         use mapmap_core::module::*;
         let part_id = part.id;
         let mut changed_part_id: Option<ModulePartId> = None;
@@ -690,7 +911,7 @@ impl ModuleCanvas {
                                                     if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "📹 Media File").clicked() { next_type = Some("MediaFile"); }
                                                     if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "📹 Video (Uni)").clicked() { next_type = Some("VideoUni"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "🖼 Image (Uni)").clicked() { next_type = Some("ImageUni"); }
-                                                    
+
                                                     ui.label("--- Shared ---");
                                                     if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "🔗 Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "🔗 Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
@@ -1055,7 +1276,7 @@ impl ModuleCanvas {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Shared ID:");
                                                     ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
-                                                    
+
                                                     egui::ComboBox::from_id_salt("shared_media_video")
                                                         .selected_text("Select Existing")
                                                         .show_ui(ui, |ui| {
@@ -1558,139 +1779,8 @@ impl ModuleCanvas {
                                         ui.label("📋 Layer:");
 
                                         // Helper to render mesh UI
-                                        let render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
-                                            ui.add_space(8.0);
-                                            ui.group(|ui| {
-                                                ui.label(egui::RichText::new("🕸️ Mesh/Geometry").strong());
-                                                ui.separator();
-
-                                            egui::ComboBox::from_id_salt(format!("mesh_type_{}", id_salt))
-                                                .selected_text(match mesh {
-                                                    MeshType::Quad { .. } => "Quad",
-                                                    MeshType::Grid { .. } => "Grid",
-                                                    MeshType::BezierSurface { .. } => "Bezier",
-                                                    MeshType::Polygon { .. } => "Polygon",
-                                                    MeshType::TriMesh => "Triangle",
-                                                    MeshType::Circle { .. } => "Circle",
-                                                    MeshType::Cylinder { .. } => "Cylinder",
-                                                    MeshType::Sphere { .. } => "Sphere",
-                                                    MeshType::Custom { .. } => "Custom",
-                                                })
-                                                .show_ui(ui, |ui| {
-                                                    if ui.selectable_label(matches!(mesh, MeshType::Quad {..}), "Quad").clicked() {
-                                                        *mesh = MeshType::Quad { tl:(0.0,0.0), tr:(1.0,0.0), br:(1.0,1.0), bl:(0.0,1.0) };
-                                                    }
-                                                    if ui.selectable_label(matches!(mesh, MeshType::Grid {..}), "Grid").clicked() {
-                                                        *mesh = MeshType::Grid { rows: 4, cols: 4 };
-                                                    }
-                                                    // Add other types as needed
-                                                });
-
-                                            match mesh {
-                                                MeshType::Quad { tl, tr, br, bl } => {
-                                                    ui.label("Corner Mapping (0.0-1.0):");
-                                                    let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
-                                                        ui.horizontal(|ui| {
-                                                            ui.label(name);
-                                                            ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).range(0.0..=1.0).prefix("X: "));
-                                                            ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).range(0.0..=1.0).prefix("Y: "));
-                                                        });
-                                                    };
-                                                    coord_ui("Top Left:", tl);
-                                                    coord_ui("Top Right:", tr);
-                                                    coord_ui("Bottom Right:", br);
-                                                    coord_ui("Bottom Left:", bl);
-
-                                                    ui.separator();
-                                                    ui.label("Visual Editor:");
-                                                    let (response, painter) = ui.allocate_painter(Vec2::new(240.0, 180.0), Sense::click_and_drag());
-                                                    let rect = response.rect;
-                                                    painter.rect_filled(rect, 0.0, Color32::from_gray(30));
-                                                    painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::WHITE), egui::StrokeKind::Inside);
-
-                                                    let to_screen = |norm: (f32, f32)| -> Pos2 {
-                                                        Pos2::new(rect.min.x + norm.0 * rect.width(), rect.min.y + norm.1 * rect.height())
-                                                    };
-                                                    let from_screen = |pos: Pos2| -> (f32, f32) {
-                                                        (((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0), ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0))
-                                                    };
-
-                                                    let p_tl = to_screen(*tl);
-                                                    let p_tr = to_screen(*tr);
-                                                    let p_br = to_screen(*br);
-                                                    let p_bl = to_screen(*bl);
-
-                                                    // Body Dragging Logic
-                                                    let body_id = response.id.with("body_drag");
-                                                    let body_response = ui.interact(rect, body_id, Sense::drag());
-
-                                                    let mut delta_norm = (0.0, 0.0);
-                                                    if body_response.dragged() {
-                                                        if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
-                                                            // Check if start pos was inside quad (approximate with current pos for now)
-                                                            // Point in Quad check:
-                                                            // For convex quad, point is on same side of all edges
-                                                            fn cross(a: Pos2, b: Pos2, p: Pos2) -> f32 {
-                                                                (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)
-                                                            }
-                                                            let c1 = cross(p_tl, p_tr, pos);
-                                                            let c2 = cross(p_tr, p_br, pos);
-                                                            let c3 = cross(p_br, p_bl, pos);
-                                                            let c4 = cross(p_bl, p_tl, pos);
-
-                                                            // Check if all have same sign (or zero)
-                                                            let inside = (c1 >= 0.0 && c2 >= 0.0 && c3 >= 0.0 && c4 >= 0.0) ||
-                                                                         (c1 <= 0.0 && c2 <= 0.0 && c3 <= 0.0 && c4 <= 0.0);
-
-                                                            // Only apply drag if we started inside (or are inside)
-                                                            // For better UX, we should check if *hovered* was inside, but interacting with rect is global.
-                                                            // Simplified: If dragging and mouse is currently effectively inside bounding box of quad?
-                                                            // No, let's just use the `drag_delta`.
-                                                            if inside || body_response.hovered() {
-                                                                 let dt = body_response.drag_delta();
-                                                                 delta_norm = (dt.x / rect.width(), dt.y / rect.height());
-                                                            }
-                                                        }
-                                                    }
-
-                                                    if delta_norm != (0.0, 0.0) {
-                                                        let apply_delta = |c: &mut (f32, f32)| {
-                                                            c.0 = (c.0 + delta_norm.0).clamp(0.0, 1.0);
-                                                            c.1 = (c.1 + delta_norm.1).clamp(0.0, 1.0);
-                                                        };
-                                                        apply_delta(tl);
-                                                        apply_delta(tr);
-                                                        apply_delta(br);
-                                                        apply_delta(bl);
-                                                    }
-
-                                                    painter.add(egui::Shape::convex_polygon(
-                                                        vec![p_tl, p_tr, p_br, p_bl],
-                                                        Color32::from_rgba_unmultiplied(100, 150, 255, 50),
-                                                        Stroke::new(1.0, Color32::LIGHT_BLUE),
-                                                    ));
-
-                                                    let handle = |coord: &mut (f32, f32), name: &str| {
-                                                        let pos = to_screen(*coord);
-                                                        let id = response.id.with(name);
-                                                        let h_rect = Rect::from_center_size(pos, Vec2::splat(12.0));
-                                                        let h_resp = ui.interact(h_rect, id, Sense::drag());
-                                                        if h_resp.dragged() {
-                                                            if let Some(mp) = ui.input(|i| i.pointer.interact_pos()) {
-                                                                *coord = from_screen(mp);
-                                                            }
-                                                        }
-                                                        painter.circle_filled(pos, 6.0, if h_resp.hovered() || h_resp.dragged() { Color32::WHITE } else { Color32::LIGHT_BLUE });
-                                                    };
-                                                    handle(tl, "tl"); handle(tr, "tr"); handle(br, "br"); handle(bl, "bl");
-                                                }
-                                                MeshType::Grid { rows, cols } => {
-                                                    ui.add(egui::Slider::new(rows, 1..=32).text("Rows"));
-                                                    ui.add(egui::Slider::new(cols, 1..=32).text("Cols"));
-                                                }
-                                                _ => { ui.label("Editor not implemented for this mesh type"); }
-                                            }
-                                            });
+                                        let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
+                                            self.render_mesh_editor_ui(ui, mesh, part_id, id_salt);
                                         };
 
                                         match layer {
@@ -1727,128 +1817,7 @@ impl ModuleCanvas {
                                         ui.label("🕸️ Mesh Node");
                                         ui.separator();
 
-                                        // Duplicated mesh editor logic (refactor later)
-                                        ui.label("Mesh Configuration:");
-
-                                        egui::ComboBox::from_id_salt(format!("mesh_type_{}", part_id))
-                                            .selected_text(match mesh {
-                                                MeshType::Quad { .. } => "Quad",
-                                                MeshType::Grid { .. } => "Grid",
-                                                MeshType::BezierSurface { .. } => "Bezier",
-                                                MeshType::Polygon { .. } => "Polygon",
-                                                MeshType::TriMesh => "Triangle",
-                                                MeshType::Circle { .. } => "Circle",
-                                                MeshType::Cylinder { .. } => "Cylinder",
-                                                MeshType::Sphere { .. } => "Sphere",
-                                                MeshType::Custom { .. } => "Custom",
-                                            })
-                                            .show_ui(ui, |ui| {
-                                                if ui.selectable_label(matches!(mesh, MeshType::Quad {..}), "Quad").clicked() {
-                                                    *mesh = MeshType::Quad { tl:(0.0,0.0), tr:(1.0,0.0), br:(1.0,1.0), bl:(0.0,1.0) };
-                                                }
-                                                if ui.selectable_label(matches!(mesh, MeshType::Grid {..}), "Grid").clicked() {
-                                                    *mesh = MeshType::Grid { rows: 4, cols: 4 };
-                                                }
-                                            });
-
-                                        match mesh {
-                                            MeshType::Quad { tl, tr, br, bl } => {
-                                                ui.label("Corner Mapping (0.0-1.0):");
-                                                let mut coord_ui = |name: &str, coord: &mut (f32, f32)| {
-                                                    ui.horizontal(|ui| {
-                                                        ui.label(name);
-                                                        ui.add(egui::DragValue::new(&mut coord.0).speed(0.01).range(0.0..=1.0).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(&mut coord.1).speed(0.01).range(0.0..=1.0).prefix("Y: "));
-                                                    });
-                                                };
-                                                coord_ui("Top Left:", tl);
-                                                coord_ui("Top Right:", tr);
-                                                coord_ui("Bottom Right:", br);
-                                                coord_ui("Bottom Left:", bl);
-
-                                                ui.separator();
-                                                ui.label("Visual Editor:");
-                                                let (response, painter) = ui.allocate_painter(Vec2::new(240.0, 180.0), Sense::click_and_drag());
-                                                let rect = response.rect;
-                                                painter.rect_filled(rect, 0.0, Color32::from_gray(30));
-                                                painter.rect_stroke(rect, 0.0, Stroke::new(1.0, Color32::GRAY), egui::StrokeKind::Inside);
-
-                                                let to_screen = |norm: (f32, f32)| -> Pos2 {
-                                                    Pos2::new(rect.min.x + norm.0 * rect.width(), rect.min.y + norm.1 * rect.height())
-                                                };
-                                                let from_screen = |pos: Pos2| -> (f32, f32) {
-                                                    (((pos.x - rect.min.x) / rect.width()).clamp(0.0, 1.0), ((pos.y - rect.min.y) / rect.height()).clamp(0.0, 1.0))
-                                                };
-
-                                                let p_tl = to_screen(*tl);
-                                                let p_tr = to_screen(*tr);
-                                                let p_br = to_screen(*br);
-                                                let p_bl = to_screen(*bl);
-
-                                                // Body Dragging Logic
-                                                let body_id = response.id.with("body_drag");
-                                                let body_response = ui.interact(rect, body_id, Sense::drag());
-
-                                                let mut delta_norm = (0.0, 0.0);
-                                                if body_response.dragged() {
-                                                    if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
-                                                        // Point in Quad check
-                                                        fn cross(a: Pos2, b: Pos2, p: Pos2) -> f32 {
-                                                            (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)
-                                                        }
-                                                        let c1 = cross(p_tl, p_tr, pos);
-                                                        let c2 = cross(p_tr, p_br, pos);
-                                                        let c3 = cross(p_br, p_bl, pos);
-                                                        let c4 = cross(p_bl, p_tl, pos);
-
-                                                        let inside = (c1 >= 0.0 && c2 >= 0.0 && c3 >= 0.0 && c4 >= 0.0) ||
-                                                                     (c1 <= 0.0 && c2 <= 0.0 && c3 <= 0.0 && c4 <= 0.0);
-
-                                                        if inside {
-                                                             let dt = body_response.drag_delta();
-                                                             delta_norm = (dt.x / rect.width(), dt.y / rect.height());
-                                                        }
-                                                    }
-                                                }
-
-                                                if delta_norm != (0.0, 0.0) {
-
-                                                    let apply_delta = |c: &mut (f32, f32)| {
-                                                        c.0 = (c.0 + delta_norm.0).clamp(0.0, 1.0);
-                                                        c.1 = (c.1 + delta_norm.1).clamp(0.0, 1.0);
-                                                    };
-                                                    apply_delta(tl);
-                                                    apply_delta(tr);
-                                                    apply_delta(br);
-                                                    apply_delta(bl);
-                                                }
-
-                                                painter.add(egui::Shape::convex_polygon(
-                                                    vec![p_tl, p_tr, p_br, p_bl],
-                                                    Color32::from_rgba_unmultiplied(100, 150, 255, 50),
-                                                    Stroke::new(1.0, Color32::LIGHT_BLUE),
-                                                ));
-
-                                                let handle = |coord: &mut (f32, f32), name: &str| {
-                                                    let pos = to_screen(*coord);
-                                                    let id = response.id.with(name);
-                                                    let h_rect = Rect::from_center_size(pos, Vec2::splat(12.0));
-                                                    let h_resp = ui.interact(h_rect, id, Sense::drag());
-                                                    if h_resp.dragged() {
-                                                        if let Some(mp) = ui.input(|i| i.pointer.interact_pos()) {
-                                                            *coord = from_screen(mp);
-                                                        }
-                                                    }
-                                                    painter.circle_filled(pos, 6.0, if h_resp.hovered() || h_resp.dragged() { Color32::WHITE } else { Color32::LIGHT_BLUE });
-                                                };
-                                                handle(tl, "tl"); handle(tr, "tr"); handle(br, "br"); handle(bl, "bl");
-                                            }
-                                            MeshType::Grid { rows, cols } => {
-                                                ui.add(egui::Slider::new(rows, 1..=32).text("Rows"));
-                                                ui.add(egui::Slider::new(cols, 1..=32).text("Cols"));
-                                            }
-                                            _ => { ui.label("Editor not implemented for this mesh type"); }
-                                        }
+                                        self.render_mesh_editor_ui(ui, mesh, part_id, part_id);
                                     }
                                     ModulePartType::Output(output) => {
                                         ui.label("Output:");
