@@ -99,30 +99,40 @@ impl MeshEditor {
 
     /// Create a default quad mesh
     pub fn create_quad(&mut self, center: Pos2, size: f32) {
+        let half = size / 2.0;
+        self.set_from_quad(
+            Pos2::new(center.x - half, center.y - half),
+            Pos2::new(center.x + half, center.y - half),
+            Pos2::new(center.x + half, center.y + half),
+            Pos2::new(center.x - half, center.y + half),
+        );
+    }
+
+    /// Set mesh from 4 quad corners (TL, TR, BR, BL)
+    pub fn set_from_quad(&mut self, tl: Pos2, tr: Pos2, br: Pos2, bl: Pos2) {
         self.vertices.clear();
         self.faces.clear();
 
-        let half = size / 2.0;
         self.vertices.push(Vertex {
-            position: Pos2::new(center.x - half, center.y - half),
+            position: tl,
             control_in: None,
             control_out: None,
             selected: false,
         });
         self.vertices.push(Vertex {
-            position: Pos2::new(center.x + half, center.y - half),
+            position: tr,
             control_in: None,
             control_out: None,
             selected: false,
         });
         self.vertices.push(Vertex {
-            position: Pos2::new(center.x + half, center.y + half),
+            position: br,
             control_in: None,
             control_out: None,
             selected: false,
         });
         self.vertices.push(Vertex {
-            position: Pos2::new(center.x - half, center.y + half),
+            position: bl,
             control_in: None,
             control_out: None,
             selected: false,
@@ -134,6 +144,84 @@ impl MeshEditor {
         self.faces.push(Face {
             vertices: [0, 2, 3],
         });
+    }
+
+    /// Get quad corners if the mesh is a simple quad
+    pub fn get_quad_corners(&self) -> Option<(Pos2, Pos2, Pos2, Pos2)> {
+        if self.vertices.len() == 4 {
+            Some((
+                self.vertices[0].position,
+                self.vertices[1].position,
+                self.vertices[2].position,
+                self.vertices[3].position,
+            ))
+        } else {
+            None
+        }
+    }
+
+    /// Populate mesh from a flattened list of bezier points (Pos, In, Out)
+    pub fn set_from_bezier_points(&mut self, points: &[(f32, f32)]) {
+        self.vertices.clear();
+        self.faces.clear();
+
+        if points.is_empty() {
+            // Default if empty
+            return;
+        }
+
+        let num_verts = points.len() / 3;
+        for i in 0..num_verts {
+            let p_pos = points[i * 3];
+            let p_in = points[i * 3 + 1];
+            let p_out = points[i * 3 + 2];
+
+            let pos = Pos2::new(p_pos.0, p_pos.1);
+            // If control point == position, treat as None
+            let ctrl_in = if (p_in.0 - p_pos.0).abs() < 0.001 && (p_in.1 - p_pos.1).abs() < 0.001 {
+                None
+            } else {
+                Some(Vec2::new(p_in.0 - p_pos.0, p_in.1 - p_pos.1))
+            };
+            let ctrl_out = if (p_out.0 - p_pos.0).abs() < 0.001 && (p_out.1 - p_pos.1).abs() < 0.001
+            {
+                None
+            } else {
+                Some(Vec2::new(p_out.0 - p_pos.0, p_out.1 - p_pos.1))
+            };
+
+            self.vertices.push(Vertex {
+                position: pos,
+                control_in: ctrl_in,
+                control_out: ctrl_out,
+                selected: false,
+            });
+        }
+
+        // Rebuild simple quad faces if 4 vertices (Standard Quad topology)
+        if self.vertices.len() == 4 {
+            self.faces.push(Face {
+                vertices: [0, 1, 2],
+            });
+            self.faces.push(Face {
+                vertices: [0, 2, 3],
+            });
+        }
+    }
+
+    /// Serialize mesh to flattened list of bezier points (Pos, In, Out)
+    pub fn get_bezier_points(&self) -> Vec<(f32, f32)> {
+        let mut points = Vec::new();
+        for v in &self.vertices {
+            let pos = v.position;
+            let p_in = v.control_in.map(|o| pos + o).unwrap_or(pos);
+            let p_out = v.control_out.map(|o| pos + o).unwrap_or(pos);
+
+            points.push((pos.x, pos.y));
+            points.push((p_in.x, p_in.y));
+            points.push((p_out.x, p_out.y));
+        }
+        points
     }
 
     /// Subdivide the mesh
