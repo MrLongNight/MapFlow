@@ -1464,7 +1464,10 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
-                                            SourceType::Bevy | SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
+                                            SourceType::Bevy
+                                            | SourceType::BevyAtmosphere { .. }
+                                            | SourceType::BevyHexGrid { .. }
+                                            | SourceType::BevyParticles { .. } => {
                                                 ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
