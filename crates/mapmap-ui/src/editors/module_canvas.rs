@@ -4323,7 +4323,6 @@ impl ModuleCanvas {
                     &mapmap_core::module::ModuleSocketType::Media // Fallback
                 };
                 let cable_color = Self::get_socket_color(socket_type);
-                let glow_color = cable_color.linear_multiply(0.3);
 
                 // Calculate WORLD positions
                 // Output: Right side + center of socket height
