@@ -5,21 +5,12 @@ use egui::{ComboBox, DragValue, Ui, Window};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OscillatorPanel {
     /// The oscillator configuration being edited.
     pub config: OscillatorConfig,
     /// Is the panel currently visible?
     pub visible: bool,
-}
-
-impl Default for OscillatorPanel {
-    fn default() -> Self {
-        Self {
-            config: OscillatorConfig::default(),
-            visible: false,
-        }
-    }
 }
 
 impl OscillatorPanel {

@@ -153,7 +153,7 @@ pub fn hex_grid_system(
 }
 
 pub fn particle_system(
-    mut commands: Commands,
+    commands: Commands,
     query: Query<
         (Entity, &crate::components::BevyParticles),
         Changed<crate::components::BevyParticles>,

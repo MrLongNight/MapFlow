@@ -44,8 +44,8 @@ pub mod target;
 #[cfg(feature = "midi")]
 pub mod midi;
 
-pub mod hue;
 pub mod dmx;
+pub mod hue;
 
 #[cfg(feature = "osc")]
 pub mod osc;
