@@ -184,9 +184,11 @@ mod ffmpeg_impl {
 
             let duration = if duration_secs < 0.0 || duration_secs.is_nan() {
                 warn!(
-                    "Invalid video duration: {} seconds (raw: {}), defaulting to 0",
+                    "Invalid video duration: {} seconds (raw: {}). Treating as live stream or unknown duration",
                     duration_secs, raw_duration
                 );
+                // Bolt Fix: Don't just set to ZERO if it's suspicious, but ZERO is safer for logic.
+                // However, we should ensure the player doesn't auto-stop.
                 Duration::ZERO
             } else {
                 Duration::from_secs_f64(duration_secs)
@@ -200,7 +202,16 @@ mod ffmpeg_impl {
                 .map_err(|e| MediaError::DecoderError(e.to_string()))?;
 
             // Setup hardware acceleration if requested
-            let actual_hw_accel = Self::setup_hw_accel(&mut decoder, hw_accel)?;
+            let actual_hw_accel = match Self::setup_hw_accel(&mut decoder, hw_accel) {
+                Ok(accel) => accel,
+                Err(e) => {
+                    warn!(
+                        "Failed to setup hardware acceleration {:?}: {}. Falling back to software decoding.",
+                        hw_accel, e
+                    );
+                    HwAccelType::None
+                }
+            };
 
             // Get dimensions from decoder
             let width = decoder.width();
@@ -223,7 +234,7 @@ mod ffmpeg_impl {
                 width,
                 height,
                 fps_value,
-                duration_secs,
+                duration.as_secs_f64(),
                 actual_hw_accel
             );
 
@@ -261,15 +272,19 @@ mod ffmpeg_impl {
                     );
 
                     if ret < 0 {
-                        warn!("Failed to create D3D11VA device context: {}", ret);
-                        return Ok(HwAccelType::None);
+                        // Return error so we can log it properly in caller
+                        return Err(MediaError::DecoderError(format!(
+                            "Failed to create D3D11VA device context: {}",
+                            ret
+                        )));
                     }
 
                     let codec_ctx = _decoder.as_mut_ptr();
                     if codec_ctx.is_null() {
-                        warn!("Codec context is null");
                         ffi::av_buffer_unref(&mut hw_device_ctx);
-                        return Ok(HwAccelType::None);
+                        return Err(MediaError::DecoderError(
+                            "Codec context is null".to_string(),
+                        ));
                     }
 
                     // Transfer ownership of hw_device_ctx to codec_ctx
@@ -280,10 +295,7 @@ mod ffmpeg_impl {
                     Ok(HwAccelType::D3D11VA)
                 },
                 _ => {
-                    warn!(
-                        "Hardware acceleration {:?} requested but not yet fully implemented",
-                        requested
-                    );
+                    // Just fallback for unsupported types
                     Ok(HwAccelType::None)
                 }
             }
@@ -508,7 +520,7 @@ pub enum FFmpegDecoder {
 impl FFmpegDecoder {
     /// Open a video file (uses FFmpeg if feature is enabled, test pattern otherwise)
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-        Self::open_with_hw_accel(path, HwAccelType::None)
+        Self::open_with_auto_hw_accel(path)
     }
 
     /// Open a video file with hardware acceleration

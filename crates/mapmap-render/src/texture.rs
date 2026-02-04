@@ -139,6 +139,27 @@ impl TexturePool {
         Arc::new(view)
     }
 
+    /// Alias an existing texture to a new name (sharing the underlying resource)
+    pub fn alias_texture(&self, src_name: &str, dest_name: &str) -> bool {
+        let textures = self.textures.read();
+        if let Some(handle) = textures.get(src_name) {
+            let handle_clone = handle.clone();
+            drop(textures); // Drop read lock before write
+
+            self.textures
+                .write()
+                .insert(dest_name.to_string(), handle_clone);
+
+            // Also alias the view if it exists
+            if let Some(view) = self.views.read().get(src_name).cloned() {
+                self.views.write().insert(dest_name.to_string(), view);
+            }
+            true
+        } else {
+            false
+        }
+    }
+
     /// Check if a texture exists in the pool.
     pub fn has_texture(&self, name: &str) -> bool {
         self.textures.read().contains_key(name)

@@ -122,7 +122,7 @@ impl MonitorTopology {
 /// called during application initialization
 #[allow(unexpected_cfgs)]
 #[cfg(feature = "winit")]
-pub fn detect_monitors_winit<T>(event_loop: &winit::event_loop::EventLoop<T>) -> MonitorTopology {
+pub fn detect_monitors_winit(event_loop: &winit::event_loop::ActiveEventLoop) -> MonitorTopology {
     use winit::monitor::MonitorHandle;
 
     let mut monitors = Vec::new();

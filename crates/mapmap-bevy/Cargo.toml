@@ -1,0 +1,30 @@
+[package]
+name = "mapmap-bevy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+# Bevy - disabling default features to avoid audio/ui bloat if not needed yet
+bevy = { version = "0.14", default-features = false, features = [
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gltf",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_winit", # Needed for WinitPlugin / loop runner, even if headless
+    "x11", # Explicitly add standard backends if needed, or rely on defaults
+    "wayland",
+    "tonemapping_luts",
+] }
+
+# Extensions
+bevy_enoki = "0.2"
+bevy_mod_outline = "0.8"
+bevy_atmosphere = "0.9"
+hexx = "0.17"
+
+mapmap-core = { path = "../mapmap-core" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+wgpu = { workspace = true }

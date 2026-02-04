@@ -4,7 +4,6 @@
 //! - **MIDI**: Input/output, learn mode, controller profiles, clock sync
 //! - **OSC**: Server/client for TouchOSC, Lemur, and custom apps
 //! - **DMX**: Art-Net and sACN output for lighting control
-//! - **Hue**: Philips Hue Entertainment integration
 //! - **Web API**: REST API and WebSocket for remote control
 //! - **Cue System**: Automated shows with crossfades and triggers
 //!
@@ -27,48 +26,36 @@
 //!
 //! ## Modules
 //!
-//! - [`midi`] - MIDI input/output system
-//! - [`osc`] - OSC server and client
-//! - [`dmx`] - DMX output via Art-Net and sACN
-//! - [`hue`] - Philips Hue integration
-//! - `web` - Web API and WebSocket (requires `http-api` feature)
-//! - [`cue`] - Cue system for show automation
-//! - [`shortcuts`] - Keyboard shortcuts and macros
-//! - [`target`] - Control target abstraction
-//! - [`error`] - Error types
-
-#![allow(missing_docs)]
+//! - [`midi`]: MIDI input/output system
+//! - [`osc`]: OSC server and client
+//! - [`dmx`]: DMX output via Art-Net and sACN
+//! - [`web`]: Web API and WebSocket
+//! - [`cue`]: Cue system for show automation
+//! - [`shortcuts`]: Keyboard shortcuts and macros
+//! - [`target`]: Control target abstraction
+//! - [`error`]: Error types
 
 // Core modules
-/// Error types
 pub mod error;
-/// Central control manager
 pub mod manager;
-/// Control target and value definitions
 pub mod target;
 
 // Control system modules
 #[cfg(feature = "midi")]
-/// MIDI input/output and processing
 pub mod midi;
 
-/// DMX output (Art-Net, sACN)
 pub mod dmx;
 
-/// Philips Hue integration
-pub mod hue;
-
 #[cfg(feature = "osc")]
-/// OSC server and client
 pub mod osc;
 
+#[cfg(feature = "link")]
+pub mod link;
+
 #[cfg(feature = "http-api")]
-/// Web API server
 pub mod web;
 
-/// Cue list management
 pub mod cue;
-/// Keyboard shortcuts
 pub mod shortcuts;
 
 // Re-exports
@@ -83,6 +70,9 @@ pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfi
 
 #[cfg(feature = "osc")]
 pub use osc::{OscClient, OscMapping, OscServer};
+
+#[cfg(feature = "link")]
+pub use link::AbletonLinkHandle;
 
 #[cfg(feature = "http-api")]
 pub use web::{WebServer, WebServerConfig};
