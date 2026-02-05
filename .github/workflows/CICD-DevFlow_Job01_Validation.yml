@@ -89,7 +89,7 @@ jobs:
         run: cargo audit --ignore RUSTSEC-2024-0370
 
       - name: Run Cargo Deny
-        run: cargo deny --config deny.toml check advisories
+        run: cargo deny check advisories
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 3: BUILD & TEST (LINUX)
