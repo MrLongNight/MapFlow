@@ -42,3 +42,8 @@
 **Vulnerability:** The `ImageSequenceDecoder` iterated over all files in a user-provided directory without limit. A directory with millions of files would cause the application to hang or crash (OOM), acting as a local Denial of Service vector.
 **Learning:** Iterators over external resources (like file systems) must always be bounded. "Users won't do that" is not a valid defense against accidental or malicious inputs.
 **Prevention:** Implement explicit `MAX_ITEMS` limits on all directory scanning or collection loops. Use `cfg(test)` to lower these limits for efficient unit testing.
+
+## 2026-11-01 - Unsafe Buffer Over-read in D3D11 Format Negotiation
+**Vulnerability:** The `get_format_callback` in `crates/mapmap-media/src/decoder.rs` iterated over a raw `AVPixelFormat` pointer assuming a null-terminated list. If the list was malformed (missing terminator), it would cause a buffer over-read and potential crash.
+**Learning:** This was identical to the previous VAAPI vulnerability, showing that fixes often miss copy-pasted or similar logic in platform-specific guards.
+**Prevention:** When fixing a vulnerability, search for similar patterns across the entire codebase (grep is your friend), especially in platform-specific blocks like `#[cfg(target_os = "windows")]`.
