@@ -31,23 +31,14 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     );
 }
 
-pub fn render_panel_header(
-    ui: &mut Ui,
-    title: &str,
-    add_contents: impl FnOnce(&mut Ui),
-) {
+pub fn render_panel_header(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let height = 28.0;
-    let (rect, _response) = ui.allocate_exact_size(
-        Vec2::new(ui.available_width(), height),
-        Sense::hover(),
-    );
+    let (rect, _response) =
+        ui.allocate_exact_size(Vec2::new(ui.available_width(), height), Sense::hover());
 
     // Paint Background
-    ui.painter().rect_filled(
-        rect,
-        egui::CornerRadius::same(0),
-        colors::LIGHTER_GREY,
-    );
+    ui.painter()
+        .rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
 
     // Paint Accent Stripe
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(3.0, rect.height()));

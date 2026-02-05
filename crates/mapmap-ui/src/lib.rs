@@ -317,7 +317,7 @@ impl Default for AppUI {
             },
             edge_blend_panel: EdgeBlendPanel::default(),
             oscillator_panel: OscillatorPanel::default(), // Hide by default
-            show_audio: false, // Hide by default - use Dashboard toggle
+            show_audio: false,                            // Hide by default - use Dashboard toggle
             audio_panel: AudioPanel::default(),
             show_cue_panel: false, // Hide by default
             assignment_panel: AssignmentPanel::default(),
@@ -509,7 +509,10 @@ impl AppUI {
                 egui::Frame::popup(ui.style())
                     .fill(crate::core::theme::colors::DARK_GREY)
                     .corner_radius(4.0)
-                    .stroke(egui::Stroke::new(1.0, crate::core::theme::colors::STROKE_GREY))
+                    .stroke(egui::Stroke::new(
+                        1.0,
+                        crate::core::theme::colors::STROKE_GREY,
+                    ))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
