@@ -907,6 +907,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 | `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
 | `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
 | `mapmap-mcp` | MCP-Server Integration | `serde_json` | ✅ Beta |
+| `mapmap-bevy` | Bevy Integration (3D/GenArt) | `bevy` | 🟡 Alpha |
 
 ### Modul-Abhängigkeiten
 
@@ -916,7 +917,9 @@ graph TD
     App --> Render[mapmap-render]
     App --> Control[mapmap-control]
     App --> MCP[mapmap-mcp]
+    App --> Bevy[mapmap-bevy]
     UI --> Core[mapmap-core]
+    Bevy --> Core
     Render --> Core
     Control --> Core
     UI --> Media[mapmap-media]

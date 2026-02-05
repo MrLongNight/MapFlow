@@ -99,6 +99,8 @@ crates/
 ├── mapmap-ui/        # User Interface (egui)
 ├── mapmap-control/   # MIDI/OSC/Automation
 ├── mapmap-io/        # NDI/Spout/DeckLink
+├── mapmap-bevy/      # 3D/Generative Engine (Bevy)
+├── mapmap-mcp/       # AI Context Protocol
 └── mapmap/           # Main application entry point
 ```
 
