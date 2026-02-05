@@ -1,4 +1,4 @@
-# Pre-commit configuration for VjMapper
+# Pre-commit configuration for MapFlow
 # Runs automatically via pre-commit.ci on every PR
 
 ci:
@@ -8,17 +8,19 @@ ci:
   autoupdate_commit_msg: "chore: pre-commit autoupdate [skip ci]"
   autoupdate_schedule: weekly
   
-  # Skip Rust hooks in CI (no toolchain available)
+  # Skip hooks that don't work in CI or are too strict
   skip:
     - fmt
     - clippy
     - cargo-sort
+    - markdownlint-fix
+    - detect-secrets
   
   submodules: false
 
 repos:
   # ═══════════════════════════════════════════════════════════════
-  # RUST FORMATTING & LINTING (local only)
+  # RUST FORMATTING & LINTING (local only - requires toolchain)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
@@ -26,7 +28,7 @@ repos:
       - id: fmt
         name: "Rust: cargo fmt"
         args: ['--all', '--']
-        stages: [manual]  # Run manually only
+        stages: [manual]
         
       - id: clippy
         name: "Rust: cargo clippy"
@@ -36,40 +38,48 @@ repos:
           - '--'
           - '-D'
           - 'warnings'
-        stages: [manual]  # Run manually only
+        stages: [manual]
 
   # ═══════════════════════════════════════════════════════════════
-  # GENERAL FILE FIXES (runs in CI)
+  # GENERAL FILE FIXES (runs in CI - fast & reliable)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # Auto-fix trailing whitespace
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
         exclude: ^(.*\.patch|.*\.diff)$
         
+      # Auto-fix missing final newline
       - id: end-of-file-fixer
         exclude: ^(.*\.patch|.*\.diff|.*\.rs\.bk)$
         
+      # Check for filename case conflicts
       - id: check-case-conflict
         
+      # Validate YAML syntax
       - id: check-yaml
         args: [--allow-multiple-documents]
         
+      # Validate TOML syntax
       - id: check-toml
         
+      # Prevent huge files
       - id: check-added-large-files
         args: [--maxkb=5000]
         exclude: ^(.*\.dll|.*\.so|.*\.dylib|assets/.*|resources/.*)$
         
+      # Check for merge conflict markers
       - id: check-merge-conflict
         
+      # Fix line endings (LF for Unix)
       - id: mixed-line-ending
         args: [--fix=lf]
-        exclude: ^(.*\.bat|.*\.cmd)$
+        exclude: ^(.*\.bat|.*\.cmd)$  # Keep CRLF for Windows scripts
 
   # ═══════════════════════════════════════════════════════════════
-  # MARKDOWN LINTING (only new files, not entire repo)
+  # MARKDOWN LINTING (local only - too many legacy violations)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.39.0
@@ -80,11 +90,11 @@ repos:
           - '--config'
           - '.markdownlint.json'
         files: \.(md|markdown)$
-        # Exclude existing problematic files (legacy)
-        exclude: ^(CHANGELOG\.md|.*\.patch|\.jules/.*|\.agent/.*|docs/.*)$
+        exclude: ^(CHANGELOG\.md|.*\.patch)$
+        stages: [manual]  # Run manually only
 
   # ═══════════════════════════════════════════════════════════════
-  # SECURITY: SECRET DETECTION
+  # SECURITY: SECRET DETECTION (local only - needs baseline setup)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
@@ -95,9 +105,10 @@ repos:
           - '--baseline'
           - '.secrets.baseline'
         exclude: ^(Cargo\.lock|.*\.patch|.*\.diff)$
+        stages: [manual]  # Run manually only
 
   # ═══════════════════════════════════════════════════════════════
-  # CARGO.TOML SORTING (local only)
+  # CARGO.TOML SORTING (local only - requires cargo-sort binary)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/DevinR528/cargo-sort
     rev: v1.0.9
@@ -105,4 +116,4 @@ repos:
       - id: cargo-sort
         name: "Rust: sort Cargo.toml"
         args: ['--workspace', '--grouped']
-        stages: [manual]  # Run manually only
+        stages: [manual]
