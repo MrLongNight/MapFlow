@@ -2172,6 +2172,23 @@ impl ModuleManager {
             .map(|module| module.add_part(part_type, position))
     }
 
+    /// Check if a module name is already taken
+    pub fn is_name_taken(&self, name: &str) -> bool {
+        self.modules.values().any(|m| m.name == name)
+    }
+
+    /// Get the next available unique name based on a base name
+    pub fn get_next_available_name(&self, base_name: &str) -> String {
+        let mut counter = 1;
+        loop {
+            let candidate = format!("{} {}", base_name, counter);
+            if !self.is_name_taken(&candidate) {
+                return candidate;
+            }
+            counter += 1;
+        }
+    }
+
     /// Create a new module
     pub fn create_module(&mut self, name: String) -> ModuleId {
         let id = self.next_module_id;
@@ -2508,6 +2525,35 @@ mod tests {
         manager.delete_module(id1);
         assert_eq!(manager.list_modules().len(), 1);
         assert!(manager.get_module(id1).is_none());
+    }
+
+    #[test]
+    fn test_unique_module_naming() {
+        let mut manager = ModuleManager::new();
+
+        // 1. Get first name
+        let name1 = manager.get_next_available_name("New Module");
+        assert_eq!(name1, "New Module 1");
+        manager.create_module(name1);
+
+        // 2. Get second name
+        let name2 = manager.get_next_available_name("New Module");
+        assert_eq!(name2, "New Module 2");
+        manager.create_module(name2);
+
+        // 3. Verify uniqueness check
+        assert!(manager.is_name_taken("New Module 1"));
+        assert!(manager.is_name_taken("New Module 2"));
+        assert!(!manager.is_name_taken("New Module 3"));
+
+        // 4. Test with gap (delete 1, create new)
+        let modules = manager.list_modules();
+        let id1 = modules.iter().find(|m| m.name == "New Module 1").unwrap().id;
+        manager.delete_module(id1);
+
+        assert!(!manager.is_name_taken("New Module 1"));
+        let name3 = manager.get_next_available_name("New Module");
+        assert_eq!(name3, "New Module 1");
     }
 }
 
