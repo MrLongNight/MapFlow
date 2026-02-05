@@ -4,6 +4,7 @@
 //! beat detection, and RMS volume.
 
 use crate::i18n::LocaleManager;
+use crate::widgets;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 use std::time::Instant;
@@ -75,8 +76,7 @@ impl AudioPanel {
         let mut config = self.local_config.clone().unwrap_or(current_config.clone());
         let mut config_changed = false;
 
-        ui.heading(locale.t("audio-panel-title"));
-        ui.separator();
+        widgets::render_panel_header(ui, &locale.t("audio-panel-title"), |_| {});
 
         // --- Audio Device Selector ---
         let no_device_text = locale.t("audio-panel-no-device");

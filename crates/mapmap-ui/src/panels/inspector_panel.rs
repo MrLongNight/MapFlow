@@ -10,6 +10,7 @@ use egui::Ui;
 use crate::i18n::LocaleManager;
 use crate::icons::IconManager;
 use crate::transform_panel::TransformPanel;
+use crate::widgets;
 use mapmap_core::{Layer, OutputConfig, Transform};
 
 /// The Inspector Panel provides context-sensitive property editing
@@ -79,15 +80,15 @@ impl InspectorPanel {
             .max_width(450.0)
             .show(ctx, |ui| {
                 // Header
-                ui.horizontal(|ui| {
-                    ui.heading(i18n.t("panel-inspector"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                widgets::render_panel_header(
+                    ui,
+                    &i18n.t("panel-inspector"),
+                    |ui| {
                         if ui.button("✕").clicked() {
                             self.visible = false;
                         }
-                    });
-                });
-                ui.separator();
+                    },
+                );
 
                 // Context-sensitive content
                 match context {

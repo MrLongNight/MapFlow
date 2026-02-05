@@ -5,7 +5,7 @@
 use crate::theme::colors;
 use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
-pub fn render_header(ui: &mut Ui, title: &str) {
+pub fn render_panel_header(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
     // Allocate space for the header
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
@@ -29,6 +29,15 @@ pub fn render_header(ui: &mut Ui, title: &str) {
         egui::FontId::proportional(14.0),
         ui.visuals().text_color(),
     );
+
+    let builder = egui::UiBuilder::new()
+        .max_rect(rect)
+        .layout(egui::Layout::right_to_left(egui::Align::Center));
+
+    ui.scope_builder(builder, |ui| {
+        ui.add_space(4.0);
+        add_contents(ui);
+    });
 }
 
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
