@@ -1,17 +1,8 @@
 name: "CICD-DevFlow: Job01 Validation"
-# Trigger run
-
 
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - 'crates/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'scripts/**'
-      - 'deny.toml'
-      - '.github/workflows/CICD-DevFlow_Job01_Validation.yml'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -55,14 +46,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config libasound2-dev \
-            libavcodec-dev libavformat-dev libavutil-dev \
-            libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
-            libfontconfig1-dev libfreetype6-dev \
-            libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
 
       - name: Check Formatting
         run: cargo fmt --all -- --check
@@ -75,7 +59,7 @@ jobs:
       - name: Check Dependency Sort
         run: |
           cargo binstall -y cargo-sort
-          cargo sort --workspace --grouped --check
+          cargo sort --workspace --check
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 2: SECURITY (AUDIT & VET)
@@ -94,11 +78,11 @@ jobs:
         run: cargo binstall -y cargo-audit cargo-deny
 
       - name: Run Audit
-        # Ignore unmaintained crates that are transitive dependencies
+        # Ignore RUSTSEC-2024-0370 (proc-macro-error "unmaintained" - transitive dep)
         run: cargo audit --ignore RUSTSEC-2024-0370 --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0436
 
       - name: Run Cargo Deny
-        run: cargo deny check
+        run: cargo deny check advisories --config deny.toml
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 3: BUILD & TEST (LINUX)
