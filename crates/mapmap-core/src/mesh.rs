@@ -683,24 +683,21 @@ mod bezier_tests {
 
         let points = vec![
             // TL (0)
-            (0.0, 0.0), // Pos
-            (0.0, 1.0/3.0), // In (corresponds to cp[1][0])
-            (1.0/3.0, 0.0), // Out (corresponds to cp[0][1])
-
+            (0.0, 0.0),       // Pos
+            (0.0, 1.0 / 3.0), // In (corresponds to cp[1][0])
+            (1.0 / 3.0, 0.0), // Out (corresponds to cp[0][1])
             // TR (1)
-            (1.0, 0.0), // Pos
-            (2.0/3.0, 0.0), // In (corresponds to cp[0][2])
-            (1.0, 1.0/3.0), // Out (corresponds to cp[1][3])
-
+            (1.0, 0.0),       // Pos
+            (2.0 / 3.0, 0.0), // In (corresponds to cp[0][2])
+            (1.0, 1.0 / 3.0), // Out (corresponds to cp[1][3])
             // BR (2)
-            (1.0, 1.0), // Pos
-            (1.0, 2.0/3.0), // In (corresponds to cp[2][3])
-            (2.0/3.0, 1.0), // Out (corresponds to cp[3][2])
-
+            (1.0, 1.0),       // Pos
+            (1.0, 2.0 / 3.0), // In (corresponds to cp[2][3])
+            (2.0 / 3.0, 1.0), // Out (corresponds to cp[3][2])
             // BL (3)
-            (0.0, 1.0), // Pos
-            (1.0/3.0, 1.0), // In (corresponds to cp[3][1])
-            (0.0, 2.0/3.0), // Out (corresponds to cp[2][0])
+            (0.0, 1.0),       // Pos
+            (1.0 / 3.0, 1.0), // In (corresponds to cp[3][1])
+            (0.0, 2.0 / 3.0), // Out (corresponds to cp[2][0])
         ];
 
         let patch = BezierPatch::from_boundary_splines(&points);
@@ -712,11 +709,11 @@ mod bezier_tests {
         assert!((patch.control_points[3][0] - Vec2::new(0.0, 1.0)).length() < 0.001);
 
         // Verify a mapped handle
-        assert!((patch.control_points[0][1] - Vec2::new(1.0/3.0, 0.0)).length() < 0.001);
+        assert!((patch.control_points[0][1] - Vec2::new(1.0 / 3.0, 0.0)).length() < 0.001);
 
         // Verify interior point 1,1 (should be 1/3, 1/3 for flat patch)
         let p11 = patch.control_points[1][1];
-        assert!((p11.x - 1.0/3.0).abs() < 0.001);
-        assert!((p11.y - 1.0/3.0).abs() < 0.001);
+        assert!((p11.x - 1.0 / 3.0).abs() < 0.001);
+        assert!((p11.y - 1.0 / 3.0).abs() < 0.001);
     }
 }

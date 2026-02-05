@@ -154,7 +154,10 @@ pub fn hex_grid_system(
 
 pub fn particle_system(
     _commands: Commands,
-    query: Query<(Entity, &crate::components::BevyParticles), Changed<crate::components::BevyParticles>>,
+    query: Query<
+        (Entity, &crate::components::BevyParticles),
+        Changed<crate::components::BevyParticles>,
+    >,
 ) {
     for (_entity, _p_config) in query.iter() {
         // Update particles logic (Simplified for now)
