@@ -479,11 +479,7 @@ impl ModuleCanvas {
         }
     }
 
-    pub fn perform_safe_delete(
-        &mut self,
-        module: &mut MapFlowModule,
-        part_ids: &[ModulePartId],
-    ) {
+    pub fn perform_safe_delete(&mut self, module: &mut MapFlowModule, part_ids: &[ModulePartId]) {
         let mut batch_actions = Vec::new();
 
         for &part_id in part_ids {
@@ -4470,7 +4466,6 @@ impl ModuleCanvas {
                 let ctrl1 = Pos2::new(cable_start.x + control_offset, cable_start.y);
                 let ctrl2 = Pos2::new(cable_end.x - control_offset, cable_end.y);
 
-
                 // Hit Detection (Approximate Bezier with segments)
                 let mut is_hovered = false;
                 if let Some(pos) = pointer_pos {
@@ -4607,7 +4602,6 @@ impl ModuleCanvas {
             Vec2::splat(20.0 * self.zoom),
         )
     }
-
 
     fn draw_part_with_delete(
         &self,
@@ -5370,7 +5364,6 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
-
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
