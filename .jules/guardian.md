@@ -38,3 +38,7 @@
 ## 2024-10-26 - Audio Buffer Resizing
 **Insight:** Testing `update_config` in audio analyzers is critical because mismatched buffer sizes (e.g., between FFT and input buffers) are a common source of runtime panics or silent failures when users change settings.
 **Action:** Always include a "reconfiguration" test case for stateful processing components like audio analyzers or render pipelines.
+
+## 2024-10-27 - [Async Pipeline Testing]
+**Erkenntnis:** Testing threaded components like `AudioMediaPipeline` without `thread::sleep` is possible by polling public atomic statistics (e.g., `samples_processed`). This avoids flaky tests dependent on CPU speed.
+**Aktion:** Use `wait_for_condition` with atomic poll checks for all future async/threaded component tests instead of fixed sleeps.
