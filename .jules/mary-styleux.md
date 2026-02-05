@@ -13,3 +13,7 @@
 - **Visuals:** Added a consistent "↗" button next to file path inputs.
 - **Interaction:** Opens the containing folder and highlights the file (Windows) or opens parent directory (Linux/macOS).
 - **Safety:** Prevents accidental file changes by providing a read-only verification method. Validated cross-platform command spawning to ensure UI responsiveness.
+
+## 2024-05-24 – CI Configuration & Empty Modules
+**Learning:** `cargo-deny`'s `unlicensed` key is deprecated and causes CI failures. Empty Rust module files (`.rs` with 0 bytes or just newlines) cause `cargo fmt` diff failures in CI pipelines.
+**Action:** Removed deprecated `unlicensed = "allow"` from `deny.toml`. Ensured all placeholder modules contain at least a comment (e.g., `// This module is currently empty.`) to satisfy `rustfmt`. Verified `cargo fmt --all -- --check` locally before submission.
