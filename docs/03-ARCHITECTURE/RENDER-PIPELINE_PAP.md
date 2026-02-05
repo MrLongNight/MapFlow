@@ -44,12 +44,12 @@ OSC Input
 Keyboard Shortcut
 Timer/Random
 2. Socket-Typen (Verbindungsarten)
-Socket-Typ	Symbol	Beschreibung	Typische Quelle → Ziel
-Trigger	🔵	Logisches Signal (0.0-1.0)	Trigger → Source/Modulizer/Layer
-Media	🟢	Video/Textur-Stream	Source → Modulizer → Layer
-Effect	🟣	Effekt-Konfiguration	Modulizer → Modulizer
-Layer	🟠	Kompositions-Layer	Layer → Output
-Link	⚪	Master/Slave Verbindung	Node ↔ Node
+Socket-Typ Symbol Beschreibung Typische Quelle → Ziel
+Trigger 🔵 Logisches Signal (0.0-1.0) Trigger → Source/Modulizer/Layer
+Media 🟢 Video/Textur-Stream Source → Modulizer → Layer
+Effect 🟣 Effekt-Konfiguration Modulizer → Modulizer
+Layer 🟠 Kompositions-Layer Layer → Output
+Link ⚪ Master/Slave Verbindung Node ↔ Node
 3. Detailansicht: Trigger-Kategorie
 ⏱️ Zeit-basierte Trigger
 🎹 Externe Trigger
@@ -72,16 +72,16 @@ Fixed Timer\n(Interval + Offset)
 Random\n(Interval, Probability)
 Trigger\nEmpfänger
 Audio FFT Output-Konfiguration
-Band	Frequenzbereich	Typische Verwendung
-SubBass	20-60 Hz	Tiefe Bässe, Kick drum
-Bass	60-250 Hz	Basslines
-LowMid	250-500 Hz	Untere Mitten
-Mid	500-2000 Hz	Vocals, Instrumente
-HighMid	2-4 kHz	Presence
-UpperMid	4-6 kHz	Obere Presence
-Presence	6-10 kHz	Brilliance
-Brilliance	10-16 kHz	Air
-Air	16-20 kHz	Ultrahohe Frequenzen
+Band Frequenzbereich Typische Verwendung
+SubBass 20-60 Hz Tiefe Bässe, Kick drum
+Bass 60-250 Hz Basslines
+LowMid 250-500 Hz Untere Mitten
+Mid 500-2000 Hz Vocals, Instrumente
+HighMid 2-4 kHz Presence
+UpperMid 4-6 kHz Obere Presence
+Presence 6-10 kHz Brilliance
+Brilliance 10-16 kHz Air
+Air 16-20 kHz Ultrahohe Frequenzen
 4. Detailansicht: Output-Kategorie
 💡 Lighting Outputs
 🌐 Network Outputs
@@ -116,13 +116,13 @@ Trigger:\nBrightness Pulse
 DTLS Paket erstellen\n(XY + RGB pro Lampe)
 An Bridge senden\n(UDP Port 2100)
 Hue-spezifische Konfiguration
-Parameter	Beschreibung
-bridge_ip	IP-Adresse der Hue Bridge
-username	API Whitelist Username
-client_key	DTLS Encryption Key
-entertainment_area	Ausgewählte Entertainment Zone
-lamp_positions	(X, Y) Position pro Lampe (0.0-1.0)
-mapping_mode	Ambient / Spatial / Trigger
+Parameter Beschreibung
+bridge_ip IP-Adresse der Hue Bridge
+username API Whitelist Username
+client_key DTLS Encryption Key
+entertainment_area Ausgewählte Entertainment Zone
+lamp_positions (X, Y) Position pro Lampe (0.0-1.0)
+mapping_mode Ambient / Spatial / Trigger
 6. Separater PAP: Audio Analysis Flow
 📤 Ausgabe
 📊 Analyse
@@ -141,11 +141,11 @@ AudioAnalysisV2\nStruct
 UI Dashboard
 Trigger Nodes\n(Audio FFT)
 Audio-Konfiguration
-Parameter	Beschreibung	Standard
-sample_rate	Audio Sample Rate	44100 Hz
-buffer_size	FFT Window Size	1024 samples
-beat_threshold	Beat Detection Schwelle	0.5
-bpm_range	BPM Tracking Bereich	60-200 BPM
+Parameter Beschreibung Standard
+sample_rate Audio Sample Rate 44100 Hz
+buffer_size FFT Window Size 1024 samples
+beat_threshold Beat Detection Schwelle 0.5
+bpm_range BPM Tracking Bereich 60-200 BPM
 7. Separater PAP: Media Playback Flow
 🎮 Playback Control
 🗂️ Frame Buffer

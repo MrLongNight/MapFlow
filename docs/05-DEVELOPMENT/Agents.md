@@ -24,14 +24,19 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 
 - **Abhängigkeiten installieren:** (Siehe `README.md` für plattformspezifische Bibliotheken)
 - **Projekt bauen (Entwicklung):**
+
   ```bash
   cargo build
   ```
+
 - **Projekt bauen (optimiert für Release):**
+
   ```bash
   cargo build --release
   ```
+
 - **Anwendung starten:**
+
   ```bash
   cargo run --release
   ```
@@ -50,9 +55,11 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 ## Test-Anweisungen
 
 - **Alle Tests lokal oder im CI ausführen:**
+
   ```bash
   cargo test
   ```
+
 - **Anforderung:** Jede neue Funktion und Bugfix bekommt Unit-Tests. Alle bestehenden Tests müssen zu jeder Zeit grün sein!
 
 ---
@@ -60,23 +67,27 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 ## Audio-Features und native Abhängigkeiten
 
 - **Ohne Audio (Standard):**  
+
   ```bash
   cargo build
   cargo test
   ```
+
 - **Mit Audio-Unterstützung:**  
   Nur unter Linux, mit ALSA:
+
   ```bash
   sudo apt-get update
   sudo apt-get install -y libasound2-dev pkg-config build-essential
   cargo build --features audio
   cargo test --features audio
   ```
+
 - macOS und Windows: Audio ist derzeit nicht unterstützt.
 
 - **CI/CD:**  
-    - Linux: mit und ohne Audio (`--all-features` & `--no-default-features`)
-    - macOS/Windows: ohne Audio
+  - Linux: mit und ohne Audio (`--all-features` & `--no-default-features`)
+  - macOS/Windows: ohne Audio
 
 ---
 
@@ -86,11 +97,13 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 
 1. **Vorbereitung:**
    - Sicherstellen: Folgende Befehle liefern KEINE Fehler oder Warnungen:
+
      ```bash
      cargo fmt
      cargo clippy
      cargo test
      ```
+
 2. **Titel-Format:**  
    Suffix: PR-$$_ ($$ Steht für die laufende PR-Nummer) Klarer, prägnanter Titel, der die Änderung(en) beschreibt.
 
@@ -184,6 +197,7 @@ Format: `type(scope): description`
 | `chore` | Build, CI, Dependencies |
 
 Beispiele:
+
 - `feat(audio): add beat detection algorithm`
 - `fix(ui): resolve panel crash on resize`
 - `refactor(mesh): extract bilinear interpolation`
@@ -196,6 +210,7 @@ Wenn ein Task die Architektur bricht:
 
 1. **STOPP** – Schreibe keinen Code
 2. **MELDE** das Problem klar:
+
    ```
    ⚠️ ARCHITEKTUR-KONFLIKT
 
@@ -203,6 +218,7 @@ Wenn ein Task die Architektur bricht:
    Problem: Würde zirkuläre Dependency erzeugen
    Vorschlag: Neues Trait in mapmap-core definieren
    ```
+
 3. **WARTE** auf Entscheidung von @MrLongNight
 
 Bei wichtigen Entscheidungen erstelle `docs/adr/NNNN-title.md`.

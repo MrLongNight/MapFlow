@@ -13,6 +13,7 @@ A comprehensive ImGui-based control panel for the Kuramoto-based oscillator dist
 ## Features
 
 ### Quick Access
+
 - **View Menu Toggle:** "Show Oscillator" checkbox in View menu
 - **Window Controls:** Collapsible, resizable, movable panel
 - **Default Position:** (870, 100) with size 450×750
@@ -20,6 +21,7 @@ A comprehensive ImGui-based control panel for the Kuramoto-based oscillator dist
 ### Control Categories
 
 #### 1. Master Controls
+
 - **Enable Effect** - Master on/off toggle
 - **Preset Buttons:**
   - Subtle - Gentle organic wobble
@@ -28,11 +30,13 @@ A comprehensive ImGui-based control panel for the Kuramoto-based oscillator dist
   - Reset - Return to defaults
 
 #### 2. Distortion Parameters
+
 - **Amount** (0-1) - Intensity of distortion effect
 - **Scale** (0-0.1) - Spatial scale of distortion
 - **Speed** (0-5) - Animation speed multiplier
 
 #### 3. Visual Overlay
+
 - **Overlay Opacity** (0-1) - Visibility of phase visualization
 - **Color Mode** - Dropdown with options:
   - Off - No color overlay
@@ -41,6 +45,7 @@ A comprehensive ImGui-based control panel for the Kuramoto-based oscillator dist
   - Complementary - Two-tone phase display
 
 #### 4. Simulation Parameters
+
 - **Resolution** - Quality preset dropdown:
   - Low (128×128) - Fast, lower detail
   - Medium (256×256) - Balanced (default)
@@ -50,6 +55,7 @@ A comprehensive ImGui-based control panel for the Kuramoto-based oscillator dist
 - **Frequency Min/Max** (0-10 Hz) - Oscillation frequency range
 
 #### 5. Advanced Parameters
+
 - **Coordinate Mode** - Dropdown:
   - Cartesian - Standard X/Y coordinates
   - Log-Polar - Radial/spiral patterns
@@ -60,7 +66,9 @@ A comprehensive ImGui-based control panel for the Kuramoto-based oscillator dist
   - Diagonal - Diagonal gradient
 
 #### 6. Coupling Rings (Advanced)
+
 Collapsible section with 4 configurable rings:
+
 - **Distance** (0-1) - Position from center
 - **Width** (0-1) - Ring thickness
 - **Coupling** (-5 to +5) - Synchronization strength
@@ -73,6 +81,7 @@ Collapsible section with 4 configurable rings:
 ## Tooltips
 
 All controls include helpful tooltips that appear on hover:
+
 - Parameter explanations
 - Value ranges
 - Performance implications
@@ -81,23 +90,29 @@ All controls include helpful tooltips that appear on hover:
 ## Integration
 
 ### UI State
+
 Added to `AppUI` struct:
+
 ```rust
 pub show_oscillator: bool,  // Toggle visibility
 ```
 
 ### Default State
+
 ```rust
 show_oscillator: true,  // Visible by default
 ```
 
 ### Menu Integration
+
 Added to View menu in `render_menu_bar()`:
+
 ```rust
 ui.checkbox("Show Oscillator", &mut self.show_oscillator);
 ```
 
 ### Usage Example
+
 ```rust
 // In main render loop
 ui_state.render_oscillator_panel(ui, &mut oscillator_config);
@@ -106,6 +121,7 @@ ui_state.render_oscillator_panel(ui, &mut oscillator_config);
 ## Design Patterns
 
 ### ImGui Patterns Used
+
 1. **Window Management** - Movable, resizable windows
 2. **Sliders** - Continuous value adjustment
 3. **Combo Boxes** - Enum selection
@@ -116,6 +132,7 @@ ui_state.render_oscillator_panel(ui, &mut oscillator_config);
 8. **Same Line** - Horizontal layout
 
 ### State Management
+
 - Direct mutation of `OscillatorConfig` struct
 - No intermediate UI state required
 - Changes applied immediately
@@ -143,6 +160,7 @@ ui_state.render_oscillator_panel(ui, &mut oscillator_config);
 ## Future Enhancements
 
 Potential improvements:
+
 1. **Parameter Animation** - Keyframe support for parameters
 2. **Preset Management** - Save/load custom presets
 3. **Visual Preview** - Small thumbnail preview
@@ -157,6 +175,7 @@ Potential improvements:
 ## Testing
 
 To test the control panel:
+
 1. Launch MapMap application
 2. Open View menu
 3. Enable "Show Oscillator"

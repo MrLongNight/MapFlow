@@ -14,6 +14,7 @@ cargo test --workspace
 ```
 
 Oder nutze das Pre-PR Skript (falls vorhanden):
+
 ```powershell
 .\scripts\pre-pr.ps1
 ```
@@ -25,12 +26,14 @@ Oder nutze das Pre-PR Skript (falls vorhanden):
 ### 1. Trailing Whitespace (Formatierung)
 
 **Fehler:**
+
 ```
 error[internal]: left behind trailing whitespace
 --> crates/mapmap/src/main.rs:1099
 ```
 
 **Lösung:**
+
 ```bash
 cargo fmt
 ```
@@ -42,19 +45,23 @@ Dies entfernt automatisch alle trailing whitespaces.
 ### 2. Unresolved Import
 
 **Fehler:**
+
 ```
 error[E0432]: unresolved import `mapmap_render::MeshBufferCache`
 --> crates/mapmap/src/main.rs:26:38
 ```
 
 **Lösung:**
+
 1. Prüfe, ob das Item in `lib.rs` des Ziel-Crates exportiert wird:
+
    ```rust
    // crates/mapmap-render/src/lib.rs
    pub use mesh_buffer_cache::MeshBufferCache;  // Hinzufügen!
    ```
 
 2. Oder ändere den Import-Pfad:
+
    ```rust
    // Falsch:
    use mapmap_render::MeshBufferCache;
@@ -68,6 +75,7 @@ error[E0432]: unresolved import `mapmap_render::MeshBufferCache`
 ### 3. Unused Imports
 
 **Fehler:**
+
 ```
 warning: unused import: `debug`
 ```
@@ -80,6 +88,7 @@ Entferne den Import oder nutze `#[allow(unused_imports)]` wenn beabsichtigt.
 ### 4. Merge Conflicts
 
 **Fehler:**
+
 ```
 This branch has conflicts that must be resolved
 Conflicting files:
@@ -88,6 +97,7 @@ Conflicting files:
 ```
 
 **Lösung:**
+
 ```bash
 git fetch origin main
 git merge origin/main
@@ -98,6 +108,7 @@ git push
 ```
 
 Bei Konflikten in `CHANGELOG.md`:
+
 - Behalte BEIDE Änderungen (chronologisch sortiert)
 - Neueste Einträge oben
 
@@ -106,19 +117,24 @@ Bei Konflikten in `CHANGELOG.md`:
 ### 5. Test Failures
 
 **Fehler:**
+
 ```
 test xxx::test_name ... FAILED
 ```
 
 **Lösung:**
+
 1. Führe den Test lokal aus:
+
    ```bash
    cargo test test_name -- --nocapture
    ```
+
 2. Analysiere die Ausgabe
 3. Fixe den Code oder den Test
 
 Für GPU-abhängige Tests die auf CI fehlschlagen:
+
 ```rust
 #[test]
 #[ignore]  // GPU tests fail on CI without GPU
@@ -132,16 +148,19 @@ fn test_gpu_feature() {
 ### 6. Borrow Checker Errors
 
 **Fehler:**
+
 ```
 error[E0499]: cannot borrow `x` as mutable more than once at a time
 ```
 
 **Lösung:**
+
 - Nutze lokale Variablen für Zwischenwerte
 - Trenne Borrows in separate Scopes
 - Nutze `Clone` wenn nötig
 
 Beispiel:
+
 ```rust
 // Falsch:
 let a = &mut self.x;

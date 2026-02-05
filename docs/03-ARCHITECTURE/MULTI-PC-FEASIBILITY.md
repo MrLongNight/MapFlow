@@ -76,6 +76,7 @@ fn main() {
 ```
 
 **Vorteile:**
+
 - Eine Codebasis = einfachere Wartung
 - Einheitlicher Installer
 - Automatische Feature-Discovery
@@ -489,11 +490,13 @@ dicaffeine --source "MAPFLOW-MASTER" --fullscreen
 ```
 
 **Performance (Raspberry Pi 4):**
+
 - 720p60: ✅ Stabil
 - 1080p30: ✅ Stabil  
 - 1080p60: ⚠️ Möglich mit Drops
 
 **Performance (Raspberry Pi 5):**
+
 - 720p60: ✅ Stabil
 - 1080p30: ✅ Stabil
 - 1080p60: ✅ Stabil (erwartet)
@@ -759,6 +762,7 @@ mapflow-pi-player-v1.0.0.img.xz
 ## 9. Empfohlener Implementierungsplan
 
 ### Phase 1: MVP (Option A - NDI)
+
 **Zeitraum:** Wochen 1-3
 
 1. Refactoring der Hauptanwendung für Multi-Mode-Unterstützung
@@ -769,6 +773,7 @@ mapflow-pi-player-v1.0.0.img.xz
 **Deliverable:** Funktionierender NDI-Stream von Master zu Player über LAN.
 
 ### Phase 2: Legacy Support (Option C)
+
 **Zeitraum:** Wochen 4-5
 
 1. H.264 Encoding Pipeline
@@ -779,6 +784,7 @@ mapflow-pi-player-v1.0.0.img.xz
 **Deliverable:** RTSP-basierter Player für Hardware ab 2010.
 
 ### Phase 3: Raspberry Pi (Option D)
+
 **Zeitraum:** Wochen 6-7
 
 1. ARM64 Build-Pipeline
@@ -789,6 +795,7 @@ mapflow-pi-player-v1.0.0.img.xz
 **Deliverable:** Funktionierender Raspberry Pi 4/5 als Ausgabegerät.
 
 ### Phase 4: Distributed Rendering (Option B)
+
 **Zeitraum:** Wochen 8-12 (Future)
 
 1. OSC Control Protocol
@@ -823,6 +830,7 @@ Die Multi-PC-Architektur für MapFlow ist **technisch machbar** und wirtschaftli
 5. **Distributed Rendering für High-End** (langfristige Perspektive)
 
 Mit diesem Ansatz positioniert sich MapFlow als **ernstzunehmende Alternative** zu kommerziellen Lösungen wie:
+
 - Resolume Arena (~€799)
 - MadMapper (~€449)
 - TouchDesigner (~$2000/Jahr)

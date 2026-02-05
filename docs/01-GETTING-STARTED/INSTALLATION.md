@@ -21,6 +21,7 @@ Pre-built binaries for Windows and Linux are available on the GitHub Releases pa
 1. Download the appropriate file for your OS (`.zip` for Windows, `.deb` for Debian/Ubuntu).
 2. **Windows**: Extract the zip archive and run `mapflow.exe`.
 3. **Linux**: Install the package:
+
    ```bash
    sudo dpkg -i mapflow_*.deb
    sudo apt-get install -f  # Fix missing dependencies if any

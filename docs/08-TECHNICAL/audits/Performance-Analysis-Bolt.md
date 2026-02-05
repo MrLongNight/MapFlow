@@ -5,37 +5,46 @@ Ich habe die Codebase intensiv analysiert. Hier sind meine Ergebnisse und die du
 ## 1. Analyse der Architektur & Datenstrukturen (`mapmap-core`)
 
 ### AppState
+
 - **Status:** Der `AppState` (in `state.rs`) ist ein monolithisches Struct.
 - **Problem:** Es wird `Clone` abgeleitet und verwendet. Das Klonen des gesamten States für Undo/Redo oder Thread-Transfer ist extrem teuer (Deep Copy aller Layer, Paints, Mappings).
 - **Empfehlung:** Umstellung auf `Arc<RwLock<...>>` für große Datenblöcke oder Verwendung von persistenten Datenstrukturen (wie `im` Crate) für effizientes Undo/Redo.
 
 ### LayerManager
+
 - **Gefunden:** Die Methode `visible_layers()` in `layer.rs` erstellt jeden Frame einen neuen `Vec<&Layer>`.
+
     ```rust
     pub fn visible_layers(&self) -> Vec<&Layer> { ... collect() }
     ```
+
 - **Impact:** Dies erzeugt unnötigen Heap-Traffic pro Frame. In Rust sollten wir Iteratoren bevorzugen, die lazy evaluiert werden.
 
 ## 2. Render-Pipeline Analyse (`mapmap-render`)
 
 ### Compositor & EffectChainRenderer
+
 - **Kritischer Fund:** In `main.rs` und `compositor.rs` werden **jeden Frame** neue Uniform-Buffer und BindGroups erstellt!
+
     ```rust
     // mapmap-render/src/compositor.rs
     pub fn create_uniform_buffer(...) -> wgpu::Buffer {
         self.device.create_buffer_init(...) // <-- Allokation + Upload jeden Frame!
     }
     ```
+
     Das Gleiche gilt für `EffectChainRenderer`.
 - **Impact:** Massiver Overhead. Buffer-Erstellung ist eine teure Operation (Treiber-Calls, VRAM-Allocation).
 - **Lösung:** Verwendung eines `StagingBelt` oder `Queue::write_buffer` auf persistente Buffer (Ring-Buffer).
 - **Status:** Dies ist die größte Performance-Bremse im aktuellen Renderer.
 
 ### Texture Uploads
+
 - **Gefunden:** `PaintTextureCache` nutzt `queue.write_texture`. Das ist **vorbildlich**! ⚡
 - **Aber:** `generate_solid_color` allokiert temporäre `Vec<u8>` Buffer. Bei statischen Farben ok, bei Video wäre das tödlich.
 
 ## 3. UI Analyse (`mapmap-ui`)
+
 - Die UI wird sauber getrennt gerendert.
 - `AppUI::take_actions()` Pattern verhindert Borrow-Checker Konflikte. Das ist gut gelöst.
 
@@ -52,9 +61,11 @@ Ich werde `visible_layers` so umschreiben, dass es statt eines `Vec` einen Itera
 
 **Bessere Bolt-Aktion:**
 Da `visible_layers` im `main.rs` Render-Loop verwendet wird:
+
 ```rust
 for layer in self.state.layer_manager.visible_layers() { ... }
 ```
+
 Wenn ich das auf Iterator umstelle, muss ich `main.rs` auch ändern.
 
 **Alternative Bolt-Aktion (Gewählt):**
@@ -69,9 +80,11 @@ Ich werde `visible_layers` so lassen (da `Vec<&Layer>` relativ klein ist, meist 
 
 **Nein, ich mache es besser:**
 Ich sehe in `EffectChainRenderer::apply_chain`:
+
 ```rust
 let bind_group = self.quad_renderer.create_bind_group(&self.device, input_view);
 ```
+
 Das passiert auch jeden Frame wenn keine Effekte da sind! `create_bind_group` ist teuer.
 
 **Entscheidung:**
@@ -103,12 +116,15 @@ pub fn visible_layers_iter(&self) -> impl Iterator<Item = &Layer> { ... }
 Und dann passe ich `main.rs` an.
 
 **Warte:** Das Interface wird in `main.rs` genutzt.
+
 ```rust
 for layer in self.state.layer_manager.visible_layers() {
 ```
+
 Das ist ein einfacher Change.
 
 **Implementierungsschritte:**
+
 1. `mapmap-core/src/layer.rs`: `visible_layers` markieren als deprecated oder ersetzen durch Iterator-basierte Lösung. Da `visible_layers` `&self` braucht, ist `impl Iterator` an die Lifetime gebunden.
 2. `mapmap/src/main.rs`: Den Aufruf anpassen.
 

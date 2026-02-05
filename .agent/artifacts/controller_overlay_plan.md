@@ -9,6 +9,7 @@
 ## 📋 Anforderungen
 
 ### 1. MIDI Status & Controls (GLOBAL)
+
 - [ ] **MIDI Connect Status** anzeigen in:
   - [ ] 🎹 MIDI Panel (Settings)
   - [ ] Werkzeugleiste (Toolbar) - immer sichtbar
@@ -17,6 +18,7 @@
   - [ ] Werkzeugleiste
 
 ### 2. Controller Overlay UI
+
 - [ ] **Ecler Nuo4 Mixer-Foto als Hintergrund**
   - Pfad: `resources/controllers/ecler_nuo4/background.png`
   - Vom Benutzer bereitgestellt
@@ -27,6 +29,7 @@
   - Fader
 
 ### 3. Element-Visualisierung
+
 - [ ] **Platzierung** der PNGs gemäß `elements.json` Positionen
 - [ ] **Animation**:
   - Knobs: Rotation basierend auf MIDI-Wert (0-127 → 0-270°)
@@ -34,6 +37,7 @@
   - Buttons: Aktiv/Inaktiv Zustand
 
 ### 4. Interaktive Features
+
 - [ ] **Rahmen** um jedes MIDI-Element mit Farbanzeige:
   - 🟡 Gelb: MIDI Learn aktiv für dieses Element
   - 🟢 Grün: Bewegung erkannt (Wert ändert sich)
@@ -47,6 +51,7 @@
   - Zuweisung (falls vorhanden)
 
 ### 5. Element-Liste mit Editor
+
 - [ ] **Tabellarische Ansicht** aller MIDI-Elemente:
   - ID, Name, Typ, MIDI-Info, Zuweisung
 - [ ] **Bearbeiten**:
@@ -71,26 +76,31 @@
 ## 🏗️ Implementierungs-Reihenfolge
 
 ### Phase 1: Globale Controls (HEUTE)
+
 1. MIDI Status-Anzeige in Toolbar
 2. MIDI Learn Button in Toolbar
 3. Globaler MIDI Learn Modus
 
 ### Phase 2: Overlay Grundgerüst
+
 1. Menü-Button zum Öffnen des Overlays
 2. Hintergrundbild laden und anzeigen
 3. Fenster skalierbar machen
 
 ### Phase 3: Element-Rendering
+
 1. Assets laden (PNG → egui::TextureHandle)
 2. Elemente gemäß JSON positionieren
 3. Animation implementieren (Rotation/Translation)
 
 ### Phase 4: Interaktivität
+
 1. Rahmen mit Farblogik
 2. Hover-Detection + Tooltip
 3. Klick → MIDI Learn starten
 
 ### Phase 5: Element-Editor
+
 1. Liste aller Elemente
 2. Zuweisungs-Editor
 3. Persistierung in JSON/AppSettings
@@ -99,15 +109,18 @@
 
 ## 📝 Code-Änderungen
 
-### Dateien zu modifizieren:
+### Dateien zu modifizieren
+
 - `crates/mapmap/src/main.rs` - Toolbar MIDI Controls
 - `crates/mapmap-ui/src/controller_overlay_panel.rs` - Komplettes Redesign
 - `crates/mapmap-ui/src/lib.rs` - Exports anpassen
 
-### Neue Dateien:
+### Neue Dateien
+
 - ❓ `crates/mapmap-ui/src/midi_element_list.rs` (optional, könnte in overlay sein)
 
-### Datei-Struktur für Assets:
+### Datei-Struktur für Assets
+
 ```
 resources/controllers/ecler_nuo4/
 ├── elements.json           ✅ Vorhanden

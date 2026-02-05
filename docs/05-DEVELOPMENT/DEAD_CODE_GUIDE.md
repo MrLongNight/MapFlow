@@ -34,13 +34,16 @@ cargo check --all-targets
 #[allow(dead_code)] // TODO: Prüfen, ob dieses Feld dauerhaft benötigt wird!
 field_name: FieldType,
 ```
+
 oder für Funktionen:
+
 ```rust
 #[allow(dead_code)] // TODO: Prüfen, ob diese Funktion benötigt wird!
 fn ungenutzte_funktion() {}
 ```
 
 **Immer:**
+
 - Attribut direkt vor das Item setzen
 - Klaren TODO-Kommentar ergänzen!
 

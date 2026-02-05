@@ -5,14 +5,14 @@ address space used in MapFlow.
 
 ## Overview
 
--   **Namespace:** All MapFlow commands are prefixed with `/mapmap`.
--   **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
-    -   `[bang]`: An OSC message with no arguments.
-    -   `[bool]`: Boolean value (`true` or `false`).
-    -   `[i32]`: 32-bit integer.
-    -   `[f32]`: 32-bit float, typically normalized between `0.0` and `1.0` unless otherwise specified.
-    -   `[string]`: A string of characters.
-    -   `[f32, f32]`: Multiple float arguments for vectors (e.g., X and Y coordinates).
+- **Namespace:** All MapFlow commands are prefixed with `/mapmap`.
+- **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
+  - `[bang]`: An OSC message with no arguments.
+  - `[bool]`: Boolean value (`true` or `false`).
+  - `[i32]`: 32-bit integer.
+  - `[f32]`: 32-bit float, typically normalized between `0.0` and `1.0` unless otherwise specified.
+  - `[string]`: A string of characters.
+  - `[f32, f32]`: Multiple float arguments for vectors (e.g., X and Y coordinates).
 
 ---
 

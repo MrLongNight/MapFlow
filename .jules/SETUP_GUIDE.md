@@ -19,6 +19,7 @@ gh label sync --file .github/labels.yml
 ```
 
 **Oder manuell** die wichtigsten Labels erstellen:
+
 - `jules-task` (für Issues die Jules bearbeiten soll)
 - `jules-pr` (für PRs von Jules)
 - `priority: critical`, `priority: high`, `priority: medium`
@@ -34,6 +35,7 @@ gh run watch
 ```
 
 Das erstellt automatisch:
+
 - ✅ Multi-Window Rendering (Critical)
 - ✅ Frame Synchronization (Critical)
 - ✅ Build System Fix (High)
@@ -90,6 +92,7 @@ Für `main` Branch:
 ## 🔍 Überwachung
 
 ### Issues anzeigen
+
 ```bash
 # Alle Jules Tasks
 gh issue list --label "jules-task"
@@ -99,6 +102,7 @@ gh issue list --label "jules-task" --label "priority: critical"
 ```
 
 ### PRs überwachen
+
 ```bash
 # Alle Jules PRs
 gh pr list --label "jules-pr"
@@ -108,6 +112,7 @@ gh pr view <pr-number> --json statusCheckRollup,mergeable
 ```
 
 ### Workflows überwachen
+
 ```bash
 # CI/CD Pipeline Status
 gh run list --workflow="CI/CD Pipeline"
@@ -175,6 +180,7 @@ cargo build --release
 ### Problem: Auto-Merge funktioniert nicht
 
 **Checkliste:**
+
 - [ ] PR hat `jules-pr` Label?
 - [ ] Alle CI Checks bestanden?
 - [ ] Keine Merge Konflikte?
@@ -182,6 +188,7 @@ cargo build --release
 - [ ] PR ist kein Draft?
 
 **Debug:**
+
 ```bash
 # Check PR Status
 gh pr view <pr-number> --json mergeable,mergeStateStatus
@@ -196,6 +203,7 @@ gh run view <run-id> --log
 **Lösung:** Der Workflow prüft bereits existierende Issues. Doppelte werden übersprungen.
 
 Manuell aufräumen:
+
 ```bash
 # Doppelte Issues finden und schließen
 gh issue list --label "jules-task" --state all
@@ -207,12 +215,14 @@ gh issue close <issue-number>
 ### Für Issue-Erstellung
 
 ✅ **DO:**
+
 - Klare Acceptance Criteria definieren
 - Technische Details und Dateipfade angeben
 - Priority Labels setzen
 - Related Documentation verlinken
 
 ❌ **DON'T:**
+
 - Vage Beschreibungen
 - Zu große Tasks (besser aufteilen)
 - Fehlende Test-Requirements
@@ -220,12 +230,14 @@ gh issue close <issue-number>
 ### Für Jules PRs
 
 ✅ **DO:**
+
 - PR Template komplett ausfüllen
 - Alle Tests lokal ausführen
 - Related Issue verlinken mit "Closes #123"
 - Clear commit messages
 
 ❌ **DON'T:**
+
 - Draft PRs (werden nicht auto-merged)
 - PRs ohne Tests
 - Merge Konflikte
@@ -233,10 +245,12 @@ gh issue close <issue-number>
 ### Monitoring
 
 **Täglich:**
+
 - Jules PR Status checken
 - CI/CD Failures überprüfen
 
 **Wöchentlich:**
+
 - Offene Issues reviewen
 - Merged PRs stichprobenartig prüfen
 - ROADMAP.md manuell updaten
@@ -255,7 +269,7 @@ gh issue close <issue-number>
 - [Issue Templates](.github/ISSUE_TEMPLATE/) - Templates für Issues
 - [PR Template](.github/pull_request_template.md) - Template für PRs
 
-## ✨ Das war's!
+## ✨ Das war's
 
 Nach diesen 5 Schritten ist die Jules Integration einsatzbereit:
 

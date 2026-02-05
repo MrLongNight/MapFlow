@@ -276,6 +276,7 @@ fn debug_print_frame(colors: &HashMap<u8, (u8, u8, u8)>) {
 ## 📍 Spatial Coordinates & Live Preview
 
 ### Coordinate System
+
 Hue Entertainment uses a normalized 3D coordinate system relative to the user's viewing position (e.g., TV or Monitor).
 
 | Axis | Range | Meaning |
@@ -342,6 +343,7 @@ impl RoomPreview {
 Using the `x, y, z` coordinates from `LightNode`, we can create immersive effects.
 
 #### 1. Radial Explosion (Distance-based)
+
 Triggered on a beat, expands from the center of the room.
 
 ```rust
@@ -372,6 +374,7 @@ impl LightEffect for RadialExplosion {
 ```
 
 #### 2. Linear Wave (Directional)
+
 A wave of color moving from Left to Right (or Front to Back).
 
 ```rust
@@ -401,6 +404,7 @@ impl LightEffect for LinearWave {
 ```
 
 #### 3. Height Map (Z-Axis)
+
 Different colors for Floor, Eye-level, and Ceiling lights.
 
 ```rust
@@ -425,6 +429,7 @@ impl LightEffect for HeightMapEffect {
 ```
 
 #### 4. Sector/Zone Trigger
+
 Only light up specific zones (e.g., "Left Rear") based on game events or triggers.
 
 ```rust

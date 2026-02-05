@@ -25,7 +25,8 @@ Projection mapping (also known as video mapping and spatial augmented reality) i
 
 MapFlow is now a fully functional Rust application. The migration from ImGui to `egui` is complete, and the core engine delivers high performance.
 
-### Key Features:
+### Key Features
+
 - **Memory Safety:** Eliminates entire classes of crashes common in live performance software.
 - **Modern Graphics:** Utilizes `wgpu` for access to Vulkan, Metal, and DX12.
 - **High Performance:** Built for 60fps+ at 4K with multiple outputs.
@@ -38,36 +39,42 @@ MapFlow is now a fully functional Rust application. The migration from ImGui to 
 For a detailed status, see the [ROADMAP](ROADMAP_2.0.md).
 
 **Phase 1: Core Engine**
--   [x] Layer system with transforms, opacity, and blend modes
--   [x] Hardware-accelerated video decoding (FFmpeg)
--   [x] Advanced playback controls
--   [x] Image/GIF support
+
+- [x] Layer system with transforms, opacity, and blend modes
+- [x] Hardware-accelerated video decoding (FFmpeg)
+- [x] Advanced playback controls
+- [x] Image/GIF support
 
 **Phase 2: Professional Multi-Projector System**
--   [x] Multi-output rendering
--   [x] Bezier-based mesh warping
--   [x] Edge blending and color calibration
+
+- [x] Multi-output rendering
+- [x] Bezier-based mesh warping
+- [x] Edge blending and color calibration
 
 **Phase 3: Effects Pipeline**
--   [x] GPU compute effects (Blur, Glitch, etc.)
--   [x] Audio reactivity (FFT, Beat)
--   [x] Shader Graph system
+
+- [x] GPU compute effects (Blur, Glitch, etc.)
+- [x] Audio reactivity (FFT, Beat)
+- [x] Shader Graph system
 
 **Future Phases:**
--   **Multi-PC:** Distributed rendering via NDI (In Progress).
--   **Lighting:** DMX/Art-Net integration.
+
+- **Multi-PC:** Distributed rendering via NDI (In Progress).
+- **Lighting:** DMX/Art-Net integration.
 
 ## 🛠️ Quick Start
 
 ### Prerequisites
 
 **Rust Toolchain:**
+
 ```bash
 # Install Rust 1.75 or later
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 **System Dependencies (Ubuntu/Debian):**
+
 ```bash
 sudo apt-get install -y \
   build-essential pkg-config \

@@ -24,7 +24,7 @@ Welcome to the MapFlow User Guide. This documentation covers all aspects of usin
 
 ## Getting Started
 
-1.  Launch MapFlow.
-2.  Go to **File > Settings** to configure your Audio and MIDI devices.
-3.  Use the **Media Browser** to import your content.
-4.  Drag nodes onto the **Module Canvas** to start creating your visual flow.
+1. Launch MapFlow.
+2. Go to **File > Settings** to configure your Audio and MIDI devices.
+3. Use the **Media Browser** to import your content.
+4. Drag nodes onto the **Module Canvas** to start creating your visual flow.

@@ -1,4 +1,4 @@
-# Pre-commit configuration for MapFlow 
+# Pre-commit configuration for MapFlow
 # Runs automatically via pre-commit.ci on every PR
 # See https://pre-commit.com for more information
 
@@ -6,15 +6,15 @@ ci:
   # Auto-fix and push commits
   autofix_commit_msg: "style: auto-fix by pre-commit.ci [skip ci]"
   autofix_prs: true
-  
+
   # Auto-update hooks weekly
   autoupdate_branch: ""
   autoupdate_commit_msg: "chore: pre-commit autoupdate [skip ci]"
   autoupdate_schedule: weekly
-  
+
   # Don't skip any hooks
   skip: []
-  
+
   # Don't process submodules
   submodules: false
 
@@ -29,7 +29,7 @@ repos:
       - id: fmt
         name: "Rust: cargo fmt"
         args: ['--all', '--']
-        
+
       # Cargo Clippy (only check, auto-fix can be unstable)
       # We run clippy in CI with --fix for more control
       - id: clippy
@@ -51,29 +51,29 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
         exclude: ^(.*\.patch|.*\.diff)$
-        
+
       # Fix end-of-file newlines
       - id: end-of-file-fixer
         exclude: ^(.*\.patch|.*\.diff|.*\.rs\.bk)$
-        
+
       # Prevent case conflicts on case-insensitive filesystems
       - id: check-case-conflict
-        
+
       # Validate YAML syntax
       - id: check-yaml
         args: [--allow-multiple-documents]
-        
+
       # Validate TOML syntax
       - id: check-toml
-        
+
       # Prevent committing large files (except FFmpeg DLLs)
       - id: check-added-large-files
         args: [--maxkb=5000]
         exclude: ^(.*\.dll|.*\.so|.*\.dylib|assets/.*|resources/.*)$
-        
+
       # Check for merge conflict markers
       - id: check-merge-conflict
-        
+
       # Fix mixed line endings (use LF)
       - id: mixed-line-ending
         args: [--fix=lf]

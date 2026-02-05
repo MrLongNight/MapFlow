@@ -5,27 +5,32 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 ## 🚀 Quick Navigation
 
 ### For New Users
+
 - [Getting Started](01-GETTING-STARTED/) - Installation, Build, Quick Start
 - [User Guide](02-USER-GUIDE/) - Features, UI Panels, Keyboard Shortcuts
 - [MIDI Control](02-USER-GUIDE/MIDI_CONTROL.md) - Controller Setup & Mapping
 - [OSC Control](10-OSC-CONTROL/) - Open Sound Control Command Reference
 
 ### For Developers
+
 - [Architecture](03-ARCHITECTURE/) - System Design, Crates, Data Flow
 - [Development](05-DEVELOPMENT/) - Development Setup, Guidelines
 - [Technical Reference](08-TECHNICAL/) - Shaders, Rendering, Performance
 - [Audits & Reports](08-TECHNICAL/audits/) - Code & Security Audits
 
 ### For Project Managers
+
 - [Roadmap & Phases](06-ROADMAP/) - Complete Phase Plan (0-7)
 - [Project Status](06-ROADMAP/README.md) - Current Progress
 
 ### Learning
+
 - [Tutorials](07-TUTORIALS/) - Step-by-Step Guides (Hello World, Video Loading, etc.)
 - [FAQ](09-RESOURCES/FAQ.md) - Common Questions & Solutions
 - [Glossary](09-RESOURCES/GLOSSARY.md) - Terminology
 
 ### Reference
+
 - [Changelog](../CHANGELOG.md) - Version History
 - [Contributors](09-RESOURCES/CONTRIBUTORS.md) - Credits
 - [External Resources](09-RESOURCES/LINKS.md)

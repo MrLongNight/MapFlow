@@ -19,42 +19,52 @@ Diese Strategie definiert die Standards für Continuous Integration und Continuo
 ## 🔄 Workflow Phasen (CI-01)
 
 ### 1. Pre-Checks & Auto-Fixes
+
 - **Ziel**: Einfache Fehler automatisch beheben bevor teure Tests laufen.
 - **Tools**: `cargo fmt`, `cargo clippy --fix`, `cargo-sort`.
 - **Aktion**: Commit & Push von Fixes durch `github-actions[bot]`.
 
 ### 2. Code Quality & Linting
+
 - **Ziel**: Statische Analyse und Einhaltung von Standards.
 - **Tools**: `clippy` (via reviewdog für PR-Kommentare), `cargo-udeps`, `cargo-deny`.
 - **Cache**: `Swatinem/rust-cache` (Shared Key: `quality-cache`).
 
 ### 3. Build & Test
+
 - **Ziel**: Funktionale Korrektheit sicherstellen.
 - **Tools**: `cargo nextest` (Parallelisierung), `cargo tarpaulin` (Coverage).
 - **Environment**: Ubuntu Latest mit Audio/Video-Libs (FFmpeg, NDI SDK).
 
 ### 4. Windows Build
+
 - **Ziel**: Cross-Platform Kompatibilität prüfen.
 - **Einschränkung**: Ohne NDI SDK (manuelle Interaktion nötig), eingeschränkte Tests.
 
 ### 5. Security & Supply Chain
+
 - **Ziel**: Sicherheitslücken in Dependencies finden.
 - **Tools**: `cargo audit`, `cargo vet`, `dependabot`.
 
 ### 6. Performance
+
 - **Ziel**: Regressionen verhindern.
 - **Tools**: `cargo bench` (nur bei PRs relevant).
 
 ## 💻 Lokale Entwicklung
 
 ### Pre-Commit Hooks
+
 Einrichtung empfohlen via Skript:
+
 ```bash
 ln -s .github/pre-commit-hook.sh .git/hooks/pre-commit
 ```
 
 ### Cargo Make
+
 Verwendung von `Makefile.toml` zur lokalen Ausführung der Pipeline:
+
 ```bash
 cargo make check-all  # Format, Lint, Test
 cargo make ci-local   # Full Pipeline inkl. Docs & Audit

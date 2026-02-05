@@ -9,6 +9,7 @@ This directory contains automated workflows for the MapFlow project, implementin
 **Purpose:** Comprehensive continuous integration and deployment pipeline
 
 **Triggers:**
+
 - Push to `main` branch (with path filters)
 - Pull requests to `main` (with path filters)
 - Manual dispatch
@@ -17,9 +18,11 @@ This directory contains automated workflows for the MapFlow project, implementin
 > **Optimization:** Path filters + parallel jobs reduce runtime by ~30-50%
 
 **Path Filters (only runs when these change):**
+
 - `crates/**`, `Cargo.toml`, `Cargo.lock`, `scripts/**`, `deny.toml`
 
 **Jobs (PARALLEL execution after pre-checks):**
+
 - **Pre-Checks:** Auto-formatting and Clippy fixes
 - **Code Quality:** Linting and dependency checks (parallel)
 - **Build & Test:** Linux builds with audio (parallel)
@@ -32,6 +35,7 @@ This directory contains automated workflows for the MapFlow project, implementin
 **Purpose:** Automated security vulnerability detection
 
 **Triggers:**
+
 - Push to `main` branch (with path filters)
 - Weekly schedule (Mondays at 00:00 UTC)
 - Manual dispatch
@@ -45,9 +49,11 @@ This directory contains automated workflows for the MapFlow project, implementin
 **Purpose:** Create all Jules development issues at once
 
 **Triggers:**
+
 - Manual dispatch only (run once to create all issues)
 
 **Features:**
+
 - Creates all development tasks from ROADMAP.md as GitHub issues
 - Properly labeled with `jules-task` for Jules to process
 - Includes priority labels and phase information
@@ -55,6 +61,7 @@ This directory contains automated workflows for the MapFlow project, implementin
 - Simple one-time setup
 
 **Usage:**
+
 ```bash
 # Create all Jules issues (run once)
 gh workflow run CI-03_create-issues.yml
@@ -67,17 +74,20 @@ gh workflow run CI-03_create-issues.yml
 **Purpose:** Automatically trigger Jules sessions when issues are created or labeled
 
 **Triggers:**
+
 - Issue opened with `jules-task` label
 - `jules-task` label added to existing issue
 - Manual dispatch (single issue)
 
 **Features:**
+
 - **Automatic Detection:** Monitors all issues with `jules-task` label
 - **Official Jules Action:** Uses `google-labs-code/jules-action@v1` for reliable session creation
 - **Tracking Comments:** Adds status comments to issues
 - **Flexible Setup:** Works with or without API key (supports Jules GitHub App)
 
 **Usage:**
+
 ```bash
 # Automatically triggered when issue gets jules-task label
 
@@ -86,15 +96,17 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 ```
 
 **Configuration:**
-- **Option 1 (Recommended):** Install Jules GitHub App at https://github.com/apps/jules
+
+- **Option 1 (Recommended):** Install Jules GitHub App at <https://github.com/apps/jules>
   - No API key needed
   - Works automatically with all `jules-task` issues
 - **Option 2:** Add `JULES_API_KEY` as repository secret for GitHub Action-based automation
-  - Get API key from https://jules.google.com (Settings)
+  - Get API key from <https://jules.google.com> (Settings)
   - Workflow uses official `google-labs-code/jules-action`
 - **Fallback:** Manual session creation via jules.google.com
 
 **What it does:**
+
 1. Detects issues with `jules-task` label
 2. Extracts issue details (number, title, body)
 3. Adds tracking comment to issue
@@ -112,12 +124,14 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 **Purpose:** Automatically merge Jules PRs when all checks pass, with intelligent error handling
 
 **Triggers:**
+
 - Pull request events (opened, synchronize, reopened, labeled)
 - Check suite completion
 - Workflow run completion (CI-01)
 - Manual dispatch
 
 **Features:**
+
 - **Intelligent Check Monitoring:** Waits for all checks to complete
 - **Success Path:** Auto-merges when all checks pass
 - **Error Path:** Creates detailed @jules comments with failure information
@@ -126,6 +140,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 - **Retry Support:** Jules can update PR, checks re-run automatically
 
 **Auto-Merge Conditions:**
+
 1. ✅ PR labeled with `jules-pr` or body contains "Created by Jules"
 2. ✅ All CI checks pass (except auto-merge workflow itself)
 3. ✅ No merge conflicts
@@ -133,6 +148,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 5. ✅ Not a draft PR
 
 **Error Handling:**
+
 - Detects failed checks and collects details
 - Creates @jules comment with:
   - List of failed checks
@@ -145,9 +161,11 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 **Purpose:** Keep CHANGELOG.md up to date automatically
 
 **Triggers:**
+
 - Pull request closed/merged
 
 **Features:**
+
 - Simple changelog updates
 - Adds entry for each merged PR
 - Commits changes automatically
@@ -158,16 +176,19 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 **Purpose:** Complete post-merge tasks: close issue, update ROADMAP, trigger next session
 
 **Triggers:**
+
 - Pull request closed/merged (Jules PRs only)
 - Manual dispatch
 
 **Features:**
+
 - **Issue Management:** Automatically closes related issue
 - **ROADMAP Updates:** Marks tasks as completed
 - **Continuous Automation:** Triggers CI-04 for next jules-task issue
 - **Progress Tracking:** Adds completion comments
 
 **Workflow:**
+
 1. Extract issue number from PR body
 2. Close related issue with success comment
 3. Update ROADMAP.md:
@@ -181,6 +202,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 **Purpose:** Event-based monitoring of Jules sessions (no continuous polling)
 
 **Triggers:**
+
 - `workflow_call` from CI-04 (when session starts)
 - `push` to `jules-*` branches (when Jules creates PR branch)
 - Manual `workflow_dispatch`
@@ -190,6 +212,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 > **Savings:** ~2000+ minutes/week
 
 **Features:**
+
 - **Single-Run Check:** Runs once per trigger, no polling loop
 - **Active Session Detection:** Finds sessions from issue comments
 - **Automatic PR Creation:** Creates PR when session completes
@@ -197,6 +220,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 - **Timeout:** 30 minutes (reduced from 360)
 
 **Workflow:**
+
 1. Triggered by CI-04, branch push, or manual dispatch
 2. Find all open jules-task issues
 3. Check Jules API for each session (single check)
@@ -242,6 +266,7 @@ The workflows require the following GitHub permissions:
 ### Complete Jules Automation Workflow
 
 **📋 Phase 1: Issue Creation & Session Start**
+
 1. **Issue Creation:**
    - Manual creation via issue templates
    - Batch creation via CI-03
@@ -255,9 +280,10 @@ The workflows require the following GitHub permissions:
 
 **🔄 Phase 2: Session Monitoring**
 3. **Continuous Monitoring (CI-08):**
-   - Runs every 5 minutes
-   - Polls Jules API for session status
-   - Detects when sessions complete or fail
+
+- Runs every 5 minutes
+- Polls Jules API for session status
+- Detects when sessions complete or fail
 
 4. **PR Creation (CI-08):**
    - Automatically creates PR when session completes
@@ -267,16 +293,18 @@ The workflows require the following GitHub permissions:
 
 **🧪 Phase 3: Automated Testing**
 5. **CI/CD Pipeline (CI-01):**
-   - Triggered automatically on PR
-   - Code quality checks (format, lint)
-   - Multi-platform builds
-   - Security scanning
+
+- Triggered automatically on PR
+- Code quality checks (format, lint)
+- Multi-platform builds
+- Security scanning
 
 **✅ Phase 4: Merge Decision**
 6. **Success Path (CI-05):**
-   - All checks pass → automatic merge
-   - Success comment added
-   - Triggers post-merge automation
+
+- All checks pass → automatic merge
+- Success comment added
+- Triggers post-merge automation
 
 7. **Error Path (CI-05):**
    - Checks fail → detailed @jules comment
@@ -286,10 +314,11 @@ The workflows require the following GitHub permissions:
 
 **📝 Phase 5: Post-Merge Actions**
 8. **Documentation Updates (CI-06 & CI-07):**
-   - ROADMAP.md marked as completed
-   - Changelog entry added
-   - Issue automatically closed
-   - Success comments added
+
+- ROADMAP.md marked as completed
+- Changelog entry added
+- Issue automatically closed
+- Success comments added
 
 9. **Continuous Automation (CI-07):**
    - Triggers CI-04 for next oldest jules-task issue
@@ -357,17 +386,20 @@ gh workflow run CI-06_update-changelog.yml
 ### Troubleshooting
 
 **Issue: CI fails with dependency errors**
+
 - Check system dependencies in `CI-01_build-and-test.yml`
 - Verify FFmpeg installation
 - Check package availability on runner OS
 
 **Issue: Auto-merge not working**
+
 - Verify PR has `jules-pr` label
 - Check all required checks pass
 - Ensure no merge conflicts
 - Review branch protection rules
 
 **Issue: Issues not created from ROADMAP**
+
 - Verify ROADMAP.md format
 - Check workflow permissions
 - Run with dry_run=true first
@@ -393,6 +425,7 @@ gh workflow run CI-06_update-changelog.yml
 ## 📞 Support
 
 For issues with workflows:
+
 1. Check workflow logs in Actions tab
 2. Review this documentation
 3. Open an issue with `workflows` label
@@ -437,33 +470,39 @@ For issues with workflows:
          └──────────────────┘
 
 ✅ Zusammenfassung der Dateipfade:
-Datei	Pfad	Grund
-.markdownlint.json	Root	Wird von markdownlint-cli im Root gesucht
-.secrets.baseline	Root	Wird von detect-secrets im Root gesucht
-.pre-commit-config.yaml	Root	Standard für pre-commit
-copilot-instructions.md	.github/	GitHub-spezifische Config
-Workflows	.github/workflows/	GitHub Actions Standard
+Datei Pfad Grund
+.markdownlint.json Root Wird von markdownlint-cli im Root gesucht
+.secrets.baseline Root Wird von detect-secrets im Root gesucht
+.pre-commit-config.yaml Root Standard für pre-commit
+copilot-instructions.md .github/ GitHub-spezifische Config
+Workflows .github/workflows/ GitHub Actions Standard
 
 ✅ Vollständige Commit-Reihenfolge:
+
 # Schritt 1: Root-Config-Dateien
+
 git add .markdownlint.json
 git add .secrets.baseline
 git commit -m "config: add markdownlint and secrets baseline"
 
 # Schritt 2: Pre-Commit erweitern
+
 git add .pre-commit-config.yaml
 git commit -m "ci: enhance pre-commit with Rust, markdown, and security checks"
 
 # Schritt 3: Copilot Instructions
+
 git add .github/copilot-instructions.md
 git commit -m "docs: add Copilot review instructions"
 
 # Schritt 4: Workflows
+
 git add .github/workflows/CICD-DevFlow_Job01_Validation.yml
 git add .github/workflows/CICD-DevFlow_Job02_AutoMerge.yml
 git commit -m "ci: implement validation and auto-merge with Jules feedback"
 
 # Push alles
+
 git push
 **Last Updated:** 2026-01-07 (Optimized for reduced Actions minutes)  
 **Maintained By:** MapFlow Team

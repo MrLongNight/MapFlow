@@ -83,6 +83,7 @@ mapmap/
 ## Building Your First Projection
 
 Let's create a simple "Hello World" projection mapping example that:
+
 1. Creates a window
 2. Loads a "Hello World" image or creates a colored texture
 3. Projects it onto a quad mesh with basic warping

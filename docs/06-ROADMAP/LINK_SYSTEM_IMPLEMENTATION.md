@@ -5,9 +5,11 @@ This document details the implementation of the Universal Link System for Layers
 ## 1. Audio Trigger Node Enhancements
 
 ### Goal
+
 Allow each output channel of the Audio Trigger Node to be optionally inverted (Logic NOT).
 
 ### Implementation Details
+
 - **File**: `crates/mapmap-core/src/module.rs`
 - **Struct**: `AudioTriggerOutputConfig`
 - **Changes**:
@@ -23,17 +25,21 @@ Allow each output channel of the Audio Trigger Node to be optionally inverted (L
 ## 2. Universal Link System
 
 ### Goal
+
 Enable Master/Slave linking between nodes to synchronize visibility/activity states.
 
 ### Core Concepts
 
 #### Link Mode
+
 Property per node determining its role:
+
 - **Off**: Standard behavior.
 - **Master**: Controls other nodes. Exposes `Link Output`. Accepts `Trigger Input` to control itself.
 - **Slave**: Controlled by a Master. Exposes `Link Input`.
 
 #### Link Behavior (Slave only)
+
 - **Same As Master**: Slave visibility = Master visibility.
 - **Inverted**: Slave visibility = !Master visibility.
 
@@ -42,6 +48,7 @@ Property per node determining its role:
 **File**: `crates/mapmap-core/src/module.rs`
 
 New Enums:
+
 ```rust
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum LinkMode {
@@ -58,6 +65,7 @@ pub enum LinkBehavior {
 ```
 
 **Common Link Data** (to be added to relevant Node structs/enums):
+
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeLinkData {
@@ -69,11 +77,11 @@ pub struct NodeLinkData {
 
 ### Affected Nodes
 
-1.  **Layer Nodes** (`LayerAssignmentType`)
+1. **Layer Nodes** (`LayerAssignmentType`)
     - `SingleLayer`, `Group`, `AllLayers` variants will receive `link_data: NodeLinkData`.
-2.  **Mask Nodes** (`MaskType`)
+2. **Mask Nodes** (`MaskType`)
     - `File`, `Shape`, `Gradient` variants will receive `link_data`.
-3.  **Effect/Blend Nodes** (`ModulizerType`)
+3. **Effect/Blend Nodes** (`ModulizerType`)
     - `Effect`, `BlendMode` variants will receive `link_data`.
 
 ### Socket Logic (`ModulePart::add_part` / `generate_outputs`)
@@ -86,6 +94,7 @@ pub struct NodeLinkData {
   - Add `Link In` socket.
 
 ### Connection Rules
+
 - `Link Out` can only connect to `Link In`.
 - Need to distinguish "Control/Link" triggers from generic "Trigger" signals if we use the same socket type.
 - **Proposal**: Use `ModuleSocketType::Link` to ensure strict typing (Master -> Slave only).
@@ -93,6 +102,7 @@ pub struct NodeLinkData {
 ### Runtime Logic
 
 In `mapmap-core/src/module_eval.rs` or `mapmap-ui/src/module_canvas.rs`:
+
 - **Master Evaluation**:
   - Read `Trigger Input` value.
   - Determine `is_active` state.
@@ -108,21 +118,21 @@ In `mapmap-core/src/module_eval.rs` or `mapmap-ui/src/module_canvas.rs`:
 
 ## 3. Implementation Steps
 
-1.  **Update Core Data Structures** (`crates/mapmap-core/src/module.rs`)
+1. **Update Core Data Structures** (`crates/mapmap-core/src/module.rs`)
     - Define `LinkMode`, `LinkBehavior`, `NodeLinkData`.
     - Update `LayerAssignmentType`, `MaskType`, `ModulizerType`.
     - Update `AudioTriggerOutputConfig` for inversion.
     - Add `ModuleSocketType::Link`? Or reuse Trigger with naming convention? -> **Decision: Add `ModuleSocketType::Link` for safety.**
 
-2.  **Update Module Construction** (`crates/mapmap-core/src/module.rs`)
+2. **Update Module Construction** (`crates/mapmap-core/src/module.rs`)
     - Update `add_part` to initialize default `link_data`.
     - Implement `update_sockets` logic to dynamically show/hide Link/Trigger sockets based on Mode.
 
-3.  **Update UI Panels** (`crates/mapmap-ui/src/module_canvas/panels/`)
+3. **Update UI Panels** (`crates/mapmap-ui/src/module_canvas/panels/`)
     - Add Inspector controls for Link Mode/Behavior.
     - Add "Invert" checkboxes for Audio Trigger.
 
-4.  **Update Runtime/Evaluation**
+4. **Update Runtime/Evaluation**
     - Ensure logical propagation of signals.
 
 ## 4. Work Packages

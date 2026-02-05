@@ -18,6 +18,7 @@ on:
 ```
 
 Das bedeutet:
+
 - ✅ **Manuelle Kontrolle:** Du entscheidest wann Issues erstellt werden
 - ✅ **Keine Duplikate:** Issues werden nicht bei jedem Push erstellt
 - ✅ **Einmalige Aktion:** Issues sollen nur EINMAL erstellt werden
@@ -59,7 +60,7 @@ Wenn du den Workflow ausführst:
 
 ## 📋 Wie funktioniert der Prozess?
 
-### Schritt-für-Schritt:
+### Schritt-für-Schritt
 
 ```
 1. Du führst Workflow aus
@@ -84,12 +85,14 @@ Wenn du den Workflow ausführst:
 ### Warum dieser Prozess?
 
 **Vorteile:**
+
 - ✅ **Kontrolle:** Du entscheidest wann der Prozess startet
 - ✅ **Transparent:** Du siehst alle Issues bevor Jules beginnt
 - ✅ **Flexibel:** Du kannst Issues anpassen/löschen vor Jules Start
 - ✅ **Sicher:** Keine unerwarteten automatischen Aktionen
 
 **Alternative (nicht gewählt):**
+
 - ❌ Automatische Issue-Erstellung bei jedem Push → Chaos!
 - ❌ Issues bei PR-Merge erstellen → Zu spät!
 - ❌ Scheduled/Cron Issue-Erstellung → Unnötig komplex!
@@ -170,15 +173,17 @@ This is critical for professional multi-projector setups.
 ```
 
 **Labels:**
+
 - `jules-task` (Jules überwacht dieses Label)
 - `priority: critical` (Hohe Priorität)
 - `phase-2: multi-projector` (Projekt-Phase)
 
 ## ⚠️ Wichtige Hinweise
 
-### Vor dem Erstellen:
+### Vor dem Erstellen
 
 1. **Labels müssen existieren:**
+
    ```bash
    gh label sync --file .github/labels.yml
    ```
@@ -191,9 +196,10 @@ This is critical for professional multi-projector setups.
    - Workflow prüft Duplikate
    - Aber besser nur einmal ausführen
 
-### Nach dem Erstellen:
+### Nach dem Erstellen
 
 1. **Issues reviewen:**
+
    ```bash
    gh issue list --label "jules-task"
    ```
@@ -237,6 +243,7 @@ gh issue list --label "jules-task"
 ```
 
 **Expected Output:**
+
 ```
 ✓ Multi-Window Rendering #1
 ✓ Frame Synchronization #2

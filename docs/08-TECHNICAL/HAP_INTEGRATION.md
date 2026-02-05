@@ -31,21 +31,25 @@ wgpu::TextureFormat::Bc1/Bc3 (GPU, direkt!)
 ## Implementierungsschritte
 
 ### Phase 1: Container-Handling (FFmpeg)
+
 - [ ] HAP-Frames via `ffmpeg-next` extrahieren
 - [ ] MOV/AVI Container-Support verifizieren
 - [ ] Frame-Metadaten (Typ, Größe, Flags) parsen
 
 ### Phase 2: HAP-Decoder
+
 - [ ] Snappy-Dekompression (`snap` crate)
 - [ ] HAP Frame Header parsen
 - [ ] Section-basiertes Decoding (multi-section für große Frames)
 
 ### Phase 3: GPU-Upload
+
 - [ ] wgpu BC1/BC3 Textur-Format nutzen
 - [ ] Direkt-Upload ohne CPU-Dekompression
 - [ ] Textur-Caching für HAP-Frames
 
 ### Phase 4: Integration
+
 - [ ] `MediaType::Hap` zu Decoder hinzufügen
 - [ ] UI: HAP-Dateien im Media Browser erkennen
 - [ ] Performance-Tests vs. H.264

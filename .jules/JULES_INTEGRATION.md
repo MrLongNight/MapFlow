@@ -22,6 +22,7 @@ gh label sync --file .github/labels.yml
 ```
 
 Die wichtigsten Labels für Jules:
+
 - `jules-task`: Markiert Issues, die Jules bearbeiten kann
 - `jules-pr`: Markiert PRs von Jules
 - `priority: critical/high/medium/low`: Priorisierung
@@ -52,7 +53,7 @@ Es gibt **drei Möglichkeiten**, Jules zu aktivieren:
 #### Option 1: Jules GitHub App (Empfohlen - Einfachste Lösung) ⭐
 
 1. **Installiere die Jules GitHub App:**
-   - Besuche: https://github.com/apps/jules
+   - Besuche: <https://github.com/apps/jules>
    - Klicke auf "Install" und wähle dein Repository aus
    - Erlaube Zugriff auf das MapFlow-Repository
 
@@ -62,6 +63,7 @@ Es gibt **drei Möglichkeiten**, Jules zu aktivieren:
    - Keine weitere Konfiguration nötig
 
 **Vorteile:**
+
 - ✅ Keine API-Keys erforderlich
 - ✅ Automatische Session-Erstellung bei neuen Issues
 - ✅ Native GitHub-Integration
@@ -70,12 +72,13 @@ Es gibt **drei Möglichkeiten**, Jules zu aktivieren:
 #### Option 2: Jules API mit GitHub Actions (Automatisch via Workflow)
 
 1. **API-Key generieren:**
-   - Besuche: https://jules.google.com
+   - Besuche: <https://jules.google.com>
    - Melde dich an und verbinde deinen GitHub Account
    - Gehe zu Settings → API-Keys
    - Generiere einen neuen API-Key
 
 2. **API-Key als Repository Secret hinzufügen:**
+
    ```bash
    # Via GitHub UI:
    # Repository Settings → Secrets and variables → Actions → New repository secret
@@ -89,6 +92,7 @@ Es gibt **drei Möglichkeiten**, Jules zu aktivieren:
    - Er nutzt den JULES_API_KEY um Sessions zu erstellen
 
 **Vorteile:**
+
 - ✅ Volle Kontrolle über API-Calls
 - ✅ Workflow-basierte Automatisierung
 - ✅ Batch-Processing möglich
@@ -115,6 +119,7 @@ curl 'https://jules.googleapis.com/v1alpha/sessions' \
 ```
 
 **Vorteile:**
+
 - ✅ Direkte Kontrolle
 - ✅ Gut für Testing
 - ✅ Kein Workflow-Setup nötig
@@ -126,16 +131,19 @@ curl 'https://jules.googleapis.com/v1alpha/sessions' \
 **Für dieses Repository (MapFlow):**
 
 **Phase 1 - Quick Start (5 Minuten):**
+
 1. Installiere Jules GitHub App (Option 1)
 2. Issues werden automatisch erkannt
 3. Fertig! ✅
 
 **Phase 2 - Erweiterte Automatisierung (optional):**
+
 1. Zusätzlich API-Key als Secret hinzufügen
 2. Ermöglicht erweiterte Workflow-Features
 3. Batch-Processing von Issues
 
 **Aktueller Status:**
+
 - ✅ Workflow `CI-04_session-trigger.yml` ist implementiert
 - ✅ Auto-Merge Workflow ist konfiguriert
 - ⏳ JULES_API_KEY Secret fehlt (optional - nur für API-basierte Automatisierung)
@@ -159,12 +167,14 @@ permissions:
 ### 1. Issue-Erstellung
 
 **Einmalig alle Issues erstellen:**
+
 ```bash
 # Alle Jules Development Issues auf einmal erstellen
 gh workflow run CI-03_create-issues.yml
 ```
 
 Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend auf ROADMAP.md:
+
 - Multi-Window Rendering (Critical)
 - Frame Synchronization (Critical)  
 - Build System Fix (High)
@@ -175,6 +185,7 @@ Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend au
 - Output Configuration Persistence (Medium)
 
 **Zusätzliche Issues manuell erstellen:**
+
 - Nutze die Issue-Templates in `.github/ISSUE_TEMPLATE/`
 - Label `jules-task` hinzufügen
 - Acceptance Criteria klar definieren
@@ -183,9 +194,10 @@ Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend au
 
 **Neu implementiert!** Der Workflow `CI-04_session-trigger.yml` automatisiert die Session-Erstellung:
 
-#### Automatische Trigger:
+#### Automatische Trigger
 
 **Wenn ein Issue erstellt oder gelabelt wird:**
+
 ```
 Issue mit jules-task Label erstellt/hinzugefügt
     ↓
@@ -199,6 +211,7 @@ Jules beginnt mit der Arbeit
 ```
 
 **Manuell für existierende Issues:**
+
 ```bash
 # Einzelnes Issue triggern
 gh workflow run CI-04_session-trigger.yml -f issue_number=123
@@ -207,7 +220,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 gh workflow run CI-04_session-trigger.yml
 ```
 
-#### Was der Workflow macht:
+#### Was der Workflow macht
 
 1. **Automatische Erkennung:**
    - Triggert bei neuem Issue mit `jules-task` Label
@@ -233,7 +246,7 @@ gh workflow run CI-04_session-trigger.yml
    - Nützlich bei Repository-Setup
    - Rate-Limiting berücksichtigt
 
-#### Workflow-Dateien:
+#### Workflow-Dateien
 
 ```
 .github/workflows/
@@ -288,6 +301,7 @@ Der Auto-Merge (via `CI-05_pr-automation.yml`) erfolgt, wenn:
 ```
 
 **Ablauf:**
+
 1. Validierung der Bedingungen
 2. Squash-Merge in `main`
 3. Automatisches Schließen des related Issues
@@ -306,6 +320,7 @@ Nach erfolgreichem Merge (via `CI-06_update-changelog.yml`):
 ### Für Issue-Erstellung
 
 1. **Klare Beschreibungen:**
+
    ```markdown
    Implementiere Multi-Window-Rendering für synchronized outputs.
 
@@ -367,6 +382,7 @@ gh issue list --label "jules-task"
 #### Problem: Auto-Merge funktioniert nicht
 
 **Diagnose:**
+
 ```bash
 # PR-Status prüfen
 gh pr view <pr-number> --json mergeable,mergeStateStatus,statusCheckRollup
@@ -376,6 +392,7 @@ gh run view --log
 ```
 
 **Lösungen:**
+
 - Merge-Konflikte auflösen
 - Fehlgeschlagene Checks reparieren
 - Branch-Protection-Rules überprüfen
@@ -384,6 +401,7 @@ gh run view --log
 #### Problem: Issues werden nicht erstellt
 
 **Diagnose:**
+
 ```bash
 # Workflow manuell mit dry-run ausführen
 gh workflow run auto-create-issues.yml -f dry_run=true
@@ -393,6 +411,7 @@ gh run view --log
 ```
 
 **Lösungen:**
+
 - ROADMAP.md Format überprüfen
 - Permissions überprüfen
 - Bereits existierende Issues prüfen
@@ -400,6 +419,7 @@ gh run view --log
 #### Problem: CI schlägt fehl
 
 **Diagnose:**
+
 ```bash
 # Build lokal reproduzieren
 cargo build --verbose
@@ -408,6 +428,7 @@ cargo test --verbose
 ```
 
 **Lösungen:**
+
 - Dependencies aktualisieren
 - System-Dependencies installieren
 - FFmpeg-Installation überprüfen
@@ -462,15 +483,18 @@ gh api repos/MrLongNight/MapFlow/pulls \
 ### Regelmäßige Aufgaben
 
 **Täglich:**
+
 - Jules PR Status überprüfen
 - Fehlgeschlagene Workflows prüfen
 
 **Wöchentlich:**
+
 - Auto-generierte Issues reviewen
 - ROADMAP.md Fortschritt überprüfen
 - Merge-Queue überprüfen
 
 **Monatlich:**
+
 - Jules-Performance analysieren
 - Workflow-Optimierungen implementieren
 - Issue-Templates aktualisieren

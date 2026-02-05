@@ -32,12 +32,14 @@ MapFlow is a modern projection mapping system written in Rust, designed to compe
 ### Crate Structure
 
 **mapmap-core:**
+
 - Domain model (Paint, Mapping, Shape)
 - Project file format
 - Geometry primitives and transforms
 - Pure Rust, no external dependencies
 
 **mapmap-render:**
+
 - Graphics abstraction layer
 - wgpu backend implementation
 - Texture pool management
@@ -45,24 +47,28 @@ MapFlow is a modern projection mapping system written in Rust, designed to compe
 - Quad renderer for textured quads
 
 **mapmap-media:**
+
 - Video decoder abstraction
 - FFmpeg integration (stub in Phase 0)
 - Video player with playback control
 - Frame management
 
 **mapmap-ui:**
+
 - ImGui integration
 - Control panels and UI widgets
 - Window management helpers
 - UI state management
 
 **mapmap-control:**
+
 - MIDI input/output (Phase 4)
 - OSC server (Phase 4)
 - Art-Net/sACN DMX (Phase 4)
 - HTTP REST API (Phase 4)
 
 **mapmap-ffi:**
+
 - C API for plugins (Phase 5)
 - NDI/DeckLink/Spout/Syphon bindings (Phase 5)
 
@@ -188,16 +194,19 @@ In Phase 2+, operations will be pipelined across threads with lock-free queues.
 ### Shader Pipeline
 
 **Vertex Shader (WGSL):**
+
 - Input: Position (vec3), UV (vec2)
 - Output: Clip position, UV coordinates
 - Transform: Identity (fullscreen quad)
 
 **Fragment Shader (WGSL):**
+
 - Input: UV coordinates
 - Texture sampling from bound texture
 - Output: RGBA color
 
 **Shader Compilation:**
+
 - Development: WGSL → naga → SPIR-V (runtime)
 - Production: Pre-compiled SPIR-V for faster startup
 
@@ -221,6 +230,7 @@ struct TexturePool {
 ```
 
 **Allocation Strategy:**
+
 1. Request texture with specific dimensions/format
 2. Check free_list for matching texture
 3. If found, return existing texture
@@ -242,6 +252,7 @@ struct StagingPool {
 ```
 
 **Upload Flow:**
+
 1. Get staging buffer from pool
 2. Map buffer for CPU write
 3. Copy decoded frame data
@@ -278,17 +289,20 @@ anyhow::Error (Application-level)
 ### Recovery Strategies
 
 **Device Lost (GPU crash/reset):**
+
 1. Detect via `wgpu::Device::poll()`
 2. Recreate device and queue
 3. Reload all resources (textures, shaders, pipelines)
 4. Resume rendering
 
 **Decode Error:**
+
 1. Log error
 2. Continue with last valid frame
 3. Attempt to seek past corrupt region
 
 **Out of Memory:**
+
 1. Clear texture pool
 2. Reduce quality settings
 3. Notify user
@@ -323,11 +337,13 @@ encoder.write_timestamp(&query_set, 1); // End
 ### Settings Files
 
 **Runtime Configuration:**
+
 - Location: `~/.config/mapmap/settings.toml`
 - Format: TOML
 - Contents: Window size, backend preferences, logging level
 
 **Project Files:**
+
 - Format: JSON or XML (maintaining compatibility with old MapMap)
 - Contents: Paints, Mappings, Shapes, Media sources
 
@@ -351,21 +367,25 @@ level = "info"  # trace, debug, info, warn, error
 ## Testing Strategy
 
 ### Unit Tests
+
 - Each crate has `#[cfg(test)]` modules
 - Test public API surface
 - Use `proptest` for geometry calculations
 
 ### Integration Tests
+
 - Located in `tests/` directory
 - Test cross-crate interactions
 - Require real wgpu device (headless mode)
 
 ### Benchmark Tests
+
 - Located in `benches/` directory
 - Use `criterion` for statistical analysis
 - Key metrics: texture upload, decode throughput, frame time
 
 ### CI Pipeline
+
 - GitHub Actions matrix: Linux, macOS, Windows
 - Checks: format, clippy, tests, docs, security audit
 - Caching: cargo registry, build artifacts
@@ -373,24 +393,28 @@ level = "info"  # trace, debug, info, warn, error
 ## Future Phases
 
 ### Phase 1 (Core Engine)
+
 - Multi-threaded decode/upload/render pipeline
 - Hardware-accelerated video decode (VA-API, VideoToolbox, DXVA)
 - Advanced compositing (blend modes, opacity)
 - Layer system implementation
 
 ### Phase 2 (Professional Warping)
+
 - Multi-window/multi-output support
 - Mesh warping with control points
 - Edge blending
 - Geometric correction (keystone, perspective)
 
 ### Phase 3 (Effects Pipeline)
+
 - Shader graph system
 - Parameter animation
 - Audio-reactive effects (FFT, beat detection)
 - LUT color grading
 
 ### Phase 4 (Control Systems)
+
 - Full MIDI implementation
 - OSC server and routing
 - Art-Net/sACN DMX output
@@ -398,6 +422,7 @@ level = "info"  # trace, debug, info, warn, error
 - Show management (cues, timelines)
 
 ### Phase 5 (Pro Media I/O)
+
 - NDI receive/send
 - DeckLink SDI input/output
 - Spout (Windows) and Syphon (macOS)
