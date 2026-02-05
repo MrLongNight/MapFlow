@@ -30,6 +30,8 @@ permissions:
   contents: read
   checks: write
   security-events: write
+  pull-requests: write
+  issues: write
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
@@ -40,6 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -49,17 +52,39 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
 
       - name: Check Formatting
+        id: fmt
         run: cargo fmt --all -- --check
+        continue-on-error: true
 
       - name: Check Clippy
+        id: clippy
         run: cargo clippy --workspace --features "mapmap-io/ci-linux" --all-targets -- -D warnings
+        continue-on-error: true
 
       - name: Install cargo-sort
         uses: cargo-bins/cargo-binstall@main
+        
       - name: Check Dependency Sort
+        id: sort
         run: |
           cargo binstall -y cargo-sort
-          cargo sort --workspace --check
+          cargo sort --workspace --grouped --check
+        continue-on-error: true
+
+      - name: Report Quality Issues
+        if: steps.fmt.outcome == 'failure' || steps.clippy.outcome == 'failure' || steps.sort.outcome == 'failure'
+        run: |
+          echo "❌ Quality checks failed"
+          if [ "${{ steps.fmt.outcome }}" == "failure" ]; then
+            echo "::error::Formatting check failed. Run 'cargo fmt --all'"
+          fi
+          if [ "${{ steps.clippy.outcome }}" == "failure" ]; then
+            echo "::error::Clippy check failed. Run 'cargo clippy --fix'"
+          fi
+          if [ "${{ steps.sort.outcome }}" == "failure" ]; then
+            echo "::error::Cargo.toml sorting failed. Run 'cargo sort --workspace --grouped'"
+          fi
+          exit 1
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 2: SECURITY (AUDIT & VET)
@@ -69,20 +94,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
+        
       - name: Install cargo-audit & cargo-deny
         run: cargo binstall -y cargo-audit cargo-deny
 
       - name: Run Audit
-        # Ignore RUSTSEC-2024-0370 (proc-macro-error "unmaintained" - transitive dep)
-        run: cargo audit --ignore RUSTSEC-2024-0370 --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0436
+        id: audit
+        run: cargo audit --ignore RUSTSEC-2024-0370
+        continue-on-error: true
 
       - name: Run Cargo Deny
+        id: deny
         run: cargo deny check advisories --config deny.toml
+        continue-on-error: true
+
+      - name: Report Security Issues
+        if: steps.audit.outcome == 'failure' || steps.deny.outcome == 'failure'
+        run: |
+          echo "❌ Security checks failed"
+          if [ "${{ steps.audit.outcome }}" == "failure" ]; then
+            echo "::error::Security vulnerabilities found. Run 'cargo audit' for details"
+          fi
+          if [ "${{ steps.deny.outcome }}" == "failure" ]; then
+            echo "::error::Cargo deny check failed. Run 'cargo deny check advisories' for details"
+          fi
+          exit 1
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 3: BUILD & TEST (LINUX)
@@ -93,14 +135,15 @@ jobs:
     needs: [quality, security]
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
 
-      - name: Install Setup
+      - name: Install Setup Script
         run: bash scripts/Final-Prepare-PreCommit.sh
-        continue-on-error: true # Script runs checks again, mainly for env setup demo
+        continue-on-error: true
 
       - name: Install System Dependencies
         run: |
@@ -123,14 +166,32 @@ jobs:
 
       - name: Install cargo-nextest
         uses: cargo-bins/cargo-binstall@main
-      - run: cargo binstall -y cargo-nextest
+        
+      - name: Install nextest
+        run: cargo binstall -y cargo-nextest
 
       - name: Build (Release)
+        id: build
         run: cargo build --release --verbose --features "mapmap-io/ci-linux"
+        continue-on-error: true
 
       - name: Test (Nextest)
+        id: test
         if: ${{ github.event.inputs.skip_tests != 'true' }}
         run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
+        continue-on-error: true
+
+      - name: Report Build/Test Issues
+        if: steps.build.outcome == 'failure' || steps.test.outcome == 'failure'
+        run: |
+          echo "❌ Build or tests failed"
+          if [ "${{ steps.build.outcome }}" == "failure" ]; then
+            echo "::error::Build failed. Check compiler errors above"
+          fi
+          if [ "${{ steps.test.outcome }}" == "failure" ]; then
+            echo "::error::Tests failed. Check test output above"
+          fi
+          exit 1
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 4: BUILD (WINDOWS)
@@ -145,18 +206,35 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'test-windows')
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build (Release, Audio only)
+        id: build
         run: cargo build --release --verbose --no-default-features --features "audio"
+        continue-on-error: true
 
       - name: Test (Release)
+        id: test
         if: ${{ github.event.inputs.skip_tests != 'true' }}
         run: cargo test --release --workspace --verbose --no-default-features --features audio
+        continue-on-error: true
 
-  # ═══════════════════════════════════════════════════════════════
-  # FINAL GATE
+      - name: Report Build/Test Issues
+        if: steps.build.outcome == 'failure' || steps.test.outcome == 'failure'
+        run: |
+          echo "❌ Build or tests failed"
+          if ("${{ steps.build.outcome }}" -eq "failure") {
+            echo "::error::Build failed. Check compiler errors above"
+          }
+          if ("${{ steps.test.outcome }}" -eq "failure") {
+            echo "::error::Tests failed. Check test output above"
+          }
+          exit 1
+
+  # ═════════════════��═════════════════════════════════════════════
+  # FINAL GATE & ERROR REPORTING
   # ═══════════════════════════════════════════════════════════════
   validation-success:
     name: "Validation Success"
@@ -165,10 +243,117 @@ jobs:
     if: always()
     steps:
       - name: Check Results
+        id: check
         run: |
-          if [ "${{ needs.quality.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.security.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.build-linux.result }}" != "success" ]; then exit 1; fi
-          # Windows execution is conditional, check if failed (not skipped)
-          if [ "${{ needs.build-windows.result }}" == "failure" ]; then exit 1; fi
+          echo "quality=${{ needs.quality.result }}" >> $GITHUB_OUTPUT
+          echo "security=${{ needs.security.result }}" >> $GITHUB_OUTPUT
+          echo "build_linux=${{ needs.build-linux.result }}" >> $GITHUB_OUTPUT
+          echo "build_windows=${{ needs.build-windows.result }}" >> $GITHUB_OUTPUT
+          
+          if [ "${{ needs.quality.result }}" != "success" ]; then 
+            echo "failed_job=quality" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          if [ "${{ needs.security.result }}" != "success" ]; then 
+            echo "failed_job=security" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          if [ "${{ needs.build-linux.result }}" != "success" ]; then 
+            echo "failed_job=build-linux" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          if [ "${{ needs.build-windows.result }}" == "failure" ]; then 
+            echo "failed_job=build-windows" >> $GITHUB_OUTPUT
+            exit 1
+          fi
           echo "✅ All Validation Checks Passed"
+
+      - name: Notify Jules on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const failedJob = '${{ steps.check.outputs.failed_job }}';
+            const quality = '${{ needs.quality.result }}';
+            const security = '${{ needs.security.result }}';
+            const buildLinux = '${{ needs.build-linux.result }}';
+            const buildWindows = '${{ needs.build-windows.result }}';
+            
+            let errorDetails = "## ❌ CI/CD Validation Failed\n\n";
+            errorDetails += `@google-labs-jules[bot] Die automatische Validierung ist fehlgeschlagen.\n\n`;
+            errorDetails += `### 📊 Check Status:\n\n`;
+            errorDetails += `| Check | Status |\n`;
+            errorDetails += `|-------|--------|\n`;
+            errorDetails += `| Quality Gate | ${quality === 'success' ? '✅ PASS' : '❌ FAIL'} |\n`;
+            errorDetails += `| Security Scan | ${security === 'success' ? '✅ PASS' : '❌ FAIL'} |\n`;
+            errorDetails += `| Build & Test (Linux) | ${buildLinux === 'success' ? '✅ PASS' : '❌ FAIL'} |\n`;
+            errorDetails += `| Build & Test (Windows) | ${buildWindows === 'success' ? '✅ PASS' : buildWindows === 'skipped' ? '⏭️ SKIP' : '❌ FAIL'} |\n\n`;
+            
+            // Detaillierte Fehleranalyse
+            if (quality === 'failure') {
+              errorDetails += `### 🔍 Quality Gate Fehler\n\n`;
+              errorDetails += `**Mögliche Probleme:**\n`;
+              errorDetails += `- **Formatierung:** Führe \`cargo fmt --all\` aus\n`;
+              errorDetails += `- **Linting:** Prüfe \`cargo clippy --workspace --all-targets --fix\`\n`;
+              errorDetails += `- **Dependency Sort:** Führe \`cargo sort --workspace --grouped\` aus\n\n`;
+              errorDetails += `**Quick Fix:**\n`;
+              errorDetails += `\`\`\`bash\n`;
+              errorDetails += `./scripts/Final-Prepare-PreCommit.sh\n`;
+              errorDetails += `git add -A\n`;
+              errorDetails += `git commit -m "fix: apply quality fixes"\n`;
+              errorDetails += `git push\n`;
+              errorDetails += `\`\`\`\n\n`;
+            }
+            
+            if (security === 'failure') {
+              errorDetails += `### 🔒 Security Scan Fehler\n\n`;
+              errorDetails += `Sicherheitsprobleme in Dependencies gefunden.\n\n`;
+              errorDetails += `**Lösungsschritte:**\n`;
+              errorDetails += `1. Prüfe welche Crates betroffen sind: \`cargo audit\`\n`;
+              errorDetails += `2. Aktualisiere vulnerable Dependencies: \`cargo update\`\n`;
+              errorDetails += `3. Falls Update nicht möglich: Prüfe \`cargo deny check advisories\`\n`;
+              errorDetails += `4. Dokumentiere ignorierte Advisories in \`deny.toml\` falls nötig\n\n`;
+            }
+            
+            if (buildLinux === 'failure') {
+              errorDetails += `### 🏗️ Build Fehler (Linux)\n\n`;
+              errorDetails += `**Der Build ist fehlgeschlagen.**\n\n`;
+              errorDetails += `**Debug-Schritte:**\n`;
+              errorDetails += `1. Prüfe Compiler-Fehler im [Workflow-Log](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n`;
+              errorDetails += `2. Teste lokal:\n`;
+              errorDetails += `   \`\`\`bash\n`;
+              errorDetails += `   cargo build --release --features "mapmap-io/ci-linux"\n`;
+              errorDetails += `   \`\`\`\n`;
+              errorDetails += `3. Prüfe ob alle Dependencies in \`Cargo.toml\` korrekt sind\n`;
+              errorDetails += `4. Stelle sicher, dass alle Features kompatibel sind\n\n`;
+            }
+            
+            if (buildWindows === 'failure') {
+              errorDetails += `### 🪟 Build Fehler (Windows)\n\n`;
+              errorDetails += `**Der Windows-Build ist fehlgeschlagen.**\n\n`;
+              errorDetails += `**Mögliche Ursachen:**\n`;
+              errorDetails += `- Platform-spezifischer Code ohne \`#[cfg(target_os = "windows")]\` Guard\n`;
+              errorDetails += `- Fehlende Windows-Dependencies\n`;
+              errorDetails += `- Inkompatible Features\n\n`;
+              errorDetails += `**Lokaler Test:**\n`;
+              errorDetails += `\`\`\`bash\n`;
+              errorDetails += `cargo build --release --no-default-features --features audio\n`;
+              errorDetails += `\`\`\`\n\n`;
+            }
+            
+            errorDetails += `---\n\n`;
+            errorDetails += `### 🔗 Workflow Details\n\n`;
+            errorDetails += `[📋 Siehe vollständige Logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\n`;
+            errorDetails += `### 💡 Tipp\n\n`;
+            errorDetails += `Führe das Pre-Commit-Script aus, um die meisten Fehler automatisch zu beheben:\n`;
+            errorDetails += `\`\`\`bash\n`;
+            errorDetails += `./scripts/Final-Prepare-PreCommit.sh\n`;
+            errorDetails += `\`\`\`\n\n`;
+            errorDetails += `**Note:** pre-commit.ci hat bereits Formatierungs-Fehler automatisch gefixt. Falls weitere Fehler auftreten, siehe oben.`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: errorDetails
+            });
