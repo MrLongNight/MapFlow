@@ -1,32 +1,117 @@
-# Pre-commit configuration for automatic code quality fixes
+# Pre-commit configuration for MapFlow 
+# Runs automatically via pre-commit.ci on every PR
 # See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 
 ci:
+  # Auto-fix and push commits
   autofix_commit_msg: "style: auto-fix by pre-commit.ci [skip ci]"
   autofix_prs: true
+  
+  # Auto-update hooks weekly
   autoupdate_branch: ""
-  autoupdate_commit_msg: "chore: pre-commit autoupdate"
+  autoupdate_commit_msg: "chore: pre-commit autoupdate [skip ci]"
   autoupdate_schedule: weekly
+  
+  # Don't skip any hooks
   skip: []
+  
+  # Don't process submodules
   submodules: false
 
 repos:
-  # ===========================================
-  # General file fixes (trailing whitespace, etc.)
-  # ===========================================
+  # ═══════════════════════════════════════════════════════════════
+  # RUST FORMATTING & LINTING
+  # ═══════════════════════════════════════════════════════════════
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      # Cargo Format (auto-fix)
+      - id: fmt
+        name: "Rust: cargo fmt"
+        args: ['--all', '--']
+        
+      # Cargo Clippy (only check, auto-fix can be unstable)
+      # We run clippy in CI with --fix for more control
+      - id: clippy
+        name: "Rust: cargo clippy"
+        args:
+          - '--workspace'
+          - '--all-targets'
+          - '--'
+          - '-D'
+          - 'warnings'
+
+  # ═══════════════════════════════════════════════════════════════
+  # GENERAL FILE FIXES (from original config)
+  # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # Fix trailing whitespace
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        exclude: ^(.*\.patch|.*\.diff)$
+        
+      # Fix end-of-file newlines
       - id: end-of-file-fixer
+        exclude: ^(.*\.patch|.*\.diff|.*\.rs\.bk)$
+        
+      # Prevent case conflicts on case-insensitive filesystems
       - id: check-case-conflict
+        
+      # Validate YAML syntax
       - id: check-yaml
         args: [--allow-multiple-documents]
+        
+      # Validate TOML syntax
       - id: check-toml
+        
+      # Prevent committing large files (except FFmpeg DLLs)
       - id: check-added-large-files
-        args: [--maxkb=1000]
+        args: [--maxkb=5000]
+        exclude: ^(.*\.dll|.*\.so|.*\.dylib|assets/.*|resources/.*)$
+        
+      # Check for merge conflict markers
       - id: check-merge-conflict
+        
+      # Fix mixed line endings (use LF)
       - id: mixed-line-ending
         args: [--fix=lf]
+        exclude: ^(.*\.bat|.*\.cmd)$  # Keep CRLF for Windows scripts
+
+  # ═══════════════════════════════════════════════════════════════
+  # MARKDOWN LINTING (optional but recommended)
+  # ═══════════════════════════════════════════════════════════════
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint-fix
+        name: "Markdown: lint and fix"
+        args:
+          - '--config'
+          - '.markdownlint.json'
+        files: \.(md|markdown)$
+        exclude: ^(CHANGELOG\.md|.*\.patch)$
+
+  # ═══════════════════════════════════════════════════════════════
+  # SECURITY: SECRET DETECTION (optional but recommended)
+  # ═══════════════════════════════════════════════════════════════
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: "Security: detect secrets"
+        args:
+          - '--baseline'
+          - '.secrets.baseline'
+        exclude: ^(Cargo\.lock|.*\.patch|.*\.diff)$
+
+  # ═══════════════════════════════════════════════════════════════
+  # CARGO.TOML SORTING (optional but nice to have)
+  # ═══════════════════════════════════════════════════════════════
+  - repo: https://github.com/DevinR528/cargo-sort
+    rev: v1.0.9
+    hooks:
+      - id: cargo-sort
+        name: "Rust: sort Cargo.toml"
+        args: ['--workspace', '--grouped']

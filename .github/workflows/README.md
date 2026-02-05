@@ -400,5 +400,70 @@ For issues with workflows:
 
 ---
 
+📋 New PR-Check Flow:
+┌─────────────────────────────────────────────────────────┐
+│                    PR erstellt                          │
+└────────────────────┬────────────────────────────────────┘
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐
+│ pre-commit.ci   │    │ GitHub Actions  │
+│                 │    │ Validation      │
+│ • cargo fmt     │    │                 │
+│ • trailing ws   │    │ • Build & Test  │
+│ • YAML/TOML     │    │ • Security      │
+│ • Markdown      │    │ • Clippy        │
+│                 │    │                 │
+│ ⚡ ~30s         │    │ ⏰ ~10min       │
+│ ✅ Auto-Push   │    │ ❌ Report only │
+└────────┬────────┘    └────────┬────────┘
+         │                      │
+         └──────────┬───────────┘
+                    │
+                    ▼
+         ┌──────────────────┐
+         │ Copilot Review   │
+         │ ~1-2 min         │
+         └────────┬─────────┘
+                  │
+                  ▼
+         ┌──────────────────┐
+         │ Auto-Merge       │
+         │ • Check Status   │
+         │ • Merge if OK    │
+         │ • Or @jules      │
+         └──────────────────┘
+
+✅ Zusammenfassung der Dateipfade:
+Datei	Pfad	Grund
+.markdownlint.json	Root	Wird von markdownlint-cli im Root gesucht
+.secrets.baseline	Root	Wird von detect-secrets im Root gesucht
+.pre-commit-config.yaml	Root	Standard für pre-commit
+copilot-instructions.md	.github/	GitHub-spezifische Config
+Workflows	.github/workflows/	GitHub Actions Standard
+
+✅ Vollständige Commit-Reihenfolge:
+# Schritt 1: Root-Config-Dateien
+git add .markdownlint.json
+git add .secrets.baseline
+git commit -m "config: add markdownlint and secrets baseline"
+
+# Schritt 2: Pre-Commit erweitern
+git add .pre-commit-config.yaml
+git commit -m "ci: enhance pre-commit with Rust, markdown, and security checks"
+
+# Schritt 3: Copilot Instructions
+git add .github/copilot-instructions.md
+git commit -m "docs: add Copilot review instructions"
+
+# Schritt 4: Workflows
+git add .github/workflows/CICD-DevFlow_Job01_Validation.yml
+git add .github/workflows/CICD-DevFlow_Job02_AutoMerge.yml
+git commit -m "ci: implement validation and auto-merge with Jules feedback"
+
+# Push alles
+git push
 **Last Updated:** 2026-01-07 (Optimized for reduced Actions minutes)  
 **Maintained By:** MapFlow Team
