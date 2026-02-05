@@ -894,6 +894,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -4308,10 +4309,14 @@ impl ModuleCanvas {
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
         let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
 
+        // Optimization: Create a lookup map for parts to avoid O(N) search per connection
+        let part_map: std::collections::HashMap<_, _> =
+            module.parts.iter().map(|p| (p.id, p)).collect();
+
         for (conn_idx, conn) in module.connections.iter().enumerate() {
-            // Find source and target parts
-            let from_part = module.parts.iter().find(|p| p.id == conn.from_part);
-            let to_part = module.parts.iter().find(|p| p.id == conn.to_part);
+            // Find source and target parts (O(1) lookup)
+            let from_part = part_map.get(&conn.from_part).copied();
+            let to_part = part_map.get(&conn.to_part).copied();
 
             if let (Some(from), Some(to)) = (from_part, to_part) {
                 // Determine cable color based on socket type
