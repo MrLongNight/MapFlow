@@ -1,5 +1,5 @@
-use mapmap_core::{AudioConfig, AudioMediaPipeline};
 use mapmap_core::audio_media_pipeline::AudioPipelineConfig;
+use mapmap_core::{AudioConfig, AudioMediaPipeline};
 use std::time::{Duration, Instant};
 
 // Helper for polling condition with timeout
@@ -36,14 +36,14 @@ fn test_pipeline_data_flow_polling() {
     wait_for_condition(
         || pipeline.stats().samples_processed >= 2048,
         2000,
-        "Timeout waiting for samples to be processed"
+        "Timeout waiting for samples to be processed",
     );
 
     // Also wait for analysis to be generated (might take a tiny bit after samples are processed)
     wait_for_condition(
         || pipeline.stats().frames_analyzed >= 1,
         2000,
-        "Timeout waiting for frames to be analyzed"
+        "Timeout waiting for frames to be analyzed",
     );
 
     // Now verify analysis is available
@@ -83,7 +83,7 @@ fn test_pipeline_stats_and_smoothing() {
     wait_for_condition(
         || pipeline.stats().frames_analyzed >= 4,
         2000,
-        "Timeout waiting for multiple frames"
+        "Timeout waiting for multiple frames",
     );
 
     // Verify stats
@@ -101,7 +101,10 @@ fn test_pipeline_stats_and_smoothing() {
     // So if we don't call `get_analysis()`, the buffer inside pipeline (the deque) stays empty!
     // The receiver channel fills up instead.
 
-    assert_eq!(stats.buffer_fill, 0.0, "Buffer should be empty before calling get_analysis");
+    assert_eq!(
+        stats.buffer_fill, 0.0,
+        "Buffer should be empty before calling get_analysis"
+    );
 
     // Now trigger buffer update
     let _ = pipeline.get_analysis();
@@ -111,7 +114,10 @@ fn test_pipeline_stats_and_smoothing() {
     // but `get_analysis` loops: `loop { match self.analysis_receiver.try_recv() ... }`
     // So it drains ALL available.
 
-    assert!(stats_after.buffer_fill > 0.0, "Buffer should have items after get_analysis");
+    assert!(
+        stats_after.buffer_fill > 0.0,
+        "Buffer should have items after get_analysis"
+    );
 
     // Verify smoothing
     let smoothed = pipeline.get_smoothed_analysis();
@@ -148,6 +154,8 @@ fn test_dropped_samples_polling() {
     if dropped {
         assert!(pipeline.stats().dropped_samples > 0);
     } else {
-        println!("test_dropped_samples_polling: System too fast to drop samples, skipping assertion.");
+        println!(
+            "test_dropped_samples_polling: System too fast to drop samples, skipping assertion."
+        );
     }
 }
