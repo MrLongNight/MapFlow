@@ -894,6 +894,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -988,9 +989,12 @@ impl ModuleCanvas {
                                                     ui.collapsing("📁 File Info", |ui| {
                                                         ui.horizontal(|ui| {
                                                             ui.label("Path:");
-                                                            ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
+                                                            ui.add(egui::TextEdit::singleline(path).desired_width(140.0));
                                                             if ui.button("📂").on_hover_text("Select Media File").clicked() {
                                                                 actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
+                                                            }
+                                                            if ui.button("↗").on_hover_text("Reveal in File Explorer").clicked() {
+                                                                Self::reveal_file(path);
                                                             }
                                                         });
                                                     });
@@ -1096,9 +1100,12 @@ impl ModuleCanvas {
                                                     ui.collapsing("📁 File Info", |ui| {
                                                         ui.horizontal(|ui| {
                                                             ui.label("Path:");
-                                                            ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
+                                                            ui.add(egui::TextEdit::singleline(path).desired_width(140.0));
                                                             if ui.button("📂").on_hover_text("Select Image File").clicked() {
                                                                 actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
+                                                            }
+                                                            if ui.button("↗").on_hover_text("Reveal in File Explorer").clicked() {
+                                                                Self::reveal_file(path);
                                                             }
                                                         });
                                                     });
@@ -1374,7 +1381,7 @@ impl ModuleCanvas {
                                                     ui.horizontal(|ui| {
                                                         ui.add(
                                                             egui::TextEdit::singleline(path)
-                                                                .desired_width(120.0),
+                                                                .desired_width(100.0),
                                                         );
                                                         if ui.button("📂").on_hover_text("Select Mask File").clicked() {
                                                             if let Some(picked) = rfd::FileDialog::new()
@@ -1389,6 +1396,9 @@ impl ModuleCanvas {
                                                             {
                                                                 *path = picked.display().to_string();
                                                             }
+                                                        }
+                                                        if ui.button("↗").on_hover_text("Reveal in File Explorer").clicked() {
+                                                            Self::reveal_file(path);
                                                         }
                                                     });
                                                 }
@@ -5214,6 +5224,38 @@ impl ModuleCanvas {
             ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
             ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
             ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
+        }
+    }
+
+    fn reveal_file(path_str: &str) {
+        let path = std::path::Path::new(path_str);
+        if !path.exists() {
+            return;
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // On Windows, explorer /select,path highlights the file
+            std::process::Command::new("explorer")
+                .arg("/select,")
+                .arg(path)
+                .spawn()
+                .ok();
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            // On Linux, xdg-open opens the folder usually
+            if let Some(parent) = path.parent() {
+                std::process::Command::new("xdg-open").arg(parent).spawn().ok();
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            if let Some(parent) = path.parent() {
+                std::process::Command::new("open").arg(parent).spawn().ok();
+            }
         }
     }
 
