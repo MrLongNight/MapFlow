@@ -54,3 +54,12 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `pr397.patch` und `pr398.patch` nach `.temp-archive/2026-01-31-*` archiviert und via `git rm` aus dem Repository entfernt.
 - `docu/jules_gpu_ui.md` und `docu/jules_hw_accel.md` nach `.jules/` verschoben.
 - `docu/` Verzeichnis entfernt.
+
+## 2026-02-05 - Root & DLL Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt mehrere FFmpeg DLLs (`avcodec-61.dll` etc.) und eine Patch-Datei (`pr398.patch`), die dort nicht hingehören. Zudem gab es ein `tmp/` Verzeichnis mit einem Skript. Ein Hilfsskript `copy_ffmpeg_dlls.bat` lag ebenfalls im Root.
+
+**Aktion:**
+- DLLs und `pr398.patch` nach `.temp-archive/2026-02-05-*` archiviert.
+- `tmp/fix_player.ps1` archiviert und `tmp/` gelöscht.
+- `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben und Pfade angepasst.
