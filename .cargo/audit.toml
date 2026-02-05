@@ -9,4 +9,14 @@ ignore = [
     # We cannot upgrade egui_dock without upgrading the entire egui ecosystem
     # Tracking: https://rustsec.org/advisories/RUSTSEC-2024-0370
     "RUSTSEC-2024-0370",
+
+    # bincode is "unmaintained" but widely used and stable
+    # Transitive dependency via ableton-link-rs
+    # Tracking: https://rustsec.org/advisories/RUSTSEC-2025-0141
+    "RUSTSEC-2025-0141",
+
+    # paste is "unmaintained" but is a macro utility with no known vulnerabilities
+    # Transitive dependency via wgpu -> metal
+    # Tracking: https://rustsec.org/advisories/RUSTSEC-2024-0436
+    "RUSTSEC-2024-0436",
 ]
