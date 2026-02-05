@@ -1,39 +1,130 @@
-# cargo-deny configuration
-# https://embarkstudios.github.io/cargo-deny/
-
+# This section is considered when running `cargo deny check advisories`
+# More documentation for the advisories section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
 [advisories]
-# The database path
-db-path = "~/.cargo/advisory-db"
 
-# List of advisory IDs to ignore
+# The path where the advisory database is cloned/fetched into
+# db-path = "~/.cargo/advisory-db"
+
+# The url(s) of the advisory databases to use
+# db-urls = ["https://github.com/rustsec/advisory-db"]
+
+# The lint level for security vulnerabilities
+vulnerability = "deny"
+
+# The lint level for unmaintained crates
+unmaintained = "warn"
+
+# The lint level for crates that have been yanked from their source registry
+yanked = "warn"
+
+# The lint level for crates with security notices.
+#
+# This includes vulnerabilities that were found in the crate itself, but for
+# which no fix is available, or vulnerabilities in dependencies of the crate.
+notice = "warn"
+
+# A list of advisory IDs to ignore. Note that ignored advisories will still
+# output a note when they are encountered.
 ignore = [
-    # proc-macro-error is "unmaintained" but not a security vulnerability
-    # It's a transitive dependency from egui_dock -> duplicate -> proc-macro-error
-    # We cannot upgrade egui_dock without upgrading the entire egui ecosystem
-    # Tracking: https://rustsec.org/advisories/RUSTSEC-2024-0370
+    # RUSTSEC-2024-0370: proc-macro-error unmaintained (used by clap via other deps, widely used)
     "RUSTSEC-2024-0370",
+    # RUSTSEC-2025-0141: bincode unmaintained (transitive dep of ableton-link-rs)
+    "RUSTSEC-2025-0141",
+    # RUSTSEC-2024-0436: paste unmaintained (transitive dep of wgpu/metal)
+    "RUSTSEC-2024-0436",
 ]
 
+# This section is considered when running `cargo deny check bans`
+# More documentation about the 'bans' section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
+[bans]
+# Lint level for when multiple versions of the same crate are detected
+multiple-versions = "warn"
+# Lint level for when a crate version requirement is `*`
+wildcards = "allow"
+# The graph highlighting used when creating dotgraphs for crates
+# with multiple versions
+# - "lowest-version": The path to the lowest versioned duplicate is highlighted
+# - "simplest-path": The path to the version appearing with the fewest intermediate dependencies is highlighted
+# - "all": Both lowest-version and simplest-path are used
+highlight = "all"
+# List of crates to deny
+deny = [
+    # Each entry the name of a crate and a version range. If version is
+    # not specified, all versions will be denied.
+    #{ name = "ansi_term", version = "=0.11.0" },
+    #{ name = "wrapper_crate", version = "0.2" },
+]
+# List of crates to allow
+# allow = [
+#     { name = "ansi_term", version = "=0.11.0" },
+# ]
+
+# List of crates to skip when checking for multiple versions.
+skip = [
+    #{ name = "ansi_term", version = "=0.11.0" },
+]
+# List of crate organizations to skip when checking for multiple versions.
+skip-tree = [
+    #{ name = "ansi_term", version = "=0.11.0" },
+]
+
+# This section is considered when running `cargo deny check licenses`
+# More documentation about the 'licenses' section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
 [licenses]
-# Skip license checking (handled separately)
-unlicensed = "allow"
+# The lint level for crates which do not have a detectible license
+unlicensed = "deny"
+# List of explicitly allowed licenses
+# See https://spdx.org/licenses/ for valid license identifiers
 allow = [
     "MIT",
     "Apache-2.0",
-    "BSD-2-Clause",
     "BSD-3-Clause",
+    "BSD-2-Clause",
+    "CC0-1.0",
     "ISC",
     "Zlib",
-    "CC0-1.0",
-    "Unicode-DFS-2016",
     "MPL-2.0",
+    "OFL-1.1",
+    "Unlicense",
+    "Unicode-DFS-2016", # used by unicode-ident
+    "Unicode-3.0", # used by unicode-segmentation
 ]
+# List of explicitly disallowed licenses
+deny = [
+    "GPL-1.0",
+    "GPL-2.0",
+    "GPL-3.0",
+    "AGPL-1.0",
+    "AGPL-3.0",
+]
+# Lint level for licenses which appear in the `deny` list
+copyleft = "deny"
+# Lint level for licenses which do not appear in the `allow` or `deny` lists
+default = "deny"
+# The confidence threshold for license detection (0.0 - 1.0)
+confidence-threshold = 0.8
 
-[bans]
-# Skip ban checking
-multiple-versions = "allow"
-
+# This section is considered when running `cargo deny check sources`
+# More documentation about the 'sources' section can be found here:
+# https://embarkstudios.github.io/cargo-deny/checks/sources/cfg.html
 [sources]
-# Skip source checking
-unknown-registry = "allow"
-unknown-git = "allow"
+# Lint level for what to happen when a crate from a crate registry that is not
+# in the allow list is encountered
+unknown-registry = "warn"
+# Lint level for what to happen when a crate from a git repository that is not
+# in the allow list is encountered
+unknown-git = "warn"
+# List of URLs for allowed crate registries. Defaults to the crates.io index
+# if not specified. If it is specified but empty, no registries are allowed.
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# List of URLs for allowed Git repositories
+allow-git = []
+
+[sources.allow-org]
+# 1 or more organizations that you trust.
+# github = ["..."]
+# gitlab = ["..."]
+# bitbucket = ["..."]
