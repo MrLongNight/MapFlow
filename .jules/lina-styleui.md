@@ -38,6 +38,15 @@
     - **Buttons:** Consolidate repeated widget logic into helpers (e.g., `icon_button`) to enforce consistent active/hover states.
 **Action:** Refactored `LayerPanel` to use this pattern, removing nested groups and aligning controls horizontally.
 
+## 2024-05-24 – [Panel Header Standardization]
+**Learning:** Inconsistent headers (`ui.heading` vs custom layouts) weaken hierarchy.
+- **Insight:** Standardizing panel headers with a specific widget (`render_panel_header`) that includes a background, accent stripe, and layout for action buttons creates a cohesive "Cyber Dark" look.
+- **Pattern:**
+    - `widgets::render_panel_header(ui, title, |ui| { /* buttons */ })`
+    - Uses `LIGHTER_GREY` background and `CYAN_ACCENT` stripe (3px).
+    - Height: 28px.
+**Action:** Applied to LayerPanel, OutputPanel, MediaBrowser, and Controls.
+
 ## 2026-02-01 – [Node Visual Hierarchy]
 **Learning:** Hardcoded colors in custom painting code (like `module_canvas`) drift from the central theme, causing visual inconsistency.
 - **Insight:** Node editors are "Canvas" elements and should use the `Panel` color for bodies but require a distinct `Header` color to establish hierarchy within the node itself.

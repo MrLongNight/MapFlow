@@ -41,8 +41,7 @@ impl OutputPanel {
         egui::Window::new(i18n.t("panel-outputs"))
             .default_size([420.0, 500.0])
             .show(ctx, |ui| {
-                ui.heading(i18n.t("header-multi-output"));
-                ui.separator();
+                crate::widgets::render_panel_header(ui, &i18n.t("header-multi-output"), |_| {});
 
                 let canvas_size = output_manager.canvas_size();
                 ui.label(format!(
@@ -92,8 +91,7 @@ impl OutputPanel {
 
                 if let Some(output_id) = self.selected_output_id {
                     if let Some(output) = output_manager.get_output_mut(output_id) {
-                        ui.heading(i18n.t("header-selected-output"));
-                        ui.separator();
+                        crate::widgets::render_header(ui, &i18n.t("header-selected-output"));
 
                         let mut updated_config = output.clone();
 

@@ -413,15 +413,11 @@ impl AppUI {
             .min_width(200.0)
             .max_width(400.0)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading(self.i18n.t("panel-media-browser"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("✕").clicked() {
-                            self.show_media_browser = false;
-                        }
-                    });
+                widgets::render_panel_header(ui, &self.i18n.t("panel-media-browser"), |ui| {
+                    if ui.button("✕").clicked() {
+                        self.show_media_browser = false;
+                    }
                 });
-                ui.separator();
                 let _ = self
                     .media_browser
                     .ui(ui, &self.i18n, self.icon_manager.as_ref());
@@ -437,8 +433,7 @@ impl AppUI {
         egui::Window::new(self.i18n.t("panel-playback"))
             .default_size([320.0, 360.0])
             .show(ctx, |ui| {
-                ui.heading(self.i18n.t("header-video-playback"));
-                ui.separator();
+                widgets::render_panel_header(ui, &self.i18n.t("header-video-playback"), |_| {});
 
                 // Transport controls
                 ui.horizontal(|ui| {
@@ -512,9 +507,9 @@ impl AppUI {
             .interactable(false)
             .show(ctx, |ui| {
                 egui::Frame::popup(ui.style())
-                    .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
+                    .fill(crate::core::theme::colors::DARK_GREY)
                     .corner_radius(4.0)
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
+                    .stroke(egui::Stroke::new(1.0, crate::core::theme::colors::STROKE_GREY))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {

@@ -31,6 +31,46 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     );
 }
 
+pub fn render_panel_header(
+    ui: &mut Ui,
+    title: &str,
+    add_contents: impl FnOnce(&mut Ui),
+) {
+    let height = 28.0;
+    let (rect, _response) = ui.allocate_exact_size(
+        Vec2::new(ui.available_width(), height),
+        Sense::hover(),
+    );
+
+    // Paint Background
+    ui.painter().rect_filled(
+        rect,
+        egui::CornerRadius::same(0),
+        colors::LIGHTER_GREY,
+    );
+
+    // Paint Accent Stripe
+    let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(3.0, rect.height()));
+    ui.painter().rect_filled(
+        stripe_rect,
+        egui::CornerRadius::same(0),
+        colors::CYAN_ACCENT,
+    );
+
+    // Content UI
+    ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+        ui.horizontal_centered(|ui| {
+            ui.add_space(10.0); // Padding left
+            ui.label(egui::RichText::new(title).strong().size(14.0));
+
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.add_space(4.0); // Padding right
+                add_contents(ui);
+            });
+        });
+    });
+}
+
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
     let color = if value < 0.5 {
         colors::CYAN_ACCENT // Cyan (Normal)
