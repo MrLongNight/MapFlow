@@ -1569,9 +1569,14 @@ impl MeshType {
             }
             MeshType::BezierSurface { control_points } => {
                 // For Bezier surface, create a grid and warp it based on control points
-                // For now, use a simple grid as a placeholder until full Bezier implementation
-                if control_points.len() >= 4 {
-                    // TODO: Implement proper Bezier surface interpolation
+                if control_points.len() >= 12 {
+                    let patch = crate::mesh::BezierPatch::from_boundary_splines(control_points);
+                    // Use higher resolution for smooth warp (e.g. 20x20)
+                    let mut mesh = Mesh::create_grid(20, 20);
+                    patch.apply_to_mesh(&mut mesh);
+                    mesh
+                } else if control_points.len() >= 4 {
+                    // Fallback to simple grid if we don't have handles yet?
                     Mesh::create_grid(8, 8)
                 } else {
                     Mesh::quad()

@@ -292,6 +292,57 @@ impl MeshEditor {
         }
     }
 
+    /// Get mesh bounds
+    pub fn get_bounds(&self) -> Rect {
+        if self.vertices.is_empty() {
+            return Rect::NOTHING;
+        }
+        let mut min = self.vertices[0].position;
+        let mut max = self.vertices[0].position;
+        for v in &self.vertices {
+            min = min.min(v.position);
+            max = max.max(v.position);
+        }
+        Rect::from_min_max(min, max)
+    }
+
+    /// Find symmetric vertex index
+    pub fn find_symmetric_vertex(&self, idx: usize) -> Option<usize> {
+        if self.symmetry == SymmetryMode::None {
+            return None;
+        }
+        let bounds = self.get_bounds();
+        let center = bounds.center();
+        let pos = self.vertices[idx].position;
+        let target_pos = match self.symmetry {
+            SymmetryMode::Horizontal => Pos2::new(2.0 * center.x - pos.x, pos.y),
+            SymmetryMode::Vertical => Pos2::new(pos.x, 2.0 * center.y - pos.y),
+            SymmetryMode::Both => Pos2::new(2.0 * center.x - pos.x, 2.0 * center.y - pos.y),
+            SymmetryMode::None => pos,
+        };
+
+        // Find closest vertex within tolerance
+        let mut closest = None;
+        let mut min_dist = f32::MAX;
+        for (i, v) in self.vertices.iter().enumerate() {
+            if i == idx {
+                continue;
+            }
+            let dist = v.position.distance_sq(target_pos);
+            if dist < min_dist {
+                min_dist = dist;
+                closest = Some(i);
+            }
+        }
+
+        if min_dist < 100.0 {
+            // Tolerance 10px
+            closest
+        } else {
+            None
+        }
+    }
+
     /// Process interaction event
     pub fn handle_interaction(&mut self, input: InteractionInput) -> Option<MeshEditorAction> {
         let mut action = None;
@@ -302,11 +353,28 @@ impl MeshEditor {
                 if input.clicked {
                     // Select vertex under pointer
                     let mut found = false;
-                    for vertex in self.vertices.iter_mut() {
+                    let mut selected_idx = None;
+
+                    for (i, vertex) in self.vertices.iter_mut().enumerate() {
                         if vertex.position.distance(pointer_pos) < 10.0 {
                             vertex.selected = !vertex.selected;
+                            selected_idx = Some(i);
                             found = true;
                             break;
+                        }
+                    }
+
+                    // Handle symmetry selection
+                    if let Some(idx) = selected_idx {
+                        if self.symmetry != SymmetryMode::None {
+                            if let Some(sym_idx) = self.find_symmetric_vertex(idx) {
+                                if let Some(v) = self.vertices.get(idx) {
+                                    let is_selected = v.selected;
+                                    if let Some(sym_v) = self.vertices.get_mut(sym_idx) {
+                                        sym_v.selected = is_selected;
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -409,6 +477,7 @@ impl MeshEditor {
                     if let Some(element) = self.dragging_element {
                         let snap_to_grid = self.snap_to_grid;
                         let grid_size = self.grid_size;
+                        let symmetry = self.symmetry;
 
                         let snap_pos = |pos: Pos2| -> Pos2 {
                             if snap_to_grid {
@@ -423,26 +492,114 @@ impl MeshEditor {
 
                         match element {
                             DragElement::Vertex(idx, offset) => {
+                                // Capture state before update
+                                let pre_sym_idx = if symmetry != SymmetryMode::None {
+                                    self.find_symmetric_vertex(idx)
+                                } else {
+                                    None
+                                };
+                                let pre_bounds = self.get_bounds();
+                                let pre_center = pre_bounds.center();
+
+                                let mut new_pos = Pos2::ZERO;
                                 if let Some(vertex) = self.vertices.get_mut(idx) {
                                     let target_pos = pointer_pos + offset;
                                     vertex.position = snap_pos(target_pos);
+                                    new_pos = vertex.position;
+                                }
+
+                                // Apply symmetry
+                                if let Some(sym_idx) = pre_sym_idx {
+                                    let sym_target = match symmetry {
+                                        SymmetryMode::Horizontal => {
+                                            Pos2::new(2.0 * pre_center.x - new_pos.x, new_pos.y)
+                                        }
+                                        SymmetryMode::Vertical => {
+                                            Pos2::new(new_pos.x, 2.0 * pre_center.y - new_pos.y)
+                                        }
+                                        SymmetryMode::Both => Pos2::new(
+                                            2.0 * pre_center.x - new_pos.x,
+                                            2.0 * pre_center.y - new_pos.y,
+                                        ),
+                                        SymmetryMode::None => new_pos,
+                                    };
+
+                                    if let Some(sym_v) = self.vertices.get_mut(sym_idx) {
+                                        sym_v.position = sym_target;
+                                    }
                                 }
                             }
                             DragElement::ControlIn(idx, offset) => {
+                                let mut new_ctrl = Vec2::ZERO;
                                 if let Some(vertex) = self.vertices.get_mut(idx) {
                                     if let Some(ctrl) = &mut vertex.control_in {
                                         let target_abs_pos = pointer_pos + offset;
                                         let snapped_abs = snap_pos(target_abs_pos);
                                         *ctrl = snapped_abs - vertex.position;
+                                        new_ctrl = *ctrl;
+                                    }
+                                }
+
+                                // Apply symmetry
+                                if symmetry != SymmetryMode::None {
+                                    if let Some(sym_idx) = self.find_symmetric_vertex(idx) {
+                                        if let Some(sym_v) = self.vertices.get_mut(sym_idx) {
+                                            if let Some(ctrl) = &mut sym_v.control_in {
+                                                *ctrl = Vec2::new(
+                                                    if symmetry == SymmetryMode::Horizontal
+                                                        || symmetry == SymmetryMode::Both
+                                                    {
+                                                        -new_ctrl.x
+                                                    } else {
+                                                        new_ctrl.x
+                                                    },
+                                                    if symmetry == SymmetryMode::Vertical
+                                                        || symmetry == SymmetryMode::Both
+                                                    {
+                                                        -new_ctrl.y
+                                                    } else {
+                                                        new_ctrl.y
+                                                    },
+                                                );
+                                            }
+                                        }
                                     }
                                 }
                             }
                             DragElement::ControlOut(idx, offset) => {
+                                let mut new_ctrl = Vec2::ZERO;
                                 if let Some(vertex) = self.vertices.get_mut(idx) {
                                     if let Some(ctrl) = &mut vertex.control_out {
                                         let target_abs_pos = pointer_pos + offset;
                                         let snapped_abs = snap_pos(target_abs_pos);
                                         *ctrl = snapped_abs - vertex.position;
+                                        new_ctrl = *ctrl;
+                                    }
+                                }
+
+                                // Apply symmetry
+                                if symmetry != SymmetryMode::None {
+                                    if let Some(sym_idx) = self.find_symmetric_vertex(idx) {
+                                        if let Some(sym_v) = self.vertices.get_mut(sym_idx) {
+                                            if let Some(ctrl) = &mut sym_v.control_out {
+                                                *ctrl = Vec2::new(
+                                                    if symmetry == SymmetryMode::Horizontal
+                                                        || symmetry == SymmetryMode::Both
+                                                    {
+                                                        -new_ctrl.x
+                                                    } else {
+                                                        new_ctrl.x
+                                                    },
+                                                    if symmetry == SymmetryMode::Vertical
+                                                        || symmetry == SymmetryMode::Both
+                                                    {
+                                                        -new_ctrl.y
+                                                    } else {
+                                                        new_ctrl.y
+                                                    },
+                                                );
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -765,5 +922,55 @@ mod tests {
         assert!(v.control_in.is_some());
         assert!(v.control_out.is_some());
         assert_eq!(v.control_in.unwrap(), Vec2::new(-30.0, 0.0));
+    }
+
+    #[test]
+    fn test_symmetry_horizontal() {
+        let mut editor = MeshEditor::new();
+        // Create 2 vertices symmetric around x=100
+        editor.vertices.push(Vertex {
+            position: Pos2::new(50.0, 100.0),
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+        editor.vertices.push(Vertex {
+            position: Pos2::new(150.0, 100.0),
+            control_in: None,
+            control_out: None,
+            selected: false,
+        });
+
+        editor.mode = EditMode::Bezier;
+        editor.symmetry = SymmetryMode::Horizontal;
+
+        // 1. Start Drag on Vertex 0
+        let input_start = InteractionInput {
+            pointer_pos: Pos2::new(50.0, 100.0),
+            clicked: false,
+            dragged: false,
+            drag_delta: Vec2::ZERO,
+            drag_started: true,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_start);
+
+        // 2. Drag to (40, 100)
+        let input_drag = InteractionInput {
+            pointer_pos: Pos2::new(40.0, 100.0),
+            clicked: false,
+            dragged: true,
+            drag_delta: Vec2::new(-10.0, 0.0),
+            drag_started: false,
+            drag_stopped: false,
+        };
+        editor.handle_interaction(input_drag);
+
+        // Check positions
+        // Center X = 100.
+        // Vertex 0 moved to 40 (Delta -10).
+        // Vertex 1 should mirror: 2*100 - 40 = 160.
+        assert_eq!(editor.vertices[0].position.x, 40.0);
+        assert_eq!(editor.vertices[1].position.x, 160.0);
     }
 }

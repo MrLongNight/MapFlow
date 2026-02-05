@@ -363,6 +363,71 @@ impl BezierPatch {
         mesh.revision += 1;
     }
 
+    /// Create a Bezier patch from boundary splines (12 points)
+    /// Expects 4 vertices, each with 3 points: [Pos, In, Out]
+    /// Order: TL, TR, BR, BL
+    pub fn from_boundary_splines(points: &[(f32, f32)]) -> Self {
+        if points.len() < 12 {
+            return Self::new();
+        }
+
+        let to_vec2 = |idx: usize| Vec2::new(points[idx].0, points[idx].1);
+
+        // Map spline points to Bezier Patch control points (4x4)
+        let mut cp = [[Vec2::ZERO; 4]; 4];
+
+        // Corners
+        cp[0][0] = to_vec2(0); // TL Pos
+        cp[0][3] = to_vec2(3); // TR Pos
+        cp[3][3] = to_vec2(6); // BR Pos
+        cp[3][0] = to_vec2(9); // BL Pos
+
+        // Top Edge (TL Out -> TR In)
+        cp[0][1] = to_vec2(2); // TL Out
+        cp[0][2] = to_vec2(4); // TR In
+
+        // Right Edge (TR Out -> BR In)
+        cp[1][3] = to_vec2(5); // TR Out
+        cp[2][3] = to_vec2(7); // BR In
+
+        // Bottom Edge (BL In <- BR Out) - Direction is reversed in patch U
+        // Patch Row 3 is Left->Right (30->33).
+        // Boundary is BR->BL (Right->Left).
+        // BR Out (pt 8) is handle from BR towards BL. So it corresponds to cp[3][2]
+        // BL In (pt 10) is handle at BL coming from BR. So it corresponds to cp[3][1]
+        cp[3][2] = to_vec2(8); // BR Out
+        cp[3][1] = to_vec2(10); // BL In
+
+        // Left Edge (TL In <- BL Out) - Direction is reversed in patch V
+        // Patch Col 0 is Top->Bottom (00->30).
+        // Boundary is BL->TL (Bottom->Top).
+        // BL Out (pt 11) is handle from BL towards TL. So it corresponds to cp[2][0]
+        // TL In (pt 1) is handle at TL coming from BL. So it corresponds to cp[1][0]
+        cp[2][0] = to_vec2(11); // BL Out
+        cp[1][0] = to_vec2(1); // TL In
+
+        // Interior Points - Coons Patch Interpolation
+        // P[i][j] = Ru + Rv - Ruv
+        #[allow(clippy::needless_range_loop)]
+        for i in 1..3 {
+            for j in 1..3 {
+                let u = j as f32 / 3.0;
+                let v = i as f32 / 3.0;
+
+                let ru = cp[i][0].lerp(cp[i][3], u);
+                let rv = cp[0][j].lerp(cp[3][j], v);
+
+                let corner_top = cp[0][0].lerp(cp[0][3], u);
+                let corner_bottom = cp[3][0].lerp(cp[3][3], u);
+                let ruv = corner_top.lerp(corner_bottom, v);
+
+                cp[i][j] = ru + rv - ruv;
+            }
+        }
+
+        Self { control_points: cp }
+    }
+
     /// Set corner control points (for keystone correction)
     pub fn set_corners(&mut self, corners: [Vec2; 4]) {
         // Map corners to control points: [top-left, top-right, bottom-right, bottom-left]
@@ -604,5 +669,54 @@ mod tests {
         assert!((min.y - 0.3).abs() < 0.001);
         assert!((max.x - 0.7).abs() < 0.001);
         assert!((max.y - 0.9).abs() < 0.001);
+    }
+}
+
+#[cfg(test)]
+mod bezier_tests {
+    use super::*;
+
+    #[test]
+    fn test_from_boundary_splines_identity() {
+        // Create 12 points for a flat unit quad
+        // TL (0,0), TR (1,0), BR (1,1), BL (0,1)
+
+        let points = vec![
+            // TL (0)
+            (0.0, 0.0), // Pos
+            (0.0, 1.0/3.0), // In (corresponds to cp[1][0])
+            (1.0/3.0, 0.0), // Out (corresponds to cp[0][1])
+
+            // TR (1)
+            (1.0, 0.0), // Pos
+            (2.0/3.0, 0.0), // In (corresponds to cp[0][2])
+            (1.0, 1.0/3.0), // Out (corresponds to cp[1][3])
+
+            // BR (2)
+            (1.0, 1.0), // Pos
+            (1.0, 2.0/3.0), // In (corresponds to cp[2][3])
+            (2.0/3.0, 1.0), // Out (corresponds to cp[3][2])
+
+            // BL (3)
+            (0.0, 1.0), // Pos
+            (1.0/3.0, 1.0), // In (corresponds to cp[3][1])
+            (0.0, 2.0/3.0), // Out (corresponds to cp[2][0])
+        ];
+
+        let patch = BezierPatch::from_boundary_splines(&points);
+
+        // Verify corners
+        assert!((patch.control_points[0][0] - Vec2::new(0.0, 0.0)).length() < 0.001);
+        assert!((patch.control_points[0][3] - Vec2::new(1.0, 0.0)).length() < 0.001);
+        assert!((patch.control_points[3][3] - Vec2::new(1.0, 1.0)).length() < 0.001);
+        assert!((patch.control_points[3][0] - Vec2::new(0.0, 1.0)).length() < 0.001);
+
+        // Verify a mapped handle
+        assert!((patch.control_points[0][1] - Vec2::new(1.0/3.0, 0.0)).length() < 0.001);
+
+        // Verify interior point 1,1 (should be 1/3, 1/3 for flat patch)
+        let p11 = patch.control_points[1][1];
+        assert!((p11.x - 1.0/3.0).abs() < 0.001);
+        assert!((p11.y - 1.0/3.0).abs() < 0.001);
     }
 }
