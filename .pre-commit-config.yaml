@@ -7,7 +7,7 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "chore: pre-commit autoupdate [skip ci]"
   autoupdate_schedule: weekly
-  
+
   # Skip hooks that don't work in CI or are too strict
   skip:
     - fmt
@@ -15,7 +15,7 @@ ci:
     - cargo-sort
     - markdownlint-fix
     - detect-secrets
-  
+
   submodules: false
 
 repos:
@@ -29,7 +29,7 @@ repos:
         name: "Rust: cargo fmt"
         args: ['--all', '--']
         stages: [manual]
-        
+
       - id: clippy
         name: "Rust: cargo clippy"
         args:
@@ -50,29 +50,29 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
         exclude: ^(.*\.patch|.*\.diff)$
-        
+
       # Auto-fix missing final newline
       - id: end-of-file-fixer
         exclude: ^(.*\.patch|.*\.diff|.*\.rs\.bk)$
-        
+
       # Check for filename case conflicts
       - id: check-case-conflict
-        
+
       # Validate YAML syntax
       - id: check-yaml
         args: [--allow-multiple-documents]
-        
+
       # Validate TOML syntax
       - id: check-toml
-        
+
       # Prevent huge files
       - id: check-added-large-files
         args: [--maxkb=5000]
         exclude: ^(.*\.dll|.*\.so|.*\.dylib|assets/.*|resources/.*)$
-        
+
       # Check for merge conflict markers
       - id: check-merge-conflict
-        
+
       # Fix line endings (LF for Unix)
       - id: mixed-line-ending
         args: [--fix=lf]
