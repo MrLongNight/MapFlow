@@ -16,8 +16,8 @@ ignore = [
 
 [licenses]
 # Skip license checking (handled separately)
-unlicensed = "allow"
 allow = [
+    "Unlicense",
     "MIT",
     "Apache-2.0",
     "BSD-2-Clause",
