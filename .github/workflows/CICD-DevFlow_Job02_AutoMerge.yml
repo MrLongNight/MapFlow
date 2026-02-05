@@ -81,7 +81,7 @@ jobs:
             // ═══════════════════════════════════════════════════════════════
             // 3. PRE-CHECKS
             // ═══════════════════════════════════════════════════════════════
-
+            
             // Check: Draft PR
             if (pr.data.draft) {
               console.log("❌ PR is a draft. Skipping auto-merge.");
@@ -114,9 +114,9 @@ jobs:
             // ═══════════════════════════════════════════════════════════════
             // 4. CHECK STATUS CHECKS
             // ═══════════════════════════════════════════════════════════════
-
+            
             console.log(`📊 Fetching check suites for commit ${pr.data.head.sha}...`);
-
+            
             const suites = await github.rest.checks.listSuitesForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -132,8 +132,8 @@ jobs:
               console.log("✅ Proceeding with merge (no checks to fail).");
             } else {
               // Check for failures
-              const failed = suites.data.check_suites.filter(s =>
-                s.conclusion === 'failure' ||
+              const failed = suites.data.check_suites.filter(s => 
+                s.conclusion === 'failure' || 
                 s.conclusion === 'timed_out' ||
                 s.conclusion === 'cancelled'
               );
@@ -145,8 +145,8 @@ jobs:
               }
 
               // Check for pending/in-progress
-              const pending = suites.data.check_suites.filter(s =>
-                s.status === 'in_progress' ||
+              const pending = suites.data.check_suites.filter(s => 
+                s.status === 'in_progress' || 
                 s.status === 'queued' ||
                 s.status === 'waiting'
               );
@@ -158,14 +158,14 @@ jobs:
               }
 
               // Check for successful completion
-              const successful = suites.data.check_suites.filter(s =>
+              const successful = suites.data.check_suites.filter(s => 
                 s.conclusion === 'success'
               );
 
               console.log(`✅ ${successful.length}/${suites.data.total_count} check suite(s) passed`);
 
               // Ensure ALL checks have completed successfully
-              const completed = suites.data.check_suites.filter(s =>
+              const completed = suites.data.check_suites.filter(s => 
                 s.status === 'completed'
               );
 
@@ -184,9 +184,9 @@ jobs:
             // ═══════════════════════════════════════════════════════════════
             // 5. EXECUTE MERGE
             // ═══════════════════════════════════════════════════════════════
-
+            
             console.log("✅ All conditions met. Initiating auto-merge...");
-
+            
             try {
               await github.rest.pulls.merge({
                 owner: context.repo.owner,
@@ -196,9 +196,9 @@ jobs:
                 commit_title: `${pr.data.title} (#${prNumber})`,
                 commit_message: `${pr.data.body || ''}\n\nAuto-merged by GitHub Actions`
               });
-
+              
               console.log("🎉 PR merged successfully!");
-
+              
               // Optional: Add a comment to the PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -206,10 +206,10 @@ jobs:
                 issue_number: prNumber,
                 body: '✅ **Auto-merged** by CI/CD pipeline after all checks passed.'
               });
-
+              
             } catch (e) {
               console.log(`❌ Merge failed: ${e.message}`);
-
+              
               // Add error comment to PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
