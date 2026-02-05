@@ -2,12 +2,12 @@ name: "CICD-DevFlow: Job02 Auto-Merge"
 
 on:
   pull_request:
-    types: [labeled] # Trigger when labels added
+    types: [labeled, synchronize, opened, reopened]
   check_suite:
-    types: [completed] # Trigger when checks finish
+    types: [completed]
   workflow_run:
     workflows: ["CICD-DevFlow: Job01 Validation"]
-    types: [completed] # Trigger when Validation workflow finishes
+    types: [completed]
 
 env:
   # Master Switch
@@ -29,9 +29,14 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            if (process.env.AUTO_MERGE_ENABLED !== 'true') return;
+            if (process.env.AUTO_MERGE_ENABLED !== 'true') {
+              console.log("⚠️ Auto-merge is disabled via AUTO_MERGE_ENABLED");
+              return;
+            }
 
-            // 1. Identify PR
+            // ═══════════════════════════════════════════════════════════════
+            // 1. IDENTIFY PR
+            // ═══════════════════════════════════════════════════════════════
             let prNumber = context.payload.pull_request?.number;
 
             // If triggered by workflow_run, find PR associated with commit
@@ -44,10 +49,10 @@ jobs:
               });
               if (prs.data.length > 0) prNumber = prs.data[0].number;
             }
-            
+
             // If triggered by check_suite
             if (!prNumber && context.payload.check_suite) {
-               const prs = await github.rest.pulls.list({
+              const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 state: 'open'
@@ -58,67 +63,158 @@ jobs:
             }
 
             if (!prNumber) {
-              console.log("No PR found for this event.");
+              console.log("ℹ️ No PR found for this event.");
               return;
             }
 
-            console.log(`Checking PR #${prNumber} for Auto-Merge eligibility...`);
-            
+            console.log(`🔍 Checking PR #${prNumber} for Auto-Merge eligibility...`);
+
+            // ═══════════════════════════════════════════════════════════════
+            // 2. GET PR DATA
+            // ═══════════════════════════════════════════════════════════════
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber
             });
 
-            // 2. Check Conditions
-            // Condition A: Mergeable
-            if (pr.data.mergeable === false) {
-              console.log("❌ PR is not mergeable (conflicts).");
+            // ═══════════════════════════════════════════════════════════════
+            // 3. PRE-CHECKS
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Check: Draft PR
+            if (pr.data.draft) {
+              console.log("❌ PR is a draft. Skipping auto-merge.");
               return;
             }
-            if (pr.data.mergeable_state === 'dirty') {
-               console.log("❌ PR mergeable_state is dirty.");
-               return;
+
+            // Check: Mergeable state
+            if (pr.data.mergeable === false) {
+              console.log("❌ PR has merge conflicts. Cannot auto-merge.");
+              return;
             }
 
-            // Condition B: All Checks Passed
-            // We specifically check the result of our Validation Workflow if accessible, or all check suites.
+            if (pr.data.mergeable_state === 'dirty') {
+              console.log("❌ PR mergeable_state is 'dirty'. Skipping auto-merge.");
+              return;
+            }
+
+            // Check: Already merged
+            if (pr.data.merged) {
+              console.log("ℹ️ PR is already merged.");
+              return;
+            }
+
+            // Check: Closed
+            if (pr.data.state === 'closed') {
+              console.log("ℹ️ PR is closed.");
+              return;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 4. CHECK STATUS CHECKS
+            // ═══════════════════════════════════════════════════════════════
+            
+            console.log(`📊 Fetching check suites for commit ${pr.data.head.sha}...`);
+            
             const suites = await github.rest.checks.listSuitesForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.data.head.sha
             });
 
-            const failed = suites.data.check_suites.some(s => s.conclusion === 'failure' || s.conclusion === 'timed_out');
-            const pending = suites.data.check_suites.some(s => s.status === 'in_progress' || s.status === 'queued');
+            console.log(`Found ${suites.data.total_count} check suite(s)`);
 
-            if (failed) {
-              console.log("❌ Some check suites failed.");
-              return;
-            }
-            if (pending) {
-               console.log("⏳ Checks still pending.");
-               return;
+            // If no checks exist at all, this might be a docs-only change
+            // We still allow merge (you can change this behavior if needed)
+            if (suites.data.total_count === 0) {
+              console.log("⚠️ No check suites found. This might be a documentation-only PR.");
+              console.log("✅ Proceeding with merge (no checks to fail).");
+            } else {
+              // Check for failures
+              const failed = suites.data.check_suites.filter(s => 
+                s.conclusion === 'failure' || 
+                s.conclusion === 'timed_out' ||
+                s.conclusion === 'cancelled'
+              );
+
+              if (failed.length > 0) {
+                console.log(`❌ ${failed.length} check suite(s) failed:`);
+                failed.forEach(s => console.log(`  - ${s.app.name}: ${s.conclusion}`));
+                return;
+              }
+
+              // Check for pending/in-progress
+              const pending = suites.data.check_suites.filter(s => 
+                s.status === 'in_progress' || 
+                s.status === 'queued' ||
+                s.status === 'waiting'
+              );
+
+              if (pending.length > 0) {
+                console.log(`⏳ ${pending.length} check suite(s) still running:`);
+                pending.forEach(s => console.log(`  - ${s.app.name}: ${s.status}`));
+                return;
+              }
+
+              // Check for successful completion
+              const successful = suites.data.check_suites.filter(s => 
+                s.conclusion === 'success'
+              );
+
+              console.log(`✅ ${successful.length}/${suites.data.total_count} check suite(s) passed`);
+
+              // Ensure ALL checks have completed successfully
+              const completed = suites.data.check_suites.filter(s => 
+                s.status === 'completed'
+              );
+
+              if (completed.length !== suites.data.total_count) {
+                console.log(`⏳ Waiting for all checks to complete (${completed.length}/${suites.data.total_count})`);
+                return;
+              }
+
+              // Ensure all completed checks are successful
+              if (successful.length !== completed.length) {
+                console.log(`❌ Not all completed checks are successful`);
+                return;
+              }
             }
 
-            // Condition C (Optional): Label or Author check?
-            // "wenn es keine Fehler gibt sollen die PRs automatisch gemerged werden" -> Implies ALL passing PRs.
-            // Safety: Ensure it is NOT a draft.
-            if (pr.data.draft) {
-               console.log("❌ PR is a draft.");
-               return;
-            }
-
-            // 3. EXECUTE MERGE
-            console.log("✅ All checks passed. Merging...");
+            // ═══════════════════════════════════════════════════════════════
+            // 5. EXECUTE MERGE
+            // ═══════════════════════════════════════════════════════════════
+            
+            console.log("✅ All conditions met. Initiating auto-merge...");
+            
             try {
               await github.rest.pulls.merge({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: prNumber,
-                merge_method: 'squash'
+                merge_method: 'squash',
+                commit_title: `${pr.data.title} (#${prNumber})`,
+                commit_message: `${pr.data.body || ''}\n\nAuto-merged by GitHub Actions`
               });
-              console.log("🎉 Merged successfully.");
+              
+              console.log("🎉 PR merged successfully!");
+              
+              // Optional: Add a comment to the PR
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: '✅ **Auto-merged** by CI/CD pipeline after all checks passed.'
+              });
+              
             } catch (e) {
               console.log(`❌ Merge failed: ${e.message}`);
+              
+              // Add error comment to PR
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `⚠️ **Auto-merge failed**: ${e.message}\n\nPlease merge manually.`
+              });
             }
