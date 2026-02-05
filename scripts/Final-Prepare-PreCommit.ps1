@@ -27,7 +27,7 @@ if (Get-Command "cargo-sort" -ErrorAction SilentlyContinue) {
 Write-Host "🛠️ Running cargo clippy (Auto-Fix)..." -ForegroundColor Yellow
 # Using settings similar to CI: workspace, all targets, audio feature (common dev feature)
 cargo clippy --fix --allow-dirty --allow-staged --workspace --features "mapmap-io/ci-linux" -- -D warnings
-if ($LASTEXITCODE -ne 0) { 
+if ($LASTEXITCODE -ne 0) {
     Write-Warning "Clippy found issues that couldn't be automatically fixed. Please check manually."
     # We don't exit here to allow user to see errors, but typically this implies manual intervention needed.
 }

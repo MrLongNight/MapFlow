@@ -24,14 +24,14 @@ jobs:
     name: Start Jules Session
     runs-on: ubuntu-latest
     if: github.event.label.name == 'jules-task' || contains(github.event.issue.labels.*.name, 'jules-task') || github.event_name == 'workflow_dispatch'
-    
+
     concurrency:
       group: issue-flow-session-${{ github.repository }}
       cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Execute Trigger Logic
         id: flow
         uses: actions/github-script@v7
@@ -68,7 +68,7 @@ jobs:
              // 3. Create Session
              const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
              const issue = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber });
-             
+
              const endpoint = 'https://jules.googleapis.com/v1alpha/sessions';
              const payload = {
                prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}`,
