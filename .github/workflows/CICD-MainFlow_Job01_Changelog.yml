@@ -1,0 +1,49 @@
+name: "CICD-MainFlow: Job01 Changelog & Cleanup"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  changelog-and-cleanup:
+    name: Update Changelog & Close Issues
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update Changelog (git-cliff or similar)
+        run: |
+           # Placeholder for actual changelog logic (formerly CI-06)
+           echo "Updating Changelog..."
+           # git-cliff --config cliff.toml --output CHANGELOG.md
+
+      - name: Close Linked Issues (Post-Merge)
+        uses: actions/github-script@v7
+        with:
+           script: |
+              // Logic from CI-07 to close issues linked to merged PRs
+              // (Since PR is merged into main, we scan for "Closes #XYZ")
+              
+              const commit = await github.rest.repos.getCommit({
+                owner: context.repo.owner, repo: context.repo.repo, ref: context.sha
+              });
+              const msg = commit.data.commit.message;
+              const match = msg.match(/(?:close|closes|fix|fixes) #(\d+)/i);
+              if (match) {
+                 const issueNum = match[1];
+                 console.log(`Closing Issue #${issueNum}`);
+                 await github.rest.issues.update({
+                   owner: context.repo.owner, repo: context.repo.repo, issue_number: parseInt(issueNum), state: 'closed'
+                 });
+                 await github.rest.issues.createComment({
+                   owner: context.repo.owner, repo: context.repo.repo, issue_number: parseInt(issueNum), body: `✅ Fix merged in ${context.sha}`
+                 });
+              }
