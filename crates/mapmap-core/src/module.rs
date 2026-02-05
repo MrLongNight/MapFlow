@@ -2548,7 +2548,11 @@ mod tests {
 
         // 4. Test with gap (delete 1, create new)
         let modules = manager.list_modules();
-        let id1 = modules.iter().find(|m| m.name == "New Module 1").unwrap().id;
+        let id1 = modules
+            .iter()
+            .find(|m| m.name == "New Module 1")
+            .unwrap()
+            .id;
         manager.delete_module(id1);
 
         assert!(!manager.is_name_taken("New Module 1"));
