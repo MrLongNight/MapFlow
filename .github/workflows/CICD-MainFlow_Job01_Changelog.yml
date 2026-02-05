@@ -31,7 +31,7 @@ jobs:
            script: |
               // Logic from CI-07 to close issues linked to merged PRs
               // (Since PR is merged into main, we scan for "Closes #XYZ")
-              
+
               const commit = await github.rest.repos.getCommit({
                 owner: context.repo.owner, repo: context.repo.repo, ref: context.sha
               });
