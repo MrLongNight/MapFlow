@@ -44,7 +44,7 @@ jobs:
               });
               if (prs.data.length > 0) prNumber = prs.data[0].number;
             }
-            
+
             // If triggered by check_suite
             if (!prNumber && context.payload.check_suite) {
                const prs = await github.rest.pulls.list({
@@ -63,7 +63,7 @@ jobs:
             }
 
             console.log(`Checking PR #${prNumber} for Auto-Merge eligibility...`);
-            
+
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
