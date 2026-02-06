@@ -3726,47 +3726,49 @@ impl ModuleCanvas {
         }
 
         // Draw context menu for adding nodes (canvas level)
-        if self.context_menu_part.is_none() && self.context_menu_connection.is_none() {
-            if let Some(pos) = self.context_menu_pos {
-                let menu_width = 180.0;
-                let menu_height = 250.0; // Estimate or let it be dynamic
-                let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
+        if self.context_menu_part.is_none()
+            && self.context_menu_connection.is_none()
+            && self.context_menu_pos.is_some()
+        {
+            let pos = self.context_menu_pos.unwrap();
+            let menu_width = 180.0;
+            let menu_height = 250.0; // Estimate or let it be dynamic
+            let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
 
-                // Draw menu background
-                let painter = ui.painter();
-                painter.rect_filled(
-                    menu_rect,
-                    4.0,
-                    Color32::from_rgba_unmultiplied(30, 30, 40, 245),
-                );
-                painter.rect_stroke(
-                    menu_rect,
-                    4.0,
-                    Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-                    egui::StrokeKind::Inside,
-                );
+            // Draw menu background
+            let painter = ui.painter();
+            painter.rect_filled(
+                menu_rect,
+                4.0,
+                Color32::from_rgba_unmultiplied(30, 30, 40, 245),
+            );
+            painter.rect_stroke(
+                menu_rect,
+                4.0,
+                Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
+                egui::StrokeKind::Inside,
+            );
 
-                // Menu items
-                let inner_rect = menu_rect.shrink(8.0);
-                ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
-                    ui.vertical(|ui| {
-                        ui.heading("➕ Add Node");
-                        ui.separator();
+            // Menu items
+            let inner_rect = menu_rect.shrink(8.0);
+            ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
+                ui.vertical(|ui| {
+                    ui.heading("➕ Add Node");
+                    ui.separator();
 
-                        // Convert screen position to canvas position for node placement
-                        let canvas_pos = from_screen(pos);
-                        let pos_tuple = (canvas_pos.x, canvas_pos.y);
+                    // Convert screen position to canvas position for node placement
+                    let canvas_pos = from_screen(pos);
+                    let pos_tuple = (canvas_pos.x, canvas_pos.y);
 
-                        self.render_add_node_menu_content(ui, manager, Some(pos_tuple));
-                    });
+                    self.render_add_node_menu_content(ui, manager, Some(pos_tuple));
                 });
+            });
 
-                // Close menu on click outside
-                if ui.input(|i| i.pointer.any_click())
-                    && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
-                {
-                    self.context_menu_pos = None;
-                }
+            // Close menu on click outside
+            if ui.input(|i| i.pointer.any_click())
+                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+            {
+                self.context_menu_pos = None;
             }
         }
     }

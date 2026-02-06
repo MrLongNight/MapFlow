@@ -77,7 +77,9 @@ impl ShortcutsPanel {
                     return true;
                 }
                 s.description.to_lowercase().contains(&filter_lower)
-                    || s.to_shortcut_string().to_lowercase().contains(&filter_lower)
+                    || s.to_shortcut_string()
+                        .to_lowercase()
+                        .contains(&filter_lower)
             })
             .map(|(i, _)| i)
             .collect();
@@ -127,7 +129,9 @@ impl ShortcutsPanel {
                             );
 
                             if is_conflict {
-                                key_label.on_hover_text("⚠️ Conflict: This shortcut is used by multiple actions.");
+                                key_label.on_hover_text(
+                                    "⚠️ Conflict: This shortcut is used by multiple actions.",
+                                );
                             }
 
                             // Edit Button
@@ -165,12 +169,16 @@ impl ShortcutsPanel {
                     ui.label(locale.t("shortcuts-edit-dialog-prompt"));
 
                     ui.group(|ui| {
-                         ui.vertical_centered(|ui| {
-                             ui.add_space(10.0);
-                             ui.label(RichText::new("Press any key combination...").strong().color(colors::CYAN_ACCENT));
-                             ui.label("(Press ESC to cancel)"); // Removed Backspace instruction
-                             ui.add_space(10.0);
-                         });
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(10.0);
+                            ui.label(
+                                RichText::new("Press any key combination...")
+                                    .strong()
+                                    .color(colors::CYAN_ACCENT),
+                            );
+                            ui.label("(Press ESC to cancel)"); // Removed Backspace instruction
+                            ui.add_space(10.0);
+                        });
                     });
 
                     if self.show_conflict_warning {
@@ -181,7 +189,10 @@ impl ShortcutsPanel {
                     }
 
                     ui.separator();
-                    if ui.button(locale.t("shortcuts-edit-dialog-cancel")).clicked() {
+                    if ui
+                        .button(locale.t("shortcuts-edit-dialog-cancel"))
+                        .clicked()
+                    {
                         self.editing_shortcut_index = None;
                     }
 
@@ -196,15 +207,13 @@ impl ShortcutsPanel {
                         } => Some(key),
                         _ => None,
                     }) {
-                         // Ignore modifier-only presses
-                        if !matches!(
-                            key,
-                            egui::Key::PageUp | egui::Key::PageDown
-                        ) {
-                             let modifiers = input.modifiers;
-                             if let Some(mapmap_key) = to_mapmap_key(*key) {
-                                new_shortcut_key = Some(Some((mapmap_key, to_mapmap_modifiers(modifiers))));
-                             }
+                        // Ignore modifier-only presses
+                        if !matches!(key, egui::Key::PageUp | egui::Key::PageDown) {
+                            let modifiers = input.modifiers;
+                            if let Some(mapmap_key) = to_mapmap_key(*key) {
+                                new_shortcut_key =
+                                    Some(Some((mapmap_key, to_mapmap_modifiers(modifiers))));
+                            }
                         }
                     }
                 });
@@ -221,7 +230,7 @@ impl ShortcutsPanel {
                         // If binding to same key as current, it's fine (no-op)
                         let current = &shortcuts_clone[index];
                         if current.key == new_key && current.modifiers == new_modifiers {
-                             self.editing_shortcut_index = None;
+                            self.editing_shortcut_index = None;
                         } else {
                             self.show_conflict_warning = true;
                         }
