@@ -131,6 +131,8 @@ impl VideoDecoder for StillImageDecoder {
 // GIF Decoder
 // ============================================================================
 
+const MAX_GIF_FRAMES: usize = 500;
+
 /// Decoder for animated GIF files
 ///
 /// Supports frame-by-frame playback with proper timing based on GIF delays.
@@ -169,8 +171,17 @@ impl GifDecoder {
 
         let mut frames = Vec::new();
         let mut total_duration = Duration::ZERO;
+        let mut width = 0;
+        let mut height = 0;
 
         for frame_result in frames_iter {
+            if frames.len() >= MAX_GIF_FRAMES {
+                return Err(MediaError::DecoderError(format!(
+                    "GIF has too many frames (limit: {})",
+                    MAX_GIF_FRAMES
+                )));
+            }
+
             let frame = frame_result
                 .map_err(|e| MediaError::DecoderError(format!("Failed to decode frame: {}", e)))?;
 
@@ -180,6 +191,16 @@ impl GifDecoder {
             );
 
             let image = DynamicImage::ImageRgba8(frame.into_buffer());
+
+            if width == 0 {
+                width = image.width();
+                height = image.height();
+            } else if image.width() != width || image.height() != height {
+                // Resize if dimensions change (unlikely for compliant GIFs but possible)
+                // For now, we assume consistent dimensions or let the consumer handle weirdness
+                // Actually, let's stick to the first frame dimensions
+            }
+
             frames.push((image.to_rgba8().into_raw(), delay_duration));
             total_duration += delay_duration;
         }
@@ -188,12 +209,11 @@ impl GifDecoder {
             return Err(MediaError::DecoderError("GIF has no frames".to_string()));
         }
 
-        let (width, height) = {
-            let frame = image::load_from_memory(&frames[0].0)
-                .map_err(|e| MediaError::DecoderError(format!("Failed to decode frame: {}", e)))?;
-            (frame.width(), frame.height())
+        let fps = if total_duration.as_secs_f64() > 0.0 {
+            frames.len() as f64 / total_duration.as_secs_f64()
+        } else {
+            10.0 // Default fallback
         };
-        let fps = frames.len() as f64 / total_duration.as_secs_f64();
 
         info!(
             "GIF loaded: {}x{}, {} frames, {:.2}s duration, {:.2} fps from {}",

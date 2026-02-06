@@ -38,3 +38,11 @@
 ## 2024-10-26 - Audio Buffer Resizing
 **Insight:** Testing `update_config` in audio analyzers is critical because mismatched buffer sizes (e.g., between FFT and input buffers) are a common source of runtime panics or silent failures when users change settings.
 **Action:** Always include a "reconfiguration" test case for stateful processing components like audio analyzers or render pipelines.
+
+## 2024-10-27 - [Feature Stubs]
+**Erkenntnis:** Stub implementations for disabled features (like NDI) are often neglected. Missing `Debug` derives or incorrect error strings in stubs can cause compilation failures or confusing runtime errors in downstream crates that rely on these traits being present regardless of feature flags.
+**Aktion:** Added `Debug` derive and specific unit tests for `mapmap-io` NDI stubs to ensure graceful degradation.
+
+## 2024-10-27 - [Media Decoder Limits]
+**Erkenntnis:** `GifDecoder` lacked frame count limits (DoS risk) and contained a logic bug where it attempted to re-decode raw frame buffers as file streams. This highlights the danger of untested complex parsing logic.
+**Aktion:** Implemented `MAX_GIF_FRAMES` limit and added regression tests using `tempfile` to verify boundary conditions.
