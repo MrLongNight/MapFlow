@@ -31,6 +31,60 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     );
 }
 
+/// Unified Panel Header with Cyber Dark Aesthetic and Action Buttons
+pub fn render_panel_header(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui)) {
+    let height = 28.0;
+    // Allocate space for the header
+    let (rect, _response) =
+        ui.allocate_at_least(Vec2::new(ui.available_width(), height), Sense::hover());
+
+    let painter = ui.painter();
+
+    // Background
+    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
+
+    // Cyan Accent Stripe (Left)
+    let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(3.0, rect.height()));
+    painter.rect_filled(
+        stripe_rect,
+        egui::CornerRadius::same(0),
+        colors::CYAN_ACCENT,
+    );
+
+    // Bottom Border
+    painter.line_segment(
+        [rect.left_bottom(), rect.right_bottom()],
+        Stroke::new(1.0, colors::STROKE_GREY),
+    );
+
+    // Title
+    let text_pos = Pos2::new(rect.min.x + 12.0, rect.center().y);
+    painter.text(
+        text_pos,
+        egui::Align2::LEFT_CENTER,
+        title,
+        egui::FontId::proportional(14.0),
+        Color32::WHITE,
+    );
+
+    // Action Buttons (Right Aligned)
+    // We create a child UI that floats on the right side of the header rect
+    let content_rect = Rect::from_min_max(
+        Pos2::new(rect.min.x + 100.0, rect.min.y), // Leave space for title
+        rect.max,
+    );
+
+    ui.scope_builder(
+        egui::UiBuilder::new()
+            .max_rect(content_rect)
+            .layout(egui::Layout::right_to_left(egui::Align::Center)),
+        |ui| {
+            ui.add_space(4.0); // Right padding
+            add_contents(ui);
+        },
+    );
+}
+
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
     let color = if value < 0.5 {
         colors::CYAN_ACCENT // Cyan (Normal)
