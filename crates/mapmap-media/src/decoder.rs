@@ -97,12 +97,29 @@ mod ffmpeg_impl {
         ctx: *mut ffi::AVCodecContext,
         fmt: *const ffi::AVPixelFormat,
     ) -> ffi::AVPixelFormat {
+        if fmt.is_null() {
+            warn!("get_format_callback: fmt is null");
+            return ffi::AVPixelFormat::AV_PIX_FMT_NONE;
+        }
+
+        const MAX_FORMATS: usize = 128;
         let mut p = fmt;
+        let mut count = 0;
+
         while *p != ffi::AVPixelFormat::AV_PIX_FMT_NONE {
+            if count >= MAX_FORMATS {
+                warn!(
+                    "D3D11 buffer over-read protection: Exceeded MAX_FORMATS ({})",
+                    MAX_FORMATS
+                );
+                break;
+            }
+
             if *p == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 {
                 return *p;
             }
             p = p.offset(1);
+            count += 1;
         }
 
         ffi::avcodec_default_get_format(ctx, fmt)
