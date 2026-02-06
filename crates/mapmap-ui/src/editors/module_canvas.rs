@@ -894,6 +894,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -1080,7 +1081,8 @@ impl ModuleCanvas {
                                             }
                                             SourceType::ImageUni {
                                                 path, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
-                                                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
+                                                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical,
+                                                target_width, target_height,
                                             } => {
                                                 // Image Picker
                                                 if path.is_empty() {
@@ -1110,6 +1112,33 @@ impl ModuleCanvas {
                                                     scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
                                                 );
 
+                                                ui.collapsing("📐 Output Size", |ui| {
+                                                    let mut use_custom = target_width.is_some() || target_height.is_some();
+                                                    if ui.checkbox(&mut use_custom, "Override Output Size").changed() {
+                                                        if use_custom {
+                                                            if target_width.is_none() { *target_width = Some(1920); }
+                                                            if target_height.is_none() { *target_height = Some(1080); }
+                                                        } else {
+                                                            *target_width = None;
+                                                            *target_height = None;
+                                                        }
+                                                    }
+
+                                                    if use_custom {
+                                                        ui.horizontal(|ui| {
+                                                            if let Some(w) = target_width {
+                                                                ui.label("W:");
+                                                                ui.add(egui::DragValue::new(w).range(1..=8192));
+                                                            }
+                                                            if let Some(h) = target_height {
+                                                                ui.label("H:");
+                                                                ui.add(egui::DragValue::new(h).range(1..=8192));
+                                                            }
+                                                        });
+                                                    } else {
+                                                        ui.label(egui::RichText::new("Using original image size").weak());
+                                                    }
+                                                });
                                             }
                                             SourceType::VideoMulti {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,

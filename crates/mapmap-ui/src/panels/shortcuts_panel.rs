@@ -59,19 +59,47 @@ impl ShortcutsPanel {
                 for (i, shortcut) in shortcuts_clone.iter().enumerate() {
                     ui.label(&shortcut.description);
 
-                    let shortcut_text = shortcut.to_shortcut_string();
-                    let label = if self.conflicts.contains(&i) {
-                        ui.label(
-                            egui::RichText::new(shortcut_text)
-                                .color(egui::Color32::RED)
-                                .strong(),
-                        )
-                    } else {
-                        ui.label(shortcut_text)
-                    };
+                    let is_conflict = self.conflicts.contains(&i);
+                    let resp = ui.horizontal(|ui| {
+                        ui.style_mut().spacing.item_spacing.x = 4.0;
 
-                    if self.conflicts.contains(&i) {
-                        label.on_hover_text("This shortcut is used by another action.");
+                        if shortcut.modifiers.ctrl {
+                            Self::draw_key_pill(ui, "Ctrl", is_conflict);
+                        }
+                        if shortcut.modifiers.shift {
+                            Self::draw_key_pill(ui, "Shift", is_conflict);
+                        }
+                        if shortcut.modifiers.alt {
+                            Self::draw_key_pill(ui, "Alt", is_conflict);
+                        }
+                        if shortcut.modifiers.meta {
+                            #[cfg(target_os = "macos")]
+                            Self::draw_key_pill(ui, "Cmd", is_conflict);
+                            #[cfg(not(target_os = "macos"))]
+                            Self::draw_key_pill(ui, "Win", is_conflict);
+                        }
+
+                        let key_str = format!("{:?}", shortcut.key);
+                        let key_display = key_str.strip_prefix("Key").unwrap_or(&key_str);
+                        let key_display = match key_display {
+                            "ArrowUp" => "Up",
+                            "ArrowDown" => "Down",
+                            "ArrowLeft" => "Left",
+                            "ArrowRight" => "Right",
+                            "PageUp" => "PgUp",
+                            "PageDown" => "PgDn",
+                            "Escape" => "Esc",
+                            "Delete" => "Del",
+                            "Insert" => "Ins",
+                            "Backspace" => "Back",
+                            k => k,
+                        };
+
+                        Self::draw_key_pill(ui, key_display, is_conflict);
+                    });
+
+                    if is_conflict {
+                        resp.response.on_hover_text("This shortcut is used by another action.");
                     }
 
                     if ui.button(locale.t("shortcuts-edit")).clicked() {
@@ -136,6 +164,35 @@ impl ShortcutsPanel {
                 }
             }
         }
+    }
+
+    fn draw_key_pill(ui: &mut Ui, text: &str, is_conflict: bool) {
+        use crate::core::theme::colors;
+        let text_color = if is_conflict {
+            colors::ERROR_COLOR
+        } else {
+            egui::Color32::WHITE
+        };
+
+        let bg_color = if is_conflict {
+            colors::ERROR_COLOR.linear_multiply(0.2)
+        } else {
+            colors::LIGHTER_GREY
+        };
+
+        egui::Frame::new()
+            .fill(bg_color)
+            .corner_radius(4)
+            .inner_margin(egui::Margin::symmetric(8, 4))
+            .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+            .show(ui, |ui| {
+                ui.label(
+                    egui::RichText::new(text)
+                        .color(text_color)
+                        .strong()
+                        .monospace(),
+                );
+            });
     }
 }
 
