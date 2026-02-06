@@ -108,7 +108,10 @@ mod ffmpeg_impl {
         let mut count = 0;
         while *p != ffi::AVPixelFormat::AV_PIX_FMT_NONE {
             if count >= MAX_FORMATS {
-                warn!("get_format_callback: format list exceeded limit of {}", MAX_FORMATS);
+                warn!(
+                    "get_format_callback: format list exceeded limit of {}",
+                    MAX_FORMATS
+                );
                 break;
             }
             if *p == ffi::AVPixelFormat::AV_PIX_FMT_D3D11 {
