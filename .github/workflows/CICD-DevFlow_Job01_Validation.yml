@@ -53,7 +53,13 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev pkg-config \
+            libavcodec-dev libavformat-dev libavutil-dev \
+            libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+            ffmpeg
 
       - name: Check Formatting
         run: cargo fmt --all -- --check
@@ -90,7 +96,7 @@ jobs:
         run: cargo audit --ignore RUSTSEC-2024-0370 --ignore RUSTSEC-2026-0007
 
       - name: Run Cargo Deny
-        run: cargo deny --config deny.toml check advisories
+        run: cargo deny check advisories --config deny.toml
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 3: BUILD & TEST (LINUX)
