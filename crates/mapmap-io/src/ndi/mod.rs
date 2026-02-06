@@ -355,6 +355,7 @@ impl NdiSender {
 // Stub implementations when NDI feature is disabled
 /// NDI receiver stub (NDI feature disabled)
 #[cfg(not(feature = "ndi"))]
+#[derive(Debug)]
 pub struct NdiReceiver;
 
 #[cfg(not(feature = "ndi"))]
@@ -367,6 +368,7 @@ impl NdiReceiver {
 
 /// NDI sender stub (NDI feature disabled)
 #[cfg(not(feature = "ndi"))]
+#[derive(Debug)]
 pub struct NdiSender;
 
 #[cfg(not(feature = "ndi"))]
@@ -388,4 +390,50 @@ pub struct NdiSource {
     pub name: String,
     /// Source URL
     pub url_address: Option<String>,
+}
+
+#[cfg(all(test, not(feature = "ndi")))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ndi_receiver_stub() {
+        let result = NdiReceiver::new();
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "NDI feature not enabled");
+
+        // Verify Debug derive
+        let receiver = NdiReceiver; // Can construct directly as unit struct
+        let debug_str = format!("{:?}", receiver);
+        assert_eq!(debug_str, "NdiReceiver");
+    }
+
+    #[test]
+    fn test_ndi_sender_stub() {
+        let format = crate::format::VideoFormat::hd_1080p30_rgba();
+        let result = NdiSender::new("Test Sender", format);
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "NDI feature not enabled");
+
+        // Verify Debug derive
+        let sender = NdiSender; // Can construct directly as unit struct
+        let debug_str = format!("{:?}", sender);
+        assert_eq!(debug_str, "NdiSender");
+    }
+
+    #[test]
+    fn test_ndi_source_stub() {
+        let source = NdiSource {
+            name: "Test Source".to_string(),
+            url_address: Some("127.0.0.1".to_string()),
+        };
+
+        // Test Clone
+        let source_clone = source.clone();
+        assert_eq!(source.name, source_clone.name);
+
+        // Test Debug
+        let debug_str = format!("{:?}", source);
+        assert!(debug_str.contains("Test Source"));
+    }
 }
