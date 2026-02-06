@@ -3734,18 +3734,18 @@ impl ModuleCanvas {
                 let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
 
                 // Draw menu background
-            let painter = ui.painter();
-            painter.rect_filled(
-                menu_rect,
-                4.0,
-                Color32::from_rgba_unmultiplied(30, 30, 40, 245),
-            );
-            painter.rect_stroke(
-                menu_rect,
-                4.0,
-                Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-                egui::StrokeKind::Inside,
-            );
+                let painter = ui.painter();
+                painter.rect_filled(
+                    menu_rect,
+                    4.0,
+                    Color32::from_rgba_unmultiplied(30, 30, 40, 245),
+                );
+                painter.rect_stroke(
+                    menu_rect,
+                    4.0,
+                    Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
+                    egui::StrokeKind::Inside,
+                );
 
                 // Menu items
                 let inner_rect = menu_rect.shrink(8.0);

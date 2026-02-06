@@ -2,29 +2,14 @@
 name = "mapmap-bevy"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-3.0-only"
 
 [dependencies]
-anyhow = { workspace = true }
-# Bevy - disabling default features to avoid audio/ui bloat if not needed yet
-bevy = { version = "0.14", default-features = false, features = [
-    "bevy_core_pipeline",
-    "bevy_pbr",
-    "bevy_gltf",
-    "bevy_render",
-    "bevy_scene",
-    "bevy_winit", # Needed for WinitPlugin / loop runner, even if headless
-    "x11", # Explicitly add standard backends if needed, or rely on defaults
-    "wayland",
-    "tonemapping_luts",
-] }
-bevy_atmosphere = "0.9"
-
-# Extensions
-bevy_enoki = "0.2"
-bevy_mod_outline = "0.8"
-hexx = "0.17"
-
+bevy = { version = "0.14.2", default-features = false, features = ["bevy_winit", "bevy_render", "bevy_pbr", "bevy_sprite", "bevy_core_pipeline", "bevy_asset", "multi-threaded"] }
 mapmap-core = { path = "../mapmap-core" }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-wgpu = { workspace = true }
+bevy_atmosphere = "0.9.1"
+bevy_mod_outline = "0.8.3"
+bevy_enoki = "0.2.2"
+rand = "0.8.5"
+image = "0.25.1"
+parking_lot = "0.12.1"
