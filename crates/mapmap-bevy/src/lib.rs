@@ -116,7 +116,6 @@ impl BevyRunner {
                                 mie_coeff,
                                 mie_directional_g,
                                 sun_position,
-                                ..
                             } => {
                                 let entity =
                                     *mapping.entities.entry(part.id).or_insert_with(|| {
@@ -139,7 +138,6 @@ impl BevyRunner {
                                 rings,
                                 pointy_top,
                                 spacing,
-                                ..
                             } => {
                                 let entity =
                                     *mapping.entities.entry(part.id).or_insert_with(|| {
@@ -160,7 +158,6 @@ impl BevyRunner {
                                 speed,
                                 color_start,
                                 color_end,
-                                ..
                             } => {
                                 let entity =
                                     *mapping.entities.entry(part.id).or_insert_with(|| {

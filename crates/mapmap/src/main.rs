@@ -360,9 +360,6 @@ impl App {
                                         std::time::Duration::from_secs_f64(position),
                                     ));
                                 }
-                                mapmap_ui::MediaPlaybackCommand::SetReverse(reverse) => {
-                                    info!("Setting reverse playback to {} for part_id={} (NOT IMPLEMENTED)", reverse, part_id);
-                                }
                             }
                         }
 

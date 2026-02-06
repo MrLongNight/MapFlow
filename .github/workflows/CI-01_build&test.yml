@@ -1,0 +1,480 @@
+name: "CI-01: Build&Test"
+
+# ═══════════════════════════════════════════════════════════════
+# OPTIMIZED: Path filters + parallel jobs for faster CI
+# ═══════════════════════════════════════════════════════════════
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'scripts/**'
+      - 'deny.toml'
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (faster builds)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      run_windows:
+        description: 'Run Windows build'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  CARGO_TERM_COLOR: always
+  FREETYPE_SYS_USE_PKG_CONFIG: 1
+  RUST_BACKTRACE: 1
+  RUST_TOOLCHAIN: stable
+  # Optimierungen für schnellere Builds
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  # ========================================
+  # PHASE 1: Pre-Checks & Auto-Fixes
+  # ========================================
+
+  pre-checks:
+    name: "Pre-Checks (Auto-Fix)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    - name: Configure Git
+      run: git config --global --add safe.directory "*"
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Installiere ALSA- und systemnahe Bibliotheken
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          build-essential pkg-config clang libclang-dev \
+          yasm nasm \
+          libfontconfig1-dev libfreetype6-dev \
+          libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev \
+          libasound2-dev libavcodec-dev libavformat-dev libavutil-dev \
+          libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+          ffmpeg
+        bash scripts/install-ffmpeg-dev.sh
+
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Install cargo-make & cargo-sort
+      run: |
+        cargo install --locked cargo-make
+        cargo install cargo-sort
+
+    - name: Check Formatting & Sort
+      id: fmt
+      run: |
+        cargo fmt --all -- --check
+        cargo sort --workspace --check
+
+    - name: Auto-fix formatting and linting
+      if: failure() || success()
+      run: |
+        # Apply formatting fixes using pre-commit for consistent rules
+        pip install pre-commit
+        pre-commit run --all-files || true  # Run checks and allow them to modify files
+
+        # Verify changes were made (optional debug)
+        git status
+
+        # Configure Git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Commit and push
+        git add .
+        git commit -m "style: auto-fix formatting (cargo fmt / cargo sort)" || echo "No changes to commit"
+        git push || echo "::warning::Push failed - this is expected for forks or if no changes"
+    - name: Check Clippy (No Fix)
+      run: |
+        cargo clippy --workspace --features "mapmap-io/ci-linux" -- -D warnings
+
+  # ========================================
+  # PHASE 2: Code Quality & Linting
+  # PARALLEL with build-and-test, security
+  # ========================================
+
+  quality:
+    name: "Code Quality (Format & Lint)"
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    steps:
+    - name: Configure Git
+      run: git config --global --add safe.directory "*"
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy, rust-src
+
+    - name: Install system dependencies (Ubuntu)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential pkg-config clang libclang-dev \
+          yasm nasm \
+          libfontconfig1-dev libfreetype6-dev \
+          libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev \
+          libasound2-dev \
+          libavcodec-dev libavformat-dev libavutil-dev \
+          libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
+        bash scripts/install-ffmpeg-dev.sh
+
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: "quality-cache"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - name: Check formatting (Final)
+      run: cargo fmt --all -- --check
+
+    - name: Run Clippy with reviewdog
+      uses: giraffate/clippy-action@v1
+      with:
+        reporter: github-pr-review
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        clippy_flags: --workspace --features "mapmap-io/ci-linux" --all-targets -- -D warnings
+
+    - name: Check for unused dependencies
+      run: |
+        cargo install cargo-udeps --locked
+        cargo +nightly udeps --workspace --features "mapmap-io/ci-linux"
+      continue-on-error: true
+
+    - name: Check dependency tree
+      run: |
+        cargo install cargo-tree
+        cargo tree --workspace --duplicates
+
+    - name: Detect security vulnerabilities (cargo-deny)
+      continue-on-error: true
+      run: |
+        cargo install cargo-deny --locked
+        cargo deny check advisories || echo "::warning::cargo-deny found advisories (may include unmaintained crates)"
+
+    - name: Check license compatibility
+      run: cargo deny check licenses
+      continue-on-error: true
+
+    - name: Check for TODO/FIXME comments
+      run: |
+        cargo install cargo-fixme --locked
+        cargo fixme --workspace
+      continue-on-error: true
+
+  # ========================================
+  # PHASE 3: Build & Test (PARALLEL)
+  # ========================================
+
+  build-and-test:
+    name: "Build & Test (Ubuntu with Audio)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+    - name: Configure Git
+      run: git config --global --add safe.directory "*"
+
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        swap-storage: true
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy, llvm-tools-preview
+
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: "build-cache"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - name: Install FFmpeg and system dependencies (Ubuntu)
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          build-essential pkg-config clang libclang-dev \
+          yasm nasm \
+          libfontconfig1-dev libfreetype6-dev \
+          libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev \
+          libavcodec-dev libavformat-dev libavutil-dev \
+          libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+          ffmpeg libasound2-dev
+        echo "✓ FFmpeg development libraries installed"
+
+    - name: Install NDI SDK
+      run: |
+        wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
+        tar xzf Install_NDI_SDK_v5_Linux.tar.gz
+        yes | sudo ./Install_NDI_SDK_v5_Linux.sh || echo "::warning::NDI SDK installation may require manual acceptance"
+        export NDI_SDK_DIR="$HOME/NDI SDK for Linux"
+        echo "NDI_SDK_DIR=$NDI_SDK_DIR" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$NDI_SDK_DIR/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        ls -la "$NDI_SDK_DIR" 2>/dev/null || echo "::warning::NDI SDK directory not found at $NDI_SDK_DIR"
+
+    - name: Run FFmpeg setup script
+      run: bash scripts/install-ffmpeg-dev.sh
+
+    - name: Prüfe FFmpeg-Dev-Libs und pkg-config
+      run: |
+        failed=0
+        for lib in fontconfig freetype2 alsa libavutil libavcodec libavformat libswscale libavdevice libavfilter libswresample; do
+          if pkg-config --exists $lib; then
+            echo "✓ $lib gefunden"
+          else
+            echo "✗ $lib NICHT gefunden"
+            failed=1
+          fi
+        done
+        if [ $failed -eq 1 ]; then
+          exit 1
+        fi
+
+    - name: Install cargo-nextest (Faster test runner)
+      run: cargo install cargo-nextest --locked
+
+    - name: Build & Test (Release)
+      env:
+        RUST_BACKTRACE: full
+      run: cargo build --release --verbose --features "mapmap-io/ci-linux"
+
+    - name: Run tests with nextest
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      env:
+        RUST_BACKTRACE: full
+      run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
+
+    - name: Run doc tests
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      run: cargo test --release --doc --verbose --features "mapmap-io/ci-linux"
+
+    - name: Generate code coverage (tarpaulin)
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      run: |
+        cargo install cargo-tarpaulin --locked
+        cargo tarpaulin --workspace --features "mapmap-io/ci-linux" --out Xml --output-dir coverage
+      continue-on-error: true
+
+    - name: Upload coverage to Codecov
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      uses: codecov/codecov-action@v3
+      with:
+        files: coverage/cobertura.xml
+      continue-on-error: true
+
+    - name: Generate documentation
+      run: cargo doc --no-deps --features "mapmap-io/ci-linux" --document-private-items
+
+    - name: Check documentation coverage
+      run: |
+        RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --features "mapmap-io/ci-linux"
+      continue-on-error: true
+
+    - name: Upload artifacts (Release binary)
+      uses: actions/upload-artifact@v4
+      with:
+        name: mapflow-ubuntu-audio-release
+        path: target/release/MapFlow
+        if-no-files-found: ignore
+
+  # ========================================
+  # PHASE 4: Windows Build (OPTIONAL)
+  # Only on main branch or explicit request
+  # ========================================
+
+  build-windows:
+    name: "Build (Windows)"
+    runs-on: windows-latest
+    needs: pre-checks
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.event.inputs.run_windows == 'true' ||
+      contains(github.event.pull_request.labels.*.name, 'test-windows')
+    permissions:
+      contents: read
+
+    steps:
+    - name: Configure Git
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: "windows-cache"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - name: Build (Release, Windows - ohne NDI)
+      env:
+        RUST_BACKTRACE: full
+      run: cargo build --release --verbose --no-default-features --features "audio"
+
+    - name: Run tests (Release, ohne NDI)
+      if: ${{ github.event.inputs.skip_tests != 'true' }}
+      env:
+        RUST_BACKTRACE: full
+      run: cargo test --release --workspace --verbose --no-default-features --features audio
+
+    - name: Upload artifacts (Windows binary)
+      uses: actions/upload-artifact@v4
+      with:
+        name: mapflow-windows-release
+        path: target/release/MapFlow.exe
+        if-no-files-found: ignore
+
+  # ========================================
+  # PHASE 5: Security & Supply Chain (PARALLEL)
+  # ========================================
+
+  security:
+    name: "Security Audit"
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    permissions:
+      security-events: write
+      contents: read
+      checks: write
+
+    steps:
+    - name: Configure Git
+      run: git config --global --add safe.directory "*"
+
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Run cargo audit (RustSec)
+      run: |
+        cargo install cargo-audit --locked
+        # Ignore RUSTSEC-2024-0370 (proc-macro-error "unmaintained" - transitive dep from egui_dock)
+        cargo audit --ignore RUSTSEC-2024-0370
+
+    - name: Check supply chain security (cargo-vet)
+      run: |
+        cargo install cargo-vet --locked
+        cargo vet || echo "::warning::cargo-vet check failed"
+      continue-on-error: true
+
+    - name: Dependency review
+      uses: actions/dependency-review-action@v3
+      if: github.event_name == 'pull_request'
+
+  # ========================================
+  # PHASE 6: Performance & Benchmarks
+  # ========================================
+
+  benchmarks:
+    name: "Performance Benchmarks"
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Run benchmarks
+      run: cargo bench --workspace --features "mapmap-io/ci-linux" -- --output-format bencher | tee output.txt
+      continue-on-error: true
+
+    - name: Compare with baseline
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'cargo'
+        output-file-path: output.txt
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: false
+      continue-on-error: true
+
+  # ========================================
+  # PHASE 7: Success Gate
+  # ========================================
+
+  ci-success:
+    name: "CI Success Gate"
+    needs: [quality, build-and-test, build-windows, security]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: read
+
+    steps:
+    - name: Fail if any job failed or was cancelled
+      if: always()
+      run: |
+        # Check results of dependent jobs and fail if any are not "success" (Windows non-blocking)
+        if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.build-and-test.result }}" != "success" ] || [ "${{ needs.security.result }}" != "success" ]; then
+          echo "::error::One or more required jobs failed or were cancelled."
+          echo "quality: ${{ needs.quality.result }}"
+          echo "build-and-test: ${{ needs.build-and-test.result }}"
+          echo "security: ${{ needs.security.result }}"
+          exit 1
+        fi
+        if [ "${{ needs.build-windows.result }}" != "success" ] && [ "${{ needs.build-windows.result }}" != "skipped" ]; then
+          echo "::warning::Windows build did not succeed (result: ${{ needs.build-windows.result }}), but this is not blocking."
+        fi
+        echo "✓ All critical CI checks passed successfully"

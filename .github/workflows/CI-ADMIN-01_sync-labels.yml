@@ -1,0 +1,27 @@
+name: "CI-ADMIN-01: Sync Labels"
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/labels.yml'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  sync-labels:
+    name: "CI-ADMIN-01: Sync Labels"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Sync labels from configuration
+      uses: micnncim/action-label-syncer@v1
+      with:
+        manifest: .github/labels.yml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        prune: false  # Don't delete existing labels not in config
