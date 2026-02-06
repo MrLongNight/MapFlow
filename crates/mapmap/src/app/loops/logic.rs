@@ -5,7 +5,6 @@ use crate::orchestration::outputs::sync_output_windows;
 use anyhow::Result;
 use mapmap_core::module::{ModulePartType, OutputType};
 use mapmap_io::save_project;
-use mapmap_media::PlaybackCommand;
 use std::collections::HashSet;
 use tracing::info;
 
@@ -26,18 +25,14 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         tracing::trace!("Effect updates: {}", param_updates.len());
     }
 
-    // Update Evaluator State
-    let analysis = app.audio_analyzer.get_latest_analysis();
-    app.module_evaluator.update_audio(&analysis);
-    app.module_evaluator.update_keys(&app.ui_state.active_keys);
-
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
         // First sync graph state
-        for module in app.state.module_manager.iter_modules() {
+        for module in app.state.module_manager.list_modules() {
             runner.apply_graph_state(module);
         }
 
+        let analysis = app.audio_analyzer.get_latest_analysis();
         let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
             band_energies: analysis.band_energies,
             rms_volume: analysis.rms_volume,
@@ -51,129 +46,31 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Module Graph Evaluation ---
     // Evaluate ALL modules and merge render_ops for multi-output support
-    app.module_evaluator.clear_render_ops();
-    for module in app.state.module_manager.iter_modules() {
-        let result = app
-            .module_evaluator
-            .evaluate_append(module, &app.state.module_manager.shared_media);
-
-        // Update UI Trigger Visualization (only for active module)
-        if Some(module.id) == app.ui_state.module_canvas.active_module_id {
-            app.ui_state.module_canvas.last_trigger_values = result
-                .trigger_values
-                .iter()
-                .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
-                .collect();
-        }
-
-        // Handle Source Commands
-        for (part_id, cmd) in &result.source_commands {
-            match cmd {
-                mapmap_core::SourceCommand::PlayMedia { trigger_value, .. } => {
-                    let player_key = (module.id, *part_id);
-                    if let Some((_, player)) = app.media_players.get_mut(&player_key) {
-                        if *trigger_value > 0.1 {
-                            let _ = player.command_sender().send(PlaybackCommand::Play);
-                        }
-                    }
-                }
-                mapmap_core::SourceCommand::NdiInput {
-                    source_name: Some(_src_name),
-                    ..
-                } => {
-                    #[cfg(feature = "ndi")]
-                    {
-                        let receiver = app.ndi_receivers.entry(*part_id).or_insert_with(|| {
-                            mapmap_io::ndi::NdiReceiver::new()
-                                .expect("Failed to create NDI receiver")
-                        });
-                        if let Ok(Some(frame)) =
-                            receiver.receive(std::time::Duration::from_millis(0))
-                        {
-                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
-                                let tex_name = format!("part_{}_{}", module.id, part_id);
-                                app.texture_pool.upload_data(
-                                    &app.backend.queue,
-                                    &tex_name,
-                                    data,
-                                    frame.format.width,
-                                    frame.format.height,
-                                );
-                            }
-                        }
-                    }
-                }
-                mapmap_core::SourceCommand::HueOutput {
-                    brightness,
-                    hue,
-                    saturation,
-                    strobe,
-                    ids,
-                } => {
-                    app.hue_controller.update_from_command(
-                        ids.as_deref(),
-                        *brightness,
-                        *hue,
-                        *saturation,
-                        *strobe,
-                    );
-                }
-                _ => {}
-            }
+    app.render_ops.clear();
+    for module in app.state.module_manager.list_modules() {
+        let module_id = module.id;
+        if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
+            let eval_result = app
+                .module_evaluator
+                .evaluate(module_ref, &app.state.module_manager.shared_media);
+            // Push (ModuleId, RenderOp) tuple
+            app.render_ops.extend(
+                eval_result
+                    .render_ops
+                    .iter()
+                    .cloned()
+                    .map(|op| (module_id, op)),
+            );
         }
     }
-
-    // Update Output Assignments for Preview/Window Mapping
-    app.output_assignments.clear();
-    for op in app.module_evaluator.render_ops() {
-        if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
-            if let Some(source_id) = op.source_part_id {
-                let tex_name = format!("part_{}_{}", op.module_id, source_id);
-                app.output_assignments
-                    .entry(*id)
-                    .or_default()
-                    .push(tex_name.clone());
-            }
-        }
-    }
-
-    // Update UI (BPM and Dashboard) using the analysis obtained earlier
-    // (Note: analysis variable from Bevy scope is dropped, so we get it again or hoist it)
-    // Actually, 'analysis' is in 'Bevy Runner Update' block.
-    // If Bevy runner is None, we don't get analysis?
-    // We should hoist analysis fetching outside Bevy block.
-
-    // Update UI state using analysis
-    app.ui_state.current_bpm = analysis.tempo_bpm;
-
-    let legacy_analysis = mapmap_core::audio::AudioAnalysis {
-        timestamp: analysis.timestamp,
-        fft_magnitudes: analysis.fft_magnitudes,
-        band_energies: [
-            analysis.band_energies[0],
-            analysis.band_energies[1],
-            analysis.band_energies[2],
-            analysis.band_energies[3],
-            analysis.band_energies[4],
-            analysis.band_energies[6],
-            analysis.band_energies[8],
-        ],
-        rms_volume: analysis.rms_volume,
-        peak_volume: analysis.peak_volume,
-        beat_detected: analysis.beat_detected,
-        beat_strength: analysis.beat_strength,
-        onset_detected: false,
-        tempo_bpm: analysis.tempo_bpm,
-        waveform: analysis.waveform,
-    };
-    app.ui_state.dashboard.set_audio_analysis(legacy_analysis);
 
     // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
     // NOT render_ops (which can be empty/fluctuate).
     let current_output_ids: HashSet<u64> = app
         .state
         .module_manager
-        .iter_modules()
+        .list_modules()
+        .iter()
         .flat_map(|m| m.parts.iter())
         .filter_map(|part| {
             if let ModulePartType::Output(OutputType::Projector { id, .. }) = &part.part_type {
@@ -198,8 +95,10 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             "Output set changed: {:?} -> {:?}",
             prev_output_ids, current_output_ids
         );
-        // Pass empty render ops as they are unused in sync_output_windows
-        if let Err(e) = sync_output_windows(app, elwt, &[], None) {
+        // Create temp list of ops for sync
+        let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+            app.render_ops.iter().map(|(_, op)| op.clone()).collect();
+        if let Err(e) = sync_output_windows(app, elwt, &ops_only, None) {
             tracing::error!("Failed to sync output windows: {}", e);
         }
     }

@@ -134,7 +134,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             RenderContext {
                 device: &app.backend.device,
                 queue: &app.backend.queue,
-                render_ops: app.module_evaluator.render_ops(),
+                render_ops: &app.render_ops,
                 output_manager: &app.state.output_manager,
                 edge_blend_renderer: &app.edge_blend_renderer,
                 color_calibration_renderer: &app.color_calibration_renderer,
@@ -168,7 +168,10 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 struct RenderContext<'a> {
     device: &'a wgpu::Device,
     queue: &'a wgpu::Queue,
-    render_ops: &'a Vec<mapmap_core::module_eval::RenderOp>,
+    render_ops: &'a Vec<(
+        mapmap_core::module::ModulePartId,
+        mapmap_core::module_eval::RenderOp,
+    )>,
     output_manager: &'a mapmap_core::output::OutputManager,
     edge_blend_renderer: &'a Option<mapmap_render::EdgeBlendRenderer>,
     color_calibration_renderer: &'a Option<mapmap_render::ColorCalibrationRenderer>,
@@ -199,17 +202,17 @@ fn render_content(
     const PREVIEW_FLAG: u64 = 1u64 << 63;
     let real_output_id = output_id & !PREVIEW_FLAG;
 
-    let mut target_ops: Vec<mapmap_core::module_eval::RenderOp> = ctx
+    let mut target_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = ctx
         .render_ops
         .iter()
-        .filter(|op| match &op.output_type {
+        .filter(|(_, op)| match &op.output_type {
             Projector { id, .. } => *id == real_output_id,
             _ => op.output_part_id == real_output_id,
         })
-        .cloned()
+        .map(|(mid, op)| (*mid, op.clone()))
         .collect();
 
-    target_ops.sort_by(|a, b| b.output_part_id.cmp(&a.output_part_id));
+    target_ops.sort_by(|(_, a), (_, b)| b.output_part_id.cmp(&a.output_part_id));
 
     if target_ops.is_empty() && output_id != 0 {
         // Clear pass
@@ -268,9 +271,9 @@ fn render_content(
 
     // Accumulate Layers
     mesh_renderer.begin_frame();
-    for op in target_ops {
+    for (module_id, op) in target_ops {
         let tex_name = if let Some(src_id) = op.source_part_id {
-            format!("part_{}_{}", op.module_id, src_id)
+            format!("part_{}_{}", module_id, src_id)
         } else {
             "".to_string()
         };
@@ -385,7 +388,8 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     let module_output_infos: Vec<(u64, u64, String)> = app
         .state
         .module_manager
-        .iter_modules()
+        .list_modules()
+        .iter()
         .flat_map(|m| m.parts.iter().map(move |p| (m.id, p)))
         .filter_map(|(mid, part)| {
             if let mapmap_core::module::ModulePartType::Output(

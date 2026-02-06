@@ -2899,7 +2899,8 @@ impl ModuleCanvas {
                                 .on_hover_text("Create a new module")
                                 .clicked()
                             {
-                                let new_id = manager.create_module("New Module".to_string());
+                                let new_id = manager
+                                    .create_module(manager.get_next_available_name("New Module"));
                                 self.active_module_id = Some(new_id);
                             }
 
@@ -5933,6 +5934,7 @@ impl ModuleCanvas {
                         (350.0, 100.0),
                         None,
                     ),
+                    #[cfg(target_os = "windows")]
                     (
                         ModulePartType::Output(OutputType::Spout {
                             name: "MapFlow Spout".to_string(),

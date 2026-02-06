@@ -2179,6 +2179,17 @@ impl ModuleManager {
             .map(|module| module.add_part(part_type, position))
     }
 
+    /// Get the next available unique name for a module
+    pub fn get_next_available_name(&self, base_name: &str) -> String {
+        let mut name = base_name.to_string();
+        let mut i = 1;
+        while self.modules.values().any(|m| m.name == name) {
+            name = format!("{} {}", base_name, i);
+            i += 1;
+        }
+        name
+    }
+
     /// Create a new module
     pub fn create_module(&mut self, name: String) -> ModuleId {
         let id = self.next_module_id;
@@ -2226,11 +2237,6 @@ impl ModuleManager {
     /// Get a module by ID (immutable)
     pub fn get_module(&self, id: ModuleId) -> Option<&MapFlowModule> {
         self.modules.get(&id)
-    }
-
-    /// Iterate over modules without allocation
-    pub fn iter_modules(&self) -> std::collections::hash_map::Values<'_, ModuleId, MapFlowModule> {
-        self.modules.values()
     }
 
     /// Get all modules as a slice-like iterator
