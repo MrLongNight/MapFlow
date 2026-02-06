@@ -31,6 +31,10 @@ allow = [
     "MPL-2.0",
     "CDLA-Permissive-2.0",
     "Unicode-3.0",
+    "BSL-1.0",
+    "MIT-0",
+    "WTFPL",
+    "OFL-1.1",
 ]
 
 [bans]
