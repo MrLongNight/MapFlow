@@ -43,7 +43,8 @@ where
         wgpu::util::TextureDataOrder::LayerMajor,
         &input_data,
     );
-    let input_view = std::sync::Arc::new(input_texture.create_view(&wgpu::TextureViewDescriptor::default()));
+    let input_view =
+        std::sync::Arc::new(input_texture.create_view(&wgpu::TextureViewDescriptor::default()));
 
     // Create output texture
     let output_texture = device.create_texture(&TextureDescriptor {

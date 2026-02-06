@@ -456,10 +456,7 @@ impl EffectChainRenderer {
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources
-    pub fn get_uniform_bind_group_cached(
-        &mut self,
-        params: &EffectParams,
-    ) -> Arc<wgpu::BindGroup> {
+    pub fn get_uniform_bind_group_cached(&mut self, params: &EffectParams) -> Arc<wgpu::BindGroup> {
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
             let buffer = self
@@ -487,11 +484,8 @@ impl EffectChainRenderer {
 
         // Update current buffer
         let cache_entry = &self.uniform_cache[self.current_cache_index];
-        self.queue.write_buffer(
-            &cache_entry.buffer,
-            0,
-            bytemuck::cast_slice(&[*params]),
-        );
+        self.queue
+            .write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[*params]));
 
         let bind_group = self.uniform_cache[self.current_cache_index]
             .bind_group
