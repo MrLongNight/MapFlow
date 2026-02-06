@@ -478,28 +478,28 @@ impl App {
         let actions = self.ui_state.take_actions();
         for action in actions {
             // Undo/Redo Logic: Snapshot state before mutating actions
-            let is_mutating = match &action {
+            let is_mutating = !matches!(
+                &action,
                 mapmap_ui::UIAction::Undo
-                | mapmap_ui::UIAction::Redo
-                | mapmap_ui::UIAction::Play
-                | mapmap_ui::UIAction::Pause
-                | mapmap_ui::UIAction::Stop
-                | mapmap_ui::UIAction::LoadProject(_)
-                | mapmap_ui::UIAction::LoadRecentProject(_)
-                | mapmap_ui::UIAction::SaveProject(_)
-                | mapmap_ui::UIAction::SaveProjectAs
-                | mapmap_ui::UIAction::Exit
-                | mapmap_ui::UIAction::OpenSettings
-                | mapmap_ui::UIAction::SetGlobalFullscreen(_)
-                | mapmap_ui::UIAction::ToggleFullscreen
-                | mapmap_ui::UIAction::ToggleModuleCanvas
-                | mapmap_ui::UIAction::ToggleControllerOverlay
-                | mapmap_ui::UIAction::MediaCommand(_, _)
-                | mapmap_ui::UIAction::PickMediaFile(_, _, _)
-                | mapmap_ui::UIAction::DiscoverHueBridges
-                | mapmap_ui::UIAction::FetchHueGroups => false,
-                _ => true,
-            };
+                    | mapmap_ui::UIAction::Redo
+                    | mapmap_ui::UIAction::Play
+                    | mapmap_ui::UIAction::Pause
+                    | mapmap_ui::UIAction::Stop
+                    | mapmap_ui::UIAction::LoadProject(_)
+                    | mapmap_ui::UIAction::LoadRecentProject(_)
+                    | mapmap_ui::UIAction::SaveProject(_)
+                    | mapmap_ui::UIAction::SaveProjectAs
+                    | mapmap_ui::UIAction::Exit
+                    | mapmap_ui::UIAction::OpenSettings
+                    | mapmap_ui::UIAction::SetGlobalFullscreen(_)
+                    | mapmap_ui::UIAction::ToggleFullscreen
+                    | mapmap_ui::UIAction::ToggleModuleCanvas
+                    | mapmap_ui::UIAction::ToggleControllerOverlay
+                    | mapmap_ui::UIAction::MediaCommand(_, _)
+                    | mapmap_ui::UIAction::PickMediaFile(_, _, _)
+                    | mapmap_ui::UIAction::DiscoverHueBridges
+                    | mapmap_ui::UIAction::FetchHueGroups
+            );
 
             if is_mutating {
                 self.history.push(self.state.clone());
