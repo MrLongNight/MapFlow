@@ -2204,6 +2204,11 @@ impl ModuleManager {
         self.modules.values().collect()
     }
 
+    /// Iterate all modules without allocation
+    pub fn iter_modules(&self) -> std::collections::hash_map::Values<'_, ModuleId, MapFlowModule> {
+        self.modules.values()
+    }
+
     /// Set module color
     pub fn set_module_color(&mut self, id: ModuleId, color: [f32; 4]) {
         if let Some(module) = self.modules.get_mut(&id) {

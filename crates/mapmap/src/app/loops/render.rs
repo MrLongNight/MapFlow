@@ -200,14 +200,14 @@ fn render_content(
     const PREVIEW_FLAG: u64 = 1u64 << 63;
     let real_output_id = output_id & !PREVIEW_FLAG;
 
-    let mut target_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = ctx
+    let mut target_ops: Vec<(u64, &mapmap_core::module_eval::RenderOp)> = ctx
         .render_ops
         .iter()
         .filter(|(_, op)| match &op.output_type {
             Projector { id, .. } => *id == real_output_id,
             _ => op.output_part_id == real_output_id,
         })
-        .map(|(mid, op)| (*mid, op.clone()))
+        .map(|(mid, op)| (*mid, op))
         .collect();
 
     target_ops.sort_by(|(_, a), (_, b)| b.output_part_id.cmp(&a.output_part_id));
@@ -367,8 +367,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     let module_output_infos: Vec<(u64, u64, String)> = app
         .state
         .module_manager
-        .list_modules()
-        .iter()
+        .iter_modules()
         .flat_map(|m| m.parts.iter().map(move |p| (m.id, p)))
         .filter_map(|(mid, part)| {
             if let mapmap_core::module::ModulePartType::Output(
