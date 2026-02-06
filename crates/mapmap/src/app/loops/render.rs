@@ -182,8 +182,8 @@ fn render_content(
     }
 
     let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
-    let use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();     
-    let use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
+    let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();     
+    let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
 
     let mesh_target_view_ref = view;
 
