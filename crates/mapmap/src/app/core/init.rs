@@ -507,7 +507,6 @@ impl App {
                     .join("MapFlow")
                     .join("recent_effect_configs.json"),
             ),
-            render_ops: Vec::new(),
             edge_blend_renderer,
             color_calibration_renderer,
             output_temp_textures: std::collections::HashMap::new(),
