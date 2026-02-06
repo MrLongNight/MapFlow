@@ -522,8 +522,12 @@ impl ModuleCanvas {
                 // we mark it for deletion. This handles the deduplication automatically because we visit each connection once.
 
                 for conn in &module.connections {
-                    if parts_to_delete.contains(&conn.from_part) || parts_to_delete.contains(&conn.to_part) {
-                        actions.push(CanvasAction::DeleteConnection { connection: conn.clone() });
+                    if parts_to_delete.contains(&conn.from_part)
+                        || parts_to_delete.contains(&conn.to_part)
+                    {
+                        actions.push(CanvasAction::DeleteConnection {
+                            connection: conn.clone(),
+                        });
                     }
                 }
 
@@ -3229,7 +3233,6 @@ impl ModuleCanvas {
         if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::A)) {
             self.selected_parts = module.parts.iter().map(|p| p.id).collect();
         }
-
 
         // Escape: Deselect all or close search
         if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
