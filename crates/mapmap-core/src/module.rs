@@ -2243,11 +2243,8 @@ impl ModuleManager {
         let mut name = base_name.to_string();
         let mut counter = 1;
 
-        let existing_names: std::collections::HashSet<String> = self
-            .modules
-            .values()
-            .map(|m| m.name.clone())
-            .collect();
+        let existing_names: std::collections::HashSet<String> =
+            self.modules.values().map(|m| m.name.clone()).collect();
 
         while existing_names.contains(&name) {
             name = format!("{} {}", base_name, counter);
