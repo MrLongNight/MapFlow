@@ -224,6 +224,13 @@ impl App {
 
                 // --- CRITICAL: Render all windows DIRECTLY (not via event queue) ---
                 // This ensures output windows update immediately, not after event dispatch
+
+                // Reset renderers at start of frame to reuse resources
+                self.mesh_renderer.begin_frame();
+                self.effect_chain_renderer.begin_frame();
+                self.preview_effect_chain_renderer.begin_frame();
+                self._compositor.begin_frame();
+
                 let output_ids: Vec<u64> =
                     self.window_manager.iter().map(|wc| wc.output_id).collect();
                 for output_id in output_ids {

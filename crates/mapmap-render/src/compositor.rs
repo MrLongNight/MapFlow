@@ -6,7 +6,8 @@
 use crate::Result;
 use bytemuck::{Pod, Zeroable};
 use mapmap_core::BlendMode;
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Weak};
 use tracing::info;
 use wgpu::util::DeviceExt;
 
@@ -35,6 +36,14 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
+    texture_bind_group_cache: HashMap<
+        (usize, usize),
+        (
+            Weak<wgpu::TextureView>,
+            Weak<wgpu::TextureView>,
+            Arc<wgpu::BindGroup>,
+        ),
+    >,
 }
 
 impl Compositor {
@@ -180,10 +189,75 @@ impl Compositor {
             device,
             uniform_cache: Vec::new(),
             current_cache_index: 0,
+            texture_bind_group_cache: HashMap::new(),
         })
     }
 
-    /// Create a bind group for compositing two textures
+    /// Reset cache index at start of frame
+    pub fn begin_frame(&mut self) {
+        self.current_cache_index = 0;
+
+        // Prune dead texture bind groups
+        self.texture_bind_group_cache
+            .retain(|_, (w1, w2, _)| w1.strong_count() > 0 && w2.strong_count() > 0);
+    }
+
+    /// Get a cached bind group or create a new one
+    pub fn get_bind_group_cached(
+        &mut self,
+        base_view: &Arc<wgpu::TextureView>,
+        blend_view: &Arc<wgpu::TextureView>,
+    ) -> Arc<wgpu::BindGroup> {
+        let key = (
+            Arc::as_ptr(base_view) as usize,
+            Arc::as_ptr(blend_view) as usize,
+        );
+
+        if let Some((weak1, weak2, bind_group)) = self.texture_bind_group_cache.get(&key) {
+            if let (Some(u1), Some(u2)) = (weak1.upgrade(), weak2.upgrade()) {
+                if Arc::ptr_eq(&u1, base_view) && Arc::ptr_eq(&u2, blend_view) {
+                    return bind_group.clone();
+                }
+            }
+        }
+
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Compositor Bind Group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(base_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(blend_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+
+        let bg = Arc::new(bind_group);
+        self.texture_bind_group_cache.insert(
+            key,
+            (
+                Arc::downgrade(base_view),
+                Arc::downgrade(blend_view),
+                bg.clone(),
+            ),
+        );
+
+        bg
+    }
+
+    /// Create a bind group for compositing two textures (Legacy)
     pub fn create_bind_group(
         &self,
         base_view: &wgpu::TextureView,
@@ -227,11 +301,6 @@ impl Compositor {
                 contents: bytemuck::cast_slice(&[params]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             })
-    }
-
-    /// Reset cache index at start of frame
-    pub fn begin_frame(&mut self) {
-        self.current_cache_index = 0;
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources

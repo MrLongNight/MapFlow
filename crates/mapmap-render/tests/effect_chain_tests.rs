@@ -256,7 +256,7 @@ async fn test_empty_chain_is_passthrough() {
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
         let source = create_solid_color_texture(&device, &queue, width, height, color);
-        let source_view = source.create_view(&Default::default());
+        let source_view = Arc::new(source.create_view(&Default::default()));
 
         let output = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Output"),
@@ -312,7 +312,7 @@ async fn test_blur_plus_coloradjust_chain() {
 
         // Create a texture that is blue, to check color adjust
         let source = create_solid_color_texture(&device, &queue, width, height, color);
-        let source_view = source.create_view(&Default::default());
+        let source_view = Arc::new(source.create_view(&Default::default()));
 
         let output = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Output"),
@@ -399,7 +399,7 @@ async fn test_vignette_plus_filmgrain_chain() {
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
         let source = create_solid_color_texture(&device, &queue, width, height, color);
-        let source_view = source.create_view(&Default::default());
+        let source_view = Arc::new(source.create_view(&Default::default()));
 
         let output = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Output"),

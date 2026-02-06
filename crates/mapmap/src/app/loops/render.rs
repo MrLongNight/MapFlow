@@ -17,7 +17,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     });
 
     // ⚡ Bolt Optimization: Batch render passes.
-    app.mesh_renderer.begin_frame();
+    // app.mesh_renderer.begin_frame(); // Moved to main.rs to support multi-window caching
 
     if output_id == 0 {
         // Sync Texture Previews

@@ -16,7 +16,7 @@ async fn run_test_with_texture<F>(
     test_fn: F,
 ) -> Vec<u8>
 where
-    F: FnOnce(&mut EffectChainRenderer, &wgpu::TextureView, &wgpu::TextureView),
+    F: FnOnce(&mut EffectChainRenderer, &std::sync::Arc<wgpu::TextureView>, &wgpu::TextureView),
 {
     let backend = WgpuBackend::new(None).await.unwrap();
     let device = &backend.device;
@@ -43,7 +43,7 @@ where
         wgpu::util::TextureDataOrder::LayerMajor,
         &input_data,
     );
-    let input_view = input_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let input_view = std::sync::Arc::new(input_texture.create_view(&wgpu::TextureViewDescriptor::default()));
 
     // Create output texture
     let output_texture = device.create_texture(&TextureDescriptor {
