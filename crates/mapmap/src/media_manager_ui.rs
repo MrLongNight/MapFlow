@@ -1,5 +1,6 @@
 use egui::{Color32, Id, Sense, Ui, Vec2};
 use mapmap_core::media_library::{MediaItem, MediaLibrary, MediaType};
+use mapmap_ui::responsive::ResponsiveLayout;
 
 pub struct MediaManagerUI {
     pub visible: bool, // Toggle visibility
@@ -39,17 +40,26 @@ impl MediaManagerUI {
             return;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(800.0, 600.0);
+
         let mut visible = self.visible;
         egui::Window::new("Media Manager")
             .open(&mut visible)
             .resizable(true)
-            .default_size([800.0, 600.0])
+            .default_size(window_size)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
+                if layout.is_compact() {
                     self.render_sidebar(ui, library);
                     ui.separator();
                     self.render_main_content(ui, library);
-                });
+                } else {
+                    ui.horizontal(|ui| {
+                        self.render_sidebar(ui, library);
+                        ui.separator();
+                        self.render_main_content(ui, library);
+                    });
+                }
             });
         self.visible = visible;
     }

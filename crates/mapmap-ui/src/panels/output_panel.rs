@@ -1,4 +1,4 @@
-use crate::{i18n::LocaleManager, UIAction};
+use crate::{i18n::LocaleManager, responsive::ResponsiveLayout, UIAction};
 
 /// Represents the UI panel for configuring render outputs.
 pub struct OutputPanel {
@@ -38,8 +38,12 @@ impl OutputPanel {
             return;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(420.0, 500.0);
+
         egui::Window::new(i18n.t("panel-outputs"))
-            .default_size([420.0, 500.0])
+            .default_size(window_size)
+            .scroll([false, true])
             .show(ctx, |ui| {
                 ui.heading(i18n.t("header-multi-output"));
                 ui.separator();
@@ -59,15 +63,17 @@ impl OutputPanel {
                     output_manager.outputs().len()
                 ));
 
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    let outputs = output_manager.outputs().to_vec();
-                    for output in outputs {
-                        let is_selected = self.selected_output_id == Some(output.id);
-                        if ui.selectable_label(is_selected, &output.name).clicked() {
-                            self.selected_output_id = Some(output.id);
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        let outputs = output_manager.outputs().to_vec();
+                        for output in outputs {
+                            let is_selected = self.selected_output_id == Some(output.id);
+                            if ui.selectable_label(is_selected, &output.name).clicked() {
+                                self.selected_output_id = Some(output.id);
+                            }
                         }
-                    }
-                });
+                    });
 
                 ui.separator();
 

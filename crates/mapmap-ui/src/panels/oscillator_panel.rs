@@ -1,6 +1,7 @@
 //! Egui-based Oscillator Control Panel
 
 use crate::i18n::LocaleManager;
+use crate::responsive::ResponsiveLayout;
 use egui::{ComboBox, DragValue, Ui, Window};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
@@ -33,10 +34,14 @@ impl OscillatorPanel {
             return false;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(400.0, 500.0);
+
         Window::new(locale.t("oscillator-panel-title"))
             .open(&mut is_open)
             .resizable(true)
-            .default_width(280.0)
+            .default_size(window_size)
+            .scroll([false, true])
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     changed |= ui

@@ -4,6 +4,7 @@
 
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
+use crate::responsive::ResponsiveLayout;
 
 /// Panel to display all available icons
 pub struct IconDemoPanel {
@@ -39,10 +40,14 @@ impl IconDemoPanel {
             return;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(800.0, 600.0);
+
         egui::Window::new("🎨 Icon Gallery - Ultimate Colors")
-            .default_size([500.0, 400.0])
+            .default_size(window_size)
             .resizable(true)
             .open(&mut self.visible)
+            .scroll([false, true])
             .show(ctx, |ui| {
                 ui.heading("Ultimate Colors - Free Icons");
                 ui.separator();
@@ -59,7 +64,12 @@ impl IconDemoPanel {
                     // Display icons in a grid
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         let available_width = ui.available_width();
-                        let cols = ((available_width - 20.0) / (self.icon_size + 80.0))
+                        let icon_size = if layout.is_compact() {
+                            32.0
+                        } else {
+                            self.icon_size
+                        };
+                        let cols = ((available_width - 20.0) / (icon_size + 80.0))
                             .floor()
                             .max(1.0) as usize;
 
@@ -68,7 +78,7 @@ impl IconDemoPanel {
                             .show(ui, |ui| {
                                 for (i, icon) in AppIcon::all().iter().enumerate() {
                                     ui.vertical(|ui| {
-                                        ui.set_width(self.icon_size + 60.0);
+                                        ui.set_width(icon_size + 60.0);
 
                                         // Icon background
                                         egui::Frame::NONE
@@ -78,7 +88,7 @@ impl IconDemoPanel {
                                             .show(ui, |ui| {
                                                 ui.centered_and_justified(|ui| {
                                                     if let Some(img) =
-                                                        icon_manager.image(*icon, self.icon_size)
+                                                        icon_manager.image(*icon, icon_size)
                                                     {
                                                         ui.add(img);
                                                     } else {
