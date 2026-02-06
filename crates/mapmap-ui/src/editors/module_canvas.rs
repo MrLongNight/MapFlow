@@ -3727,9 +3727,7 @@ impl ModuleCanvas {
         }
 
         // Draw context menu for adding nodes (canvas level)
-        if self.context_menu_part.is_none()
-            && self.context_menu_connection.is_none()
-        {
+        if self.context_menu_part.is_none() && self.context_menu_connection.is_none() {
             if let Some(pos) = self.context_menu_pos {
                 let menu_width = 180.0;
                 let menu_height = 250.0; // Estimate or let it be dynamic
