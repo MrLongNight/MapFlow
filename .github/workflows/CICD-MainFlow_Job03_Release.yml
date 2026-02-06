@@ -1,0 +1,22 @@
+name: "CICD-MainFlow: Job03 Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        run: |
+          echo "Creating Release ${{ inputs.version }}"
+          # gh release create ${{ inputs.version }} --generate-notes
