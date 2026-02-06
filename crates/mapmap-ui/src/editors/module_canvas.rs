@@ -3764,8 +3764,7 @@ impl ModuleCanvas {
 
                 // Close menu on click outside
                 if ui.input(|i| i.pointer.any_click())
-                    && !menu_rect
-                        .contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+                    && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
                 {
                     self.context_menu_pos = None;
                 }
