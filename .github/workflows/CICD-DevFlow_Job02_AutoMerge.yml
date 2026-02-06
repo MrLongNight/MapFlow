@@ -1,0 +1,124 @@
+name: "CICD-DevFlow: Job02 Auto-Merge"
+
+on:
+  pull_request:
+    types: [labeled] # Trigger when labels added
+  check_suite:
+    types: [completed] # Trigger when checks finish
+  workflow_run:
+    workflows: ["CICD-DevFlow: Job01 Validation"]
+    types: [completed] # Trigger when Validation workflow finishes
+
+env:
+  # Master Switch
+  AUTO_MERGE_ENABLED: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+
+jobs:
+  auto-merge:
+    name: Auto-Merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request != null || github.event.workflow_run != null || github.event.check_suite != null
+    steps:
+      - name: Auto-Merge Logic
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (process.env.AUTO_MERGE_ENABLED !== 'true') return;
+
+            // 1. Identify PR
+            let prNumber = context.payload.pull_request?.number;
+
+            // If triggered by workflow_run, find PR associated with commit
+            if (!prNumber && context.payload.workflow_run) {
+              const prs = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`
+              });
+              if (prs.data.length > 0) prNumber = prs.data[0].number;
+            }
+
+            // If triggered by check_suite
+            if (!prNumber && context.payload.check_suite) {
+               const prs = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open'
+              });
+              // Filter by SHA
+              const match = prs.data.find(p => p.head.sha === context.payload.check_suite.head_sha);
+              if (match) prNumber = match.number;
+            }
+
+            if (!prNumber) {
+              console.log("No PR found for this event.");
+              return;
+            }
+
+            console.log(`Checking PR #${prNumber} for Auto-Merge eligibility...`);
+
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            // 2. Check Conditions
+            // Condition A: Mergeable
+            if (pr.data.mergeable === false) {
+              console.log("❌ PR is not mergeable (conflicts).");
+              return;
+            }
+            if (pr.data.mergeable_state === 'dirty') {
+               console.log("❌ PR mergeable_state is dirty.");
+               return;
+            }
+
+            // Condition B: All Checks Passed
+            // We specifically check the result of our Validation Workflow if accessible, or all check suites.
+            const suites = await github.rest.checks.listSuitesForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.data.head.sha
+            });
+
+            const failed = suites.data.check_suites.some(s => s.conclusion === 'failure' || s.conclusion === 'timed_out');
+            const pending = suites.data.check_suites.some(s => s.status === 'in_progress' || s.status === 'queued');
+
+            if (failed) {
+              console.log("❌ Some check suites failed.");
+              return;
+            }
+            if (pending) {
+               console.log("⏳ Checks still pending.");
+               return;
+            }
+
+            // Condition C (Optional): Label or Author check?
+            // "wenn es keine Fehler gibt sollen die PRs automatisch gemerged werden" -> Implies ALL passing PRs.
+            // Safety: Ensure it is NOT a draft.
+            if (pr.data.draft) {
+               console.log("❌ PR is a draft.");
+               return;
+            }
+
+            // 3. EXECUTE MERGE
+            console.log("✅ All checks passed. Merging...");
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash'
+              });
+              console.log("🎉 Merged successfully.");
+            } catch (e) {
+              console.log(`❌ Merge failed: ${e.message}`);
+            }
