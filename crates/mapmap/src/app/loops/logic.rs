@@ -21,7 +21,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     update_media_players(app, dt);
 
     // --- Effect Animator Update ---
-    let param_updates = app.state.effect_animator.update(dt as f64);
+    let param_updates = app.state.effect_animator_mut().update(dt as f64);
     if !param_updates.is_empty() {
         tracing::trace!("Effect updates: {}", param_updates.len());
     }

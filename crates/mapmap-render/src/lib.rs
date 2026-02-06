@@ -23,6 +23,7 @@ mod mesh_buffer_cache;
 pub mod mesh_renderer;
 pub mod oscillator_renderer;
 pub mod paint_texture_cache;
+pub mod pipeline;
 pub mod preset;
 pub mod quad;
 pub mod shader;

@@ -37,14 +37,14 @@ pub fn show(ctx: &Context, context: TimelineContext) {
             if let Some(action) = context
                 .ui_state
                 .timeline_panel
-                .ui(ui, &mut context.state.effect_animator)
+                .ui(ui, context.state.effect_animator_mut())
             {
                 use mapmap_ui::timeline_v2::TimelineAction;
                 match action {
-                    TimelineAction::Play => context.state.effect_animator.play(),
-                    TimelineAction::Pause => context.state.effect_animator.pause(),
-                    TimelineAction::Stop => context.state.effect_animator.stop(),
-                    TimelineAction::Seek(t) => context.state.effect_animator.seek(t as f64),
+                    TimelineAction::Play => context.state.effect_animator_mut().play(),
+                    TimelineAction::Pause => context.state.effect_animator_mut().pause(),
+                    TimelineAction::Stop => context.state.effect_animator_mut().stop(),
+                    TimelineAction::Seek(t) => context.state.effect_animator_mut().seek(t as f64),
                 }
             }
         });

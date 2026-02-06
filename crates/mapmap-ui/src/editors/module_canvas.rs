@@ -321,6 +321,7 @@ pub enum CanvasAction {
     DeleteConnection {
         connection: mapmap_core::module::ModuleConnection,
     },
+    Batch(Vec<CanvasAction>),
 }
 
 impl Default for ModuleCanvas {
@@ -1631,7 +1632,7 @@ impl ModuleCanvas {
                                         };
 
                                         match layer {
-                                            LayerType::Single { id, name, opacity, blend_mode, mesh } => {
+                                            LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_mode } => {
                                                 ui.label("🔲 Single Layer");
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
@@ -1646,12 +1647,15 @@ impl ModuleCanvas {
                                                     if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Multiply)), "Multiply").clicked() { *blend_mode = Some(BlendModeType::Multiply); }
                                                 });
 
+                                                ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
+
                                                 render_mesh_ui(ui, mesh, *id);
                                             }
-                                            LayerType::Group { name, opacity, mesh, .. } => {
+                                            LayerType::Group { name, opacity, mesh, mapping_mode, .. } => {
                                                 ui.label("📂 Group");
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+                                                ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
                                                 render_mesh_ui(ui, mesh, 9999); // Dummy ID
                                             }
                                             LayerType::All { opacity, .. } => {
@@ -2648,6 +2652,137 @@ impl ModuleCanvas {
         });
     }
 
+    fn apply_undo_action(module: &mut MapFlowModule, action: &CanvasAction) {
+        match action {
+            CanvasAction::AddPart { part_id, .. } => {
+                // Undo add = delete
+                module.parts.retain(|p| p.id != *part_id);
+            }
+            CanvasAction::DeletePart { part_data } => {
+                // Undo delete = restore
+                module.parts.push(part_data.clone());
+            }
+            CanvasAction::MovePart {
+                part_id, old_pos, ..
+            } => {
+                // Undo move = restore old position
+                if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                    part.position = *old_pos;
+                }
+            }
+            CanvasAction::AddConnection { connection } => {
+                // Undo add connection = delete
+                module.connections.retain(|c| {
+                    !(c.from_part == connection.from_part
+                        && c.to_part == connection.to_part
+                        && c.from_socket == connection.from_socket
+                        && c.to_socket == connection.to_socket)
+                });
+            }
+            CanvasAction::DeleteConnection { connection } => {
+                // Undo delete connection = restore
+                module.connections.push(connection.clone());
+            }
+            CanvasAction::Batch(actions) => {
+                for action in actions.iter().rev() {
+                    Self::apply_undo_action(module, action);
+                }
+            }
+        }
+    }
+
+    fn apply_redo_action(module: &mut MapFlowModule, action: &CanvasAction) {
+        match action {
+            CanvasAction::AddPart { part_data, .. } => {
+                // Redo add = add again
+                module.parts.push(part_data.clone());
+            }
+            CanvasAction::DeletePart { part_data } => {
+                // Redo delete = delete again
+                module.parts.retain(|p| p.id != part_data.id);
+            }
+            CanvasAction::MovePart {
+                part_id, new_pos, ..
+            } => {
+                // Redo move = apply new position
+                if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                    part.position = *new_pos;
+                }
+            }
+            CanvasAction::AddConnection { connection } => {
+                // Redo add connection = add again
+                module.connections.push(connection.clone());
+            }
+            CanvasAction::DeleteConnection { connection } => {
+                // Redo delete connection = delete again
+                module.connections.retain(|c| {
+                    !(c.from_part == connection.from_part
+                        && c.to_part == connection.to_part
+                        && c.from_socket == connection.from_socket
+                        && c.to_socket == connection.to_socket)
+                });
+            }
+            CanvasAction::Batch(actions) => {
+                for action in actions.iter() {
+                    Self::apply_redo_action(module, action);
+                }
+            }
+        }
+    }
+
+    fn safe_delete_selection(&mut self, module: &mut MapFlowModule) {
+        if self.selected_parts.is_empty() {
+            return;
+        }
+
+        let mut actions = Vec::new();
+
+        // 1. Identify all parts to delete
+        let parts_to_delete: Vec<ModulePartId> = self.selected_parts.clone();
+
+        // 2. Identify all connections to delete (connected to any selected part)
+        // We need to capture the connection data for undo
+        let mut connections_to_delete = Vec::new();
+
+        for conn in module.connections.iter() {
+            if parts_to_delete.contains(&conn.from_part) || parts_to_delete.contains(&conn.to_part)
+            {
+                connections_to_delete.push(conn.clone());
+            }
+        }
+
+        // Add DeleteConnection actions
+        for conn in connections_to_delete {
+            actions.push(CanvasAction::DeleteConnection { connection: conn });
+        }
+
+        // 3. Capture part data for undo
+        for part_id in &parts_to_delete {
+            if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                actions.push(CanvasAction::DeletePart {
+                    part_data: part.clone(),
+                });
+            }
+        }
+
+        // 4. Create Batch Action
+        let batch_action = CanvasAction::Batch(actions);
+
+        // 5. Execute Deletions (Modify Module)
+        // Remove connections first
+        module.connections.retain(|c| {
+            !parts_to_delete.contains(&c.from_part) && !parts_to_delete.contains(&c.to_part)
+        });
+
+        // Remove parts
+        module.parts.retain(|p| !parts_to_delete.contains(&p.id));
+
+        // 6. Update Stacks
+        self.undo_stack.push(batch_action);
+        self.redo_stack.clear();
+        self.selected_parts.clear();
+    }
+
     pub fn show(
         &mut self,
         ui: &mut Ui,
@@ -2951,6 +3086,66 @@ impl ModuleCanvas {
         }
         let shift_held = ui.input(|i| i.modifiers.shift);
 
+        // Keyboard Navigation (Arrow Keys)
+        if !ui.memory(|m| m.focused().is_some()) && !self.show_search {
+            let mut direction = Vec2::ZERO;
+            if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
+                direction = Vec2::new(0.0, -1.0);
+            } else if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
+                direction = Vec2::new(0.0, 1.0);
+            } else if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                direction = Vec2::new(-1.0, 0.0);
+            } else if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                direction = Vec2::new(1.0, 0.0);
+            }
+
+            if direction != Vec2::ZERO {
+                if let Some(current_id) = self.get_selected_part_id() {
+                    if let Some(current_part) = module.parts.iter().find(|p| p.id == current_id) {
+                        let current_pos =
+                            Vec2::new(current_part.position.0, current_part.position.1);
+                        let mut best_candidate = None;
+                        let mut best_score = f32::MAX;
+
+                        for part in &module.parts {
+                            if part.id == current_id {
+                                continue;
+                            }
+
+                            let part_pos = Vec2::new(part.position.0, part.position.1);
+                            let delta = part_pos - current_pos;
+                            let distance = delta.length();
+
+                            if distance < 1.0 {
+                                continue;
+                            }
+
+                            let dir_to_part = delta.normalized();
+                            let alignment = direction.dot(dir_to_part);
+
+                            // Directional cone check
+                            if alignment > 0.5 {
+                                // Score prefers closer distance and better alignment
+                                let score = distance * (2.0 - alignment);
+                                if score < best_score {
+                                    best_score = score;
+                                    best_candidate = Some(part.id);
+                                }
+                            }
+                        }
+
+                        if let Some(target_id) = best_candidate {
+                            self.selected_parts.clear();
+                            self.selected_parts.push(target_id);
+                        }
+                    }
+                } else if !module.parts.is_empty() {
+                    // Select first part if nothing selected
+                    self.selected_parts.push(module.parts[0].id);
+                }
+            }
+        }
+
         // Ctrl+C: Copy selected parts
         if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::C)) && !self.selected_parts.is_empty()
         {
@@ -3001,14 +3196,12 @@ impl ModuleCanvas {
         }
 
         // Delete: Delete selected parts
-        if ui.input(|i| i.key_pressed(egui::Key::Delete)) && !self.selected_parts.is_empty() {
-            for &part_id in &self.selected_parts {
-                module
-                    .connections
-                    .retain(|c| c.from_part != part_id && c.to_part != part_id);
-                module.parts.retain(|p| p.id != part_id);
-            }
-            self.selected_parts.clear();
+        if !ui.memory(|m| m.focused().is_some())
+            && (ui.input(|i| i.key_pressed(egui::Key::Delete))
+                || ui.input(|i| i.key_pressed(egui::Key::Backspace)))
+            && !self.selected_parts.is_empty()
+        {
+            self.safe_delete_selection(module);
         }
 
         // Escape: Deselect all or close search
@@ -3031,37 +3224,7 @@ impl ModuleCanvas {
         // Ctrl+Z: Undo
         if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Z)) && !self.undo_stack.is_empty() {
             if let Some(action) = self.undo_stack.pop() {
-                match &action {
-                    CanvasAction::AddPart { part_id, .. } => {
-                        // Undo add = delete
-                        module.parts.retain(|p| p.id != *part_id);
-                    }
-                    CanvasAction::DeletePart { part_data } => {
-                        // Undo delete = restore
-                        module.parts.push(part_data.clone());
-                    }
-                    CanvasAction::MovePart {
-                        part_id, old_pos, ..
-                    } => {
-                        // Undo move = restore old position
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
-                            part.position = *old_pos;
-                        }
-                    }
-                    CanvasAction::AddConnection { connection } => {
-                        // Undo add connection = delete
-                        module.connections.retain(|c| {
-                            !(c.from_part == connection.from_part
-                                && c.to_part == connection.to_part
-                                && c.from_socket == connection.from_socket
-                                && c.to_socket == connection.to_socket)
-                        });
-                    }
-                    CanvasAction::DeleteConnection { connection } => {
-                        // Undo delete connection = restore
-                        module.connections.push(connection.clone());
-                    }
-                }
+                Self::apply_undo_action(module, &action);
                 self.redo_stack.push(action);
             }
         }
@@ -3069,37 +3232,7 @@ impl ModuleCanvas {
         // Ctrl+Y: Redo
         if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Y)) && !self.redo_stack.is_empty() {
             if let Some(action) = self.redo_stack.pop() {
-                match &action {
-                    CanvasAction::AddPart { part_data, .. } => {
-                        // Redo add = add again
-                        module.parts.push(part_data.clone());
-                    }
-                    CanvasAction::DeletePart { part_data } => {
-                        // Redo delete = delete again
-                        module.parts.retain(|p| p.id != part_data.id);
-                    }
-                    CanvasAction::MovePart {
-                        part_id, new_pos, ..
-                    } => {
-                        // Redo move = apply new position
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
-                            part.position = *new_pos;
-                        }
-                    }
-                    CanvasAction::AddConnection { connection } => {
-                        // Redo add connection = add again
-                        module.connections.push(connection.clone());
-                    }
-                    CanvasAction::DeleteConnection { connection } => {
-                        // Redo delete connection = delete again
-                        module.connections.retain(|c| {
-                            !(c.from_part == connection.from_part
-                                && c.to_part == connection.to_part
-                                && c.from_socket == connection.from_socket
-                                && c.to_socket == connection.to_socket)
-                        });
-                    }
-                }
+                Self::apply_redo_action(module, &action);
                 self.undo_stack.push(action);
             }
         }
