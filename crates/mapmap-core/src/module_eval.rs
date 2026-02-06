@@ -1367,7 +1367,8 @@ mod tests_logic {
             rms_volume: 0.5,
             peak_volume: 0.8,
             band_energies: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-            ..Default::default()
+            beat_strength: 0.0,
+            bpm: None,
         }
     }
 
