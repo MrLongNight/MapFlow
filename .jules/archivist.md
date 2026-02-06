@@ -54,3 +54,14 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `pr397.patch` und `pr398.patch` nach `.temp-archive/2026-01-31-*` archiviert und via `git rm` aus dem Repository entfernt.
 - `docu/jules_gpu_ui.md` und `docu/jules_hw_accel.md` nach `.jules/` verschoben.
 - `docu/` Verzeichnis entfernt.
+
+## 2026-02-01 - Root & Script Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt mehrere Binärdateien (FFmpeg DLLs), die dort nicht getrackt werden sollten. Ein Batch-Skript (`copy_ffmpeg_dlls.bat`) befand sich im Root statt in `scripts/`. Eine temporäre Patch-Datei (`pr398.patch`) und ein `tmp/` Verzeichnis mit einem Skript (`fix_player.ps1`) wurden gefunden. `ROADMAP_2.0.md` entsprach nicht der Standard-Benennung `ROADMAP.md`.
+
+**Aktion:**
+- `ROADMAP_2.0.md` zu `ROADMAP.md` umbenannt.
+- `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben und Pfade angepasst (`%~dp0..\`).
+- FFmpeg DLLs (`av*.dll`, `sw*.dll`, `pkgconf*.dll`) nach `.temp-archive/` archiviert.
+- `pr398.patch` nach `.temp-archive/` archiviert.
+- `tmp/fix_player.ps1` archiviert und `tmp/` Verzeichnis entfernt.
