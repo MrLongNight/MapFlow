@@ -281,13 +281,8 @@ fn render_content(
                     wgpu::TextureFormat::Rgba8UnormSrgb,
                     wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 );
-                ctx.texture_pool.upload_data(
-                    queue,
-                    &grid_tex_name,
-                    &grid_img,
-                    256,
-                    256,
-                );
+                ctx.texture_pool
+                    .upload_data(queue, &grid_tex_name, &grid_img, 256, 256);
             }
             grid_tex_name
         } else if let Some(src_id) = op.source_part_id {

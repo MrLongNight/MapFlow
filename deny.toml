@@ -10,13 +10,10 @@ ignore = [
     # proc-macro-error is "unmaintained" but not a security vulnerability
     # It's a transitive dependency from egui_dock -> duplicate -> proc-macro-error
     # We cannot upgrade egui_dock without upgrading the entire egui ecosystem
-    # Tracking: https://rustsec.org/advisories/RUSTSEC-2024-0370
-    "RUSTSEC-2024-0370",
 ]
 
 [licenses]
 # Skip license checking (handled separately)
-unlicensed = "allow"
 allow = [
     "MIT",
     "Apache-2.0",
@@ -25,8 +22,9 @@ allow = [
     "ISC",
     "Zlib",
     "CC0-1.0",
-    "Unicode-DFS-2016",
     "MPL-2.0",
+    "CDLA-Permissive-2.0",
+    "Unicode-3.0",
 ]
 
 [bans]
