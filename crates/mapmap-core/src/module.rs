@@ -2232,11 +2232,6 @@ impl ModuleManager {
         self.modules.get(&id)
     }
 
-    /// Iterate over modules without allocation
-    pub fn iter_modules(&self) -> std::collections::hash_map::Values<'_, ModuleId, MapFlowModule> {
-        self.modules.values()
-    }
-
     /// Get all modules as a slice-like iterator
     pub fn modules(&self) -> Vec<&MapFlowModule> {
         self.modules.values().collect()

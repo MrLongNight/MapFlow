@@ -27,7 +27,7 @@ use mapmap_ui::EdgeBlendAction;
 
 use rfd::FileDialog;
 use std::path::PathBuf;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use winit::{event::WindowEvent, event_loop::EventLoop};
 
@@ -245,6 +245,11 @@ impl App {
                 // Get analysis results
                 let analysis_v2 = self.audio_analyzer.get_latest_analysis();
 
+                // --- MODULE EVALUATION ---
+                self.module_evaluator.update_audio(&analysis_v2);
+                self.module_evaluator
+                    .update_keys(&self.ui_state.active_keys);
+
                 // Process pending playback commands from UI
                 for (part_id, cmd) in self
                     .ui_state
@@ -411,15 +416,180 @@ impl App {
 
                 // (Redundant media player update removed - handled in regular update_media_players path)
 
-                // Module evaluation and updates moved to logic::update
-                // Sync output windows with evaluation result (pass empty ops as they are unused)
+                // CLEAR render ops for the new frame
+                self.render_ops.clear();
+
+                // Evaluate ALL modules to support parallel output
+                for module in self.state.module_manager.list_modules() {
+                    // DEBUG: Log which module we're evaluating
+                    debug!(
+                        "Evaluating module '{}' (ID {}): parts={}, connections={}",
+                        module.name,
+                        module.id,
+                        module.parts.len(),
+                        module.connections.len()
+                    );
+
+                    let result = self
+                        .module_evaluator
+                        .evaluate(module, &self.state.module_manager.shared_media);
+
+                    // Accumulate Render Ops
+                    let mut module_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module.id, op))
+                        .collect();
+                    self.render_ops.append(&mut module_ops);
+
+                    // Update UI Trigger Visualization (only for active module)
+                    if Some(module.id) == self.ui_state.module_canvas.active_module_id {
+                        self.ui_state.module_canvas.last_trigger_values = result
+                            .trigger_values
+                            .iter()
+                            .map(|(k, v)| (*k, v.iter().copied().fold(0.0, f32::max)))
+                            .collect();
+                    }
+
+                    // 1. Handle Source Commands for this module
+                    #[allow(clippy::for_kv_map)]
+                    for (part_id, cmd) in &result.source_commands {
+                        #[allow(clippy::single_match)]
+                        match cmd {
+                            mapmap_core::SourceCommand::PlayMedia {
+                                path,
+                                trigger_value,
+                            } => {
+                                let path = path.clone();
+                                let part_id = *part_id;
+                                let player_key = (module.id, part_id);
+                                if path.is_empty() {
+                                    continue;
+                                }
+
+                                let player_needs_reload = if let Some((current_path, _)) =
+                                    self.media_players.get(&player_key)
+                                {
+                                    current_path != &path
+                                } else {
+                                    true
+                                };
+
+                                if player_needs_reload {
+                                    match mapmap_media::open_path(&path) {
+                                        Ok(player) => {
+                                            self.media_players
+                                                .insert(player_key, (path.clone(), player));
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to load media '{}': {}", path, e);
+                                            continue;
+                                        }
+                                    }
+                                }
+
+                                if let Some((_, player)) = self.media_players.get_mut(&player_key) {
+                                    if *trigger_value > 0.1 {
+                                        let _ = player.command_sender().send(PlaybackCommand::Play);
+                                    }
+                                    if let Some(frame) =
+                                        player.update(std::time::Duration::from_millis(16))
+                                    {
+                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
+                                        {
+                                            let tex_name =
+                                                format!("part_{}_{}", module.id, part_id);
+                                            self.texture_pool.upload_data(
+                                                &self.backend.queue,
+                                                &tex_name,
+                                                data,
+                                                frame.format.width,
+                                                frame.format.height,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                            mapmap_core::SourceCommand::NdiInput {
+                                source_name: Some(_src_name),
+                                ..
+                            } => {
+                                #[cfg(feature = "ndi")]
+                                {
+                                    let receiver =
+                                        self.ndi_receivers.entry(*part_id).or_insert_with(|| {
+                                            mapmap_io::ndi::NdiReceiver::new()
+                                                .expect("Failed to create NDI receiver")
+                                        });
+                                    if let Ok(Some(frame)) =
+                                        receiver.receive(std::time::Duration::from_millis(0))
+                                    {
+                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
+                                        {
+                                            let tex_name =
+                                                format!("part_{}_{}", module.id, part_id);
+                                            self.texture_pool.upload_data(
+                                                &self.backend.queue,
+                                                &tex_name,
+                                                data,
+                                                frame.format.width,
+                                                frame.format.height,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                            mapmap_core::SourceCommand::HueOutput {
+                                brightness,
+                                hue,
+                                saturation,
+                                strobe,
+                                ids,
+                            } => {
+                                self.hue_controller.update_from_command(
+                                    ids.as_deref(),
+                                    *brightness,
+                                    *hue,
+                                    *saturation,
+                                    *strobe,
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
+                // Global render log removed to prevent spam
+                // static mut LAST_RENDER_LOG: u64 = 0; ...
+
+                // 2. Update Output Assignments for Preview/Window Mapping
+                self.output_assignments.clear();
+                for (mid, op) in &self.render_ops {
+                    if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
+                        if let Some(source_id) = op.source_part_id {
+                            let tex_name = format!("part_{}_{}", mid, source_id);
+                            // Insert both for UI panel and window manager
+                            self.output_assignments
+                                .entry(*id)
+                                .or_default()
+                                .push(tex_name.clone());
+                        }
+                    }
+                }
+
+                // 3. Sync output windows with evaluation result
+                let render_ops_temp = std::mem::take(&mut self.render_ops);
+                let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+                    render_ops_temp.iter().map(|(_, op)| op.clone()).collect();
                 if let Err(e) = self.sync_output_windows(
                     elwt,
-                    &[],
+                    &ops_only,
                     self.ui_state.module_canvas.active_module_id,
                 ) {
                     error!("Failed to sync output windows: {}", e);
                 }
+                self.render_ops = render_ops_temp;
 
                 // Update BPM in toolbar
                 self.ui_state.current_bpm = analysis_v2.tempo_bpm;

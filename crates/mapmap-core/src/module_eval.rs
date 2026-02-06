@@ -334,8 +334,6 @@ mod tests_evaluator {
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
-    /// The Module ID this op belongs to
-    pub module_id: crate::module::ModuleId,
     /// The output node ID (Part ID)
     pub output_part_id: ModulePartId,
     /// The specific output type configuration
@@ -374,22 +372,19 @@ pub struct ModuleEvalResult {
 impl ModuleEvalResult {
     /// Clears the result for reuse, preserving capacity where possible
     pub fn clear(&mut self) {
-        self.clear_state();
-        self.clear_render_ops();
-    }
-
-    /// Clear transient state (triggers, commands) but keep render ops
-    pub fn clear_state(&mut self) {
         // Clear trigger values but keep the vectors to reuse their capacity
         for values in self.trigger_values.values_mut() {
             values.clear();
         }
         // Note: We don't remove keys from trigger_values map to reuse map capacity and vectors.
-        self.source_commands.clear();
-    }
+        // However, if the graph changes, we might accumulate stale keys.
+        // For a fixed graph (most of the time), this is fine.
+        // To be safe against memory leaks on graph changes, we could occasionally prune.
+        // For now, simple reuse is a huge win.
 
-    /// Clear render ops
-    pub fn clear_render_ops(&mut self) {
+        // Source commands are typically small (one per source), but we can clear the map
+        self.source_commands.clear();
+        // Render ops is a Vec, simply clear
         self.render_ops.clear();
     }
 }
@@ -529,51 +524,15 @@ impl ModuleEvaluator {
         self.active_keys = keys.clone();
     }
 
-    /// Access the accumulated render operations
-    pub fn render_ops(&self) -> &Vec<RenderOp> {
-        &self.cached_result.render_ops
-    }
-
-    /// Clear the accumulated render operations
-    pub fn clear_render_ops(&mut self) {
-        self.cached_result.clear_render_ops();
-    }
-
-    /// Clear the transient state (triggers, commands)
-    pub fn clear_state(&mut self) {
-        self.cached_result.clear_state();
-    }
-
-    /// Evaluate a module and append results to render_ops without clearing them.
-    /// Used for multi-module evaluation.
-    /// NOTE: You should call clear_state() before calling this for a new module,
-    /// and clear_render_ops() at the start of the frame.
-    pub fn evaluate_append(
-        &mut self,
-        module: &MapFlowModule,
-        shared_state: &SharedMediaState,
-    ) -> &ModuleEvalResult {
-        self.clear_state();
-        self.evaluate_internal(module, shared_state)
-    }
-
-    /// Evaluate a module for one frame (Legacy/Single-module mode).
-    /// Clears ALL previous results (including render ops).
+    /// Evaluate a module for one frame
+    /// Returns a reference to the reusable result buffer
     pub fn evaluate(
         &mut self,
         module: &MapFlowModule,
         shared_state: &SharedMediaState,
     ) -> &ModuleEvalResult {
+        // Clear previous result for reuse
         self.cached_result.clear();
-        self.evaluate_internal(module, shared_state)
-    }
-
-    /// Internal evaluation logic (does not clear results)
-    fn evaluate_internal(
-        &mut self,
-        module: &MapFlowModule,
-        shared_state: &SharedMediaState,
-    ) -> &ModuleEvalResult {
         // Since we cleared trigger_values via iteration (retaining keys),
         // we might have entries with empty vectors. This is fine as we will overwrite them.
 
@@ -765,7 +724,6 @@ impl ModuleEvaluator {
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
-                                        module_id: module.id,
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
@@ -788,7 +746,6 @@ impl ModuleEvaluator {
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
-                                        module_id: module.id,
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
