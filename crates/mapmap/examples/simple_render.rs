@@ -1,7 +1,5 @@
 //! Simple Render Example
 //!
-#![allow(deprecated)]
-
 //! This example demonstrates the basics of rendering with mapmap_render.
 #![allow(deprecated)]
 
