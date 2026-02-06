@@ -662,13 +662,13 @@ impl ModuleCanvas {
         }
     }
 
-    pub fn render_inspector_for_part<'a>(
+    pub fn render_inspector_for_part(
         &mut self,
         ui: &mut Ui,
         part: &mut mapmap_core::module::ModulePart,
         actions: &mut Vec<UIAction>,
         module_id: mapmap_core::module::ModuleId,
-        shared_media_ids: impl Iterator<Item = &'a String> + Clone,
+        shared_media_ids: &[String],
     ) {
         // Sync mesh editor state if needed
         self.sync_mesh_editor_to_current_selection(part);
@@ -1125,7 +1125,7 @@ impl ModuleCanvas {
                                                     egui::ComboBox::from_id_salt("shared_media_video")
                                                         .selected_text("Select Existing")
                                                         .show_ui(ui, |ui| {
-                                                            for id in shared_media_ids.clone() {
+                                                            for id in shared_media_ids {
                                                                 if ui.selectable_label(shared_id == id, id).clicked() {
                                                                     *shared_id = id.clone();
                                                                 }
@@ -1152,7 +1152,7 @@ impl ModuleCanvas {
                                                     egui::ComboBox::from_id_salt("shared_media_image")
                                                         .selected_text("Select Existing")
                                                         .show_ui(ui, |ui| {
-                                                            for id in shared_media_ids.clone() {
+                                                            for id in shared_media_ids {
                                                                 if ui.selectable_label(shared_id == id, id).clicked() {
                                                                     *shared_id = id.clone();
                                                                 }
