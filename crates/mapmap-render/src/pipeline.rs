@@ -55,10 +55,10 @@ impl UniformBufferAllocator {
 
         // Check if we need a new page or can use current
         let mut fits = false;
-        if self.current_page < self.pages.len() {
-            if self.current_offset + size <= self.pages[self.current_page].size() {
-                fits = true;
-            }
+        if self.current_page < self.pages.len()
+            && self.current_offset + size <= self.pages[self.current_page].size()
+        {
+            fits = true;
         }
 
         if fits {
