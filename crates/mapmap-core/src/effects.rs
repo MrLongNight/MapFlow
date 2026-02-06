@@ -36,6 +36,12 @@ pub enum EffectType {
     Mirror,
     /// Hue shift effect
     HueShift,
+    /// Voronoi distortion effect
+    Voronoi,
+    /// Tunnel effect
+    Tunnel,
+    /// Galaxy generator effect
+    Galaxy,
     /// Custom shader from shader graph
     Custom,
     /// Custom Node-based Shader Graph
@@ -61,6 +67,9 @@ impl EffectType {
             EffectType::RgbSplit => "RGB Split",
             EffectType::Mirror => "Mirror",
             EffectType::HueShift => "Hue Shift",
+            EffectType::Voronoi => "Voronoi",
+            EffectType::Tunnel => "Tunnel",
+            EffectType::Galaxy => "Galaxy",
             EffectType::Custom => "Custom Shader",
             EffectType::ShaderGraph(_) => "Shader Graph",
         }
@@ -122,6 +131,24 @@ impl Effect {
             EffectType::FilmGrain => {
                 parameters.insert("amount".to_string(), 0.1);
                 parameters.insert("speed".to_string(), 1.0);
+            }
+            EffectType::Voronoi => {
+                parameters.insert("scale".to_string(), 10.0);
+                parameters.insert("offset".to_string(), 1.0);
+                parameters.insert("cell_size".to_string(), 1.0);
+                parameters.insert("distortion".to_string(), 0.5);
+            }
+            EffectType::Tunnel => {
+                parameters.insert("speed".to_string(), 0.5);
+                parameters.insert("rotation".to_string(), 0.5);
+                parameters.insert("scale".to_string(), 0.5);
+                parameters.insert("distortion".to_string(), 0.5);
+            }
+            EffectType::Galaxy => {
+                parameters.insert("zoom".to_string(), 0.5);
+                parameters.insert("speed".to_string(), 0.2);
+                parameters.insert("radius".to_string(), 1.0);
+                parameters.insert("brightness".to_string(), 1.0);
             }
             _ => {}
         }

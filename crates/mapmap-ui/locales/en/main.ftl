@@ -373,3 +373,12 @@ shortcuts-edit-dialog-conflict-warning = This key combination is already in use.
 
 audio-panel-select-device = Please select an audio device.
 audio-panel-waiting-signal = Waiting for signal...
+
+effect-name-voronoi = Voronoi Distortion
+effect-name-tunnel = Space Tunnel
+effect-name-galaxy = Galaxy Generator
+param-scale = Scale
+param-offset = Offset
+param-cell-size = Cell Size
+param-distortion = Distortion
+param-zoom = Zoom
