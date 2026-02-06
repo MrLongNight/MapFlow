@@ -1,0 +1,254 @@
+name: "CI-05: PR Auto-Merge"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  check_suite:
+    types: [completed]
+  workflow_run:
+    workflows: ["CI-01: Build&Test"]
+    types: [completed]
+  workflow_dispatch:
+
+env:
+  # ═══════════════════════════════════════════════════════════════
+  # MASTER SWITCH - Set to 'false' to disable ALL Jules automation
+  # ═══════════════════════════════════════════════════════════════
+  JULES_AUTOMATION_ENABLED: true
+  # Set to 'false' to disable auto-merge only (keeps other automation)
+  AUTO_MERGE_ENABLED: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+
+jobs:
+  # Auto-merge for Jules PRs with failure handling
+  auto-merge:
+    name: Auto-Merge Jules PR
+    runs-on: ubuntu-latest
+    env:
+      JULES_AUTOMATION_ENABLED: "true"
+      FIND_PR_NUMBER: ''
+      HAS_PR: 'false'
+    if: |
+      github.event.pull_request != null ||
+      github.event.workflow_run != null ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Find Jules PR for workflow run
+      id: find-pr
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Check conditions internally to satisfy linter
+          if (context.eventName !== 'workflow_run' || process.env.JULES_AUTOMATION_ENABLED !== 'true') {
+            core.setOutput('has_pr', 'false');
+            core.setOutput('pr_number', '');
+            return;
+          }
+
+          const run = context.payload.workflow_run;
+          const { data: prs } = await github.rest.pulls.list({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open'
+          });
+
+          // Find PR matching the workflow run head SHA
+          const pr = prs.find(p =>
+            p.head.sha === run.head_sha &&
+            (p.labels.some(l => l.name === 'jules-pr') || (p.body && p.body.includes('Created by Jules')))
+          );
+
+          if (pr) {
+            core.exportVariable('FIND_PR_NUMBER', pr.number.toString());
+            core.exportVariable('HAS_PR', 'true');
+            core.setOutput('pr_number', pr.number);
+            core.setOutput('has_pr', 'true');
+          } else {
+            core.exportVariable('HAS_PR', 'false');
+          }
+
+    - name: Check for check failures and comment if needed
+      id: check-failures
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Check master switch
+          if (process.env.JULES_AUTOMATION_ENABLED !== 'true') {
+            return;
+          }
+
+          // Determine PR number
+          let prNumber = context.payload.pull_request?.number || process.env.FIND_PR_NUMBER;
+          if (!prNumber && context.payload.issue) {
+            prNumber = context.payload.issue.number;
+          }
+
+          if (!prNumber) {
+            console.log('⏭️ No PR to process for checks');
+            return;
+          }
+
+          prNumber = parseInt(prNumber);
+          console.log(`🔍 Checking checks for PR #${prNumber}`);
+
+          // Get check suites for the PR
+          const { data: checkSuites } = await github.rest.checks.listSuitesForRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.payload.pull_request?.head.sha || context.payload.workflow_run?.head_sha
+          });
+
+          let hasFailures = false;
+          let failureDetails = [];
+
+          for (const suite of checkSuites.check_suites) {
+            const { data: checks } = await github.rest.checks.listForSuite({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_suite_id: suite.id
+            });
+
+            for (const check of checks.check_runs) {
+              if (check.conclusion === 'failure' || check.conclusion === 'error') {
+                hasFailures = true;
+                failureDetails.push({
+                  name: check.name,
+                  output: check.output
+                });
+              }
+            }
+          }
+
+          if (hasFailures) {
+            // Generate analysis using Copilot-like logic (simplified AI analysis)
+            let analysis = '### 🤖 Copilot-Analyse der Check-Fehler:\n\n';
+            failureDetails.forEach((failure, index) => {
+              analysis += `#### Fehler ${index + 1}: ${failure.name}\n`;
+              analysis += `**Meldung:** ${failure.output.title || 'Keine spezifische Meldung'}\n`;
+              if (failure.output.summary) {
+                analysis += `**Details:** ${failure.output.summary}\n`;
+              }
+              // Basic solution suggestions based on common Rust/CI issues
+              if (failure.name.includes('test') && failure.output.summary.includes('failed')) {
+                analysis += `**Lösungsansatz:** Überprüfe die Testfälle auf Assertions-Fehler. Führe \`cargo test -- --nocapture\` lokal aus, um detaillierte Ausgaben zu sehen. Stelle sicher, dass alle Inputs valide sind und keine Nebenwirkungen auftreten.\n\n`;
+              } else if (failure.name.includes('clippy') && failure.output.summary.includes('warning')) {
+                analysis += `**Lösungsansatz:** Clippy-Warnungen beheben. Führe \`cargo clippy --fix\` aus, um automatische Korrekturen anzuwenden. Überprüfe Rust-API-Guidelines für Stil-Konventionen.\n\n`;
+              } else if (failure.name.includes('fmt') && failure.output.summary.includes('format')) {
+                analysis += `**Lösungsansatz:** Code-Formatierung anpassen. Führe \`cargo fmt\` aus, um den Code automatisch zu formatieren.\n\n`;
+              } else {
+                analysis += `**Lösungsansatz:** Überprüfe die vollständigen Logs für weitere Details. Konsultiere die Projekt-Dokumentation in \`docs/\` oder \`AGENTS.md\` für spezifische Guidelines.\n\n`;
+              }
+            });
+
+            // Comment on PR
+            const commentBody = `@jules Es wurden Check-Fehler in diesem PR entdeckt. Bitte behebe sie, um den Auto-Merge zu ermöglichen.\n\n${analysis}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: commentBody
+            });
+
+            core.setOutput('has_failures', 'true');
+          } else {
+            core.setOutput('has_failures', 'false');
+          }
+
+    - name: Auto-merge Jules PR if all checks pass
+      id: auto-merge
+      uses: actions/github-script@v7
+      if: env.JULES_AUTOMATION_ENABLED == 'true'
+      with:
+        script: |
+          // Determine PR number
+          let prNumber = context.payload.pull_request?.number || process.env.FIND_PR_NUMBER;
+          if (!prNumber && context.payload.issue) {
+            prNumber = context.payload.issue.number;
+          }
+
+          if (!prNumber) {
+            console.log('⏭️ No PR to process');
+            return;
+          }
+
+          prNumber = parseInt(prNumber);
+          console.log(`🤖 Jules PR Auto-Merge: #${prNumber}`);
+
+          // Get latest PR state
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber
+          });
+
+          // Check if it's eligible for auto-merge (jules-pr, auto-merge, dependencies label, or Created by Jules)
+          const isAutoMergeEligible = pr.labels.some(l => l.name === 'jules-pr' || l.name === 'auto-merge' || l.name === 'dependencies') ||
+                           (pr.body && pr.body.includes('Created by Jules'));
+          if (!isAutoMergeEligible) {
+            console.log('⏭️ PR has no auto-merge label - skipping auto-merge (checks still run)');
+            return;
+          }
+
+          // Check mergeable state
+          if (pr.mergeable === false) {
+            console.log('❌ PR is not mergeable');
+            return;
+          }
+
+          // Get check suites
+          const { data: checkSuites } = await github.rest.checks.listSuitesForRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: pr.head.sha
+          });
+
+          let allChecksPassed = true;
+          let pendingChecks = false;
+          for (const suite of checkSuites.check_suites) {
+            // Skip the check suite for the auto-merge workflow itself if we can identify it
+            // Typically, the suite.app.name for GitHub Actions is "GitHub Actions"
+            // But we want to wait for other specific workflows.
+
+            // If any suite is failed, we abort completely
+            if (suite.conclusion === 'failure' || suite.conclusion === 'error' || suite.conclusion === 'timed_out' || suite.conclusion === 'cancelled') {
+              console.log(`❌ Check suite failed: ${suite.app.name} (${suite.conclusion})`);
+              allChecksPassed = false;
+              break;
+            }
+
+            // If any suite is not completed, we wait.
+            if (suite.status !== 'completed') {
+               console.log(`⏳ Check suite still running: ${suite.app.name} (Status: ${suite.status})`);
+               pendingChecks = true;
+            } else if (suite.conclusion !== 'success' && suite.conclusion !== 'neutral' && suite.conclusion !== 'skipped') {
+               console.log(`⚠️ Check suite concluded with non-success: ${suite.app.name} (${suite.conclusion})`);
+               allChecksPassed = false;
+            }
+          }
+
+          if (!allChecksPassed) {
+            console.log('❌ Not all checks passed - cannot auto-merge');
+            return;
+          }
+
+          // Auto-merge if enabled
+          if (process.env.AUTO_MERGE_ENABLED === 'true') {
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash'
+            });
+            console.log('✅ Auto-merged Jules PR');
+
+            // Update CHANGELOG.md (existing logic, assuming it's in CI-06)
+            // Note: Actual changelog update is handled by CI-06_update-changelog.yml
+          } else {
+            console.log('⏭️ Auto-merge disabled');
+          }
