@@ -903,6 +903,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 | `mapmap-core` | Datenstrukturen & Logik | `serde`, `nalgebra` | ✅ Stable |
 | `mapmap-ui` | Benutzeroberfläche | `egui`, `wgpu` | ✅ Stable |
 | `mapmap-render` | Rendering-Engine | `wgpu` | ✅ Stable |
+| `mapmap-bevy` | Bevy-Integration | `bevy`, `wgpu` | ✅ Beta |
 | `mapmap-media` | Medien-Handling | `ffmpeg-next`, `image` | ✅ Beta |
 | `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
 | `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
@@ -914,10 +915,12 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 graph TD
     App[mapmap] --> UI[mapmap-ui]
     App --> Render[mapmap-render]
+    App --> Bevy[mapmap-bevy]
     App --> Control[mapmap-control]
     App --> MCP[mapmap-mcp]
     UI --> Core[mapmap-core]
     Render --> Core
+    Bevy --> Core
     Control --> Core
     UI --> Media[mapmap-media]
     Render --> Media
