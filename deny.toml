@@ -35,7 +35,9 @@ allow = [
     "Ubuntu-font-1.0",
     "CDLA-Permissive-2.0",
     "Unicode-3.0",
-    "GPL-3.0",
+    "GPL-3.0-only",
+    "WTFPL",
+    "Unlicense",
 ]
 
 [bans]
