@@ -2172,6 +2172,21 @@ impl ModuleManager {
             .map(|module| module.add_part(part_type, position))
     }
 
+    /// Get the next available unique name based on a base name
+    pub fn get_next_available_name(&self, base_name: &str) -> String {
+        let mut name = base_name.to_string();
+        let mut counter = 1;
+
+        let existing_names: Vec<String> = self.modules.values().map(|m| m.name.clone()).collect();
+
+        while existing_names.contains(&name) {
+            name = format!("{} {}", base_name, counter);
+            counter += 1;
+        }
+
+        name
+    }
+
     /// Create a new module
     pub fn create_module(&mut self, name: String) -> ModuleId {
         let id = self.next_module_id;
@@ -2508,6 +2523,30 @@ mod tests {
         manager.delete_module(id1);
         assert_eq!(manager.list_modules().len(), 1);
         assert!(manager.get_module(id1).is_none());
+    }
+
+    #[test]
+    fn test_get_next_available_name() {
+        let mut manager = ModuleManager::new();
+
+        // 1. Initial name
+        let name1 = manager.get_next_available_name("My Module");
+        assert_eq!(name1, "My Module");
+        manager.create_module(name1);
+
+        // 2. First collision
+        let name2 = manager.get_next_available_name("My Module");
+        assert_eq!(name2, "My Module 1");
+        manager.create_module(name2);
+
+        // 3. Second collision
+        let name3 = manager.get_next_available_name("My Module");
+        assert_eq!(name3, "My Module 2");
+        manager.create_module(name3);
+
+        // 4. Non-colliding name
+        let name4 = manager.get_next_available_name("Other Module");
+        assert_eq!(name4, "Other Module");
     }
 }
 
