@@ -1,10 +1,10 @@
 [package]
 name = "mapmap"
-version = "0.2.0"
-edition = "2021"
-authors = ["MapFlow Contributors"]
-license = "GPL-3.0"
-repository = "https://github.com/MrLongNight/MapFlow"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "MapFlow - Professional Projection Mapping Software"
 
 [[bin]]
