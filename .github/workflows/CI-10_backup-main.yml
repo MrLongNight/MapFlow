@@ -1,0 +1,107 @@
+name: "CI-10: Backup Main Branch"
+
+# Automatische Sicherung des main Branch
+# Erstellt täglich und nach jedem Merge einen Backup-Tag
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    # Täglich um 02:00 UTC (03:00 MEZ / 04:00 MESZ)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      backup_name:
+        description: 'Optionaler Name für das Backup (z.B. "pre-refactor")'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  # Anzahl der Backup-Tags die behalten werden (ältere werden gelöscht!)
+  MAX_BACKUP_TAGS: 30
+
+jobs:
+  backup-main:
+    name: Create Backup Tag
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create backup tag
+      run: |
+        DATE=$(date +%Y%m%d-%H%M%S)
+
+        # Bestimme Tag-Name
+        if [ -n "${{ github.event.inputs.backup_name }}" ]; then
+          TAG_NAME="backup/${{ github.event.inputs.backup_name }}-${DATE}"
+        elif [ "${{ github.event_name }}" == "schedule" ]; then
+          TAG_NAME="backup/daily-${DATE}"
+        else
+          # Push event - nach Merge
+          TAG_NAME="backup/post-merge-${DATE}"
+        fi
+
+        echo "📦 Creating backup tag: ${TAG_NAME}"
+
+        # Erstelle annotated tag
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a "${TAG_NAME}" -m "Automatic backup of main branch at ${DATE}"
+        git push origin "${TAG_NAME}"
+
+        echo "✅ Backup created: ${TAG_NAME}"
+        echo "BACKUP_TAG=${TAG_NAME}" >> $GITHUB_ENV
+
+    - name: Cleanup old backup tags
+      run: |
+        echo "🧹 Cleaning up old backup tags (keeping last ${{ env.MAX_BACKUP_TAGS }})"
+
+        # Liste alle backup/* Tags sortiert nach Datum (älteste zuerst)
+        BACKUP_TAGS=$(git tag -l 'backup/*' --sort=creatordate)
+        TAG_COUNT=$(echo "$BACKUP_TAGS" | grep -c '^backup' || echo 0)
+
+        echo "Found ${TAG_COUNT} backup tags"
+
+        if [ "$TAG_COUNT" -gt "${{ env.MAX_BACKUP_TAGS }}" ]; then
+          DELETE_COUNT=$((TAG_COUNT - ${{ env.MAX_BACKUP_TAGS }}))
+          echo "Deleting ${DELETE_COUNT} old backup tags..."
+
+          # Lösche die ältesten Tags
+          echo "$BACKUP_TAGS" | head -n ${DELETE_COUNT} | while read TAG; do
+            if [ -n "$TAG" ]; then
+              echo "  Deleting: ${TAG}"
+              git push origin --delete "${TAG}" 2>/dev/null || true
+              git tag -d "${TAG}" 2>/dev/null || true
+            fi
+          done
+        else
+          echo "No cleanup needed"
+        fi
+
+    - name: Summary
+      run: |
+        echo "## 📦 Backup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tag:** \`${{ env.BACKUP_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Restore Commands" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Lokales Checkout des Backups:" >> $GITHUB_STEP_SUMMARY
+        echo "git fetch origin ${{ env.BACKUP_TAG }}" >> $GITHUB_STEP_SUMMARY
+        echo "git checkout ${{ env.BACKUP_TAG }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Main auf Backup zurücksetzen (VORSICHT!):" >> $GITHUB_STEP_SUMMARY
+        echo "git checkout main" >> $GITHUB_STEP_SUMMARY
+        echo "git reset --hard ${{ env.BACKUP_TAG }}" >> $GITHUB_STEP_SUMMARY
+        echo "git push --force origin main" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
