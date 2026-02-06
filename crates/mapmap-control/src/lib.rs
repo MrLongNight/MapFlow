@@ -68,6 +68,8 @@ pub use target::{ControlTarget, ControlValue, EdgeSide};
 pub use midi::MidiMessage;
 
 pub use dmx::{ArtNetSender, ChannelAssignment, DmxChannel, Fixture, FixtureProfile, SacnSender};
+pub use hue::controller::HueController;
+pub use hue::models::HueConfig;
 
 #[cfg(feature = "osc")]
 pub use osc::{OscClient, OscMapping, OscServer};
