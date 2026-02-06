@@ -894,6 +894,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -2763,7 +2764,9 @@ impl ModuleCanvas {
                                 .on_hover_text("Create a new module")
                                 .clicked()
                             {
-                                let new_id = manager.create_module("New Module".to_string());
+                                let base_name = "New Module";
+                                let unique_name = manager.get_next_available_name(base_name);
+                                let new_id = manager.create_module(unique_name);
                                 self.active_module_id = Some(new_id);
                             }
 

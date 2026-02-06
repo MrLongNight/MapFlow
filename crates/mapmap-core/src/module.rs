@@ -2237,6 +2237,25 @@ impl ModuleManager {
         self.next_part_id += 1;
         id
     }
+
+    /// Generate a unique module name based on a base name
+    pub fn get_next_available_name(&self, base_name: &str) -> String {
+        let mut name = base_name.to_string();
+        let mut counter = 1;
+
+        let existing_names: std::collections::HashSet<String> = self
+            .modules
+            .values()
+            .map(|m| m.name.clone())
+            .collect();
+
+        while existing_names.contains(&name) {
+            name = format!("{} {}", base_name, counter);
+            counter += 1;
+        }
+
+        name
+    }
 }
 
 impl Default for ModuleManager {
@@ -3051,5 +3070,20 @@ mod additional_tests {
             _ => panic!("Wrong trigger target deserialized"),
         }
         assert!(target.invert);
+    }
+
+    #[test]
+    fn test_unique_module_naming() {
+        let mut manager = ModuleManager::new();
+        let name1 = manager.get_next_available_name("My Module");
+        assert_eq!(name1, "My Module");
+        manager.create_module(name1);
+
+        let name2 = manager.get_next_available_name("My Module");
+        assert_eq!(name2, "My Module 1");
+        manager.create_module(name2);
+
+        let name3 = manager.get_next_available_name("My Module");
+        assert_eq!(name3, "My Module 2");
     }
 }
