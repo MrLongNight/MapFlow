@@ -80,10 +80,7 @@ impl ResponsiveLayout {
     /// * `default_height` - Standard-Höhe bei Desktop
     pub fn window_size(&self, default_width: f32, default_height: f32) -> [f32; 2] {
         if self.is_compact() {
-            [
-                self.viewport_size.x * 0.9,
-                self.viewport_size.y * 0.8,
-            ]
+            [self.viewport_size.x * 0.9, self.viewport_size.y * 0.8]
         } else {
             [default_width, default_height]
         }
