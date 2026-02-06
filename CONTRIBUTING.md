@@ -12,7 +12,7 @@ It really helps us efficiently process your contribution!
 [Request a feature](#feature-requests)  
 [Contribute code](#contributing-code)  
 
-## <a id='bug-reports'></a>Report a bug
+ ## <a id='bug-reports'></a>Report a bug
 
 We love hearing about bugs! It's how we get them fixed.
 
@@ -29,11 +29,12 @@ We love hearing about bugs! It's how we get them fixed.
     3. what you expected to happen,
     4. what actually happened, and how to make it happen again (ie how to reproduce the bug).
   - If you can demonstrate the bug in a few lines of code, include this code in the description.
-  But please **don't** copy and paste your entire source file.
+  But please __don't__ copy and paste your entire source file.
 - Someone will be along to review your bug report and assign tags to it.
 You might be asked some questions about it, or you might not.
 If you don't hear back for a while don't despair, it's not being ignored!
 We're simply a busy group of people, but you will hear back eventually.
+
 
 ## <a id='feature-requests'></a>Request a feature
 
@@ -70,8 +71,8 @@ They don't have to be in-depth, just a brief summary of what the commit contains
 - Submit from a dedicated branch on your own repository **branched off from current `main`**. Your branch should be only about a single topic or area of MapFlow.
 If you have multiple things to submit, make separate branches for each topic and submit multiple pull requests.
 (This makes it easier to review different parts of your code separately, and get it into the core faster.)
-- The branch name should start with either **feature/** for features or **bugfix/** for bug fixes.
-  - For example, if your patch adds code to draw ellipses, your branch should be called something like **feature/draw-ellipses**.
+- The branch name should start with either __feature/__ for features or __bugfix/__ for bug fixes.
+  - For example, if your patch adds code to draw ellipses, your branch should be called something like __feature/draw-ellipses__.
   - Remember, _commit early, commit often_ - use commits to isolate small subsets of code.
 This granularity makes the code easier to deal with in cases where some things have to be modified/isolated/removed from the pull request.
 - When you commit your files and you find you can't do that without using `git add -f/--force`, this is because of the existing gitignore patterns. _Think about if those files really should be in the repo in the first place_. Then, instead of force-adding files which really should be in the repo (i.e. incorrectly match a gitignore pattern), correct the gitignore pattern (ask for help if necessary) and commit normally.
@@ -81,11 +82,11 @@ This granularity makes the code easier to deal with in cases where some things h
 
 #### Submitting the pull request
 
-- Submit your pull request to the **`main`** branch of MapFlow (which you branched off from).
+- Submit your pull request to the __`main`__ branch of MapFlow (which you branched off from).
 - All pull requests that contain significant changes should update the relevant documentation in the `docs/` folder.
 - In the comments field on your new pull request, enter a description of everything that the code in the pull request does.
   - This description is the first contact most of the core team will have with your code, so you should use it to explain why your pull request is awesome and we should accept it.
-  - Reference any issues or bugs in the [MapFlow issue tracker](https://github.com/MrLongNight/MapFlow/issues) that are relevant to your pull request using `#issue number` notation, eg to reference issue **1234** write `#1234`.
+  - Reference any issues or bugs in the [MapFlow issue tracker](https://github.com/MrLongNight/MapFlow/issues) that are relevant to your pull request using `#issue number` notation, eg to reference issue __1234__ write `#1234`.
   - Mention if the code has been tested and on what platform.
   - Include screenshots or videos if your changes affect the UI.
 
