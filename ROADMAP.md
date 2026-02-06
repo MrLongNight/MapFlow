@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-06 12:00
+> **Stand:** 2026-02-15 12:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -907,6 +907,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 | `mapmap-control` | Eingabe-Steuerung | `rosc`, `midir` | ✅ Beta |
 | `mapmap-io` | Ein-/Ausgabe (NDI/Spout) | `ndi-sys` | 🟡 Alpha |
 | `mapmap-mcp` | MCP-Server Integration | `serde_json` | ✅ Beta |
+| `mapmap-bevy` | 3D & Partikel (Bevy Engine) | `bevy`, `wgpu` | ✅ Beta |
 
 ### Modul-Abhängigkeiten
 
@@ -916,8 +917,10 @@ graph TD
     App --> Render[mapmap-render]
     App --> Control[mapmap-control]
     App --> MCP[mapmap-mcp]
+    App --> Bevy[mapmap-bevy]
     UI --> Core[mapmap-core]
     Render --> Core
+    Bevy --> Core
     Control --> Core
     UI --> Media[mapmap-media]
     Render --> Media
@@ -964,6 +967,11 @@ graph TD
 *   Implementiert `egui::App`.
 *   Handhabt Input-Events.
 *   Visualisiert den State aus `mapmap-core`.
+
+### `mapmap-bevy`
+*   Integriert die Bevy Engine für 3D-Rendering.
+*   Bietet Partikelsysteme via `bevy_enoki`.
+*   Teilt den wgpu-Context mit der Hauptanwendung.
 
 ## Technologie-Stack und Entscheidungen
 
