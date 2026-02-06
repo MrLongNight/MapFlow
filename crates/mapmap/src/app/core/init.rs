@@ -519,7 +519,16 @@ impl App {
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
             media_library: MediaLibrary::new(),
-            bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
+            bevy_runner: {
+                info!("Initializing Bevy Runner...");
+                // FIXME: Bevy initialization causes a crash on startup (likely WGPU conflict).
+                // Temporarily disabled to allow the app to start.
+                warn!("Bevy Integration is TEMPORARILY DISABLED to prevent startup crash.");
+                // let runner = Some(mapmap_bevy::BevyRunner::new());
+                // info!("Bevy Runner initialized successfully.");
+                // runner
+                None
+            },
         };
 
         Ok(app)
