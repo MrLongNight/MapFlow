@@ -1,6 +1,5 @@
 //! Egui-based Mapping Management Panel
 use crate::i18n::LocaleManager;
-use crate::widgets;
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{MappingId, MappingManager};
@@ -27,18 +26,13 @@ impl MappingPanel {
             .open(&mut open)
             .default_size([380.0, 400.0])
             .show(ctx, |ui| {
-                widgets::render_panel_header(
-                    ui,
-                    &i18n.t_args(
+                ui.horizontal(|ui| {
+                    ui.label(i18n.t_args(
                         "label-total-mappings",
                         &[("count", &mapping_manager.mappings().len().to_string())],
-                    ),
-                    |ui| {
-                        if ui.button(i18n.t("btn-add-mapping")).clicked() {
-                            actions.push(UIAction::AddMapping);
-                        }
-                    },
-                );
+                    ));
+                });
+                ui.separator();
 
                 // Scrollable mapping list
                 egui::ScrollArea::vertical()
@@ -114,6 +108,12 @@ impl MappingPanel {
                         }
                     });
 
+                ui.separator();
+
+                // Add Mapping Button
+                if ui.button(i18n.t("btn-add-mapping")).clicked() {
+                    actions.push(UIAction::AddMapping);
+                }
             });
 
         self.visible = open;

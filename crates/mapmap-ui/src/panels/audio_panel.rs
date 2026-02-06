@@ -75,7 +75,8 @@ impl AudioPanel {
         let mut config = self.local_config.clone().unwrap_or(current_config.clone());
         let mut config_changed = false;
 
-        crate::widgets::render_panel_header(ui, &locale.t("audio-panel-title"), |_ui| {});
+        ui.heading(locale.t("audio-panel-title"));
+        ui.separator();
 
         // --- Audio Device Selector ---
         let no_device_text = locale.t("audio-panel-no-device");
