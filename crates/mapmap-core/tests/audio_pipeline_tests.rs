@@ -5,9 +5,7 @@ use std::time::{Duration, Instant};
 
 fn create_test_samples(count: usize) -> Vec<f32> {
     // Generate a simple sine wave
-    (0..count)
-        .map(|i| (i as f32 * 0.1).sin())
-        .collect()
+    (0..count).map(|i| (i as f32 * 0.1).sin()).collect()
 }
 
 fn wait_for_condition<F>(timeout: Duration, mut condition: F) -> bool
@@ -119,9 +117,5 @@ fn test_dropped_samples() {
     thread::sleep(Duration::from_millis(100));
 
     let dropped = pipeline.dropped_samples();
-    assert!(
-        dropped > 0,
-        "Expected dropped samples, got {}",
-        dropped
-    );
+    assert!(dropped > 0, "Expected dropped samples, got {}", dropped);
 }
