@@ -1,4 +1,10 @@
-use crate::{i18n::LocaleManager, UIAction};
+use crate::{
+    core::responsive::ResponsiveLayout,
+    i18n::LocaleManager,
+    widgets::icons::{AppIcon, IconManager},
+    widgets::panel::{cyber_panel_frame, render_panel_header},
+    UIAction,
+};
 
 /// Represents the UI panel for configuring render outputs.
 pub struct OutputPanel {
@@ -27,20 +33,37 @@ impl OutputPanel {
     }
 
     /// Renders the output configuration panel using `egui`.
-    pub fn render(
+    pub fn show(
         &mut self,
         ctx: &egui::Context,
         i18n: &LocaleManager,
         output_manager: &mut mapmap_core::OutputManager,
         _monitors: &[mapmap_core::monitor::MonitorInfo],
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(420.0, 500.0);
+
         egui::Window::new(i18n.t("panel-outputs"))
-            .default_size([420.0, 500.0])
+            .default_size(window_size)
+            .resizable(true)
+            .scroll([false, true])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &i18n.t("panel-outputs"),
+                    Some(AppIcon::Monitor),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 ui.heading(i18n.t("header-multi-output"));
                 ui.separator();
 
@@ -59,15 +82,17 @@ impl OutputPanel {
                     output_manager.outputs().len()
                 ));
 
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    let outputs = output_manager.outputs().to_vec();
-                    for output in outputs {
-                        let is_selected = self.selected_output_id == Some(output.id);
-                        if ui.selectable_label(is_selected, &output.name).clicked() {
-                            self.selected_output_id = Some(output.id);
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        let outputs = output_manager.outputs().to_vec();
+                        for output in outputs {
+                            let is_selected = self.selected_output_id == Some(output.id);
+                            if ui.selectable_label(is_selected, &output.name).clicked() {
+                                self.selected_output_id = Some(output.id);
+                            }
                         }
-                    }
-                });
+                    });
 
                 ui.separator();
 

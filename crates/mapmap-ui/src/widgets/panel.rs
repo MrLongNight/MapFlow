@@ -4,6 +4,7 @@
 //! to enforce the Resolume/MadMapper aesthetic.
 
 use crate::theme::colors;
+use crate::widgets::icons::{AppIcon, IconManager};
 use egui::{Color32, Frame, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 
 /// Returns a Frame styled for "Cyber Dark" panels.
@@ -28,20 +29,13 @@ pub fn cyber_panel_frame(_style: &egui::Style) -> Frame {
 /// Renders a standardized panel header with title and right-aligned actions.
 ///
 /// This widget consumes the full width available.
-///
-/// # Layout
-/// - **Background**: `LIGHTER_GREY` (Distinct header bar)
-/// - **Accent**: `CYAN_ACCENT` (Left stripe)
-/// - **Title**: Uppercase, Bold, White
-/// - **Actions**: Right-aligned, user-provided closure
-///
-/// # Example
-/// ```rust
-/// render_panel_header(ui, "BROWSER", |ui| {
-///     if ui.button("X").clicked() { close_panel(); }
-/// });
-/// ```
-pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&mut Ui)) {
+pub fn render_panel_header(
+    ui: &mut Ui,
+    title: &str,
+    icon: Option<AppIcon>,
+    icon_manager: Option<&IconManager>,
+    add_actions: impl FnOnce(&mut Ui),
+) {
     let height = 28.0;
     let desired_size = Vec2::new(ui.available_width(), height);
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
@@ -60,8 +54,29 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
         colors::CYAN_ACCENT,
     );
 
-    // 3. Title Text
-    let text_pos = Pos2::new(rect.min.x + stripe_width + 8.0, rect.center().y);
+    let mut current_x = rect.min.x + stripe_width + 8.0;
+
+    // 3. Optional Icon
+    if let (Some(icon), Some(im)) = (icon, icon_manager) {
+        let icon_size = 16.0;
+        let icon_rect = Rect::from_center_size(
+            Pos2::new(current_x + icon_size / 2.0, rect.center().y),
+            Vec2::splat(icon_size),
+        );
+
+        if let Some(texture) = im.get(icon) {
+            painter.image(
+                texture.id(),
+                icon_rect,
+                Rect::from_min_max(Pos2::new(0.0, 0.0), Pos2::new(1.0, 1.0)),
+                Color32::WHITE,
+            );
+            current_x += icon_size + 8.0;
+        }
+    }
+
+    // 4. Title Text
+    let text_pos = Pos2::new(current_x, rect.center().y);
     painter.text(
         text_pos,
         egui::Align2::LEFT_CENTER,
@@ -70,8 +85,7 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
         Color32::WHITE,
     );
 
-    // 4. Right-aligned Actions Area
-    // We allocate a child UI to allow standard button placement
+    // 5. Right-aligned Actions Area
     let mut actions_ui = ui.new_child(
         egui::UiBuilder::new()
             .max_rect(rect)

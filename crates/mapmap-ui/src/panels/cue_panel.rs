@@ -10,6 +10,7 @@ use mapmap_control::{
 use crate::{
     i18n::LocaleManager,
     icons::{AppIcon, IconManager},
+    widgets::panel::{cyber_panel_frame, render_panel_header},
     UIAction,
 };
 
@@ -45,7 +46,18 @@ impl CuePanel {
         egui::Window::new(i18n.t("panel-cues"))
             .open(&mut open)
             .default_size([300.0, 500.0])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &i18n.t("panel-cues"),
+                    Some(AppIcon::VinylRecord),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 self.render_ui(ui, &control_manager.cue_list, i18n, actions, icon_manager);
             });
         self.visible = open;

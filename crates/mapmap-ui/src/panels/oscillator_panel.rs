@@ -1,7 +1,10 @@
 //! Egui-based Oscillator Control Panel
 
+use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
-use egui::{ComboBox, DragValue, Ui, Window};
+use crate::widgets::icons::{AppIcon, IconManager};
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
+use egui::{ComboBox, DragValue, Ui};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
@@ -25,6 +28,7 @@ impl OscillatorPanel {
         ctx: &egui::Context,
         locale: &LocaleManager,
         config: &mut OscillatorConfig,
+        icon_manager: Option<&IconManager>,
     ) -> bool {
         let mut changed = false;
         let mut is_open = self.visible;
@@ -33,11 +37,26 @@ impl OscillatorPanel {
             return false;
         }
 
-        Window::new(locale.t("oscillator-panel-title"))
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(400.0, 500.0);
+
+        egui::Window::new(locale.t("oscillator-panel-title"))
             .open(&mut is_open)
             .resizable(true)
-            .default_width(280.0)
+            .default_size(window_size)
+            .scroll([false, true])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &locale.t("oscillator-panel-title"),
+                    Some(AppIcon::MagicWand),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 ui.vertical_centered_justified(|ui| {
                     changed |= ui
                         .toggle_value(&mut config.enabled, locale.t("oscillator-enable"))
@@ -46,37 +65,35 @@ impl OscillatorPanel {
 
                 ui.separator();
 
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    if ui
-                        .collapsing(locale.t("oscillator-simulation-params"), |ui| {
-                            self.show_simulation_params(ui, locale, config)
-                        })
-                        .body_returned
-                        .unwrap_or(false)
-                    {
-                        changed = true;
-                    }
+                if ui
+                    .collapsing(locale.t("oscillator-simulation-params"), |ui| {
+                        self.show_simulation_params(ui, locale, config)
+                    })
+                    .body_returned
+                    .unwrap_or(false)
+                {
+                    changed = true;
+                }
 
-                    if ui
-                        .collapsing(locale.t("oscillator-distortion-params"), |ui| {
-                            self.show_distortion_params(ui, locale, config)
-                        })
-                        .body_returned
-                        .unwrap_or(false)
-                    {
-                        changed = true;
-                    }
+                if ui
+                    .collapsing(locale.t("oscillator-distortion-params"), |ui| {
+                        self.show_distortion_params(ui, locale, config)
+                    })
+                    .body_returned
+                    .unwrap_or(false)
+                {
+                    changed = true;
+                }
 
-                    if ui
-                        .collapsing(locale.t("oscillator-visual-params"), |ui| {
-                            self.show_visual_params(ui, locale, config)
-                        })
-                        .body_returned
-                        .unwrap_or(false)
-                    {
-                        changed = true;
-                    }
-                });
+                if ui
+                    .collapsing(locale.t("oscillator-visual-params"), |ui| {
+                        self.show_visual_params(ui, locale, config)
+                    })
+                    .body_returned
+                    .unwrap_or(false)
+                {
+                    changed = true;
+                }
             });
 
         self.visible = is_open;

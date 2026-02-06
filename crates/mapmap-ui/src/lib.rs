@@ -273,6 +273,12 @@ pub struct AppUI {
     pub sys_info: sysinfo::System,
     /// Active keyboard keys (for Shortcut triggers)
     pub active_keys: std::collections::HashSet<String>,
+    
+    /// Active tab in compact sidebar (0 = Controls, 1 = Preview)
+    pub active_sidebar_tab: usize,
+    
+    /// Last time responsive styles were updated
+    last_style_update: std::time::Instant,
 }
 
 impl Default for AppUI {
@@ -373,11 +379,56 @@ impl Default for AppUI {
             available_hue_groups: Vec::new(),
             sys_info: sysinfo::System::new_all(),
             active_keys: std::collections::HashSet::new(),
+            active_sidebar_tab: 0,
+            last_style_update: std::time::Instant::now(),
         }
     }
 }
 
 impl AppUI {
+    /// Update responsive styles based on viewport size
+    ///
+    /// Only updates every 500ms to preserve performance
+    pub fn update_responsive_styles(&mut self, ctx: &egui::Context) {
+        // Only update every 500ms
+        if self.last_style_update.elapsed().as_millis() < 500 {
+            return;
+        }
+        self.last_style_update = std::time::Instant::now();
+
+        let layout = crate::core::responsive::ResponsiveLayout::new(ctx);
+        
+        let mut style = (*ctx.style()).clone();
+        let base_font_size = 14.0;
+        
+        // Scale font sizes
+        let scaled_size = layout.scale_font(base_font_size);
+        
+        style.text_styles.insert(
+            egui::TextStyle::Body,
+            egui::FontId::proportional(scaled_size)
+        );
+        style.text_styles.insert(
+            egui::TextStyle::Button,
+            egui::FontId::proportional(scaled_size)
+        );
+        style.text_styles.insert(
+            egui::TextStyle::Heading,
+            egui::FontId::proportional(scaled_size * 1.4)
+        );
+        style.text_styles.insert(
+            egui::TextStyle::Small,
+            egui::FontId::proportional(scaled_size * 0.85)
+        );
+        
+        // Scale spacing
+        let spacing_scale = layout.scale_font(1.0) / 14.0; // Normalize scale factor
+        style.spacing.item_spacing = egui::vec2(8.0, 6.0) * spacing_scale;
+        style.spacing.button_padding = egui::vec2(8.0, 4.0) * spacing_scale;
+        
+        ctx.set_style(style);
+    }
+
     /// Take all pending actions and clear the list
     pub fn take_actions(&mut self) -> Vec<UIAction> {
         std::mem::take(&mut self.actions)
@@ -417,6 +468,8 @@ impl AppUI {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("panel-media-browser"),
+                    Some(crate::widgets::icons::AppIcon::MenuFile),
+                    self.icon_manager.as_ref(),
                     |ui| {
                         if ui.button("✕").clicked() {
                             self.show_media_browser = false;
@@ -442,10 +495,13 @@ impl AppUI {
 
         egui::Window::new(self.i18n.t("panel-playback"))
             .default_size([320.0, 360.0])
+            .frame(crate::widgets::panel::cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("header-video-playback"),
+                    Some(crate::widgets::icons::AppIcon::VideoPlayer),
+                    self.icon_manager.as_ref(),
                     |_| {},
                 );
                 ui.add_space(8.0);

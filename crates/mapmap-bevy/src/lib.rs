@@ -31,12 +31,24 @@ impl BevyRunner {
 
         let mut app = App::new();
 
-        // Minimal plugins for headless/embedded execution
-        app.add_plugins(MinimalPlugins);
-        app.add_plugins(bevy::asset::AssetPlugin::default());
-        app.add_plugins(bevy::scene::ScenePlugin);
-        app.add_plugins(bevy::render::RenderPlugin::default());
-        app.add_plugins(bevy::pbr::PbrPlugin::default()); // Includes StandardMaterial
+        // Use DefaultPlugins but disable problematic ones for embedded execution
+        app.add_plugins(
+            DefaultPlugins
+                .set(bevy::window::WindowPlugin {
+                    primary_window: None,
+                    exit_condition: bevy::window::ExitCondition::DontExit,
+                    ..default()
+                })
+                .disable::<bevy::winit::WinitPlugin>()
+                .disable::<bevy::log::LogPlugin>(),
+        );
+
+        // Manually initialize window events that are usually added by WinitPlugin
+        // but required by RenderPlugin/Camera systems.
+        app.init_resource::<bevy::ecs::event::Events<bevy::window::WindowResized>>();
+        app.init_resource::<bevy::ecs::event::Events<bevy::window::WindowCreated>>();
+        app.init_resource::<bevy::ecs::event::Events<bevy::window::WindowClosed>>();
+        app.init_resource::<bevy::ecs::event::Events<bevy::window::WindowFocused>>();
 
         // Register Extensions (Temporarily disabled due to version mismatch)
         // app.add_plugins(bevy_enoki::EnokiPlugin);
@@ -67,8 +79,9 @@ impl BevyRunner {
         ); // Removed sync_atmosphere_system, particle_system
 
         // Add readback system to the RENDER APP, not the main app
-        let render_app = app.sub_app_mut(bevy::render::RenderApp);
-        render_app.add_systems(bevy::render::Render, frame_readback_system);
+        if let Some(render_app) = app.get_sub_app_mut(bevy::render::RenderApp) {
+            render_app.add_systems(bevy::render::Render, frame_readback_system);
+        }
 
         Self { app }
     }

@@ -1,6 +1,7 @@
-//! Egui-based Layer Management Panel
 use crate::i18n::LocaleManager;
 use crate::widgets;
+use crate::widgets::icons::{AppIcon, IconManager};
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{BlendMode, LayerManager};
@@ -35,6 +36,7 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -44,7 +46,18 @@ impl LayerPanel {
         egui::Window::new(i18n.t("panel-layers"))
             .open(&mut open)
             .default_size([380.0, 400.0])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &i18n.t("panel-layers"),
+                    Some(AppIcon::AppWindow),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 ui.horizontal(|ui| {
                     ui.label(i18n.t_args(
                         "label-total-layers",
