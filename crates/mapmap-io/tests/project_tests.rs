@@ -11,14 +11,14 @@ use tempfile::tempdir;
 fn create_sample_app_state() -> AppState {
     let mut app_state = AppState::new("Test Project");
     app_state.version = "1.2.3".to_string();
-    app_state.settings = AppSettings {
+    app_state.settings = std::sync::Arc::new(AppSettings {
         master_volume: 0.8,
         dark_mode: false,
         ui_scale: 1.2,
         language: "de".to_string(),
         log_config: Default::default(),
         output_count: 1,
-    };
+    });
     // TODO: Add more complex data to the managers once their structures are more stable.
     app_state
 }

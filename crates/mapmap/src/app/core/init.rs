@@ -195,7 +195,7 @@ impl App {
             let valid_ids: Vec<u64> = valid_outputs.values().cloned().collect();
 
             let mut fixed_count = 0;
-            for module in state.module_manager.modules_mut() {
+            for module in state.module_manager_mut().modules_mut() {
                 for part in &mut module.parts {
                     if let mapmap_core::module::ModulePartType::Output(
                         mapmap_core::module::OutputType::Projector {
@@ -457,6 +457,7 @@ impl App {
             _composite_texture: composite_texture,
             layer_ping_pong,
             state,
+            history: mapmap_core::History::default(),
             audio_backend,
             audio_analyzer,
             audio_devices,
