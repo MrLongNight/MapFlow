@@ -941,22 +941,118 @@ impl EffectChainPanel {
                 );
             }
             EffectType::Voronoi => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "scale", &locale.t("param-scale"), 1.0, 50.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "offset", &locale.t("param-offset"), 0.0, 10.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "cell_size", &locale.t("param-cell-size"), 0.1, 5.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "distortion", &locale.t("param-distortion"), 0.0, 2.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "scale",
+                    &locale.t("param-scale"),
+                    1.0,
+                    50.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset",
+                    &locale.t("param-offset"),
+                    0.0,
+                    10.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "cell_size",
+                    &locale.t("param-cell-size"),
+                    0.1,
+                    5.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "distortion",
+                    &locale.t("param-distortion"),
+                    0.0,
+                    2.0,
+                );
             }
             EffectType::Tunnel => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "scale", &locale.t("param-scale"), 0.1, 2.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "rotation", &locale.t("param-rotation"), 0.0, 5.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 5.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "distortion", &locale.t("param-distortion"), 0.0, 2.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "scale",
+                    &locale.t("param-scale"),
+                    0.1,
+                    2.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "rotation",
+                    &locale.t("param-rotation"),
+                    0.0,
+                    5.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    5.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "distortion",
+                    &locale.t("param-distortion"),
+                    0.0,
+                    2.0,
+                );
             }
             EffectType::Galaxy => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "zoom", &locale.t("param-zoom"), 0.1, 5.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 2.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "radius", &locale.t("param-radius"), 0.1, 3.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "brightness", &locale.t("param-brightness"), 0.0, 2.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "zoom",
+                    &locale.t("param-zoom"),
+                    0.1,
+                    5.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    2.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.1,
+                    3.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "brightness",
+                    &locale.t("param-brightness"),
+                    0.0,
+                    2.0,
+                );
             }
 
             _ => {

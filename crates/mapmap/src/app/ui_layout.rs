@@ -594,6 +594,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
                     UIEffectType::Mirror => RenderEffectType::Mirror,
                     UIEffectType::HueShift => RenderEffectType::HueShift,
+                    UIEffectType::Voronoi => RenderEffectType::Voronoi,
+                    UIEffectType::Tunnel => RenderEffectType::Tunnel,
+                    UIEffectType::Galaxy => RenderEffectType::Galaxy,
                     UIEffectType::Custom => RenderEffectType::Custom,
                 };
 
@@ -624,6 +627,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     UIEffectType::RgbSplit => RenderEffectType::RgbSplit,
                     UIEffectType::Mirror => RenderEffectType::Mirror,
                     UIEffectType::HueShift => RenderEffectType::HueShift,
+                    UIEffectType::Voronoi => RenderEffectType::Voronoi,
+                    UIEffectType::Tunnel => RenderEffectType::Tunnel,
+                    UIEffectType::Galaxy => RenderEffectType::Galaxy,
                     UIEffectType::Custom => RenderEffectType::Custom,
                 };
                 app.state.effect_chain.add_effect(render_type);
