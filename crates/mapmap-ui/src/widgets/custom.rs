@@ -3,31 +3,49 @@
 //! This module provides custom `egui` widgets to match the professional VJ software aesthetic.
 
 use crate::theme::colors;
-use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
+use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, UiBuilder, Vec2};
 
-pub fn render_header(ui: &mut Ui, title: &str) {
-    let desired_size = Vec2::new(ui.available_width(), 24.0);
-    // Allocate space for the header
+pub fn render_panel_header(
+    ui: &mut Ui,
+    title: &str,
+    add_contents: impl FnOnce(&mut Ui),
+) {
+    let desired_size = Vec2::new(ui.available_width(), 28.0);
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
 
     let painter = ui.painter();
-    // Header background
+    // Header background (Darker than panel)
     painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
 
-    let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(
-        stripe_rect,
-        egui::CornerRadius::same(0),
-        colors::CYAN_ACCENT,
+    // Bottom border
+    painter.line_segment(
+        [rect.left_bottom(), rect.right_bottom()],
+        Stroke::new(1.0, colors::STROKE_GREY),
     );
 
-    let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
+    // Accent Stripe (Cyan)
+    let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(3.0, rect.height()));
+    painter.rect_filled(stripe_rect, egui::CornerRadius::same(0), colors::CYAN_ACCENT);
+
+    // Title
+    let text_pos = Pos2::new(rect.min.x + 12.0, rect.center().y);
     painter.text(
         text_pos,
         egui::Align2::LEFT_CENTER,
         title,
-        egui::FontId::proportional(14.0),
-        ui.visuals().text_color(),
+        egui::FontId::proportional(14.0), // Stronger font
+        Color32::WHITE,
+    );
+
+    // Content (Actions) - Right Aligned
+    let action_rect = rect.shrink2(Vec2::new(4.0, 0.0));
+    ui.scope_builder(
+        UiBuilder::new()
+            .max_rect(action_rect)
+            .layout(egui::Layout::right_to_left(egui::Align::Center)),
+        |ui| {
+             add_contents(ui);
+        }
     );
 }
 

@@ -45,18 +45,15 @@ impl LayerPanel {
             .open(&mut open)
             .default_size([380.0, 400.0])
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(i18n.t_args(
-                        "label-total-layers",
-                        &[("count", &layer_manager.layers().len().to_string())],
-                    ));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(i18n.t("btn-eject-all")).clicked() {
-                            actions.push(UIAction::EjectAllLayers);
-                        }
-                    });
+                let title = i18n.t_args(
+                    "label-total-layers",
+                    &[("count", &layer_manager.layers().len().to_string())],
+                );
+                widgets::render_panel_header(ui, &title, |ui| {
+                    if ui.button(i18n.t("btn-eject-all")).clicked() {
+                        actions.push(UIAction::EjectAllLayers);
+                    }
                 });
-                ui.separator();
 
                 // Layer list area
                 // We build a tree structure (parent_id -> list of child IDs)
