@@ -22,7 +22,6 @@ pub fn cyber_panel_frame(_style: &egui::Style) -> Frame {
         shadow: egui::Shadow::NONE,
         fill: colors::DARK_GREY,
         stroke: Stroke::new(1.0, colors::STROKE_GREY),
-        ..Default::default()
     }
 }
 
