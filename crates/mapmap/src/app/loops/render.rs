@@ -6,7 +6,6 @@ use anyhow::Result;
 use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
 
-#[cfg(feature = "midi")]
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     // Clone device Arc to create encoder without borrowing self
@@ -54,35 +53,9 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             // UI Pass
             let raw_input = app.egui_state.take_egui_input(&window_context.window);
 
-            // Drop window borrow during closure?
-            // "window_context" is the borrow.
-            // We cannot drop it here because "surface_texture" depends on it (maybe).
-            // Actually, does surface_texture borrow window_context.surface? Yes.
-            // So we cannot use "app" fully in closure.
-            // But ui_layout::show takes "&mut App".
-            // CONFLICT.
-
-            // WORKAROUND: We must assume ui_layout::show DOES NOT touch window_manager.
-            // But strict borrowing prevents this.
-            // EXCEPT if we refactor ui_layout::show OR use unsafe to effectively unborrow.
-
-            // Since we are modularizing, we should accept that we have limits.
-            // Let's defer UI rendering or use disjoint references?
-            // ui_layout::show touches almost everything.
-
-            // Revert to "Unsafe Transmute to Static" or similar hack used in main.rs?
-            // No, main.rs didn't have this conflict because logic was inline.
-
-            // We'll use a scoped hack:
-            // We cheat the borrow checker by transmuting 'app' to 'static for the closure,
-            // knowing that 'window_context' also borrows 'app' but disjointly (logic wise).
-            // This is dangerous but pragmatic for this refactor step.
-            // Ideally: split App.
-
+            // Defer UI logic to ui_layout::show
             let full_output = app.egui_context.run(raw_input, |ctx| {
                 // SAFETY: We ensure window_context doesn't overlap with fields used in show.
-                // show uses: sys_info, audio, state, media, etc.
-                // It does NOT use window_manager (except maybe to layout? No).
                 unsafe {
                     ui_layout::show(&mut *app_ptr, ctx);
                 }
@@ -110,7 +83,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         }
 
         // --- Render Content ---
-        // Pass disjoint fields to avoid conflict with window_context borrow
         render_content(
             RenderContext {
                 device: &app.backend.device,
@@ -550,7 +522,6 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
 }
 
 // Re-defining bitmaps as byte arrays [row0, row1, row2, row3, row4] where each row is 3 bits
-// 3 bits: 4 = 100, 2 = 010, 1 = 001.  7 = 111. 5 = 101.
 const BITMAPS: [[u8; 5]; 10] = [
     [7, 5, 5, 5, 7], // 0
     [2, 6, 2, 2, 7], // 1

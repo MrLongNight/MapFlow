@@ -140,24 +140,24 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // Periodic Performance Status (every 10s)
-    static mut LAST_PERF_LOG: Option<std::time::Instant> = None;
-    unsafe {
-        let now = std::time::Instant::now();
-        if LAST_PERF_LOG.is_none() || now.duration_since(LAST_PERF_LOG.unwrap()).as_secs() >= 10 {
-            let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
-                app.sys_info.process(pid).map(|p| p.memory() as f32 / 1024.0 / 1024.0).unwrap_or(0.0)
-            } else {
-                0.0
-            };
-            info!(
-                "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}", 
-                app.current_fps, 
-                app.current_frame_time_ms,
-                ram_mb,
-                app.state.module_manager.list_modules().len()
-            );
-            LAST_PERF_LOG = Some(now);
-        }
+    // Use a simpler approach without static mut to avoid warnings/safety issues
+    // We can use the app.last_sysinfo_refresh as a rough proxy or just log every N frames.
+    // Let's use a frame counter based approach since we don't want to modify App struct.
+    // 600 frames @ 60fps = 10 seconds.
+    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
+        let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
+            app.sys_info.process(pid).map(|p| p.memory() as f32 / 1024.0 / 1024.0).unwrap_or(0.0)
+        } else {
+            0.0
+        };
+        info!(
+            "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}", 
+            app.current_fps, 
+            app.current_frame_time_ms,
+            ram_mb,
+            app.state.module_manager.list_modules().len()
+        );
     }
 
     // Periodic Cleanups (every 600 frames ~ 10s at 60fps)
