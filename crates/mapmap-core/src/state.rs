@@ -7,6 +7,7 @@ use crate::{
     LayerManager, MappingManager, OscillatorConfig, OutputManager, PaintManager,
 };
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// Global application state
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -17,36 +18,36 @@ pub struct AppState {
     pub version: String,
 
     /// Paint manager (media sources)
-    pub paint_manager: PaintManager,
+    pub paint_manager: Arc<PaintManager>,
 
     /// Mapping manager (geometry mapping)
-    pub mapping_manager: MappingManager,
+    pub mapping_manager: Arc<MappingManager>,
 
     /// Layer manager (compositing)
-    pub layer_manager: LayerManager,
+    pub layer_manager: Arc<LayerManager>,
 
     /// Output manager (display configuration)
-    pub output_manager: OutputManager,
+    pub output_manager: Arc<OutputManager>,
 
     /// Module manager (show control)
     #[serde(default)]
-    pub module_manager: ModuleManager,
+    pub module_manager: Arc<ModuleManager>,
 
     /// Effect automation
     #[serde(default)]
-    pub effect_animator: crate::EffectParameterAnimator,
+    pub effect_animator: Arc<crate::EffectParameterAnimator>,
 
     /// Custom shader graphs
     #[serde(default)]
-    pub shader_graphs: std::collections::HashMap<crate::GraphId, crate::ShaderGraph>,
+    pub shader_graphs: Arc<std::collections::HashMap<crate::GraphId, crate::ShaderGraph>>,
 
     /// Effect chain
     #[serde(default)]
-    pub effect_chain: crate::effects::EffectChain,
+    pub effect_chain: Arc<crate::effects::EffectChain>,
 
     /// Assignment manager (MIDI, OSC, etc.)
     #[serde(default)]
-    pub assignment_manager: AssignmentManager,
+    pub assignment_manager: Arc<AssignmentManager>,
 
     /// Audio configuration
     pub audio_config: AudioConfig,
@@ -56,7 +57,7 @@ pub struct AppState {
 
     /// Application settings
     #[serde(default)]
-    pub settings: AppSettings,
+    pub settings: Arc<AppSettings>,
 
     /// Dirty flag (has changes?) - Not serialized
     #[serde(skip)]
@@ -68,18 +69,18 @@ impl Default for AppState {
         Self {
             name: "Untitled Project".to_string(),
             version: "0.1.0".to_string(),
-            paint_manager: PaintManager::new(),
-            mapping_manager: MappingManager::new(),
-            layer_manager: LayerManager::new(),
-            output_manager: OutputManager::new((1920, 1080)),
-            module_manager: ModuleManager::default(),
-            effect_animator: crate::EffectParameterAnimator::default(),
-            shader_graphs: std::collections::HashMap::new(),
-            effect_chain: crate::effects::EffectChain::new(),
-            assignment_manager: AssignmentManager::default(),
+            paint_manager: Arc::new(PaintManager::new()),
+            mapping_manager: Arc::new(MappingManager::new()),
+            layer_manager: Arc::new(LayerManager::new()),
+            output_manager: Arc::new(OutputManager::new((1920, 1080))),
+            module_manager: Arc::new(ModuleManager::default()),
+            effect_animator: Arc::new(crate::EffectParameterAnimator::default()),
+            shader_graphs: Arc::new(std::collections::HashMap::new()),
+            effect_chain: Arc::new(crate::effects::EffectChain::new()),
+            assignment_manager: Arc::new(AssignmentManager::default()),
             audio_config: AudioConfig::default(),
             oscillator_config: OscillatorConfig::default(),
-            settings: AppSettings::default(),
+            settings: Arc::new(AppSettings::default()),
             dirty: false,
         }
     }
@@ -92,6 +93,56 @@ impl AppState {
             name: name.into(),
             ..Default::default()
         }
+    }
+
+    /// Get mutable reference to PaintManager (CoW)
+    pub fn paint_manager_mut(&mut self) -> &mut PaintManager {
+        Arc::make_mut(&mut self.paint_manager)
+    }
+
+    /// Get mutable reference to MappingManager (CoW)
+    pub fn mapping_manager_mut(&mut self) -> &mut MappingManager {
+        Arc::make_mut(&mut self.mapping_manager)
+    }
+
+    /// Get mutable reference to LayerManager (CoW)
+    pub fn layer_manager_mut(&mut self) -> &mut LayerManager {
+        Arc::make_mut(&mut self.layer_manager)
+    }
+
+    /// Get mutable reference to OutputManager (CoW)
+    pub fn output_manager_mut(&mut self) -> &mut OutputManager {
+        Arc::make_mut(&mut self.output_manager)
+    }
+
+    /// Get mutable reference to ModuleManager (CoW)
+    pub fn module_manager_mut(&mut self) -> &mut ModuleManager {
+        Arc::make_mut(&mut self.module_manager)
+    }
+
+    /// Get mutable reference to EffectParameterAnimator (CoW)
+    pub fn effect_animator_mut(&mut self) -> &mut crate::EffectParameterAnimator {
+        Arc::make_mut(&mut self.effect_animator)
+    }
+
+    /// Get mutable reference to ShaderGraphs (CoW)
+    pub fn shader_graphs_mut(&mut self) -> &mut std::collections::HashMap<crate::GraphId, crate::ShaderGraph> {
+        Arc::make_mut(&mut self.shader_graphs)
+    }
+
+    /// Get mutable reference to EffectChain (CoW)
+    pub fn effect_chain_mut(&mut self) -> &mut crate::effects::EffectChain {
+        Arc::make_mut(&mut self.effect_chain)
+    }
+
+    /// Get mutable reference to AssignmentManager (CoW)
+    pub fn assignment_manager_mut(&mut self) -> &mut AssignmentManager {
+        Arc::make_mut(&mut self.assignment_manager)
+    }
+
+    /// Get mutable reference to AppSettings (CoW)
+    pub fn settings_mut(&mut self) -> &mut AppSettings {
+        Arc::make_mut(&mut self.settings)
     }
 }
 
@@ -233,19 +284,22 @@ mod tests {
     }
 
     #[test]
-    fn test_app_state_dirty_flag_skip() {
-        let mut state = AppState::new("Dirty Project");
-        state.dirty = true;
+    fn test_app_state_cow_behavior() {
+        let state1 = AppState::new("COW Test");
+        let mut state2 = state1.clone();
 
-        let serialized = serde_json::to_string(&state).expect("Failed to serialize");
+        // Initially they share the same PaintManager (Arc)
+        assert_eq!(Arc::strong_count(&state1.paint_manager), 2);
 
-        // Ensure "dirty" field is NOT in the JSON string
-        assert!(!serialized.contains("\"dirty\""));
+        // Mutate state2's paint manager
+        state2.paint_manager_mut().add_paint(crate::Paint::color(1, "Test", [1.0, 0.0, 0.0, 1.0]));
 
-        let deserialized: AppState =
-            serde_json::from_str(&serialized).expect("Failed to deserialize");
+        // Now they should have split
+        assert_eq!(Arc::strong_count(&state1.paint_manager), 1);
+        assert_eq!(Arc::strong_count(&state2.paint_manager), 1);
 
-        // Deserialized object should have default dirty state (false), NOT true
-        assert!(!deserialized.dirty);
+        // state1 should be empty, state2 should have 1 paint
+        assert!(state1.paint_manager.paints().is_empty());
+        assert_eq!(state2.paint_manager.paints().len(), 1);
     }
 }

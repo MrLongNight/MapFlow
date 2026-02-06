@@ -41,7 +41,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 } else {
                     // Create if not exists
                     if let std::collections::hash_map::Entry::Vacant(e) =
-                        app.state.shader_graphs.entry(graph_id)
+                        app.state.shader_graphs_mut().entry(graph_id)
                     {
                         let new_graph = mapmap_core::shader_graph::ShaderGraph::new(
                             graph_id,
@@ -70,10 +70,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.ui_state.show_media_browser = true;
                 app.ui_state.show_module_canvas = false;
             }
-            UIAction::Play => app.state.effect_animator.play(),
-            UIAction::Pause => app.state.effect_animator.pause(),
-            UIAction::Stop => app.state.effect_animator.stop(),
-            UIAction::SetSpeed(s) => app.state.effect_animator.set_speed(s),
+            UIAction::Play => app.state.effect_animator_mut().play(),
+            UIAction::Pause => app.state.effect_animator_mut().pause(),
+            UIAction::Stop => app.state.effect_animator_mut().stop(),
+            UIAction::SetSpeed(s) => app.state.effect_animator_mut().set_speed(s),
             UIAction::ToggleMediaManager => {
                 app.media_manager_ui.visible = !app.media_manager_ui.visible;
             }
@@ -174,7 +174,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 load_project_file(app, &path);
             }
             UIAction::SetLanguage(lang_code) => {
-                app.state.settings.language = lang_code.clone();
+                app.state.settings_mut().language = lang_code.clone();
                 app.state.dirty = true;
                 app.ui_state.i18n.set_locale(&lang_code);
                 info!("Language switched to: {}", lang_code);
@@ -312,19 +312,19 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::SetLayerOpacity(id, opacity) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.opacity = opacity;
                     app.state.dirty = true;
                 }
             }
             UIAction::SetLayerBlendMode(id, mode) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.blend_mode = mode;
                     app.state.dirty = true;
                 }
             }
             UIAction::SetLayerVisibility(id, visible) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.visible = visible;
                     app.state.dirty = true;
                 }
@@ -332,67 +332,67 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::AddLayer => {
                 let count = app.state.layer_manager.len();
                 app.state
-                    .layer_manager
+                    .layer_manager_mut()
                     .create_layer(format!("Layer {}", count + 1));
                 app.state.dirty = true;
             }
             UIAction::CreateGroup => {
                 let count = app.state.layer_manager.len();
                 app.state
-                    .layer_manager
+                    .layer_manager_mut()
                     .create_group(format!("Group {}", count + 1));
                 app.state.dirty = true;
             }
             UIAction::ReparentLayer(id, parent_id) => {
-                app.state.layer_manager.reparent_layer(id, parent_id);
+                app.state.layer_manager_mut().reparent_layer(id, parent_id);
                 app.state.dirty = true;
             }
             UIAction::SwapLayers(id1, id2) => {
-                app.state.layer_manager.swap_layers(id1, id2);
+                app.state.layer_manager_mut().swap_layers(id1, id2);
                 app.state.dirty = true;
             }
             UIAction::ToggleGroupCollapsed(id) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.collapsed = !layer.collapsed;
                     app.state.dirty = true;
                 }
             }
             UIAction::RemoveLayer(id) => {
-                app.state.layer_manager.remove_layer(id);
+                app.state.layer_manager_mut().remove_layer(id);
                 app.state.dirty = true;
                 if app.ui_state.selected_layer_id == Some(id) {
                     app.ui_state.selected_layer_id = None;
                 }
             }
             UIAction::DuplicateLayer(id) => {
-                if let Some(new_id) = app.state.layer_manager.duplicate_layer(id) {
+                if let Some(new_id) = app.state.layer_manager_mut().duplicate_layer(id) {
                     app.ui_state.selected_layer_id = Some(new_id);
                     app.state.dirty = true;
                 }
             }
             UIAction::RenameLayer(id, name) => {
-                if app.state.layer_manager.rename_layer(id, name) {
+                if app.state.layer_manager_mut().rename_layer(id, name) {
                     app.state.dirty = true;
                 }
             }
             UIAction::ToggleLayerSolo(id) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.toggle_solo();
                     app.state.dirty = true;
                 }
             }
             UIAction::ToggleLayerBypass(id) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.toggle_bypass();
                     app.state.dirty = true;
                 }
             }
             UIAction::EjectAllLayers => {
-                app.state.layer_manager.eject_all();
+                app.state.layer_manager_mut().eject_all();
                 app.state.dirty = true;
             }
             UIAction::SetLayerTransform(id, transform) => {
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.transform = transform;
                     app.state.dirty = true;
                 }
@@ -412,26 +412,26 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     }
                 }
 
-                if let Some(layer) = app.state.layer_manager.get_layer_mut(id) {
+                if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(id) {
                     layer.set_transform_with_resize(mode, source_size, target_size);
                     app.state.dirty = true;
                 }
             }
             UIAction::SetMasterOpacity(val) => {
-                app.state.layer_manager.composition.set_master_opacity(val);
+                app.state.layer_manager_mut().composition.set_master_opacity(val);
                 app.state.dirty = true;
             }
             UIAction::SetMasterSpeed(val) => {
-                app.state.layer_manager.composition.set_master_speed(val);
+                app.state.layer_manager_mut().composition.set_master_speed(val);
                 app.state.dirty = true;
             }
             UIAction::SetCompositionName(name) => {
-                app.state.layer_manager.composition.name = name;
+                app.state.layer_manager_mut().composition.name = name;
                 app.state.dirty = true;
             }
             UIAction::ConfigureOutput(id, config) => {
                 let fs = config.fullscreen;
-                app.state.output_manager.update_output(id, config.clone());
+                app.state.output_manager_mut().update_output(id, config.clone());
 
                 let all_ids: Vec<_> = app
                     .state
@@ -441,7 +441,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .map(|o| o.id)
                     .collect();
                 for oid in all_ids {
-                    if let Some(other) = app.state.output_manager.get_output_mut(oid) {
+                    if let Some(other) = app.state.output_manager_mut().get_output_mut(oid) {
                         if other.fullscreen != fs {
                             other.fullscreen = fs;
                             info!("Syncing fullscreen state for output {} -> {}", oid, fs);
@@ -475,7 +475,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
 /// Handle Node Editor actions
 fn handle_node_action(app: &mut App, action: NodeEditorAction) -> Result<()> {
     if let Some(graph_id) = app.ui_state.node_editor_panel.graph_id {
-        if let Some(graph) = app.state.shader_graphs.get_mut(&graph_id) {
+        if let Some(graph) = app.state.shader_graphs_mut().get_mut(&graph_id) {
             let mut needs_update = false;
 
             match action {
@@ -539,7 +539,7 @@ pub fn handle_mcp_actions(app: &mut App) {
                 "MCP: SetModuleSourcePath({}, {}, {:?})",
                 mod_id, part_id, path
             );
-            if let Some(module) = app.state.module_manager.get_module_mut(mod_id) {
+            if let Some(module) = app.state.module_manager_mut().get_module_mut(mod_id) {
                 if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
                     if let mapmap_core::module::ModulePartType::Source(
                         mapmap_core::module::SourceType::MediaFile {

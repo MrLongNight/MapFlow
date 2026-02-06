@@ -46,6 +46,10 @@ pub mod shader_graph;
 pub mod state;
 pub mod trigger_system;
 
+// Undo/Redo
+pub mod history;
+pub use history::History;
+
 // --- Re-exports grouped by category ---
 
 // Animation
