@@ -56,10 +56,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libasound2-dev pkg-config \
+            pkg-config libasound2-dev \
             libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
-            ffmpeg
+            libfontconfig1-dev libfreetype6-dev \
+            libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev
 
       - name: Check Formatting
         run: cargo fmt --all -- --check
@@ -72,7 +73,7 @@ jobs:
       - name: Check Dependency Sort
         run: |
           cargo binstall -y cargo-sort
-          cargo sort --workspace --check
+          cargo sort --workspace --grouped --check
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 2: SECURITY (AUDIT & VET)
@@ -92,11 +93,10 @@ jobs:
 
       - name: Run Audit
         # Ignore RUSTSEC-2024-0370 (proc-macro-error "unmaintained" - transitive dep)
-        # RUSTSEC-2026-0007 (bytes integer overflow) - Upgrade pending
-        run: cargo audit --ignore RUSTSEC-2024-0370 --ignore RUSTSEC-2026-0007
+        run: cargo audit --ignore RUSTSEC-2024-0370
 
       - name: Run Cargo Deny
-        run: cargo deny check advisories --config deny.toml
+        run: cargo deny --config deny.toml check advisories
 
   # ═══════════════════════════════════════════════════════════════
   # JOB 3: BUILD & TEST (LINUX)
