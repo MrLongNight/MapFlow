@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-02-06: feat: Implement safe delete, batch undo/redo, and keyboard navigation (#4e5bc44)
+- 2026-02-06: fix: Guard Spout output type on Windows and update license allowances (#04aa037)
+- 2026-02-06: fix(ci): Resolve cargo-deny configuration and license checks (#c5b94d3)
 - 2026-02-01: docs: Update Roadmap status for NDI/MIDI and fix documentation duplicates in core (Scribe)
 - 2026-01-31: feat: Implement the main application entry point and core orchestration logic for MapFlow
 - 2026-01-26: docs: Refine Cyber Dark theme documentation and fix duplicate match arm in EffectChainPanel
