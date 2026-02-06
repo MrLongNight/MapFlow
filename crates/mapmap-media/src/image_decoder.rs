@@ -131,6 +131,9 @@ impl VideoDecoder for StillImageDecoder {
 // GIF Decoder
 // ============================================================================
 
+/// Maximum number of frames allowed in a GIF to prevent memory exhaustion DoS
+const MAX_GIF_FRAMES: usize = 500;
+
 /// Decoder for animated GIF files
 ///
 /// Supports frame-by-frame playback with proper timing based on GIF delays.
@@ -169,8 +172,17 @@ impl GifDecoder {
 
         let mut frames = Vec::new();
         let mut total_duration = Duration::ZERO;
+        let mut width = 0;
+        let mut height = 0;
 
         for frame_result in frames_iter {
+            if frames.len() >= MAX_GIF_FRAMES {
+                return Err(MediaError::DecoderError(format!(
+                    "GIF contains too many frames (limit: {})",
+                    MAX_GIF_FRAMES
+                )));
+            }
+
             let frame = frame_result
                 .map_err(|e| MediaError::DecoderError(format!("Failed to decode frame: {}", e)))?;
 
@@ -180,6 +192,13 @@ impl GifDecoder {
             );
 
             let image = DynamicImage::ImageRgba8(frame.into_buffer());
+
+            // Capture dimensions from the first frame
+            if width == 0 {
+                width = image.width();
+                height = image.height();
+            }
+
             frames.push((image.to_rgba8().into_raw(), delay_duration));
             total_duration += delay_duration;
         }
@@ -188,11 +207,6 @@ impl GifDecoder {
             return Err(MediaError::DecoderError("GIF has no frames".to_string()));
         }
 
-        let (width, height) = {
-            let frame = image::load_from_memory(&frames[0].0)
-                .map_err(|e| MediaError::DecoderError(format!("Failed to decode frame: {}", e)))?;
-            (frame.width(), frame.height())
-        };
         let fps = frames.len() as f64 / total_duration.as_secs_f64();
 
         info!(
@@ -326,5 +340,37 @@ mod tests {
     fn test_gif_decoder_new_not_found() {
         let result = GifDecoder::open("a_file_that_does_not_exist.gif");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_gif_frame_limit() {
+        use image::codecs::gif::GifEncoder;
+        use std::fs::File;
+
+        // Create a temporary directory
+        let temp_dir = tempfile::tempdir().expect("failed to create temp dir");
+        let file_path = temp_dir.path().join("test_limit.gif");
+
+        {
+            let file = File::create(&file_path).expect("failed to create file");
+            let mut encoder = GifEncoder::new(file);
+
+            // Create a small 1x1 frame
+            let frame = image::Frame::new(image::RgbaImage::new(1, 1));
+
+            // Encode MAX_GIF_FRAMES + 1 frames
+            for _ in 0..super::MAX_GIF_FRAMES + 1 {
+                encoder.encode_frame(frame.clone()).expect("failed to encode frame");
+            }
+        }
+
+        let result = GifDecoder::open(&file_path);
+        assert!(result.is_err());
+        match result {
+            Err(MediaError::DecoderError(msg)) => {
+                assert!(msg.contains("too many frames"));
+            }
+            _ => panic!("Expected DecoderError"),
+        }
     }
 }
