@@ -2768,9 +2768,9 @@ impl ModuleCanvas {
 
         // 5. Execute Deletions (Modify Module)
         // Remove connections first
-        module
-            .connections
-            .retain(|c| !parts_to_delete.contains(&c.from_part) && !parts_to_delete.contains(&c.to_part));
+        module.connections.retain(|c| {
+            !parts_to_delete.contains(&c.from_part) && !parts_to_delete.contains(&c.to_part)
+        });
 
         // Remove parts
         module.parts.retain(|p| !parts_to_delete.contains(&p.id));
