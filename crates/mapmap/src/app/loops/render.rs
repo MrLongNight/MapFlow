@@ -270,7 +270,27 @@ fn render_content(
     // Accumulate Layers
     mesh_renderer.begin_frame();
     for (module_id, op) in target_ops {
-        let tex_name = if let Some(src_id) = op.source_part_id {
+        let tex_name = if op.mapping_mode {
+            let grid_tex_name = format!("grid_layer_{}", op.layer_part_id);
+            if !ctx.texture_pool.has_texture(&grid_tex_name) {
+                let grid_img = create_grid_texture(op.layer_part_id, 256, 256);
+                ctx.texture_pool.ensure_texture(
+                    &grid_tex_name,
+                    256,
+                    256,
+                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                );
+                ctx.texture_pool.upload_data(
+                    queue,
+                    &grid_tex_name,
+                    &grid_img,
+                    256,
+                    256,
+                );
+            }
+            grid_tex_name
+        } else if let Some(src_id) = op.source_part_id {
             format!("part_{}_{}", module_id, src_id)
         } else {
             "".to_string()
@@ -361,6 +381,103 @@ fn render_content(
         }
     }
     Ok(())
+}
+
+// Simple 3x5 font for digits 0-9
+// 1 = pixel on, 0 = pixel off
+const DIGIT_FONT: [[u8; 15]; 10] = [
+    // 0
+    [1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1],
+    // 1
+    [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
+    // 2
+    [1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+    // 3
+    [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+    // 4
+    [1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1],
+    // 5
+    [1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+    // 6
+    [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+    // 7
+    [1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+    // 8
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+    // 9
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+];
+
+fn draw_digit(
+    img: &mut image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
+    digit: u8,
+    x: u32,
+    y: u32,
+    color: image::Rgba<u8>,
+    scale: u32,
+) {
+    if digit > 9 {
+        return;
+    }
+    let font = &DIGIT_FONT[digit as usize];
+    for row in 0..5 {
+        for col in 0..3 {
+            if font[row * 3 + col] == 1 {
+                for sy in 0..scale {
+                    for sx in 0..scale {
+                        let px = x + col as u32 * scale + sx;
+                        let py = y + row as u32 * scale + sy;
+                        if px < img.width() && py < img.height() {
+                            img.put_pixel(px, py, color);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn create_grid_texture(layer_id: u64, width: u32, height: u32) -> Vec<u8> {
+    let mut img = image::ImageBuffer::new(width, height);
+
+    for (x, y, pixel) in img.enumerate_pixels_mut() {
+        let is_grid = x % 32 == 0 || y % 32 == 0;
+        let is_border = x < 2 || x >= width - 2 || y < 2 || y >= height - 2;
+        let is_center =
+            (x as i32 - width as i32 / 2).abs() < 2 || (y as i32 - height as i32 / 2).abs() < 2;
+
+        if is_border || is_center {
+            *pixel = image::Rgba([255, 0, 0, 255]); // Red border/center
+        } else if is_grid {
+            *pixel = image::Rgba([255, 255, 255, 255]); // White grid
+        } else {
+            *pixel = image::Rgba([0, 0, 0, 255]); // Black background
+        }
+    }
+
+    // Draw Layer ID
+    let s = layer_id.to_string();
+    let scale = 4;
+    let digit_width = 3 * scale;
+    let digit_spacing = 1 * scale;
+    let total_width = (digit_width + digit_spacing) * s.len() as u32;
+    let start_x = (width.saturating_sub(total_width)) / 2;
+    let start_y = (height.saturating_sub(5 * scale)) / 2;
+
+    for (i, c) in s.chars().enumerate() {
+        if let Some(digit) = c.to_digit(10) {
+            draw_digit(
+                &mut img,
+                digit as u8,
+                start_x + i as u32 * (digit_width + digit_spacing),
+                start_y,
+                image::Rgba([0, 255, 255, 255]),
+                scale,
+            );
+        }
+    }
+
+    img.into_raw()
 }
 
 fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {

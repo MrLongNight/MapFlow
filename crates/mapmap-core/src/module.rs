@@ -105,6 +105,7 @@ impl MapFlowModule {
                 opacity: 1.0,
                 blend_mode: None,
                 mesh: default_mesh_quad(),
+                mapping_mode: false,
             }),
 
             PartType::Hue => ModulePartType::Hue(HueNodeType::SingleLamp {
@@ -1547,7 +1548,7 @@ impl MeshType {
 
     /// Convert to runtime mesh
     pub fn to_mesh(&self) -> crate::mesh::Mesh {
-        use crate::mesh::Mesh;
+        use crate::mesh::{BezierPatch, Mesh};
         use glam::Vec2;
 
         let mut mesh = match self {
@@ -1568,14 +1569,36 @@ impl MeshType {
                 Mesh::ellipse(Vec2::new(0.5, 0.5), 0.5, 0.5, *segments)
             }
             MeshType::BezierSurface { control_points } => {
-                // For Bezier surface, create a grid and warp it based on control points
-                // For now, use a simple grid as a placeholder until full Bezier implementation
-                if control_points.len() >= 4 {
-                    // TODO: Implement proper Bezier surface interpolation
-                    Mesh::create_grid(8, 8)
-                } else {
-                    Mesh::quad()
+                // Create high-res grid for smooth warping
+                let mut mesh = Mesh::create_grid(16, 16);
+
+                if control_points.len() == 16 {
+                    let mut patch = BezierPatch::new();
+                    // Map 1D vector to 4x4 array
+                    for i in 0..4 {
+                        for j in 0..4 {
+                            let idx = i * 4 + j;
+                            if idx < control_points.len() {
+                                patch.control_points[i][j] =
+                                    Vec2::new(control_points[idx].0, control_points[idx].1);
+                            }
+                        }
+                    }
+                    patch.apply_to_mesh(&mut mesh);
+                } else if control_points.len() == 4 {
+                    // 4 points = Simple keystone (corners)
+                    let corners = [
+                        Vec2::new(control_points[0].0, control_points[0].1),
+                        Vec2::new(control_points[1].0, control_points[1].1),
+                        Vec2::new(control_points[2].0, control_points[2].1),
+                        Vec2::new(control_points[3].0, control_points[3].1),
+                    ];
+                    let mut patch = BezierPatch::new();
+                    patch.set_corners(corners);
+                    patch.apply_to_mesh(&mut mesh);
                 }
+
+                mesh
             }
             MeshType::Polygon { vertices } => {
                 // Create a triangle fan from polygon vertices
@@ -1621,7 +1644,8 @@ impl MeshType {
                 }
             }
             MeshType::Cylinder { segments, height } => {
-                // Create a cylindrical mesh by wrapping a grid
+                // Create a high-density grid suitable for cylindrical warping.
+                // The 'height' parameter scales vertical resolution.
                 let rows = (height * 10.0).max(2.0) as u32;
                 let cols = (*segments).max(3);
                 Mesh::create_grid(rows, cols)
@@ -1630,7 +1654,8 @@ impl MeshType {
                 lat_segments,
                 lon_segments,
             } => {
-                // Create a UV sphere mesh
+                // Create a UV sphere mesh (Orthographic projection of a sphere).
+                // Useful for dome mapping or spherical objects.
                 use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
 
                 let lat_segs = (*lat_segments).max(3);
@@ -1931,6 +1956,9 @@ pub enum LayerType {
         /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Mapping mode (renders grid)
+        #[serde(default)]
+        mapping_mode: bool,
     },
     /// A group of layers
     Group {
@@ -1943,6 +1971,9 @@ pub enum LayerType {
         /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Mapping mode (renders grid)
+        #[serde(default)]
+        mapping_mode: bool,
     },
     /// Special layer representing "All Layers"
     All {

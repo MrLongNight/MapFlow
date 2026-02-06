@@ -446,12 +446,59 @@ impl ModuleCanvas {
                 );
             }
             MeshType::BezierSurface { control_points } => {
-                // Deserialize scaled points
-                let points: Vec<(f32, f32)> = control_points
-                    .iter()
-                    .map(|(x, y)| (x * scale, y * scale))
-                    .collect();
-                self.mesh_editor.set_from_bezier_points(&points);
+                // Check if we have 16 points (4x4 patch)
+                if control_points.len() == 16 {
+                    // Convert 4x4 patch to 4 vertices with handles for the editor
+                    // See 4x4 Patch indices:
+                    // 0  1  2  3
+                    // 4  5  6  7
+                    // 8  9  10 11
+                    // 12 13 14 15
+                    let pts = control_points;
+                    let to_vec = |i: usize| Vec2::new(pts[i].0 * scale, pts[i].1 * scale);
+                    let to_pos = |i: usize| egui::Pos2::new(pts[i].0 * scale, pts[i].1 * scale);
+
+                    let vertices = vec![
+                        // TL (0) -> TR (3) -> BR (15) -> BL (12) -> TL (0)
+                        // Vertex 0 (TL): Pos=0, Out=1-0, In=4-0
+                        (
+                            to_pos(0),
+                            to_vec(4) - to_vec(0), // In (from Left)
+                            to_vec(1) - to_vec(0), // Out (to Top)
+                        ),
+                        // Vertex 1 (TR): Pos=3, Out=7-3, In=2-3
+                        (
+                            to_pos(3),
+                            to_vec(2) - to_vec(3), // In (from Top)
+                            to_vec(7) - to_vec(3), // Out (to Right)
+                        ),
+                        // Vertex 2 (BR): Pos=15, Out=14-15, In=11-15
+                        (
+                            to_pos(15),
+                            to_vec(11) - to_vec(15), // In (from Right)
+                            to_vec(14) - to_vec(15), // Out (to Bottom)
+                        ),
+                        // Vertex 3 (BL): Pos=12, Out=8-12, In=13-12
+                        (
+                            to_pos(12),
+                            to_vec(13) - to_vec(12), // In (from Bottom)
+                            to_vec(8) - to_vec(12),  // Out (to Left)
+                        ),
+                    ];
+
+                    // Convert to flattened editor format
+                    let mut flat_points = Vec::new();
+                    for (pos, p_in, p_out) in vertices {
+                        flat_points.push((pos.x, pos.y));
+                        flat_points.push((pos.x + p_in.x, pos.y + p_in.y));
+                        flat_points.push((pos.x + p_out.x, pos.y + p_out.y));
+                    }
+                    self.mesh_editor.set_from_bezier_points(&flat_points);
+                } else {
+                    // Fallback or empty
+                    self.mesh_editor
+                        .create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
+                }
             }
             // Fallback for unsupported types - reset to default quad for now
             _ => {
@@ -486,8 +533,92 @@ impl ModuleCanvas {
                 }
             }
             MeshType::BezierSurface { control_points } => {
-                let points = self.mesh_editor.get_bezier_points();
-                *control_points = points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
+                let editor_points = self.mesh_editor.get_bezier_points();
+                // Editor returns flattened list: V0_Pos, V0_In, V0_Out, V1_Pos...
+                // We expect 4 vertices (12 points) to form the boundary.
+                if editor_points.len() == 12 {
+                    let get_pt = |i: usize| -> (f32, f32) {
+                        (editor_points[i].0 / scale, editor_points[i].1 / scale)
+                    };
+
+                    // Reconstruct 16 points (4x4 patch)
+                    let mut cp = vec![(0.0, 0.0); 16];
+
+                    // Corners
+                    cp[0] = get_pt(0); // TL Pos
+                    cp[3] = get_pt(3); // TR Pos
+                    cp[15] = get_pt(6); // BR Pos
+                    cp[12] = get_pt(9); // BL Pos
+
+                    // Edges
+                    // Top (0->3): TL.Out (2) -> TR.In (4)
+                    // Note: get_bezier_points returns: Pos, In(Pos+Vec), Out(Pos+Vec)
+                    // So index 2 is TL.Out absolute position. Index 4 is TR.In abs pos.
+                    cp[1] = get_pt(2); // TL.Out
+                    cp[2] = get_pt(4); // TR.In
+
+                    // Right (3->15): TR.Out (5) -> BR.In (7)
+                    cp[7] = get_pt(5);
+                    cp[11] = get_pt(7);
+
+                    // Bottom (15->12): BR.Out (8) -> BL.In (10)
+                    // Note: 4x4 grid order for bottom row is 12, 13, 14, 15.
+                    // Editor flows 15 -> 12.
+                    // So BR.Out corresponds to 14. BL.In corresponds to 13.
+                    cp[14] = get_pt(8);
+                    cp[13] = get_pt(10);
+
+                    // Left (12->0): BL.Out (11) -> TL.In (1)
+                    // Grid order: 12, 8, 4, 0.
+                    // Flow 12 -> 0.
+                    // BL.Out -> 8. TL.In -> 4.
+                    cp[8] = get_pt(11);
+                    cp[4] = get_pt(1);
+
+                    // Inner 4 points (5, 6, 9, 10) - Bilinear Interpolation of neighbors
+                    // Coons patch approximation
+                    // P(u,v) = ...
+                    // Simplified: average of horizontal and vertical interpolations
+                    // P5 (1,1): Left neighbor P4, Right P7? Top P1, Bottom P13?
+                    // 4x4 Grid indices:
+                    // 0  1  2  3
+                    // 4  5  6  7
+                    // 8  9  10 11
+                    // 12 13 14 15
+
+                    let lerp = |a: (f32, f32), b: (f32, f32), t: f32| {
+                        (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t)
+                    };
+
+                    // Row 1 (indices 4, 5, 6, 7)
+                    // We have 4 and 7. We need 5 and 6.
+                    // Col 1 (indices 1, 5, 9, 13)
+                    // We have 1 and 13. We need 5 and 9.
+
+                    // P5: Avg of Row-interp and Col-interp?
+                    // Horizontal 1/3 between P4 and P7:
+                    let h5 = lerp(cp[4], cp[7], 0.333);
+                    // Vertical 1/3 between P1 and P13:
+                    let v5 = lerp(cp[1], cp[13], 0.333);
+                    cp[5] = ((h5.0 + v5.0) * 0.5, (h5.1 + v5.1) * 0.5);
+
+                    // P6 (1,2):
+                    let h6 = lerp(cp[4], cp[7], 0.666);
+                    let v6 = lerp(cp[2], cp[14], 0.333);
+                    cp[6] = ((h6.0 + v6.0) * 0.5, (h6.1 + v6.1) * 0.5);
+
+                    // P9 (2,1):
+                    let h9 = lerp(cp[8], cp[11], 0.333);
+                    let v9 = lerp(cp[1], cp[13], 0.666);
+                    cp[9] = ((h9.0 + v9.0) * 0.5, (h9.1 + v9.1) * 0.5);
+
+                    // P10 (2,2):
+                    let h10 = lerp(cp[8], cp[11], 0.666);
+                    let v10 = lerp(cp[2], cp[14], 0.666);
+                    cp[10] = ((h10.0 + v10.0) * 0.5, (h10.1 + v10.1) * 0.5);
+
+                    *control_points = cp;
+                }
             }
             _ => {
                 // Other types not yet supported for write-back
@@ -894,6 +1025,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -1631,7 +1763,7 @@ impl ModuleCanvas {
                                         };
 
                                         match layer {
-                                            LayerType::Single { id, name, opacity, blend_mode, mesh } => {
+                                            LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_mode } => {
                                                 ui.label("🔲 Single Layer");
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
@@ -1646,12 +1778,16 @@ impl ModuleCanvas {
                                                     if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Multiply)), "Multiply").clicked() { *blend_mode = Some(BlendModeType::Multiply); }
                                                 });
 
+                                                ui.separator();
+                                                ui.checkbox(mapping_mode, "📐 Mapping Mode (Show Grid)");
+
                                                 render_mesh_ui(ui, mesh, *id);
                                             }
-                                            LayerType::Group { name, opacity, mesh, .. } => {
+                                            LayerType::Group { name, opacity, mesh, mapping_mode, .. } => {
                                                 ui.label("📂 Group");
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+                                                ui.checkbox(mapping_mode, "📐 Mapping Mode (Show Grid)");
                                                 render_mesh_ui(ui, mesh, 9999); // Dummy ID
                                             }
                                             LayerType::All { opacity, .. } => {
