@@ -9,7 +9,16 @@ use image::{AnimationDecoder, DynamicImage};
 use mapmap_io::{PixelFormat, VideoFrame};
 use std::path::Path;
 use std::time::Duration;
-use tracing::info;
+use tracing::{info, warn};
+
+/// Maximum number of frames to decode in a GIF
+///
+/// This limit prevents memory exhaustion (DoS) when loading large animated GIFs
+/// which are fully decoded into memory.
+#[cfg(not(test))]
+const MAX_GIF_FRAMES: usize = 1000;
+#[cfg(test)]
+const MAX_GIF_FRAMES: usize = 10;
 
 // ============================================================================
 // Still Image Decoder
@@ -171,6 +180,18 @@ impl GifDecoder {
         let mut total_duration = Duration::ZERO;
 
         for frame_result in frames_iter {
+            if frames.len() >= MAX_GIF_FRAMES {
+                warn!(
+                    "GIF exceeded limit of {} frames. Aborting playback from {}",
+                    MAX_GIF_FRAMES,
+                    path.display()
+                );
+                return Err(MediaError::DecoderError(format!(
+                    "GIF exceeded limit of {} frames",
+                    MAX_GIF_FRAMES
+                )));
+            }
+
             let frame = frame_result
                 .map_err(|e| MediaError::DecoderError(format!("Failed to decode frame: {}", e)))?;
 
@@ -326,5 +347,42 @@ mod tests {
     fn test_gif_decoder_new_not_found() {
         let result = GifDecoder::open("a_file_that_does_not_exist.gif");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_gif_limit() {
+        use tempfile::NamedTempFile;
+
+        // Create a temporary file
+        let file = NamedTempFile::new().unwrap();
+        let path = file.path();
+
+        // Generate a GIF with excess frames
+        // Limit is 10 in test mode. We create 15 frames.
+        {
+            let mut encoder = image::codecs::gif::GifEncoder::new(&file);
+            let frame = image::Frame::new(image::RgbaImage::new(1, 1)); // 1x1 pixel
+
+            // Set repeat to Infinite
+            encoder
+                .set_repeat(image::codecs::gif::Repeat::Infinite)
+                .unwrap();
+
+            for _ in 0..(MAX_GIF_FRAMES + 5) {
+                encoder.encode_frame(frame.clone()).unwrap();
+            }
+        }
+
+        // Open decoder
+        let result = GifDecoder::open(path);
+
+        // Verify it fails
+        assert!(result.is_err());
+        match result {
+            Err(MediaError::DecoderError(msg)) => {
+                assert!(msg.contains("exceeded limit"));
+            }
+            _ => panic!("Expected DecoderError with limit message"),
+        }
     }
 }
