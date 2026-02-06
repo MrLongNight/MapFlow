@@ -378,6 +378,9 @@ impl EffectChainRenderer {
             EffectType::Mirror => include_str!("../../../shaders/effect_mirror.wgsl"),
             EffectType::HueShift => include_str!("../../../shaders/effect_hue_shift.wgsl"),
             EffectType::Kaleidoscope => include_str!("../../../shaders/effect_kaleidoscope.wgsl"),
+            EffectType::Voronoi => include_str!("../../../shaders/effect_voronoi.wgsl"),
+            EffectType::Tunnel => include_str!("../../../shaders/effect_tunnel.wgsl"),
+            EffectType::Galaxy => include_str!("../../../shaders/effect_galaxy.wgsl"),
             _ => include_str!("../../../shaders/effect_passthrough.wgsl"),
         }
     }
@@ -556,6 +559,24 @@ impl EffectChainRenderer {
                 }
                 EffectType::Pixelate => {
                     params.param_a = effect.get_param("pixel_size", 8.0);
+                }
+                EffectType::Voronoi => {
+                    params.param_a = effect.get_param("scale", 10.0);
+                    params.param_b = effect.get_param("offset", 1.0);
+                    params.param_c[0] = effect.get_param("cell_size", 1.0);
+                    params.param_c[1] = effect.get_param("distortion", 0.5);
+                }
+                EffectType::Tunnel => {
+                    params.param_a = effect.get_param("scale", 0.5);
+                    params.param_b = effect.get_param("rotation", 0.5);
+                    params.param_c[0] = effect.get_param("speed", 0.5);
+                    params.param_c[1] = effect.get_param("distortion", 0.5);
+                }
+                EffectType::Galaxy => {
+                    params.param_a = effect.get_param("zoom", 0.5);
+                    params.param_b = effect.get_param("speed", 0.2);
+                    params.param_c[0] = effect.get_param("radius", 1.0);
+                    params.param_c[1] = effect.get_param("brightness", 1.0);
                 }
                 // Custom graphs handle params differently (via Uniform nodes usually),
                 // but we can map standard params to defaults if needed.

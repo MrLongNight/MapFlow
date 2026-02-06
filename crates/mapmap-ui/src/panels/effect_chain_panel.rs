@@ -26,6 +26,9 @@ pub enum EffectType {
     RgbSplit,
     Mirror,
     HueShift,
+    Voronoi,
+    Tunnel,
+    Galaxy,
     Custom,
 }
 
@@ -47,6 +50,9 @@ impl EffectType {
             EffectType::RgbSplit => locale.t("effect-name-rgb-split"),
             EffectType::Mirror => locale.t("effect-name-mirror"),
             EffectType::HueShift => locale.t("effect-name-hue-shift"),
+            EffectType::Voronoi => locale.t("effect-name-voronoi"),
+            EffectType::Tunnel => locale.t("effect-name-tunnel"),
+            EffectType::Galaxy => locale.t("effect-name-galaxy"),
             EffectType::Custom => locale.t("effect-name-custom"),
         }
     }
@@ -68,6 +74,9 @@ impl EffectType {
             EffectType::RgbSplit => "🌈",
             EffectType::Mirror => "🪞",
             EffectType::HueShift => "🎨",
+            EffectType::Voronoi => "💠",
+            EffectType::Tunnel => "🌀",
+            EffectType::Galaxy => "🌌",
             EffectType::Custom => "⚙️",
         }
     }
@@ -89,6 +98,9 @@ impl EffectType {
             EffectType::RgbSplit => AppIcon::MagicWand,
             EffectType::Mirror => AppIcon::Repeat,
             EffectType::HueShift => AppIcon::PaintBucket,
+            EffectType::Voronoi => AppIcon::MagicWand,
+            EffectType::Tunnel => AppIcon::MagicWand,
+            EffectType::Galaxy => AppIcon::MagicWand,
             EffectType::Custom => AppIcon::Cog,
         }
     }
@@ -110,6 +122,9 @@ impl EffectType {
             EffectType::RgbSplit,
             EffectType::Mirror,
             EffectType::HueShift,
+            EffectType::Voronoi,
+            EffectType::Tunnel,
+            EffectType::Galaxy,
             EffectType::Custom,
         ]
     }
@@ -161,6 +176,24 @@ impl UIEffect {
             EffectType::FilmGrain => {
                 parameters.insert("amount".to_string(), 0.1);
                 parameters.insert("speed".to_string(), 1.0);
+            }
+            EffectType::Voronoi => {
+                parameters.insert("scale".to_string(), 10.0);
+                parameters.insert("offset".to_string(), 1.0);
+                parameters.insert("cell_size".to_string(), 1.0);
+                parameters.insert("distortion".to_string(), 0.5);
+            }
+            EffectType::Tunnel => {
+                parameters.insert("speed".to_string(), 0.5);
+                parameters.insert("rotation".to_string(), 0.5);
+                parameters.insert("scale".to_string(), 0.5);
+                parameters.insert("distortion".to_string(), 0.5);
+            }
+            EffectType::Galaxy => {
+                parameters.insert("zoom".to_string(), 0.5);
+                parameters.insert("speed".to_string(), 0.2);
+                parameters.insert("radius".to_string(), 1.0);
+                parameters.insert("brightness".to_string(), 1.0);
             }
             _ => {}
         }
@@ -906,6 +939,24 @@ impl EffectChainPanel {
                     0.0,
                     1.0,
                 );
+            }
+            EffectType::Voronoi => {
+                Self::render_param_slider_static(ui, parameters, param_changes, "scale", &locale.t("param-scale"), 1.0, 50.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "offset", &locale.t("param-offset"), 0.0, 10.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "cell_size", &locale.t("param-cell-size"), 0.1, 5.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "distortion", &locale.t("param-distortion"), 0.0, 2.0);
+            }
+            EffectType::Tunnel => {
+                Self::render_param_slider_static(ui, parameters, param_changes, "scale", &locale.t("param-scale"), 0.1, 2.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "rotation", &locale.t("param-rotation"), 0.0, 5.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 5.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "distortion", &locale.t("param-distortion"), 0.0, 2.0);
+            }
+            EffectType::Galaxy => {
+                Self::render_param_slider_static(ui, parameters, param_changes, "zoom", &locale.t("param-zoom"), 0.1, 5.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 2.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "radius", &locale.t("param-radius"), 0.1, 3.0);
+                Self::render_param_slider_static(ui, parameters, param_changes, "brightness", &locale.t("param-brightness"), 0.0, 2.0);
             }
 
             _ => {

@@ -333,3 +333,12 @@ oscillator-color-mode-off = Aus
 oscillator-color-mode-rainbow = Regenbogen
 oscillator-color-mode-black-white = Schwarzweiß
 oscillator-color-mode-complementary = Komplementär
+
+effect-name-voronoi = Voronoi-Verzerrung
+effect-name-tunnel = Weltraum-Tunnel
+effect-name-galaxy = Galaxie-Generator
+param-scale = Skalierung
+param-offset = Versatz
+param-cell-size = Zellgröße
+param-distortion = Verzerrung
+param-zoom = Zoom
