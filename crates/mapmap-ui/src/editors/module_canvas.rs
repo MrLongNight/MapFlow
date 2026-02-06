@@ -5932,6 +5932,7 @@ impl ModuleCanvas {
                         (350.0, 100.0),
                         None,
                     ),
+                    #[cfg(target_os = "windows")]
                     (
                         ModulePartType::Output(OutputType::Spout {
                             name: "MapFlow Spout".to_string(),
