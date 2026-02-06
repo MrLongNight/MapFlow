@@ -86,10 +86,12 @@ fn test_update_audio_volume_beat() {
 
     // 2. Stimulate
     let audio_data = AudioTriggerData {
+        band_energies: [0.0; 9],
         rms_volume: 0.6,  // > 0.5
         peak_volume: 0.4, // < 0.5
         beat_detected: true,
-        ..AudioTriggerData::default()
+        beat_strength: 0.0,
+        bpm: None,
     };
 
     // 3. Update
@@ -133,8 +135,12 @@ fn test_update_clears_previous_state() {
 
     // 2. Activate
     let mut audio_data = AudioTriggerData {
+        band_energies: [0.0; 9],
+        rms_volume: 0.0,
+        peak_volume: 0.0,
         beat_detected: true,
-        ..AudioTriggerData::default()
+        beat_strength: 0.0,
+        bpm: None,
     };
     system.update(&module_manager, &audio_data);
     assert!(system.is_active(part_id, 11)); // Beat is socket 11
