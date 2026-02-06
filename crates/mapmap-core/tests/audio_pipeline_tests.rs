@@ -50,10 +50,7 @@ fn test_audio_media_pipeline_data_flow() {
 
     // Check analysis
     // Wait for analysis to be available
-    wait_for_condition(
-        || pipeline.get_analysis().is_some(),
-        Duration::from_secs(5),
-    );
+    wait_for_condition(|| pipeline.get_analysis().is_some(), Duration::from_secs(5));
 
     // Check stats
     let stats = pipeline.stats();
@@ -110,7 +107,11 @@ fn test_stats_and_smoothing() {
         Duration::from_secs(5),
     );
 
-    assert!(final_rms > 0.01, "Smoothed RMS should be > 0.01, was {}", final_rms);
+    assert!(
+        final_rms > 0.01,
+        "Smoothed RMS should be > 0.01, was {}",
+        final_rms
+    );
 }
 
 #[test]
