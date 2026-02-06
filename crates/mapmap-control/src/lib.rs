@@ -84,6 +84,10 @@ pub use shortcuts::{
     ShortcutContext,
 };
 
+// Hue re-exports
+pub use hue::controller::HueController;
+pub use hue::models::HueConfig;
+
 #[cfg(test)]
 mod tests {
     use super::*;

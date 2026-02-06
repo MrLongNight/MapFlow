@@ -894,6 +894,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -1080,7 +1081,8 @@ impl ModuleCanvas {
                                             }
                                             SourceType::ImageUni {
                                                 path, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
-                                                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
+                                                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical,
+                                                target_width, target_height,
                                             } => {
                                                 // Image Picker
                                                 if path.is_empty() {
@@ -1103,6 +1105,35 @@ impl ModuleCanvas {
                                                         });
                                                     });
                                                 }
+
+                                                ui.separator();
+                                                ui.collapsing("📏 Target Resolution", |ui| {
+                                                    ui.label("Override output size (disable for original):");
+
+                                                    let mut width_enabled = target_width.is_some();
+                                                    if ui.checkbox(&mut width_enabled, "Override Width").changed() {
+                                                        if width_enabled {
+                                                            *target_width = Some(1920);
+                                                        } else {
+                                                            *target_width = None;
+                                                        }
+                                                    }
+                                                    if let Some(w) = target_width {
+                                                        ui.add(egui::DragValue::new(w).range(1..=8192).suffix(" px"));
+                                                    }
+
+                                                    let mut height_enabled = target_height.is_some();
+                                                    if ui.checkbox(&mut height_enabled, "Override Height").changed() {
+                                                        if height_enabled {
+                                                            *target_height = Some(1080);
+                                                        } else {
+                                                            *target_height = None;
+                                                        }
+                                                    }
+                                                    if let Some(h) = target_height {
+                                                        ui.add(egui::DragValue::new(h).range(1..=8192).suffix(" px"));
+                                                    }
+                                                });
 
                                                 ui.separator();
                                                 Self::render_common_controls(

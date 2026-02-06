@@ -1,7 +1,8 @@
 //! Egui-based shortcuts configuration panel
 
+use crate::core::theme::colors;
 use crate::LocaleManager;
-use egui::Ui;
+use egui::{Color32, CornerRadius, Stroke, Ui, Vec2};
 use mapmap_control::shortcuts::KeyBindings;
 use std::collections::HashSet;
 
@@ -36,7 +37,7 @@ impl ShortcutsPanel {
 
     /// Render the shortcuts panel
     pub fn render(&mut self, ui: &mut Ui, locale: &LocaleManager, key_bindings: &mut KeyBindings) {
-        ui.heading(locale.t("shortcuts-panel-title"));
+        crate::widgets::render_header(ui, &locale.t("shortcuts-panel-title"));
 
         if ui.button(locale.t("shortcuts-reset-defaults")).clicked() {
             key_bindings.reset_to_defaults();
@@ -47,39 +48,41 @@ impl ShortcutsPanel {
 
         let shortcuts_clone = key_bindings.get_shortcuts().to_vec();
 
-        egui::Grid::new("shortcuts_grid")
-            .num_columns(3)
-            .striped(true)
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
             .show(ui, |ui| {
-                ui.label(locale.t("shortcuts-header-action"));
-                ui.label(locale.t("shortcuts-header-shortcut"));
-                ui.label(""); // For edit button
-                ui.end_row();
-
-                for (i, shortcut) in shortcuts_clone.iter().enumerate() {
-                    ui.label(&shortcut.description);
-
-                    let shortcut_text = shortcut.to_shortcut_string();
-                    let label = if self.conflicts.contains(&i) {
+                egui::Grid::new("shortcuts_grid")
+                    .num_columns(3)
+                    .striped(true)
+                    .spacing([20.0, 8.0])
+                    .show(ui, |ui| {
+                        ui.label(egui::RichText::new(locale.t("shortcuts-header-action")).strong());
                         ui.label(
-                            egui::RichText::new(shortcut_text)
-                                .color(egui::Color32::RED)
-                                .strong(),
-                        )
-                    } else {
-                        ui.label(shortcut_text)
-                    };
+                            egui::RichText::new(locale.t("shortcuts-header-shortcut")).strong(),
+                        );
+                        ui.label(""); // For edit button
+                        ui.end_row();
 
-                    if self.conflicts.contains(&i) {
-                        label.on_hover_text("This shortcut is used by another action.");
-                    }
+                        for (i, shortcut) in shortcuts_clone.iter().enumerate() {
+                            ui.label(&shortcut.description);
 
-                    if ui.button(locale.t("shortcuts-edit")).clicked() {
-                        self.editing_shortcut_index = Some(i);
-                        self.show_conflict_warning = false;
-                    }
-                    ui.end_row();
-                }
+                            // Render shortcut as pills
+                            ui.horizontal(|ui| {
+                                draw_shortcut_pill(ui, shortcut);
+                            });
+
+                            if self.conflicts.contains(&i) {
+                                ui.colored_label(Color32::RED, "⚠ Conflict")
+                                    .on_hover_text("This shortcut is used by another action.");
+                            }
+
+                            if ui.button(locale.t("shortcuts-edit")).clicked() {
+                                self.editing_shortcut_index = Some(i);
+                                self.show_conflict_warning = false;
+                            }
+                            ui.end_row();
+                        }
+                    });
             });
 
         if let Some(index) = self.editing_shortcut_index {
@@ -137,6 +140,65 @@ impl ShortcutsPanel {
             }
         }
     }
+}
+
+/// Helper to draw a single keycap pill
+fn draw_key_pill(ui: &mut Ui, text: &str) {
+    let text_galley = ui.painter().layout_no_wrap(
+        text.to_string(),
+        egui::FontId::proportional(12.0),
+        Color32::WHITE,
+    );
+
+    let padding = Vec2::new(8.0, 4.0);
+    let size = text_galley.size() + padding * 2.0;
+
+    let (rect, _response) = ui.allocate_exact_size(size, egui::Sense::hover());
+
+    // Draw background pill
+    ui.painter().rect(
+        rect,
+        CornerRadius::same(4),
+        colors::LIGHTER_GREY,
+        Stroke::new(1.0, colors::STROKE_GREY),
+        egui::StrokeKind::Inside,
+    );
+
+    // Draw text
+    ui.painter()
+        .galley(rect.min + padding, text_galley, Color32::WHITE);
+}
+
+fn draw_shortcut_pill(ui: &mut Ui, shortcut: &mapmap_control::shortcuts::Shortcut) {
+    let mods = &shortcut.modifiers;
+
+    // Draw modifiers
+    if mods.ctrl {
+        #[cfg(target_os = "macos")]
+        draw_key_pill(ui, "Cmd");
+        #[cfg(not(target_os = "macos"))]
+        draw_key_pill(ui, "Ctrl");
+        ui.add_space(4.0);
+    }
+    if mods.shift {
+        draw_key_pill(ui, "Shift");
+        ui.add_space(4.0);
+    }
+    if mods.alt {
+        draw_key_pill(ui, "Alt");
+        ui.add_space(4.0);
+    }
+    if mods.meta {
+        #[cfg(target_os = "macos")]
+        draw_key_pill(ui, "Cmd");
+        #[cfg(not(target_os = "macos"))]
+        draw_key_pill(ui, "Super");
+        ui.add_space(4.0);
+    }
+
+    // Draw Key
+    let key_text = format!("{:?}", shortcut.key); // Default Debug impl for Key
+    draw_key_pill(ui, &key_text);
 }
 
 fn to_mapmap_key(key: egui::Key) -> Option<mapmap_control::shortcuts::Key> {
@@ -209,15 +271,6 @@ fn to_mapmap_key(key: egui::Key) -> Option<mapmap_control::shortcuts::Key> {
         ArrowRight => Some(Mk::ArrowRight),
         Minus => Some(Mk::Minus),
         Plus => Some(Mk::Plus),
-        // egui doesn't have separate keys for these, so we map them from other keys
-        // LeftBracket => Some(Mk::LeftBracket),
-        // RightBracket => Some(Mk::RightBracket),
-        // Semicolon => Some(Mk::Semicolon),
-        // Quote => Some(Mk::Quote),
-        // Comma => Some(Mk::Comma),
-        // Period => Some(Mk::Period),
-        // Slash => Some(Mk::Slash),
-        // Backslash => Some(Mk::Backslash),
         _ => None,
     }
 }
