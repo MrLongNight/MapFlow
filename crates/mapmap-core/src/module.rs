@@ -2891,7 +2891,7 @@ mod trigger_config_tests {
 
         // If value > 0, should be random in range
         let val = config.apply(1.0);
-        assert!(val >= 10.0 && val <= 20.0);
+        assert!((10.0..=20.0).contains(&val));
 
         // If value <= 0, returns min_value (implementation detail: "if value > 0.0")
         // Wait, the implementation says: if value > 0.0 { random } else { min_value }
