@@ -1,0 +1,551 @@
+name: "CI-04: Session Trigger"
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to trigger Jules session for (leave empty to use the oldest open jules-task)'
+        required: false
+        type: string
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+  actions: write
+
+env:
+  # ═══════════════════════════════════════════════════════════════
+  # MASTER SWITCH - Set to 'false' to disable ALL Jules automation
+  # ═══════════════════════════════════════════════════════════════
+  JULES_AUTOMATION_ENABLED: true
+
+jobs:
+  check-enabled:
+    name: Check Automation Status
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check if automation is enabled
+        id: check
+        run: |
+          if [ "${{ env.JULES_AUTOMATION_ENABLED }}" == "true" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+            echo "✅ Jules automation is enabled"
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Jules automation is disabled - skipping"
+          fi
+
+  trigger-jules-session:
+    name: Create Jules Session & Open PR
+    runs-on: ubuntu-latest
+    needs: check-enabled
+    if: needs.check-enabled.outputs.enabled == 'true'
+
+    concurrency:
+      # Use repository-wide lock to ensure issues are processed sequentially (not in parallel)
+      # This prevents multiple Jules sessions from running at the same time
+      group: ci-04-jules-session-${{ github.repository }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check trigger conditions
+        id: check-trigger
+        run: |
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            if [ "${{ github.event.action }}" == "labeled" ] && [ "${{ github.event.label.name }}" == "jules-task" ]; then
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" == "opened" ]; then
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_run=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        if: steps.check-trigger.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Resolve the single issue to process (oldest open jules-task when no input)
+        id: get-issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const MAX_PER_PAGE = 100;
+
+            const getIssueFromContext = () => {
+              if (context.payload.issue) return context.payload.issue.number;
+              if (context.eventName === 'workflow_dispatch' && context.payload.inputs && context.payload.inputs.issue_number) {
+                const n = parseInt(context.payload.inputs.issue_number, 10);
+                if (!isNaN(n)) return n;
+              }
+              return null;
+            };
+
+            const explicitIssue = getIssueFromContext();
+            if (explicitIssue) {
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: explicitIssue
+              });
+
+              const labels = (issue.labels || []).map(l => (typeof l === 'string' ? l : l.name));
+              if (!labels.includes('jules-task') || issue.state === 'closed') {
+                core.info(`⏭️ Issue #${explicitIssue} not applicable (missing label or closed).`);
+                core.setOutput('has_issue', 'false');
+                core.setOutput('issue_number', '');
+                return;
+              }
+
+              core.info(`🎯 Will process explicit Issue #${explicitIssue}`);
+              core.setOutput('has_issue', 'true');
+              core.setOutput('issue_number', String(explicitIssue));
+              return;
+            }
+
+            if (context.eventName === 'workflow_dispatch') {
+              core.info('No issue_number input; listing open issues with label "jules-task" and selecting oldest...');
+              let page = 1;
+              const candidates = [];
+              while (true) {
+                const { data } = await github.rest.issues.listForRepo({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  labels: 'jules-task',
+                  state: 'open',
+                  per_page: MAX_PER_PAGE,
+                  page
+                });
+                if (!data || data.length === 0) break;
+                for (const it of data) {
+                  if (it.pull_request) continue;
+                  candidates.push({ number: it.number, created_at: it.created_at });
+                }
+                if (data.length < MAX_PER_PAGE) break;
+                page++;
+              }
+
+              if (candidates.length === 0) {
+                core.info('⏭️ No open issues with label "jules-task" found.');
+                core.setOutput('has_issue', 'false');
+                core.setOutput('issue_number', '');
+                return;
+              }
+
+              candidates.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+              const chosen = candidates[0];
+              core.info(`🎯 Selected oldest issue: #${chosen.number} (created_at: ${chosen.created_at})`);
+              core.setOutput('has_issue', 'true');
+              core.setOutput('issue_number', String(chosen.number));
+              return;
+            }
+
+            core.info('No issue information in workflow context — nothing to do.');
+            core.setOutput('has_issue', 'false');
+            core.setOutput('issue_number', '');
+
+      - name: Check if Jules session already exists
+        id: check-existing
+        if: steps.get-issue.outputs.has_issue == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+
+            // Get all comments on the issue
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+
+            // Check if a Jules session was already triggered
+            // Look for multiple patterns to be more robust
+            const hasSession = comments.some(comment =>
+              comment.body.includes('Jules Session Triggered') ||
+              comment.body.includes('Jules session created') ||
+              comment.body.includes('🤖 **Jules Session Triggered**') ||
+              (comment.body.includes('Jules') && comment.body.includes('session') &&
+               (comment.body.includes('created') || comment.body.includes('triggered')))
+            );
+
+            if (hasSession) {
+              core.info(`⏭️ Jules session already exists for issue #${issueNumber} - skipping`);
+              core.setOutput('has_existing', 'true');
+            } else {
+              core.info(`✅ No existing Jules session found for issue #${issueNumber}`);
+              core.setOutput('has_existing', 'false');
+            }
+
+      - name: Check JULES_API_KEY secret
+        id: check-key
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'false'
+        run: |
+          if [ -n "${{ secrets.JULES_API_KEY }}" ]; then
+            echo "has_key=true" >> $GITHUB_OUTPUT
+            echo "✅ JULES_API_KEY is configured"
+          else
+            echo "has_key=false" >> $GITHUB_OUTPUT
+            echo "⚠️ JULES_API_KEY is NOT configured"
+          fi
+
+      - name: Create Jules session (list sources -> create)
+        id: create-session
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'false' && steps.check-key.outputs.has_key == 'true'
+        uses: actions/github-script@v7
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        with:
+          script: |
+            const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+
+            if (!process.env.JULES_API_KEY) throw new Error('JULES_API_KEY not set');
+
+            // Read issue to build payload
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+
+            const title = (`Issue #${issueNumber}: ${issue.title || ''}`).slice(0, 200);
+            const body = (issue.body || '').slice(0, 5000);
+            const repoId = `${context.repo.owner}/${context.repo.repo}`;
+            const guessedSource = `sources/github/${repoId}`;
+
+            // Optional: try to find exact Jules source (best-effort)
+            let sourceName = guessedSource;
+            try {
+              const listRes = await fetch('https://jules.googleapis.com/v1alpha/sources', {
+                method: 'GET',
+                headers: { 'X-Goog-Api-Key': process.env.JULES_API_KEY, 'Accept': 'application/json' }
+              });
+              if (listRes.ok) {
+                const listJson = await listRes.json().catch(()=>null);
+                if (listJson && Array.isArray(listJson.sources)) {
+                  const found = listJson.sources.find(s => s.name === guessedSource || (s.name && s.name.includes(`/github/${repoId}`)));
+                  if (found && found.name) sourceName = found.name;
+                }
+              } else {
+                core.info(`Listing sources returned ${listRes.status} - using guessed source ${guessedSource}`);
+              }
+            } catch (e) {
+              core.info('Could not list Jules sources, proceeding with guessed source.');
+            }
+
+            const endpoint = 'https://jules.googleapis.com/v1alpha/sessions';
+            const payload = {
+              prompt: `Issue #${issueNumber}: ${title}\n\n${body}`,
+              title: title,
+              // AUTO_CREATE_PR ensures Jules automatically pushes the branch and creates a PR
+              // without requiring manual 'Publish PR' click in the Jules UI
+              automationMode: 'AUTO_CREATE_PR',
+              sourceContext: {
+                source: sourceName,
+                githubRepoContext: { startingBranch: 'main' }
+              }
+            };
+
+            core.info(`Creating Jules session for issue #${issueNumber} (POST ${endpoint})`);
+            core.info(`Using source ${sourceName}`);
+
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': process.env.JULES_API_KEY,
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+
+            const text = await res.text();
+            let json = null;
+            try { json = JSON.parse(text); } catch {}
+
+            if (!res.ok) {
+              core.error(`Jules API returned ${res.status}: ${text.slice(0,1000)}`);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ **Jules Session Creation Failed** — API returned status ${res.status}.\n\n\`\`\`\n${text.slice(0,1000)}\n\`\`\``
+              });
+              throw new Error(`Jules API error ${res.status}`);
+            }
+
+            core.info('✅ Jules session created');
+            const sessionUrl = json?.url ?? null;
+            const sessionName = json?.name ?? json?.id ?? null;
+
+            // Try to detect branch created by Jules / used for PR
+            // Enhanced branch detection with more comprehensive field checks
+            const possibleBranchFields = [
+              json?.gitPush?.branch,
+              json?.git?.branch,
+              json?.git?.ref,
+              json?.pr?.branch,
+              json?.pr?.head,
+              json?.pullRequest?.branch,
+              json?.pullRequest?.head,
+              json?.workspace?.branch,
+              json?.workspace?.gitBranch,
+              json?.session_branch,
+              json?.branch,
+              json?.branchName,
+              json?.head,
+              json?.ref,
+              json?.githubRepoContext?.branch,
+              json?.sourceContext?.githubRepoContext?.branch,
+              json?.sourceContext?.branch,
+              // Fallback: generate branch name from session if no explicit branch found
+              (json?.name || json?.id) ? `jules/${String(json?.name || json?.id).replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase()}` : null
+            ].filter(Boolean);
+
+            const sessionBranch = possibleBranchFields.length > 0 ? possibleBranchFields[0] : null;
+
+            core.info(`Branch detection results: found ${possibleBranchFields.length} possible branches`);
+            if (possibleBranchFields.length > 0) {
+              core.info(`Possible branches: ${possibleBranchFields.join(', ')}`);
+              core.info(`Selected branch: ${sessionBranch}`);
+            }
+
+            // Save outputs
+            core.setOutput('session_url', sessionUrl ?? '');
+            core.setOutput('session_name', sessionName ?? '');
+            core.setOutput('session_branch', sessionBranch ?? '');
+
+            // Comment start
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `🤖 **Jules Session Triggered** — Jules session created. ${sessionUrl ? `🔗 ${sessionUrl}` : ''}`
+            });
+
+      - name: Create Pull Request from Jules branch (if branch found)
+        id: create-pr
+        if: steps.create-session.outputs.session_branch != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+            const sessionBranch = '${{ steps.create-session.outputs.session_branch }}';
+            const sessionUrl = '${{ steps.create-session.outputs.session_url }}';
+            const sessionName = '${{ steps.create-session.outputs.session_name }}';
+
+            // get default branch for base
+            const { data: repo } = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            const baseBranch = repo.default_branch || 'main';
+
+            core.info(`Attempting to create PR from branch '${sessionBranch}' into base '${baseBranch}'`);
+
+            try {
+              // Get issue details for PR body
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+
+              const prTitle = sessionName ? `Jules: ${sessionName}` : `Jules session for issue #${issueNumber}`;
+
+              // Enhanced PR body with proper "Closes #" reference and labels
+              let prBody = '## Jules Session PR\n\n';
+              prBody += 'Automated PR created for Jules session.\n\n';
+              prBody += `**Closes #${issueNumber}**\n\n`;
+              prBody += '### Issue Details\n';
+              prBody += `- **Title:** ${issue.title}\n`;
+              prBody += `- **Issue:** #${issueNumber}\n`;
+              if (sessionUrl) {
+                prBody += `- **Session:** ${sessionUrl}\n`;
+              }
+              prBody += '\n### Description\n';
+              prBody += (issue.body || 'No description provided') + '\n\n';
+              prBody += '---\n';
+              prBody += 'This PR was automatically created by the CI workflow (CI-04).';
+
+              // Verify branch exists before creating PR
+              try {
+                await github.rest.repos.getBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  branch: sessionBranch
+                });
+                core.info(`✅ Branch '${sessionBranch}' exists`);
+              } catch (branchErr) {
+                core.warning(`Branch '${sessionBranch}' not found yet. Will retry after waiting...`);
+                // Wait 10 seconds for branch to propagate
+                await new Promise(resolve => setTimeout(resolve, 10000));
+
+                try {
+                  await github.rest.repos.getBranch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    branch: sessionBranch
+                  });
+                  core.info(`✅ Branch '${sessionBranch}' now exists after retry`);
+                } catch (retryErr) {
+                  throw new Error(`Branch '${sessionBranch}' does not exist in repository. Jules may not have pushed changes yet. Error: ${retryErr.message}`);
+                }
+              }
+
+              // Create PR with proper labels
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: prTitle,
+                head: sessionBranch,
+                base: baseBranch,
+                body: prBody
+              });
+
+              core.info(`✅ PR created: ${pr.html_url}`);
+
+              // Add jules-pr label
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: ['jules-pr']
+                });
+                core.info(`✅ Added 'jules-pr' label to PR #${pr.number}`);
+              } catch (labelErr) {
+                core.warning(`Could not add 'jules-pr' label: ${labelErr.message}`);
+              }
+
+              // Comment PR link on issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `✅ **PR created** from Jules branch \`${sessionBranch}\`: ${pr.html_url}\n\nThe PR includes proper references and will be automatically merged when all checks pass.`
+              });
+
+              core.setOutput('pr_url', pr.html_url);
+              core.setOutput('pr_number', String(pr.number));
+            } catch (err) {
+              core.error('Failed to create PR: ' + err.message);
+
+              // Provide detailed error information
+              let errorDetails = `**Error:** ${err.message}`;
+              if (err.message.includes('Branch')) {
+                errorDetails += '\n\n**Possible causes:**\n- Jules has not yet pushed changes to the branch\n- Branch name detection was incorrect\n- Network issues during branch creation';
+              }
+
+              let errorBody = '⚠️ **Failed to create PR automatically**\n\n';
+              errorBody += `**Detected branch:** \`${sessionBranch}\`\n`;
+              if (sessionUrl) {
+                errorBody += `**Session URL:** ${sessionUrl}\n`;
+              }
+              errorBody += errorDetails + '\n\n';
+              errorBody += '**Next steps:**\n';
+              errorBody += '1. Check the Jules session to see if changes were pushed\n';
+              errorBody += '2. Create a PR manually from the branch if it exists\n';
+              errorBody += '3. Or wait for Jules to complete and the monitoring workflow (CI-08) will create the PR automatically';
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: errorBody
+              });
+              throw err;
+            }
+
+      - name: Notify no branch found (manual step required)
+        if: steps.create-session.outputs.session_branch == ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+            const sessionUrl = '${{ steps.create-session.outputs.session_url }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `⚠️ **Automated PR creation skipped** — Could not detect a branch from the Jules session. ${sessionUrl ? `Open the session: ${sessionUrl}\n\n` : ''}Please create a Pull Request for the branch Jules uses (or configure Jules to push to a named branch).`
+            });
+
+      - name: Notify existing session
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+            core.info(`Skipping duplicate session creation for issue #${issueNumber}`);
+
+            // Add a comment to inform users that a session already exists
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `ℹ️ **Jules session already exists** — A Jules session was already triggered for this issue. Skipping duplicate creation to prevent conflicts.`
+            });
+
+      - name: Notify missing JULES_API_KEY
+        if: steps.get-issue.outputs.has_issue == 'true' && steps.check-existing.outputs.has_existing == 'false' && steps.check-key.outputs.has_key == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.get-issue.outputs.issue_number }}', 10);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `⚠️ **Jules integration not configured** — Repository secret \`JULES_API_KEY\` is missing. Get a key at https://jules.google.com → Settings → API and add it as secret \`JULES_API_KEY\`. Alternatively install the Jules GitHub App.`
+            });
+
+      - name: Log completion
+        if: always()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📝 CI-04: Session Trigger completed"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "has_issue: ${{ steps.get-issue.outputs.has_issue }}"
+          echo "issue_number: ${{ steps.get-issue.outputs.issue_number }}"
+          echo "has_existing: ${{ steps.check-existing.outputs.has_existing }}"
+          echo "has_key: ${{ steps.check-key.outputs.has_key }}"
+          echo "session_name: ${{ steps.create-session.outputs.session_name }}"
+          echo "session_branch: ${{ steps.create-session.outputs.session_branch }}"
+          echo "session_url: ${{ steps.create-session.outputs.session_url }}"
+          echo "pr_url: ${{ steps.create-pr.outputs.pr_url }}"
+          echo ""
+
+      - name: Trigger Session Monitoring
+        if: steps.create-session.outputs.session_name != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('🔄 Triggering CI-08 to monitor session...');
+
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'CI-08_monitor-jules-session.yml',
+                ref: 'main',
+                inputs: {
+                  session_id: '${{ steps.create-session.outputs.session_name }}',
+                  issue_number: '${{ steps.get-issue.outputs.issue_number }}'
+                }
+              });
+
+              console.log('✅ CI-08 Session Monitoring triggered');
+            } catch (error) {
+              console.error('⚠️ Could not trigger monitoring:', error.message);
+            }

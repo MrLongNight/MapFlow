@@ -23,7 +23,6 @@ license = "GPL-3.0"
 repository = "https://github.com/MrLongNight/MapFlow"
 
 [workspace.dependencies]
-ableton-link-rs = { version = "0.1" }
 anyhow = "1.0"
 arc-swap = "1.6"
 
@@ -41,6 +40,7 @@ chrono = { version = "0.4", features = ["serde"] }
 
 # Audio
 cpal = { version = "0.17", default-features = false }
+ableton-link-rs = { version = "0.1" }
 criterion = "0.5"
 
 # Concurrency
