@@ -99,7 +99,8 @@ impl ShortcutsPanel {
                     });
 
                     if is_conflict {
-                        resp.response.on_hover_text("This shortcut is used by another action.");
+                        resp.response
+                            .on_hover_text("This shortcut is used by another action.");
                     }
 
                     if ui.button(locale.t("shortcuts-edit")).clicked() {
