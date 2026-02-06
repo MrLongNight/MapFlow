@@ -1039,6 +1039,19 @@ impl ModuleCanvas {
 
                                                 self.render_timeline(ui, part_id, video_duration, current_pos, start_time, end_time);
 
+                                                // Safe Reset Clip (Mary StyleUX)
+                                                ui.vertical_centered(|ui| {
+                                                    ui.add_space(4.0);
+                                                    if crate::widgets::hold_to_action_button(
+                                                        ui,
+                                                        "⟲ Reset Clip",
+                                                        colors::WARN_COLOR,
+                                                    ) {
+                                                        *start_time = 0.0;
+                                                        *end_time = 0.0;
+                                                    }
+                                                });
+
                                                 ui.add_space(8.0);
                                                 ui.horizontal(|ui| {
                                                     ui.label("Playback Speed:");
