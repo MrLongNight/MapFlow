@@ -126,7 +126,9 @@ impl AppState {
     }
 
     /// Get mutable reference to ShaderGraphs (CoW)
-    pub fn shader_graphs_mut(&mut self) -> &mut std::collections::HashMap<crate::GraphId, crate::ShaderGraph> {
+    pub fn shader_graphs_mut(
+        &mut self,
+    ) -> &mut std::collections::HashMap<crate::GraphId, crate::ShaderGraph> {
         Arc::make_mut(&mut self.shader_graphs)
     }
 
@@ -292,7 +294,9 @@ mod tests {
         assert_eq!(Arc::strong_count(&state1.paint_manager), 2);
 
         // Mutate state2's paint manager
-        state2.paint_manager_mut().add_paint(crate::Paint::color(1, "Test", [1.0, 0.0, 0.0, 1.0]));
+        state2
+            .paint_manager_mut()
+            .add_paint(crate::Paint::color(1, "Test", [1.0, 0.0, 0.0, 1.0]));
 
         // Now they should have split
         assert_eq!(Arc::strong_count(&state1.paint_manager), 1);

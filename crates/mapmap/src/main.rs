@@ -649,16 +649,25 @@ impl App {
         for action in actions {
             // Undo/Redo Logic: Snapshot state before mutating actions
             let is_mutating = match &action {
-                mapmap_ui::UIAction::Undo | mapmap_ui::UIAction::Redo |
-                mapmap_ui::UIAction::Play | mapmap_ui::UIAction::Pause | mapmap_ui::UIAction::Stop |
-                mapmap_ui::UIAction::LoadProject(_) | mapmap_ui::UIAction::LoadRecentProject(_) |
-                mapmap_ui::UIAction::SaveProject(_) | mapmap_ui::UIAction::SaveProjectAs |
-                mapmap_ui::UIAction::Exit | mapmap_ui::UIAction::OpenSettings |
-                mapmap_ui::UIAction::SetGlobalFullscreen(_) | mapmap_ui::UIAction::ToggleFullscreen |
-                mapmap_ui::UIAction::ToggleModuleCanvas | mapmap_ui::UIAction::ToggleControllerOverlay |
-                mapmap_ui::UIAction::MediaCommand(_, _) |
-                mapmap_ui::UIAction::PickMediaFile(_, _, _) |
-                mapmap_ui::UIAction::DiscoverHueBridges | mapmap_ui::UIAction::FetchHueGroups => false,
+                mapmap_ui::UIAction::Undo
+                | mapmap_ui::UIAction::Redo
+                | mapmap_ui::UIAction::Play
+                | mapmap_ui::UIAction::Pause
+                | mapmap_ui::UIAction::Stop
+                | mapmap_ui::UIAction::LoadProject(_)
+                | mapmap_ui::UIAction::LoadRecentProject(_)
+                | mapmap_ui::UIAction::SaveProject(_)
+                | mapmap_ui::UIAction::SaveProjectAs
+                | mapmap_ui::UIAction::Exit
+                | mapmap_ui::UIAction::OpenSettings
+                | mapmap_ui::UIAction::SetGlobalFullscreen(_)
+                | mapmap_ui::UIAction::ToggleFullscreen
+                | mapmap_ui::UIAction::ToggleModuleCanvas
+                | mapmap_ui::UIAction::ToggleControllerOverlay
+                | mapmap_ui::UIAction::MediaCommand(_, _)
+                | mapmap_ui::UIAction::PickMediaFile(_, _, _)
+                | mapmap_ui::UIAction::DiscoverHueBridges
+                | mapmap_ui::UIAction::FetchHueGroups => false,
                 _ => true,
             };
 
@@ -1057,11 +1066,17 @@ impl App {
                     }
                 }
                 mapmap_ui::UIAction::SetMasterOpacity(val) => {
-                    self.state.layer_manager_mut().composition.set_master_opacity(val);
+                    self.state
+                        .layer_manager_mut()
+                        .composition
+                        .set_master_opacity(val);
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::SetMasterSpeed(val) => {
-                    self.state.layer_manager_mut().composition.set_master_speed(val);
+                    self.state
+                        .layer_manager_mut()
+                        .composition
+                        .set_master_speed(val);
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::SetCompositionName(name) => {
@@ -1080,7 +1095,9 @@ impl App {
                     let fs = config.fullscreen;
 
                     // Update the target output
-                    self.state.output_manager_mut().update_output(id, config.clone());
+                    self.state
+                        .output_manager_mut()
+                        .update_output(id, config.clone());
 
                     // SYNC Logic: If this is an output node, we might want to sync fullscreen across all projectors
                     // This prevents desync where one projector is FS and another is windowed.
@@ -1169,7 +1186,8 @@ impl App {
                         part_id, module_id, path
                     );
                     // Update module part in specific module
-                    if let Some(module) = self.state.module_manager_mut().get_module_mut(module_id) {
+                    if let Some(module) = self.state.module_manager_mut().get_module_mut(module_id)
+                    {
                         if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
                             if let mapmap_core::module::ModulePartType::Source(
                                 mapmap_core::module::SourceType::MediaFile {

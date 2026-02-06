@@ -418,11 +418,17 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::SetMasterOpacity(val) => {
-                app.state.layer_manager_mut().composition.set_master_opacity(val);
+                app.state
+                    .layer_manager_mut()
+                    .composition
+                    .set_master_opacity(val);
                 app.state.dirty = true;
             }
             UIAction::SetMasterSpeed(val) => {
-                app.state.layer_manager_mut().composition.set_master_speed(val);
+                app.state
+                    .layer_manager_mut()
+                    .composition
+                    .set_master_speed(val);
                 app.state.dirty = true;
             }
             UIAction::SetCompositionName(name) => {
@@ -431,7 +437,9 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             }
             UIAction::ConfigureOutput(id, config) => {
                 let fs = config.fullscreen;
-                app.state.output_manager_mut().update_output(id, config.clone());
+                app.state
+                    .output_manager_mut()
+                    .update_output(id, config.clone());
 
                 let all_ids: Vec<_> = app
                     .state
