@@ -5,10 +5,14 @@ use mapmap_core::audio::{analyzer_v2::AudioAnalyzerV2Config, backend::AudioBacke
 use mapmap_core::effects::EffectType as RenderEffectType;
 use mapmap_ui::effect_chain_panel::{EffectChainAction, EffectType as UIEffectType};
 use mapmap_ui::menu_bar;
+use mapmap_ui::responsive::ResponsiveLayout;
 use tracing::{error, info};
 
 /// Renders the implementation of the UI.
 pub fn show(app: &mut App, ctx: &egui::Context) {
+    // Responsive Layout initialisieren
+    let layout = ResponsiveLayout::new(ctx);
+
     // 1. GLOBAL THEME & SETUP
     app.ui_state.user_config.theme.apply(ctx);
 
@@ -75,11 +79,14 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     // === Left Panel: Unified Sidebar ===
     // Two independent collapsible panels: Controls (top) and Preview (bottom)
     if app.ui_state.show_left_sidebar {
+        let sidebar_width = layout.sidebar_width();
+        let sidebar_max = layout.sidebar_max_width();
+
         egui::SidePanel::left("unified_left_sidebar")
             .resizable(true)
-            .default_width(280.0)
+            .default_width(sidebar_width)
             .min_width(150.0)
-            .max_width(1500.0)
+            .max_width(sidebar_max)
             .show(ctx, |ui| {
                 // Sidebar header with collapse button
                 ui.horizontal(|ui| {

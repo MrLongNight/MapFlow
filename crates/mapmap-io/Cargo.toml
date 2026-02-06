@@ -30,7 +30,7 @@ texture-sharing = [] # Enable on platforms that support it
 # Convenience features
 all-io = ["ndi", "decklink", "syphon", "stream", "virtual-camera"]
 # CI-safe feature for Linux builds (excludes platform-specific: spout, syphon, ndi)
-ci-linux = ["stream", "virtual-camera"]
+ci-linux = ["virtual-camera"]
 
 [dependencies]
 bytemuck = { workspace = true }

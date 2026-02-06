@@ -5,6 +5,7 @@
 
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
+use crate::responsive::ResponsiveLayout;
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
 
@@ -369,9 +370,13 @@ impl EffectChainPanel {
             return;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(400.0, 600.0);
+
         egui::Window::new(locale.t("panel-effect-chain"))
-            .default_size([320.0, 500.0])
+            .default_size(window_size)
             .resizable(true)
+            .scroll([false, true])
             .show(ctx, |ui| {
                 self.render_toolbar(ui, locale, icon_manager, &mut recent_configs);
                 ui.separator();

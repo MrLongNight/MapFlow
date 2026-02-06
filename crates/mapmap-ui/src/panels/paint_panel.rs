@@ -2,6 +2,7 @@
 
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
+use crate::responsive::ResponsiveLayout;
 use egui::Context;
 use mapmap_core::{PaintId, PaintManager, PaintType};
 
@@ -33,8 +34,14 @@ impl PaintPanel {
             return;
         }
 
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(350.0, 450.0);
+
         egui::Window::new(i18n.t("panel-paints"))
             .open(&mut self.visible)
+            .default_size(window_size)
+            .resizable(true)
+            .scroll([false, true])
             .show(ctx, |ui| {
                 ui.heading(i18n.t_args(
                     "label-total-paints",

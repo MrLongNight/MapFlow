@@ -5,6 +5,7 @@
 **VjMapper** ist ein professionelles Open-Source Projection-Mapping-Tool in Rust.
 
 **Tech Stack:**
+
 - **Sprache:** Rust 2021 (MSRV 1.75+)
 - **Graphics:** wgpu (Vulkan/Metal/DX12)
 - **UI:** egui (Immediate Mode)
@@ -12,6 +13,7 @@
 - **Build:** Cargo Workspace
 
 **Crates:**
+
 ```
 crates/
 ├── mapmap-core      # Kernlogik, Projektmanagement
@@ -28,6 +30,7 @@ crates/
 ### 🔴 HOCH (Immer kommentieren)
 
 **1. Memory Safety & `unsafe`**
+
 ```rust
 // ❌ BAD
 unsafe {
@@ -44,6 +47,7 @@ unsafe {
 ```
 
 **2. Error Handling**
+
 ```rust
 // ❌ BAD
 let data = file.read().unwrap();
@@ -54,6 +58,7 @@ let data = file.read()
 ```
 
 **3. Security Issues**
+
 - Unvalidated user input
 - Path traversal vulnerabilities
 - Command injection risks
@@ -64,6 +69,7 @@ let data = file.read()
 ### 🟡 MITTEL (Bei Signifikanz)
 
 **4. Performance**
+
 ```rust
 // ⚠️ WARNUNG
 for item in large_vec.iter() {
@@ -77,6 +83,7 @@ for item in large_vec.iter() {
 ```
 
 **5. Cross-Platform Issues**
+
 ```rust
 // ❌ BAD
 use std::os::windows::*; // Nur Windows
@@ -87,6 +94,7 @@ use std::os::windows::*;
 ```
 
 **6. GPU Resource Management**
+
 ```rust
 // ✅ GOOD - Implementiere Drop für Cleanup
 impl Drop for GpuTexture {
@@ -101,6 +109,7 @@ impl Drop for GpuTexture {
 ### 🟢 NIEDRIG (Optional)
 
 **7. Code Style (nur bei klaren Verbesserungen)**
+
 ```rust
 // Akzeptabel (wird von rustfmt gehandhabt)
 fn foo(  ) {  }
@@ -110,6 +119,7 @@ fn foo() {}
 ```
 
 **8. Micro-Optimierungen**
+
 - Nur bei Hot Paths kommentieren
 - Mit Benchmarks belegen
 
@@ -128,11 +138,13 @@ fn foo() {}
 ## 💬 Tone Guidelines
 
 **DO:**
+
 - ✅ Konstruktiv: "Erwäge stattdessen..."
 - ✅ Erklärend: "Dies könnte problematisch sein, weil..."
 - ✅ Kurz: Max 2-3 Sätze pro Kommentar
 
 **DON'T:**
+
 - ❌ "Das ist falsch"
 - ❌ "Du musst..."
 - ❌ Nitpicking ohne Begründung
@@ -142,15 +154,17 @@ fn foo() {}
 ## 🎯 Spezifische Checks
 
 ### egui UI Code
+
 ```rust
 // ✅ Accessibility
-if ui.button("Delete").clicked() || 
+if ui.button("Delete").clicked() ||
    ui.input(|i| i.key_pressed(Key::Delete)) {
     // Keyboard + Mouse support
 }
 ```
 
 ### FFmpeg/Media Handling
+
 ```rust
 // ✅ Resource Cleanup
 let mut decoder = ffmpeg::decoder::new(stream)?;
@@ -159,6 +173,7 @@ drop(decoder); // Explizit cleanup bei C-Bindings
 ```
 
 ### Shader Code (WGSL)
+
 ```wgsl
 // Prüfe auf:
 // - Korrekte Binding-Indices
@@ -179,13 +194,15 @@ drop(decoder); // Explizit cleanup bei C-Bindings
 ### ⚠️ Zu Beachten
 **[Datei:Zeile]** - [Problem]
 - **Warum:** [Begründung]
-- **Lösung:** 
+- **Lösung:**
   ```rust
   // Vorschlag
   ```
 
 ### 💡 Optional
+
 - [Nice-to-have Verbesserungen]
+
 ```
 
 ---
