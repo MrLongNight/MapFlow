@@ -10,6 +10,18 @@
 *   **Projection Mapping**: Advanced warping and masking.
 *   **Jules AI Integration**: Built-in AI coding assistant.
 
+## 📚 Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+- [**01-GETTING-STARTED**](docs/01-GETTING-STARTED/): Installation and Quick Start.
+- [**02-USER-GUIDE**](docs/02-USER-GUIDE/): Manual for end-users.
+- [**03-ARCHITECTURE**](docs/03-ARCHITECTURE/): System architecture and design diagrams.
+- [**04-API**](docs/04-API/): API reference.
+- [**05-DEVELOPMENT**](docs/05-DEVELOPMENT/): Guide for contributors and developers.
+- [**06-ROADMAP**](docs/06-ROADMAP/): Future plans and feature status.
+- [**08-TECHNICAL**](docs/08-TECHNICAL/): In-depth technical details.
+
 ## 🛠️ Tech Stack
 *   **Core**: Rust
 *   **Engine**: Bevy
@@ -18,7 +30,7 @@
 *   **Audio**: cpal, rodio
 
 ## 📦 Installation
-See [SETUP_GUIDE.md](docs/08-TECHNICAL/SETUP_GUIDE.md).
+See [INSTALLATION.md](docs/01-GETTING-STARTED/INSTALLATION.md).
 
 ## 📄 License
 MIT / Apache 2.0
