@@ -21,8 +21,8 @@ This crate is primarily used by the main `mapmap` application to power 3D module
 
 ## Dependencies
 
-*   `bevy` (Rendering, Core Pipeline, PBR, GLTF, Scene)
-*   `bevy_enoki` (Particles)
-*   `bevy_atmosphere` (Skybox/Atmosphere)
-*   `bevy_mod_outline` (Visual outlines)
-*   `mapmap-core` (Core data structures)
+- `bevy` (Rendering, Core Pipeline, PBR, GLTF, Scene)
+- `bevy_enoki` (Particles)
+- `bevy_atmosphere` (Skybox/Atmosphere)
+- `bevy_mod_outline` (Visual outlines)
+- `mapmap-core` (Core data structures)

@@ -59,8 +59,8 @@ To integrate with an MCP client (e.g., Claude Desktop), add the following to you
 
 The server supports a wide range of actions defined in `McpAction`, including:
 
-*   **Project**: `SaveProject`, `LoadProject`
-*   **Layers**: `AddLayer`, `SetLayerOpacity`, `SetLayerBlendMode`
-*   **Media**: `MediaPlay`, `LayerLoadMedia`
-*   **Audio**: `AudioBindParam`, `AudioSetSensitivity`
-*   **Effects**: `EffectAdd`, `EffectSetParam`
+- **Project**: `SaveProject`, `LoadProject`
+- **Layers**: `AddLayer`, `SetLayerOpacity`, `SetLayerBlendMode`
+- **Media**: `MediaPlay`, `LayerLoadMedia`
+- **Audio**: `AudioBindParam`, `AudioSetSensitivity`
+- **Effects**: `EffectAdd`, `EffectSetParam`
