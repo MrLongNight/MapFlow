@@ -144,7 +144,7 @@ fn foo() {}
 ### egui UI Code
 ```rust
 // ✅ Accessibility
-if ui.button("Delete").clicked() || 
+if ui.button("Delete").clicked() ||
    ui.input(|i| i.key_pressed(Key::Delete)) {
     // Keyboard + Mouse support
 }
@@ -179,7 +179,7 @@ drop(decoder); // Explizit cleanup bei C-Bindings
 ### ⚠️ Zu Beachten
 **[Datei:Zeile]** - [Problem]
 - **Warum:** [Begründung]
-- **Lösung:** 
+- **Lösung:**
   ```rust
   // Vorschlag
   ```
