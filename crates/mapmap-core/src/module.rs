@@ -2234,6 +2234,17 @@ impl ModuleManager {
         self.modules.get_mut(&id)
     }
 
+    /// Get module by ID (mutable) AND shared media state (immutable)
+    /// This allows accessing both simultaneously without borrow checker issues
+    pub fn get_module_mut_and_shared_media(
+        &mut self,
+        id: ModuleId,
+    ) -> Option<(&mut MapFlowModule, &SharedMediaState)> {
+        let module = self.modules.get_mut(&id)?;
+        let shared_media = &self.shared_media;
+        Some((module, shared_media))
+    }
+
     /// Get a module by ID (immutable)
     pub fn get_module(&self, id: ModuleId) -> Option<&MapFlowModule> {
         self.modules.get(&id)
