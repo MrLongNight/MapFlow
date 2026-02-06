@@ -18,6 +18,8 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 
     // ⚡ Bolt Optimization: Batch render passes.
     app.mesh_renderer.begin_frame();
+    app.effect_chain_renderer.begin_frame();
+    app.preview_effect_chain_renderer.begin_frame();
 
     if output_id == 0 {
         // Sync Texture Previews
