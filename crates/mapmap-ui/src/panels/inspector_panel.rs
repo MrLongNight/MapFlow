@@ -47,7 +47,7 @@ pub enum InspectorContext<'a> {
         canvas: &'a mut crate::ModuleCanvas,
         module: &'a mut mapmap_core::module::MapFlowModule,
         part_id: mapmap_core::module::ModulePartId,
-        shared_media_ids: Vec<String>,
+        shared_media: &'a mapmap_core::module::SharedMediaState,
     },
 }
 
@@ -119,7 +119,7 @@ impl InspectorPanel {
                         canvas,
                         module,
                         part_id,
-                        shared_media_ids,
+                        shared_media,
                     } => {
                         if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
                             canvas.render_inspector_for_part(
@@ -127,7 +127,7 @@ impl InspectorPanel {
                                 part,
                                 global_actions,
                                 module.id,
-                                &shared_media_ids,
+                                shared_media.items.keys(),
                             );
                         } else {
                             self.show_no_selection(ui, i18n);
