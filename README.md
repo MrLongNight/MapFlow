@@ -12,10 +12,22 @@
 
 ## 🛠️ Tech Stack
 *   **Core**: Rust
-*   **Engine**: Bevy
+*   **Engine**: Bevy (via `mapmap-bevy`)
 *   **UI**: eframe / egui
 *   **Graphics**: wgpu
 *   **Audio**: cpal, rodio
+*   **AI**: Model Context Protocol (`mapmap-mcp`)
+
+## 📦 Workspace Modules
+*   `mapmap`: Main application binary
+*   `mapmap-core`: Core data structures and logic
+*   `mapmap-ui`: UI implementation (egui)
+*   `mapmap-render`: WGPU rendering engine
+*   `mapmap-bevy`: Bevy engine integration (3D/Particles)
+*   `mapmap-mcp`: MCP Server for AI integration
+*   `mapmap-media`: Media decoding and playback
+*   `mapmap-control`: OSC/MIDI input handling
+*   `mapmap-io`: NDI/Spout IO
 
 ## 📦 Installation
 See [SETUP_GUIDE.md](docs/08-TECHNICAL/SETUP_GUIDE.md).
