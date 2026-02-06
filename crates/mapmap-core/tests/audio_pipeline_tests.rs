@@ -162,9 +162,11 @@ fn test_dropped_samples() {
     });
 
     let stats = pipeline.stats();
-    assert!(success,
+    assert!(
+        success,
         "Accounting mismatch: processed({}) + dropped({}) != sent({})",
-        stats.samples_processed, stats.dropped_samples, expected_total_samples);
+        stats.samples_processed, stats.dropped_samples, expected_total_samples
+    );
 
     // We can't strictly assert dropped > 0 because on a fast machine with slow sender
     // (e.g. debugging/instrumentation) it might keep up.
