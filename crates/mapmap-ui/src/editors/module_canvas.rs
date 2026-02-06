@@ -321,6 +321,7 @@ pub enum CanvasAction {
     DeleteConnection {
         connection: mapmap_core::module::ModuleConnection,
     },
+    Batch(Vec<CanvasAction>),
 }
 
 impl Default for ModuleCanvas {
@@ -375,6 +376,234 @@ impl Default for ModuleCanvas {
 }
 
 impl ModuleCanvas {
+    pub fn undo(&mut self, module: &mut MapFlowModule) {
+        if let Some(action) = self.undo_stack.pop() {
+            self.apply_undo_action(&action, module);
+            self.redo_stack.push(action);
+        }
+    }
+
+    pub fn redo(&mut self, module: &mut MapFlowModule) {
+        if let Some(action) = self.redo_stack.pop() {
+            self.apply_redo_action(&action, module);
+            self.undo_stack.push(action);
+        }
+    }
+
+    pub fn push_action(&mut self, action: CanvasAction) {
+        self.undo_stack.push(action);
+        self.redo_stack.clear();
+    }
+
+    pub fn safe_delete_part(&mut self, module: &mut MapFlowModule, part_id: ModulePartId) {
+        let mut actions = Vec::new();
+
+        // 1. Find connections to delete
+        let connections_to_delete: Vec<_> = module
+            .connections
+            .iter()
+            .filter(|c| c.from_part == part_id || c.to_part == part_id)
+            .cloned()
+            .collect();
+
+        for conn in connections_to_delete {
+            actions.push(CanvasAction::DeleteConnection { connection: conn });
+        }
+
+        // 2. Find part to delete
+        if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+            actions.push(CanvasAction::DeletePart {
+                part_data: part.clone(),
+            });
+        }
+
+        if !actions.is_empty() {
+            let batch = CanvasAction::Batch(actions);
+            self.apply_redo_action(&batch, module);
+            self.push_action(batch);
+        }
+    }
+
+    fn handle_keyboard_navigation(&mut self, ui: &Ui, module: &mut MapFlowModule) {
+        // Only handle navigation if no popup is open and not typing (no focus)
+        if self.show_search || self.show_presets || ui.memory(|m| m.focused().is_some()) {
+            return;
+        }
+
+        let mut next_selection = None;
+        let selected_id = self.selected_parts.last().copied();
+
+        // 1. Arrow Key Navigation
+        if let Some(current_id) = selected_id {
+            if let Some(current_part) = module.parts.iter().find(|p| p.id == current_id) {
+                let current_pos = Vec2::new(current_part.position.0, current_part.position.1);
+
+                let direction = if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                    Some(Vec2::new(-1.0, 0.0))
+                } else if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                    Some(Vec2::new(1.0, 0.0))
+                } else if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
+                    Some(Vec2::new(0.0, -1.0))
+                } else if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
+                    Some(Vec2::new(0.0, 1.0))
+                } else {
+                    None
+                };
+
+                if let Some(dir) = direction {
+                    // Find nearest neighbor in direction
+                    let mut min_score = f32::MAX;
+
+                    for part in &module.parts {
+                        if part.id == current_id {
+                            continue;
+                        }
+
+                        let part_pos = Vec2::new(part.position.0, part.position.1);
+                        let vec = part_pos - current_pos;
+                        let dist_sq = vec.length_sq();
+
+                        if dist_sq < 0.1 {
+                            continue;
+                        } // Too close or overlap
+
+                        // Normalize
+                        let dist = dist_sq.sqrt();
+                        let unit_vec = vec / dist;
+
+                        // Dot product: 1.0 = exact direction, 0.0 = perpendicular, -1.0 = opposite
+                        let dot = dir.dot(unit_vec);
+
+                        // Filter by direction (allow 45 degrees cone, approx dot > 0.707)
+                        // Actually, let's be more lenient, > 0.5 (60 degrees)
+                        if dot > 0.5 {
+                            // Score: Distance weighted by alignment
+                            // We prefer closer nodes, but also nodes more aligned with direction
+                            // Score = Distance / Dot^2 (So higher dot reduces effective distance)
+                            let score = dist / (dot * dot);
+
+                            if score < min_score {
+                                min_score = score;
+                                next_selection = Some(part.id);
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // If nothing selected, select first part on any arrow key
+            if ui.input(|i| {
+                i.key_pressed(egui::Key::ArrowLeft)
+                    || i.key_pressed(egui::Key::ArrowRight)
+                    || i.key_pressed(egui::Key::ArrowUp)
+                    || i.key_pressed(egui::Key::ArrowDown)
+            }) {
+                if let Some(first) = module.parts.first() {
+                    next_selection = Some(first.id);
+                }
+            }
+        }
+
+        if let Some(id) = next_selection {
+            self.selected_parts.clear();
+            self.selected_parts.push(id);
+        }
+
+        // 2. Delete Key
+        if ui.input(|i| i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace)) {
+            let parts_to_delete = self.selected_parts.clone();
+            if !parts_to_delete.is_empty() {
+                let mut actions = Vec::new();
+                // Use indices or just check equality if PartialEq is implemented.
+                // Since connections are structs, they might implement PartialEq.
+                // But comparing clones is safer if we just iterate once over module.connections.
+
+                // We iterate over all connections in the module. If a connection is attached to ANY of the deleted parts,
+                // we mark it for deletion. This handles the deduplication automatically because we visit each connection once.
+
+                for conn in &module.connections {
+                    if parts_to_delete.contains(&conn.from_part) || parts_to_delete.contains(&conn.to_part) {
+                        actions.push(CanvasAction::DeleteConnection { connection: conn.clone() });
+                    }
+                }
+
+                for part_id in &parts_to_delete {
+                    if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                        actions.push(CanvasAction::DeletePart {
+                            part_data: part.clone(),
+                        });
+                    }
+                }
+
+                if !actions.is_empty() {
+                    let batch = CanvasAction::Batch(actions);
+                    self.apply_redo_action(&batch, module);
+                    self.push_action(batch);
+                    self.selected_parts.clear();
+                }
+            }
+        }
+    }
+
+    fn apply_undo_action(&mut self, action: &CanvasAction, module: &mut MapFlowModule) {
+        match action {
+            CanvasAction::AddPart { part_id, .. } => {
+                module.parts.retain(|p| p.id != *part_id);
+            }
+            CanvasAction::DeletePart { part_data } => {
+                module.parts.push(part_data.clone());
+            }
+            CanvasAction::MovePart {
+                part_id, old_pos, ..
+            } => {
+                if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                    part.position = *old_pos;
+                }
+            }
+            CanvasAction::AddConnection { connection } => {
+                module.connections.retain(|c| *c != *connection);
+            }
+            CanvasAction::DeleteConnection { connection } => {
+                module.connections.push(connection.clone());
+            }
+            CanvasAction::Batch(actions) => {
+                // Undo batch in reverse order
+                for action in actions.iter().rev() {
+                    self.apply_undo_action(action, module);
+                }
+            }
+        }
+    }
+
+    fn apply_redo_action(&mut self, action: &CanvasAction, module: &mut MapFlowModule) {
+        match action {
+            CanvasAction::AddPart { part_data, .. } => {
+                module.parts.push(part_data.clone());
+            }
+            CanvasAction::DeletePart { part_data } => {
+                module.parts.retain(|p| p.id != part_data.id);
+            }
+            CanvasAction::MovePart {
+                part_id, new_pos, ..
+            } => {
+                if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                    part.position = *new_pos;
+                }
+            }
+            CanvasAction::AddConnection { connection } => {
+                module.connections.push(connection.clone());
+            }
+            CanvasAction::DeleteConnection { connection } => {
+                module.connections.retain(|c| *c != *connection);
+            }
+            CanvasAction::Batch(actions) => {
+                for action in actions {
+                    self.apply_redo_action(action, module);
+                }
+            }
+        }
+    }
+
     fn ensure_icons_loaded(&mut self, ctx: &egui::Context) {
         if !self.plug_icons.is_empty() {
             return;
@@ -894,6 +1123,7 @@ impl ModuleCanvas {
                                                 SourceType::Shader { .. } => "🎨 Shader",
                                                 SourceType::LiveInput { .. } => "📹 Live Input",
                                                 SourceType::NdiInput { .. } => "📡 NDI Input",
+                                                #[cfg(target_os = "windows")]
                                                 SourceType::SpoutInput { .. } => "🚰 Spout Input",
                                                 SourceType::Bevy => "🎮 Bevy Scene",
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
@@ -3000,16 +3230,6 @@ impl ModuleCanvas {
             self.selected_parts = module.parts.iter().map(|p| p.id).collect();
         }
 
-        // Delete: Delete selected parts
-        if ui.input(|i| i.key_pressed(egui::Key::Delete)) && !self.selected_parts.is_empty() {
-            for &part_id in &self.selected_parts {
-                module
-                    .connections
-                    .retain(|c| c.from_part != part_id && c.to_part != part_id);
-                module.parts.retain(|p| p.id != part_id);
-            }
-            self.selected_parts.clear();
-        }
 
         // Escape: Deselect all or close search
         if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
@@ -3029,80 +3249,16 @@ impl ModuleCanvas {
         }
 
         // Ctrl+Z: Undo
-        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Z)) && !self.undo_stack.is_empty() {
-            if let Some(action) = self.undo_stack.pop() {
-                match &action {
-                    CanvasAction::AddPart { part_id, .. } => {
-                        // Undo add = delete
-                        module.parts.retain(|p| p.id != *part_id);
-                    }
-                    CanvasAction::DeletePart { part_data } => {
-                        // Undo delete = restore
-                        module.parts.push(part_data.clone());
-                    }
-                    CanvasAction::MovePart {
-                        part_id, old_pos, ..
-                    } => {
-                        // Undo move = restore old position
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
-                            part.position = *old_pos;
-                        }
-                    }
-                    CanvasAction::AddConnection { connection } => {
-                        // Undo add connection = delete
-                        module.connections.retain(|c| {
-                            !(c.from_part == connection.from_part
-                                && c.to_part == connection.to_part
-                                && c.from_socket == connection.from_socket
-                                && c.to_socket == connection.to_socket)
-                        });
-                    }
-                    CanvasAction::DeleteConnection { connection } => {
-                        // Undo delete connection = restore
-                        module.connections.push(connection.clone());
-                    }
-                }
-                self.redo_stack.push(action);
-            }
+        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Z)) {
+            self.undo(module);
         }
 
         // Ctrl+Y: Redo
-        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Y)) && !self.redo_stack.is_empty() {
-            if let Some(action) = self.redo_stack.pop() {
-                match &action {
-                    CanvasAction::AddPart { part_data, .. } => {
-                        // Redo add = add again
-                        module.parts.push(part_data.clone());
-                    }
-                    CanvasAction::DeletePart { part_data } => {
-                        // Redo delete = delete again
-                        module.parts.retain(|p| p.id != part_data.id);
-                    }
-                    CanvasAction::MovePart {
-                        part_id, new_pos, ..
-                    } => {
-                        // Redo move = apply new position
-                        if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
-                            part.position = *new_pos;
-                        }
-                    }
-                    CanvasAction::AddConnection { connection } => {
-                        // Redo add connection = add again
-                        module.connections.push(connection.clone());
-                    }
-                    CanvasAction::DeleteConnection { connection } => {
-                        // Redo delete connection = delete again
-                        module.connections.retain(|c| {
-                            !(c.from_part == connection.from_part
-                                && c.to_part == connection.to_part
-                                && c.from_socket == connection.from_socket
-                                && c.to_socket == connection.to_socket)
-                        });
-                    }
-                }
-                self.undo_stack.push(action);
-            }
+        if ctrl_held && ui.input(|i| i.key_pressed(egui::Key::Y)) {
+            self.redo(module);
         }
+
+        self.handle_keyboard_navigation(ui, module);
 
         // For shift_held - used in click handling below
         let _ = shift_held;
@@ -3474,12 +3630,7 @@ impl ModuleCanvas {
 
         // Process pending deletion
         if let Some(part_id) = delete_part_id {
-            // Remove all connections involving this part
-            module
-                .connections
-                .retain(|c| c.from_part != part_id && c.to_part != part_id);
-            // Remove the part
-            module.parts.retain(|p| p.id != part_id);
+            self.safe_delete_part(module, part_id);
         }
 
         // Resize operations to apply after the loop
@@ -3662,11 +3813,7 @@ impl ModuleCanvas {
                         self.context_menu_pos = None;
                     }
                     if ui.button("🗑 Delete").clicked() {
-                        // Remove connections and part
-                        module
-                            .connections
-                            .retain(|c| c.from_part != part_id && c.to_part != part_id);
-                        module.parts.retain(|p| p.id != part_id);
+                        self.safe_delete_part(module, part_id);
                         self.context_menu_part = None;
                         self.context_menu_pos = None;
                     }
