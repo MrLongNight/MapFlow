@@ -360,7 +360,9 @@ mod tests {
 
             // Encode MAX_GIF_FRAMES + 1 frames
             for _ in 0..super::MAX_GIF_FRAMES + 1 {
-                encoder.encode_frame(frame.clone()).expect("failed to encode frame");
+                encoder
+                    .encode_frame(frame.clone())
+                    .expect("failed to encode frame");
             }
         }
 
