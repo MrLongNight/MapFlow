@@ -13,11 +13,7 @@ use mapmap_core::{
     audio::{analyzer_v2::AudioAnalyzerV2, backend::cpal_backend::CpalBackend},
     media_library::MediaLibrary,
     module::ModulePartId,
-<<<<<<< HEAD
     AppState, History, ModuleEvaluator, RenderOp,
-=======
-    AppState, ModuleEvaluator,
->>>>>>> origin/main
 };
 use mapmap_mcp::McpAction;
 use mapmap_media::player::VideoPlayer;
