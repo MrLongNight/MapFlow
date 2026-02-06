@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -63,7 +63,7 @@ jobs:
 
       - name: Install cargo-sort
         uses: cargo-bins/cargo-binstall@main
-        
+
       - name: Check Dependency Sort
         id: sort
         run: |
@@ -94,13 +94,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
-        
+
       - name: Install cargo-audit & cargo-deny
         run: cargo binstall -y cargo-audit cargo-deny
 
@@ -135,7 +135,7 @@ jobs:
     needs: [quality, security]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -166,7 +166,7 @@ jobs:
 
       - name: Install cargo-nextest
         uses: cargo-bins/cargo-binstall@main
-        
+
       - name: Install nextest
         run: cargo binstall -y cargo-nextest
 
@@ -206,7 +206,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'test-windows')
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -249,20 +249,20 @@ jobs:
           echo "security=${{ needs.security.result }}" >> $GITHUB_OUTPUT
           echo "build_linux=${{ needs.build-linux.result }}" >> $GITHUB_OUTPUT
           echo "build_windows=${{ needs.build-windows.result }}" >> $GITHUB_OUTPUT
-          
-          if [ "${{ needs.quality.result }}" != "success" ]; then 
+
+          if [ "${{ needs.quality.result }}" != "success" ]; then
             echo "failed_job=quality" >> $GITHUB_OUTPUT
             exit 1
           fi
-          if [ "${{ needs.security.result }}" != "success" ]; then 
+          if [ "${{ needs.security.result }}" != "success" ]; then
             echo "failed_job=security" >> $GITHUB_OUTPUT
             exit 1
           fi
-          if [ "${{ needs.build-linux.result }}" != "success" ]; then 
+          if [ "${{ needs.build-linux.result }}" != "success" ]; then
             echo "failed_job=build-linux" >> $GITHUB_OUTPUT
             exit 1
           fi
-          if [ "${{ needs.build-windows.result }}" == "failure" ]; then 
+          if [ "${{ needs.build-windows.result }}" == "failure" ]; then
             echo "failed_job=build-windows" >> $GITHUB_OUTPUT
             exit 1
           fi
@@ -278,7 +278,7 @@ jobs:
             const security = '${{ needs.security.result }}';
             const buildLinux = '${{ needs.build-linux.result }}';
             const buildWindows = '${{ needs.build-windows.result }}';
-            
+
             let errorDetails = "## ❌ CI/CD Validation Failed\n\n";
             errorDetails += `@google-labs-jules[bot] Die automatische Validierung ist fehlgeschlagen.\n\n`;
             errorDetails += `### 📊 Check Status:\n\n`;
@@ -288,7 +288,7 @@ jobs:
             errorDetails += `| Security Scan | ${security === 'success' ? '✅ PASS' : '❌ FAIL'} |\n`;
             errorDetails += `| Build & Test (Linux) | ${buildLinux === 'success' ? '✅ PASS' : '❌ FAIL'} |\n`;
             errorDetails += `| Build & Test (Windows) | ${buildWindows === 'success' ? '✅ PASS' : buildWindows === 'skipped' ? '⏭️ SKIP' : '❌ FAIL'} |\n\n`;
-            
+
             // Detaillierte Fehleranalyse
             if (quality === 'failure') {
               errorDetails += `### 🔍 Quality Gate Fehler\n\n`;
@@ -304,7 +304,7 @@ jobs:
               errorDetails += `git push\n`;
               errorDetails += `\`\`\`\n\n`;
             }
-            
+
             if (security === 'failure') {
               errorDetails += `### 🔒 Security Scan Fehler\n\n`;
               errorDetails += `Sicherheitsprobleme in Dependencies gefunden.\n\n`;
@@ -314,7 +314,7 @@ jobs:
               errorDetails += `3. Falls Update nicht möglich: Prüfe \`cargo deny check advisories\`\n`;
               errorDetails += `4. Dokumentiere ignorierte Advisories in \`deny.toml\` falls nötig\n\n`;
             }
-            
+
             if (buildLinux === 'failure') {
               errorDetails += `### 🏗️ Build Fehler (Linux)\n\n`;
               errorDetails += `**Der Build ist fehlgeschlagen.**\n\n`;
@@ -327,7 +327,7 @@ jobs:
               errorDetails += `3. Prüfe ob alle Dependencies in \`Cargo.toml\` korrekt sind\n`;
               errorDetails += `4. Stelle sicher, dass alle Features kompatibel sind\n\n`;
             }
-            
+
             if (buildWindows === 'failure') {
               errorDetails += `### 🪟 Build Fehler (Windows)\n\n`;
               errorDetails += `**Der Windows-Build ist fehlgeschlagen.**\n\n`;
@@ -340,7 +340,7 @@ jobs:
               errorDetails += `cargo build --release --no-default-features --features audio\n`;
               errorDetails += `\`\`\`\n\n`;
             }
-            
+
             errorDetails += `---\n\n`;
             errorDetails += `### 🔗 Workflow Details\n\n`;
             errorDetails += `[📋 Siehe vollständige Logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\n`;
@@ -350,7 +350,7 @@ jobs:
             errorDetails += `./scripts/Final-Prepare-PreCommit.sh\n`;
             errorDetails += `\`\`\`\n\n`;
             errorDetails += `**Note:** pre-commit.ci hat bereits Formatierungs-Fehler automatisch gefixt. Falls weitere Fehler auftreten, siehe oben.`;
-            
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

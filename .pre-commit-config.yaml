@@ -7,13 +7,13 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "chore: pre-commit autoupdate [skip ci]"
   autoupdate_schedule: weekly
-  
+
   # Skip Rust hooks in CI (no toolchain available)
   skip:
     - fmt
     - clippy
     - cargo-sort
-  
+
   submodules: false
 
 repos:
@@ -27,7 +27,7 @@ repos:
         name: "Rust: cargo fmt"
         args: ['--all', '--']
         stages: [manual]  # Run manually only
-        
+
       - id: clippy
         name: "Rust: cargo clippy"
         args:
@@ -47,23 +47,23 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
         exclude: ^(.*\.patch|.*\.diff)$
-        
+
       - id: end-of-file-fixer
         exclude: ^(.*\.patch|.*\.diff|.*\.rs\.bk)$
-        
+
       - id: check-case-conflict
-        
+
       - id: check-yaml
         args: [--allow-multiple-documents]
-        
+
       - id: check-toml
-        
+
       - id: check-added-large-files
         args: [--maxkb=5000]
         exclude: ^(.*\.dll|.*\.so|.*\.dylib|assets/.*|resources/.*)$
-        
+
       - id: check-merge-conflict
-        
+
       - id: mixed-line-ending
         args: [--fix=lf]
         exclude: ^(.*\.bat|.*\.cmd)$

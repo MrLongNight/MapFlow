@@ -21,8 +21,8 @@ MapFlow Render provides a robust abstraction over modern graphics APIs (Vulkan, 
 
 Rendering in MapFlow is pipeline-based. The `Compositor` takes a scene description and executes a series of render passes:
 
-1.  **Layer Rendering**: Individual layers are rendered to intermediate textures.
-2.  **Composition**: Layers are blended together.
-3.  **Output Mapping**: The composition is mapped onto 3D meshes for projection.
-4.  **Post-Processing**: Edge blending and color calibration are applied.
-5.  **Presentation**: The final result is presented to the window surface.
+1. **Layer Rendering**: Individual layers are rendered to intermediate textures.
+2. **Composition**: Layers are blended together.
+3. **Output Mapping**: The composition is mapped onto 3D meshes for projection.
+4. **Post-Processing**: Edge blending and color calibration are applied.
+5. **Presentation**: The final result is presented to the window surface.
