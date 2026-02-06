@@ -412,19 +412,25 @@ impl AppUI {
             .default_width(280.0)
             .min_width(200.0)
             .max_width(400.0)
+            .frame(crate::widgets::panel::cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading(self.i18n.t("panel-media-browser"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                crate::widgets::panel::render_panel_header(
+                    ui,
+                    &self.i18n.t("panel-media-browser"),
+                    |ui| {
                         if ui.button("✕").clicked() {
                             self.show_media_browser = false;
                         }
+                    },
+                );
+
+                egui::Frame::new()
+                    .inner_margin(egui::Margin::symmetric(8, 8))
+                    .show(ui, |ui| {
+                        let _ = self
+                            .media_browser
+                            .ui(ui, &self.i18n, self.icon_manager.as_ref());
                     });
-                });
-                ui.separator();
-                let _ = self
-                    .media_browser
-                    .ui(ui, &self.i18n, self.icon_manager.as_ref());
             });
     }
 
@@ -437,8 +443,12 @@ impl AppUI {
         egui::Window::new(self.i18n.t("panel-playback"))
             .default_size([320.0, 360.0])
             .show(ctx, |ui| {
-                ui.heading(self.i18n.t("header-video-playback"));
-                ui.separator();
+                crate::widgets::panel::render_panel_header(
+                    ui,
+                    &self.i18n.t("header-video-playback"),
+                    |_| {},
+                );
+                ui.add_space(8.0);
 
                 // Transport controls
                 ui.horizontal(|ui| {
