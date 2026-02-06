@@ -24,25 +24,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     if output_id == 0 {
         // Sync Texture Previews
         prepare_texture_previews(app, &mut encoder);
-
-        // Update Bevy Texture
-        if let Some(runner) = &app.bevy_runner {
-            if let Some((data, width, height)) = runner.get_image_data() {
-                let tex_name = "bevy_output";
-                app.texture_pool.ensure_texture(
-                    tex_name,
-                    width,
-                    height,
-                    wgpu::TextureFormat::Bgra8UnormSrgb,
-                    wgpu::TextureUsages::TEXTURE_BINDING
-                        | wgpu::TextureUsages::COPY_DST
-                        | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                );
-
-                app.texture_pool
-                    .upload_data(&app.backend.queue, tex_name, &data, width, height);
-            }
-        }
     }
 
     // Create raw pointer for UI loop hack BEFORE borrowing window_context
