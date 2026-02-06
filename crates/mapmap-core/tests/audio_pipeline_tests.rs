@@ -105,7 +105,7 @@ fn test_smoothing_presence() {
     let success = wait_for_condition(Duration::from_secs(2), || {
         let _ = pipeline.get_analysis();
         if let Some(smoothed) = pipeline.get_smoothed_analysis() {
-             smoothed.rms_volume > 0.0
+            smoothed.rms_volume > 0.0
         } else {
             false
         }
