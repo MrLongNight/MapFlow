@@ -80,7 +80,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     app.ui_state.actions.extend(menu_actions);
 
     // === Left Panel: Unified Sidebar ===
-    // Two independent collapsible panels: Controls (top) and Preview (bottom)
     if app.ui_state.show_left_sidebar {
         let sidebar_width = layout.sidebar_width();
         let sidebar_max = layout.sidebar_max_width();
@@ -199,8 +198,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 
     // === 7. Floating Windows / Modals ===
 
-    // Master Controls moved to sidebar
-
     // Icon Demo Panel
     ui::dialogs::icon_demo::show(
         ctx,
@@ -253,13 +250,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         },
     );
 
-    // Icon Demo Panel
-    ui::dialogs::icon_demo::show(
-        ctx,
-        ui::dialogs::icon_demo::IconDemoContext {
-            ui_state: &mut app.ui_state,
-        },
-    );
     // ---------------------------------------------------------------------
     // 3. FLOATING WINDOWS (Rendered LAST = On Top)
     // ---------------------------------------------------------------------
@@ -273,9 +263,12 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     );
 
     // Render Oscillator Panel
-    app.ui_state
-        .oscillator_panel
-        .render(ctx, &app.ui_state.i18n, &mut app.state.oscillator_config, app.ui_state.icon_manager.as_ref());
+    app.ui_state.oscillator_panel.render(
+        ctx, 
+        &app.ui_state.i18n, 
+        &mut app.state.oscillator_config, 
+        app.ui_state.icon_manager.as_ref()
+    );
 
     // Handle Effect Chain Actions
     for action in app.ui_state.effect_chain_panel.take_actions() {
@@ -436,7 +429,7 @@ fn render_compact_sidebar(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
 fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
     let layout = ResponsiveLayout::new(ui.ctx());
     
-    // Header
+    // Header with collapse button
     ui.horizontal(|ui| {
         ui.heading("Sidebar");
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -460,14 +453,13 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
                 },
             );
 
-            // Splitter logic (simplified for brevity)
+            // Splitter logic
             let splitter_height = 6.0;
             let (_, splitter_response) = ui.allocate_at_least(
                 egui::vec2(ui.available_width(), splitter_height),
                 egui::Sense::drag(),
             );
             
-            // Draw the splitter handle
             let is_hovered = splitter_response.hovered();
             let is_dragged = splitter_response.dragged();
             let color = if is_dragged {
@@ -487,7 +479,7 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
             if splitter_response.dragged() {
                 app.ui_state.control_panel_height += splitter_response.drag_delta().y;
                 let total_available = ui.available_height();
-                app.ui_state.control_panel_height = app.ui_state.control_panel_height.clamp(100.0, total_available - 150.0);
+                app.ui_state.control_panel_height = app.ui_state.control_panel_height.clamp(100.0, total_available - 50.0);
             }
             
             if is_hovered || is_dragged {
