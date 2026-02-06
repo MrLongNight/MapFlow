@@ -222,27 +222,25 @@ impl ShortcutsPanel {
                 self.editing_shortcut_index = None;
             }
 
-            if let Some(maybe_key_config) = new_shortcut_key {
-                if let Some((new_key, new_modifiers)) = maybe_key_config {
-                    let context = shortcuts_clone[index].context;
-                    // Check conflict
-                    if key_bindings.is_key_bound(new_key, &new_modifiers, context) {
-                        // If binding to same key as current, it's fine (no-op)
-                        let current = &shortcuts_clone[index];
-                        if current.key == new_key && current.modifiers == new_modifiers {
-                            self.editing_shortcut_index = None;
-                        } else {
-                            self.show_conflict_warning = true;
-                        }
-                    } else {
-                        // Apply
-                        let mut shortcut = shortcuts_clone[index].clone();
-                        shortcut.key = new_key;
-                        shortcut.modifiers = new_modifiers;
-                        key_bindings.update_shortcut(index, shortcut);
-                        self.detect_conflicts(key_bindings);
+            if let Some(Some((new_key, new_modifiers))) = new_shortcut_key {
+                let context = shortcuts_clone[index].context;
+                // Check conflict
+                if key_bindings.is_key_bound(new_key, &new_modifiers, context) {
+                    // If binding to same key as current, it's fine (no-op)
+                    let current = &shortcuts_clone[index];
+                    if current.key == new_key && current.modifiers == new_modifiers {
                         self.editing_shortcut_index = None;
+                    } else {
+                        self.show_conflict_warning = true;
                     }
+                } else {
+                    // Apply
+                    let mut shortcut = shortcuts_clone[index].clone();
+                    shortcut.key = new_key;
+                    shortcut.modifiers = new_modifiers;
+                    key_bindings.update_shortcut(index, shortcut);
+                    self.detect_conflicts(key_bindings);
+                    self.editing_shortcut_index = None;
                 }
             }
         }
