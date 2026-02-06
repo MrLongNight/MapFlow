@@ -341,8 +341,8 @@ mod tests {
 
     #[test]
     fn test_gif_limit() {
-        use image::{Delay, Frame, RgbaImage};
         use image::codecs::gif::GifEncoder;
+        use image::{Delay, Frame, RgbaImage};
 
         // Create a temporary file
         let file = tempfile::NamedTempFile::new().unwrap();
@@ -383,8 +383,8 @@ mod tests {
 
     #[test]
     fn test_gif_load() {
-        use image::{Delay, Frame, RgbaImage};
         use image::codecs::gif::GifEncoder;
+        use image::{Delay, Frame, RgbaImage};
 
         // Create a temporary file
         let file = tempfile::NamedTempFile::new().unwrap();
