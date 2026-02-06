@@ -595,8 +595,7 @@ fn draw_digit(
     }
     let bitmap = BITMAPS[digit];
 
-    for row in 0..5 {
-        let row_bits = bitmap[row];
+    for (row, row_bits) in bitmap.iter().enumerate() {
         for col in 0..3 {
             // Check bit (2-col)
             if (row_bits >> (2 - col)) & 1 == 1 {
