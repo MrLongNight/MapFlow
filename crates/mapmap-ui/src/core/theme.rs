@@ -66,6 +66,7 @@ pub mod colors {
     pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 10); // Window/Deep Background (Almost Black)
     pub const LIGHTER_GREY: Color32 = Color32::from_rgb(40, 40, 45); // Widget Background
     pub const STROKE_GREY: Color32 = Color32::from_rgb(60, 60, 70); // Borders (High Contrast)
+    pub const WHITE: Color32 = Color32::WHITE;
 }
 
 impl ThemeConfig {
