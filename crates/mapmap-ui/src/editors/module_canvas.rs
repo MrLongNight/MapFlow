@@ -1331,7 +1331,6 @@ impl ModuleCanvas {
                                                     ui.label("Sender:");
                                                     ui.text_edit_singleline(sender_name);
                                                 });
-                                                // ... (image multi items) ...
                                             }
                                             SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
