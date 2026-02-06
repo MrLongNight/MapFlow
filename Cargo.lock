@@ -4959,7 +4959,6 @@ dependencies = [
  "hound",
  "hyper",
  "image 0.24.9",
- "mapmap-bevy",
  "mapmap-control",
  "mapmap-core",
  "mapmap-io",

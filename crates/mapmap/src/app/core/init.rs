@@ -39,7 +39,7 @@ impl App {
         let backend = WgpuBackend::new(saved_config.preferred_gpu.as_deref()).await?;
 
         // Version marker to confirm correct build is running
-        tracing::info!(">>> BUILD VERSION: 2026-02-06-BEVY-DISABLED-V2 <<<");
+        tracing::info!(">>> BUILD VERSION: 2026-02-06-BEVY-REMOVED-ULTIMATE <<<");
 
         // Initialize renderers
         let texture_pool = TexturePool::new(backend.device.clone());
@@ -519,16 +519,6 @@ impl App {
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
             media_library: MediaLibrary::new(),
-            bevy_runner: {
-                info!("Initializing Bevy Runner...");
-                // FIXME: Bevy initialization causes a crash on startup (likely WGPU conflict).
-                // Temporarily disabled to allow the app to start.
-                warn!("Bevy Integration is TEMPORARILY DISABLED to prevent startup crash.");
-                // let runner = Some(mapmap_bevy::BevyRunner::new());
-                // info!("Bevy Runner initialized successfully.");
-                // runner
-                None
-            },
         };
 
         Ok(app)

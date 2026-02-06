@@ -25,25 +25,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         tracing::trace!("Effect updates: {}", param_updates.len());
     }
 
-    // --- Bevy Runner Update ---
-    if let Some(runner) = &mut app.bevy_runner {
-        // First sync graph state
-        for module in app.state.module_manager.list_modules() {
-            runner.apply_graph_state(module);
-        }
-
-        let analysis = app.audio_analyzer.get_latest_analysis();
-        let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
-            band_energies: analysis.band_energies,
-            rms_volume: analysis.rms_volume,
-            peak_volume: analysis.peak_volume,
-            beat_detected: analysis.beat_detected,
-            beat_strength: analysis.beat_strength,
-            bpm: analysis.tempo_bpm,
-        };
-        runner.update(&trigger_data);
-    }
-
     // --- Module Graph Evaluation ---
     // Evaluate ALL modules and merge render_ops for multi-output support
     app.render_ops.clear();
