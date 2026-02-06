@@ -5,16 +5,11 @@ use egui::{ComboBox, DragValue, Ui, Window};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OscillatorPanel {
+
     /// Is the panel currently visible?
     pub visible: bool,
-}
-
-impl Default for OscillatorPanel {
-    fn default() -> Self {
-        Self { visible: false }
-    }
 }
 
 impl OscillatorPanel {
@@ -26,12 +21,7 @@ impl OscillatorPanel {
     /// Renders the oscillator panel UI.
     ///
     /// Returns `true` if any value was changed by the user.
-    pub fn render(
-        &mut self,
-        ctx: &egui::Context,
-        locale: &LocaleManager,
-        config: &mut OscillatorConfig,
-    ) -> bool {
+    pub fn render(&mut self, ctx: &egui::Context, locale: &LocaleManager, config: &mut OscillatorConfig) -> bool {
         let mut changed = false;
         let mut is_open = self.visible;
 
@@ -89,12 +79,7 @@ impl OscillatorPanel {
         changed
     }
 
-    fn show_simulation_params(
-        &mut self,
-        ui: &mut Ui,
-        locale: &LocaleManager,
-        config: &mut OscillatorConfig,
-    ) -> bool {
+    fn show_simulation_params(&mut self, ui: &mut Ui, locale: &LocaleManager, config: &mut OscillatorConfig) -> bool {
         let mut sim_changed = false;
 
         ui.horizontal(|ui| {
@@ -136,12 +121,7 @@ impl OscillatorPanel {
         sim_changed
     }
 
-    fn show_distortion_params(
-        &mut self,
-        ui: &mut Ui,
-        locale: &LocaleManager,
-        config: &mut OscillatorConfig,
-    ) -> bool {
+    fn show_distortion_params(&mut self, ui: &mut Ui, locale: &LocaleManager, config: &mut OscillatorConfig) -> bool {
         let mut dist_changed = false;
 
         ui.horizontal(|ui| {
@@ -180,12 +160,7 @@ impl OscillatorPanel {
         dist_changed
     }
 
-    fn show_visual_params(
-        &mut self,
-        ui: &mut Ui,
-        locale: &LocaleManager,
-        config: &mut OscillatorConfig,
-    ) -> bool {
+    fn show_visual_params(&mut self, ui: &mut Ui, locale: &LocaleManager, config: &mut OscillatorConfig) -> bool {
         let mut viz_changed = false;
 
         ui.horizontal(|ui| {

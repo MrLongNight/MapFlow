@@ -186,6 +186,7 @@ impl BevyRunner {
     }
 }
 
+
 /*
 pub fn sync_atmosphere_system(
     query: Query<&crate::components::BevyAtmosphere, Changed<crate::components::BevyAtmosphere>>,
