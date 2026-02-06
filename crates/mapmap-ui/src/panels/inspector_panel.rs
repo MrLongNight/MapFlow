@@ -80,11 +80,15 @@ impl InspectorPanel {
             .max_width(450.0)
             .show(ctx, |ui| {
                 // Header
-                widgets::render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
-                    if ui.button("✕").clicked() {
-                        self.visible = false;
-                    }
-                });
+                widgets::render_panel_header(
+                    ui,
+                    &i18n.t("panel-inspector"),
+                    |ui| {
+                        if ui.button("✕").clicked() {
+                            self.visible = false;
+                        }
+                    },
+                );
 
                 // Context-sensitive content
                 match context {
