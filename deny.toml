@@ -29,6 +29,8 @@ allow = [
     "MIT-0",
     "WTFPL",
     "OFL-1.1",
+    "Ubuntu-font-1.0",
+    "GPL-3.0-only",
 ]
 
 [bans]
