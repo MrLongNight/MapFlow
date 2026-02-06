@@ -1632,7 +1632,7 @@ impl ModuleCanvas {
                                         };
 
                                         match layer {
-                                            LayerType::Single { id, name, opacity, blend_mode, mesh } => {
+                                            LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_mode } => {
                                                 ui.label("🔲 Single Layer");
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
@@ -1647,12 +1647,15 @@ impl ModuleCanvas {
                                                     if ui.selectable_label(matches!(blend_mode, Some(BlendModeType::Multiply)), "Multiply").clicked() { *blend_mode = Some(BlendModeType::Multiply); }
                                                 });
 
+                                                ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
+
                                                 render_mesh_ui(ui, mesh, *id);
                                             }
-                                            LayerType::Group { name, opacity, mesh, .. } => {
+                                            LayerType::Group { name, opacity, mesh, mapping_mode, .. } => {
                                                 ui.label("📂 Group");
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
+                                                ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
                                                 render_mesh_ui(ui, mesh, 9999); // Dummy ID
                                             }
                                             LayerType::All { opacity, .. } => {
