@@ -38,3 +38,7 @@
 ## 2024-10-26 - Audio Buffer Resizing
 **Insight:** Testing `update_config` in audio analyzers is critical because mismatched buffer sizes (e.g., between FFT and input buffers) are a common source of runtime panics or silent failures when users change settings.
 **Action:** Always include a "reconfiguration" test case for stateful processing components like audio analyzers or render pipelines.
+
+## 2024-10-27 - [NDI Stub Tests]
+**Insight:** Stub implementations for disabled features (like NDI) often lack test coverage, leading to silent failures or regressions where stubs might panic or fail to compile when features are toggled.
+**Action:** Added unit tests for `NdiReceiver` and `NdiSender` stubs in `mapmap-io/src/ndi/mod.rs` to verify they return explicit errors instead of crashing. Added `#[derive(Debug)]` to ensure they integrate seamlessly with logging infrastructure.
