@@ -39,7 +39,7 @@ impl App {
         let backend = WgpuBackend::new(saved_config.preferred_gpu.as_deref()).await?;
 
         // Version marker to confirm correct build is running
-        tracing::info!(">>> BUILD VERSION: 2026-01-04-FIX-RENDER-CHECK <<<");
+        tracing::info!(">>> BUILD VERSION: 2026-02-06-BEVY-DISABLED-V2 <<<");
 
         // Initialize renderers
         let texture_pool = TexturePool::new(backend.device.clone());
