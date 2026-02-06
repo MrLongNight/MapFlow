@@ -9,7 +9,7 @@
 //! - Parameter uniforms
 //! - Hot-reload support (via shader recompilation)
 
-use crate::{QuadRenderer, Result};
+use crate::{pipeline::UniformBufferAllocator, QuadRenderer, Result};
 use bytemuck::{Pod, Zeroable};
 use mapmap_core::{EffectChain, EffectType};
 use std::collections::HashMap;
@@ -130,6 +130,9 @@ pub struct EffectChainRenderer {
 
     // Passthrough renderer
     quad_renderer: QuadRenderer,
+
+    // Uniform buffer allocator
+    allocator: UniformBufferAllocator,
 }
 
 impl EffectChainRenderer {
@@ -270,6 +273,8 @@ impl EffectChainRenderer {
             }
         }
 
+        let allocator = UniformBufferAllocator::new(device.clone(), "EffectChain");
+
         Ok(Self {
             device,
             queue,
@@ -283,7 +288,13 @@ impl EffectChainRenderer {
             vertex_buffer,
             index_buffer,
             quad_renderer,
+            allocator,
         })
+    }
+
+    /// Reset allocator at start of frame
+    pub fn begin_frame(&mut self) {
+        self.allocator.reset();
     }
 
     /// Create a render pipeline for a specific effect type
@@ -573,8 +584,25 @@ impl EffectChainRenderer {
 
             // Create bind groups
             let input_bind_group = self.create_bind_group(current_input);
-            let uniform_buffer = self.create_uniform_buffer(&params);
-            let uniform_bind_group = self.create_uniform_bind_group(&uniform_buffer);
+
+            // Allocate uniform buffer from pool
+            let (buffer, offset) = self
+                .allocator
+                .allocate(&self.queue, bytemuck::cast_slice(&[params]));
+            let size = std::mem::size_of::<EffectParams>() as u64;
+
+            let uniform_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Effect Chain Uniform Bind Group"),
+                layout: &self.uniform_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer,
+                        offset,
+                        size: std::num::NonZeroU64::new(size),
+                    }),
+                }],
+            });
 
             // Determine output target
             let render_target = if is_last {
