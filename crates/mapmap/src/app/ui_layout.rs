@@ -104,7 +104,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             |ui| {
                                 egui::ScrollArea::vertical().id_salt("controls_scroll").show(ui, |ui| {
                                     // Master Controls (Embedded)
-                                    app.ui_state.render_master_controls_embedded(ui, &mut app.state.layer_manager);
+                                    app.ui_state.render_master_controls_embedded(ui, app.state.layer_manager_mut());
                                     ui.separator();
 
                                     // Media Browser Section
@@ -250,7 +250,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         // Controls only - full height
                         egui::ScrollArea::vertical().id_salt("inspector_scroll_full").show(ui, |ui| {
                             // Module Sidebar
-                            app.ui_state.module_sidebar.show(ui, &mut app.state.module_manager, &app.ui_state.i18n);
+                            app.ui_state.module_sidebar.show(ui, app.state.module_manager_mut(), &app.ui_state.i18n);
 
                             // Media Browser Section
                             egui::CollapsingHeader::new("📁 Media")
@@ -408,11 +408,12 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     }
 
     // === RIGHT PANEL: Inspector ===
+    let state = &mut app.state;
     app.ui_state.render_inspector(
         ctx,
-        &mut app.state.module_manager,
-        &app.state.layer_manager,
-        &app.state.output_manager,
+        std::sync::Arc::make_mut(&mut state.module_manager),
+        &state.layer_manager,
+        &state.output_manager,
     );
 
     // === 2. BOTTOM PANEL: Timeline (FULL WIDTH - rendered before side panels!) ===
@@ -597,8 +598,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     UIEffectType::Custom => RenderEffectType::Custom,
                 };
 
-                let id = app.state.effect_chain.add_effect(render_type);
-                if let Some(effect) = app.state.effect_chain.get_effect_mut(id) {
+                let id = app.state.effect_chain_mut().add_effect(render_type);
+                if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
                     for (k, v) in &params {
                         effect.set_param(k, *v);
                     }
@@ -626,32 +627,32 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     UIEffectType::HueShift => RenderEffectType::HueShift,
                     UIEffectType::Custom => RenderEffectType::Custom,
                 };
-                app.state.effect_chain.add_effect(render_type);
+                app.state.effect_chain_mut().add_effect(render_type);
             }
             EffectChainAction::ClearAll => {
-                app.state.effect_chain.effects.clear();
+                app.state.effect_chain_mut().effects.clear();
             }
             EffectChainAction::RemoveEffect(id) => {
-                app.state.effect_chain.remove_effect(id);
+                app.state.effect_chain_mut().remove_effect(id);
             }
             EffectChainAction::MoveUp(id) => {
-                app.state.effect_chain.move_up(id);
+                app.state.effect_chain_mut().move_up(id);
             }
             EffectChainAction::MoveDown(id) => {
-                app.state.effect_chain.move_down(id);
+                app.state.effect_chain_mut().move_down(id);
             }
             EffectChainAction::ToggleEnabled(id) => {
-                if let Some(effect) = app.state.effect_chain.get_effect_mut(id) {
+                if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
                     effect.enabled = !effect.enabled;
                 }
             }
             EffectChainAction::SetIntensity(id, val) => {
-                if let Some(effect) = app.state.effect_chain.get_effect_mut(id) {
+                if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
                     effect.intensity = val;
                 }
             }
             EffectChainAction::SetParameter(id, name, val) => {
-                if let Some(effect) = app.state.effect_chain.get_effect_mut(id) {
+                if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
                     effect.set_param(&name, val);
                 }
             }
@@ -667,7 +668,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         if let Some(selected_id) = app.ui_state.selected_layer_id {
             match action {
                 mapmap_ui::TransformAction::UpdateTransform(values) => {
-                    if let Some(layer) = app.state.layer_manager.get_layer_mut(selected_id) {
+                    if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(selected_id) {
                         layer.transform.position.x = values.position.0;
                         layer.transform.position.y = values.position.1;
                         layer.transform.rotation.z = values.rotation.to_radians();
@@ -679,7 +680,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     }
                 }
                 mapmap_ui::TransformAction::ResetTransform => {
-                    if let Some(layer) = app.state.layer_manager.get_layer_mut(selected_id) {
+                    if let Some(layer) = app.state.layer_manager_mut().get_layer_mut(selected_id) {
                         layer.transform = mapmap_core::Transform::default();
                         app.state.dirty = true;
                     }

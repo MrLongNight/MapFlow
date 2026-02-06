@@ -17,7 +17,7 @@ pub fn show(ctx: &Context, context: PaintContext) {
     context.ui_state.paint_panel.render(
         ctx,
         &context.ui_state.i18n,
-        &mut context.state.paint_manager,
+        context.state.paint_manager_mut(),
         context.ui_state.icon_manager.as_ref(),
     );
 }
@@ -28,7 +28,7 @@ pub fn handle_actions(ui_state: &mut AppUI, state: &mut AppState) {
         match action {
             mapmap_ui::paint_panel::PaintPanelAction::AddPaint => {
                 state
-                    .paint_manager
+                    .paint_manager_mut()
                     .add_paint(mapmap_core::paint::Paint::color(
                         0,
                         "New Color",
@@ -37,7 +37,7 @@ pub fn handle_actions(ui_state: &mut AppUI, state: &mut AppState) {
                 state.dirty = true;
             }
             mapmap_ui::paint_panel::PaintPanelAction::RemovePaint(id) => {
-                state.paint_manager.remove_paint(id);
+                state.paint_manager_mut().remove_paint(id);
                 state.dirty = true;
             }
         }

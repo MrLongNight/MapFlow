@@ -105,6 +105,7 @@ impl MapFlowModule {
                 opacity: 1.0,
                 blend_mode: None,
                 mesh: default_mesh_quad(),
+                mapping_mode: false,
             }),
 
             PartType::Hue => ModulePartType::Hue(HueNodeType::SingleLamp {
@@ -1931,6 +1932,9 @@ pub enum LayerType {
         /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Mapping mode (Phase 2) - Renders grid texture with Layer ID
+        #[serde(default)]
+        mapping_mode: bool,
     },
     /// A group of layers
     Group {
@@ -1943,6 +1947,9 @@ pub enum LayerType {
         /// Associated mesh geometry
         #[serde(default = "default_mesh_quad")]
         mesh: MeshType,
+        /// Mapping mode (Phase 2) - Renders grid texture with Layer ID
+        #[serde(default)]
+        mapping_mode: bool,
     },
     /// Special layer representing "All Layers"
     All {

@@ -18,6 +18,8 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 
     // ⚡ Bolt Optimization: Batch render passes.
     app.mesh_renderer.begin_frame();
+    app.effect_chain_renderer.begin_frame();
+    app.preview_effect_chain_renderer.begin_frame();
 
     if output_id == 0 {
         // Sync Texture Previews
@@ -276,8 +278,27 @@ fn render_content(
             "".to_string()
         };
 
-        // Use has_texture and get_view. Assuming dimensions are handled via UVs properly.
-        let source_view = if ctx.texture_pool.has_texture(&tex_name) {
+        // Check for Mapping Mode (Grid override)
+        let source_view = if op.mapping_mode {
+            let grid_tex_name = format!("grid_layer_{}", op.layer_part_id);
+            if !ctx.texture_pool.has_texture(&grid_tex_name) {
+                // Generate grid texture on demand
+                let width = 512;
+                let height = 512;
+                let data = generate_grid_texture(width, height, op.layer_part_id);
+
+                ctx.texture_pool.ensure_texture(
+                    &grid_tex_name,
+                    width,
+                    height,
+                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                );
+                ctx.texture_pool
+                    .upload_data(queue, &grid_tex_name, &data, width, height);
+            }
+            Some(ctx.texture_pool.get_view(&grid_tex_name))
+        } else if ctx.texture_pool.has_texture(&tex_name) {
             Some(ctx.texture_pool.get_view(&tex_name))
         } else {
             ctx.dummy_view.as_ref().map(|v| v.clone())
@@ -481,6 +502,119 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                         &texture_bind_group,
                         false,
                     );
+                }
+            }
+        }
+    }
+}
+
+// --- Grid Generation Helpers ---
+
+/// Generate a grid texture with Layer ID burned in
+fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
+    let mut data = vec![0u8; (width * height * 4) as usize];
+    let bg_color = [0, 0, 0, 255]; // Black background
+    let grid_color = [255, 255, 255, 255]; // White grid
+    let text_color = [0, 255, 255, 255]; // Cyan text
+
+    // Fill background
+    for i in 0..(width * height) {
+        let idx = (i * 4) as usize;
+        data[idx] = bg_color[0];
+        data[idx + 1] = bg_color[1];
+        data[idx + 2] = bg_color[2];
+        data[idx + 3] = bg_color[3];
+    }
+
+    // Draw Grid
+    let grid_step = 64;
+    for y in 0..height {
+        for x in 0..width {
+            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 {
+                let idx = ((y * width + x) * 4) as usize;
+                data[idx] = grid_color[0];
+                data[idx + 1] = grid_color[1];
+                data[idx + 2] = grid_color[2];
+                data[idx + 3] = grid_color[3];
+            }
+        }
+    }
+
+    // Draw Layer ID
+    let id_str = format!("{}", layer_id);
+    let digit_scale = 8;
+    let digit_w = 3 * digit_scale;
+    let digit_h = 5 * digit_scale;
+    let spacing = 2 * digit_scale;
+
+    let total_w = id_str.len() as u32 * (digit_w + spacing) - spacing;
+    let start_x = (width - total_w) / 2;
+    let start_y = (height - digit_h) / 2;
+
+    for (i, char) in id_str.chars().enumerate() {
+        if let Some(digit) = char.to_digit(10) {
+            draw_digit(
+                &mut data,
+                width,
+                digit as usize,
+                start_x + i as u32 * (digit_w + spacing),
+                start_y,
+                digit_scale,
+                text_color,
+            );
+        }
+    }
+
+    data
+}
+
+// Re-defining bitmaps as byte arrays [row0, row1, row2, row3, row4] where each row is 3 bits
+// 3 bits: 4 = 100, 2 = 010, 1 = 001.  7 = 111. 5 = 101.
+const BITMAPS: [[u8; 5]; 10] = [
+    [7, 5, 5, 5, 7], // 0
+    [2, 6, 2, 2, 7], // 1
+    [7, 1, 7, 4, 7], // 2
+    [7, 1, 7, 1, 7], // 3
+    [5, 5, 7, 1, 1], // 4
+    [7, 4, 7, 1, 7], // 5
+    [7, 4, 7, 5, 7], // 6
+    [7, 1, 1, 1, 1], // 7
+    [7, 5, 7, 5, 7], // 8
+    [7, 5, 7, 1, 7], // 9
+];
+
+fn draw_digit(
+    data: &mut [u8],
+    width: u32,
+    digit: usize,
+    offset_x: u32,
+    offset_y: u32,
+    scale: u32,
+    color: [u8; 4],
+) {
+    if digit > 9 {
+        return;
+    }
+    let bitmap = BITMAPS[digit];
+
+    for (row, row_bits) in bitmap.iter().enumerate() {
+        for col in 0..3 {
+            // Check bit (2-col)
+            if (row_bits >> (2 - col)) & 1 == 1 {
+                // Draw pixel rect
+                for dy in 0..scale {
+                    for dx in 0..scale {
+                        let x = offset_x + col as u32 * scale + dx;
+                        let y = offset_y + row as u32 * scale + dy;
+
+                        if x < width && y < (data.len() as u32 / width / 4) {
+                            let idx = ((y * width + x) * 4) as usize;
+                            data[idx] = color[0];
+                            data[idx + 1] = color[1];
+                            data[idx + 2] = color[2];
+                            data[idx + 3] = color[3];
+                        }
+                    }
                 }
             }
         }

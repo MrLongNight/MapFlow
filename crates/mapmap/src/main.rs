@@ -647,7 +647,49 @@ impl App {
         // Process UI actions
         let actions = self.ui_state.take_actions();
         for action in actions {
+            // Undo/Redo Logic: Snapshot state before mutating actions
+            let is_mutating = !matches!(
+                &action,
+                mapmap_ui::UIAction::Undo
+                    | mapmap_ui::UIAction::Redo
+                    | mapmap_ui::UIAction::Play
+                    | mapmap_ui::UIAction::Pause
+                    | mapmap_ui::UIAction::Stop
+                    | mapmap_ui::UIAction::LoadProject(_)
+                    | mapmap_ui::UIAction::LoadRecentProject(_)
+                    | mapmap_ui::UIAction::SaveProject(_)
+                    | mapmap_ui::UIAction::SaveProjectAs
+                    | mapmap_ui::UIAction::Exit
+                    | mapmap_ui::UIAction::OpenSettings
+                    | mapmap_ui::UIAction::SetGlobalFullscreen(_)
+                    | mapmap_ui::UIAction::ToggleFullscreen
+                    | mapmap_ui::UIAction::ToggleModuleCanvas
+                    | mapmap_ui::UIAction::ToggleControllerOverlay
+                    | mapmap_ui::UIAction::MediaCommand(_, _)
+                    | mapmap_ui::UIAction::PickMediaFile(_, _, _)
+                    | mapmap_ui::UIAction::DiscoverHueBridges
+                    | mapmap_ui::UIAction::FetchHueGroups
+            );
+
+            if is_mutating {
+                self.history.push(self.state.clone());
+            }
+
             match action {
+                mapmap_ui::UIAction::Undo => {
+                    if let Some(prev) = self.history.undo(self.state.clone()) {
+                        self.state = prev;
+                        self.state.dirty = true;
+                        info!("Undo performed");
+                    }
+                }
+                mapmap_ui::UIAction::Redo => {
+                    if let Some(next) = self.history.redo(self.state.clone()) {
+                        self.state = next;
+                        self.state.dirty = true;
+                        info!("Redo performed");
+                    }
+                }
                 mapmap_ui::UIAction::SaveProjectAs => {
                     if let Some(path) = FileDialog::new()
                         .add_filter("MapFlow Project", &["mflow", "mapmap", "ron", "json"])
@@ -747,7 +789,7 @@ impl App {
                     self.load_project_file(&path);
                 }
                 mapmap_ui::UIAction::SetLanguage(lang_code) => {
-                    self.state.settings.language = lang_code.clone();
+                    self.state.settings_mut().language = lang_code.clone();
                     self.state.dirty = true;
                     self.ui_state.i18n.set_locale(&lang_code);
                     info!("Language switched to: {}", lang_code);
@@ -909,19 +951,19 @@ impl App {
                     }
                 }
                 mapmap_ui::UIAction::SetLayerOpacity(id, opacity) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.opacity = opacity;
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::SetLayerBlendMode(id, mode) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.blend_mode = mode;
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::SetLayerVisibility(id, visible) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.visible = visible;
                         self.state.dirty = true;
                     }
@@ -929,33 +971,33 @@ impl App {
                 mapmap_ui::UIAction::AddLayer => {
                     let count = self.state.layer_manager.len();
                     self.state
-                        .layer_manager
+                        .layer_manager_mut()
                         .create_layer(format!("Layer {}", count + 1));
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::CreateGroup => {
                     let count = self.state.layer_manager.len();
                     self.state
-                        .layer_manager
+                        .layer_manager_mut()
                         .create_group(format!("Group {}", count + 1));
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::ReparentLayer(id, parent_id) => {
-                    self.state.layer_manager.reparent_layer(id, parent_id);
+                    self.state.layer_manager_mut().reparent_layer(id, parent_id);
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::SwapLayers(id1, id2) => {
-                    self.state.layer_manager.swap_layers(id1, id2);
+                    self.state.layer_manager_mut().swap_layers(id1, id2);
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::ToggleGroupCollapsed(id) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.collapsed = !layer.collapsed;
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::RemoveLayer(id) => {
-                    self.state.layer_manager.remove_layer(id);
+                    self.state.layer_manager_mut().remove_layer(id);
                     self.state.dirty = true;
                     // Deselect if removed
                     if self.ui_state.selected_layer_id == Some(id) {
@@ -963,34 +1005,34 @@ impl App {
                     }
                 }
                 mapmap_ui::UIAction::DuplicateLayer(id) => {
-                    if let Some(new_id) = self.state.layer_manager.duplicate_layer(id) {
+                    if let Some(new_id) = self.state.layer_manager_mut().duplicate_layer(id) {
                         self.ui_state.selected_layer_id = Some(new_id);
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::RenameLayer(id, name) => {
-                    if self.state.layer_manager.rename_layer(id, name) {
+                    if self.state.layer_manager_mut().rename_layer(id, name) {
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::ToggleLayerSolo(id) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.toggle_solo();
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::ToggleLayerBypass(id) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.toggle_bypass();
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::EjectAllLayers => {
-                    self.state.layer_manager.eject_all();
+                    self.state.layer_manager_mut().eject_all();
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::SetLayerTransform(id, transform) => {
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.transform = transform;
                         self.state.dirty = true;
                     }
@@ -1018,21 +1060,27 @@ impl App {
                         }
                     }
 
-                    if let Some(layer) = self.state.layer_manager.get_layer_mut(id) {
+                    if let Some(layer) = self.state.layer_manager_mut().get_layer_mut(id) {
                         layer.set_transform_with_resize(mode, source_size, target_size);
                         self.state.dirty = true;
                     }
                 }
                 mapmap_ui::UIAction::SetMasterOpacity(val) => {
-                    self.state.layer_manager.composition.set_master_opacity(val);
+                    self.state
+                        .layer_manager_mut()
+                        .composition
+                        .set_master_opacity(val);
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::SetMasterSpeed(val) => {
-                    self.state.layer_manager.composition.set_master_speed(val);
+                    self.state
+                        .layer_manager_mut()
+                        .composition
+                        .set_master_speed(val);
                     self.state.dirty = true;
                 }
                 mapmap_ui::UIAction::SetCompositionName(name) => {
-                    self.state.layer_manager.composition.name = name;
+                    self.state.layer_manager_mut().composition.name = name;
                     self.state.dirty = true;
                 }
                 // Phase 2 output actions (placeholders for now)
@@ -1047,7 +1095,9 @@ impl App {
                     let fs = config.fullscreen;
 
                     // Update the target output
-                    self.state.output_manager.update_output(id, config.clone());
+                    self.state
+                        .output_manager_mut()
+                        .update_output(id, config.clone());
 
                     // SYNC Logic: If this is an output node, we might want to sync fullscreen across all projectors
                     // This prevents desync where one projector is FS and another is windowed.
@@ -1059,7 +1109,7 @@ impl App {
                         .map(|o| o.id)
                         .collect();
                     for oid in all_ids {
-                        if let Some(other) = self.state.output_manager.get_output_mut(oid) {
+                        if let Some(other) = self.state.output_manager_mut().get_output_mut(oid) {
                             if other.fullscreen != fs {
                                 other.fullscreen = fs;
                                 info!("Syncing fullscreen state for output {} -> {}", oid, fs);
@@ -1096,12 +1146,12 @@ impl App {
                 }
                 McpAction::AddLayer(name) => {
                     info!("MCP: Adding layer '{}'", name);
-                    self.state.layer_manager.create_layer(name);
+                    self.state.layer_manager_mut().create_layer(name);
                     self.state.dirty = true;
                 }
                 McpAction::RemoveLayer(id) => {
                     info!("MCP: Removing layer {}", id);
-                    self.state.layer_manager.remove_layer(id);
+                    self.state.layer_manager_mut().remove_layer(id);
                     self.state.dirty = true;
                 }
                 McpAction::TriggerCue(id) => {
@@ -1136,7 +1186,8 @@ impl App {
                         part_id, module_id, path
                     );
                     // Update module part in specific module
-                    if let Some(module) = self.state.module_manager.get_module_mut(module_id) {
+                    if let Some(module) = self.state.module_manager_mut().get_module_mut(module_id)
+                    {
                         if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
                             if let mapmap_core::module::ModulePartType::Source(
                                 mapmap_core::module::SourceType::MediaFile {
@@ -1175,7 +1226,7 @@ impl App {
         if let Some(action) = self.ui_state.edge_blend_panel.take_action() {
             match action {
                 EdgeBlendAction::UpdateEdgeBlend(id, values) => {
-                    if let Some(output) = self.state.output_manager.get_output_mut(id) {
+                    if let Some(output) = self.state.output_manager_mut().get_output_mut(id) {
                         output.edge_blend.left.enabled = values.left_enabled;
                         output.edge_blend.left.width = values.left_width;
                         output.edge_blend.left.offset = values.left_offset;
@@ -1193,7 +1244,7 @@ impl App {
                     }
                 }
                 EdgeBlendAction::UpdateColorCalibration(id, values) => {
-                    if let Some(output) = self.state.output_manager.get_output_mut(id) {
+                    if let Some(output) = self.state.output_manager_mut().get_output_mut(id) {
                         output.color_calibration.brightness = values.brightness;
                         output.color_calibration.contrast = values.contrast;
                         output.color_calibration.gamma.x = values.gamma_r;
@@ -1205,13 +1256,13 @@ impl App {
                     }
                 }
                 EdgeBlendAction::ResetEdgeBlend(id) => {
-                    if let Some(output) = self.state.output_manager.get_output_mut(id) {
+                    if let Some(output) = self.state.output_manager_mut().get_output_mut(id) {
                         output.edge_blend = Default::default();
                         self.state.dirty = true;
                     }
                 }
                 EdgeBlendAction::ResetColorCalibration(id) => {
-                    if let Some(output) = self.state.output_manager.get_output_mut(id) {
+                    if let Some(output) = self.state.output_manager_mut().get_output_mut(id) {
                         output.color_calibration = Default::default();
                         self.state.dirty = true;
                     }

@@ -347,6 +347,8 @@ pub struct RenderOp {
     pub opacity: f32,
     /// Layer blend mode
     pub blend_mode: Option<BlendModeType>,
+    /// Mapping mode active (render grid)
+    pub mapping_mode: bool,
 
     /// Source part ID (if any)
     pub source_part_id: Option<ModulePartId>,
@@ -718,6 +720,7 @@ impl ModuleEvaluator {
                                     mesh,
                                     opacity,
                                     blend_mode,
+                                    mapping_mode,
                                     ..
                                 } => {
                                     let chain = self.trace_chain(layer_part.id, module);
@@ -730,6 +733,7 @@ impl ModuleEvaluator {
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
+                                        mapping_mode: *mapping_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props,
                                         effects: chain.effects,
@@ -740,6 +744,7 @@ impl ModuleEvaluator {
                                     opacity,
                                     blend_mode,
                                     mesh,
+                                    mapping_mode,
                                     ..
                                 } => {
                                     let chain = self.trace_chain(layer_part.id, module);
@@ -752,6 +757,7 @@ impl ModuleEvaluator {
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
+                                        mapping_mode: *mapping_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props.clone(),
                                         effects: chain.effects,
@@ -759,7 +765,22 @@ impl ModuleEvaluator {
                                     });
                                 }
                                 LayerType::All { .. } => {
-                                    // TODO: Handle global layers
+                                    // Global layers not yet fully implemented, but if we do render them:
+                                    /*
+                                    self.cached_result.render_ops.push(RenderOp {
+                                        output_part_id: part.id,
+                                        output_type: output_type.clone(),
+                                        layer_part_id: layer_part.id,
+                                        mesh: MeshType::Quad { .. }.to_mesh(),
+                                        opacity: *link_opacity,
+                                        blend_mode: None,
+                                        mapping_mode: false,
+                                        source_part_id: None,
+                                        source_props: SourceProperties::default(),
+                                        effects: vec![],
+                                        masks: vec![],
+                                    });
+                                    */
                                 }
                             }
                         }

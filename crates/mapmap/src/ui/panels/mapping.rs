@@ -16,7 +16,7 @@ pub struct MappingContext<'a> {
 pub fn show(ctx: &Context, context: MappingContext) {
     context.ui_state.mapping_panel.show(
         ctx,
-        &mut context.state.mapping_manager,
+        context.state.mapping_manager_mut(),
         &mut context.ui_state.actions,
         &context.ui_state.i18n,
     );

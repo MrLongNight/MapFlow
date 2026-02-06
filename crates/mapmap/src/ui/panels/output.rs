@@ -17,7 +17,7 @@ pub fn show(ctx: &Context, context: OutputContext) {
     context.ui_state.output_panel.render(
         ctx,
         &context.ui_state.i18n,
-        &mut context.state.output_manager,
+        context.state.output_manager_mut(),
         &[], // Monitors placeholder
     );
 }
