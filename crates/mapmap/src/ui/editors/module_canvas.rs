@@ -25,7 +25,7 @@ pub fn show(ui: &mut Ui, context: ModuleCanvasContext) {
 
     context.ui_state.module_canvas.show(
         ui,
-        &mut context.state.module_manager,
+        context.state.module_manager_mut(),
         &context.ui_state.i18n,
         &mut context.ui_state.actions,
     );

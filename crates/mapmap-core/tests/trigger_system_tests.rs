@@ -96,10 +96,14 @@ fn test_update_audio_volume_beat() {
     let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
 
     // 2. Stimulate
-    let mut audio_data = default_audio_data();
-    audio_data.rms_volume = 0.6; // > 0.5
-    audio_data.peak_volume = 0.4; // < 0.5
-    audio_data.beat_detected = true;
+    let audio_data = AudioTriggerData {
+        band_energies: [0.0; 9],
+        rms_volume: 0.6,  // > 0.5
+        peak_volume: 0.4, // < 0.5
+        beat_detected: true,
+        beat_strength: 0.0,
+        bpm: None,
+    };
 
     // 3. Update
     system.update(&module_manager, &audio_data);
@@ -141,9 +145,14 @@ fn test_update_clears_previous_state() {
     let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
 
     // 2. Activate
-    let mut audio_data = default_audio_data();
-    audio_data.beat_detected = true;
-
+    let mut audio_data = AudioTriggerData {
+        band_energies: [0.0; 9],
+        rms_volume: 0.0,
+        peak_volume: 0.0,
+        beat_detected: true,
+        beat_strength: 0.0,
+        bpm: None,
+    };
     system.update(&module_manager, &audio_data);
     assert!(system.is_active(part_id, 11)); // Beat is socket 11
 

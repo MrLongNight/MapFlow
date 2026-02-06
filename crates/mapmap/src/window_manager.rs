@@ -54,7 +54,15 @@ impl WindowManager {
             main_window_id: None,
         }
     }
+}
 
+impl Default for WindowManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WindowManager {
     /// Creates the main control window.
     ///
     /// This is the primary window for the application, where the UI is displayed.

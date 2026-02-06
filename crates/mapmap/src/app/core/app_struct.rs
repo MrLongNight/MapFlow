@@ -13,7 +13,7 @@ use mapmap_core::{
     audio::{analyzer_v2::AudioAnalyzerV2, backend::cpal_backend::CpalBackend},
     media_library::MediaLibrary,
     module::ModulePartId,
-    AppState, ModuleEvaluator, RenderOp,
+    AppState, History, ModuleEvaluator,
 };
 use mapmap_mcp::McpAction;
 use mapmap_media::player::VideoPlayer;
@@ -53,6 +53,8 @@ pub struct App {
     pub layer_ping_pong: [String; 2],
     /// The application state (project data).
     pub state: AppState,
+    /// Undo/Redo history
+    pub history: History,
     /// The audio backend.
     pub audio_backend: Option<CpalBackend>,
     /// The audio analyzer.
@@ -126,8 +128,6 @@ pub struct App {
     pub output_assignments: std::collections::HashMap<u64, Vec<String>>,
     /// Recent Effect Configurations (User Prefs)
     pub recent_effect_configs: mapmap_core::RecentEffectConfigs,
-    /// Render Operations from Module Evaluator ((ModuleID, RenderOp))
-    pub render_ops: Vec<(ModulePartId, RenderOp)>,
     /// Edge blend renderer for output windows
     pub edge_blend_renderer: Option<EdgeBlendRenderer>,
     /// Color calibration renderer for output windows

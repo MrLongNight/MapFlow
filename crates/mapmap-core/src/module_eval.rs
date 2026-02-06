@@ -334,6 +334,8 @@ mod tests_evaluator {
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
+    /// The Module ID this op belongs to
+    pub module_id: crate::module::ModuleId,
     /// The output node ID (Part ID)
     pub output_part_id: ModulePartId,
     /// The specific output type configuration
@@ -347,6 +349,8 @@ pub struct RenderOp {
     pub opacity: f32,
     /// Layer blend mode
     pub blend_mode: Option<BlendModeType>,
+    /// Mapping mode active (render grid)
+    pub mapping_mode: bool,
 
     /// Source part ID (if any)
     pub source_part_id: Option<ModulePartId>,
@@ -372,19 +376,22 @@ pub struct ModuleEvalResult {
 impl ModuleEvalResult {
     /// Clears the result for reuse, preserving capacity where possible
     pub fn clear(&mut self) {
+        self.clear_state();
+        self.clear_render_ops();
+    }
+
+    /// Clear transient state (triggers, commands) but keep render ops
+    pub fn clear_state(&mut self) {
         // Clear trigger values but keep the vectors to reuse their capacity
         for values in self.trigger_values.values_mut() {
             values.clear();
         }
         // Note: We don't remove keys from trigger_values map to reuse map capacity and vectors.
-        // However, if the graph changes, we might accumulate stale keys.
-        // For a fixed graph (most of the time), this is fine.
-        // To be safe against memory leaks on graph changes, we could occasionally prune.
-        // For now, simple reuse is a huge win.
-
-        // Source commands are typically small (one per source), but we can clear the map
         self.source_commands.clear();
-        // Render ops is a Vec, simply clear
+    }
+
+    /// Clear render ops
+    pub fn clear_render_ops(&mut self) {
         self.render_ops.clear();
     }
 }
@@ -524,15 +531,51 @@ impl ModuleEvaluator {
         self.active_keys = keys.clone();
     }
 
-    /// Evaluate a module for one frame
-    /// Returns a reference to the reusable result buffer
+    /// Access the accumulated render operations
+    pub fn render_ops(&self) -> &Vec<RenderOp> {
+        &self.cached_result.render_ops
+    }
+
+    /// Clear the accumulated render operations
+    pub fn clear_render_ops(&mut self) {
+        self.cached_result.clear_render_ops();
+    }
+
+    /// Clear the transient state (triggers, commands)
+    pub fn clear_state(&mut self) {
+        self.cached_result.clear_state();
+    }
+
+    /// Evaluate a module and append results to render_ops without clearing them.
+    /// Used for multi-module evaluation.
+    /// NOTE: You should call clear_state() before calling this for a new module,
+    /// and clear_render_ops() at the start of the frame.
+    pub fn evaluate_append(
+        &mut self,
+        module: &MapFlowModule,
+        shared_state: &SharedMediaState,
+    ) -> &ModuleEvalResult {
+        self.clear_state();
+        self.evaluate_internal(module, shared_state)
+    }
+
+    /// Evaluate a module for one frame (Legacy/Single-module mode).
+    /// Clears ALL previous results (including render ops).
     pub fn evaluate(
         &mut self,
         module: &MapFlowModule,
         shared_state: &SharedMediaState,
     ) -> &ModuleEvalResult {
-        // Clear previous result for reuse
         self.cached_result.clear();
+        self.evaluate_internal(module, shared_state)
+    }
+
+    /// Internal evaluation logic (does not clear results)
+    fn evaluate_internal(
+        &mut self,
+        module: &MapFlowModule,
+        shared_state: &SharedMediaState,
+    ) -> &ModuleEvalResult {
         // Since we cleared trigger_values via iteration (retaining keys),
         // we might have entries with empty vectors. This is fine as we will overwrite them.
 
@@ -718,18 +761,21 @@ impl ModuleEvaluator {
                                     mesh,
                                     opacity,
                                     blend_mode,
+                                    mapping_mode,
                                     ..
                                 } => {
                                     let chain = self.trace_chain(layer_part.id, module);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
+                                        module_id: module.id,
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
+                                        mapping_mode: *mapping_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props,
                                         effects: chain.effects,
@@ -740,18 +786,21 @@ impl ModuleEvaluator {
                                     opacity,
                                     blend_mode,
                                     mesh,
+                                    mapping_mode,
                                     ..
                                 } => {
                                     let chain = self.trace_chain(layer_part.id, module);
                                     let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
 
                                     self.cached_result.render_ops.push(RenderOp {
+                                        module_id: module.id,
                                         output_part_id: part.id,
                                         output_type: output_type.clone(),
                                         layer_part_id: layer_part.id,
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
+                                        mapping_mode: *mapping_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props.clone(),
                                         effects: chain.effects,
@@ -759,7 +808,22 @@ impl ModuleEvaluator {
                                     });
                                 }
                                 LayerType::All { .. } => {
-                                    // TODO: Handle global layers
+                                    // Global layers not yet fully implemented, but if we do render them:
+                                    /*
+                                    self.cached_result.render_ops.push(RenderOp {
+                                        output_part_id: part.id,
+                                        output_type: output_type.clone(),
+                                        layer_part_id: layer_part.id,
+                                        mesh: MeshType::Quad { .. }.to_mesh(),
+                                        opacity: *link_opacity,
+                                        blend_mode: None,
+                                        mapping_mode: false,
+                                        source_part_id: None,
+                                        source_props: SourceProperties::default(),
+                                        effects: vec![],
+                                        masks: vec![],
+                                    });
+                                    */
                                 }
                             }
                         }
