@@ -7,18 +7,13 @@ use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 /// UI for the oscillator control panel.
 #[derive(Debug, Clone)]
 pub struct OscillatorPanel {
-    /// The oscillator configuration being edited.
-    pub config: OscillatorConfig,
     /// Is the panel currently visible?
     pub visible: bool,
 }
 
 impl Default for OscillatorPanel {
     fn default() -> Self {
-        Self {
-            config: OscillatorConfig::default(),
-            visible: false,
-        }
+        Self { visible: false }
     }
 }
 
@@ -28,7 +23,7 @@ impl OscillatorPanel {
         Self::default()
     }
 
-    /// Shows the oscillator panel UI.
+    /// Renders the oscillator panel UI.
     ///
     /// Returns `true` if any value was changed by the user.
     pub fn render(
