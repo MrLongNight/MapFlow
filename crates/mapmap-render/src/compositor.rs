@@ -25,6 +25,12 @@ struct CachedUniform {
     bind_group: Arc<wgpu::BindGroup>,
 }
 
+struct CachedBindGroup {
+    base_weak: Weak<wgpu::TextureView>,
+    blend_weak: Weak<wgpu::TextureView>,
+    bind_group: Arc<wgpu::BindGroup>,
+}
+
 /// Compositor for blending layers
 pub struct Compositor {
     pipeline: wgpu::RenderPipeline,
@@ -36,14 +42,7 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    texture_bind_group_cache: HashMap<
-        (usize, usize),
-        (
-            Weak<wgpu::TextureView>,
-            Weak<wgpu::TextureView>,
-            Arc<wgpu::BindGroup>,
-        ),
-    >,
+    texture_bind_group_cache: HashMap<(usize, usize), CachedBindGroup>,
 }
 
 impl Compositor {
@@ -198,8 +197,9 @@ impl Compositor {
         self.current_cache_index = 0;
 
         // Prune dead texture bind groups
-        self.texture_bind_group_cache
-            .retain(|_, (w1, w2, _)| w1.strong_count() > 0 && w2.strong_count() > 0);
+        self.texture_bind_group_cache.retain(|_, cached| {
+            cached.base_weak.strong_count() > 0 && cached.blend_weak.strong_count() > 0
+        });
     }
 
     /// Get a cached bind group or create a new one
@@ -213,10 +213,11 @@ impl Compositor {
             Arc::as_ptr(blend_view) as usize,
         );
 
-        if let Some((weak1, weak2, bind_group)) = self.texture_bind_group_cache.get(&key) {
-            if let (Some(u1), Some(u2)) = (weak1.upgrade(), weak2.upgrade()) {
+        if let Some(cached) = self.texture_bind_group_cache.get(&key) {
+            if let (Some(u1), Some(u2)) = (cached.base_weak.upgrade(), cached.blend_weak.upgrade())
+            {
                 if Arc::ptr_eq(&u1, base_view) && Arc::ptr_eq(&u2, blend_view) {
-                    return bind_group.clone();
+                    return cached.bind_group.clone();
                 }
             }
         }
@@ -247,11 +248,11 @@ impl Compositor {
         let bg = Arc::new(bind_group);
         self.texture_bind_group_cache.insert(
             key,
-            (
-                Arc::downgrade(base_view),
-                Arc::downgrade(blend_view),
-                bg.clone(),
-            ),
+            CachedBindGroup {
+                base_weak: Arc::downgrade(base_view),
+                blend_weak: Arc::downgrade(blend_view),
+                bind_group: bg.clone(),
+            },
         );
 
         bg
