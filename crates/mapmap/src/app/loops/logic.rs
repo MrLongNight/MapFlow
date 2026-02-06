@@ -29,8 +29,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // Update Evaluator State
     let analysis = app.audio_analyzer.get_latest_analysis();
     app.module_evaluator.update_audio(&analysis);
-    app.module_evaluator
-        .update_keys(&app.ui_state.active_keys);
+    app.module_evaluator.update_keys(&app.ui_state.active_keys);
 
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
