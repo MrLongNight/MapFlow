@@ -1097,6 +1097,8 @@ pub enum SourceType {
         mie_directional_g: f32,
         /// Sun position (azimuth, elevation)
         sun_position: (f32, f32),
+        /// Global exposure
+        exposure: f32,
     },
     /// Specialized Bevy Hex Grid Generator
     BevyHexGrid {
@@ -1108,6 +1110,12 @@ pub enum SourceType {
         pointy_top: bool,
         /// Spread/Spacing between hexagons
         spacing: f32,
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Uniform Scale
+        scale: f32,
     },
     /// Specialized Bevy Particle System
     BevyParticles {
@@ -1121,6 +1129,10 @@ pub enum SourceType {
         color_start: [f32; 4],
         /// Particle color end (RGBA)
         color_end: [f32; 4],
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
     },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
@@ -2879,7 +2891,7 @@ mod trigger_config_tests {
 
         // If value > 0, should be random in range
         let val = config.apply(1.0);
-        assert!(val >= 10.0 && val <= 20.0);
+        assert!((10.0..=20.0).contains(&val));
 
         // If value <= 0, returns min_value (implementation detail: "if value > 0.0")
         // Wait, the implementation says: if value > 0.0 { random } else { min_value }

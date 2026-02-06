@@ -12,9 +12,11 @@ default = ["midi", "osc"]
 midi = ["midir"]
 osc = ["rosc"]
 http-api = ["axum", "tower", "tower-http", "futures", "http"]
-full = ["midi", "osc", "http-api"]
+link = ["ableton-link-rs"]
+full = ["midi", "osc", "http-api", "link"]
 
 [dependencies]
+ableton-link-rs = { workspace = true, optional = true }
 anyhow = "1.0"
 
 # HTTP API (optional)

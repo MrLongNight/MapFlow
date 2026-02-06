@@ -1,0 +1,25 @@
+name: "CICD-MainFlow: Job02 Backup"
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 2 * * *' # Daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    name: Backup Main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Backup Tag
+        run: |
+          DATE=$(date +%Y%m%d-%H%M%S)
+          TAG="backup/${DATE}"
+          git tag $TAG
+          git push origin $TAG
+          echo "Backed up to $TAG"
