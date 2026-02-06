@@ -2199,6 +2199,11 @@ impl ModuleManager {
         self.modules.remove(&id);
     }
 
+    /// Iterate over all modules
+    pub fn iter_modules(&self) -> impl Iterator<Item = &MapFlowModule> {
+        self.modules.values()
+    }
+
     /// List all modules
     pub fn list_modules(&self) -> Vec<&MapFlowModule> {
         self.modules.values().collect()

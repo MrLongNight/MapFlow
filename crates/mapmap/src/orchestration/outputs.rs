@@ -21,10 +21,9 @@ pub fn sync_output_windows(
     let global_fullscreen = app.ui_state.user_config.global_fullscreen;
 
     // 1. Iterate over ALL modules to collect required outputs
-    for module in app.state.module_manager.list_modules() {
-        if let Some(module_ref) = app.state.module_manager.get_module(module.id) {
-            for part in &module_ref.parts {
-                if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
+    for module in app.state.module_manager.iter_modules() {
+        for part in &module.parts {
+            if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
                     // Use part.id for consistency with render pipeline
                     let _output_id = part.id;
 
@@ -124,6 +123,7 @@ pub fn sync_output_windows(
                             }
                         }
                         // Handle other output types or ignore them
+                        #[cfg(target_os = "windows")]
                         OutputType::Spout { .. } => {
                             // Spout not yet implemented in synchronization loop
                         }
@@ -134,7 +134,6 @@ pub fn sync_output_windows(
                 }
             }
         }
-    }
 
     // Cleanup logic for closed windows/senders would go here (omitted for brevity in this step)
 
