@@ -5,8 +5,8 @@
 use crate::theme::colors;
 use egui::{lerp, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
-pub fn render_header(ui: &mut Ui, title: &str) {
-    let desired_size = Vec2::new(ui.available_width(), 24.0);
+pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&mut Ui)) {
+    let desired_size = Vec2::new(ui.available_width(), 28.0);
     // Allocate space for the header
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
 
@@ -14,6 +14,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     // Header background
     painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
 
+    // Cyan accent stripe (Left)
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
     painter.rect_filled(
         stripe_rect,
@@ -21,6 +22,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
         colors::CYAN_ACCENT,
     );
 
+    // Title
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
         text_pos,
@@ -29,6 +31,19 @@ pub fn render_header(ui: &mut Ui, title: &str) {
         egui::FontId::proportional(14.0),
         ui.visuals().text_color(),
     );
+
+    // Actions
+    let actions_rect = Rect::from_min_max(
+        Pos2::new(rect.min.x + 8.0, rect.min.y),
+        rect.max,
+    );
+
+    let mut actions_ui = ui.new_child(
+        egui::UiBuilder::new()
+            .max_rect(actions_rect)
+            .layout(egui::Layout::right_to_left(egui::Align::Center)),
+    );
+    add_actions(&mut actions_ui);
 }
 
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {

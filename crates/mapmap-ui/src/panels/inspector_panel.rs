@@ -79,15 +79,11 @@ impl InspectorPanel {
             .max_width(450.0)
             .show(ctx, |ui| {
                 // Header
-                ui.horizontal(|ui| {
-                    ui.heading(i18n.t("panel-inspector"));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("✕").clicked() {
-                            self.visible = false;
-                        }
-                    });
+                crate::widgets::render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
+                    if ui.button("✕").clicked() {
+                        self.visible = false;
+                    }
                 });
-                ui.separator();
 
                 // Context-sensitive content
                 match context {
