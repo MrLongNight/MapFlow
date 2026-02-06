@@ -12,7 +12,7 @@ name = "MapFlow"
 path = "src/main.rs"
 
 [features]
-default = ["audio", "midi", "ffmpeg"]
+default = ["audio", "midi"]
 ffmpeg = ["ffmpeg-next", "mapmap-media/ffmpeg"]
 audio = ["mapmap-core/audio"]
 midi = ["mapmap-control/midi", "mapmap-ui/midi"]
