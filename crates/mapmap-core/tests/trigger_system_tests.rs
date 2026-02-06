@@ -4,6 +4,17 @@ use mapmap_core::module::{
 };
 use mapmap_core::trigger_system::TriggerSystem;
 
+fn default_audio_data() -> AudioTriggerData {
+    AudioTriggerData {
+        band_energies: [0.0; 9],
+        rms_volume: 0.0,
+        peak_volume: 0.0,
+        beat_detected: false,
+        beat_strength: 0.0,
+        bpm: None,
+    }
+}
+
 #[test]
 fn test_initialization() {
     let system = TriggerSystem::new();
@@ -14,7 +25,7 @@ fn test_initialization() {
 fn test_update_empty_manager() {
     let mut system = TriggerSystem::new();
     let module_manager = ModuleManager::new();
-    let audio_data = AudioTriggerData::default();
+    let audio_data = default_audio_data();
 
     system.update(&module_manager, &audio_data);
     assert!(system.get_active_triggers().is_empty());
@@ -44,7 +55,7 @@ fn test_update_audio_fft_bands() {
 
     // 2. Test each band individually
     for i in 0..9 {
-        let mut audio_data = AudioTriggerData::default();
+        let mut audio_data = default_audio_data();
         audio_data.band_energies[i] = 0.8; // Trigger threshold is 0.5
 
         system.update(&module_manager, &audio_data);
@@ -165,7 +176,7 @@ fn test_trigger_system_update_thresholds() {
     let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
 
     // 2. Test Below Threshold
-    let mut audio_data = AudioTriggerData::default();
+    let mut audio_data = default_audio_data();
     audio_data.band_energies[1] = 0.79;
     system.update(&module_manager, &audio_data);
     assert!(!system.is_active(part_id, 1));
