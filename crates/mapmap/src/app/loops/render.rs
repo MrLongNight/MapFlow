@@ -15,7 +15,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         label: Some("Render Encoder"),
     });
 
-    // ⚡ Bolt Optimization: Batch render passes.
+    // Batch render passes.
     app.mesh_renderer.begin_frame();
     app.effect_chain_renderer.begin_frame();
     app.preview_effect_chain_renderer.begin_frame();
@@ -29,17 +29,12 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     let app_ptr = app as *mut App;
 
     // SCOPE for Window Context Borrow
-    // Use inner scope to manage lifetimes of window_context vs disjoint app parts for render_content
     {
         // Safety check for window existence
         let has_window = app.window_manager.get(output_id).is_some();
         if !has_window {
             return Ok(());
         }
-
-        // We need fields from app for ui_layout::show and later render_content.
-        // But we need window for egui input/output and surface for view.
-        // Surface texture must live until present.
 
         let window_context = app.window_manager.get(output_id).unwrap();
         let surface_texture = window_context.surface.get_current_texture()?;
@@ -53,16 +48,15 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             // UI Pass
             let raw_input = app.egui_state.take_egui_input(&window_context.window);
 
-            // Defer UI logic to ui_layout::show
             let full_output = app.egui_context.run(raw_input, |ctx| {
-                // SAFETY: We ensure window_context doesn't overlap with fields used in show.
+                // SAFETY: We ensure window_context doesn't overlap with fields used in show.  
                 unsafe {
                     ui_layout::show(&mut *app_ptr, ctx);
                 }
             });
 
             app.egui_state
-                .handle_platform_output(&window_context.window, full_output.platform_output);
+                .handle_platform_output(&window_context.window, full_output.platform_output);  
 
             let tris = app
                 .egui_context
@@ -188,11 +182,10 @@ fn render_content(
     }
 
     let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
-    let use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();
+    let use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();     
     let use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
-    let _needs_post_processing = use_edge_blend || use_color_calib;
 
-    let mesh_target_view_ref = view; // Simplified for now
+    let mesh_target_view_ref = view;
 
     // Clear Pass
     {
@@ -245,7 +238,7 @@ fn render_content(
                     width,
                     height,
                     wgpu::TextureFormat::Rgba8UnormSrgb,
-                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,      
                 );
                 ctx.texture_pool
                     .upload_data(queue, &grid_tex_name, &data, width, height);
@@ -259,7 +252,7 @@ fn render_content(
 
         if let Some(src_ref) = source_view {
             let transform = glam::Mat4::IDENTITY;
-            let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(
+            let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(   
                 queue,
                 transform,
                 op.opacity * op.source_props.opacity,
@@ -310,7 +303,7 @@ fn render_content(
     // EgUI Overlay
     if output_id == 0 {
         if let Some((tris, screen_desc, _)) = egui_data {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {      
                 label: Some("Egui Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view,
@@ -364,9 +357,8 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
             .cloned()
         {
             if app.texture_pool.has_texture(&texture_name) {
-                // Fixed Aspect Ratio assumption (16:9) since we can't get texture dim easily
                 let preview_width = 256;
-                let preview_height = 144; // 16:9
+                let preview_height = 144;
 
                 let needs_recreate = if let Some(tex) = app.output_temp_textures.get(&output_id) {
                     tex.width() != preview_width || tex.height() != preview_height
@@ -375,7 +367,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 };
 
                 if needs_recreate {
-                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor {
+                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor { 
                         label: Some(&format!("Preview Tex {}", output_id)),
                         size: wgpu::Extent3d {
                             width: preview_width,
@@ -461,16 +453,12 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     }
 }
 
-// --- Grid Generation Helpers ---
-
-/// Generate a grid texture with Layer ID burned in
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
-    let bg_color = [0, 0, 0, 255]; // Black background
-    let grid_color = [255, 255, 255, 255]; // White grid
-    let text_color = [0, 255, 255, 255]; // Cyan text
+    let bg_color = [0, 0, 0, 255]; 
+    let grid_color = [255, 255, 255, 255];
+    let text_color = [0, 255, 255, 255];
 
-    // Fill background
     for i in 0..(width * height) {
         let idx = (i * 4) as usize;
         data[idx] = bg_color[0];
@@ -479,11 +467,10 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
         data[idx + 3] = bg_color[3];
     }
 
-    // Draw Grid
     let grid_step = 64;
     for y in 0..height {
         for x in 0..width {
-            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 {
+            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 { 
                 let idx = ((y * width + x) * 4) as usize;
                 data[idx] = grid_color[0];
                 data[idx + 1] = grid_color[1];
@@ -493,7 +480,6 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
         }
     }
 
-    // Draw Layer ID
     let id_str = format!("{}", layer_id);
     let digit_scale = 8;
     let digit_w = 3 * digit_scale;
@@ -521,18 +507,9 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     data
 }
 
-// Re-defining bitmaps as byte arrays [row0, row1, row2, row3, row4] where each row is 3 bits
 const BITMAPS: [[u8; 5]; 10] = [
-    [7, 5, 5, 5, 7], // 0
-    [2, 6, 2, 2, 7], // 1
-    [7, 1, 7, 4, 7], // 2
-    [7, 1, 7, 1, 7], // 3
-    [5, 5, 7, 1, 1], // 4
-    [7, 4, 7, 1, 7], // 5
-    [7, 4, 7, 5, 7], // 6
-    [7, 1, 1, 1, 1], // 7
-    [7, 5, 7, 5, 7], // 8
-    [7, 5, 7, 1, 7], // 9
+    [7, 5, 5, 5, 7], [2, 6, 2, 2, 7], [7, 1, 7, 4, 7], [7, 1, 7, 1, 7], [5, 5, 7, 1, 1],
+    [7, 4, 7, 1, 7], [7, 4, 7, 5, 7], [7, 1, 1, 1, 1], [7, 5, 7, 5, 7], [7, 5, 7, 1, 7],
 ];
 
 fn draw_digit(
@@ -544,21 +521,15 @@ fn draw_digit(
     scale: u32,
     color: [u8; 4],
 ) {
-    if digit > 9 {
-        return;
-    }
+    if digit > 9 { return; }
     let bitmap = BITMAPS[digit];
-
     for (row, row_bits) in bitmap.iter().enumerate() {
         for col in 0..3 {
-            // Check bit (2-col)
             if (row_bits >> (2 - col)) & 1 == 1 {
-                // Draw pixel rect
                 for dy in 0..scale {
                     for dx in 0..scale {
                         let x = offset_x + col as u32 * scale + dx;
                         let y = offset_y + row as u32 * scale + dy;
-
                         if x < width && y < (data.len() as u32 / width / 4) {
                             let idx = ((y * width + x) * 4) as usize;
                             data[idx] = color[0];
