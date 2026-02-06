@@ -38,3 +38,7 @@
 ## 2024-10-26 - Audio Buffer Resizing
 **Insight:** Testing `update_config` in audio analyzers is critical because mismatched buffer sizes (e.g., between FFT and input buffers) are a common source of runtime panics or silent failures when users change settings.
 **Action:** Always include a "reconfiguration" test case for stateful processing components like audio analyzers or render pipelines.
+
+## 2024-10-27 - [Audio Pipeline Robustness]
+**Insight:** Testing threaded audio pipelines requires robust "polling atomics" (loops with `yield_now`) rather than fixed sleeps to avoid flakiness and ensure valid data flow verification (e.g. `rms_volume > 0`). Explicit struct initialization in tests prevents Clippy warnings and future-proofs against default value assumptions.
+**Action:** Implemented `audio_pipeline_tests.rs` with data flow, stats, and dropped sample verification. Refactored `trigger_system_tests.rs` to use explicit `AudioTriggerData` initialization.
