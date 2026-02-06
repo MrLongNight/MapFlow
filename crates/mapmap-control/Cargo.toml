@@ -16,8 +16,8 @@ link = ["ableton-link-rs"]
 full = ["midi", "osc", "http-api", "link"]
 
 [dependencies]
-anyhow = "1.0"
 ableton-link-rs = { workspace = true, optional = true }
+anyhow = "1.0"
 
 # HTTP API (optional)
 axum = { workspace = true, optional = true, features = ["ws"] }
