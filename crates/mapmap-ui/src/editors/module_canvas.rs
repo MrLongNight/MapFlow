@@ -3727,12 +3727,9 @@ impl ModuleCanvas {
         }
 
         // Draw context menu for adding nodes (canvas level)
-        if self.context_menu_part.is_none()
-            && self.context_menu_connection.is_none()
-            && self.context_menu_pos.is_some()
-        {
-            let pos = self.context_menu_pos.unwrap();
-            let menu_width = 180.0;
+        if self.context_menu_part.is_none() && self.context_menu_connection.is_none() {
+            if let Some(pos) = self.context_menu_pos {
+                let menu_width = 180.0;
             let menu_height = 250.0; // Estimate or let it be dynamic
             let menu_rect = Rect::from_min_size(pos, Vec2::new(menu_width, menu_height));
 
@@ -3771,6 +3768,7 @@ impl ModuleCanvas {
             {
                 self.context_menu_pos = None;
             }
+        }
         }
     }
 
