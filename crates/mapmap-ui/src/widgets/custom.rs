@@ -236,6 +236,45 @@ pub fn move_down_button(ui: &mut Ui) -> Response {
         .on_hover_text("Move Layer Down")
 }
 
+/// Helper: Checks for hold-to-confirm logic.
+/// Returns (is_triggered, progress_0_to_1)
+pub fn check_hold_state(
+    ui: &mut Ui,
+    id: egui::Id,
+    is_interacting: bool,
+    duration: f32,
+) -> (bool, f32) {
+    let start_time_id = id.with("hold_start_time");
+    let mut start_time: Option<f64> = ui.data_mut(|d| d.get_temp(start_time_id));
+    let mut triggered = false;
+    let mut progress = 0.0;
+
+    if is_interacting {
+        let now = ui.input(|i| i.time);
+        if start_time.is_none() {
+            start_time = Some(now);
+            ui.data_mut(|d| d.insert_temp(start_time_id, start_time));
+        }
+
+        let elapsed = now - start_time.unwrap();
+        progress = (elapsed as f32 / duration).clamp(0.0, 1.0);
+
+        if progress >= 1.0 {
+            triggered = true;
+            ui.data_mut(|d| d.remove_temp::<Option<f64>>(start_time_id)); // Reset
+        } else {
+            ui.ctx().request_repaint(); // Animate
+        }
+    } else {
+        // Reset if released early
+        if start_time.is_some() {
+            ui.data_mut(|d| d.remove_temp::<Option<f64>>(start_time_id));
+        }
+    }
+
+    (triggered, progress)
+}
+
 /// A safety button that requires holding down for 0.6s to trigger (Mouse or Keyboard)
 pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let hold_duration = 0.6; // seconds
@@ -261,29 +300,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         || (response.has_focus()
             && (ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter))));
 
-    // Get or initialize start time
-    let mut start_time: Option<f64> = ui.data_mut(|d| d.get_temp(state_id));
-    let mut triggered = false;
-
-    if is_interacting {
-        let now = ui.input(|i| i.time);
-        if start_time.is_none() {
-            start_time = Some(now);
-            ui.data_mut(|d| d.insert_temp(state_id, start_time));
-        }
-
-        let elapsed = now - start_time.unwrap();
-        let progress = (elapsed as f32 / hold_duration).clamp(0.0, 1.0);
-
-        if progress >= 1.0 {
-            triggered = true;
-            ui.data_mut(|d| d.remove_temp::<Option<f64>>(state_id)); // Reset
-        } else {
-            ui.ctx().request_repaint(); // Animate
-        }
-    } else if start_time.is_some() {
-        ui.data_mut(|d| d.remove_temp::<Option<f64>>(state_id));
-    }
+    let (triggered, progress) = check_hold_state(ui, state_id, is_interacting, hold_duration);
 
     // --- Visuals ---
     let visuals = ui.style().interact(&response);
@@ -309,22 +326,14 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     }
 
     // 2. Progress Fill
-    if let Some(start) = start_time {
-        if is_interacting {
-            let now = ui.input(|i| i.time);
-            let elapsed = now - start;
-            let progress = (elapsed as f32 / hold_duration).clamp(0.0, 1.0);
-
-            if progress > 0.0 {
-                let mut fill_rect = rect;
-                fill_rect.max.x = rect.min.x + rect.width() * progress;
-                painter.rect_filled(
-                    fill_rect,
-                    egui::CornerRadius::same(4),
-                    color.linear_multiply(0.4), // Transparent version of action color
-                );
-            }
-        }
+    if progress > 0.0 {
+        let mut fill_rect = rect;
+        fill_rect.max.x = rect.min.x + rect.width() * progress;
+        painter.rect_filled(
+            fill_rect,
+            egui::CornerRadius::same(4),
+            color.linear_multiply(0.4), // Transparent version of action color
+        );
     }
 
     // 3. Text
@@ -346,6 +355,86 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
     response.on_hover_text("Hold to confirm (Mouse or Space/Enter)");
+
+    triggered
+}
+
+/// A circular icon button that requires holding down to trigger.
+pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool {
+    let hold_duration = 0.6; // seconds
+    let size = Vec2::splat(32.0); // Fixed size for icons
+
+    let (rect, response) = ui.allocate_at_least(size, Sense::click());
+    let state_id = response.id.with("hold_state");
+
+    let is_interacting = response.is_pointer_button_down_on()
+        || (response.has_focus()
+            && (ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter))));
+
+    let (triggered, progress) = check_hold_state(ui, state_id, is_interacting, hold_duration);
+
+    // Visuals
+    let visuals = ui.style().interact(&response);
+    let painter = ui.painter();
+    let center = rect.center();
+    let radius = rect.width() / 2.0;
+
+    // 1. Background
+    painter.circle_filled(center, radius, visuals.bg_fill);
+    painter.circle_stroke(center, radius, visuals.bg_stroke);
+
+    // Focus ring
+    if response.has_focus() {
+        painter.circle_stroke(
+            center,
+            radius + 2.0,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+        );
+    }
+
+    // 2. Progress Ring
+    if progress > 0.0 {
+        use std::f32::consts::TAU;
+        let stroke_width = 3.0;
+        let arc_radius = radius - stroke_width / 2.0;
+
+        let start_angle = -std::f32::consts::FRAC_PI_2; // Top
+        let end_angle = start_angle + progress * TAU;
+
+        // Use a simple path for the arc
+        let mut points = Vec::new();
+        let steps = 32;
+        for i in 0..=steps {
+            let t = i as f32 / steps as f32;
+            let angle = lerp(start_angle..=end_angle, t);
+            points.push(center + Vec2::new(angle.cos(), angle.sin()) * arc_radius);
+        }
+
+        painter.add(egui::Shape::line(
+            points,
+            Stroke::new(stroke_width, color),
+        ));
+    }
+
+    // 3. Icon
+    let text_color = if triggered {
+        color
+    } else {
+        visuals.text_color()
+    };
+    painter.text(
+        center,
+        egui::Align2::CENTER_CENTER,
+        icon_text,
+        egui::FontId::proportional(16.0),
+        text_color,
+    );
+
+    // Tooltip
+    if response.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    response.on_hover_text("Hold to confirm");
 
     triggered
 }

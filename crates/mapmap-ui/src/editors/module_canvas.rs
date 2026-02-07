@@ -3586,36 +3586,21 @@ impl ModuleCanvas {
                 || (delete_response.has_focus()
                     && ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter)));
 
-            let mut delete_start_time: Option<f64> =
-                ui.data_mut(|d| d.get_temp(delete_id.with("start_time")));
+            // Use shared helper
+            let hold_duration = 0.6;
+            let (triggered, progress) = crate::widgets::check_hold_state(
+                ui,
+                delete_id,
+                is_holding_delete,
+                hold_duration,
+            );
 
-            if is_holding_delete {
-                let now = ui.input(|i| i.time);
-                if delete_start_time.is_none() {
-                    delete_start_time = Some(now);
-                    ui.data_mut(|d| d.insert_temp(delete_id.with("start_time"), delete_start_time));
-                }
+            // Store progress for visualization in draw_part_with_delete
+            ui.data_mut(|d| d.insert_temp(delete_id.with("progress"), progress));
 
-                let elapsed = now - delete_start_time.unwrap();
-                let hold_duration = 0.6; // seconds
-
-                // Store progress for visualization
-                let progress = (elapsed as f32 / hold_duration as f32).clamp(0.0, 1.0);
-                ui.data_mut(|d| d.insert_temp(delete_id.with("progress"), progress));
-
-                if progress >= 1.0 {
-                    delete_part_id = Some(*part_id);
-                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
-                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
-                } else {
-                    ui.ctx().request_repaint(); // Animate progress
-                }
-            } else {
-                // Reset if released early
-                if delete_start_time.is_some() {
-                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
-                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
-                }
+            if triggered {
+                delete_part_id = Some(*part_id);
+                ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
             }
         }
 
@@ -4871,13 +4856,28 @@ impl ModuleCanvas {
             .unwrap_or(0.0);
 
         if progress > 0.0 {
-            // Draw loading circle/fill
-            let radius = 10.0 * self.zoom * progress;
-            painter.circle_filled(
-                delete_button_rect.center(),
-                radius,
-                Color32::from_rgb(255, 50, 50).linear_multiply(0.8),
-            );
+            // Draw loading ring (Mary StyleUX Unified Pattern)
+            use std::f32::consts::TAU;
+            let center = delete_button_rect.center();
+            let max_radius = (delete_button_rect.width() / 2.0) - 2.0 * self.zoom;
+            let stroke_width = 2.5 * self.zoom;
+            let arc_radius = max_radius - stroke_width / 2.0;
+
+            let start_angle = -std::f32::consts::FRAC_PI_2;
+            let end_angle = start_angle + progress * TAU;
+
+            let mut points = Vec::new();
+            let steps = 32;
+            for i in 0..=steps {
+                let t = i as f32 / steps as f32;
+                let angle = egui::lerp(start_angle..=end_angle, t);
+                points.push(center + Vec2::new(angle.cos(), angle.sin()) * arc_radius);
+            }
+
+            painter.add(egui::Shape::line(
+                points,
+                Stroke::new(stroke_width, Color32::from_rgb(255, 50, 50)),
+            ));
         }
 
         painter.text(
@@ -6416,7 +6416,7 @@ impl ModuleCanvas {
 
             // STOP (Destructive Action - Separated)
             // Mary StyleUX: Use hold-to-confirm for safety
-            if crate::widgets::hold_to_action_button(ui, "⏹", Color32::from_rgb(255, 80, 80)) {
+            if crate::widgets::hold_to_action_icon(ui, "⏹", Color32::from_rgb(255, 80, 80)) {
                 self.pending_playback_commands
                     .push((part_id, MediaPlaybackCommand::Stop));
             }
