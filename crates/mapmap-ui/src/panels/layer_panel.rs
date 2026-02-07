@@ -1,5 +1,6 @@
 //! Egui-based Layer Management Panel
 use crate::i18n::LocaleManager;
+use crate::theme::colors;
 use crate::widgets;
 use crate::UIAction;
 use egui::*;
@@ -119,14 +120,19 @@ impl LayerPanel {
                         let collapsed = layer.collapsed;
 
                         let bg_color = if is_selected {
-                            ui.visuals().selection.bg_fill.linear_multiply(0.2)
+                            colors::CYAN_ACCENT.linear_multiply(0.2)
+                        } else if idx % 2 == 1 {
+                            // Zebra striping for odd rows
+                            ui.visuals().faint_bg_color
                         } else {
                             Color32::TRANSPARENT
                         };
 
                         egui::Frame::new()
                             .fill(bg_color)
-                            .inner_margin(4.0)
+                            .inner_margin(egui::Margin::symmetric(8, 4))
+                            .corner_radius(0.0)
+                            .stroke(egui::Stroke::NONE)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     // Reorder Buttons (Move Up/Down)

@@ -52,12 +52,12 @@ pub struct MyUserState {
 impl DataTypeTrait<MyUserState> for MyDataType {
     fn data_type_color(&self, _user_state: &mut MyUserState) -> Color32 {
         match self {
-            MyDataType::Trigger => Color32::from_rgb(180, 100, 220),
-            MyDataType::Media => Color32::from_rgb(100, 180, 220),
-            MyDataType::Effect => Color32::from_rgb(220, 180, 100),
-            MyDataType::Layer => Color32::from_rgb(100, 220, 140),
-            MyDataType::Output => Color32::from_rgb(220, 100, 100),
-            MyDataType::Link => Color32::from_rgb(200, 200, 200),
+            MyDataType::Trigger => Color32::from_rgb(180, 100, 220), // Purple
+            MyDataType::Media => Color32::from_rgb(100, 180, 255),   // Blue
+            MyDataType::Effect => colors::WARN_COLOR,                // Orange
+            MyDataType::Layer => colors::MINT_ACCENT,                // Mint
+            MyDataType::Output => colors::ERROR_COLOR,               // Red
+            MyDataType::Link => Color32::from_gray(200),
         }
     }
 
@@ -3652,7 +3652,7 @@ impl ModuleCanvas {
                 painter.rect_stroke(
                     highlight_rect,
                     0, // Sharp corners
-                    Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
+                    Stroke::new(2.0 * self.zoom, colors::CYAN_ACCENT),
                     egui::StrokeKind::Inside,
                 );
 
@@ -3666,7 +3666,7 @@ impl ModuleCanvas {
                     Vec2::splat(handle_size),
                 );
                 // Cyan resize handle, sharp
-                painter.rect_filled(handle_rect, 0, Color32::from_rgb(0, 229, 255));
+                painter.rect_filled(handle_rect, 0, colors::CYAN_ACCENT);
                 // Draw diagonal lines for resize indicator
                 painter.line_segment(
                     [
@@ -5163,27 +5163,27 @@ impl ModuleCanvas {
                     TriggerType::Fixed { .. } => "Fixed Timer",
                 };
                 (
-                    Color32::from_rgb(60, 50, 70),
-                    Color32::from_rgb(130, 80, 180),
+                    colors::DARK_GREY,
+                    Color32::from_rgb(180, 100, 220), // Purple
                     "⚡",
                     name,
                 )
             }
             ModulePartType::Source(SourceType::BevyAtmosphere { .. }) => (
-                Color32::from_rgb(40, 60, 80),
-                Color32::from_rgb(100, 180, 220),
+                colors::DARK_GREY,
+                Color32::from_rgb(100, 180, 255), // Blue
                 "☁️",
                 "Atmosphere",
             ),
             ModulePartType::Source(SourceType::BevyHexGrid { .. }) => (
-                Color32::from_rgb(40, 60, 80),
-                Color32::from_rgb(100, 180, 220),
+                colors::DARK_GREY,
+                Color32::from_rgb(100, 180, 255), // Blue
                 "🛑",
                 "Hex Grid",
             ),
             ModulePartType::Source(SourceType::BevyParticles { .. }) => (
-                Color32::from_rgb(40, 60, 80),
-                Color32::from_rgb(100, 180, 220),
+                colors::DARK_GREY,
+                Color32::from_rgb(100, 180, 255), // Blue
                 "✨",
                 "Particles",
             ),
@@ -5205,8 +5205,8 @@ impl ModuleCanvas {
                     SourceType::BevyParticles { .. } => "Particles",
                 };
                 (
-                    Color32::from_rgb(50, 60, 70),
-                    Color32::from_rgb(80, 140, 180),
+                    colors::DARK_GREY,
+                    Color32::from_rgb(100, 180, 255), // Blue
                     "🎬",
                     name,
                 )
@@ -5225,8 +5225,8 @@ impl ModuleCanvas {
                     MaskType::Gradient { .. } => "Gradient",
                 };
                 (
-                    Color32::from_rgb(60, 55, 70),
-                    Color32::from_rgb(160, 100, 180),
+                    colors::DARK_GREY,
+                    Color32::from_rgb(160, 100, 180), // Magenta/Purple
                     "🎭",
                     name,
                 )
@@ -5275,15 +5275,15 @@ impl ModuleCanvas {
                     ModulizerType::AudioReactive { .. } => "Audio Reactive",
                 };
                 (
-                    egui::Color32::from_rgb(60, 60, 50),
-                    egui::Color32::from_rgb(180, 140, 60),
+                    colors::DARK_GREY,
+                    colors::WARN_COLOR, // Orange
                     "〰️",
                     name,
                 )
             }
             ModulePartType::Mesh(_) => (
-                egui::Color32::from_rgb(60, 60, 80),
-                egui::Color32::from_rgb(100, 100, 200),
+                colors::DARK_GREY,
+                Color32::from_rgb(100, 100, 200),
                 "🕸️",
                 "Mesh",
             ),
@@ -5294,8 +5294,8 @@ impl ModuleCanvas {
                     LayerType::All { .. } => "All Layers",
                 };
                 (
-                    Color32::from_rgb(50, 70, 60),
-                    Color32::from_rgb(80, 180, 120),
+                    colors::DARK_GREY,
+                    colors::MINT_ACCENT, // Mint
                     "📑",
                     name,
                 )
@@ -5309,8 +5309,8 @@ impl ModuleCanvas {
                     OutputType::Hue { .. } => "Philips Hue",
                 };
                 (
-                    Color32::from_rgb(70, 50, 50),
-                    Color32::from_rgb(180, 80, 80),
+                    colors::DARK_GREY,
+                    colors::ERROR_COLOR, // Red
                     "📺",
                     name,
                 )
@@ -5324,8 +5324,8 @@ impl ModuleCanvas {
                     }
                 };
                 (
-                    Color32::from_rgb(60, 60, 40),
-                    Color32::from_rgb(200, 200, 100),
+                    colors::DARK_GREY,
+                    Color32::from_rgb(255, 200, 100), // Yellow/Gold
                     "💡",
                     name,
                 )
@@ -5351,12 +5351,12 @@ impl ModuleCanvas {
     fn get_socket_color(socket_type: &mapmap_core::module::ModuleSocketType) -> Color32 {
         use mapmap_core::module::ModuleSocketType;
         match socket_type {
-            ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220),
-            ModuleSocketType::Media => Color32::from_rgb(100, 180, 220),
-            ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
-            ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
-            ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
-            ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
+            ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220), // Purple
+            ModuleSocketType::Media => Color32::from_rgb(100, 180, 255),   // Blue
+            ModuleSocketType::Effect => colors::WARN_COLOR,                // Orange
+            ModuleSocketType::Layer => colors::MINT_ACCENT,                // Mint
+            ModuleSocketType::Output => colors::ERROR_COLOR,               // Red
+            ModuleSocketType::Link => Color32::from_gray(200),
         }
     }
 
