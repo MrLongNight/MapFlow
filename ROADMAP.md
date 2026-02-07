@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-15 12:00
+> **Stand:** 2026-02-07 06:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -61,6 +61,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 ## Feature-Status-Übersicht
 
 ### General Updates
+
 * ✅ **Rebranding: VjMapper -> MapFlow** (COMPLETED 2025-12-22)
   * ✅ Rename Project (2025-12-22)
   * ✅ Update UI Strings & Docs (2025-12-22)
@@ -459,53 +460,53 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 ### Grundlagen (implementiert)
 
-  * ✅ Controller-Profil (89 MIDI-Mappings in `ecler_nuo4.rs`)
-  * ✅ Element-Datenstruktur (30 Elemente in `elements.json`)
-  * ✅ MIDI-Learn Modul (`midi_learn.rs`)
-  * ✅ Overlay UI Panel Grundgerüst (`controller_overlay_panel.rs`)
-  * ✅ Hintergrundbild (`resources/controllers/ecler_nuo4/background.jpg`)
+* ✅ Controller-Profil (89 MIDI-Mappings in `ecler_nuo4.rs`)
+* ✅ Element-Datenstruktur (30 Elemente in `elements.json`)
+* ✅ MIDI-Learn Modul (`midi_learn.rs`)
+* ✅ Overlay UI Panel Grundgerüst (`controller_overlay_panel.rs`)
+* ✅ Hintergrundbild (`resources/controllers/ecler_nuo4/background.jpg`)
 
 ### Overlay UI Features
 
-  * ⚠️ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px) (Asset fehlt)
-  * ✅ **Skalierbares Panel** - Zoom 30%-100% via Slider
-  * ⬜ **PNG-Assets für Elemente** - Knobs, Fader, Buttons (vom User bereitgestellt)
-  * ⬜ **Exakte Platzierung** - Koordinaten aus `elements.json` auf Foto mappen
-  * ⬜ **Animation** - Knobs rotieren (0-270°), Fader bewegen sich
+* ⚠️ **Hintergrundbild anzeigen** - Mixer-Foto als Background (841x1024 px) (Asset fehlt)
+* ✅ **Skalierbares Panel** - Zoom 30%-100% via Slider
+* ⬜ **PNG-Assets für Elemente** - Knobs, Fader, Buttons (vom User bereitgestellt)
+* ⬜ **Exakte Platzierung** - Koordinaten aus `elements.json` auf Foto mappen
+* ⬜ **Animation** - Knobs rotieren (0-270°), Fader bewegen sich
 
 ### Interaktive Features
 
-  * ✅ **Rahmen um MIDI-Elemente** mit Farbzuständen:
-    * Kein Rahmen / Grau = Inaktiv
-    * 🟡 Gelb pulsierend = MIDI Learn aktiv
-    * 🟢 Grün = Wert ändert sich
-    * ⚪ Weiß = Hover
-    * 🔵 Blau = Ausgewählt
-    * 🎨 **NEU: Zuweisungs-Modus**: Grün (Frei) / Blau / Lila / Orange (Belegt)
-  * ✅ **Mouseover-Tooltip** pro Element:
-    * Element-Name, MIDI-Typ, Channel, CC/Note, Wert
-    * ✅ **Aktuelle Zuweisung** (MapFlow/Streamer.bot/Mixxx) anzeigen
+* ✅ **Rahmen um MIDI-Elemente** mit Farbzuständen:
+  * Kein Rahmen / Grau = Inaktiv
+  * 🟡 Gelb pulsierend = MIDI Learn aktiv
+  * 🟢 Grün = Wert ändert sich
+  * ⚪ Weiß = Hover
+  * 🔵 Blau = Ausgewählt
+  * 🎨 **NEU: Zuweisungs-Modus**: Grün (Frei) / Blau / Lila / Orange (Belegt)
+* ✅ **Mouseover-Tooltip** pro Element:
+  * Element-Name, MIDI-Typ, Channel, CC/Note, Wert
+  * ✅ **Aktuelle Zuweisung** (MapFlow/Streamer.bot/Mixxx) anzeigen
 
 ### MIDI Learn Buttons
 
-  * ✅ **MapFlow MIDI Learn** - Button im Panel
-  * ✅ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
-  * ✅ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
-  * ✅ **Toolbar Toggle** - 🎛️ Button zum Ein/Ausblenden des Overlays
+* ✅ **MapFlow MIDI Learn** - Button im Panel
+* ✅ **Streamer.bot MIDI Learn** - Mit Eingabefeld für Funktionsname
+* ✅ **Mixxx MIDI Learn** - Mit Eingabefeld für Funktionsname
+* ✅ **Toolbar Toggle** - 🎛️ Button zum Ein/Ausblenden des Overlays
 
 ### Zuweisungs-Editor
 
-  * ✅ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
-  * ✅ **Filter-Ansichten**:
-    * Alle Zuweisungen
-    * Nur MapFlow-Zuweisungen
-    * Nur Streamer.bot-Zuweisungen
-    * Nur Mixxx-Zuweisungen
-    * Freie Elemente (ohne Zuweisung)
-  * ✅ **Bearbeiten** - Zuweisung löschen via 🗑 Button
-  * ✅ **Bearbeiten** - Zuweisung auswählen via Dropdown (Weg 2)
-  * ✅ **Global MIDI Learn** - Zuweisung per Mouse-Hover über UI-Elemente (Weg 1)
-  * ✅ **Persistierung** - MidiAssignment in UserConfig (config.json)
+* ✅ **Element-Liste** - Alle 30 MIDI-Elemente tabellarisch
+* ✅ **Filter-Ansichten**:
+  * Alle Zuweisungen
+  * Nur MapFlow-Zuweisungen
+  * Nur Streamer.bot-Zuweisungen
+  * Nur Mixxx-Zuweisungen
+  * Freie Elemente (ohne Zuweisung)
+* ✅ **Bearbeiten** - Zuweisung löschen via 🗑 Button
+* ✅ **Bearbeiten** - Zuweisung auswählen via Dropdown (Weg 2)
+* ✅ **Global MIDI Learn** - Zuweisung per Mouse-Hover über UI-Elemente (Weg 1)
+* ✅ **Persistierung** - MidiAssignment in UserConfig (config.json)
 
 * 🟡 **WGPU Rendering Fixes**
   * ⬜ R32Float Validation Error in OscillatorRenderer
@@ -545,6 +546,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 Die folgenden Node-Typen haben vollständige UI-Panels:
 
 #### Part-Typen (6 Hauptkategorien)
+
 * ✅ **Trigger** - Schaltet andere Nodes
   * ✅ AudioFFT Panel (Band-Auswahl, Threshold-Slider, 11 Outputs)
   * ✅ Random Panel (Min/Max Interval, Probability)
@@ -583,6 +585,7 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
   * ✅ NDI Output Panel (Sender Name)
 
 #### Socket-Typen (für Wire-Kompatibilität)
+
 * ✅ Trigger (Signal-Flow)
 * ✅ Media (Bild/Video-Daten)
 * ✅ Effect (Effekt-Kette)
