@@ -63,3 +63,12 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - DLLs (`avcodec-61.dll`, etc.) und `pr398.patch` nach `.temp-archive/2026-02-06-*` archiviert.
 - `tmp/fix_player.ps1` nach `.temp-archive/` verschoben und `tmp/` entfernt.
 - `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben und Pfade korrigiert (`%~dp0..\`).
+
+## 2026-02-07 - Repository Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt ein unerlaubtes Verzeichnis `tmp/` mit leerem Inhalt. `.temp-archive/` enthielt veraltete Dateien (>30 Tage). `.jules/SETUP_GUIDE.md` trug einen Namen, der mit dem deprecated Root-Guide verwechselt werden konnte.
+
+**Aktion:**
+- `tmp/` Verzeichnis entfernt.
+- Alte Archiv-Dateien (`2026-01-02-*`) aus `.temp-archive/` gelöscht.
+- `.jules/SETUP_GUIDE.md` zu `.jules/JULES_SETUP.md` umbenannt.
