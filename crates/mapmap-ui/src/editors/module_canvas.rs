@@ -3588,12 +3588,8 @@ impl ModuleCanvas {
 
             // Use shared helper
             let hold_duration = 0.6;
-            let (triggered, progress) = crate::widgets::check_hold_state(
-                ui,
-                delete_id,
-                is_holding_delete,
-                hold_duration,
-            );
+            let (triggered, progress) =
+                crate::widgets::check_hold_state(ui, delete_id, is_holding_delete, hold_duration);
 
             // Store progress for visualization in draw_part_with_delete
             ui.data_mut(|d| d.insert_temp(delete_id.with("progress"), progress));

@@ -410,10 +410,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
             points.push(center + Vec2::new(angle.cos(), angle.sin()) * arc_radius);
         }
 
-        painter.add(egui::Shape::line(
-            points,
-            Stroke::new(stroke_width, color),
-        ));
+        painter.add(egui::Shape::line(points, Stroke::new(stroke_width, color)));
     }
 
     // 3. Icon
