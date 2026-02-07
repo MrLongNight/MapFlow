@@ -29,3 +29,7 @@
 ## 2026-10-24 - Deep Cloning in UI Loops
 **Learning:** `module_sidebar.rs` was performing `modules.into_iter().cloned().collect()` inside the `show()` method (called every frame). This deep-cloned the entire module graph (nodes, connections, strings) 60 times a second, creating massive unnecessary allocation traffic.
 **Action:** When iterating collections for UI display, always prefer iterating references (`&T`) directly. If a closure requires ownership of a field (like `id: u64`), capture just that field, not the whole struct.
+
+## 2026-10-25 - Redundant GPU Uniform Updates
+**Learning:** `wgpu::Queue::write_buffer` is not free. Even if the data is small (96 bytes), calling it every frame for every static object adds up to significant command encoding overhead. Initializing cache state with `None` (forcing a first write) is safer than trying to rely on local variable scope for initialization, avoiding subtle bugs while maintaining the optimization for all subsequent frames.
+**Action:** Always implement a dirty-check (e.g. `PartialEq` on uniform structs) before issuing `queue.write_buffer` commands in render loops. Initialize cache state cleanly (`None`) to ensure correctness.
