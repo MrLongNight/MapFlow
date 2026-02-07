@@ -127,6 +127,21 @@ pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Optio
         }
     }
 
+    // Try Sec-WebSocket-Protocol
+    // Browsers cannot set custom headers for WebSocket connections,
+    // so we use the subprotocol list as a carrier for the API key.
+    // Client should add "mapmap.auth.<TOKEN>" to the protocols list.
+    if let Some(protocol_header) = headers.get(http::header::SEC_WEBSOCKET_PROTOCOL) {
+        if let Ok(protocols) = protocol_header.to_str() {
+            for protocol in protocols.split(',') {
+                let protocol = protocol.trim();
+                if let Some(token) = protocol.strip_prefix("mapmap.auth.") {
+                    return Some(token.to_string());
+                }
+            }
+        }
+    }
+
     None
 }
 
@@ -225,5 +240,19 @@ mod tests {
 
         // Internal storage should match the input hash (not double-hashed)
         assert!(config.api_keys.contains(&hash));
+    }
+
+    #[test]
+    fn test_extract_websocket_protocol_token() {
+        let mut headers = http::HeaderMap::new();
+        // Simulate WebSocket protocol header
+        // Note: The client sends "mapmap.auth.<TOKEN>" as one of the protocols
+        headers.insert(
+            http::header::SEC_WEBSOCKET_PROTOCOL,
+            "graphql-ws, mapmap.auth.test_key".parse().unwrap(),
+        );
+
+        let key = extract_api_key(&headers, None);
+        assert_eq!(key, Some("test_key".to_string()));
     }
 }
