@@ -198,7 +198,10 @@ mod tests {
     fn test_extract_websocket_protocol() {
         let mut headers = http::HeaderMap::new();
         // Simulate WebSocket connection from browser: new WebSocket("url", ["mapmap.auth.test_token"])
-        headers.insert("Sec-WebSocket-Protocol", "mapmap.auth.test_token".parse().unwrap());
+        headers.insert(
+            "Sec-WebSocket-Protocol",
+            "mapmap.auth.test_token".parse().unwrap(),
+        );
 
         let key = extract_api_key(&headers, None);
         assert_eq!(key, Some("test_token".to_string()));
@@ -208,7 +211,10 @@ mod tests {
     fn test_extract_websocket_protocol_multiple() {
         let mut headers = http::HeaderMap::new();
         // Multiple subprotocols: "mqtt, chat, mapmap.auth.test_token"
-        headers.insert("Sec-WebSocket-Protocol", "mqtt, chat, mapmap.auth.test_token".parse().unwrap());
+        headers.insert(
+            "Sec-WebSocket-Protocol",
+            "mqtt, chat, mapmap.auth.test_token".parse().unwrap(),
+        );
 
         let key = extract_api_key(&headers, None);
         assert_eq!(key, Some("test_token".to_string()));
