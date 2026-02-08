@@ -31,7 +31,7 @@ impl GpuVertex {
 /// Uniforms for mesh rendering (matches mesh_warp.wgsl)
 /// Note: Must be padded to 128 bytes (multiple of 16) for std140 layout
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
 struct MeshUniforms {
     transform: [[f32; 4]; 4], // 64 bytes
     opacity: f32,             // 4 bytes
@@ -47,6 +47,7 @@ struct MeshUniforms {
 struct CachedMeshUniform {
     buffer: wgpu::Buffer,
     bind_group: Arc<wgpu::BindGroup>,
+    last_uniforms: Option<MeshUniforms>,
 }
 
 /// Mesh renderer for warped texture mapping
@@ -364,11 +365,12 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
+                last_uniforms: None,
             });
         }
 
         // Update current buffer
-        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let cache_entry = &mut self.uniform_cache[self.current_cache_index];
         let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
             * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
         let final_transform = normalization * transform;
@@ -385,11 +387,12 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        if cache_entry.last_uniforms.as_ref() != Some(&uniforms) {
+            queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+            cache_entry.last_uniforms = Some(uniforms);
+        }
 
-        let bind_group = self.uniform_cache[self.current_cache_index]
-            .bind_group
-            .clone();
+        let bind_group = cache_entry.bind_group.clone();
         self.current_cache_index += 1;
 
         bind_group
@@ -447,11 +450,12 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
+                last_uniforms: None,
             });
         }
 
         // Update current buffer
-        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let cache_entry = &mut self.uniform_cache[self.current_cache_index];
         let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
             * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
         let final_transform = normalization * transform;
@@ -468,11 +472,12 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        if cache_entry.last_uniforms.as_ref() != Some(&uniforms) {
+            queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+            cache_entry.last_uniforms = Some(uniforms);
+        }
 
-        let bind_group = self.uniform_cache[self.current_cache_index]
-            .bind_group
-            .clone();
+        let bind_group = cache_entry.bind_group.clone();
         self.current_cache_index += 1;
 
         bind_group
@@ -564,6 +569,91 @@ mod tests {
         assert_eq!(
             std::mem::size_of::<MeshUniforms>(),
             96 // 64 (mat4x4) + 4 (f32) + 28 (padding) = 96
+        );
+    }
+
+    #[test]
+    fn test_mesh_uniforms_partial_eq() {
+        let u1 = MeshUniforms {
+            transform: [[1.0; 4]; 4],
+            opacity: 1.0,
+            flip_h: 0.0,
+            flip_v: 0.0,
+            brightness: 0.0,
+            contrast: 1.0,
+            saturation: 1.0,
+            hue_shift: 0.0,
+            _padding: 0.0,
+        };
+        let u2 = u1;
+        let mut u3 = u1;
+        u3.opacity = 0.5;
+
+        assert_eq!(u1, u2);
+        assert_ne!(u1, u3);
+    }
+
+    #[test]
+    fn test_uniform_caching() {
+        // Create headless device
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+
+        // This might fail if no adapter is found (e.g. in some CI envs), but we can try
+        // We use pollster to run async code in sync test
+        let (device, queue) = pollster::block_on(async {
+            let adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference: wgpu::PowerPreference::LowPower,
+                    force_fallback_adapter: true, // Use software renderer if needed
+                    compatible_surface: None,
+                })
+                .await
+                .expect("Failed to find an appropriate adapter");
+
+            adapter
+                .request_device(&wgpu::DeviceDescriptor {
+                    label: None,
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_defaults(),
+                    memory_hints: wgpu::MemoryHints::Performance,
+                    ..Default::default()
+                })
+                .await
+                .expect("Failed to create device")
+        });
+
+        let device = Arc::new(device);
+        let mut renderer =
+            MeshRenderer::new(device.clone(), wgpu::TextureFormat::Rgba8Unorm).unwrap();
+
+        let transform = Mat4::IDENTITY;
+        let opacity = 1.0;
+
+        // First call - should write buffer and populate cache
+        let _bg1 = renderer.get_uniform_bind_group(&queue, transform, opacity);
+
+        assert_eq!(renderer.current_cache_index, 1);
+        assert!(renderer.uniform_cache[0].last_uniforms.is_some());
+
+        // Second call - same params - should NOT write buffer (optimization)
+        // We verify state is still valid
+        renderer.current_cache_index = 0; // Simulate new frame reset
+        let _bg2 = renderer.get_uniform_bind_group(&queue, transform, opacity);
+
+        assert_eq!(renderer.current_cache_index, 1);
+        assert!(renderer.uniform_cache[0].last_uniforms.is_some());
+
+        // Third call - different params - should write buffer
+        renderer.current_cache_index = 0;
+        let _bg3 = renderer.get_uniform_bind_group(&queue, transform, 0.5);
+
+        assert_eq!(renderer.current_cache_index, 1);
+        assert_eq!(
+            renderer.uniform_cache[0].last_uniforms.unwrap().opacity,
+            0.5
         );
     }
 }
