@@ -227,6 +227,20 @@ impl EffectChain {
         }
     }
 
+    /// Move an effect to a specific index
+    pub fn move_effect(&mut self, id: u64, to_idx: usize) {
+        if let Some(from_idx) = self.effects.iter().position(|e| e.id == id) {
+            if from_idx == to_idx {
+                return;
+            }
+            if to_idx >= self.effects.len() {
+                return;
+            }
+            let effect = self.effects.remove(from_idx);
+            self.effects.insert(to_idx, effect);
+        }
+    }
+
     /// Get enabled effects only
     pub fn enabled_effects(&self) -> impl Iterator<Item = &Effect> {
         self.effects.iter().filter(|e| e.enabled)
@@ -265,6 +279,29 @@ mod tests {
 
         assert_eq!(chain.effects[0].id, id2);
         assert_eq!(chain.effects[1].id, id1);
+    }
+
+    #[test]
+    fn test_effect_chain_move_to() {
+        let mut chain = EffectChain::new();
+
+        let id1 = chain.add_effect(EffectType::Blur); // 0
+        let id2 = chain.add_effect(EffectType::ColorAdjust); // 1
+        let id3 = chain.add_effect(EffectType::Glow); // 2
+
+        // Move id1 (0) to 2
+        chain.move_effect(id1, 2);
+        // Expect: [id2, id3, id1]
+        assert_eq!(chain.effects[0].id, id2);
+        assert_eq!(chain.effects[1].id, id3);
+        assert_eq!(chain.effects[2].id, id1);
+
+        // Move id1 (2) back to 0
+        chain.move_effect(id1, 0);
+        // Expect: [id1, id2, id3]
+        assert_eq!(chain.effects[0].id, id1);
+        assert_eq!(chain.effects[1].id, id2);
+        assert_eq!(chain.effects[2].id, id3);
     }
 
     #[test]
