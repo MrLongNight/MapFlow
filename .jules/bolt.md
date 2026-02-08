@@ -29,3 +29,7 @@
 ## 2026-10-24 - Deep Cloning in UI Loops
 **Learning:** `module_sidebar.rs` was performing `modules.into_iter().cloned().collect()` inside the `show()` method (called every frame). This deep-cloned the entire module graph (nodes, connections, strings) 60 times a second, creating massive unnecessary allocation traffic.
 **Action:** When iterating collections for UI display, always prefer iterating references (`&T`) directly. If a closure requires ownership of a field (like `id: u64`), capture just that field, not the whole struct.
+
+## 2026-10-25 - Redundant Uniform Writes
+**Learning:** `MeshRenderer` was calling `queue.write_buffer` every frame for every mesh, even if the transform and opacity hadn't changed. This causes significant PCI-e traffic and driver overhead.
+**Action:** Implement "dirty checking" for uniform buffers by caching the last written value. Use `PartialEq` to skip writes if the new value matches the cached one.
