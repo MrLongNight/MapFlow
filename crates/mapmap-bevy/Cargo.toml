@@ -26,7 +26,7 @@ bevy_atmosphere = "0.9"
 # Extensions
 bevy_enoki = "0.2"
 bevy_mod_outline = "0.8"
-hexx = "0.17"
+hexx = "0.24"
 
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
