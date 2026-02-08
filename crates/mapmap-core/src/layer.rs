@@ -1270,8 +1270,7 @@ mod additional_tests {
         // Should be clamped to 0.0 (last operation was -0.5)
         assert_eq!(layer.opacity, 0.0);
 
-        let layer = Layer::new(2, "Clamped High")
-            .with_opacity(1.5);
+        let layer = Layer::new(2, "Clamped High").with_opacity(1.5);
         assert_eq!(layer.opacity, 1.0);
     }
 }

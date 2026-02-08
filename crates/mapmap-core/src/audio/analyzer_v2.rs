@@ -839,12 +839,22 @@ mod tests {
 
         // 3. Magnitudes should all be finite
         for (i, mag) in analysis.fft_magnitudes.iter().enumerate() {
-            assert!(mag.is_finite(), "FFT Magnitude at {} is non-finite: {}", i, mag);
+            assert!(
+                mag.is_finite(),
+                "FFT Magnitude at {} is non-finite: {}",
+                i,
+                mag
+            );
         }
 
         // 4. Band energies should be finite
         for (i, band) in analysis.band_energies.iter().enumerate() {
-            assert!(band.is_finite(), "Band Energy at {} is non-finite: {}", i, band);
+            assert!(
+                band.is_finite(),
+                "Band Energy at {} is non-finite: {}",
+                i,
+                band
+            );
         }
     }
 
