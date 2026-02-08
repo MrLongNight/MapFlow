@@ -42,3 +42,8 @@
 **Vulnerability:** The `ImageSequenceDecoder` iterated over all files in a user-provided directory without limit. A directory with millions of files would cause the application to hang or crash (OOM), acting as a local Denial of Service vector.
 **Learning:** Iterators over external resources (like file systems) must always be bounded. "Users won't do that" is not a valid defense against accidental or malicious inputs.
 **Prevention:** Implement explicit `MAX_ITEMS` limits on all directory scanning or collection loops. Use `cfg(test)` to lower these limits for efficient unit testing.
+
+## 2026-10-28 - Missing WebSocket Auth for Browser Clients
+**Vulnerability:** Browser-based WebSocket clients could not authenticate because the standard `WebSocket` API does not support custom headers (e.g., `Authorization`, `X-API-Key`). This forced users to potentially disable authentication or expose keys in query parameters (which were explicitly blocked).
+**Learning:** Security protocols must align with client capabilities. If a standard client (like a browser) cannot meet the protocol requirements, users will bypass security entirely.
+**Prevention:** Support the `Sec-WebSocket-Protocol` header as a transport for authentication tokens when custom headers are unavailable. This allows secure, authenticated connections from standard browser environments.

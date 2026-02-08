@@ -127,6 +127,21 @@ pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Optio
         }
     }
 
+    // Try Sec-WebSocket-Protocol header (for browser-based WebSockets)
+    // Browsers cannot set custom headers on WebSocket upgrade requests,
+    // so we use the subprotocol header as a transport for the API key.
+    // Format: "other-protocol, mapmap.auth.<TOKEN>"
+    if let Some(protocol_header) = headers.get(http::header::SEC_WEBSOCKET_PROTOCOL) {
+        if let Ok(protocols) = protocol_header.to_str() {
+            for protocol in protocols.split(',') {
+                let protocol = protocol.trim();
+                if let Some(token) = protocol.strip_prefix("mapmap.auth.") {
+                    return Some(token.to_string());
+                }
+            }
+        }
+    }
+
     None
 }
 
@@ -177,6 +192,26 @@ mod tests {
         // Query param extraction should be disabled for security
         let key = extract_api_key(&headers, Some("foo=bar&api_key=test_key"));
         assert_eq!(key, None);
+    }
+
+    #[test]
+    fn test_extract_websocket_protocol() {
+        let mut headers = http::HeaderMap::new();
+        // Simulate WebSocket connection from browser: new WebSocket("url", ["mapmap.auth.test_token"])
+        headers.insert("Sec-WebSocket-Protocol", "mapmap.auth.test_token".parse().unwrap());
+
+        let key = extract_api_key(&headers, None);
+        assert_eq!(key, Some("test_token".to_string()));
+    }
+
+    #[test]
+    fn test_extract_websocket_protocol_multiple() {
+        let mut headers = http::HeaderMap::new();
+        // Multiple subprotocols: "mqtt, chat, mapmap.auth.test_token"
+        headers.insert("Sec-WebSocket-Protocol", "mqtt, chat, mapmap.auth.test_token".parse().unwrap());
+
+        let key = extract_api_key(&headers, None);
+        assert_eq!(key, Some("test_token".to_string()));
     }
 
     #[test]
