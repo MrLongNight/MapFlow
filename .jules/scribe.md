@@ -1,3 +1,16 @@
+# Scribe Journal - 2026-02-15
+
+## Broken Links Fixed
+
+I identified and fixed several broken links in the project documentation.
+
+### Actions Taken
+- **README.md**: Updated the link to the installation guide. It was pointing to a non-existent `docs/08-TECHNICAL/SETUP_GUIDE.md`, and now points to `docs/01-GETTING-STARTED/INSTALLATION.md`.
+- **CONTRIBUTING.md**: Updated two occurrences of `ROADMAP_2.0.md` to `ROADMAP.md`. The `ROADMAP_2.0.md` file does not exist in the root, but `ROADMAP.md` does.
+- **CHANGELOG.md**: Added an entry for these documentation fixes.
+
+---
+
 # Scribe Journal - 2026-01-20
 
 ## Documentation Cleanup & Restructuring
