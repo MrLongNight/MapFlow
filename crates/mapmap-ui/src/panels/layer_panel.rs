@@ -44,19 +44,17 @@ impl LayerPanel {
         egui::Window::new(i18n.t("panel-layers"))
             .open(&mut open)
             .default_size([380.0, 400.0])
+            .frame(widgets::panel::cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
+                widgets::panel::render_panel_header(ui, &i18n.t("panel-layers"), |ui| {
                     ui.label(i18n.t_args(
                         "label-total-layers",
                         &[("count", &layer_manager.layers().len().to_string())],
                     ));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(i18n.t("btn-eject-all")).clicked() {
-                            actions.push(UIAction::EjectAllLayers);
-                        }
-                    });
+                    if ui.button(i18n.t("btn-eject-all")).clicked() {
+                        actions.push(UIAction::EjectAllLayers);
+                    }
                 });
-                ui.separator();
 
                 // Layer list area
                 // We build a tree structure (parent_id -> list of child IDs)
@@ -72,6 +70,7 @@ impl LayerPanel {
                 egui::ScrollArea::vertical()
                     .max_height(300.0)
                     .show(ui, |ui| {
+                        let mut row_index = 0;
                         Self::render_tree(
                             ui,
                             None,
@@ -80,6 +79,7 @@ impl LayerPanel {
                             selected_layer_id,
                             actions,
                             i18n,
+                            &mut row_index,
                         );
                     });
 
@@ -108,6 +108,7 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
+        row_index: &mut usize,
     ) {
         if let Some(children) = children_map.get(&parent_id) {
             let count = children.len();
@@ -120,9 +121,12 @@ impl LayerPanel {
 
                         let bg_color = if is_selected {
                             ui.visuals().selection.bg_fill.linear_multiply(0.2)
+                        } else if *row_index % 2 != 0 {
+                            ui.visuals().faint_bg_color
                         } else {
                             Color32::TRANSPARENT
                         };
+                        *row_index += 1;
 
                         egui::Frame::new()
                             .fill(bg_color)
@@ -290,6 +294,7 @@ impl LayerPanel {
                                     selected_layer_id,
                                     actions,
                                     i18n,
+                                    row_index,
                                 );
                             });
                         }

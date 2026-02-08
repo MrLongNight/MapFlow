@@ -1,4 +1,4 @@
-use crate::{i18n::LocaleManager, responsive::ResponsiveLayout, UIAction};
+use crate::{i18n::LocaleManager, responsive::ResponsiveLayout, widgets, UIAction};
 
 /// Represents the UI panel for configuring render outputs.
 pub struct OutputPanel {
@@ -44,9 +44,13 @@ impl OutputPanel {
         egui::Window::new(i18n.t("panel-outputs"))
             .default_size(window_size)
             .scroll([false, true])
+            .frame(widgets::panel::cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                ui.heading(i18n.t("header-multi-output"));
-                ui.separator();
+                widgets::panel::render_panel_header(
+                    ui,
+                    &i18n.t("header-multi-output"),
+                    |_ui| {},
+                );
 
                 let canvas_size = output_manager.canvas_size();
                 ui.label(format!(

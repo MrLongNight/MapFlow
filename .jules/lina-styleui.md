@@ -46,3 +46,9 @@
     - **Node Header:** `colors::LIGHTER_GREY` (creates contrast vs body).
     - **Separator:** `colors::STROKE_GREY` (sharp definition).
 **Action:** Refactored `ModuleCanvas` to use `crate::theme::colors` constants, enforcing the Cyber Dark palette on the node graph.
+
+## 2026-03-01 – [Panel Standardization]
+**Learning:** Implemented "Cyber Dark" panel containers using `cyber_panel_frame` and `render_panel_header`.
+- **Insight:** `egui::Window` can use `.frame(...)` to override the content frame, applying sharp corners and dark background.
+- **Pattern:** For recursive trees (like Layer Panel), pass a `&mut usize` row index to implement global zebra striping across nested levels.
+**Action:** Applied this pattern to Layer, Inspector, and Output panels.
