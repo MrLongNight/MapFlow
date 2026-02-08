@@ -69,7 +69,7 @@ imgui-winit-support = "0.12"
 libmpv2 = { version = "5.0", features = ["render"] }
 
 # Control
-midir = "0.9"
+midir = "0.10"
 
 # File watching
 notify = "6.1"
