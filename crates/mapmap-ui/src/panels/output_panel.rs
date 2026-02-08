@@ -46,11 +46,7 @@ impl OutputPanel {
             .scroll([false, true])
             .frame(widgets::panel::cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                widgets::panel::render_panel_header(
-                    ui,
-                    &i18n.t("header-multi-output"),
-                    |_ui| {},
-                );
+                widgets::panel::render_panel_header(ui, &i18n.t("header-multi-output"), |_ui| {});
 
                 let canvas_size = output_manager.canvas_size();
                 ui.label(format!(
