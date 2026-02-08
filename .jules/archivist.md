@@ -63,3 +63,11 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - DLLs (`avcodec-61.dll`, etc.) und `pr398.patch` nach `.temp-archive/2026-02-06-*` archiviert.
 - `tmp/fix_player.ps1` nach `.temp-archive/` verschoben und `tmp/` entfernt.
 - `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben und Pfade korrigiert (`%~dp0..\`).
+
+## 2026-02-08 - Tmp Directory Cleanup & Docs Review
+
+**Erkenntnis:** Das `tmp/` Verzeichnis (mit `antigravity-jules-orchestration`) existierte erneut im Root, obwohl es nicht zur Standardstruktur gehört. Zudem ist die `docs/` Struktur inkonsistent: Doppelte Präfixe (`01-GENERAL`, `01-GETTING-STARTED` und `03-ARCHITECTURE`, `03-FEATURES`) sowie fehlende Standard-Ordner (`01-OVERVIEW`, `06-DEPLOYMENT`, `07-TECHNICAL`).
+
+**Aktion:**
+- `tmp/` Verzeichnis und Inhalt gelöscht.
+- Dokumentations-Struktur als Diskussionsthema für zukünftige Restrukturierung notiert (keine sofortige Änderung, um größere Konflikte zu vermeiden).
