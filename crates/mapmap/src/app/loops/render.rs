@@ -73,6 +73,25 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 ],
                 pixels_per_point: app.egui_context.pixels_per_point(),
             };
+
+            // CRITICAL: Update GPU buffers before rendering - this prepares vertex/index buffers
+            // and ensures all texture references are valid. Without this, egui-wgpu may panic
+            // when looking up textures that haven't been properly registered yet.
+            app.egui_renderer.update_buffers(
+                &device,
+                &app.backend.queue,
+                &mut encoder,
+                &tris,
+                &screen_descriptor,
+            );
+
+            let screen_descriptor = egui_wgpu::ScreenDescriptor {
+                size_in_pixels: [
+                    window_context.surface_config.width,
+                    window_context.surface_config.height,
+                ],
+                pixels_per_point: app.egui_context.pixels_per_point(),
+            };
             egui_render_data = Some((tris, screen_descriptor, full_output.textures_delta.free));
         }
 
