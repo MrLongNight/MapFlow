@@ -53,3 +53,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-30 - ROADMAP Conflict Resolution
 **Erkenntnis:** Merge-Konflikte in `ROADMAP_2.0.md` entdeckt (HEAD vs. Incoming Status für Windows Installer).
 **Aktion:** Konflikte behoben, `Stand` aktualisiert, und Windows Installer Status konsolidiert (Completed + Detailed Checklist).
+
+## 2026-02-06 - Massive Documentation Gap
+**Erkenntnis:** A batch of ~11 PRs merged around 2026-02-06 (#571-#589) were completely missing from CHANGELOG.md, including significant features like 'Reset Clip', 'Responsive Layout', and new Shaders.
+**Aktion:** Tracker has reconstructed the changelog entries for this entire batch and updated the Roadmap to reflect the new state. Future large merges must be strictly checked for documentation updates.

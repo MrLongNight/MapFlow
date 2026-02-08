@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-02-06: feat(ui): Add Safe 'Reset Clip' button to Media Inspector (#589)
+- 2026-02-06: feat(ui): Apply responsive layout to panels (#588)
+- 2026-02-06: perf(ui): Remove hot-path allocation in Inspector (#585)
+- 2026-02-06: fix(security): Fix DoS risk in GIF decoder (#584)
+- 2026-02-06: feat(render): Integrate rusty_art shaders (Voronoi, Tunnel, Galaxy) (#583)
+- 2026-02-06: perf(render): Optimize uniform buffer allocation in render pipeline (#581)
+- 2026-02-06: test(core): Re-implement Guardian tests for AudioMediaPipeline (#580)
+- 2026-02-06: fix(security): Fix D3D11 buffer over-read vulnerability (#578)
+- 2026-02-06: fix(core): Ensure unique module names and fix Spout compilation (#576)
+- 2026-02-06: feat(ui): Improve ShortcutsPanel Visuals and fix module compilation (#575)
+- 2026-02-06: feat(core): Implement efficient Undo/Redo infrastructure for AppState (#571)
 - 2026-02-01: feat: Add responsive layout helper with viewport-based sizing and mobile/compact detection
 - 2026-02-01: docs: Update Roadmap status for NDI/MIDI and fix documentation duplicates in core (Scribe)
 - 2026-01-31: feat: Implement the main application entry point and core orchestration logic for MapFlow
