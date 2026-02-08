@@ -578,7 +578,11 @@ impl EffectChainPanel {
 
                         // Handle swap on hover
                         if let Some(dragging_id) = self.dragging_effect {
-                            if dragging_id != effect_id && card_rect.contains(ui.input(|i| i.pointer.interact_pos().unwrap_or_default())) {
+                            if dragging_id != effect_id
+                                && card_rect.contains(
+                                    ui.input(|i| i.pointer.interact_pos().unwrap_or_default()),
+                                )
+                            {
                                 // Only swap if we are hovering over the middle of the card to prevent flickering
                                 // or just simple containment for now
                                 swap_request = Some((dragging_id, idx));
@@ -640,12 +644,15 @@ impl EffectChainPanel {
                         self.actions.push(EffectChainAction::MoveDown(id));
                     }
                     if let Some((from_id, to_idx)) = swap_request {
-                         if let Some(from_idx) = self.chain.effects.iter().position(|e| e.id == from_id) {
-                             if from_idx != to_idx {
-                                 self.chain.move_effect(from_id, to_idx);
-                                 self.actions.push(EffectChainAction::MoveEffect(from_id, to_idx));
-                             }
-                         }
+                        if let Some(from_idx) =
+                            self.chain.effects.iter().position(|e| e.id == from_id)
+                        {
+                            if from_idx != to_idx {
+                                self.chain.move_effect(from_id, to_idx);
+                                self.actions
+                                    .push(EffectChainAction::MoveEffect(from_id, to_idx));
+                            }
+                        }
                     }
                 }
             });
@@ -667,7 +674,17 @@ impl EffectChainPanel {
         is_dragging: bool,
         locale: &LocaleManager,
         icon_manager: Option<&IconManager>,
-    ) -> (bool, bool, bool, bool, egui::Rect, bool, bool, f32, Vec<(String, f32)>) {
+    ) -> (
+        bool,
+        bool,
+        bool,
+        bool,
+        egui::Rect,
+        bool,
+        bool,
+        f32,
+        Vec<(String, f32)>,
+    ) {
         let mut remove = false;
         let mut move_up = false;
         let mut move_down = false;
@@ -675,7 +692,7 @@ impl EffectChainPanel {
         let mut param_changes = Vec::new();
 
         let frame_color = if is_dragging {
-             Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
+            Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
         } else if enabled {
             Color32::from_rgba_premultiplied(60, 80, 120, 200)
         } else {
@@ -699,7 +716,11 @@ impl EffectChainPanel {
                 // Header row
                 ui.horizontal(|ui| {
                     // Drag Handle
-                    let handle_resp = ui.add(egui::Button::new("⋮⋮").frame(false).sense(egui::Sense::drag()));
+                    let handle_resp = ui.add(
+                        egui::Button::new("⋮⋮")
+                            .frame(false)
+                            .sense(egui::Sense::drag()),
+                    );
                     if handle_resp.drag_started() {
                         dragged = true;
                     }
