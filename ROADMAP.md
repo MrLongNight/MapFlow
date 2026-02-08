@@ -209,6 +209,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   * ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   * ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
+  * ✅ Safe 'Reset Clip' Button (COMPLETED 2026-02-06)
   * ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
 
 * ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
@@ -327,11 +328,11 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Triggers (`cue/triggers.rs`)
   * ℹ️ Kein separates Cue-Panel – Funktionalität via Timeline-Modi (siehe Phase 7)
 
-* ⬜ **Shortcuts** (`mapmap-control/src/shortcuts/`)
+* ✅ **Shortcuts** (`mapmap-control/src/shortcuts/`)
   * ✅ Keyboard-Shortcuts (`shortcuts/shortcuts.rs`)
   * ✅ Bindings (`shortcuts/bindings.rs`)
   * ✅ Macros (`shortcuts/macros.rs`)
-  * ⬜ Shortcut-UI fehlt
+  * ✅ Shortcut-UI (Improved 2026-02-06)
 
 ### UI (ImGui / egui)
 
@@ -347,9 +348,10 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Mesh-Editor (`mesh_editor.rs`) – Mesh-Warping-UI
   * ✅ Node-Editor (`node_editor.rs`) – Shader-Graph-Editor
   * ✅ Timeline V2 (`timeline_v2.rs`) – Keyframe Animation
-  * ✅ Undo-Redo (`undo_redo.rs`) – Command-Pattern
+  * ✅ Undo-Redo (`undo_redo.rs`) – Command-Pattern (Efficient Infrastructure 2026-02-06)
   * ✅ Asset-Manager (`asset_manager.rs`)
   * ✅ Theme (`theme.rs`)
+  * ✅ Responsive Layout Helper (2026-02-06)
   * ⬜ Es gibt diverse UI Elemente die keine Funktion haben und entfernt werden müssen
   * ⬜ Es gibt diverse UI Elemente die noch nicht wie gewünscht implementiert sind
 
@@ -567,7 +569,7 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
   * ✅ Gradient Mask Panel (Angle, Softness)
 
 * ✅ **Modulator** - Effekte und Modifier
-  * ✅ Effect Panel (24 Effekt-Typen: Blur, Sharpen, Invert, Threshold, Brightness, Contrast, Saturation, HueShift, Colorize, Wave, Spiral, Pinch, Mirror, Kaleidoscope, Pixelate, Halftone, EdgeDetect, Posterize, Glitch, RgbSplit, ChromaticAberration, VHS, FilmGrain)
+  * ✅ Effect Panel (27 Effekt-Typen: Blur, Sharpen, Invert, Threshold, Brightness, Contrast, Saturation, HueShift, Colorize, Wave, Spiral, Pinch, Mirror, Kaleidoscope, Pixelate, Halftone, EdgeDetect, Posterize, Glitch, RgbSplit, ChromaticAberration, VHS, FilmGrain, Voronoi, Tunnel, Galaxy)
   * ✅ BlendMode Panel (Normal, Add, Multiply, Screen, Overlay, Difference, Exclusion)
   * ✅ AudioReactive Panel (FFT-Band Selector, Sensitivity, Smoothing)
 
