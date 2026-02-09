@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-08 06:00
+> **Stand:** 2026-02-09 13:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -144,6 +144,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Post-FX-Pipeline verdrahtet
   * ✅ Effect-Parameter-Binding an UI vorhanden
   * ✅ Real-time Effect Hot-Reload implementiert
+  * ✅ Effect Chain Reordering (Drag & Drop) (COMPLETED 2026-02-09)
 
 ### Audio (Plattformspezifische Backends, Analyzer/Mapping)
 
@@ -826,7 +827,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
   * ✅ Project-Save/Load-Tests (COMPLETED PR #68, 2025-12-22)
   * ✅ Multi-Output-Rendering-Tests (COMPLETED 2025-12-22)
   * ✅ ModuleEvaluator Tests (COMPLETED 2026-01-16)
-  * ⬜ Effect-Chain-Tests
+  * 🟡 Effect-Chain-Tests (Partially implemented in #603)
   * ⬜ End-to-End-Tests
 
 ### Packaging / Developer Experience (DX)

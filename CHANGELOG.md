@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-02-09: feat(ui): Implement drag and drop reordering for effect chain (Mary StyleUX) (#603) (re-implements #616, #599, #598)
 - 2026-02-06: feat(ui): Add Safe 'Reset Clip' button to Media Inspector (#589)
 - 2026-02-06: fix(ui): Make UI panels responsive using ResponsiveLayout (#588)
 - 2026-02-06: fix(security): Fix DoS risk in GIF decoder (Sentinel) (#584)
