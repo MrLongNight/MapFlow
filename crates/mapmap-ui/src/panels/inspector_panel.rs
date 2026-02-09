@@ -146,13 +146,13 @@ impl InspectorPanel {
             ui.label(
                 egui::RichText::new("No Selection")
                     .size(16.0)
-                    .color(egui::Color32::from_rgb(120, 120, 140)),
+                    .color(egui::Color32::WHITE.linear_multiply(0.5)),
             );
             ui.add_space(10.0);
             ui.label(
                 egui::RichText::new("Select a layer or output to view properties")
                     .size(12.0)
-                    .color(egui::Color32::from_rgb(100, 100, 120)),
+                    .color(egui::Color32::WHITE.linear_multiply(0.4)),
             );
         });
     }

@@ -123,7 +123,7 @@ impl LayerPanel {
                         let bg_color = if is_selected {
                             colors::CYAN_ACCENT.linear_multiply(0.2)
                         } else if idx % 2 == 1 {
-                            colors::DARKER_GREY.linear_multiply(0.5) // Subtle alternating background
+                            colors::DARKER_GREY // Subtle alternating background
                         } else {
                             Color32::TRANSPARENT
                         };
@@ -132,13 +132,13 @@ impl LayerPanel {
                         let stroke = if is_selected {
                             Stroke::new(1.0, colors::CYAN_ACCENT)
                         } else {
-                            Stroke::new(1.0, colors::STROKE_GREY.linear_multiply(0.5))
+                            Stroke::new(1.0, colors::STROKE_GREY)
                         };
 
                         egui::Frame::new()
                             .fill(bg_color)
                             .stroke(stroke)
-                            .corner_radius(egui::CornerRadius::same(0)) // Sharp corners for Cyber/Resolume style
+                            .corner_radius(0.0) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
