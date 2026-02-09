@@ -2001,14 +2001,14 @@ impl ModuleCanvas {
 
     fn load_svg_icon(path: &std::path::Path, ctx: &egui::Context) -> Option<TextureHandle> {
         let svg_data = std::fs::read(path).ok()?;
-        let options = usvg::Options::default();
-        let tree = usvg::Tree::from_data(&svg_data, &options).ok()?;
+        let options = resvg::usvg::Options::default();
+        let tree = resvg::usvg::Tree::from_data(&svg_data, &options).ok()?;
         let size = tree.size();
         let width = size.width().round() as u32;
         let height = size.height().round() as u32;
 
-        let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
-        resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)?;
+        resvg::render(&tree, resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
 
         let mut pixels = Vec::with_capacity((width * height) as usize);
         for pixel in pixmap.pixels() {
