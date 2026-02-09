@@ -116,6 +116,15 @@ impl MapFlowModule {
                 effect: None,
                 effect_active: false,
             }),
+            PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
+                rate: 100.0,
+                lifetime: 2.0,
+                speed: 1.0,
+                color_start: [1.0, 0.8, 0.2, 1.0],
+                color_end: [0.8, 0.2, 0.1, 0.0],
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+            }),
             PartType::Output => {
                 // Auto-assign next available Output ID
                 let used_ids: Vec<u64> = self
@@ -734,6 +743,8 @@ pub enum PartType {
     Layer,
     /// Philips Hue
     Hue,
+    /// Bevy Particles
+    BevyParticles,
     /// Outputs
     Output,
 }

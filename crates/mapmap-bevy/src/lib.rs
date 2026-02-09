@@ -4,6 +4,7 @@
 //! for high-performance 3D rendering and audio reactivity.
 
 pub mod components;
+pub mod particles;
 pub mod resources;
 pub mod systems;
 
@@ -32,26 +33,26 @@ impl BevyRunner {
         let mut app = App::new();
 
         // Use DefaultPlugins but disable windowing and input loop to avoid Winit panic
-        app.add_plugins(DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: None,
-                exit_condition: bevy::window::ExitCondition::DontExit,
-                close_when_requested: false,
-            })
-            .set(bevy::render::RenderPlugin {
-                render_creation: bevy::render::settings::RenderCreation::Automatic(
-                    bevy::render::settings::WgpuSettings {
-                        // Inherit backend preferences if possible, or default
-                        ..default()
-                    }
-                ),
-                synchronous_pipeline_compilation: false,
-                ..default()
-            })
-            // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
-            .disable::<bevy::winit::WinitPlugin>()
+        app.add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: None,
+                    exit_condition: bevy::window::ExitCondition::DontExit,
+                    close_when_requested: false,
+                })
+                .set(bevy::render::RenderPlugin {
+                    render_creation: bevy::render::settings::RenderCreation::Automatic(
+                        bevy::render::settings::WgpuSettings {
+                            // Inherit backend preferences if possible, or default
+                            ..default()
+                        },
+                    ),
+                    synchronous_pipeline_compilation: false,
+                    ..default()
+                })
+                // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
+                .disable::<bevy::winit::WinitPlugin>(),
         );
-
 
         // Register Extensions (Temporarily disabled due to version mismatch)
         // app.add_plugins(bevy_enoki::EnokiPlugin);
@@ -73,6 +74,8 @@ impl BevyRunner {
         app.register_type::<BevyAtmosphere>();
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
+
+        app.add_plugins(particles::ParticlePlugin);
 
         // Register systems
         app.add_systems(Startup, setup_3d_scene);
