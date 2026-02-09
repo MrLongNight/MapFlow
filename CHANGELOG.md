@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-02-06: feat(ui): Add Safe 'Reset Clip' button to Media Inspector (#589)
+- 2026-02-06: fix(ui): Make UI panels responsive using ResponsiveLayout (#588)
+- 2026-02-06: fix(security): Fix DoS risk in GIF decoder (Sentinel) (#584)
+- 2026-02-06: perf(ui): Optimize Inspector with hot-path allocation removal (Bolt) (#585)
+- 2026-02-06: fix(ci): Restore cargo audit ignores in workflow (ecbd6bc)
+- 2026-02-06: fix(ui): Resolve CI formatting issues in responsive.rs (1a42255)
 - 2026-02-06: feat(ux): Add Safe 'Reset Clip' button to Media Inspector (#589)
 - 2026-02-01: feat: Add responsive layout helper with viewport-based sizing and mobile/compact detection
 - 2026-02-01: docs: Update Roadmap status for NDI/MIDI and fix documentation duplicates in core (Scribe)
