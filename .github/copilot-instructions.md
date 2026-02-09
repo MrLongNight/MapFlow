@@ -215,5 +215,5 @@ drop(decoder); // Explizit cleanup bei C-Bindings
 
 ---
 
-**Version:** 1.0  
+**Version:** 1.0
 **Last Updated:** 2026-02-05

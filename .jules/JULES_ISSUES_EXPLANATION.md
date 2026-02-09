@@ -134,8 +134,8 @@ Beispiel für "Multi-Window Rendering":
 ```markdown
 ## Multi-Window Rendering Implementation
 
-**Phase:** Phase 2 - Multi-Projector System  
-**Priority:** Critical  
+**Phase:** Phase 2 - Multi-Projector System
+**Priority:** Critical
 **Status:** 60% complete
 
 ### Description

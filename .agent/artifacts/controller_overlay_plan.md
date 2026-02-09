@@ -1,7 +1,7 @@
 # Controller Overlay Redesign - Implementierungsplan
 
-> **Erstellt:** 2025-12-27  
-> **Status:** In Arbeit  
+> **Erstellt:** 2025-12-27
+> **Status:** In Arbeit
 > **Priorität:** Hoch
 
 ---
