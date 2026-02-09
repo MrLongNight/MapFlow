@@ -7,10 +7,10 @@ This document outlines the procedures and what to expect when contributing a bug
 **Please read** and **follow these guidelines** before submitting a bug report, feature request or pull request.
 It really helps us efficiently process your contribution!
 
-**Table Of Contents**  
-[Report a bug](#bug-reports)  
-[Request a feature](#feature-requests)  
-[Contribute code](#contributing-code)  
+**Table Of Contents**
+[Report a bug](#bug-reports)
+[Request a feature](#feature-requests)
+[Contribute code](#contributing-code)
 
 ## <a id='bug-reports'></a>Report a bug
 
@@ -19,11 +19,11 @@ We love hearing about bugs! It's how we get them fixed.
 - If you notice something odd happening, try to make it happen again (reproduce it).
 - If you can reproduce it, try to figure out if it's caused by the video format that you use or by MapFlow.
 - If it's caused by MapFlow, make sure it **still occurs in the current development version** (where we continually fix problems) by checking out with git to the current `main` branch of MapFlow.
-- If it looks like it's caused by MapFlow (or if you're not sure) and still occurs on the current `main` branch, submit a bug report to the [issue tracker](https://github.com/MrLongNight/MapFlow/issues).  
+- If it looks like it's caused by MapFlow (or if you're not sure) and still occurs on the current `main` branch, submit a bug report to the [issue tracker](https://github.com/MrLongNight/MapFlow/issues).
   - **Search the issue tracker** to make sure your problem has not been reported yet. If you find a relevant bug, comment there, even if it's an old or closed one!
   - Only if you don't find a relevant issue, open a new issue. A new issue does not generate more exposure/visibility than commenting on an existing one.
   - Make sure you give it a good title! A good title explains the core of the problem in about 5-10 words. (It's sometimes easier to write the title after you've written the description.)
-  - In the description, include the following details:  
+  - In the description, include the following details:
     1. **relevant system information** such as which MapFlow version, operating system, Rust version, and graphics card you are using,
     2. what you were doing when you noticed the bug,
     3. what you expected to happen,
