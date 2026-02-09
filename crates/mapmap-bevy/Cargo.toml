@@ -9,26 +9,25 @@ repository.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-# Bevy 0.16 stabilization
-bevy = { version = "0.16", default-features = false, features = [
+# Bevy - disabling default features to avoid audio/ui bloat if not needed yet
+bevy = { version = "0.15.1", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_pbr",
     "bevy_gltf",
     "bevy_render",
     "bevy_scene",
-    "bevy_winit",
-    "x11",
+    "bevy_winit", # Needed for WinitPlugin / loop runner, even if headless
+    "x11", # Explicitly add standard backends if needed, or rely on defaults
     "wayland",
     "tonemapping_luts",
 ] }
-
-# Extensions compatible with Bevy 0.16
 bevy_atmosphere = "0.12"
-# bevy_enoki = "0.5" # Disabled due to version mismatch (skips 0.16 support)
-bevy_mod_outline = "0.10.3"
-hexx = "0.21" # Version compatible with Bevy 0.16
+
+# Extensions
+bevy_enoki = "0.2"
+# bevy_mod_outline = "0.10" # Disabled due to Bevy version mismatch
+hexx = "0.21"
 
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts

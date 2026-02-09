@@ -53,7 +53,3 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-01-30 - ROADMAP Conflict Resolution
 **Erkenntnis:** Merge-Konflikte in `ROADMAP_2.0.md` entdeckt (HEAD vs. Incoming Status für Windows Installer).
 **Aktion:** Konflikte behoben, `Stand` aktualisiert, und Windows Installer Status konsolidiert (Completed + Detailed Checklist).
-
-## 2026-02-07 - Undocumented PRs Discovery (Feb 6)
-**Erkenntnis:** Discovered multiple merged PRs from 2026-02-06 (#589, #588, #584, #585) missing from CHANGELOG.md. Also corrected FUTURE DATE in ROADMAP.md (was 2026-02-15).
-**Aktion:** Added missing entries to CHANGELOG.md and corrected ROADMAP.md Stand date to current date.

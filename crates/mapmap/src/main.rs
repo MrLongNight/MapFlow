@@ -632,9 +632,13 @@ impl App {
 
                 self.ui_state.dashboard.set_audio_analysis(legacy_analysis);
 
-                // Request egui repaint for UI audio visualizations only
-                // NOTE: Removed excessive request_redraw() loop that was causing 100% CPU load
-                // Projector windows are redrawn based on their own VSync/frame timing
+                // Update Effect Automation
+                // Redraw all windows - Optimized to avoid allocation
+                for window_context in self.window_manager.iter() {
+                    window_context.window.request_redraw();
+                }
+
+                // Also ensure egui updates for previews
                 self.egui_context.request_repaint();
             }
             _ => (),

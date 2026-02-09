@@ -40,7 +40,7 @@ impl BevyRunner {
 
         // Register Extensions (Temporarily disabled due to version mismatch)
         // app.add_plugins(bevy_enoki::EnokiPlugin);
-        app.add_plugins(bevy_mod_outline::OutlinePlugin);
+        // app.add_plugins(bevy_mod_outline::OutlinePlugin);
         // app.add_plugins(bevy_atmosphere::prelude::AtmospherePlugin);
 
         // Register resources
