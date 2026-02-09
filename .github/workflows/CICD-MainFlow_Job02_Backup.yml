@@ -38,65 +38,75 @@ jobs:
           
           TAG="backup/${TYPE}-${DATE}"
           
-          # Prüfen, ob der Tag bereits existiert (falls mehrere Pushes am Tag erfolgen)
+          # Kollisionsschutz (falls mehrere Pushes pro Tag)
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             TAG="${TAG}-$(date +%H%M%S)"
           fi
           
           git tag $TAG
           git push origin $TAG
-          echo "Backup-Typ: $TYPE | Tag: $TAG"
-          echo "current_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Neues Backup erstellt: $TAG (Typ: $TYPE)"
 
-      - name: GFS Retention Cleanup
+      - name: GFS Retention Cleanup (incl. Legacy)
         run: |
-          echo "Starte Bereinigung nach GFS-Prinzip..."
+          echo "Starte GFS-Bereinigung..."
           git fetch --tags
           
           CURRENT_DATE=$(date +%s)
           ONE_DAY=$((24 * 60 * 60))
           
-          # Definition der Aufbewahrungsfristen (in Tagen)
+          # Aufbewahrungsfristen
           RETENTION_DAILY=7
           RETENTION_WEEKLY=30
           RETENTION_MONTHLY=365
+          RETENTION_LEGACY=7
           
-          ALL_BACKUPS=$(git tag -l "backup/*")
+          ALL_BACKUP_TAGS=$(git tag -l "backup/*")
           
-          for tag in $ALL_BACKUPS; do
-            # Extrahiere Typ und Datum aus dem Tag-Namen (z.B. backup/daily-20260209)
-            # Format: backup/TYPE-YYYYMMDD
+          for tag in $ALL_BACKUP_TAGS; do
             TAG_NAME=$(echo $tag | cut -d'/' -f2)
-            TAG_TYPE=$(echo $TAG_NAME | cut -d'-' -f1)
-            TAG_DATE_STR=$(echo $TAG_NAME | cut -d'-' -f2)
             
-            # Konvertiere Tag-Datum in Epoch-Sekunden
-            TAG_EPOCH=$(date -d "$TAG_DATE_STR" +%s 2>/dev/null || continue)
+            # 1. Parsing: Prüfen ob neues Format (daily-..., weekly-..., monthly-...)
+            if [[ $TAG_NAME =~ ^(daily|weekly|monthly)- ]]; then
+              TAG_TYPE=$(echo $TAG_NAME | cut -d'-' -f1)
+              TAG_DATE_STR=$(echo $TAG_NAME | cut -d'-' -f2)
+            else
+              # 2. Parsing: Altes Format (Legacy) oder unbekannt
+              TAG_TYPE="legacy"
+              # Extrahiere YYYYMMDD vom Anfang des Namens
+              TAG_DATE_STR=$(echo $TAG_NAME | grep -oE '^[0-9]{8}')
+            fi
+            
+            # Datum validieren und in Epoch konvertieren
+            TAG_EPOCH=$(date -d "$TAG_DATE_STR" +%s 2>/dev/null)
+            if [ -z "$TAG_EPOCH" ]; then
+              echo "Überspringe ungültigen Tag: $tag"
+              continue
+            fi
+            
             AGE_DAYS=$(( (CURRENT_DATE - TAG_EPOCH) / ONE_DAY ))
-            
             DELETE=false
             
             case $TAG_TYPE in
               daily)
-                if [ $AGE_DAYS -ge $RETENTION_DAILY ]; then DELETE=true; fi
+                [ $AGE_DAYS -ge $RETENTION_DAILY ] && DELETE=true
                 ;;
               weekly)
-                if [ $AGE_DAYS -ge $RETENTION_WEEKLY ]; then DELETE=true; fi
+                [ $AGE_DAYS -ge $RETENTION_WEEKLY ] && DELETE=true
                 ;;
               monthly)
-                if [ $AGE_DAYS -ge $RETENTION_MONTHLY ]; then DELETE=true; fi
+                [ $AGE_DAYS -ge $RETENTION_MONTHLY ] && DELETE=true
                 ;;
-              *)
-                # Unbekannte Tags im backup/ Namespace nach 7 Tagen löschen
-                if [ $AGE_DAYS -ge 7 ]; then DELETE=true; fi
+              legacy)
+                [ $AGE_DAYS -ge $RETENTION_LEGACY ] && DELETE=true
                 ;;
             esac
             
             if [ "$DELETE" = true ]; then
-              echo "Lösche abgelaufenes $TAG_TYPE Backup: $tag (Alter: $AGE_DAYS Tage)"
+              echo "Lösche ($TAG_TYPE): $tag (Alter: $AGE_DAYS Tage)"
               git push --delete origin $tag
               git tag -d $tag
             else
-              echo "Behalte $TAG_TYPE Backup: $tag (Alter: $AGE_DAYS Tage)"
+              echo "Behalte ($TAG_TYPE): $tag (Alter: $AGE_DAYS Tage)"
             fi
           done
