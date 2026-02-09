@@ -1135,6 +1135,24 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Specialized Bevy 3D Text Node
+    Bevy3DText {
+        /// Text content
+        text: String,
+        /// Font size
+        #[serde(default = "default_font_size")]
+        font_size: f32,
+        /// Text color (RGBA)
+        #[serde(default = "default_text_color")]
+        color: [f32; 4],
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Text alignment
+        #[serde(default)]
+        alignment: TextAlignmentType,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1349,6 +1367,28 @@ pub enum SourceType {
         #[serde(default)]
         flip_vertical: bool,
     },
+}
+
+fn default_font_size() -> f32 {
+    32.0
+}
+
+fn default_text_color() -> [f32; 4] {
+    [1.0, 1.0, 1.0, 1.0]
+}
+
+/// Text alignment options
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum TextAlignmentType {
+    /// Align text to the left
+    Left,
+    /// Align text to the center
+    #[default]
+    Center,
+    /// Align text to the right
+    Right,
+    /// Justify text
+    Justify,
 }
 
 impl SourceType {

@@ -11,6 +11,8 @@ repository.workspace = true
 anyhow = { workspace = true }
 # Bevy 0.16 stabilization
 bevy = { version = "0.16", default-features = false, features = [
+    "bevy_text",
+    "bevy_ui",
     "bevy_core_pipeline",
     "bevy_pbr",
     "bevy_gltf",

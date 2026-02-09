@@ -69,6 +69,26 @@ pub struct BevyParticles {
     pub color_end: [f32; 4],
 }
 
+#[derive(Reflect, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BevyTextAlignment {
+    #[default]
+    Center,
+    Left,
+    Right,
+    Justify,
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Bevy3DText {
+    pub text: String,
+    pub font_size: f32,
+    pub color: [f32; 4],
+    pub position: [f32; 3],
+    pub rotation: [f32; 3],
+    pub alignment: BevyTextAlignment,
+}
+
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;
