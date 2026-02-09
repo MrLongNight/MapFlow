@@ -122,7 +122,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let pixel_size = 1.0 / params.sim_resolution;
 
     // Read current phase
-    let theta_i = textureSample(phase_texture, phase_sampler, uv).r;
+    let theta_i = textureSampleLevel(phase_texture, phase_sampler, uv, 0.0).r;
 
     // Compute natural frequency
     let omega_i = compute_frequency(uv);
