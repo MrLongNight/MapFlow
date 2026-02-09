@@ -6,7 +6,8 @@
 
 ## Purpose
 
-Originally designed to bridge the gap between the legacy Qt/C++ application and the new Rust core. As the Rust rewrite (`mapmap`) becomes the primary application, this crate serves as an integration point for external systems.
+Originally designed to bridge the gap between the legacy Qt/C++ application and the new Rust core.
+As the Rust rewrite (`mapmap`) becomes the primary application, this crate serves as an integration point for external systems.
 
 ## Features
 

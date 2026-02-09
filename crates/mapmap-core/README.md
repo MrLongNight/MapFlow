@@ -2,7 +2,8 @@
 
 **MapFlow Core Domain Model and Business Logic.**
 
-`mapmap-core` is the heart of MapFlow, containing the fundamental data structures, state management, and business logic that drives the application. It is designed to be renderer-agnostic and UI-agnostic.
+`mapmap-core` is the heart of MapFlow, containing the fundamental data structures, state management, and business logic that drives the application.
+It is designed to be renderer-agnostic and UI-agnostic.
 
 ## Features
 

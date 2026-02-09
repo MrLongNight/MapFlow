@@ -12,7 +12,7 @@
 1. [Fokus & Ziele für Release 1.0](#fokus--ziele-für-release-10)
 2. [Feature-Status-Übersicht](#feature-status-übersicht)
 3. [Architektur und Crate-Übersicht](#architektur-und-crate-übersicht)
-4. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8)
+4. [Multi-PC-Architektur (Phase 8)](#multi-pc-architektur-phase-8--neu)
 5. [Arbeitspakete für @jules](#arbeitspakete-für-jules)
 6. [Task-Gruppen (Adaptiert für Rust)](#task-gruppen-adaptiert-für-rust)
 7. [Implementierungsdetails nach Crate](#implementierungsdetails-nach-crate)
@@ -569,7 +569,9 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
   * ✅ Gradient Mask Panel (Angle, Softness)
 
 * ✅ **Modulator** - Effekte und Modifier
-  * ✅ Effect Panel (24 Effekt-Typen: Blur, Sharpen, Invert, Threshold, Brightness, Contrast, Saturation, HueShift, Colorize, Wave, Spiral, Pinch, Mirror, Kaleidoscope, Pixelate, Halftone, EdgeDetect, Posterize, Glitch, RgbSplit, ChromaticAberration, VHS, FilmGrain)
+  * ✅ Effect Panel (24 Effekt-Typen: Blur, Sharpen, Invert, Threshold, Brightness, Contrast, Saturation, HueShift, Colorize,
+    Wave, Spiral, Pinch, Mirror, Kaleidoscope, Pixelate, Halftone, EdgeDetect, Posterize, Glitch, RgbSplit,
+    ChromaticAberration, VHS, FilmGrain)
   * ✅ BlendMode Panel (Normal, Add, Multiply, Screen, Overlay, Difference, Exclusion)
   * ✅ AudioReactive Panel (FFT-Band Selector, Sensitivity, Smoothing)
 

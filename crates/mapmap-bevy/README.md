@@ -1,10 +1,12 @@
 # MapFlow Bevy Integration
 
-The **MapFlow Bevy** crate provides integration with the [Bevy](https://bevyengine.org/) game engine, enabling high-performance 3D rendering, particle systems, and advanced visual effects within the MapFlow ecosystem.
+The **MapFlow Bevy** crate provides integration with the [Bevy](https://bevyengine.org/) game engine,
+enabling high-performance 3D rendering, particle systems, and advanced visual effects within the MapFlow ecosystem.
 
 ## Overview
 
-This crate serves as the bridge between MapFlow's core architecture and Bevy's ECS (Entity Component System) and rendering capabilities. It allows MapFlow to leverage Bevy's robust 3D features while maintaining its own application lifecycle.
+This crate serves as the bridge between MapFlow's core architecture and Bevy's ECS (Entity Component System) and rendering capabilities.
+It allows MapFlow to leverage Bevy's robust 3D features while maintaining its own application lifecycle.
 
 ## Features
 
