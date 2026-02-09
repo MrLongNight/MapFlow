@@ -1,8 +1,8 @@
 # Audio-Analyse Migration: audio-processor-analysis Integration
 
-> **Version:** 1.0  
-> **Stand:** 2025-12-29  
-> **Status:** GEPLANT  
+> **Version:** 1.0
+> **Stand:** 2025-12-29
+> **Status:** GEPLANT
 > **Priorität:** KRITISCH
 
 ---
