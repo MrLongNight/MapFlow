@@ -57,3 +57,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-07 - Undocumented PRs Discovery (Feb 6)
 **Erkenntnis:** Discovered multiple merged PRs from 2026-02-06 (#589, #588, #584, #585) missing from CHANGELOG.md. Also corrected FUTURE DATE in ROADMAP.md (was 2026-02-15).
 **Aktion:** Added missing entries to CHANGELOG.md and corrected ROADMAP.md Stand date to current date.
+
+## 2026-02-09 - Undocumented Commit fd10273
+**Erkenntnis:** Found undocumented commit fd10273 ("Refactor backup workflow with improved tag handling") missing from CHANGELOG.md.
+**Aktion:** Added entry to CHANGELOG.md and updated ROADMAP.md Stand date.
