@@ -38,7 +38,7 @@ crates/
 
 **Problem:** `main.rs` hat 1808 Zeilen mit sehr großen Funktionen:
 - `App.new()`: 274 Zeilen
-- `App.handle_event()`: 399 Zeilen  
+- `App.handle_event()`: 399 Zeilen
 - `App.render()`: 916 Zeilen
 
 **Empfehlung:**

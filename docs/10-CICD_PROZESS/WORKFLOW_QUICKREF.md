@@ -315,7 +315,7 @@ echo "$((SUCCESS * 100 / TOTAL))%"
 
 ---
 
-**Version:** 1.0  
+**Version:** 1.0
 **Last Updated:** 2024-12-04
 
 **💡 Tipp:** Dieses Dokument als Bookmark speichern für schnellen Zugriff!

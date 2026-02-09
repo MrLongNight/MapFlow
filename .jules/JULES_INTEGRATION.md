@@ -166,7 +166,7 @@ gh workflow run CI-03_create-issues.yml
 
 Dieser Workflow erstellt automatisch alle 8 Haupt-Development-Tasks basierend auf ROADMAP.md:
 - Multi-Window Rendering (Critical)
-- Frame Synchronization (Critical)  
+- Frame Synchronization (Critical)
 - Build System Fix (High)
 - Still Image Support (High)
 - Animated Format Support (Medium)
