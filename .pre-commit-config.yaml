@@ -72,7 +72,7 @@ repos:
   # MARKDOWN LINTING (only new files, not entire repo)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint-fix
         name: "Markdown: lint and fix"
@@ -87,7 +87,7 @@ repos:
   # SECURITY: SECRET DETECTION
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         name: "Security: detect secrets"
@@ -100,7 +100,7 @@ repos:
   # CARGO.TOML SORTING (local only)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/DevinR528/cargo-sort
-    rev: v1.0.9
+    rev: v2.0.2
     hooks:
       - id: cargo-sort
         name: "Rust: sort Cargo.toml"
