@@ -31,12 +31,27 @@ impl BevyRunner {
 
         let mut app = App::new();
 
-        // Minimal plugins for headless/embedded execution
-        app.add_plugins(MinimalPlugins);
-        app.add_plugins(bevy::asset::AssetPlugin::default());
-        app.add_plugins(bevy::scene::ScenePlugin);
-        app.add_plugins(bevy::render::RenderPlugin::default());
-        app.add_plugins(bevy::pbr::PbrPlugin::default()); // Includes StandardMaterial
+        // Use DefaultPlugins but disable windowing and input loop to avoid Winit panic
+        app.add_plugins(DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: None,
+                exit_condition: bevy::window::ExitCondition::DontExit,
+                close_when_requested: false,
+            })
+            .set(bevy::render::RenderPlugin {
+                render_creation: bevy::render::settings::RenderCreation::Automatic(
+                    bevy::render::settings::WgpuSettings {
+                        // Inherit backend preferences if possible, or default
+                        ..default()
+                    }
+                ),
+                synchronous_pipeline_compilation: false,
+                ..default()
+            })
+            // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
+            .disable::<bevy::winit::WinitPlugin>()
+        );
+
 
         // Register Extensions (Temporarily disabled due to version mismatch)
         // app.add_plugins(bevy_enoki::EnokiPlugin);
