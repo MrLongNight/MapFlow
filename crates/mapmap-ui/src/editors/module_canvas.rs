@@ -3651,36 +3651,10 @@ impl ModuleCanvas {
                 || (delete_response.has_focus()
                     && ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter)));
 
-            let mut delete_start_time: Option<f64> =
-                ui.data_mut(|d| d.get_temp(delete_id.with("start_time")));
+            let (triggered, _) = crate::widgets::check_hold_state(ui, delete_id, is_holding_delete);
 
-            if is_holding_delete {
-                let now = ui.input(|i| i.time);
-                if delete_start_time.is_none() {
-                    delete_start_time = Some(now);
-                    ui.data_mut(|d| d.insert_temp(delete_id.with("start_time"), delete_start_time));
-                }
-
-                let elapsed = now - delete_start_time.unwrap();
-                let hold_duration = 0.6; // seconds
-
-                // Store progress for visualization
-                let progress = (elapsed as f32 / hold_duration as f32).clamp(0.0, 1.0);
-                ui.data_mut(|d| d.insert_temp(delete_id.with("progress"), progress));
-
-                if progress >= 1.0 {
-                    delete_part_id = Some(*part_id);
-                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
-                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
-                } else {
-                    ui.ctx().request_repaint(); // Animate progress
-                }
-            } else {
-                // Reset if released early
-                if delete_start_time.is_some() {
-                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
-                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
-                }
+            if triggered {
+                delete_part_id = Some(*part_id);
             }
         }
 
