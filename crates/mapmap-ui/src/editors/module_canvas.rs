@@ -3622,7 +3622,8 @@ impl ModuleCanvas {
                                 }
                                 // Consume accumulator only if move succeeded
                                 if !alt_held {
-                                    self.dragging_part = Some((dragged_id, accumulator - consumed_accum));
+                                    self.dragging_part =
+                                        Some((dragged_id, accumulator - consumed_accum));
                                 }
                             }
                         }
@@ -5227,7 +5228,7 @@ impl ModuleCanvas {
                     TriggerType::Fixed { .. } => "Fixed Timer",
                 };
                 (
-                    colors::DARK_GREY, // Use standard dark grey background
+                    colors::DARK_GREY,               // Use standard dark grey background
                     Color32::from_rgb(130, 80, 180), // Trigger Accent (Purple)
                     "⚡",
                     name,
