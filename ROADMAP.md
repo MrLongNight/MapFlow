@@ -29,7 +29,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 * **Priorität:** 🔥 **CRITICAL**
 * **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
-* **Status:** Aktuell startet die App aufgrund eines größeren Refactorings nicht. Dies muss zuerst behoben werden.
+* **Status:** In Stabilisierung. Main Application Entry Point implementiert (2026-01-31). Laufende Bugfixes und Node-Stabilisierung.
 * **Maßnahme:** "Broken Nodes" reparieren. Experimentelle Features (wie NDI/Multi-PC) ggf. ausklammern oder verstecken, falls sie die Stabilität gefährden.
 
 ### B) Timeline Integration (V3)
