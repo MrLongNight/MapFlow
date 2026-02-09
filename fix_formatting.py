@@ -6,18 +6,18 @@ def fix_file(file_path):
         try:
             with open(file_path, 'rb') as f:
                 content = f.read()
-            
+
             # Convert CRLF (\r\n) to LF (\n)
             content = content.replace(b'\r\n', b'\n')
-            
+
             # Split into lines
             lines = content.split(b'\n')
             # Strip trailing whitespace
             fixed_lines = [line.rstrip() for line in lines]
-            
+
             # Rejoin with LF and ensure single newline at EOF
             new_content = b'\n'.join(fixed_lines).rstrip() + b'\n'
-            
+
             if content != new_content:
                 with open(file_path, 'wb') as f:
                     f.write(new_content)
