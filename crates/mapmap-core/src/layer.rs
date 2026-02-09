@@ -1244,7 +1244,10 @@ mod additional_tests {
         // Should return finite values (handle division by zero)
         let (scale, pos) = ResizeMode::Fill.calculate_transform(source_zero, target);
         assert!(scale.is_finite(), "Scale should be finite with zero source");
-        assert!(pos.is_finite(), "Position should be finite with zero source");
+        assert!(
+            pos.is_finite(),
+            "Position should be finite with zero source"
+        );
         assert_eq!(scale, Vec2::ZERO);
 
         let (scale, _) = ResizeMode::Fit.calculate_transform(source_zero, target);
