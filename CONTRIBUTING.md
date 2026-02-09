@@ -79,7 +79,7 @@ either as a [feature request](#feature-requests) or in the [issue tracker](https
 If in doubt, try and match the style and practices you find in the code you are working with.
 - Please write _descriptive commit messages_ for each of the commits that you make.
 They don't have to be in-depth, just a brief summary of what the commit contains.
-A page describing how well-written commit messages look like can be found [here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
+A page describing how well-written commit messages look like can be found [in this note about git commit messages](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
 
 ### Organising your code
 

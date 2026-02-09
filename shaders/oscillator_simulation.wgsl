@@ -51,9 +51,9 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 // Simple hash function for pseudo-random noise
 fn hash(p: vec2<f32>) -> f32 {
-    let p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
-    let p4 = dot(vec3<f32>(p3.x, p3.y, p3.z + 33.33), vec3<f32>(p3.y, p3.z, p3.x) + 33.33);
-    return fract((p4.x + p4.y) * p3.z);
+    var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+    p3 += dot(p3, vec3<f32>(p3.y, p3.z, p3.x) + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 // Compute natural frequency for a cell
