@@ -1,10 +1,10 @@
-name: "CICD-MainFlow: Job02 Backup"
+name: "CICD-MainFlow: Job02 Backup (GFS-Schema)"
 
 on:
   push:
     branches: [ "main" ]
   schedule:
-    - cron: '0 2 * * *' # Daily
+    - cron: '0 2 * * *' # Täglich um 02:00 Uhr
   workflow_dispatch:
 
 permissions:
@@ -12,14 +12,91 @@ permissions:
 
 jobs:
   backup:
-    name: Backup Main
+    name: GFS Rotation Backup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Create Backup Tag
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GFS Tag
+        id: create_tag
         run: |
-          DATE=$(date +%Y%m%d-%H%M%S)
-          TAG="backup/${DATE}"
+          DOM=$(date +%d)
+          DOW=$(date +%u) # 1=Montag, 7=Sonntag
+          DATE=$(date +%Y%m%d)
+          
+          # Bestimmung des GFS-Typs
+          if [ "$DOM" = "01" ]; then
+            TYPE="monthly"
+          elif [ "$DOW" = "7" ]; then
+            TYPE="weekly"
+          else
+            TYPE="daily"
+          fi
+          
+          TAG="backup/${TYPE}-${DATE}"
+          
+          # Prüfen, ob der Tag bereits existiert (falls mehrere Pushes am Tag erfolgen)
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            TAG="${TAG}-$(date +%H%M%S)"
+          fi
+          
           git tag $TAG
           git push origin $TAG
-          echo "Backed up to $TAG"
+          echo "Backup-Typ: $TYPE | Tag: $TAG"
+          echo "current_tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: GFS Retention Cleanup
+        run: |
+          echo "Starte Bereinigung nach GFS-Prinzip..."
+          git fetch --tags
+          
+          CURRENT_DATE=$(date +%s)
+          ONE_DAY=$((24 * 60 * 60))
+          
+          # Definition der Aufbewahrungsfristen (in Tagen)
+          RETENTION_DAILY=7
+          RETENTION_WEEKLY=30
+          RETENTION_MONTHLY=365
+          
+          ALL_BACKUPS=$(git tag -l "backup/*")
+          
+          for tag in $ALL_BACKUPS; do
+            # Extrahiere Typ und Datum aus dem Tag-Namen (z.B. backup/daily-20260209)
+            # Format: backup/TYPE-YYYYMMDD
+            TAG_NAME=$(echo $tag | cut -d'/' -f2)
+            TAG_TYPE=$(echo $TAG_NAME | cut -d'-' -f1)
+            TAG_DATE_STR=$(echo $TAG_NAME | cut -d'-' -f2)
+            
+            # Konvertiere Tag-Datum in Epoch-Sekunden
+            TAG_EPOCH=$(date -d "$TAG_DATE_STR" +%s 2>/dev/null || continue)
+            AGE_DAYS=$(( (CURRENT_DATE - TAG_EPOCH) / ONE_DAY ))
+            
+            DELETE=false
+            
+            case $TAG_TYPE in
+              daily)
+                if [ $AGE_DAYS -ge $RETENTION_DAILY ]; then DELETE=true; fi
+                ;;
+              weekly)
+                if [ $AGE_DAYS -ge $RETENTION_WEEKLY ]; then DELETE=true; fi
+                ;;
+              monthly)
+                if [ $AGE_DAYS -ge $RETENTION_MONTHLY ]; then DELETE=true; fi
+                ;;
+              *)
+                # Unbekannte Tags im backup/ Namespace nach 7 Tagen löschen
+                if [ $AGE_DAYS -ge 7 ]; then DELETE=true; fi
+                ;;
+            esac
+            
+            if [ "$DELETE" = true ]; then
+              echo "Lösche abgelaufenes $TAG_TYPE Backup: $tag (Alter: $AGE_DAYS Tage)"
+              git push --delete origin $tag
+              git tag -d $tag
+            else
+              echo "Behalte $TAG_TYPE Backup: $tag (Alter: $AGE_DAYS Tage)"
+            fi
+          done
