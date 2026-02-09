@@ -995,6 +995,26 @@ impl AudioTriggerOutputConfig {
     }
 }
 
+/// Camera Control Modes for Bevy
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum BevyCameraType {
+    /// Orbit around a target point
+    #[default]
+    Orbit,
+    /// Fly mode (free movement)
+    Fly,
+    /// Static fixed position
+    Static,
+}
+
+fn default_distance() -> f32 {
+    5.0
+}
+
+fn default_fov() -> f32 {
+    60.0
+}
+
 /// Types of media sources
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SourceType {
@@ -1134,6 +1154,26 @@ pub enum SourceType {
         position: [f32; 3],
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
+    },
+    /// Specialized Bevy Camera Control
+    BevyCamera {
+        /// Camera behavior mode
+        camera_type: BevyCameraType,
+        /// Position (Start pos for Fly, Center for Orbit, Fixed for Static)
+        #[serde(default)]
+        position: [f32; 3],
+        /// Target look-at point
+        #[serde(default)]
+        target: [f32; 3],
+        /// Distance from target (Orbit radius)
+        #[serde(default = "default_distance")]
+        distance: f32,
+        /// Movement speed (Orbit rotation speed or Fly speed)
+        #[serde(default = "default_speed")]
+        speed: f32,
+        /// Field of View in degrees
+        #[serde(default = "default_fov")]
+        fov: f32,
     },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]

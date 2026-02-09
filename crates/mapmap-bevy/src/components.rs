@@ -72,3 +72,23 @@ pub struct BevyParticles {
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;
+
+/// Camera Control Modes for Bevy (Mirrors Core)
+#[derive(Reflect, Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum CameraMode {
+    #[default]
+    Orbit,
+    Fly,
+    Static,
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BevyCameraNode {
+    pub mode: CameraMode,
+    pub position: Vec3,
+    pub target: Vec3,
+    pub distance: f32,
+    pub speed: f32,
+    pub fov: f32,
+}
