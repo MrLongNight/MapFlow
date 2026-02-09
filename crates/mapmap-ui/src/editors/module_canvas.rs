@@ -3717,7 +3717,7 @@ impl ModuleCanvas {
                 painter.rect_stroke(
                     highlight_rect,
                     0, // Sharp corners
-                    Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
+                    Stroke::new(2.0 * self.zoom, colors::CYAN_ACCENT),
                     egui::StrokeKind::Inside,
                 );
 
@@ -3731,7 +3731,7 @@ impl ModuleCanvas {
                     Vec2::splat(handle_size),
                 );
                 // Cyan resize handle, sharp
-                painter.rect_filled(handle_rect, 0, Color32::from_rgb(0, 229, 255));
+                painter.rect_filled(handle_rect, 0, colors::CYAN_ACCENT);
                 // Draw diagonal lines for resize indicator
                 painter.line_segment(
                     [
@@ -5341,7 +5341,7 @@ impl ModuleCanvas {
                 };
                 (
                     egui::Color32::from_rgb(60, 60, 50),
-                    egui::Color32::from_rgb(180, 140, 60),
+                    colors::WARN_COLOR,
                     "〰️",
                     name,
                 )
@@ -5360,7 +5360,7 @@ impl ModuleCanvas {
                 };
                 (
                     Color32::from_rgb(50, 70, 60),
-                    Color32::from_rgb(80, 180, 120),
+                    colors::MINT_ACCENT,
                     "📑",
                     name,
                 )
@@ -5375,7 +5375,7 @@ impl ModuleCanvas {
                 };
                 (
                     Color32::from_rgb(70, 50, 50),
-                    Color32::from_rgb(180, 80, 80),
+                    colors::ERROR_COLOR,
                     "📺",
                     name,
                 )
@@ -5418,10 +5418,10 @@ impl ModuleCanvas {
         match socket_type {
             ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220),
             ModuleSocketType::Media => Color32::from_rgb(100, 180, 220),
-            ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
-            ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
-            ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
-            ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
+            ModuleSocketType::Effect => colors::WARN_COLOR,
+            ModuleSocketType::Layer => colors::MINT_ACCENT,
+            ModuleSocketType::Output => colors::ERROR_COLOR,
+            ModuleSocketType::Link => colors::STROKE_GREY,
         }
     }
 
