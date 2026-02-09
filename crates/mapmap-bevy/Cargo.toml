@@ -9,8 +9,8 @@ repository.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-# Bevy 0.16 stabilization
-bevy = { version = "0.16", default-features = false, features = [
+# Bevy 0.15 stabilization (revert 0.16 due to plugin incompatibility)
+bevy = { version = "0.15", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_pbr",
     "bevy_gltf",
@@ -22,13 +22,13 @@ bevy = { version = "0.16", default-features = false, features = [
     "tonemapping_luts",
 ] }
 
-# Extensions compatible with Bevy 0.16
+# Extensions compatible with Bevy 0.15
 bevy_atmosphere = "0.12"
-# bevy_enoki = "0.5" # Disabled due to version mismatch (skips 0.16 support)
-bevy_mod_outline = "0.10.3"
-hexx = "0.21" # Version compatible with Bevy 0.16
+# bevy_enoki = "0.5" # Disabled due to version mismatch
+bevy_mod_outline = "0.9" # Downgraded for Bevy 0.15 compatibility
+hexx = "0.19" # Version compatible with Bevy 0.15
 
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts
+# wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid version mismatch

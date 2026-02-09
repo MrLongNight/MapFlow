@@ -7,7 +7,7 @@ pub fn audio_reaction_system(
     mut query: Query<(
         &AudioReactive,
         &mut Transform,
-        Option<&Handle<StandardMaterial>>,
+        Option<&MeshMaterial3d<StandardMaterial>>,
     )>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -42,7 +42,7 @@ pub fn audio_reaction_system(
             }
             AudioReactiveTarget::EmissiveIntensity => {
                 if let Some(handle) = mat_handle {
-                    if let Some(mat) = materials.get_mut(handle) {
+                    if let Some(mat) = materials.get_mut(&handle.0) {
                         // Assuming emissive is white, scale intensity.
                         // Simple MVP: Set emissive to white * value
                         mat.emissive = LinearRgba::gray(value);
@@ -85,14 +85,14 @@ pub fn setup_3d_scene(
 
     // Spawn Shared Engine Camera
     commands
-        .spawn(Camera3dBundle {
-            camera: Camera {
+        .spawn((
+            Camera3d::default(),
+            Camera {
                 target: bevy::render::camera::RenderTarget::Image(image_handle),
                 ..default()
             },
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
+            Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ))
         .insert(crate::components::SharedEngineCamera);
 
     // Spawn Light
@@ -141,12 +141,11 @@ pub fn hex_grid_system(
         commands.entity(entity).with_children(|parent| {
             for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, hex_config.rings) {
                 let pos = layout.hex_to_world_pos(hex);
-                parent.spawn(PbrBundle {
-                    mesh: mesh.clone(),
-                    material: material.clone(),
-                    transform: Transform::from_xyz(pos.x, 0.0, pos.y),
-                    ..default()
-                });
+                parent.spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    Transform::from_xyz(pos.x, 0.0, pos.y),
+                ));
             }
         });
     }
@@ -220,11 +219,6 @@ pub fn frame_readback_system(
                     rows_per_image: Some(height),
                 },
             },
-            // GpuImage stores size as Extent3d in .size (if it mimics Image) or we check docs.
-            // Bevy 0.14: GpuImage has .size which is uvec2 usually?
-            // Wait, previous error showed 'size' as available field.
-            // If it is UVec2, we need Extent3d.
-            // Typically GpuImage.size is UVec2.
             bevy::render::render_resource::Extent3d {
                 width,
                 height,

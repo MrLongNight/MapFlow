@@ -171,8 +171,7 @@ impl IconManager {
 
         // Create pixmap
         let pixmap_size = resvg::tiny_skia::IntSize::from_wh(size, size)?;
-        let mut pixmap =
-            resvg::tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())?;
+        let mut pixmap = resvg::tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())?;
 
         // Calculate scale to fit
         let svg_size = tree.size();

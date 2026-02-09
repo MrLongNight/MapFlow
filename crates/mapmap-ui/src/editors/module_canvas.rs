@@ -2008,7 +2008,11 @@ impl ModuleCanvas {
         let height = size.height().round() as u32;
 
         let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)?;
-        resvg::render(&tree, resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        resvg::render(
+            &tree,
+            resvg::tiny_skia::Transform::default(),
+            &mut pixmap.as_mut(),
+        );
 
         let mut pixels = Vec::with_capacity((width * height) as usize);
         for pixel in pixmap.pixels() {
