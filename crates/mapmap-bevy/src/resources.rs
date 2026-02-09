@@ -37,7 +37,7 @@ pub struct BevyRenderOutput {
 
 #[derive(Resource)]
 pub struct ReadbackBuffer {
-    pub buffer: bevy::render::render_resource::Buffer,
+    pub buffer: wgpu::Buffer,
     pub size: u64,
 }
 /// Maps MapFlow Node IDs to Bevy Entities

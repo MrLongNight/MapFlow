@@ -1,0 +1,85 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+    Checking mapmap-ui v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-ui)
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1471:49
+     |
+1471 | ...                   let layer_id = (module.parts.len() + 1) as u64;
+     |                                       ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1472:54
+     |
+1472 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Single {
+     |                                            ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1483:54
+     |
+1483 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Group {
+     |                                            ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1493:54
+     |
+1493 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::All { opacity: 1.0, blend_mode: None }));
+     |                                            ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1507:49
+     |
+1507 | ...                   let layer_id = (module.parts.len() + 1) as u64;
+     |                                       ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1508:54
+     |
+1508 | ...                   self.add_module_node(module, ModulePartType::Layer(LayerType::Single {
+     |                                            ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1557:54
+     |
+1557 | ...                   self.add_module_node(module, ModulePartType::Output(OutputType::Projector {
+     |                                            ^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `module` in this scope
+    --> crates\mapmap-ui\src\module_canvas.rs:1576:50
+     |
+1576 | ...                   self.add_module_node(module, ModulePartType::Modulizer(ModulizerType::AudioReactive { source: "Bass".to_string() }));
+     |                                            ^^^^^^ not found in this scope
+
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:813:57
+    |
+813 | ...                   let mut handle = |coord: &mut (f32, f32), name: &str| {
+    |                           ----^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:747:45
+    |
+747 | ...                   let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
+    |                           ----^^^^^^^^^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:853:79
+    |
+853 | ...                   LayerType::Group { name, opacity, blend_mode, mesh } => {
+    |                                                         ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:859:71
+    |
+859 | ...                   LayerType::All { opacity, blend_mode } => {
+    |                                                 ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `mapmap-ui` (lib) generated 4 warnings
+error: could not compile `mapmap-ui` (lib) due to 8 previous errors; 4 warnings emitted

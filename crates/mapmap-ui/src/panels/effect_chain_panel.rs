@@ -260,19 +260,6 @@ impl UIEffectChain {
         }
     }
 
-    pub fn move_effect(&mut self, id: u64, to_idx: usize) {
-        if let Some(from_idx) = self.effects.iter().position(|e| e.id == id) {
-            if from_idx == to_idx {
-                return;
-            }
-            if to_idx >= self.effects.len() {
-                return;
-            }
-            let effect = self.effects.remove(from_idx);
-            self.effects.insert(to_idx, effect);
-        }
-    }
-
     pub fn get_effect_mut(&mut self, id: u64) -> Option<&mut UIEffect> {
         self.effects.iter_mut().find(|e| e.id == id)
     }
@@ -291,8 +278,6 @@ pub enum EffectChainAction {
     MoveUp(u64),
     /// Move effect down in chain
     MoveDown(u64),
-    /// Move effect to specific index
-    MoveEffect(u64, usize),
     /// Toggle effect enabled state
     ToggleEnabled(u64),
     /// Set effect intensity
@@ -338,6 +323,7 @@ pub struct EffectChainPanel {
     presets: Vec<PresetEntry>,
 
     /// Currently dragging effect ID
+    #[allow(dead_code)]
     dragging_effect: Option<u64>,
 
     /// Save preset name input
@@ -529,8 +515,6 @@ impl EffectChainPanel {
                     let mut effect_to_remove = None;
                     let mut effect_to_move_up = None;
                     let mut effect_to_move_down = None;
-                    let mut drag_started_id = None;
-                    let mut swap_request = None; // (from_id, to_idx)
 
                     // Collect effect data to avoid borrow issues
                     let effect_count = self.chain.effects.len();
@@ -545,14 +529,11 @@ impl EffectChainPanel {
                         let enabled = effect.enabled;
                         let expanded = effect.expanded;
                         let intensity = effect.intensity;
-                        let is_dragging = self.dragging_effect == Some(effect_id);
 
                         let (
                             remove,
                             move_up,
                             move_down,
-                            dragged,
-                            card_rect,
                             new_enabled,
                             new_expanded,
                             new_intensity,
@@ -567,27 +548,9 @@ impl EffectChainPanel {
                             &effect.parameters,
                             is_first,
                             is_last,
-                            is_dragging,
                             locale,
                             icon_manager,
                         );
-
-                        if dragged {
-                            drag_started_id = Some(effect_id);
-                        }
-
-                        // Handle swap on hover
-                        if let Some(dragging_id) = self.dragging_effect {
-                            if dragging_id != effect_id
-                                && card_rect.contains(
-                                    ui.input(|i| i.pointer.interact_pos().unwrap_or_default()),
-                                )
-                            {
-                                // Only swap if we are hovering over the middle of the card to prevent flickering
-                                // or just simple containment for now
-                                swap_request = Some((dragging_id, idx));
-                            }
-                        }
 
                         // Apply changes
                         let effect = &mut self.chain.effects[idx];
@@ -621,15 +584,6 @@ impl EffectChainPanel {
                         }
                     }
 
-                    // Handle drag state updates
-                    if let Some(id) = drag_started_id {
-                        self.dragging_effect = Some(id);
-                    }
-
-                    if ui.input(|i| i.pointer.any_released()) {
-                        self.dragging_effect = None;
-                    }
-
                     // Apply pending operations
                     if let Some(id) = effect_to_remove {
                         self.chain.remove_effect(id);
@@ -642,17 +596,6 @@ impl EffectChainPanel {
                     if let Some(id) = effect_to_move_down {
                         self.chain.move_down(id);
                         self.actions.push(EffectChainAction::MoveDown(id));
-                    }
-                    if let Some((from_id, to_idx)) = swap_request {
-                        if let Some(from_idx) =
-                            self.chain.effects.iter().position(|e| e.id == from_id)
-                        {
-                            if from_idx != to_idx {
-                                self.chain.move_effect(from_id, to_idx);
-                                self.actions
-                                    .push(EffectChainAction::MoveEffect(from_id, to_idx));
-                            }
-                        }
                     }
                 }
             });
@@ -671,65 +614,28 @@ impl EffectChainPanel {
         parameters: &std::collections::HashMap<String, f32>,
         is_first: bool,
         is_last: bool,
-        is_dragging: bool,
         locale: &LocaleManager,
         icon_manager: Option<&IconManager>,
-    ) -> (
-        bool,
-        bool,
-        bool,
-        bool,
-        egui::Rect,
-        bool,
-        bool,
-        f32,
-        Vec<(String, f32)>,
-    ) {
+    ) -> (bool, bool, bool, bool, bool, f32, Vec<(String, f32)>) {
         let mut remove = false;
         let mut move_up = false;
         let mut move_down = false;
-        let mut dragged = false;
         let mut param_changes = Vec::new();
 
-        let frame_color = if is_dragging {
-            Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
-        } else if enabled {
+        let frame_color = if enabled {
             Color32::from_rgba_premultiplied(60, 80, 120, 200)
         } else {
             Color32::from_rgba_premultiplied(60, 60, 60, 150)
         };
 
-        // Add stroke if dragging
-        let stroke = if is_dragging {
-            egui::Stroke::new(2.0, Color32::WHITE)
-        } else {
-            egui::Stroke::NONE
-        };
-
-        let response = egui::Frame::NONE
+        egui::Frame::NONE
             .fill(frame_color)
-            .stroke(stroke)
             .corner_radius(8.0)
             .inner_margin(8.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
                 // Header row
                 ui.horizontal(|ui| {
-                    // Drag Handle
-                    let handle_resp = ui.add(
-                        egui::Button::new("⋮⋮")
-                            .frame(false)
-                            .sense(egui::Sense::drag()),
-                    );
-                    if handle_resp.drag_started() {
-                        dragged = true;
-                    }
-                    if handle_resp.dragged() {
-                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
-                    } else if handle_resp.hovered() {
-                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
-                    }
-
                     // Enable toggle
                     ui.checkbox(&mut enabled, "");
 
@@ -799,8 +705,6 @@ impl EffectChainPanel {
             remove,
             move_up,
             move_down,
-            dragged,
-            response.response.rect, // Return the rect of the whole card
             enabled,
             expanded,
             intensity,
@@ -1319,35 +1223,6 @@ mod tests {
         assert_eq!(chain.effects.len(), 2);
         assert_eq!(chain.effects[0].id, id1);
         assert_eq!(chain.effects[1].id, id2);
-    }
-
-    #[test]
-    fn test_ui_effect_chain_move_down() {
-        let mut chain = UIEffectChain::new();
-
-        let id1 = chain.add_effect(EffectType::Blur);
-        let id2 = chain.add_effect(EffectType::ColorAdjust);
-
-        chain.move_down(id1);
-
-        assert_eq!(chain.effects[0].id, id2);
-        assert_eq!(chain.effects[1].id, id1);
-    }
-
-    #[test]
-    fn test_ui_effect_chain_move_effect() {
-        let mut chain = UIEffectChain::new();
-
-        let id1 = chain.add_effect(EffectType::Blur); // 0
-        let id2 = chain.add_effect(EffectType::ColorAdjust); // 1
-        let id3 = chain.add_effect(EffectType::Glow); // 2
-
-        // Move id1 (0) to 2
-        chain.move_effect(id1, 2);
-        // Expect: [id2, id3, id1]
-        assert_eq!(chain.effects[0].id, id2);
-        assert_eq!(chain.effects[1].id, id3);
-        assert_eq!(chain.effects[2].id, id1);
     }
 
     #[test]

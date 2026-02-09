@@ -2001,18 +2001,14 @@ impl ModuleCanvas {
 
     fn load_svg_icon(path: &std::path::Path, ctx: &egui::Context) -> Option<TextureHandle> {
         let svg_data = std::fs::read(path).ok()?;
-        let options = resvg::usvg::Options::default();
-        let tree = resvg::usvg::Tree::from_data(&svg_data, &options).ok()?;
+        let options = usvg::Options::default();
+        let tree = usvg::Tree::from_data(&svg_data, &options).ok()?;
         let size = tree.size();
         let width = size.width().round() as u32;
         let height = size.height().round() as u32;
 
-        let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)?;
-        resvg::render(
-            &tree,
-            resvg::tiny_skia::Transform::default(),
-            &mut pixmap.as_mut(),
-        );
+        let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
+        resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
 
         let mut pixels = Vec::with_capacity((width * height) as usize);
         for pixel in pixmap.pixels() {
@@ -3527,103 +3523,42 @@ impl ModuleCanvas {
             }
 
             if part_response.dragged() {
-                if let Some((dragged_id, mut accumulator)) = self.dragging_part {
+                if let Some((dragged_id, _)) = self.dragging_part {
                     if dragged_id == *part_id {
-                        let raw_delta = part_response.drag_delta() / self.zoom;
-                        let alt_held = ui.input(|i| i.modifiers.alt);
-                        let grid_size = 20.0;
+                        let delta = part_response.drag_delta() / self.zoom;
 
-                        // Add delta to accumulator
-                        accumulator += raw_delta;
+                        // Calculate new position
+                        if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                            let new_x = part.position.0 + delta.x;
+                            let new_y = part.position.1 + delta.y;
+                            let part_height =
+                                80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
+                            let new_rect = Rect::from_min_size(
+                                Pos2::new(new_x, new_y),
+                                Vec2::new(200.0, part_height),
+                            );
 
-                        let effective_move;
-                        let consumed_accum;
+                            // Check collision with other parts
+                            let has_collision = module.parts.iter().any(|other| {
+                                if other.id == *part_id {
+                                    return false;
+                                }
+                                let other_height = 80.0
+                                    + (other.inputs.len().max(other.outputs.len()) as f32) * 20.0;
+                                let other_rect = Rect::from_min_size(
+                                    Pos2::new(other.position.0, other.position.1),
+                                    Vec2::new(200.0, other_height),
+                                );
+                                new_rect.intersects(other_rect)
+                            });
 
-                        if alt_held {
-                            // Precision Mode: Move freely
-                            effective_move = raw_delta;
-                            consumed_accum = Vec2::ZERO; // Don't use accumulator
-                            accumulator = Vec2::ZERO; // Reset
-                        } else {
-                            // Snap Mode: Only move in grid steps
-                            // Use trunc() to avoid oscillation at midpoint (rounding would jump back and forth)
-                            let step_x = (accumulator.x / grid_size).trunc() * grid_size;
-                            let step_y = (accumulator.y / grid_size).trunc() * grid_size;
-
-                            // Threshold: Only move if we accumulated at least one full grid step
-                            if step_x.abs() > 0.1 || step_y.abs() > 0.1 {
-                                effective_move = Vec2::new(step_x, step_y);
-                                consumed_accum = effective_move;
-                            } else {
-                                effective_move = Vec2::ZERO;
-                                consumed_accum = Vec2::ZERO;
-                            }
-                        }
-
-                        // Update state with new accumulator
-                        if !alt_held {
-                            self.dragging_part = Some((dragged_id, accumulator));
-                        }
-
-                        if effective_move != Vec2::ZERO {
-                            // Identify parts to move (Selection Group)
-                            let moving_parts: Vec<ModulePartId> =
-                                if self.selected_parts.contains(&dragged_id) {
-                                    self.selected_parts.clone()
-                                } else {
-                                    vec![dragged_id]
-                                };
-
-                            // Check collisions for the entire group
-                            let mut collision_detected = false;
-
-                            for moving_id in &moving_parts {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == *moving_id)
+                            // Only move if no collision
+                            if !has_collision {
+                                if let Some(part_mut) =
+                                    module.parts.iter_mut().find(|p| p.id == *part_id)
                                 {
-                                    let new_x = part.position.0 + effective_move.x;
-                                    let new_y = part.position.1 + effective_move.y;
-
-                                    let part_height = 80.0
-                                        + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
-                                    let new_rect = Rect::from_min_size(
-                                        Pos2::new(new_x, new_y),
-                                        Vec2::new(200.0, part_height),
-                                    );
-
-                                    // Check against any part NOT in the moving group
-                                    if module.parts.iter().any(|other| {
-                                        if moving_parts.contains(&other.id) {
-                                            return false;
-                                        }
-                                        let other_height = 80.0
-                                            + (other.inputs.len().max(other.outputs.len()) as f32)
-                                                * 20.0;
-                                        let other_rect = Rect::from_min_size(
-                                            Pos2::new(other.position.0, other.position.1),
-                                            Vec2::new(200.0, other_height),
-                                        );
-                                        new_rect.intersects(other_rect)
-                                    }) {
-                                        collision_detected = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // Apply move if safe
-                            if !collision_detected {
-                                for moving_id in &moving_parts {
-                                    if let Some(part) =
-                                        module.parts.iter_mut().find(|p| p.id == *moving_id)
-                                    {
-                                        part.position.0 += effective_move.x;
-                                        part.position.1 += effective_move.y;
-                                    }
-                                }
-                                // Consume accumulator only if move succeeded
-                                if !alt_held {
-                                    self.dragging_part =
-                                        Some((dragged_id, accumulator - consumed_accum));
+                                    part_mut.position.0 = new_x;
+                                    part_mut.position.1 = new_y;
                                 }
                             }
                         }

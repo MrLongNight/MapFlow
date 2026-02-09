@@ -1,0 +1,80 @@
+(
+    version: "1.0.0",
+    metadata: (
+        created_at: "2025-12-23T20:18:07.304118800Z",
+        modified_at: "2025-12-23T20:18:07.304121900Z",
+    ),
+    app_state: (
+        name: "New Project",
+        version: "0.1.0",
+        paint_manager: (
+            paints: [],
+            next_id: 1,
+        ),
+        mapping_manager: (
+            mappings: [],
+            next_id: 1,
+        ),
+        layer_manager: (
+            layers: [],
+            next_id: 1,
+            composition: (
+                name: "Untitled Composition",
+                description: "",
+                master_opacity: 1.0,
+                master_speed: 1.0,
+                size: (1920, 1080),
+                frame_rate: 60.0,
+            ),
+        ),
+        output_manager: (
+            outputs: [],
+            canvas_size: (1920, 1080),
+            next_id: 1,
+        ),
+        audio_config: (
+            sample_rate: 44100,
+            fft_size: 1024,
+            overlap: 0.5,
+            smoothing: 0.8,
+        ),
+        oscillator_config: (
+            simulation_resolution: Medium,
+            kernel_radius: 16.0,
+            rings: ((
+                distance: 0.2,
+                width: 0.1,
+                coupling: 1.0,
+            ), (
+                distance: 0.5,
+                width: 0.15,
+                coupling: -0.5,
+            ), (
+                distance: 0.8,
+                width: 0.2,
+                coupling: 0.3,
+            ), (
+                distance: 0.0,
+                width: 0.0,
+                coupling: 0.0,
+            )),
+            frequency_min: 0.5,
+            frequency_max: 2.0,
+            noise_amount: 0.1,
+            coordinate_mode: Cartesian,
+            phase_init_mode: Random,
+            distortion_amount: 0.5,
+            distortion_scale: 0.02,
+            distortion_speed: 1.0,
+            overlay_opacity: 0.0,
+            color_mode: Off,
+            enabled: true,
+        ),
+        settings: (
+            master_volume: 1.0,
+            dark_mode: true,
+            ui_scale: 1.0,
+            language: "en",
+        ),
+    ),
+)

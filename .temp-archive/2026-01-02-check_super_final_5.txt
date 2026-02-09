@@ -1,0 +1,27 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+   Compiling mapmap v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap)
+warning: fields `compositor`, `effect_chain_renderer`, `quad_renderer`, `composite_texture`, and `layer_ping_pong` are never read
+  --> crates\mapmap\src\main.rs:59:5
+   |
+48 | struct App {
+   |        --- fields in this struct
+...
+59 |     compositor: Compositor,
+   |     ^^^^^^^^^^
+60 |     /// The effect chain renderer.
+61 |     effect_chain_renderer: EffectChainRenderer,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+...
+67 |     quad_renderer: QuadRenderer,
+   |     ^^^^^^^^^^^^^
+68 |     /// Final composite texture before output processing.
+69 |     composite_texture: String,
+   |     ^^^^^^^^^^^^^^^^^
+70 |     /// Ping-pong textures for layer composition.
+71 |     layer_ping_pong: [String; 2],
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mapmap` (bin "MapFlow") generated 1 warning
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.15s

@@ -654,9 +654,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             EffectChainAction::MoveDown(id) => {
                 app.state.effect_chain_mut().move_down(id);
             }
-            EffectChainAction::MoveEffect(id, to_idx) => {
-                app.state.effect_chain_mut().move_effect(id, to_idx);
-            }
             EffectChainAction::ToggleEnabled(id) => {
                 if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
                     effect.enabled = !effect.enabled;

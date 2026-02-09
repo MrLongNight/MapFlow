@@ -29,7 +29,3 @@
 ## 2026-10-24 - Deep Cloning in UI Loops
 **Learning:** `module_sidebar.rs` was performing `modules.into_iter().cloned().collect()` inside the `show()` method (called every frame). This deep-cloned the entire module graph (nodes, connections, strings) 60 times a second, creating massive unnecessary allocation traffic.
 **Action:** When iterating collections for UI display, always prefer iterating references (`&T`) directly. If a closure requires ownership of a field (like `id: u64`), capture just that field, not the whole struct.
-
-## 2026-05-28 - HashMap Allocations in Loops
-**Learning:** Updating a `HashMap` inside a loop using `insert` with a cloned key (`String`) every frame causes massive unnecessary allocations if the key already exists.
-**Action:** Always check `get_mut` first to update in place without allocating a new key. Only `insert` (and clone the key) if the entry is missing.

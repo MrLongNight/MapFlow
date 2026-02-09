@@ -160,12 +160,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         app.backend.queue.submit(std::iter::once(encoder.finish()));
         window_context.window.pre_present_notify();
         surface_texture.present();
-
-        // For projector windows (output_id != 0), request continuous VSync-based rendering
-        // Main window (output_id == 0) is controlled by egui's repaint mechanism
-        if output_id != 0 {
-            window_context.window.request_redraw();
-        }
     }
 
     Ok(())

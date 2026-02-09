@@ -76,19 +76,13 @@ impl AudioReactiveController {
         let delta_time = (current_time - self.last_update_time) as f32;
         self.last_update_time = current_time;
 
-        let mut updated_values = HashMap::with_capacity(self.mappings.len());
+        let mut updated_values = HashMap::new();
 
         for (param_path, mapping) in &self.mappings {
             let previous = self.previous_values.get(param_path).copied().unwrap_or(0.0);
             let new_value = mapping.apply(audio, previous, delta_time);
 
-            // Optimization: Update existing value without cloning key if possible
-            if let Some(val) = self.previous_values.get_mut(param_path) {
-                *val = new_value;
-            } else {
-                self.previous_values.insert(param_path.clone(), new_value);
-            }
-
+            self.previous_values.insert(param_path.clone(), new_value);
             updated_values.insert(param_path.clone(), new_value);
         }
 
@@ -387,40 +381,30 @@ impl AudioReactiveAnimationSystem {
         animated: &HashMap<String, f32>,
         audio: &HashMap<String, f32>,
     ) -> HashMap<String, f32> {
-        // Pre-allocate assuming worst case (no overlap) to avoid resizing
-        let mut result = HashMap::with_capacity(animated.len() + audio.len());
+        let mut result = HashMap::new();
 
-        // Process all keys from animated map
-        for (param_path, &anim_value) in animated {
-            let audio_value = audio.get(param_path).copied().unwrap_or(0.0);
-            let blended = self.calculate_blended(anim_value, audio_value);
-            result.insert(param_path.clone(), blended);
-        }
+        // Collect all parameter paths
+        let mut all_params: std::collections::HashSet<String> = animated.keys().cloned().collect();
+        all_params.extend(audio.keys().cloned());
 
-        // Process keys from audio map that were NOT in animated map
-        for (param_path, &audio_value) in audio {
-            if !animated.contains_key(param_path) {
-                // anim_value is 0.0
-                let blended = self.calculate_blended(0.0, audio_value);
-                result.insert(param_path.clone(), blended);
-            }
+        for param_path in all_params {
+            let anim_value = animated.get(&param_path).copied().unwrap_or(0.0);
+            let audio_value = audio.get(&param_path).copied().unwrap_or(0.0);
+
+            let blended = match self.blend_mode {
+                AudioAnimationBlendMode::Replace => {
+                    anim_value * (1.0 - self.blend_factor) + audio_value * self.blend_factor
+                }
+                AudioAnimationBlendMode::Add => anim_value + audio_value * self.blend_factor,
+                AudioAnimationBlendMode::Multiply => {
+                    anim_value * (1.0 + (audio_value - 1.0) * self.blend_factor)
+                }
+            };
+
+            result.insert(param_path, blended);
         }
 
         result
-    }
-
-    /// Helper to calculate blended value based on mode
-    #[inline]
-    fn calculate_blended(&self, anim_value: f32, audio_value: f32) -> f32 {
-        match self.blend_mode {
-            AudioAnimationBlendMode::Replace => {
-                anim_value * (1.0 - self.blend_factor) + audio_value * self.blend_factor
-            }
-            AudioAnimationBlendMode::Add => anim_value + audio_value * self.blend_factor,
-            AudioAnimationBlendMode::Multiply => {
-                anim_value * (1.0 + (audio_value - 1.0) * self.blend_factor)
-            }
-        }
     }
 }
 

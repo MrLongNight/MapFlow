@@ -1,6 +1,5 @@
 //! Egui-based Layer Management Panel
 use crate::i18n::LocaleManager;
-use crate::theme::colors;
 use crate::widgets;
 use crate::UIAction;
 use egui::*;
@@ -119,26 +118,14 @@ impl LayerPanel {
                         let is_group = layer.is_group;
                         let collapsed = layer.collapsed;
 
-                        // Zebra striping for better list readability
                         let bg_color = if is_selected {
-                            colors::CYAN_ACCENT.linear_multiply(0.2)
-                        } else if idx % 2 == 1 {
-                            colors::DARKER_GREY.linear_multiply(0.5) // Subtle alternating background
+                            ui.visuals().selection.bg_fill.linear_multiply(0.2)
                         } else {
                             Color32::TRANSPARENT
                         };
 
-                        // Selection stroke or subtle border
-                        let stroke = if is_selected {
-                            Stroke::new(1.0, colors::CYAN_ACCENT)
-                        } else {
-                            Stroke::new(1.0, colors::STROKE_GREY.linear_multiply(0.5))
-                        };
-
                         egui::Frame::new()
                             .fill(bg_color)
-                            .stroke(stroke)
-                            .corner_radius(egui::CornerRadius::same(0)) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {

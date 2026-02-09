@@ -1,0 +1,18 @@
+   Compiling com v0.6.0
+   Compiling audio-processor-analysis v2.4.0
+   Compiling hassle-rs v0.11.0
+   Compiling mapmap-core v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-core)
+   Compiling wgpu-hal v0.19.5
+   Compiling wgpu-core v0.19.4
+   Compiling wgpu v0.19.4
+   Compiling mapmap-io v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-io)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1m 54s
+     Running tests\project_tests.rs (target\debug\deps\project_tests-2aaec961a100c194.exe)
+
+running 4 tests
+test test_load_missing_file ... ok
+test test_load_invalid_ron ... ok
+test test_project_ron_roundtrip ... ok
+test test_project_json_roundtrip ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s

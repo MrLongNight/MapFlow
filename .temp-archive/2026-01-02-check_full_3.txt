@@ -1,0 +1,97 @@
+    Checking mapmap-mcp v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-mcp)
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:813:57
+    |
+813 | ...                   let mut handle = |coord: &mut (f32, f32), name: &str| {
+    |                           ----^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates\mapmap-ui\src\module_canvas.rs:747:45
+    |
+747 | ...                   let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
+    |                           ----^^^^^^^^^^^^^^
+    |                           |
+    |                           help: remove this `mut`
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:853:79
+    |
+853 | ...                   LayerType::Group { name, opacity, blend_mode, mesh } => {
+    |                                                         ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `blend_mode`
+   --> crates\mapmap-ui\src\module_canvas.rs:859:71
+    |
+859 | ...                   LayerType::All { opacity, blend_mode } => {
+    |                                                 ^^^^^^^^^^ help: try ignoring the field: `blend_mode: _`
+
+warning: method `add_output_node` is never used
+    --> crates\mapmap-ui\src\module_canvas.rs:1163:8
+     |
+ 186 | impl ModuleCanvas {
+     | ----------------- method in this implementation
+...
+1163 |     fn add_output_node(&mut self, manager: &mut ModuleManager, output_type: OutputType) {
+     |        ^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mapmap-ui` (lib) generated 5 warnings (run `cargo fix --lib -p mapmap-ui` to apply 4 suggestions)
+    Checking mapmap v0.2.0 (C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap)
+error[E0308]: mismatched types
+    --> crates\mapmap\src\main.rs:1932:35
+     |
+1922 |                 let mut source_view = None;
+     |                                       ---- expected due to this value
+...
+1932 |                     source_view = self.dummy_view.as_ref();
+     |                                   ^^^^^^^^^^^^^^^^^^^^^^^^ expected `Option<TextureView>`, found `Option<&TextureView>`
+     |
+     = note: expected enum `Option<mapmap_render::TextureView>`
+                found enum `Option<&mapmap_render::TextureView>`
+help: try removing the method call
+     |
+1932 -                     source_view = self.dummy_view.as_ref();
+1932 +                     source_view = self.dummy_view;
+     |
+
+error[E0308]: mismatched types
+    --> crates\mapmap\src\main.rs:1959:78
+     |
+1959 |                         .get_buffers(&self.backend.device, op.layer_part_id, &op.mesh);
+     |                          ----------- arguments to this method are incorrect  ^^^^^^^^ expected `&Mesh`, found `&MeshType`
+     |
+     = note: expected reference `&mapmap_core::Mesh`
+                found reference `&mapmap_core::module::MeshType`
+note: method defined here
+    --> C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-render\src\mesh_buffer_cache.rs:39:12
+     |
+  39 |     pub fn get_buffers(
+     |            ^^^^^^^^^^^
+
+error[E0308]: mismatched types
+    --> crates\mapmap\src\main.rs:1971:91
+     |
+1971 |                     let texture_bind_group = self.mesh_renderer.create_texture_bind_group(src_view);
+     |                                                                 ------------------------- ^^^^^^^^ expected `&TextureView`, found `TextureView`
+     |                                                                 |
+     |                                                                 arguments to this method are incorrect
+     |
+note: method defined here
+    --> C:\Users\Vinyl\Desktop\VJMapper\VjMapper\crates\mapmap-render\src\mesh_renderer.rs:346:12
+     |
+ 346 |     pub fn create_texture_bind_group(&self, texture_view: &wgpu::TextureView) -> wgpu::BindGroup {
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+help: consider borrowing here
+     |
+1971 |                     let texture_bind_group = self.mesh_renderer.create_texture_bind_group(&src_view);
+     |                                                                                           +
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `mapmap` (bin "MapFlow") due to 3 previous errors

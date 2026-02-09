@@ -35,7 +35,7 @@ projection mapping.
 
 ## 📦 Installation
 
-See [INSTALLATION.md](docs/01-GETTING-STARTED/INSTALLATION.md).
+See [SETUP_GUIDE.md](docs/08-TECHNICAL/SETUP_GUIDE.md).
 
 ## 📄 License
 
