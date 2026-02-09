@@ -1,7 +1,7 @@
 ´9# MIDI User Guide - MapFlow
 
-> **Version:** 1.0  
-> **Stand:** 2025-12-27  
+> **Version:** 1.0
+> **Stand:** 2025-12-27
 > **Status:** MIDI-System vollständig verdrahtet
 
 ---
@@ -25,16 +25,16 @@ MapFlow unterstützt MIDI-Eingabe für:
 - **Controller Overlay** (visuelle Anzeige des Ecler NUO 4 Mixers)
 
 ### Was funktioniert:
-✅ MIDI-Ports werden automatisch erkannt  
-✅ Auto-Connect zum ersten verfügbaren Port  
-✅ Port-Auswahl in Settings  
-✅ MIDI Learn für Trigger-Nodes  
-✅ Controller Overlay zeigt MIDI-Werte in Echtzeit  
+✅ MIDI-Ports werden automatisch erkannt
+✅ Auto-Connect zum ersten verfügbaren Port
+✅ Port-Auswahl in Settings
+✅ MIDI Learn für Trigger-Nodes
+✅ Controller Overlay zeigt MIDI-Werte in Echtzeit
 
 ### Was noch fehlt:
-❌ Mixer-Foto als Hintergrund im Controller Overlay  
-❌ Asset-Bilder für Knobs/Fader (nur geometrische Formen aktuell)  
-❌ MIDI-zu-Layer/Effect Routing (direkte Parametersteuerung)  
+❌ Mixer-Foto als Hintergrund im Controller Overlay
+❌ Asset-Bilder für Knobs/Fader (nur geometrische Formen aktuell)
+❌ MIDI-zu-Layer/Effect Routing (direkte Parametersteuerung)
 
 ---
 

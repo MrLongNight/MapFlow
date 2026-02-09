@@ -1,8 +1,8 @@
 # 🌍 Internationalisierung (i18n) - Implementierungsplan
 
-> **Status:** Geplant  
-> **Priorität:** Niedrig (nach UI-Stabilisierung)  
-> **Geschätzter Aufwand:** 3-5 Entwicklertage  
+> **Status:** Geplant
+> **Priorität:** Niedrig (nach UI-Stabilisierung)
+> **Geschätzter Aufwand:** 3-5 Entwicklertage
 > **Ziel:** MapFlow soll mehrere Sprachen in der Benutzeroberfläche unterstützen
 
 ---
@@ -331,6 +331,6 @@ Die Texte aus den `. ts`-Dateien können manuell als Referenz für neue YAML-Üb
 
 ---
 
-*Erstellt: 2025-12-04*  
-*Autor: GitHub Copilot*  
+*Erstellt: 2025-12-04*
+*Autor: GitHub Copilot*
 *Review: @MrLongNight*

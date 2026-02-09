@@ -54,35 +54,35 @@ Alle Issues sind **vollständig ausgearbeitet** mit:
 - ✅ Richtige Labels (jules-task, Priority, Phase)
 
 ### Issue 1: Implement Multi-Window Rendering
-**Priority:** Critical | **Phase:** Phase 2  
+**Priority:** Critical | **Phase:** Phase 2
 Multi-Fenster-Rendering mit synchronisierter Ausgabe für Multi-Projektor-Setups.
 
 ### Issue 2: Implement Frame Synchronization
-**Priority:** Critical | **Phase:** Phase 2  
+**Priority:** Critical | **Phase:** Phase 2
 Frame-perfekte Synchronisation über alle Ausgabefenster.
 
 ### Issue 3: Fix Build System - FreeType Linker Errors
-**Priority:** High | **Phase:** Infrastructure  
+**Priority:** High | **Phase:** Infrastructure
 FreeType Linker-Fehler beheben, saubere Multi-Plattform-Builds.
 
 ### Issue 4: Complete Still Image Support (PNG, JPG, TIFF)
-**Priority:** High | **Phase:** Phase 1  
+**Priority:** High | **Phase:** Phase 1
 Umfassende Unterstützung für Standbildformate mit Caching.
 
 ### Issue 5: Add Animated Format Support (GIF, Image Sequences)
-**Priority:** Medium | **Phase:** Phase 1  
+**Priority:** Medium | **Phase:** Phase 1
 Unterstützung für animierte Formate und Bildsequenzen.
 
 ### Issue 6: Add ProRes Codec Support
-**Priority:** Medium | **Phase:** Phase 1  
+**Priority:** Medium | **Phase:** Phase 1
 Apple ProRes Codec-Varianten für professionelle Videos.
 
 ### Issue 7: Advanced Geometric Correction Tools
-**Priority:** Medium | **Phase:** Phase 2  
+**Priority:** Medium | **Phase:** Phase 2
 Keystone-Korrektur, Mesh-Warping, Bezier-Kurven für Projection Mapping.
 
 ### Issue 8: Implement Output Configuration Persistence
-**Priority:** Medium | **Phase:** Phase 2  
+**Priority:** Medium | **Phase:** Phase 2
 Projektdatei-Format zum Speichern/Laden von Konfigurationen.
 
 ## 🚀 Empfohlener Workflow
@@ -134,6 +134,6 @@ Das Script `create-jules-issues.sh` enthält:
 
 ---
 
-**Erstellt:** 2024-12-04  
-**Status:** Script fertig, ready to execute  
+**Erstellt:** 2024-12-04
+**Status:** Script fertig, ready to execute
 **Datei:** `create-jules-issues.sh` (im Repository root)

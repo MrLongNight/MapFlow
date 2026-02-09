@@ -275,6 +275,6 @@ gh workflow run CI-03_create-issues.yml
 
 ---
 
-**Version:** 1.0  
-**Letztes Update:** 2024-12-04  
+**Version:** 1.0
+**Letztes Update:** 2024-12-04
 **Status:** Produktionsbereit ✅
