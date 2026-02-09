@@ -127,7 +127,8 @@ impl WgpuBackend {
                         ..Default::default()
                     },
                     memory_hints: Default::default(),
-                    ..Default::default()
+                    experimental_features: Default::default(),
+                    trace: Default::default(),
                 },
             )
             .await
