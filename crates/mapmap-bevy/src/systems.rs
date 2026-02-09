@@ -87,7 +87,7 @@ pub fn setup_3d_scene(
     commands.spawn((
         Camera3d::default(),
         Camera {
-            target: bevy::render::camera::RenderTarget::Image(image_handle.into()),
+            target: bevy::render::camera::RenderTarget::Image(image_handle),
             ..default()
         },
         Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
