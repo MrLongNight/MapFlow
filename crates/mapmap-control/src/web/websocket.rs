@@ -312,10 +312,7 @@ mod tests {
         assert_eq!(proto_empty, None);
 
         let mut headers_other = HeaderMap::new();
-        headers_other.insert(
-            "Sec-WebSocket-Protocol",
-            "json, xml".parse().unwrap(),
-        );
+        headers_other.insert("Sec-WebSocket-Protocol", "json, xml".parse().unwrap());
         let proto_other = extract_auth_protocol(&headers_other);
         assert_eq!(proto_other, None);
     }
