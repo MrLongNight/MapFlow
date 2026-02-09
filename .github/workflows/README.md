@@ -466,6 +466,16 @@ For issues with workflows:
 
 **Status:** ✅ Alle Checks laufen automatisch bei jedem Pull Request
 
+> [!IMPORTANT]
+> **Troubleshooting:** Falls die Checks im GitHub UI nicht als "Expected" erscheinen:
+> 1. Stelle sicher, dass die Workflows im Repository aktiviert sind (Settings → Actions → General → "Allow all actions")
+> 2. Markiere die Jobs in den Branch Protection Rules als "required" (Settings → Branches → main → "Require status checks to pass before merging")
+> 3. Empfohlene required checks:
+>    - `Quality Gate (Format & Lint)`
+>    - `Security Scan`
+>    - `Build & Test (Linux)`
+>    - `Validation Success`
+
 ### CICD-DevFlow_Job02_AutoMerge.yml
 
 **Trigger:**
@@ -477,6 +487,23 @@ For issues with workflows:
 - Wartet auf erfolgreichen Abschluss aller Checks
 - Merged automatisch bei grünen Checks
 - Erstellt hilfreiche Fehler-Comments bei fehlgeschlagenen Checks
+
+---
+
+## 🔧 Branch Protection Rules Konfiguration
+
+Um die PR-Checks als "required" zu markieren, folge diesen Schritten:
+
+1. Gehe zu **Settings** → **Branches** → **main**
+2. Aktiviere "Require status checks to pass before merging"
+3. Wähle folgende Checks als required aus:
+   - `Quality Gate (Format & Lint)`
+   - `Security Scan`
+   - `Build & Test (Linux)`
+   - `Validation Success`
+4. Optional: Aktiviere "Require branches to be up to date before merging"
+
+Die Checks werden dann als "Expected" im PR angezeigt und müssen vor dem Merge grün sein.
 
 ---
 
