@@ -3622,7 +3622,8 @@ impl ModuleCanvas {
                                 }
                                 // Consume accumulator only if move succeeded
                                 if !alt_held {
-                                    self.dragging_part = Some((dragged_id, accumulator - consumed_accum));
+                                    self.dragging_part =
+                                        Some((dragged_id, accumulator - consumed_accum));
                                 }
                             }
                         }

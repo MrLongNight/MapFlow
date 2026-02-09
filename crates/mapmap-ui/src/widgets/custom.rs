@@ -405,11 +405,23 @@ pub fn hold_to_action_icon(
             );
         } else {
             // Fallback text if texture not found
-             painter.text(center, egui::Align2::CENTER_CENTER, "?", egui::FontId::proportional(size), color);
+            painter.text(
+                center,
+                egui::Align2::CENTER_CENTER,
+                "?",
+                egui::FontId::proportional(size),
+                color,
+            );
         }
     } else {
-         // Fallback if no manager
-         painter.text(center, egui::Align2::CENTER_CENTER, "!", egui::FontId::proportional(size), color);
+        // Fallback if no manager
+        painter.text(
+            center,
+            egui::Align2::CENTER_CENTER,
+            "!",
+            egui::FontId::proportional(size),
+            color,
+        );
     }
 
     // Draw Progress Ring
@@ -433,11 +445,13 @@ pub fn hold_to_action_icon(
         let start_angle = -TAU / 4.0; // Top
         let end_angle = start_angle + progress * TAU;
         let n_points = 32;
-        let points: Vec<Pos2> = (0..=n_points).map(|i| {
-             let t = i as f32 / n_points as f32;
-             let angle = lerp(start_angle..=end_angle, t);
-             center + Vec2::new(angle.cos(), angle.sin()) * radius
-        }).collect();
+        let points: Vec<Pos2> = (0..=n_points)
+            .map(|i| {
+                let t = i as f32 / n_points as f32;
+                let angle = lerp(start_angle..=end_angle, t);
+                center + Vec2::new(angle.cos(), angle.sin()) * radius
+            })
+            .collect();
 
         painter.add(egui::Shape::line(points, stroke));
     }
