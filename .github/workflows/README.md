@@ -433,6 +433,53 @@ For issues with workflows:
 
 ---
 
+## 🔄 Aktuelle CICD-DevFlow Workflows
+
+### CICD-DevFlow_Job01_Validation.yml
+
+**Trigger:**
+- Push zu `main` Branch
+- **Pull Requests zu `main` Branch** ✅ (automatisch)
+- Manual Dispatch
+
+**Jobs bei Pull Requests:**
+1. **Quality Gate** (Format & Lint)
+   - Formatierung prüfen (`cargo fmt`)
+   - Clippy Linting (`cargo clippy`)
+   - Dependency Sortierung (`cargo sort`)
+
+2. **Security Scan**
+   - Vulnerability Scan (`cargo audit`)
+   - Dependency Review (`cargo deny`)
+
+3. **Build & Test (Linux)**
+   - Release Build mit CI-Features
+   - Integration Tests (`cargo nextest`)
+
+4. **Build & Test (Windows)** - Optional
+   - Nur bei `test-windows` Label oder auf `main`
+   - Audio-only Build
+
+5. **Validation Success** - Final Gate
+   - Sammelt alle Check-Results
+   - Benachrichtigt bei Fehlern mit detaillierter Anleitung
+
+**Status:** ✅ Alle Checks laufen automatisch bei jedem Pull Request
+
+### CICD-DevFlow_Job02_AutoMerge.yml
+
+**Trigger:**
+- Pull Request Events (labeled, synchronize, opened, reopened)
+- Check Suite Completion
+- Workflow Run Completion
+
+**Funktion:**
+- Wartet auf erfolgreichen Abschluss aller Checks
+- Merged automatisch bei grünen Checks
+- Erstellt hilfreiche Fehler-Comments bei fehlgeschlagenen Checks
+
+---
+
 📋 New PR-Check Flow:
 ┌─────────────────────────────────────────────────────────┐
 │                    PR erstellt                          │
@@ -504,5 +551,5 @@ git commit -m "ci: implement validation and auto-merge with Jules feedback"
 # Push alles
 
 git push
-**Last Updated:** 2026-01-07 (Optimized for reduced Actions minutes)  
+**Last Updated:** 2026-02-09 (PR-Check Konfiguration validiert)  
 **Maintained By:** MapFlow Team
