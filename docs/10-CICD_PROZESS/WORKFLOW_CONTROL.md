@@ -53,7 +53,7 @@ Workflows können auch über die GitHub UI deaktiviert werden:
 3. Klicke auf **"..."** (drei Punkte) oben rechts
 4. Wähle **"Disable workflow"**
 
-**Vorteil:** Workflow läuft gar nicht mehr  
+**Vorteil:** Workflow läuft gar nicht mehr
 **Nachteil:** Muss manuell wieder aktiviert werden
 
 ### Methode 3: Branch Protection Rules anpassen
@@ -267,5 +267,5 @@ Bei Fragen oder Problemen:
 
 ---
 
-**Erstellt:** 2024-12-04  
+**Erstellt:** 2024-12-04
 **Version:** 1.0

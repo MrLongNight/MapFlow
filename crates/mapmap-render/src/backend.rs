@@ -117,20 +117,17 @@ impl WgpuBackend {
         );
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("MapFlow Device"),
-                    required_features: wgpu::Features::TIMESTAMP_QUERY
-                        | wgpu::Features::PUSH_CONSTANTS,
-                    required_limits: wgpu::Limits {
-                        max_push_constant_size: 128,
-                        ..Default::default()
-                    },
-                    memory_hints: Default::default(),
-                    experimental_features: Default::default(),
-                    trace: Default::default(),
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("MapFlow Device"),
+                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
+                required_limits: wgpu::Limits {
+                    max_push_constant_size: 128,
+                    ..Default::default()
                 },
-            )
+                memory_hints: Default::default(),
+                experimental_features: Default::default(),
+                trace: Default::default(),
+            })
             .await
             .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;
 

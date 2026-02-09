@@ -8,10 +8,10 @@ This document outlines the procedures and what to expect when contributing a bug
 **Please read** and **follow these guidelines** before submitting a bug report, feature request or pull request.
 It really helps us efficiently process your contribution!
 
-**Table Of Contents**  
-[Report a bug](#bug-reports)  
-[Request a feature](#feature-requests)  
-[Contribute code](#contributing-code)  
+**Table Of Contents**
+[Report a bug](#bug-reports)
+[Request a feature](#feature-requests)
+[Contribute code](#contributing-code)
 
 ## <a id='bug-reports'></a>Report a bug
 
@@ -29,7 +29,7 @@ We love hearing about bugs! It's how we get them fixed.
     A new issue does not generate more exposure/visibility than commenting on an existing one.
   - Make sure you give it a good title! A good title explains the core of the problem in about 5-10 words.
     (It's sometimes easier to write the title after you've written the description.)
-  - In the description, include the following details:  
+  - In the description, include the following details:
     1. **relevant system information** such as which MapFlow version, operating system, Rust version, and graphics card you are using,
     2. what you were doing when you noticed the bug,
     3. what you expected to happen,

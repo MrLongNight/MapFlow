@@ -1,13 +1,13 @@
 # AGENTS.md – Anweisungen für KI-Agenten
 
-Hallo Jules!  
+Hallo Jules!
 Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle KI-basierten Agenten und menschlichen Contributor:innen im MapFlow-Projekt.
 
 ---
 
 ## Projektübersicht
 
-- **MapFlow** ist ein vollständiger Rewrite einer bestehenden C++/Qt-Anwendung in Rust.  
+- **MapFlow** ist ein vollständiger Rewrite einer bestehenden C++/Qt-Anwendung in Rust.
 - Ziel ist eine hochperformante, speichersichere Projection-Mapping-Software.
 - Der gesamte Rust-Quellcode befindet sich im `crates/`-Verzeichnis, organisiert als Cargo-Workspace.
 
@@ -15,7 +15,7 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 
 ## Wichtigste Hauptanweisungen
 
-- **Kommuniziere mit dem Benutzer ausschließlich auf Deutsch.**  
+- **Kommuniziere mit dem Benutzer ausschließlich auf Deutsch.**
   Jede Planung, Frage und Antwort erfolgt auf Deutsch!
 
 ---
@@ -59,12 +59,12 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 
 ## Audio-Features und native Abhängigkeiten
 
-- **Ohne Audio (Standard):**  
+- **Ohne Audio (Standard):**
   ```bash
   cargo build
   cargo test
   ```
-- **Mit Audio-Unterstützung:**  
+- **Mit Audio-Unterstützung:**
   Nur unter Linux, mit ALSA:
   ```bash
   sudo apt-get update
@@ -74,7 +74,7 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
   ```
 - macOS und Windows: Audio ist derzeit nicht unterstützt.
 
-- **CI/CD:**  
+- **CI/CD:**
     - Linux: mit und ohne Audio (`--all-features` & `--no-default-features`)
     - macOS/Windows: ohne Audio
 
@@ -91,18 +91,18 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
      cargo clippy
      cargo test
      ```
-2. **Titel-Format:**  
+2. **Titel-Format:**
    Suffix: PR-$$_ ($$ Steht für die laufende PR-Nummer) Klarer, prägnanter Titel, der die Änderung(en) beschreibt.
 
-3. **Kommunikation:**  
+3. **Kommunikation:**
    - Für strategische Fragen: `@MrLongNight` im PR erwähnen.
    - Technisches Feedback/Review durch @GitHub Copilot via PR-Kommentar.
    - Fragen, Diskussion und Feedback erfolgen ausschließlich über PR-Kommentare (nicht privat!).
 
-4. **Changelog-Pflicht:**  
+4. **Changelog-Pflicht:**
    - Jede Änderung (egal ob Bugfix, Feature, Automatisierung) **muss** im `CHANGELOG.md` dokumentiert werden!
 
-5. **Issue-Verknüpfung:**  
+5. **Issue-Verknüpfung:**
    - Jeder PR referenziert ein existierendes Issue, ein Roadmap-Item oder eine relevante Task-Nummer.
 
 ---
@@ -111,7 +111,7 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 
 ### Hintergrund
 
-- **Das PR-Template befindet sich in:**  
+- **Das PR-Template befindet sich in:**
   `.github/PULL_REQUEST_TEMPLATE.md`
 - **Das PR-Template wird im GitHub Web-Interface Menschen automatisch angezeigt.**
 - **WICHTIG:** KI-Agenten (z.B. Jules), die PRs automatisiert via API anlegen, befüllen das Template **NICHT automatisch**, sondern nur nach expliziter Anweisung.
@@ -130,7 +130,7 @@ Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle 
 **Beispiel-Anweisung (für Jules bei jeder PR-Erstellung):**
 > „Nutze den Inhalt von `.github/PULL_REQUEST_TEMPLATE.md` als Struktur für die PR-Beschreibung. Ersetze jeden Abschnitt mit den Informationen der Änderung, geforderten Checkliste und referenzierten Issues. Es ist Pflicht, alle relevanten Felder auszufüllen und die Vorlage vollständig zu übernehmen!“
 
-**Hintergrund:**  
+**Hintergrund:**
 Dies sichert Nachvollziehbarkeit, vollständige Dokumentation und erfüllt alle Audit-, Transparenz- und Review-Anforderungen des Projekts.
 
 ---
