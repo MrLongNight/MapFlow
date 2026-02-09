@@ -279,11 +279,11 @@ impl ShaderGraphRendering for EffectChainRenderer {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: output_view,
                 resolve_target: None,
-                ops: wgpu::Operations {
+                depth_slice: None, ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store,
                 },
-                depth_slice: None,
+                
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,

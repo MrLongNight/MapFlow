@@ -23,10 +23,10 @@ bevy = { version = "0.16", default-features = false, features = [
 ] }
 
 # Extensions compatible with Bevy 0.16
-bevy_atmosphere = "0.12"
+bevy_atmosphere = "0.13"
 # bevy_enoki = "0.5" # Disabled due to version mismatch (skips 0.16 support)
 bevy_mod_outline = "0.10.3"
-hexx = "0.21" # Version compatible with Bevy 0.16
+hexx = "0.24" # Version compatible with Bevy 0.16
 
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }

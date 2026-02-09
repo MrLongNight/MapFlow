@@ -7,7 +7,7 @@ pub fn audio_reaction_system(
     mut query: Query<(
         &AudioReactive,
         &mut Transform,
-        Option<&Handle<StandardMaterial>>,
+        Option<&MeshMaterial3d<StandardMaterial>>,
     )>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -41,7 +41,7 @@ pub fn audio_reaction_system(
                 transform.translation.y = value;
             }
             AudioReactiveTarget::EmissiveIntensity => {
-                if let Some(handle) = mat_handle {
+                if let Some(MeshMaterial3d(handle)) = mat_handle {
                     if let Some(mat) = materials.get_mut(handle) {
                         // Assuming emissive is white, scale intensity.
                         // Simple MVP: Set emissive to white * value
@@ -85,14 +85,14 @@ pub fn setup_3d_scene(
 
     // Spawn Shared Engine Camera
     commands
-        .spawn(Camera3dBundle {
-            camera: Camera {
-                target: bevy::render::camera::RenderTarget::Image(image_handle),
+        .spawn((
+            Camera3d::default(),
+            Camera {
+                target: bevy::render::camera::RenderTarget::Image(image_handle.into()),
                 ..default()
             },
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
+            Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ))
         .insert(crate::components::SharedEngineCamera);
 
     // Spawn Light
@@ -116,10 +116,10 @@ pub fn hex_grid_system(
 ) {
     for (entity, hex_config) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn_descendants();
+        commands.entity(entity).despawn_related::<Children>();
 
         let layout = hexx::HexLayout {
-            hex_size: hexx::Vec2::splat(hex_config.radius),
+            scale: hexx::Vec2::splat(hex_config.radius),
             orientation: if hex_config.pointy_top {
                 hexx::HexOrientation::Pointy
             } else {
@@ -141,12 +141,11 @@ pub fn hex_grid_system(
         commands.entity(entity).with_children(|parent| {
             for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, hex_config.rings) {
                 let pos = layout.hex_to_world_pos(hex);
-                parent.spawn(PbrBundle {
-                    mesh: mesh.clone(),
-                    material: material.clone(),
-                    transform: Transform::from_xyz(pos.x, 0.0, pos.y),
-                    ..default()
-                });
+                parent.spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    Transform::from_xyz(pos.x, 0.0, pos.y),
+                ));
             }
         });
     }
@@ -178,8 +177,8 @@ pub fn frame_readback_system(
     if let Some(gpu_image) = gpu_images.get(&render_output.image_handle) {
         let texture = &gpu_image.texture;
 
-        let width = gpu_image.size.x;
-        let height = gpu_image.size.y;
+        let width = gpu_image.size.width;
+        let height = gpu_image.size.height;
         let block_size = gpu_image.texture_format.block_copy_size(None).unwrap();
 
         // bytes_per_row must be multiple of 256
@@ -206,25 +205,20 @@ pub fn frame_readback_system(
         );
 
         encoder.copy_texture_to_buffer(
-            bevy::render::render_resource::ImageCopyTexture {
+            bevy::render::render_resource::TexelCopyTextureInfo {
                 texture,
                 mip_level: 0,
                 origin: bevy::render::render_resource::Origin3d::ZERO,
                 aspect: bevy::render::render_resource::TextureAspect::All,
             },
-            bevy::render::render_resource::ImageCopyBuffer {
+            bevy::render::render_resource::TexelCopyBufferInfo {
                 buffer: &buffer,
-                layout: bevy::render::render_resource::ImageDataLayout {
+                layout: bevy::render::render_resource::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(bytes_per_row),
                     rows_per_image: Some(height),
                 },
             },
-            // GpuImage stores size as Extent3d in .size (if it mimics Image) or we check docs.
-            // Bevy 0.14: GpuImage has .size which is uvec2 usually?
-            // Wait, previous error showed 'size' as available field.
-            // If it is UVec2, we need Extent3d.
-            // Typically GpuImage.size is UVec2.
             bevy::render::render_resource::Extent3d {
                 width,
                 height,
