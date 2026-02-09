@@ -4,7 +4,7 @@ name: "CICD-DevFlow: Job01 Validation"
 # WICHTIG: Dieser Workflow läuft automatisch bei jedem Pull Request
 # zu 'main' und führt alle Quality Checks, Security Scans und Tests aus.
 # Die Checks sind als GitHub Status Checks sichtbar und können als
-# required checks in den Branch Protection Rules markiert werden.
+# required Checks in den Branch Protection Rules markiert werden.
 # ═══════════════════════════════════════════════════════════════
 
 on:
