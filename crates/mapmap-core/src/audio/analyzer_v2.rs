@@ -229,6 +229,14 @@ impl AudioAnalyzerV2 {
             return;
         }
 
+        // Sanitize input samples: replace NaN/Inf with 0.0
+        // This is critical to prevent contamination of analysis metrics
+        let sanitized_samples: Vec<f32> = samples
+            .iter()
+            .map(|&s| if s.is_finite() { s } else { 0.0 })
+            .collect();
+        let samples = &sanitized_samples;
+
         self.current_time = timestamp;
         self.total_samples += samples.len() as u64;
 
@@ -810,18 +818,28 @@ mod tests {
         // Feed NaN and Infinity
         let bad_samples = vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.0];
 
-        // Should not panic
+        // Should not panic, and results should be clean (0.0)
         analyzer.process_samples(&bad_samples, 0.0);
 
         let analysis = analyzer.get_latest_analysis();
-        // Results might be garbage (NaN), but process should survive
-        // Just ensuring it didn't crash is the main test here.
-        // Optionally, we could assert that NaNs propagate to output
-        assert!(
-            analysis.rms_volume.is_nan()
-                || analysis.rms_volume.is_infinite()
-                || analysis.rms_volume >= 0.0
-        );
+
+        // Assert that ALL analysis outputs are finite and valid
+        assert!(analysis.rms_volume.is_finite());
+        assert!(analysis.peak_volume.is_finite());
+
+        // Check that bad inputs were effectively treated as silence (0.0)
+        assert_eq!(analysis.rms_volume, 0.0);
+        assert_eq!(analysis.peak_volume, 0.0);
+
+        // Check FFT magnitudes are clean
+        for mag in analysis.fft_magnitudes {
+            assert!(mag.is_finite());
+        }
+
+        // Check band energies are clean
+        for band in analysis.band_energies {
+            assert!(band.is_finite());
+        }
     }
 
     #[test]
