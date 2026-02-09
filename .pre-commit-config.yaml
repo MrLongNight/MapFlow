@@ -81,7 +81,7 @@ repos:
           - '.markdownlint.json'
         files: \.(md|markdown)$
         # Exclude existing problematic files (legacy)
-        exclude: ^(CHANGELOG\.md|.*\.patch|\.jules/.*|\.agent/.*|docs/.*)$
+        exclude: ^(CHANGELOG\.md|ROADMAP\.md|.*\.patch|\.jules/.*|\.agent/.*|docs/.*)$
 
   # ═══════════════════════════════════════════════════════════════
   # SECURITY: SECRET DETECTION
