@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-07 06:00
+> **Stand:** 2026-02-08 06:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -66,6 +66,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Rename Project (2025-12-22)
   * ✅ Update UI Strings & Docs (2025-12-22)
   * ✅ Rename WiX Installer Config (2025-12-22)
+  * ✅ Restore cargo audit ignores in workflow (COMPLETED 2026-02-06)
 
 ### Core / Layer / Mapping System
 
@@ -210,6 +211,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   * ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   * ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
+  * ✅ Sicherheitsfix: DoS-Risiko im GIF-Decoder behoben (COMPLETED 2026-02-06)
   * ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
 
 * ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
@@ -340,6 +342,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ❌ ImGui entfernt (Phase 6 Complete - 2025-12-23)
   * ✅ egui-Integration (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
   * ✅ **Phase 6: Migration von ImGui zu egui ABGESCHLOSSEN**
+  * ✅ Responsive Layout für UI Panels (COMPLETED 2026-02-06)
   * ⬜ WGPU 0.27, Winit 0.30 & Egui 0.33 Upgrade ist jetzt vollständig abgeschlossen aber es gibt noch diverse Fehler die gerade gefixt werden
 
 * ✅ **UI-Module (Migriert zu egui)** (`mapmap-ui/src/`)
@@ -351,6 +354,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Undo-Redo (`undo_redo.rs`) – Command-Pattern
   * ✅ Asset-Manager (`asset_manager.rs`)
   * ✅ Theme (`theme.rs`)
+  * ✅ Sicherer 'Reset Clip' Button im Media Inspector (COMPLETED 2026-02-06)
   * ⬜ Es gibt diverse UI Elemente die keine Funktion haben und entfernt werden müssen
   * ⬜ Es gibt diverse UI Elemente die noch nicht wie gewünscht implementiert sind
 
