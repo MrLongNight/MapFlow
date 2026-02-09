@@ -101,6 +101,16 @@ impl ResizeMode {
     /// Calculate transform matrix for this resize mode
     /// Returns scale and translation to apply
     pub fn calculate_transform(&self, source_size: Vec2, target_size: Vec2) -> (Vec2, Vec2) {
+        // Prevent division by zero if source is empty
+        if source_size.x.abs() < f32::EPSILON || source_size.y.abs() < f32::EPSILON {
+            return (Vec2::ZERO, Vec2::ZERO);
+        }
+
+        // Prevent weird behavior if target is empty
+        if target_size.x.abs() < f32::EPSILON || target_size.y.abs() < f32::EPSILON {
+            return (Vec2::ZERO, Vec2::ZERO);
+        }
+
         match self {
             ResizeMode::Fill => {
                 // Scale to cover (largest dimension fills, crop other)
@@ -1272,5 +1282,33 @@ mod additional_tests {
 
         let layer = Layer::new(2, "Clamped High").with_opacity(1.5);
         assert_eq!(layer.opacity, 1.0);
+    }
+
+    #[test]
+    fn test_resize_mode_zero_size() {
+        // Source is zero
+        let source_zero = Vec2::ZERO;
+        let target = Vec2::new(100.0, 100.0);
+
+        // Should return finite values (handle division by zero)
+        let (scale, pos) = ResizeMode::Fill.calculate_transform(source_zero, target);
+        assert!(scale.is_finite(), "Scale should be finite with zero source");
+        assert!(
+            pos.is_finite(),
+            "Position should be finite with zero source"
+        );
+        assert_eq!(scale, Vec2::ZERO);
+
+        let (scale, _) = ResizeMode::Fit.calculate_transform(source_zero, target);
+        assert!(scale.is_finite());
+        assert_eq!(scale, Vec2::ZERO);
+
+        // Target is zero
+        let source = Vec2::new(100.0, 100.0);
+        let target_zero = Vec2::ZERO;
+
+        let (scale, _) = ResizeMode::Fill.calculate_transform(source, target_zero);
+        assert!(scale.is_finite());
+        assert_eq!(scale, Vec2::ZERO);
     }
 }

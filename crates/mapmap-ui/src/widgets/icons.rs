@@ -165,13 +165,13 @@ impl IconManager {
         // Read SVG file
         let svg_data = std::fs::read_to_string(path).ok()?;
 
-        // Parse SVG using resvg (usvg 0.45 API)
-        let opt = usvg::Options::default();
-        let tree = usvg::Tree::from_str(&svg_data, &opt).ok()?;
+        // Parse SVG using resvg
+        let opt = resvg::usvg::Options::default();
+        let tree = resvg::usvg::Tree::from_str(&svg_data, &opt).ok()?;
 
         // Create pixmap
-        let pixmap_size = tiny_skia::IntSize::from_wh(size, size)?;
-        let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())?;
+        let pixmap_size = resvg::tiny_skia::IntSize::from_wh(size, size)?;
+        let mut pixmap = resvg::tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())?;
 
         // Calculate scale to fit
         let svg_size = tree.size();
@@ -183,8 +183,8 @@ impl IconManager {
         let x_offset = (size as f32 - svg_size.width() * scale) / 2.0;
         let y_offset = (size as f32 - svg_size.height() * scale) / 2.0;
 
-        let transform =
-            tiny_skia::Transform::from_scale(scale, scale).post_translate(x_offset, y_offset);
+        let transform = resvg::tiny_skia::Transform::from_scale(scale, scale)
+            .post_translate(x_offset, y_offset);
 
         // Render SVG
         resvg::render(&tree, transform, &mut pixmap.as_mut());

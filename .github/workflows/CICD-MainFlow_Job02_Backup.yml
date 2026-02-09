@@ -1,10 +1,10 @@
-name: "CICD-MainFlow: Job02 Backup"
+name: "CICD-MainFlow: Job02 Backup (GFS-Schema)"
 
 on:
   push:
     branches: [ "main" ]
   schedule:
-    - cron: '0 2 * * *' # Daily
+    - cron: '0 2 * * *' # Täglich um 02:00 Uhr
   workflow_dispatch:
 
 permissions:
@@ -12,14 +12,101 @@ permissions:
 
 jobs:
   backup:
-    name: Backup Main
+    name: GFS Rotation Backup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Create Backup Tag
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GFS Tag
+        id: create_tag
         run: |
-          DATE=$(date +%Y%m%d-%H%M%S)
-          TAG="backup/${DATE}"
+          DOM=$(date +%d)
+          DOW=$(date +%u) # 1=Montag, 7=Sonntag
+          DATE=$(date +%Y%m%d)
+
+          # Bestimmung des GFS-Typs
+          if [ "$DOM" = "01" ]; then
+            TYPE="monthly"
+          elif [ "$DOW" = "7" ]; then
+            TYPE="weekly"
+          else
+            TYPE="daily"
+          fi
+
+          TAG="backup/${TYPE}-${DATE}"
+
+          # Kollisionsschutz (falls mehrere Pushes pro Tag)
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            TAG="${TAG}-$(date +%H%M%S)"
+          fi
+
           git tag $TAG
           git push origin $TAG
-          echo "Backed up to $TAG"
+          echo "Neues Backup erstellt: $TAG (Typ: $TYPE)"
+
+      - name: GFS Retention Cleanup (incl. Legacy)
+        run: |
+          echo "Starte GFS-Bereinigung..."
+          git fetch --tags
+
+          CURRENT_DATE=$(date +%s)
+          ONE_DAY=$((24 * 60 * 60))
+
+          # Aufbewahrungsfristen
+          RETENTION_DAILY=7
+          RETENTION_WEEKLY=30
+          RETENTION_MONTHLY=365
+          RETENTION_LEGACY=7
+
+          ALL_BACKUP_TAGS=$(git tag -l "backup/*")
+
+          for tag in $ALL_BACKUP_TAGS; do
+            TAG_NAME=$(echo $tag | cut -d'/' -f2)
+
+            # 1. Parsing: Prüfen ob neues Format (daily-..., weekly-..., monthly-...)
+            if [[ $TAG_NAME =~ ^(daily|weekly|monthly)- ]]; then
+              TAG_TYPE=$(echo $TAG_NAME | cut -d'-' -f1)
+              TAG_DATE_STR=$(echo $TAG_NAME | cut -d'-' -f2)
+            else
+              # 2. Parsing: Altes Format (Legacy) oder unbekannt
+              TAG_TYPE="legacy"
+              # Extrahiere YYYYMMDD vom Anfang des Namens
+              TAG_DATE_STR=$(echo $TAG_NAME | grep -oE '^[0-9]{8}')
+            fi
+
+            # Datum validieren und in Epoch konvertieren
+            TAG_EPOCH=$(date -d "$TAG_DATE_STR" +%s 2>/dev/null)
+            if [ -z "$TAG_EPOCH" ]; then
+              echo "Überspringe ungültigen Tag: $tag"
+              continue
+            fi
+
+            AGE_DAYS=$(( (CURRENT_DATE - TAG_EPOCH) / ONE_DAY ))
+            DELETE=false
+
+            case $TAG_TYPE in
+              daily)
+                [ $AGE_DAYS -ge $RETENTION_DAILY ] && DELETE=true
+                ;;
+              weekly)
+                [ $AGE_DAYS -ge $RETENTION_WEEKLY ] && DELETE=true
+                ;;
+              monthly)
+                [ $AGE_DAYS -ge $RETENTION_MONTHLY ] && DELETE=true
+                ;;
+              legacy)
+                [ $AGE_DAYS -ge $RETENTION_LEGACY ] && DELETE=true
+                ;;
+            esac
+
+            if [ "$DELETE" = true ]; then
+              echo "Lösche ($TAG_TYPE): $tag (Alter: $AGE_DAYS Tage)"
+              git push --delete origin $tag
+              git tag -d $tag
+            else
+              echo "Behalte ($TAG_TYPE): $tag (Alter: $AGE_DAYS Tage)"
+            fi
+          done
