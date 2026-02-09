@@ -68,6 +68,7 @@ check_*.txt
 /vcpkg_installed/
 
 # Temporary build/debug files
+/tmp/
 *.txt
 *.tmp
 *.temp

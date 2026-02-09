@@ -24,11 +24,11 @@ bevy = { version = "0.16", default-features = false, features = [
 
 # Extensions compatible with Bevy 0.16
 bevy_atmosphere = "0.12"
-bevy_enoki = "0.6" # Check version for 0.16, usually 0.6 is quite recent
+# bevy_enoki = "0.5" # Disabled due to version mismatch (skips 0.16 support)
 bevy_mod_outline = "0.10.3"
 hexx = "0.21" # Version compatible with Bevy 0.16
 
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-wgpu = { workspace = true }
+# wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts
