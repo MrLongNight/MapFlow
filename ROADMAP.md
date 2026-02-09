@@ -25,10 +25,10 @@
 
 Basierend auf dem aktuellen Status und den Projektzielen für die erste produktive Version (v1.0) sind dies die Prioritäten:
 
-1.  **Stabilität (Core):** Fehlerfreie FFT-Analyse, robustes Layer-Compositing und stabiles Window-Management.
-2.  **Performance:** Minimierung von Latenzen in der Audio-Trigger-Kette und GPU-optimiertes Rendering (WGPU).
-3.  **Benutzererfahrung:** Intuitive Steuerung via MIDI/OSC und ein konsistentes Cyber-Dark UI-Thema.
-4.  **Konnektivität:** Volle Unterstützung für NDI (In/Out) und Spout (Windows) für professionelle VJ-Workflows.
+1. **Stabilität (Core):** Fehlerfreie FFT-Analyse, robustes Layer-Compositing und stabiles Window-Management.
+2. **Performance:** Minimierung von Latenzen in der Audio-Trigger-Kette und GPU-optimiertes Rendering (WGPU).
+3. **Benutzererfahrung:** Intuitive Steuerung via MIDI/OSC und ein konsistentes Cyber-Dark UI-Thema.
+4. **Konnektivität:** Volle Unterstützung für NDI (In/Out) und Spout (Windows) für professionelle VJ-Workflows.
 
 ---
 
