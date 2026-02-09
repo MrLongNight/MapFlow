@@ -63,3 +63,11 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - DLLs (`avcodec-61.dll`, etc.) und `pr398.patch` nach `.temp-archive/2026-02-06-*` archiviert.
 - `tmp/fix_player.ps1` nach `.temp-archive/` verschoben und `tmp/` entfernt.
 - `copy_ffmpeg_dlls.bat` nach `scripts/` verschoben und Pfade korrigiert (`%~dp0..\`).
+
+## 2026-02-09 - Archive Maintenance
+
+**Erkenntnis:** Das Verzeichnis `.temp-archive/` enthielt mehrere getrackte Dateien vom 2026-01-02 (`.mapmap_autosave`, `check_*.txt`, `VERSION.txt`, `VjMapper.code-workspace`, `core_error.txt`, `test_results.txt`), die älter als 30 Tage waren und somit die Aufbewahrungsfrist überschritten hatten.
+
+**Aktion:**
+- Alle Dateien mit dem Präfix `2026-01-02-` aus `.temp-archive/` via `git rm` entfernt.
+- `.temp-archive/` ist nun leer und wurde entfernt.

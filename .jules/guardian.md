@@ -42,3 +42,7 @@
 ## 2024-10-27 - [Audio Pipeline Robustness]
 **Insight:** Testing threaded audio pipelines requires robust "polling atomics" (loops with `yield_now`) rather than fixed sleeps to avoid flakiness and ensure valid data flow verification (e.g. `rms_volume > 0`). Explicit struct initialization in tests prevents Clippy warnings and future-proofs against default value assumptions.
 **Action:** Implemented `audio_pipeline_tests.rs` with data flow, stats, and dropped sample verification. Refactored `trigger_system_tests.rs` to use explicit `AudioTriggerData` initialization.
+
+## 2024-05-27 - [Critical: Audio Sanitization & Zero-Size Transforms]
+**Erkenntnis:** `AudioAnalyzerV2` allowed NaN/Inf values to propagate, potentially destabilizing the entire audio pipeline. `ResizeMode` calculations for zero-sized layers could result in division by zero (Inf).
+**Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`. Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
