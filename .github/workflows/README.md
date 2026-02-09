@@ -438,11 +438,13 @@ For issues with workflows:
 ### CICD-DevFlow_Job01_Validation.yml
 
 **Trigger:**
+
 - Push zu `main` Branch
 - **Pull Requests zu `main` Branch** ✅ (automatisch)
 - Manual Dispatch
 
 **Jobs bei Pull Requests:**
+
 1. **Quality Gate** (Format & Lint)
    - Formatierung prüfen (`cargo fmt`)
    - Clippy Linting (`cargo clippy`)
@@ -468,6 +470,7 @@ For issues with workflows:
 
 > [!IMPORTANT]
 > **Troubleshooting:** Falls die Checks im GitHub UI nicht als "Expected" erscheinen:
+>
 > 1. Stelle sicher, dass die Workflows im Repository aktiviert sind (Settings → Actions → General → "Allow all actions")
 > 2. Markiere die Jobs in den Branch Protection Rules als "required" (Settings → Branches → main → "Require status checks to pass before merging")
 > 3. Empfohlene required checks:
@@ -479,11 +482,13 @@ For issues with workflows:
 ### CICD-DevFlow_Job02_AutoMerge.yml
 
 **Trigger:**
+
 - Pull Request Events (labeled, synchronize, opened, reopened)
 - Check Suite Completion
 - Workflow Run Completion
 
 **Funktion:**
+
 - Wartet auf erfolgreichen Abschluss aller Checks
 - Merged automatisch bei grünen Checks
 - Erstellt hilfreiche Fehler-Comments bei fehlgeschlagenen Checks
