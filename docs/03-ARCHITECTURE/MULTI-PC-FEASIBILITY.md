@@ -490,7 +490,7 @@ dicaffeine --source "MAPFLOW-MASTER" --fullscreen
 
 **Performance (Raspberry Pi 4):**
 - 720p60: ✅ Stabil
-- 1080p30: ✅ Stabil  
+- 1080p30: ✅ Stabil
 - 1080p60: ⚠️ Möglich mit Drops
 
 **Performance (Raspberry Pi 5):**
