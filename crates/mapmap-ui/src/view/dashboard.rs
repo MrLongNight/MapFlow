@@ -3,6 +3,8 @@
 //! Quick-access parameter controls for playback and audio analysis.
 
 use crate::i18n::LocaleManager;
+use crate::theme::colors;
+use crate::widgets::hold_to_action_icon;
 use egui::Ui;
 use mapmap_core::AudioAnalysis;
 use mapmap_media::{LoopMode, PlaybackCommand, PlaybackState};
@@ -140,13 +142,15 @@ impl Dashboard {
                     action = Some(DashboardAction::SendCommand(PlaybackCommand::Pause));
                 }
                 // Stop
-                if icon_btn(
-                    Some(crate::icons::AppIcon::ButtonStop),
-                    &locale.t("btn-stop"),
+                if hold_to_action_icon(
+                    ui,
+                    icon_manager,
+                    crate::icons::AppIcon::ButtonStop,
+                    icon_size,
+                    colors::ERROR_COLOR,
                 ) {
                     action = Some(DashboardAction::SendCommand(PlaybackCommand::Stop));
                 }
-
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(format!("{:?}", self.playback_state));
                 });
