@@ -2,6 +2,7 @@ use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::UIAction;
+use crate::widgets::{styled_slider, styled_drag_value};
 use egui::epaint::CubicBezierShape;
 use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
@@ -1055,7 +1056,8 @@ impl ModuleCanvas {
                                                 ui.add_space(8.0);
                                                 ui.horizontal(|ui| {
                                                     ui.label("Playback Speed:");
-                                                    let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).suffix("x").show_value(true));
+                                                    let speed_slider = styled_slider(ui, speed, 0.1..=4.0, 1.0);
+                                                    ui.label("x");
                                                     if speed_slider.changed() {
                                                         actions.push(UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetSpeed(*speed)));
                                                     }
@@ -6153,32 +6155,20 @@ impl ModuleCanvas {
                                 mapmap_core::module::TriggerMappingMode::Fixed => {
                                     ui.horizontal(|ui| {
                                         ui.label("Threshold:");
-                                        ui.add(egui::Slider::new(&mut config.threshold, 0.0..=1.0));
+                                        styled_slider(ui, &mut config.threshold, 0.0..=1.0, 0.5);
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Off:");
-                                        ui.add(egui::Slider::new(
-                                            &mut config.min_value,
-                                            -5.0..=5.0,
-                                        ));
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
                                         ui.label("On:");
-                                        ui.add(egui::Slider::new(
-                                            &mut config.max_value,
-                                            -5.0..=5.0,
-                                        ));
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                                 mapmap_core::module::TriggerMappingMode::RandomInRange => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.add(
-                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
-                                                .text("Min"),
-                                        );
-                                        ui.add(
-                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
-                                                .text("Max"),
-                                        );
+                                        ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                                 mapmap_core::module::TriggerMappingMode::Smoothed {
@@ -6187,36 +6177,26 @@ impl ModuleCanvas {
                                 } => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.add(
-                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
-                                                .text("Min"),
-                                        );
-                                        ui.add(
-                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
-                                                .text("Max"),
-                                        );
+                                        ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Attack:");
-                                        ui.add(egui::Slider::new(attack, 0.0..=2.0).text("s"));
+                                        styled_slider(ui, attack, 0.0..=2.0, 0.1);
+                                        ui.label("s");
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Release:");
-                                        ui.add(egui::Slider::new(release, 0.0..=2.0).text("s"));
+                                        styled_slider(ui, release, 0.0..=2.0, 0.1);
+                                        ui.label("s");
                                     });
                                 }
                                 _ => {
                                     // Direct
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.add(
-                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
-                                                .text("Min"),
-                                        );
-                                        ui.add(
-                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
-                                                .text("Max"),
-                                        );
+                                        ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                             }
@@ -6257,7 +6237,7 @@ impl ModuleCanvas {
                 .spacing([10.0, 8.0])
                 .show(ui, |ui| {
                     ui.label("Opacity:");
-                    ui.add(egui::Slider::new(opacity, 0.0..=1.0));
+                    styled_slider(ui, opacity, 0.0..=1.0, 1.0);
                     ui.end_row();
 
                     ui.label("Blend Mode:");
@@ -6342,19 +6322,19 @@ impl ModuleCanvas {
                 .spacing([10.0, 8.0])
                 .show(ui, |ui| {
                     ui.label("Brightness:");
-                    ui.add(egui::Slider::new(brightness, -1.0..=1.0));
+                    styled_slider(ui, brightness, -1.0..=1.0, 0.0);
                     ui.end_row();
 
                     ui.label("Contrast:");
-                    ui.add(egui::Slider::new(contrast, 0.0..=2.0));
+                    styled_slider(ui, contrast, 0.0..=2.0, 1.0);
                     ui.end_row();
 
                     ui.label("Saturation:");
-                    ui.add(egui::Slider::new(saturation, 0.0..=2.0));
+                    styled_slider(ui, saturation, 0.0..=2.0, 1.0);
                     ui.end_row();
 
                     ui.label("Hue Shift:");
-                    ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).suffix("°"));
+                    styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
                     ui.end_row();
                 });
         }) {
@@ -6372,20 +6352,20 @@ impl ModuleCanvas {
                 .show(ui, |ui| {
                     ui.label("Scale:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
-                        ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
+                        styled_drag_value(ui, scale_x, 0.01, 0.0..=10.0, 1.0, "X: ", "");
+                        styled_drag_value(ui, scale_y, 0.01, 0.0..=10.0, 1.0, "Y: ", "");
                     });
                     ui.end_row();
 
                     ui.label("Offset:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
-                        ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
+                        styled_drag_value(ui, offset_x, 1.0, -2000.0..=2000.0, 0.0, "X: ", "px");
+                        styled_drag_value(ui, offset_y, 1.0, -2000.0..=2000.0, 0.0, "Y: ", "px");
                     });
                     ui.end_row();
 
                     ui.label("Rotation:");
-                    ui.add(egui::Slider::new(rotation, -180.0..=180.0).suffix("°"));
+                    styled_slider(ui, rotation, -180.0..=180.0, 0.0);
                     ui.end_row();
 
                     ui.label("Mirror:");
