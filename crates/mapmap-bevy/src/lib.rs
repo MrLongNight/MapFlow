@@ -76,10 +76,8 @@ impl BevyRunner {
 
         // Register systems
         app.add_systems(Startup, setup_3d_scene);
-        app.add_systems(
-            Update,
-            (print_status_system, audio_reaction_system, hex_grid_system),
-        ); // Removed sync_atmosphere_system, particle_system
+        app.add_systems(Update, print_status_system);
+        app.add_systems(Update, (audio_reaction_system, hex_grid_system)); // Removed sync_atmosphere_system, particle_system
 
         // Add readback system to the RENDER APP, not the main app
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
