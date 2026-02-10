@@ -164,6 +164,24 @@ pub fn particle_system(
     }
 }
 
+pub fn camera_control_system(
+    camera_query: Query<&crate::components::BevyCamera>,
+    mut engine_camera_query: Query<&mut Transform, With<crate::components::SharedEngineCamera>>,
+) {
+    // We only support one main camera for now. Use the first one found.
+    // If multiple camera nodes exist, the order is indeterminate (or we could pick by ID).
+    if let Some(cam_config) = camera_query.iter().last() {
+        if let Some(mut transform) = engine_camera_query.iter_mut().next() {
+            transform.translation = Vec3::from(cam_config.position);
+            // Convert degrees to radians for rotation
+            let rx = cam_config.rotation[0].to_radians();
+            let ry = cam_config.rotation[1].to_radians();
+            let rz = cam_config.rotation[2].to_radians();
+            transform.rotation = Quat::from_euler(EulerRot::XYZ, rx, ry, rz);
+        }
+    }
+}
+
 use bevy::render::render_asset::RenderAssets;
 use bevy::render::texture::GpuImage;
 

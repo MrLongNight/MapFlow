@@ -1135,6 +1135,13 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Specialized Bevy Camera Control
+    BevyCamera {
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {

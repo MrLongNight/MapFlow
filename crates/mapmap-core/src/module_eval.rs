@@ -446,6 +446,11 @@ pub enum SourceCommand {
         /// Trigger value
         trigger_value: f32,
     },
+    /// Bevy Camera Control
+    BevyCamera {
+        /// Trigger value
+        trigger_value: f32,
+    },
     /// Philips Hue output (Trigger/Effect data)
     HueOutput {
         /// Brightness (0.0 - 1.0)
@@ -1366,6 +1371,7 @@ impl ModuleEvaluator {
             SourceType::BevyAtmosphere { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyHexGrid { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
+            SourceType::BevyCamera { .. } => Some(SourceCommand::BevyCamera { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }

@@ -901,6 +901,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::BevyCamera { .. } => "🎥 Camera",
                                             };
 
                                             let mut next_type = None;
@@ -915,6 +916,9 @@ impl ModuleCanvas {
                                                     ui.label("--- Shared ---");
                                                     if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "🔗 Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "🔗 Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
+
+                                                    ui.label("--- Bevy ---");
+                                                    if ui.selectable_label(matches!(source, SourceType::BevyCamera { .. }), "🎥 Camera").clicked() { next_type = Some("BevyCamera"); }
                                                 });
 
                                             if let Some(t) = next_type {
@@ -958,6 +962,10 @@ impl ModuleCanvas {
                                                         opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
                                                         scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
                                                         flip_horizontal: false, flip_vertical: false,
+                                                    },
+                                                    "BevyCamera" => SourceType::BevyCamera {
+                                                        position: [0.0, 2.0, 5.0],
+                                                        rotation: [0.0, 0.0, 0.0],
                                                     },
                                                     _ => source.clone(),
                                                 };
@@ -1347,6 +1355,32 @@ impl ModuleCanvas {
                                             }
                                             SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
+                                            }
+                                            SourceType::BevyCamera { position, rotation, .. } => {
+                                                ui.label("🎥 Camera Control");
+
+                                                crate::widgets::collapsing_header_with_reset(ui, "📐 Transform", true, |ui| {
+                                                    egui::Grid::new("camera_transform_grid")
+                                                        .num_columns(2)
+                                                        .spacing([10.0, 8.0])
+                                                        .show(ui, |ui| {
+                                                            ui.label("Position:");
+                                                            ui.horizontal(|ui| {
+                                                                ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
+                                                                ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
+                                                                ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
+                                                            });
+                                                            ui.end_row();
+
+                                                            ui.label("Rotation:");
+                                                            ui.horizontal(|ui| {
+                                                                ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("°"));
+                                                                ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("°"));
+                                                                ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("°"));
+                                                            });
+                                                            ui.end_row();
+                                                        });
+                                                });
                                             }
                                             SourceType::Bevy => {
                                                 ui.label("🎮 Bevy Scene");
@@ -5226,6 +5260,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "🎥",
+                "Camera",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5242,6 +5282,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::BevyCamera { .. } => "Camera",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5448,6 +5489,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::BevyCamera { .. } => "🎥 Camera".to_string(),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {

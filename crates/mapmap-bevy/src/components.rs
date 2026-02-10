@@ -69,6 +69,13 @@ pub struct BevyParticles {
     pub color_end: [f32; 4],
 }
 
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BevyCamera {
+    pub position: [f32; 3],
+    pub rotation: [f32; 3],
+}
+
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;

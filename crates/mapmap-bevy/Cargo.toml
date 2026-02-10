@@ -31,4 +31,4 @@ hexx = "0.24" # Version compatible with Bevy 0.16
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts
+wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts
