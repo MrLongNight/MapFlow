@@ -12,12 +12,15 @@ pub struct ParticlePlugin;
 impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ParticleEmitter>();
-        app.add_systems(Update, (
-            init_particle_system,
-            sync_emitter_params,
-            simulate_particles,
-            update_particle_mesh
-        ));
+        app.add_systems(
+            Update,
+            (
+                init_particle_system,
+                sync_emitter_params,
+                simulate_particles,
+                update_particle_mesh,
+            ),
+        );
     }
 }
 
@@ -52,20 +55,25 @@ struct Particle {
 pub struct ParticleSystem {
     particles: Vec<Particle>,
     mesh_handle: Handle<Mesh>,
-    material_handle: Handle<StandardMaterial>,
     capacity: usize,
 }
 
 fn init_particle_system(
     mut commands: Commands,
-    query: Query<(Entity, &crate::components::BevyParticles), Added<crate::components::BevyParticles>>,
+    query: Query<
+        (Entity, &crate::components::BevyParticles),
+        Added<crate::components::BevyParticles>,
+    >,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     for (entity, config) in query.iter() {
         // Create a dynamic mesh
         let capacity = 10000; // Max particles
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default()); // Dynamic usage
+        let mesh = Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::default(),
+        ); // Dynamic usage
 
         let mesh_handle = meshes.add(mesh);
 
@@ -89,7 +97,6 @@ fn init_particle_system(
             ParticleSystem {
                 particles: Vec::with_capacity(capacity),
                 mesh_handle: mesh_handle.clone(),
-                material_handle: material_handle.clone(),
                 capacity,
             },
             // Render components
@@ -100,7 +107,10 @@ fn init_particle_system(
 }
 
 fn sync_emitter_params(
-    mut query: Query<(&crate::components::BevyParticles, &mut ParticleEmitter), Changed<crate::components::BevyParticles>>,
+    mut query: Query<
+        (&crate::components::BevyParticles, &mut ParticleEmitter),
+        Changed<crate::components::BevyParticles>,
+    >,
 ) {
     for (config, mut emitter) in query.iter_mut() {
         emitter.rate = config.rate;
@@ -135,7 +145,9 @@ fn simulate_particles(
                 rng.random::<f32>() - 0.5,
                 rng.random::<f32>() - 0.5,
                 rng.random::<f32>() - 0.5,
-            ).normalize_or_zero() * emitter.speed;
+            )
+            .normalize_or_zero()
+                * emitter.speed;
 
             system.particles.push(Particle {
                 position: Vec3::ZERO,
@@ -177,7 +189,9 @@ fn update_particle_mesh(
     let cam_up = cam_transform.up();
 
     for system in query.iter() {
-        let Some(mesh) = meshes.get_mut(&system.mesh_handle) else { continue };
+        let Some(mesh) = meshes.get_mut(&system.mesh_handle) else {
+            continue;
+        };
 
         let count = system.particles.len();
         let mut positions = Vec::with_capacity(count * 4);
