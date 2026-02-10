@@ -46,13 +46,20 @@ criterion = "0.8"
 # Concurrency
 crossbeam-channel = "0.5"
 # Phase 6: egui migration
-egui = { version = "0.33", features = ["serde"] }
-egui-wgpu = "0.33"
-egui-winit = "0.33"
-egui_extras = { version = "0.33", features = ["image", "file", "svg"] }
+egui = { version = "0.30.0", features = ["serde"] }
+egui-wgpu = "0.30.0"
+egui-winit = "0.30.0"
+egui_extras = { version = "0.30.0", features = ["image", "file", "svg"] }
 
 # Media
-ffmpeg-next = { version = "7.1", default-features = false, features = ["codec", "format", "software-resampling", "software-scaling", "static", "build"] }
+ffmpeg-next = { version = "7.1", default-features = false, features = [
+    "codec",
+    "format",
+    "software-resampling",
+    "software-scaling",
+    "static",
+    "build",
+] }
 ffmpeg-sys-next = "=7.1.0"
 fluent = "0.17"
 fluent-langneg = "0.14"
@@ -109,7 +116,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unic-langid = "0.9"
 usvg = "0.46"
 # Core dependencies
-wgpu = "27.0.1"
+wgpu = "24.0.0"
 winit = { version = "0.30", features = ["x11", "wayland"] }
 winres = "0.1"
 
