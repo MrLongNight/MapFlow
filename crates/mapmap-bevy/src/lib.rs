@@ -65,7 +65,10 @@ impl BevyRunner {
 
         // Register systems
         app.add_systems(Update, print_status_system);
-        app.add_systems(Update, (audio_reaction_system, hex_grid_system, text_3d_system));
+        app.add_systems(
+            Update,
+            (audio_reaction_system, hex_grid_system, text_3d_system),
+        );
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
         render_app.add_systems(bevy::render::Render, frame_readback_system);
