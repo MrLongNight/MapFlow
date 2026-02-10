@@ -106,14 +106,8 @@ fn kernel_function(dist: f32) -> f32 {
 // Normalize phase difference to [-π, π]
 fn normalize_phase_diff(diff: f32) -> f32 {
     let PI = 3.14159265359;
-    var d = diff;
-    while (d > PI) {
-        d = d - 2.0 * PI;
-    }
-    while (d < -PI) {
-        d = d + 2.0 * PI;
-    }
-    return d;
+    let TWO_PI = 6.28318530718;
+    return diff - floor((diff + PI) / TWO_PI) * TWO_PI;
 }
 
 @fragment
