@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - 2026-02-10: fix(bevy): Resolve RenderDevice panic by sharing WGPU context and harmonizing versions to v24.0.5
-- 2026-02-09: ci: Validierung der GitHub Actions PR-Checks (Automatische Ausführung bestätigt)
 - 2026-02-09: perf(render): Optimize MeshRenderer uniform buffer writes to avoid redundancy
+- 2026-02-09: ci: Validierung der GitHub Actions PR-Checks (Automatische Ausführung bestätigt)
 - 2026-02-06: feat(ui): Add Safe 'Reset Clip' button to Media Inspector (#589)
 - 2026-02-06: fix(ui): Make UI panels responsive using ResponsiveLayout (#588)
 - 2026-02-06: fix(security): Fix DoS risk in GIF decoder (Sentinel) (#584)
@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-08: feat(ui): add Output Settings UI controls for Projector nodes
 - 2026-01-08: docs: Clarify Cue-System integration and Phase 7 playback modes
 - 2026-01-07: feat(ui): add separate toggle buttons for Controls and Preview panels
-- 2026-01-07: fix(control): default web server bind address to 127.0.0.1 for security (#207)
+- 2026-01-07: fix(control): default web server address to 127.0.0.1 for security (#207)
 - 2026-01-07: perf(ci): optimize GitHub Actions to reduce minutes usage
 - 2026-01-07: test(core): Guardian Module Tests - socket, mesh, CRUD (#205)
 - 2026-01-07: docs: Add crate READMEs (#196)
@@ -181,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Audio-Media-Pipeline Integration**: Audio-Stream vollständig in Media-Pipeline integriert
   - Konfigurierbare Sample-Rate (default: 44100 Hz)
   - Ring-Buffer für Audio-Analyse-Historie
-  - Audio-Position-Tracking für Frame-genaue Synchronisation
+  - Audio-Position-Tracking for Frame-genaue Synchronisation
   - Pipeline-Statistiken (Samples processed, frames analyzed, buffer fill level)
 - **Latenz-Kompensation**: Implementiert mit konfigurierbarem Delay (0-500ms)
   - Automatische Latenz-Schätzung basierend auf Buffer-Status
@@ -225,6 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-14: fix: resolve winit/wgpu dependency conflicts in mapmap-ui (#50)
 - 2025-12-12: Fix: `mapmap-control` doc test for OSC server updated to use `poll_packet` instead of non-existent `poll_event`.
 - 2025-12-12: Fix: `test_backend_creation` now handles headless CI environments by skipping gracefully when GPU backend unavailable.
+- 2025-12-12: Fix: `VideoEncoder` keyframe logic (first frame is now keyframe) and updated `test_video_encoder_keyframe` to match.
 - 2025-12-12: Fix: `VideoEncoder` keyframe logic (first frame is now keyframe) and updated `test_video_encoder_keyframe` to match.
 - 2025-12-12: Fix: MIDI unit tests (input/output) now accept initialization failures in CI environments where MIDI devices are unavailable.
 - 2025-12-12: Fix: Alle aktuellen dead_code-Stellen mit #[allow(dead_code)] und Erklärung markiert, so dass der Build wieder erfolgreich läuft. (Siehe auch DEAD_CODE_GUIDE.md)
