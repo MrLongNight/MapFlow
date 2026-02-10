@@ -1,8 +1,8 @@
 use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
+use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
-use crate::widgets::{styled_slider, styled_drag_value};
 use egui::epaint::CubicBezierShape;
 use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
@@ -6167,8 +6167,10 @@ impl ModuleCanvas {
                                 mapmap_core::module::TriggerMappingMode::RandomInRange => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
-                                        ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                        ui.label("Min:");
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:");
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                                 mapmap_core::module::TriggerMappingMode::Smoothed {
@@ -6177,8 +6179,10 @@ impl ModuleCanvas {
                                 } => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
-                                        ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                        ui.label("Min:");
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:");
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Attack:");
@@ -6195,8 +6199,10 @@ impl ModuleCanvas {
                                     // Direct
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
-                                        ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                        ui.label("Min:");
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:");
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                             }
