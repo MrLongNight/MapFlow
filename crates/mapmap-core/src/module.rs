@@ -627,6 +627,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::Bevy3DShape { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -800,6 +810,14 @@ pub enum HueNodeType {
 
 fn default_hue_color() -> [f32; 3] {
     [1.0, 1.0, 1.0]
+}
+
+fn default_vec3_one() -> [f32; 3] {
+    [1.0, 1.0, 1.0]
+}
+
+fn default_white_color() -> [f32; 4] {
+    [1.0, 1.0, 1.0, 1.0]
 }
 
 /// Types of logic triggers
@@ -1135,6 +1153,26 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Specialized Bevy 3D Shape
+    Bevy3DShape {
+        /// Shape type
+        shape: BevyShapeType,
+        /// Transform: Position [x, y, z]
+        #[serde(default)]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        #[serde(default)]
+        rotation: [f32; 3],
+        /// Transform: Scale [x, y, z]
+        #[serde(default = "default_vec3_one")]
+        scale: [f32; 3],
+        /// Color (RGBA)
+        #[serde(default = "default_white_color")]
+        color: [f32; 4],
+        /// Whether to use unlit material
+        #[serde(default)]
+        unlit: bool,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1398,6 +1436,24 @@ pub enum MaskType {
         /// Edge softness
         softness: f32,
     },
+}
+
+/// Bevy 3D Shape types
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum BevyShapeType {
+    /// Cube (Box)
+    #[default]
+    Cube,
+    /// Sphere
+    Sphere,
+    /// Capsule
+    Capsule,
+    /// Torus (Donut)
+    Torus,
+    /// Cylinder
+    Cylinder,
+    /// Plane
+    Plane,
 }
 
 /// Procedural mask shapes
