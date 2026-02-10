@@ -21,7 +21,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-wgpu = "27.0.1"
+wgpu = { workspace = true }
 winit = { workspace = true }
 
 [dev-dependencies]
