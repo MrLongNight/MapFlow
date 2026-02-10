@@ -1,6 +1,6 @@
 //! Icon loader module for Ultimate Colors icons
 //!
-//! Loads SVG icons from assets/icons and provides them as egui images.
+//! Loads SVG icons from resources/images/icons and provides them as egui images.
 
 use egui::{ColorImage, Context, TextureHandle};
 use std::collections::HashMap;

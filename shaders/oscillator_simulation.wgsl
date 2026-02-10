@@ -155,7 +155,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                 continue;
             }
 
-            let theta_j = textureSample(phase_texture, phase_sampler, neighbor_uv).r;
+            let theta_j = textureSampleLevel(phase_texture, phase_sampler, neighbor_uv, 0.0).r;
 
             // Kernel weight
             let K = kernel_function(dist);

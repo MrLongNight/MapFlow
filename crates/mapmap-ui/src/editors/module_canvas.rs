@@ -901,6 +901,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DModel { .. } => "🧊 3D Model",
                                             };
 
                                             let mut next_type = None;
@@ -1345,6 +1346,44 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
+                                            SourceType::Bevy3DModel {
+                                                path,
+                                                position,
+                                                rotation,
+                                                scale,
+                                            } => {
+                                                ui.label("🧊 Bevy 3D Model");
+                                                ui.separator();
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Path:");
+                                                    ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
+                                                    // TODO: Add file picker button if needed, but manual entry is fine for now
+                                                });
+
+                                                ui.add_space(4.0);
+                                                ui.label("Transform:");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Pos:");
+                                                    ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
+                                                    ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
+                                                    ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Rot:");
+                                                    ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("°"));
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Scale:");
+                                                    ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01).prefix("X: "));
+                                                    ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01).prefix("Y: "));
+                                                    ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01).prefix("Z: "));
+                                                });
+                                            }
                                             SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
                                             }
@@ -1353,7 +1392,6 @@ impl ModuleCanvas {
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
                                             }
-
                                         }
                                     }
                                     ModulePartType::Mask(mask) => {
@@ -3651,36 +3689,10 @@ impl ModuleCanvas {
                 || (delete_response.has_focus()
                     && ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter)));
 
-            let mut delete_start_time: Option<f64> =
-                ui.data_mut(|d| d.get_temp(delete_id.with("start_time")));
+            let (triggered, _) = crate::widgets::check_hold_state(ui, delete_id, is_holding_delete);
 
-            if is_holding_delete {
-                let now = ui.input(|i| i.time);
-                if delete_start_time.is_none() {
-                    delete_start_time = Some(now);
-                    ui.data_mut(|d| d.insert_temp(delete_id.with("start_time"), delete_start_time));
-                }
-
-                let elapsed = now - delete_start_time.unwrap();
-                let hold_duration = 0.6; // seconds
-
-                // Store progress for visualization
-                let progress = (elapsed as f32 / hold_duration as f32).clamp(0.0, 1.0);
-                ui.data_mut(|d| d.insert_temp(delete_id.with("progress"), progress));
-
-                if progress >= 1.0 {
-                    delete_part_id = Some(*part_id);
-                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
-                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
-                } else {
-                    ui.ctx().request_repaint(); // Animate progress
-                }
-            } else {
-                // Reset if released early
-                if delete_start_time.is_some() {
-                    ui.data_mut(|d| d.remove_temp::<Option<f64>>(delete_id.with("start_time")));
-                    ui.data_mut(|d| d.remove_temp::<f32>(delete_id.with("progress")));
-                }
+            if triggered {
+                delete_part_id = Some(*part_id);
             }
         }
 
@@ -5252,6 +5264,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::Bevy3DModel { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "🧊",
+                "3D Model",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5268,6 +5286,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::Bevy3DModel { .. } => "3D Model",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5474,6 +5493,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::Bevy3DModel { path, .. } => format!("🧊 {}", path),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
