@@ -13,7 +13,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Unique identifier for a Module
+/// Unique identifier for a Module.
 pub type ModuleId = u64;
 /// Unique identifier for a Part within a Module
 pub type ModulePartId = u64;
