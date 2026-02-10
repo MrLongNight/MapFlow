@@ -36,6 +36,21 @@ projection mapping.
 * `mapmap-media`: Media decoding and playback
 * `mapmap-control`: OSC/MIDI input handling
 * `mapmap-io`: NDI/Spout IO
+* `mapmap-ffi`: C/C++ Foreign Function Interface
+
+## 📚 Documentation
+
+Detailed documentation is available in the [`docs/`](docs/INDEX.md) directory:
+
+* [**User Guide**](docs/02-USER-GUIDE/): Features and controls.
+* [**Developer Guide**](docs/05-DEVELOPMENT/): Setup and guidelines.
+* [**Architecture**](docs/03-ARCHITECTURE/): System design.
+* [**Roadmap**](ROADMAP.md): Project status and plans.
+
+## ⚙️ CI/CD
+
+MapFlow uses a comprehensive GitHub Actions workflow for validation and release management.
+See [CI/CD Workflow](docs/10-CICD_PROZESS/README_CICD.md) for details.
 
 ## 📦 Installation
 
