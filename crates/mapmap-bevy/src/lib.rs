@@ -96,6 +96,32 @@ impl BevyRunner {
         self.app.update();
     }
 
+    /// Update a specific 3D model entity by part ID.
+    pub fn update_model(&mut self, part_id: u64, path: String, position: [f32; 3], rotation: [f32; 3], scale: [f32; 3]) {
+        self.app.world_mut().resource_scope(|world, mapping: Mut<BevyNodeMapping>| {
+            for ((_, pid), entity) in &mapping.entities {
+                if *pid == part_id {
+                    if let Some(mut model) = world.get_mut::<Bevy3DModel>(*entity) {
+                        model.path = path.clone();
+                        model.position = position;
+                        model.rotation = rotation;
+                        model.scale = scale;
+                    }
+                    if let Some(mut transform) = world.get_mut::<Transform>(*entity) {
+                         transform.translation = Vec3::from(position);
+                         transform.rotation = Quat::from_euler(
+                             EulerRot::XYZ,
+                             rotation[0].to_radians(),
+                             rotation[1].to_radians(),
+                             rotation[2].to_radians(),
+                         );
+                         transform.scale = Vec3::from(scale);
+                    }
+                }
+            }
+        });
+    }
+
     /// Get the rendered image data.
     /// Returns (data, width, height).
     pub fn get_image_data(&self) -> Option<(Vec<u8>, u32, u32)> {
