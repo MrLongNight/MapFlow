@@ -3,8 +3,8 @@ use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::UIAction;
 use egui::epaint::CubicBezierShape;
-use egui::Ui as EguiUi;
-use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
+
+use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
     module::{
@@ -4774,7 +4774,7 @@ impl ModuleCanvas {
         }
 
         // Draw shadow behind node
-        let shadow = egui::Shadow {
+        let _shadow = egui::Shadow {
             offset: [(2.0 * self.zoom) as i8, (4.0 * self.zoom) as i8],
             blur: (12.0 * self.zoom).min(255.0) as u8,
             spread: 0,
