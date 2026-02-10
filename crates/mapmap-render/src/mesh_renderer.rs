@@ -2,14 +2,16 @@
 //!
 //! Supports perspective-correct texture mapping for projection mapping applications.
 
-use crate::Result;
-use bytemuck::{Pod, Zeroable};
-use glam::Mat4;
-use mapmap_core::{Mesh, MeshVertex};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
+
+use bytemuck::{Pod, Zeroable};
+use glam::Mat4;
 use tracing::info;
 use wgpu::util::DeviceExt;
+
+use crate::Result;
+use mapmap_core::{Mesh, MeshVertex};
 
 /// Vertex format for mesh rendering (matches mesh_warp.wgsl)
 #[repr(C)]
@@ -31,7 +33,7 @@ impl GpuVertex {
 /// Uniforms for mesh rendering (matches mesh_warp.wgsl)
 /// Note: Must be padded to 128 bytes (multiple of 16) for std140 layout
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, PartialEq, Pod, Zeroable)]
 struct MeshUniforms {
     transform: [[f32; 4]; 4], // 64 bytes
     opacity: f32,             // 4 bytes
@@ -47,6 +49,7 @@ struct MeshUniforms {
 struct CachedMeshUniform {
     buffer: wgpu::Buffer,
     bind_group: Arc<wgpu::BindGroup>,
+    last_uniforms: Option<MeshUniforms>,
 }
 
 /// Mesh renderer for warped texture mapping
@@ -364,11 +367,12 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
+                last_uniforms: Some(uniforms),
             });
         }
 
         // Update current buffer
-        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let cache_entry = &mut self.uniform_cache[self.current_cache_index];
         let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
             * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
         let final_transform = normalization * transform;
@@ -385,7 +389,10 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        if cache_entry.last_uniforms.as_ref() != Some(&uniforms) {
+            queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+            cache_entry.last_uniforms = Some(uniforms);
+        }
 
         let bind_group = self.uniform_cache[self.current_cache_index]
             .bind_group
@@ -447,11 +454,12 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
+                last_uniforms: Some(uniforms),
             });
         }
 
         // Update current buffer
-        let cache_entry = &self.uniform_cache[self.current_cache_index];
+        let cache_entry = &mut self.uniform_cache[self.current_cache_index];
         let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
             * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
         let final_transform = normalization * transform;
@@ -468,7 +476,10 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        if cache_entry.last_uniforms.as_ref() != Some(&uniforms) {
+            queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
+            cache_entry.last_uniforms = Some(uniforms);
+        }
 
         let bind_group = self.uniform_cache[self.current_cache_index]
             .bind_group
