@@ -75,7 +75,7 @@ pub struct MidiAssignment {
 }
 
 /// Configuration for Philips Hue integration
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct HueConfig {
     /// Bridge IP address
     #[serde(default)]
@@ -92,6 +92,18 @@ pub struct HueConfig {
     /// Setup mode/auto-connect
     #[serde(default)]
     pub auto_connect: bool,
+}
+
+impl std::fmt::Debug for HueConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HueConfig")
+            .field("bridge_ip", &self.bridge_ip)
+            .field("username", &"***REDACTED***")
+            .field("client_key", &"***REDACTED***")
+            .field("entertainment_area", &self.entertainment_area)
+            .field("auto_connect", &self.auto_connect)
+            .finish()
+    }
 }
 
 /// User configuration settings
@@ -341,6 +353,22 @@ mod tests {
         let config = UserConfig::default();
         assert_eq!(config.language, "en");
         assert!(config.recent_files.is_empty());
+    }
+
+    #[test]
+    fn test_hue_config_debug_redaction() {
+        let config = HueConfig {
+            bridge_ip: "10.0.0.5".to_string(),
+            username: "secret_user".to_string(),
+            client_key: "secret_key".to_string(),
+            entertainment_area: "area_1".to_string(),
+            auto_connect: true,
+        };
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("***REDACTED***"));
+        assert!(!debug_str.contains("secret_user"));
+        assert!(!debug_str.contains("secret_key"));
+        assert!(debug_str.contains("10.0.0.5"));
     }
 
     #[test]
