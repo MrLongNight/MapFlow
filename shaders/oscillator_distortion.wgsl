@@ -82,14 +82,8 @@ fn hsv_to_rgb(hsv: vec3<f32>) -> vec3<f32> {
 // Normalize phase difference to [-π, π]
 fn normalize_phase_diff(diff: f32) -> f32 {
     let PI = 3.14159265359;
-    var d = diff;
-    while (d > PI) {
-        d = d - 2.0 * PI;
-    }
-    while (d < -PI) {
-        d = d + 2.0 * PI;
-    }
-    return d;
+    let TWO_PI = 6.28318530718;
+    return diff - floor((diff + PI) / TWO_PI) * TWO_PI;
 }
 
 @fragment
@@ -98,11 +92,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let pixel_size = 1.0 / params.sim_resolution;
 
     // Sample phase texture at current position
-    let theta_c = textureSample(phase_texture, phase_sampler, uv).r;
+    let theta_c = textureSampleLevel(phase_texture, phase_sampler, uv, 0.0).r;
 
     // Sample neighboring phases to compute gradient
-    let theta_dx = textureSample(phase_texture, phase_sampler, uv + vec2<f32>(pixel_size.x, 0.0)).r;
-    let theta_dy = textureSample(phase_texture, phase_sampler, uv + vec2<f32>(0.0, pixel_size.y)).r;
+    let theta_dx = textureSampleLevel(phase_texture, phase_sampler, uv + vec2<f32>(pixel_size.x, 0.0), 0.0).r;
+    let theta_dy = textureSampleLevel(phase_texture, phase_sampler, uv + vec2<f32>(0.0, pixel_size.y), 0.0).r;
 
     // Compute phase gradient (normalized to [-π, π])
     let grad_x = normalize_phase_diff(theta_dx - theta_c);

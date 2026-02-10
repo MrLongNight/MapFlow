@@ -25,6 +25,9 @@ pub enum ControlError {
     #[error("DMX error: {0}")]
     DmxError(String),
 
+    #[error("Link error: {0}")]
+    LinkError(String),
+
     #[error("HTTP error: {0}")]
     HttpError(String),
 
