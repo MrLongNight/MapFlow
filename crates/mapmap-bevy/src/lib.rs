@@ -12,7 +12,6 @@ use components::*;
 use resources::*;
 use systems::*;
 use tracing::info;
-use wgpu;
 
 /// Struct to manage the Bevy application instance.
 pub struct BevyRunner {
@@ -192,14 +191,6 @@ impl BevyRunner {
                 }
             });
     }
-}
-
-impl bevy::render::extract_resource::ExtractResource for BevyRenderOutput {
-    type Source = Self;
-    fn extract_resource(source: &Self::Source) -> Self {
-        source.clone()
-    }
-}
 }
 
 fn print_status_system() {
