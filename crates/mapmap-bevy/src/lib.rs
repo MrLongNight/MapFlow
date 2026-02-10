@@ -12,7 +12,6 @@ use components::*;
 use resources::*;
 use systems::*;
 use tracing::info;
-use wgpu;
 
 /// Struct to manage the Bevy application instance.
 pub struct BevyRunner {
@@ -29,14 +28,19 @@ impl BevyRunner {
     ) -> Self {
         info!("Initializing Bevy integration with shared WGPU context...");
 
-        use bevy::render::renderer::{WgpuWrapper, RenderInstance, RenderAdapter, RenderDevice, RenderQueue, RenderAdapterInfo};
+        use bevy::render::renderer::{
+            RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue,
+            WgpuWrapper,
+        };
 
         let mut app = App::new();
 
         // Wrap wgpu resources into Bevy's wrapper types (WgpuWrapper is required for Send/Sync)
         let info = adapter.get_info();
-        let render_instance = RenderInstance(std::sync::Arc::new(WgpuWrapper::new((*instance).clone())));
-        let render_adapter = RenderAdapter(std::sync::Arc::new(WgpuWrapper::new((*adapter).clone())));
+        let render_instance =
+            RenderInstance(std::sync::Arc::new(WgpuWrapper::new((*instance).clone())));
+        let render_adapter =
+            RenderAdapter(std::sync::Arc::new(WgpuWrapper::new((*adapter).clone())));
         let render_device = RenderDevice::from((*device).clone());
         let render_queue = RenderQueue(std::sync::Arc::new(WgpuWrapper::new((*queue).clone())));
         let adapter_info = RenderAdapterInfo(WgpuWrapper::new(info));
