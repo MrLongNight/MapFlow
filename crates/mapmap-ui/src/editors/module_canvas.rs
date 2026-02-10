@@ -901,6 +901,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DModel { .. } => "🧊 3D Model",
                                             };
 
                                             let mut next_type = None;
@@ -5292,6 +5293,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::Bevy3DModel { .. } => "3D Model",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
