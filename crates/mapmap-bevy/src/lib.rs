@@ -61,10 +61,11 @@ impl BevyRunner {
         app.register_type::<BevyAtmosphere>();
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
+        app.register_type::<Bevy3DText>();
 
         // Register systems
         app.add_systems(Update, print_status_system);
-        app.add_systems(Update, (audio_reaction_system, hex_grid_system));
+        app.add_systems(Update, (audio_reaction_system, hex_grid_system, text_3d_system));
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
         render_app.add_systems(bevy::render::Render, frame_readback_system);
@@ -94,11 +95,95 @@ impl BevyRunner {
     }
 
     /// Sync the MapFlow module graph state to Bevy entities.
-    pub fn apply_graph_state(&mut self, _module: &mapmap_core::module::MapFlowModule) {
-        let _mapping = self.app.world_mut().resource_mut::<BevyNodeMapping>();
-        // TODO: Implement full graph sync (spawn/despawn entities based on module parts)
-        // For now, this is a placeholder to satisfy the API.
-        // Real implementation would iterate module.parts, check mapping, spawn/update components.
+    pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
+        let world = self.app.world_mut();
+        let mut mapping_resource = world.resource_mut::<BevyNodeMapping>();
+        let mut mapping = std::mem::take(&mut mapping_resource.entities);
+        let mut active_ids = std::collections::HashSet::new();
+
+        for part in &module.parts {
+            if let mapmap_core::module::ModulePartType::Source(
+                mapmap_core::module::SourceType::Bevy3DText {
+                    text,
+                    font_size,
+                    color,
+                    position,
+                    rotation,
+                    alignment,
+                },
+            ) = &part.part_type
+            {
+                active_ids.insert(part.id);
+
+                let entity = if let Some(&e) = mapping.get(&part.id) {
+                    if world.get_entity(e).is_ok() {
+                        e
+                    } else {
+                        world.spawn_empty().id()
+                    }
+                } else {
+                    world.spawn_empty().id()
+                };
+                mapping.insert(part.id, entity);
+
+                let align_enum = match alignment.as_str() {
+                    "Center" => BevyTextAlignment::Center,
+                    "Right" => BevyTextAlignment::Right,
+                    "Justify" => BevyTextAlignment::Justify,
+                    _ => BevyTextAlignment::Left,
+                };
+
+                let rotation_quat = Quat::from_euler(
+                    EulerRot::XYZ,
+                    rotation[0].to_radians(),
+                    rotation[1].to_radians(),
+                    rotation[2].to_radians(),
+                );
+
+                let mut entity_mut = world.entity_mut(entity);
+                entity_mut.insert(Bevy3DText {
+                    text: text.clone(),
+                    font_size: *font_size,
+                    color: *color,
+                    alignment: align_enum,
+                });
+
+                entity_mut.insert(Transform {
+                    translation: Vec3::from(*position),
+                    rotation: rotation_quat,
+                    scale: Vec3::ONE,
+                });
+
+                if !entity_mut.contains::<GlobalTransform>() {
+                    entity_mut.insert((
+                        GlobalTransform::default(),
+                        Visibility::default(),
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
+                    ));
+                }
+            }
+        }
+
+        // Cleanup
+        mapping.retain(|id, entity| {
+            if !active_ids.contains(id) {
+                // Only despawn if it looks like one of ours (has Bevy3DText)
+                // This prevents deleting entities from other node types if we add them later to mapping
+                // For now, since only Bevy3DText uses mapping, it's safe-ish.
+                // Better: check if module still has this part ID?
+                // If the part is GONE from the module, we should remove it.
+                // If the part exists but is NOT a Bevy3DText, we should also remove it (type changed).
+                // active_ids contains exactly the IDs of current Bevy3DText parts.
+                // So if it's in mapping but not active_ids, it should be removed.
+                world.despawn(*entity);
+                false
+            } else {
+                true
+            }
+        });
+
+        world.resource_mut::<BevyNodeMapping>().entities = mapping;
     }
 }
 

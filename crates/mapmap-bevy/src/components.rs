@@ -90,3 +90,21 @@ pub struct Particle {
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;
+
+#[derive(Reflect, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BevyTextAlignment {
+    #[default]
+    Left,
+    Center,
+    Right,
+    Justify,
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Bevy3DText {
+    pub text: String,
+    pub font_size: f32,
+    pub color: [f32; 4],
+    pub alignment: BevyTextAlignment,
+}

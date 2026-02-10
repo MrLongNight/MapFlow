@@ -403,3 +403,35 @@ pub fn frame_readback_system(
         buffer.unmap();
     }
 }
+
+pub fn text_3d_system(
+    mut commands: Commands,
+    query: Query<(Entity, &crate::components::Bevy3DText), Changed<crate::components::Bevy3DText>>,
+) {
+    for (entity, config) in query.iter() {
+        let justify = match config.alignment {
+            crate::components::BevyTextAlignment::Left => JustifyText::Left,
+            crate::components::BevyTextAlignment::Center => JustifyText::Center,
+            crate::components::BevyTextAlignment::Right => JustifyText::Right,
+            crate::components::BevyTextAlignment::Justify => JustifyText::Justified,
+        };
+
+        let color = Color::srgba(
+            config.color[0],
+            config.color[1],
+            config.color[2],
+            config.color[3],
+        );
+
+        commands.entity(entity).insert((
+            Text2d::default(),
+            Text::new(config.text.clone()),
+            TextFont {
+                font_size: config.font_size,
+                ..default()
+            },
+            TextColor(color),
+            TextLayout::new_with_justify(justify),
+        ));
+    }
+}

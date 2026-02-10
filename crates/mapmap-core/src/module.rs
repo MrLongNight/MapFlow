@@ -1146,6 +1146,21 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Specialized Bevy 3D Text
+    Bevy3DText {
+        /// Text content
+        text: String,
+        /// Font size
+        font_size: f32,
+        /// Color (RGBA)
+        color: [f32; 4],
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Text alignment ("Left", "Center", "Right")
+        alignment: String,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
