@@ -58,3 +58,12 @@ MapFlow integrates seamlessly with your hardware and software setup.
 *   **Multiple Displays**: Drive multiple projectors or screens from a single computer.
 *   **Virtual Outputs**: Output to NDI or Spout for recording or streaming.
 *   **Color Calibration**: Fine-tune color and gamma for each output independently.
+
+## 8. Bevy Particles Node
+
+Generate dynamic particle systems directly within MapFlow.
+
+*   **Real-time Simulation**: GPU-accelerated particle simulation using Bevy engine.
+*   **Audio Reactive**: Control particle emission rate, speed, and color with audio triggers.
+*   **Customizable**: Adjust lifetime, speed, and color gradients to match your visual style.
+*   **Performance**: Lightweight implementation designed for high frame rates.

@@ -114,7 +114,7 @@ impl IconDemoPanel {
                 } else {
                     ui.colored_label(
                         egui::Color32::YELLOW,
-                        "⚠ Icons not loaded. Make sure resources/images/icons folder exists.",
+                        "⚠ Icons not loaded. Make sure assets/icons folder exists.",
                     );
 
                     ui.separator();
