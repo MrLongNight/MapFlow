@@ -38,7 +38,7 @@ impl BevyRunner {
         let render_instance = RenderInstance(std::sync::Arc::new(WgpuWrapper::new((*instance).clone())));
         let render_adapter = RenderAdapter(std::sync::Arc::new(WgpuWrapper::new((*adapter).clone())));
         let render_device = RenderDevice::from((*device).clone());
-        let render_queue = RenderQueue::from((*queue).clone());
+        let render_queue = RenderQueue(std::sync::Arc::new(WgpuWrapper::new((*queue).clone())));
         let adapter_info = RenderAdapterInfo(WgpuWrapper::new(info));
 
         // Use DefaultPlugins but with shared WGPU resources.
@@ -78,10 +78,11 @@ impl BevyRunner {
         app.register_type::<BevyAtmosphere>();
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
+        app.register_type::<Bevy3DModel>();
 
         // Register systems
         app.add_systems(Update, print_status_system);
-        app.add_systems(Update, (audio_reaction_system, hex_grid_system));
+        app.add_systems(Update, (audio_reaction_system, hex_grid_system, model_system));
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
         render_app.add_systems(bevy::render::Render, frame_readback_system);
@@ -100,6 +101,50 @@ impl BevyRunner {
 
         // Run schedule
         self.app.update();
+    }
+
+    /// Update or spawn a 3D Model entity based on MapFlow node state
+    pub fn update_model(
+        &mut self,
+        part_id: u64,
+        path: String,
+        position: [f32; 3],
+        rotation: [f32; 3],
+        scale: [f32; 3],
+    ) {
+        // Check if entity exists
+        let entity_opt = self.app.world().resource::<BevyNodeMapping>().entities.get(&part_id).copied();
+
+        let entity = if let Some(e) = entity_opt {
+            e
+        } else {
+            // Spawn new
+            let e = self.app.world_mut().spawn((
+                Bevy3DModel::default(),
+                Transform::default(),
+                Visibility::default(),
+            )).id();
+            // Store mapping
+            self.app.world_mut().resource_mut::<BevyNodeMapping>().entities.insert(part_id, e);
+            e
+        };
+
+        // Update Component Data
+        if let Some(mut model) = self.app.world_mut().get_mut::<Bevy3DModel>(entity) {
+            // Only assign if changed to avoid triggering Changed<Bevy3DModel> every frame
+            if model.path != path {
+                model.path = path;
+            }
+            if model.position != position {
+                model.position = position;
+            }
+            if model.rotation != rotation {
+                model.rotation = rotation;
+            }
+            if model.scale != scale {
+                model.scale = scale;
+            }
+        }
     }
 }
 
