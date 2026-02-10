@@ -106,7 +106,7 @@ where
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
