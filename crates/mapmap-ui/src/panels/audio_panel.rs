@@ -4,6 +4,7 @@
 //! beat detection, and RMS volume.
 
 use crate::i18n::LocaleManager;
+use crate::theme::colors;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 use std::time::Instant;
@@ -69,8 +70,6 @@ impl AudioPanel {
         if self.local_config.is_none() {
             self.local_config = Some(current_config.clone());
         }
-        // Sync local config if external config changed significantly (e.g. preset load)
-        // For simplicity, we trust local config while editing, assuming single user.
 
         let mut config = self.local_config.clone().unwrap_or(current_config.clone());
         let mut config_changed = false;
@@ -79,56 +78,70 @@ impl AudioPanel {
         ui.separator();
 
         // --- Audio Device Selector ---
-        let no_device_text = locale.t("audio-panel-no-device");
-        let selected_text = selected_audio_device.as_deref().unwrap_or(&no_device_text);
+        ui.group(|ui| {
+            ui.label(egui::RichText::new("🎤 Input Source").strong().color(colors::CYAN_ACCENT));
+            let no_device_text = locale.t("audio-panel-no-device");
+            let selected_text = selected_audio_device.as_deref().unwrap_or(&no_device_text);
 
-        egui::ComboBox::from_label(locale.t("audio-panel-device"))
-            .selected_text(selected_text)
-            .show_ui(ui, |ui| {
-                for device in audio_devices {
-                    if ui
-                        .selectable_value(selected_audio_device, Some(device.clone()), device)
-                        .changed()
-                    {
-                        if let Some(new_device) = selected_audio_device.clone() {
-                            action = Some(AudioPanelAction::DeviceChanged(new_device));
+            egui::ComboBox::from_id_salt("audio_device_combo")
+                .selected_text(selected_text)
+                .width(ui.available_width())
+                .show_ui(ui, |ui| {
+                    for device in audio_devices {
+                        if ui
+                            .selectable_value(selected_audio_device, Some(device.clone()), device)
+                            .changed()
+                        {
+                            if let Some(new_device) = selected_audio_device.clone() {
+                                action = Some(AudioPanelAction::DeviceChanged(new_device));
+                            }
                         }
                     }
-                }
-            });
+                });
+        });
 
-        ui.separator();
+        ui.add_space(8.0);
 
         // --- Settings (Gain, Gate, Smoothing) ---
         ui.collapsing(locale.t("audio-panel-settings"), |ui| {
-            if ui
-                .add(
-                    egui::Slider::new(&mut config.gain, 0.1..=10.0)
-                        .text("Gain")
-                        .logarithmic(true),
-                )
-                .changed()
-            {
-                config_changed = true;
-            }
+            egui::Grid::new("audio_settings_grid")
+                .num_columns(2)
+                .spacing([10.0, 8.0])
+                .striped(true)
+                .show(ui, |ui| {
+                    ui.label("Gain:");
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut config.gain, 0.1..=10.0)
+                                .logarithmic(true),
+                        )
+                        .changed()
+                    {
+                        config_changed = true;
+                    }
+                    ui.end_row();
 
-            if ui
-                .add(
-                    egui::Slider::new(&mut config.noise_gate, 0.0..=0.2)
-                        .text("Noise Gate")
-                        .clamping(egui::SliderClamping::Always),
-                )
-                .changed()
-            {
-                config_changed = true;
-            }
+                    ui.label("Noise Gate:");
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut config.noise_gate, 0.0..=0.2)
+                                .clamping(egui::SliderClamping::Always),
+                        )
+                        .changed()
+                    {
+                        config_changed = true;
+                    }
+                    ui.end_row();
 
-            if ui
-                .add(egui::Slider::new(&mut config.smoothing, 0.0..=0.99).text("Smoothing"))
-                .changed()
-            {
-                config_changed = true;
-            }
+                    ui.label("Smoothing:");
+                    if ui
+                        .add(egui::Slider::new(&mut config.smoothing, 0.0..=0.99))
+                        .changed()
+                    {
+                        config_changed = true;
+                    }
+                    ui.end_row();
+                });
         });
 
         if config_changed {
@@ -136,6 +149,7 @@ impl AudioPanel {
             action = Some(AudioPanelAction::ConfigChanged(config));
         }
 
+        ui.add_space(8.0);
         ui.separator();
 
         // --- View Mode Switcher ---
@@ -146,7 +160,7 @@ impl AudioPanel {
             ui.selectable_value(&mut self.view_mode, ViewMode::Waveform, "Waveform");
         });
 
-        ui.separator();
+        ui.add_space(4.0);
 
         // --- Visualizations ---
         if let Some(analysis) = analysis {
@@ -158,21 +172,32 @@ impl AudioPanel {
             // RMS Volume
             self.render_rms_volume(ui, locale, analysis.rms_volume);
 
+            ui.add_space(4.0);
+
             // Beat Indicator
             self.render_beat_indicator(ui, locale);
 
-            // Main Visualization
-            match self.view_mode {
-                ViewMode::Spectrum => self.render_spectrum(ui, analysis),
-                ViewMode::Bars => self.render_frequency_bands(ui, locale, &analysis.band_energies),
-                ViewMode::Waveform => self.render_waveform(ui, &analysis.waveform),
-            }
+            ui.add_space(4.0);
+
+            // Main Visualization Container
+            egui::Frame::default()
+                .fill(colors::DARKER_GREY)
+                .stroke(Stroke::new(1.0, colors::STROKE_GREY))
+                .inner_margin(4.0)
+                .show(ui, |ui| {
+                    match self.view_mode {
+                        ViewMode::Spectrum => self.render_spectrum(ui, analysis),
+                        ViewMode::Bars => self.render_frequency_bands(ui, locale, &analysis.band_energies),
+                        ViewMode::Waveform => self.render_waveform(ui, &analysis.waveform),
+                    }
+                });
+
         } else {
             ui.vertical_centered(|ui| {
                 ui.add_space(10.0);
                 if selected_audio_device.is_none() {
                     ui.label(locale.t("audio-panel-select-device"));
-                    ui.label(egui::RichText::new("⚠️").size(24.0));
+                    ui.label(egui::RichText::new("⚠️").size(24.0).color(colors::WARN_COLOR));
                 } else {
                     ui.label(locale.t("audio-panel-waiting-signal"));
                     ui.spinner();
@@ -187,27 +212,76 @@ impl AudioPanel {
     /// Renders the RMS volume progress bar
     fn render_rms_volume(&self, ui: &mut Ui, locale: &LocaleManager, rms_volume: f32) {
         let rms_text = format!("{}: {:.2}", locale.t("audio-panel-rms"), rms_volume);
-        ui.add(egui::ProgressBar::new(rms_volume).text(rms_text));
+
+        let (rect, _resp) = ui.allocate_at_least(Vec2::new(ui.available_width(), 18.0), Sense::hover());
+        let painter = ui.painter();
+
+        // Background
+        painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
+        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Inside);
+
+        // Bar
+        let width = rect.width() * rms_volume.clamp(0.0, 1.0);
+        let bar_rect = Rect::from_min_size(rect.min, Vec2::new(width, rect.height()));
+
+        // Dynamic Color: Green -> Yellow -> Red
+        let color = if rms_volume > 0.8 {
+            colors::ERROR_COLOR
+        } else if rms_volume > 0.5 {
+            colors::WARN_COLOR
+        } else {
+            colors::MINT_ACCENT
+        };
+
+        painter.rect_filled(bar_rect, 2.0, color);
+
+        // Text
+        painter.text(
+            rect.center(),
+            egui::Align2::CENTER_CENTER,
+            rms_text,
+            egui::FontId::proportional(12.0),
+            Color32::WHITE,
+        );
     }
 
     /// Renders the beat indicator
     fn render_beat_indicator(&self, ui: &mut Ui, locale: &LocaleManager) {
         ui.horizontal(|ui| {
             ui.label(locale.t("audio-panel-beat"));
-            let beat_pulse =
-                (1.0 - (self.last_beat_time.elapsed().as_secs_f32() * 5.0).min(1.0)).powi(2);
+
+            let elapsed = self.last_beat_time.elapsed().as_secs_f32();
+            let beat_pulse = (1.0 - (elapsed * 8.0).min(1.0)).powi(2);
 
             let (rect, _) = ui.allocate_exact_size(Vec2::splat(20.0), Sense::hover());
+
+            // Base circle
             ui.painter().circle_filled(
                 rect.center(),
-                10.0,
-                Color32::from_rgba_premultiplied(
-                    (beat_pulse * 255.0) as u8,
-                    (beat_pulse * 150.0) as u8,
-                    (beat_pulse * 50.0) as u8,
-                    255,
-                ),
+                8.0,
+                colors::DARKER_GREY,
             );
+             ui.painter().circle_stroke(
+                rect.center(),
+                8.0,
+                Stroke::new(1.0, colors::STROKE_GREY),
+            );
+
+            // Active pulse
+            if beat_pulse > 0.01 {
+                let color = colors::CYAN_ACCENT.linear_multiply(beat_pulse);
+                ui.painter().circle_filled(
+                    rect.center(),
+                    6.0 + (4.0 * beat_pulse), // Expand slightly
+                    color,
+                );
+                // Bloom/Glow
+                ui.painter().circle_stroke(
+                    rect.center(),
+                    8.0 + (4.0 * beat_pulse),
+                    Stroke::new(2.0 * beat_pulse, color.linear_multiply(0.5)),
+                );
+            }
         });
     }
 
@@ -216,7 +290,9 @@ impl AudioPanel {
         let (rect, _response) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), 150.0), Sense::hover());
         let painter = ui.painter();
-        painter.rect_filled(rect, 3.0, Color32::from_rgb(20, 20, 20));
+
+        // Background handled by container, but ensure fill just in case
+        painter.rect_filled(rect, 0.0, colors::DARKER_GREY);
 
         let fft_magnitudes = &analysis.fft_magnitudes;
         let num_bars = (fft_magnitudes.len() / 2).min(128); // Limit bars for performance
@@ -228,17 +304,24 @@ impl AudioPanel {
                     .max(1.0);
                 let x = rect.min.x + i as f32 * bar_width;
                 let y = rect.max.y;
-                let color = Color32::from_rgb(
-                    (magnitude * 200.0) as u8,
-                    255 - (magnitude * 200.0) as u8,
-                    50,
-                );
+
+                // Color Gradient based on height/magnitude
+                // Low: Cyan, High: Red/Orange
+                let t = magnitude.clamp(0.0, 1.0);
+                let color = if t > 0.7 {
+                    colors::WARN_COLOR
+                } else if t > 0.4 {
+                    colors::CYAN_ACCENT
+                } else {
+                    colors::MINT_ACCENT.linear_multiply(0.8)
+                };
+
                 painter.rect_filled(
                     Rect::from_min_size(
                         Pos2::new(x, y - bar_height),
                         Vec2::new(bar_width.ceil(), bar_height),
                     ),
-                    1.0,
+                    0.0, // Sharp bars
                     color,
                 );
             }
@@ -252,13 +335,16 @@ impl AudioPanel {
         let (rect, _response) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), 150.0), Sense::hover());
         let painter = ui.painter();
-        painter.rect_filled(rect, 3.0, Color32::from_rgb(20, 20, 20));
+
+        // Background handled by container
 
         let num_bands = bands.len();
         let bar_spacing = 5.0;
         let total_spacing = (num_bands + 1) as f32 * bar_spacing;
         let bar_width = (rect.width() - total_spacing) / num_bands as f32;
         let dt = ui.input(|i| i.stable_dt);
+
+        let band_names = ["Sub", "Bass", "LoMid", "Mid", "HiMid", "Pres", "Brill"];
 
         for (i, &energy) in bands.iter().enumerate() {
             // Update peak level
@@ -283,9 +369,14 @@ impl AudioPanel {
                 Vec2::new(bar_width, bar_height),
             );
 
-            // Bar color based on energy
-            let color = Color32::from_rgb((energy * 200.0) as u8, 255 - (energy * 200.0) as u8, 50);
-            painter.rect_filled(bar_rect, 1.0, color);
+            // Bar color based on energy (Cyan to Orange)
+            let color = if energy > 0.8 {
+                colors::WARN_COLOR
+            } else {
+                colors::CYAN_ACCENT
+            };
+
+            painter.rect_filled(bar_rect, 2.0, color);
 
             // Peak indicator
             let peak_y = rect.max.y
@@ -295,8 +386,19 @@ impl AudioPanel {
 
             painter.line_segment(
                 [Pos2::new(x, peak_y), Pos2::new(x + bar_width, peak_y)],
-                Stroke::new(2.0, Color32::from_rgb(255, 100, 100)),
+                Stroke::new(2.0, colors::ERROR_COLOR),
             );
+
+            // Label
+            if i < band_names.len() {
+                painter.text(
+                    Pos2::new(x + bar_width / 2.0, rect.max.y - 10.0),
+                    egui::Align2::CENTER_BOTTOM,
+                    band_names[i],
+                    egui::FontId::proportional(10.0),
+                    Color32::WHITE.linear_multiply(0.8),
+                );
+            }
         }
     }
 
@@ -305,20 +407,25 @@ impl AudioPanel {
         let (rect, _response) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), 150.0), Sense::hover());
         let painter = ui.painter();
-        painter.rect_filled(rect, 3.0, Color32::from_rgb(20, 20, 20));
+
+        // Grid lines
+        let mid_y = rect.center().y;
+        painter.line_segment(
+            [Pos2::new(rect.min.x, mid_y), Pos2::new(rect.max.x, mid_y)],
+            Stroke::new(1.0, colors::STROKE_GREY),
+        );
 
         if waveform.is_empty() {
             return;
         }
 
-        let center_y = rect.center().y;
         let points: Vec<Pos2> = waveform
             .iter()
             .enumerate()
             .map(|(i, &sample)| {
                 let x = rect.min.x + (i as f32 / waveform.len() as f32) * rect.width();
                 // Clamp sample to -1.0..1.0 range and scale to fit height
-                let y = center_y - (sample.clamp(-1.0, 1.0) * rect.height() * 0.5);
+                let y = mid_y - (sample.clamp(-1.0, 1.0) * rect.height() * 0.5);
                 Pos2::new(x, y)
             })
             .collect();
@@ -326,7 +433,7 @@ impl AudioPanel {
         // Draw the waveform line
         painter.add(egui::Shape::line(
             points,
-            Stroke::new(1.5, Color32::from_rgb(100, 200, 255)),
+            Stroke::new(1.5, colors::MINT_ACCENT),
         ));
     }
 }
