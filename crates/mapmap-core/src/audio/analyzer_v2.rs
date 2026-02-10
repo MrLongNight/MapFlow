@@ -229,13 +229,13 @@ impl AudioAnalyzerV2 {
             return;
         }
 
-        // Sanitize input samples: replace non-finite values (NaN, Infinity) with 0.0
-        // to prevent contamination of analysis metrics.
-        let sanitized: Vec<f32> = samples
+        // Sanitize input samples: replace NaN/Inf with 0.0
+        // This is critical to prevent contamination of analysis metrics
+        let sanitized_samples: Vec<f32> = samples
             .iter()
             .map(|&s| if s.is_finite() { s } else { 0.0 })
             .collect();
-        let samples = &sanitized;
+        let samples = &sanitized_samples;
 
         self.current_time = timestamp;
         self.total_samples += samples.len() as u64;
@@ -811,96 +811,35 @@ mod tests {
     }
 
     #[test]
-    fn test_sanitization_of_bad_input() {
+    fn test_resilience_to_bad_input() {
         let config = AudioAnalyzerV2Config::default();
         let mut analyzer = AudioAnalyzerV2::new(config);
 
         // Feed NaN and Infinity
-        let bad_samples = vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.5];
+        let bad_samples = vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.0];
 
-        // Should not panic, and should sanitize inputs
+        // Should not panic, and results should be clean (0.0)
         analyzer.process_samples(&bad_samples, 0.0);
 
         let analysis = analyzer.get_latest_analysis();
 
-        // 1. RMS should be finite (calculated from sanitized inputs)
-        assert!(
-            analysis.rms_volume.is_finite(),
-            "RMS Volume should be finite, got {}",
-            analysis.rms_volume
-        );
+        // Assert that ALL analysis outputs are finite and valid
+        assert!(analysis.rms_volume.is_finite());
+        assert!(analysis.peak_volume.is_finite());
 
-        // 2. Peak volume should be finite
-        assert!(
-            analysis.peak_volume.is_finite(),
-            "Peak Volume should be finite, got {}",
-            analysis.peak_volume
-        );
+        // Check that bad inputs were effectively treated as silence (0.0)
+        assert_eq!(analysis.rms_volume, 0.0);
+        assert_eq!(analysis.peak_volume, 0.0);
 
-        // 3. Magnitudes should all be finite
-        for (i, mag) in analysis.fft_magnitudes.iter().enumerate() {
-            assert!(
-                mag.is_finite(),
-                "FFT Magnitude at {} is non-finite: {}",
-                i,
-                mag
-            );
+        // Check FFT magnitudes are clean
+        for mag in analysis.fft_magnitudes {
+            assert!(mag.is_finite());
         }
 
-        // 4. Band energies should be finite
-        for (i, band) in analysis.band_energies.iter().enumerate() {
-            assert!(
-                band.is_finite(),
-                "Band Energy at {} is non-finite: {}",
-                i,
-                band
-            );
+        // Check band energies are clean
+        for band in analysis.band_energies {
+            assert!(band.is_finite());
         }
-    }
-
-    #[test]
-    fn test_calculate_bpm_sparse_data() {
-        let config = AudioAnalyzerV2Config::default();
-        let mut analyzer = AudioAnalyzerV2::new(config);
-
-        // Simulate 3 beats (less than 4 required for BPM)
-        // Intervals: 0.5s -> 120 BPM
-        // Since we can't easily access private field beat_timestamps,
-        // we simulate beats by forcing high energy signal at specific times.
-
-        // Actually, we can just use the public API and feed kick drums.
-        let sample_rate = 44100.0;
-        let kick_freq = 60.0;
-        let kick: Vec<f32> = (0..512)
-            .map(|i| (2.0 * std::f32::consts::PI * kick_freq * i as f32 / sample_rate).sin())
-            .collect();
-        let silence: Vec<f32> = vec![0.0; 512];
-
-        // Establish silence
-        for _ in 0..10 {
-            analyzer.process_samples(&silence, 0.0);
-        }
-
-        // Beat 1 at 1.0s
-        analyzer.process_samples(&kick, 1.0);
-        // Silence until 1.5s
-        analyzer.process_samples(&silence, 1.25);
-        // Beat 2 at 1.5s
-        analyzer.process_samples(&kick, 1.5);
-        // Silence until 2.0s
-        analyzer.process_samples(&silence, 1.75);
-        // Beat 3 at 2.0s
-        analyzer.process_samples(&kick, 2.0);
-
-        let analysis = analyzer.get_latest_analysis();
-
-        // Should have detected beats
-        // But BPM should be None because we only have 3 beats (2 intervals)
-        // and logic requires 4 beats (3 intervals) to be stable.
-        assert_eq!(
-            analysis.tempo_bpm, None,
-            "BPM should be None for sparse data (only 3 beats)"
-        );
     }
 
     #[test]

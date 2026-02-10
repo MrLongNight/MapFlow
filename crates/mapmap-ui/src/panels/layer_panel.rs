@@ -229,7 +229,7 @@ impl LayerPanel {
                                     ui.with_layout(
                                         egui::Layout::right_to_left(egui::Align::Center),
                                         |ui| {
-                                            if widgets::delete_button(ui) {
+                                            if widgets::delete_button(ui).clicked() {
                                                 actions.push(UIAction::RemoveLayer(layer.id));
                                             }
 

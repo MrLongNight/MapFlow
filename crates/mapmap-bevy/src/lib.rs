@@ -42,27 +42,6 @@ impl BevyRunner {
         // app.add_plugins(bevy_enoki::EnokiPlugin);
         app.add_plugins(bevy_mod_outline::OutlinePlugin);
         // app.add_plugins(bevy_atmosphere::prelude::AtmospherePlugin);
-        // Use DefaultPlugins but disable windowing and input loop to avoid Winit panic
-        app.add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: None,
-                    exit_condition: bevy::window::ExitCondition::DontExit,
-                    close_when_requested: false,
-                })
-                .set(bevy::render::RenderPlugin {
-                    render_creation: bevy::render::settings::RenderCreation::Automatic(
-                        bevy::render::settings::WgpuSettings {
-                            // Inherit backend preferences if possible, or default
-                            ..default()
-                        },
-                    ),
-                    synchronous_pipeline_compilation: false,
-                    ..default()
-                })
-                // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
-                .disable::<bevy::winit::WinitPlugin>(),
-        );
 
         // Register resources
         app.init_resource::<AudioInputResource>();
@@ -79,15 +58,15 @@ impl BevyRunner {
         app.register_type::<BevyAtmosphere>();
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
-        app.register_type::<Bevy3DModel>();
 
         // Register systems
-        app.add_systems(Update, print_status_system);
+        app.add_systems(Startup, setup_3d_scene);
         app.add_systems(
             Update,
-            (audio_reaction_system, hex_grid_system, model_system),
-        );
+            (print_status_system, audio_reaction_system, hex_grid_system),
+        ); // Removed sync_atmosphere_system, particle_system
 
+        // Add readback system to the RENDER APP, not the main app
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
         render_app.add_systems(bevy::render::Render, frame_readback_system);
 
@@ -106,33 +85,6 @@ impl BevyRunner {
         // Run schedule
         self.app.update();
     }
-
-    /// Update a specific 3D model entity by part ID.
-    pub fn update_model(&mut self, part_id: u64, path: String, position: [f32; 3], rotation: [f32; 3], scale: [f32; 3]) {
-        self.app.world_mut().resource_scope(|world, mapping: Mut<BevyNodeMapping>| {
-            for ((_, pid), entity) in &mapping.entities {
-                if *pid == part_id {
-                    if let Some(mut model) = world.get_mut::<Bevy3DModel>(*entity) {
-                        model.path = path.clone();
-                        model.position = position;
-                        model.rotation = rotation;
-                        model.scale = scale;
-                    }
-                    if let Some(mut transform) = world.get_mut::<Transform>(*entity) {
-                         transform.translation = Vec3::from(position);
-                         transform.rotation = Quat::from_euler(
-                             EulerRot::XYZ,
-                             rotation[0].to_radians(),
-                             rotation[1].to_radians(),
-                             rotation[2].to_radians(),
-                         );
-                         transform.scale = Vec3::from(scale);
-                    }
-                }
-            }
-        });
-    }
-
     /// Get the rendered image data.
     /// Returns (data, width, height).
     pub fn get_image_data(&self) -> Option<(Vec<u8>, u32, u32)> {
@@ -151,14 +103,12 @@ impl BevyRunner {
     /// Update the Bevy scene based on the MapFlow graph state.
     pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
         use mapmap_core::module::{ModulePartType, SourceType};
-        let module_id = module.id;
 
         self.app
             .world_mut()
             .resource_scope(|world, mut mapping: Mut<BevyNodeMapping>| {
                 for part in &module.parts {
                     if let ModulePartType::Source(source_type) = &part.part_type {
-                        let key = (module_id, part.id);
                         match source_type {
                             SourceType::BevyAtmosphere {
                                 turbidity,
@@ -169,7 +119,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
                                         world
                                             .spawn(crate::components::BevyAtmosphere::default())
                                             .id()
@@ -192,7 +142,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
                                         world.spawn(crate::components::BevyHexGrid::default()).id()
                                     });
                                 if let Some(mut hex) =
@@ -213,7 +163,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
                                         world
                                             .spawn(crate::components::BevyParticles::default())
                                             .id()
@@ -228,47 +178,43 @@ impl BevyRunner {
                                     p.color_end = *color_end;
                                 }
                             }
-                            SourceType::Bevy3DModel {
-                                path,
-                                position,
-                                rotation,
-                                scale,
-                                ..
-                            } => {
-                                let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
-                                        world
-                                            .spawn((
-                                                Bevy3DModel::default(),
-                                                Transform::default(),
-                                                Visibility::default(),
-                                            ))
-                                            .id()
-                                    });
-
-                                if let Some(mut model) =
-                                    world.get_mut::<Bevy3DModel>(entity)
-                                {
-                                    // Use clone/assignment as in HEAD's update_model
-                                    if model.path != *path {
-                                        model.path = path.clone();
-                                    }
-                                    if model.position != *position {
-                                        model.position = *position;
-                                    }
-                                    if model.rotation != *rotation {
-                                        model.rotation = *rotation;
-                                    }
-                                    if model.scale != *scale {
-                                        model.scale = *scale;
-                                    }
-                                }
-                            }
                             _ => {}
                         }
                     }
                 }
             });
+    }
+}
+
+/*
+pub fn sync_atmosphere_system(
+    query: Query<&crate::components::BevyAtmosphere, Changed<crate::components::BevyAtmosphere>>,
+    mut atmosphere: ResMut<bevy_atmosphere::prelude::AtmosphereModel>,
+) {
+    for settings in query.iter() {
+        if let Some(mut nishita) = atmosphere.to_mut::<bevy_atmosphere::prelude::Nishita>() {
+            nishita.turbidity = settings.turbidity;
+            nishita.rayleigh = settings.rayleigh;
+            nishita.mie_coefficient = settings.mie_coeff;
+            nishita.mie_directional_g = settings.mie_directional_g;
+            nishita.sun_position = Vec3::new(settings.sun_position.0, settings.sun_position.1, 1.0); // Simple Z-fallback
+        } else {
+            *atmosphere = bevy_atmosphere::prelude::AtmosphereModel::new(bevy_atmosphere::prelude::Nishita {
+                turbidity: settings.turbidity,
+                rayleigh: settings.rayleigh,
+                mie_coefficient: settings.mie_coeff,
+                mie_directional_g: settings.mie_directional_g,
+                sun_position: Vec3::new(settings.sun_position.0, settings.sun_position.1, 1.0),
+            });
+        }
+    }
+}
+*/
+
+impl bevy::render::extract_resource::ExtractResource for BevyRenderOutput {
+    type Source = Self;
+    fn extract_resource(source: &Self::Source) -> Self {
+        source.clone()
     }
 }
 

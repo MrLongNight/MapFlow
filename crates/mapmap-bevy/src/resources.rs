@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::render::extract_resource::ExtractResource;
 
 /// Resource to store current audio analysis data from MapFlow.
 #[derive(Resource, Default, Reflect)]
@@ -27,7 +26,7 @@ impl AudioInputResource {
     }
 }
 
-#[derive(Resource, Clone, Default, ExtractResource)]
+#[derive(Resource, Clone, Default)]
 pub struct BevyRenderOutput {
     pub image_handle: Handle<Image>,
     /// Last extracted frame data (BGRA8) - Shared between Main and Render worlds
@@ -44,5 +43,5 @@ pub struct ReadbackBuffer {
 /// Maps MapFlow Node IDs to Bevy Entities
 #[derive(Resource, Default)]
 pub struct BevyNodeMapping {
-    pub entities: std::collections::HashMap<(u64, u64), Entity>,
+    pub entities: std::collections::HashMap<u64, Entity>,
 }

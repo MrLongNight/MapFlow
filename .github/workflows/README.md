@@ -433,85 +433,6 @@ For issues with workflows:
 
 ---
 
-## 🔄 Aktuelle CICD-DevFlow Workflows
-
-### CICD-DevFlow_Job01_Validation.yml
-
-**Trigger:**
-
-- Push zu `main` Branch
-- **Pull Requests zu `main` Branch** ✅ (automatisch)
-- Manual Dispatch
-
-**Jobs bei Pull Requests:**
-
-1. **Quality Gate** (Format & Lint)
-   - Formatierung prüfen (`cargo fmt`)
-   - Clippy Linting (`cargo clippy`)
-   - Dependency Sortierung (`cargo sort`)
-
-2. **Security Scan**
-   - Vulnerability Scan (`cargo audit`)
-   - Dependency Review (`cargo deny`)
-
-3. **Build & Test (Linux)**
-   - Release Build mit CI-Features
-   - Integration Tests (`cargo nextest`)
-
-4. **Build & Test (Windows)** - Optional
-   - Nur bei `test-windows` Label oder auf `main`
-   - Audio-only Build
-
-5. **Validation Success** - Final Gate
-   - Sammelt alle Check-Results
-   - Benachrichtigt bei Fehlern mit detaillierter Anleitung
-
-**Status:** ✅ Alle Checks laufen automatisch bei jedem Pull Request
-
-> [!IMPORTANT]
-> **Troubleshooting:** Falls die Checks im GitHub UI nicht als "Expected" erscheinen:
->
-> 1. Stelle sicher, dass die Workflows im Repository aktiviert sind (Settings → Actions → General → "Allow all actions")
-> 2. Markiere die Jobs in den Branch Protection Rules als "required" (Settings → Branches → main → "Require status checks to pass before merging")
-> 3. Empfohlene required checks:
->    - `Quality Gate (Format & Lint)`
->    - `Security Scan`
->    - `Build & Test (Linux)`
->    - `Validation Success`
-
-### CICD-DevFlow_Job02_AutoMerge.yml
-
-**Trigger:**
-
-- Pull Request Events (labeled, synchronize, opened, reopened)
-- Check Suite Completion
-- Workflow Run Completion
-
-**Funktion:**
-
-- Wartet auf erfolgreichen Abschluss aller Checks
-- Merged automatisch bei grünen Checks
-- Erstellt hilfreiche Fehler-Comments bei fehlgeschlagenen Checks
-
----
-
-## 🔧 Branch Protection Rules Konfiguration
-
-Um die PR-Checks als "required" zu markieren, folge diesen Schritten:
-
-1. Gehe zu **Settings** → **Branches** → **main**
-2. Aktiviere "Require status checks to pass before merging"
-3. Wähle folgende Checks als required aus:
-   - `Quality Gate (Format & Lint)`
-   - `Security Scan`
-   - `Build & Test (Linux)`
-   - `Validation Success`
-4. Optional: Aktiviere "Require branches to be up to date before merging"
-
-Die Checks werden dann als "Expected" im PR angezeigt und müssen vor dem Merge grün sein.
-
----
-
 📋 New PR-Check Flow:
 ┌─────────────────────────────────────────────────────────┐
 │                    PR erstellt                          │
@@ -583,5 +504,5 @@ git commit -m "ci: implement validation and auto-merge with Jules feedback"
 # Push alles
 
 git push
-**Last Updated:** 2026-02-09 (PR-Check Konfiguration validiert)  
+**Last Updated:** 2026-01-07 (Optimized for reduced Actions minutes)
 **Maintained By:** MapFlow Team

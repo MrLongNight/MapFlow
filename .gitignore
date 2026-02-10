@@ -44,9 +44,11 @@
 
 # except icons files
 !resources/images/*
-!resources/images/icons/*.svg
 !resources/macOS/Info.plist
 !resources/macOS/MapMap.icns
+
+# Allow assets icons
+!assets/icons/*.svg
 
 # Allow controller definitions
 !resources/controllers/**/*.json
