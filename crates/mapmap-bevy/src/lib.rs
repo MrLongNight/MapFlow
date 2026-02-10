@@ -144,12 +144,26 @@ impl BevyRunner {
                 );
 
                 let mut entity_mut = world.entity_mut(entity);
-                entity_mut.insert(Bevy3DText {
+                let new_text_comp = Bevy3DText {
                     text: text.clone(),
                     font_size: *font_size,
                     color: *color,
                     alignment: align_enum,
-                });
+                };
+
+                // Check change to avoid triggering Changed<Bevy3DText> every frame
+                let needs_update = if let Some(current) = entity_mut.get::<Bevy3DText>() {
+                    current.text != new_text_comp.text
+                        || (current.font_size - new_text_comp.font_size).abs() > f32::EPSILON
+                        || current.color != new_text_comp.color
+                        || current.alignment != new_text_comp.alignment
+                } else {
+                    true
+                };
+
+                if needs_update {
+                    entity_mut.insert(new_text_comp);
+                }
 
                 entity_mut.insert(Transform {
                     translation: Vec3::from(*position),

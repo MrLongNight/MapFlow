@@ -431,7 +431,10 @@ pub fn text_3d_system(
                 ..default()
             },
             TextColor(color),
-            TextLayout::new_with_justify(justify),
+            TextLayout {
+                justify,
+                ..default()
+            },
         ));
     }
 }
