@@ -938,4 +938,66 @@ mod tests {
         assert!(rms2 > rms1, "RMS should increase over time with smoothing");
         assert!(rms2 < 1.0, "RMS should not reach target instantly");
     }
+
+    #[test]
+    fn test_process_samples_silence() {
+        let config = AudioAnalyzerV2Config {
+            fft_size: 1024,
+            smoothing: 0.5,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // Feed silence for several frames
+        let silence = vec![0.0f32; 1024];
+        for i in 0..10 {
+            analyzer.process_samples(&silence, i as f64 * 0.1);
+        }
+
+        let analysis = analyzer.get_latest_analysis();
+
+        // Volume should be exactly 0
+        assert_eq!(analysis.rms_volume, 0.0, "RMS should be 0 for silence");
+        assert_eq!(analysis.peak_volume, 0.0, "Peak should be 0 for silence");
+
+        // Bands should be 0
+        assert!(
+            analysis.band_energies.iter().all(|&e| e == 0.0),
+            "Bands should be 0"
+        );
+    }
+
+    #[test]
+    fn test_process_samples_noise() {
+        let config = AudioAnalyzerV2Config {
+            fft_size: 1024,
+            smoothing: 0.0,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config);
+
+        // Deterministic noise using a fixed seed equivalent
+        // Simple linear congruential generator to avoid dependencies
+        let mut seed = 12345u32;
+        let mut rand = || {
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            (seed as f32 / u32::MAX as f32) * 2.0 - 1.0 // -1.0 to 1.0
+        };
+
+        // Create random noise
+        let noise: Vec<f32> = (0..2048).map(|_| rand()).collect();
+
+        analyzer.process_samples(&noise, 0.0);
+        let analysis = analyzer.get_latest_analysis();
+
+        assert!(analysis.rms_volume > 0.0, "Noise should have volume");
+
+        // White noise has energy across all bands
+        // Verify at least some bands have energy
+        let bands_with_energy = analysis.band_energies.iter().filter(|&&e| e > 0.0).count();
+        assert!(
+            bands_with_energy > 5,
+            "White noise should trigger most bands"
+        );
+    }
 }

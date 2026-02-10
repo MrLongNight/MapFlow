@@ -76,3 +76,7 @@ to use explicit `AudioTriggerData` initialization.
 calculations for zero-sized layers could result in division by zero (Inf).
 **Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`.
 Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
+
+## 2025-05-15 - mapmap-control Link Feature Fix
+**Erkenntnis:** Die `link` Feature-Flag in `mapmap-control` war defekt, da `ControlError::LinkError` fehlte und `Tempo::set_bpm` API sich geändert hat. Tests liefen standardmäßig ohne dieses Feature, weshalb der Fehler unbemerkt blieb.
+**Aktion:** Immer `cargo check --all-features` oder spezifische Features testen, wenn Änderungen an optionalen Modulen vorgenommen werden.

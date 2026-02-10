@@ -19,6 +19,10 @@ pub enum ControlError {
     #[cfg(feature = "midi")]
     MidiSendError(#[from] midir::SendError),
 
+    #[error("Link error: {0}")]
+    #[cfg(feature = "link")]
+    LinkError(String),
+
     #[error("OSC error: {0}")]
     OscError(String),
 

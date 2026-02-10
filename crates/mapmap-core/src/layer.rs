@@ -1311,4 +1311,29 @@ mod additional_tests {
         let layer = Layer::new(2, "Clamped High").with_opacity(1.5);
         assert_eq!(layer.opacity, 1.0);
     }
+
+    #[test]
+    fn test_layer_removal_preserves_subtree() {
+        let mut manager = LayerManager::new();
+        // Grandparent -> Parent -> Child
+        let gp_id = manager.create_group("Grandparent");
+        let p_id = manager.create_group("Parent");
+        let c_id = manager.create_layer("Child");
+
+        manager.reparent_layer(p_id, Some(gp_id));
+        manager.reparent_layer(c_id, Some(p_id));
+
+        // Verify initial state
+        assert_eq!(manager.get_layer(p_id).unwrap().parent_id, Some(gp_id));
+        assert_eq!(manager.get_layer(c_id).unwrap().parent_id, Some(p_id));
+
+        // Remove Grandparent
+        manager.remove_layer(gp_id);
+
+        // Verify Parent is orphaned
+        assert_eq!(manager.get_layer(p_id).unwrap().parent_id, None);
+
+        // Verify Child is still attached to Parent (Subtree preserved)
+        assert_eq!(manager.get_layer(c_id).unwrap().parent_id, Some(p_id));
+    }
 }

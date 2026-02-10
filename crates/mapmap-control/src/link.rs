@@ -44,7 +44,45 @@ impl AbletonLinkHandle {
                 "Tempo must be between 20 and 300 BPM".to_string(),
             ));
         }
-        self._tempo.set_bpm(bpm);
+        self._tempo = Tempo::new(bpm);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_link_handle_creation() {
+        // Valid creation
+        let handle = AbletonLinkHandle::new(120.0).expect("Should create with 120 BPM");
+        assert!((handle.tempo_bpm() - 120.0).abs() < f64::EPSILON);
+
+        // Invalid creation (too low)
+        let res = AbletonLinkHandle::new(10.0);
+        assert!(res.is_err());
+        match res {
+            Err(ControlError::LinkError(msg)) => assert_eq!(msg, "Tempo must be between 20 and 300 BPM"),
+            _ => panic!("Expected LinkError"),
+        }
+
+        // Invalid creation (too high)
+        let res = AbletonLinkHandle::new(350.0);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_link_handle_set_tempo() {
+        let mut handle = AbletonLinkHandle::new(120.0).unwrap();
+
+        // Valid update
+        handle.set_tempo_bpm(140.0).expect("Should set tempo");
+        assert!((handle.tempo_bpm() - 140.0).abs() < f64::EPSILON);
+
+        // Invalid update
+        let res = handle.set_tempo_bpm(10.0);
+        assert!(res.is_err());
+        assert!((handle.tempo_bpm() - 140.0).abs() < f64::EPSILON, "Tempo should not change on error");
     }
 }

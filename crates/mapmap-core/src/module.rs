@@ -3091,4 +3091,181 @@ mod additional_tests {
         }
         assert!(target.invert);
     }
+
+    #[test]
+    fn test_all_source_types_have_sockets() {
+        // Construct representative instances of all SourceType variants
+        let sources = vec![
+            SourceType::MediaFile {
+                path: "test.mp4".into(),
+                speed: 1.0,
+                loop_enabled: true,
+                start_time: 0.0,
+                end_time: 0.0,
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                target_width: None,
+                target_height: None,
+                target_fps: None,
+                flip_horizontal: false,
+                flip_vertical: false,
+                reverse_playback: false,
+            },
+            SourceType::Shader {
+                name: "test".into(),
+                params: vec![],
+            },
+            SourceType::LiveInput { device_id: 0 },
+            SourceType::NdiInput { source_name: None },
+            SourceType::Bevy,
+            SourceType::BevyAtmosphere {
+                turbidity: 1.0,
+                rayleigh: 1.0,
+                mie_coeff: 1.0,
+                mie_directional_g: 1.0,
+                sun_position: (0.0, 0.0),
+                exposure: 1.0,
+            },
+            SourceType::BevyHexGrid {
+                radius: 1.0,
+                rings: 1,
+                pointy_top: true,
+                spacing: 1.0,
+                position: [0.0; 3],
+                rotation: [0.0; 3],
+                scale: 1.0,
+            },
+            SourceType::BevyParticles {
+                rate: 10.0,
+                lifetime: 1.0,
+                speed: 1.0,
+                color_start: [1.0; 4],
+                color_end: [1.0; 4],
+                position: [0.0; 3],
+                rotation: [0.0; 3],
+            },
+            SourceType::Bevy3DModel {
+                path: "test.glb".into(),
+                position: [0.0; 3],
+                rotation: [0.0; 3],
+                scale: [1.0; 3],
+            },
+            SourceType::VideoUni {
+                path: "video.mp4".into(),
+                speed: 1.0,
+                loop_enabled: true,
+                start_time: 0.0,
+                end_time: 0.0,
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                target_width: None,
+                target_height: None,
+                target_fps: None,
+                flip_horizontal: false,
+                flip_vertical: false,
+                reverse_playback: false,
+            },
+            SourceType::VideoMulti {
+                shared_id: "vid1".into(),
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                flip_horizontal: false,
+                flip_vertical: false,
+            },
+            SourceType::ImageUni {
+                path: "img.png".into(),
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                target_width: None,
+                target_height: None,
+                flip_horizontal: false,
+                flip_vertical: false,
+            },
+            SourceType::ImageMulti {
+                shared_id: "img1".into(),
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                flip_horizontal: false,
+                flip_vertical: false,
+            },
+        ];
+
+        for source in sources {
+            let part_type = ModulePartType::Source(source.clone());
+            let (inputs, outputs) = part_type.get_default_sockets();
+
+            // Check Input sockets (Trigger)
+            let has_trigger = inputs
+                .iter()
+                .any(|s| s.socket_type == ModuleSocketType::Trigger);
+            assert!(
+                has_trigger,
+                "Source {:?} missing Trigger Input socket",
+                source
+            );
+
+            // Check Output sockets (Media)
+            let has_media_out = outputs
+                .iter()
+                .any(|s| s.socket_type == ModuleSocketType::Media);
+            assert!(
+                has_media_out,
+                "Source {:?} missing Media Output socket",
+                source
+            );
+
+            // Special check for BevyParticles spawn trigger name
+            if let SourceType::BevyParticles { .. } = source {
+                assert!(
+                    inputs.iter().any(|s| s.name == "Spawn Trigger"),
+                    "BevyParticles missing 'Spawn Trigger' socket"
+                );
+            }
+        }
+    }
 }
