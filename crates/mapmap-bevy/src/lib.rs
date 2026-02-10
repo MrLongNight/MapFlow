@@ -6,6 +6,7 @@
 pub mod components;
 pub mod resources;
 pub mod systems;
+pub mod text;
 
 use bevy::prelude::*;
 use components::*;
@@ -32,26 +33,26 @@ impl BevyRunner {
         let mut app = App::new();
 
         // Use DefaultPlugins but disable windowing and input loop to avoid Winit panic
-        app.add_plugins(DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: None,
-                exit_condition: bevy::window::ExitCondition::DontExit,
-                close_when_requested: false,
-            })
-            .set(bevy::render::RenderPlugin {
-                render_creation: bevy::render::settings::RenderCreation::Automatic(
-                    bevy::render::settings::WgpuSettings {
-                        // Inherit backend preferences if possible, or default
-                        ..default()
-                    }
-                ),
-                synchronous_pipeline_compilation: false,
-                ..default()
-            })
-            // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
-            .disable::<bevy::winit::WinitPlugin>()
+        app.add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: None,
+                    exit_condition: bevy::window::ExitCondition::DontExit,
+                    close_when_requested: false,
+                })
+                .set(bevy::render::RenderPlugin {
+                    render_creation: bevy::render::settings::RenderCreation::Automatic(
+                        bevy::render::settings::WgpuSettings {
+                            // Inherit backend preferences if possible, or default
+                            ..default()
+                        },
+                    ),
+                    synchronous_pipeline_compilation: false,
+                    ..default()
+                })
+                // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
+                .disable::<bevy::winit::WinitPlugin>(),
         );
-
 
         // Register Extensions (Temporarily disabled due to version mismatch)
         // app.add_plugins(bevy_enoki::EnokiPlugin);
@@ -73,12 +74,18 @@ impl BevyRunner {
         app.register_type::<BevyAtmosphere>();
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
+        app.register_type::<Bevy3DText>();
 
         // Register systems
         app.add_systems(Startup, setup_3d_scene);
         app.add_systems(
             Update,
-            (print_status_system, audio_reaction_system, hex_grid_system),
+            (
+                print_status_system,
+                audio_reaction_system,
+                hex_grid_system,
+                text::text_system,
+            ),
         ); // Removed sync_atmosphere_system, particle_system
 
         // Add readback system to the RENDER APP, not the main app
@@ -191,6 +198,42 @@ impl BevyRunner {
                                     p.speed = *speed;
                                     p.color_start = *color_start;
                                     p.color_end = *color_end;
+                                }
+                            }
+                            SourceType::Bevy3DText {
+                                text,
+                                font_size,
+                                color,
+                                position,
+                                rotation,
+                                alignment,
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world.spawn(crate::components::Bevy3DText::default()).id()
+                                    });
+                                if let Some(mut comp) =
+                                    world.get_mut::<crate::components::Bevy3DText>(entity)
+                                {
+                                    comp.text = text.clone();
+                                    comp.font_size = *font_size;
+                                    comp.color = *color;
+                                    comp.position = *position;
+                                    comp.rotation = *rotation;
+                                    comp.alignment = match alignment {
+                                        mapmap_core::module::TextAlignmentType::Left => {
+                                            crate::components::BevyTextAlignment::Left
+                                        }
+                                        mapmap_core::module::TextAlignmentType::Center => {
+                                            crate::components::BevyTextAlignment::Center
+                                        }
+                                        mapmap_core::module::TextAlignmentType::Right => {
+                                            crate::components::BevyTextAlignment::Right
+                                        }
+                                        mapmap_core::module::TextAlignmentType::Justify => {
+                                            crate::components::BevyTextAlignment::Justify
+                                        }
+                                    };
                                 }
                             }
                             _ => {}
