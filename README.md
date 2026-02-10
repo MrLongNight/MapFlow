@@ -8,6 +8,7 @@
 projection mapping.
 
 > 🚀 **CI/CD Status**: Verified (v3.0)
+[![CICD-DevFlow: Job01 Validation](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
 
 ## ✨ Key Features
 
