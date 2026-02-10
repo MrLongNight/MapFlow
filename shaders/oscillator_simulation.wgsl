@@ -106,8 +106,14 @@ fn kernel_function(dist: f32) -> f32 {
 // Normalize phase difference to [-π, π]
 fn normalize_phase_diff(diff: f32) -> f32 {
     let PI = 3.14159265359;
-    let TWO_PI = 6.28318530718;
-    return diff - floor((diff + PI) / TWO_PI) * TWO_PI;
+    var d = diff;
+    while (d > PI) {
+        d = d - 2.0 * PI;
+    }
+    while (d < -PI) {
+        d = d + 2.0 * PI;
+    }
+    return d;
 }
 
 @fragment
@@ -116,7 +122,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let pixel_size = 1.0 / params.sim_resolution;
 
     // Read current phase
-    let theta_i = textureSample(phase_texture, phase_sampler, uv).r;
+    let theta_i = textureSampleLevel(phase_texture, phase_sampler, uv, 0.0).r;
 
     // Compute natural frequency
     let omega_i = compute_frequency(uv);
@@ -149,7 +155,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                 continue;
             }
 
-            let theta_j = textureSample(phase_texture, phase_sampler, neighbor_uv).r;
+            let theta_j = textureSampleLevel(phase_texture, phase_sampler, neighbor_uv, 0.0).r;
 
             // Kernel weight
             let K = kernel_function(dist);

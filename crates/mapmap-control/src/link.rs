@@ -44,7 +44,7 @@ impl AbletonLinkHandle {
                 "Tempo must be between 20 and 300 BPM".to_string(),
             ));
         }
-        self._tempo = Tempo::new(bpm);
+        self._tempo.set_bpm(bpm);
         Ok(())
     }
 }
