@@ -2,16 +2,14 @@
 //!
 //! Supports perspective-correct texture mapping for projection mapping applications.
 
-use std::collections::HashMap;
-use std::sync::{Arc, Weak};
-
+use crate::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::Mat4;
+use mapmap_core::{Mesh, MeshVertex};
+use std::collections::HashMap;
+use std::sync::{Arc, Weak};
 use tracing::info;
 use wgpu::util::DeviceExt;
-
-use crate::Result;
-use mapmap_core::{Mesh, MeshVertex};
 
 /// Vertex format for mesh rendering (matches mesh_warp.wgsl)
 #[repr(C)]

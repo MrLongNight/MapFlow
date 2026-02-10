@@ -627,16 +627,6 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
-            ModulePartType::Source(SourceType::Bevy3DModel { .. }) => (
-                vec![ModuleSocket {
-                    name: "Trigger In".to_string(),
-                    socket_type: ModuleSocketType::Trigger,
-                }],
-                vec![ModuleSocket {
-                    name: "Media Out".to_string(),
-                    socket_type: ModuleSocketType::Media,
-                }],
-            ),
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -1145,18 +1135,7 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
-    /// Bevy 3D Model Loader (GLTF)
-    Bevy3DModel {
-        /// Path to GLTF/GLB file
-        path: String,
-        /// Transform: Position [x, y, z]
-        position: [f32; 3],
-        /// Transform: Rotation [x, y, z] in degrees
-        rotation: [f32; 3],
-        /// Transform: Scale [x, y, z]
-        scale: [f32; 3],
-    },
-    /// Bevy Camera control node
+    /// Control the Bevy Camera
     BevyCamera {
         /// Mode of operation (Orbit, Fly, Static)
         mode: BevyCameraMode,
@@ -1417,8 +1396,8 @@ impl SourceType {
     }
 }
 
-/// Mode of operation for the Bevy camera
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Copy)]
+/// Bevy Camera Modes
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum BevyCameraMode {
     /// Rotates around a target point
     #[default]

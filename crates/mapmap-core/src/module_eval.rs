@@ -441,7 +441,7 @@ pub enum SourceCommand {
         /// Trigger value
         trigger_value: f32,
     },
-    /// Bevy Scene Input (Generic/Legacy)
+    /// Bevy Scene Input
     BevyInput {
         /// Trigger value
         trigger_value: f32,
@@ -449,19 +449,6 @@ pub enum SourceCommand {
     /// Bevy Camera Input
     BevyCamera {
         /// Trigger value
-        trigger_value: f32,
-    },
-    /// Bevy 3D Model Input
-    Bevy3DModel {
-        /// Path to GLTF/GLB file
-        path: String,
-        /// Transform: Position [x, y, z]
-        position: [f32; 3],
-        /// Transform: Rotation [x, y, z] in degrees
-        rotation: [f32; 3],
-        /// Transform: Scale [x, y, z]
-        scale: [f32; 3],
-        /// Trigger value (0.0 - 1.0)
         trigger_value: f32,
     },
     /// Philips Hue output (Trigger/Effect data)
@@ -1384,18 +1371,6 @@ impl ModuleEvaluator {
             SourceType::BevyAtmosphere { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyHexGrid { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
-            SourceType::Bevy3DModel {
-                path,
-                position,
-                rotation,
-                scale,
-            } => Some(SourceCommand::Bevy3DModel {
-                path: path.clone(),
-                position: *position,
-                rotation: *rotation,
-                scale: *scale,
-                trigger_value,
-            }),
             SourceType::BevyCamera { .. } => Some(SourceCommand::BevyCamera { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }

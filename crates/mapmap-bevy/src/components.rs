@@ -8,7 +8,7 @@ pub struct AudioReactive {
     pub target: AudioReactiveTarget,
     /// Which audio data source to use
     pub source: AudioReactiveSource,
-    /// Multiplier for the audio value.
+    /// Multiplier for the audio value
     pub intensity: f32,
     /// Base value when audio is 0
     pub base: f32,
@@ -67,27 +67,6 @@ pub struct BevyParticles {
     pub speed: f32,
     pub color_start: [f32; 4],
     pub color_end: [f32; 4],
-}
-
-/// Component for 3D Model loading and transform control
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct Bevy3DModel {
-    pub path: String,
-    pub position: [f32; 3],
-    pub rotation: [f32; 3],
-    pub scale: [f32; 3],
-}
-
-impl Default for Bevy3DModel {
-    fn default() -> Self {
-        Self {
-            path: String::new(),
-            position: [0.0, 0.0, 0.0],
-            rotation: [0.0, 0.0, 0.0],
-            scale: [1.0, 1.0, 1.0],
-        }
-    }
 }
 
 #[derive(Reflect, Clone, Copy, PartialEq, Eq, Default)]

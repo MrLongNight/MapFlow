@@ -20,7 +20,7 @@ impl ResponsiveLayout {
     /// Erstellt neue ResponsiveLayout-Instanz basierend auf aktuellem Context
     pub fn new(ctx: &Context) -> Self {
         Self {
-            viewport_size: ctx.content_rect().size(),
+            viewport_size: ctx.screen_rect().size(),
         }
     }
 
