@@ -734,7 +734,7 @@ impl ControllerOverlayPanel {
                 rect,
                 4,
                 Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-                egui::StrokeKind::Inside,
+                egui::StrokeKind::Middle,
             );
             painter.text(
                 rect.center(),
@@ -941,7 +941,7 @@ impl ControllerOverlayPanel {
                             painter.circle_stroke(elem_rect.center(), radius, stroke);
                         }
                         _ => {
-                            painter.rect_stroke(elem_rect, 0, stroke, egui::StrokeKind::Inside);
+                            painter.rect_stroke(elem_rect, 0, stroke, egui::StrokeKind::Middle);
                         }
                     }
 
@@ -1041,7 +1041,7 @@ impl ControllerOverlayPanel {
                     painter.circle_stroke(elem_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4, stroke, egui::StrokeKind::Inside);
+                    painter.rect_stroke(elem_rect, 4, stroke, egui::StrokeKind::Middle);
                 }
             }
         }

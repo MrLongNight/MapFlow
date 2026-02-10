@@ -103,8 +103,7 @@ impl WgpuBackend {
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await
-                .ok();
+                .await;
         }
 
         let adapter =
@@ -126,7 +125,7 @@ impl WgpuBackend {
                         max_push_constant_size: 128,
                         ..Default::default()
                     },
-                    memory_hints: Default::default(),
+                    ..Default::default()
                 },
                 None, // trace_path
             )

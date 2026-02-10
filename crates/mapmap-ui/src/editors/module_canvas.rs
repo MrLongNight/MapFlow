@@ -3,6 +3,7 @@ use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::UIAction;
 use egui::epaint::CubicBezierShape;
+use egui::Ui as EguiUi;
 use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
@@ -50,7 +51,7 @@ pub struct MyUserState {
 }
 
 impl DataTypeTrait<MyUserState> for MyDataType {
-    fn data_type_color(&self, _user_state: &mut MyUserState) -> Color32 {
+    fn data_type_color(&self, _user_state: &mut MyUserState) -> egui::Color32 {
         match self {
             MyDataType::Trigger => Color32::from_rgb(180, 100, 220),
             MyDataType::Media => Color32::from_rgb(100, 180, 220),
@@ -123,7 +124,7 @@ impl NodeDataTrait for MyNodeData {
 
     fn bottom_ui(
         &self,
-        ui: &mut Ui,
+        ui: &mut egui::Ui,
         _node_id: NodeId,
         _graph: &Graph<Self, Self::DataType, Self::ValueType>,
         _user_state: &mut Self::UserState,
@@ -2025,11 +2026,11 @@ impl ModuleCanvas {
             ));
         }
 
-        let image = egui::ColorImage {
-            size: [width as usize, height as usize],
-            pixels,
-            source_size: egui::Vec2::new(width as f32, height as f32),
-        };
+        let mut image = egui::ColorImage::new(
+            [width as usize, height as usize],
+            egui::Color32::TRANSPARENT,
+        );
+        image.pixels = pixels;
 
         Some(ctx.load_texture(
             path.file_name()?.to_string_lossy(),
@@ -2362,7 +2363,7 @@ impl ModuleCanvas {
                 SourceType::new_media_file(String::new()),
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
         if ui.button("📹 Video (Uni)").clicked() {
             self.add_source_node(
@@ -2393,7 +2394,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
         if ui.button("🖼 Image (Uni)").clicked() {
             self.add_source_node(
@@ -2418,7 +2419,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
 
         ui.add_space(4.0);
@@ -2444,7 +2445,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
         if ui.button("🖼 Image (Multi)").clicked() {
             self.add_source_node(
@@ -2467,7 +2468,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
 
         ui.add_space(4.0);
@@ -2478,7 +2479,7 @@ impl ModuleCanvas {
                 SourceType::LiveInput { device_id: 0 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
         if ui.button("📡 NDI Input").clicked() {
             self.add_source_node(
@@ -2486,7 +2487,7 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name: None },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
         #[cfg(target_os = "windows")]
         if ui.button("🚰 Spout Input").clicked() {
@@ -2497,7 +2498,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
 
         ui.add_space(4.0);
@@ -2511,11 +2512,11 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close();
+            ui.close_menu();
         }
         if ui.button("🎮 Bevy Scene").clicked() {
             self.add_source_node(manager, SourceType::Bevy, pos_override);
-            ui.close();
+            ui.close_menu();
         }
     }
 
@@ -2528,11 +2529,11 @@ impl ModuleCanvas {
     ) {
         ui.set_min_width(150.0);
 
-        ui.menu_button("🎬 Sources", |ui| {
+        ui.menu_button("🎬 Sources", |ui: &mut egui::Ui| {
             self.render_sources_menu_content(ui, manager, pos_override);
         });
 
-        ui.menu_button("⚡ Triggers", |ui| {
+        ui.menu_button("⚡ Triggers", |ui: &mut egui::Ui| {
             if ui.button("🎵 Audio FFT").clicked() {
                 self.add_trigger_node(
                     manager,
@@ -2543,7 +2544,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
             if ui.button("🎲 Random").clicked() {
                 self.add_trigger_node(
@@ -2555,7 +2556,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
             if ui.button("⏱ Fixed").clicked() {
                 self.add_trigger_node(
@@ -2566,7 +2567,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
             if ui.button("🎹 MIDI").clicked() {
                 self.add_trigger_node(
@@ -2578,18 +2579,18 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
         });
 
-        ui.menu_button("🎭 Masks", |ui| {
+        ui.menu_button("🎭 Masks", |ui: &mut egui::Ui| {
             if ui.button("⭕ Shape").clicked() {
                 self.add_mask_node(
                     manager,
                     MaskType::Shape(mapmap_core::module::MaskShape::Circle),
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
             if ui.button("🌈 Gradient").clicked() {
                 self.add_mask_node(
@@ -2600,22 +2601,22 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
         });
 
-        ui.menu_button("🎛 Modulators", |ui| {
+        ui.menu_button("🎛 Modulators", |ui: &mut egui::Ui| {
             if ui.button("🎚 Blend Mode").clicked() {
                 self.add_modulator_node(
                     manager,
                     ModulizerType::BlendMode(mapmap_core::module::BlendModeType::Normal),
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
         });
 
-        ui.menu_button("💡 Philips Hue", |ui| {
+        ui.menu_button("💡 Philips Hue", |ui: &mut egui::Ui| {
             if ui.button("💡 Single Lamp").clicked() {
                 self.add_hue_node(
                     manager,
@@ -2629,7 +2630,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close();
+                ui.close_menu();
             }
         });
 
@@ -2658,13 +2659,13 @@ impl ModuleCanvas {
                     );
                 }
             }
-            ui.close();
+            ui.close_menu();
         }
     }
 
     /// Renders the menu to add new nodes to the canvas
     fn render_add_node_menu(&mut self, ui: &mut egui::Ui, manager: &mut ModuleManager) {
-        ui.menu_button("➕ Add Node", |ui| {
+        ui.menu_button("➕ Add Node", |ui: &mut egui::Ui| {
             self.render_add_node_menu_content(ui, manager, None);
         });
     }
@@ -2868,11 +2869,10 @@ impl ModuleCanvas {
         // === CANVAS TOOLBAR ===
         egui::Frame::NONE
             .inner_margin(egui::Margin::symmetric(8, 6))
-            .fill(ui.visuals().panel_fill)
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     // --- ROW 1: Module Context & Adding Nodes ---
-                    ui.horizontal_wrapped(|ui| {
+                    ui.horizontal_wrapped(|ui: &mut egui::Ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
 
                         // LEFT: Module Selector & Info
@@ -3452,13 +3452,13 @@ impl ModuleCanvas {
                 let select_rect = Rect::from_two_pos(start_pos, current_pos);
                 painter.rect_stroke(
                     select_rect,
-                    0.0,
+                    0,
                     Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-                    egui::StrokeKind::Inside,
+                    egui::StrokeKind::Middle,
                 );
                 painter.rect_filled(
                     select_rect,
-                    0.0,
+                    0,
                     Color32::from_rgba_unmultiplied(100, 200, 255, 30),
                 );
             }
@@ -3691,8 +3691,8 @@ impl ModuleCanvas {
                 painter.rect_stroke(
                     highlight_rect,
                     0, // Sharp corners
-                    Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
-                    egui::StrokeKind::Inside,
+                    egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 229, 255)),
+                    egui::StrokeKind::Middle,
                 );
 
                 // Draw resize handle at bottom-right corner
@@ -3831,9 +3831,9 @@ impl ModuleCanvas {
             );
             painter.rect_stroke(
                 menu_rect,
-                0.0,
+                0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                egui::StrokeKind::Inside,
+                egui::StrokeKind::Middle,
             );
 
             // Menu items
@@ -3883,9 +3883,9 @@ impl ModuleCanvas {
             );
             painter.rect_stroke(
                 menu_rect,
-                0.0,
+                0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                egui::StrokeKind::Inside,
+                egui::StrokeKind::Middle,
             );
 
             // Menu items
@@ -3927,9 +3927,9 @@ impl ModuleCanvas {
                 );
                 painter.rect_stroke(
                     menu_rect,
-                    4.0,
+                    4,
                     Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-                    egui::StrokeKind::Inside,
+                    egui::StrokeKind::Middle,
                 );
 
                 // Menu items
@@ -3978,9 +3978,9 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            0,
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // Popup content
@@ -4054,14 +4054,14 @@ impl ModuleCanvas {
         let painter = ui.painter();
         painter.rect_filled(
             popup_rect,
-            0.0,
+            0,
             Color32::from_rgba_unmultiplied(30, 35, 45, 245),
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            0,
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // Popup content
@@ -4148,12 +4148,12 @@ impl ModuleCanvas {
         let rect = response.rect;
 
         // Draw background (Room representation)
-        painter.rect_filled(rect, 4.0, Color32::from_gray(30));
+        painter.rect_filled(rect, 4, Color32::from_gray(30));
         painter.rect_stroke(
             rect,
             4,
             Stroke::new(1.0, Color32::GRAY),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // Draw grid
@@ -4378,16 +4378,12 @@ impl ModuleCanvas {
         );
 
         // Background
-        painter.rect_filled(
-            map_rect,
-            0,
-            Color32::from_rgba_unmultiplied(30, 30, 40, 200),
-        );
+        painter.rect_filled(map_rect, 0, Color32::from_rgba_premultiplied(0, 0, 0, 200));
         painter.rect_stroke(
             map_rect,
             0,
             Stroke::new(1.0, Color32::from_gray(80)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // Calculate bounds of all parts
@@ -4451,7 +4447,7 @@ impl ModuleCanvas {
             viewport_rect,
             0,
             Stroke::new(1.5, Color32::WHITE),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -4736,21 +4732,21 @@ impl ModuleCanvas {
 
                 painter.rect_stroke(
                     rect.expand(expansion),
-                    0.0,
+                    0,
                     Stroke::new(1.0 * self.zoom, color),
-                    egui::StrokeKind::Outside,
+                    egui::StrokeKind::Middle,
                 );
             }
 
             // Inner "Light" border
             painter.rect_stroke(
                 rect,
-                0.0,
+                0,
                 Stroke::new(
                     2.0 * self.zoom,
                     Color32::WHITE.gamma_multiply(180.0 * glow_intensity / 255.0),
                 ),
-                egui::StrokeKind::Inside,
+                egui::StrokeKind::Middle,
             );
         }
 
@@ -4763,9 +4759,9 @@ impl ModuleCanvas {
 
             painter.rect_stroke(
                 rect.expand(4.0 * self.zoom),
-                0.0,
+                0,
                 Stroke::new(2.0 * self.zoom, learn_color),
-                egui::StrokeKind::Outside,
+                egui::StrokeKind::Middle,
             );
 
             painter.text(
@@ -4778,11 +4774,11 @@ impl ModuleCanvas {
         }
 
         // Draw shadow behind node
-        let _shadow = Shadow {
+        let shadow = egui::Shadow {
             offset: [(2.0 * self.zoom) as i8, (4.0 * self.zoom) as i8],
             blur: (12.0 * self.zoom).min(255.0) as u8,
             spread: 0,
-            color: Color32::from_black_alpha(100),
+            color: egui::Color32::from_black_alpha(180),
         };
         // TODO: Shadow::tessellate was removed in egui 0.33
         // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
@@ -4807,7 +4803,7 @@ impl ModuleCanvas {
                         rect,
                         0,
                         egui::Stroke::new(2.0, egui::Color32::YELLOW),
-                        egui::StrokeKind::Outside,
+                        egui::StrokeKind::Middle,
                     );
 
                     if ui.input(|i| i.pointer.any_released()) {
@@ -4827,7 +4823,7 @@ impl ModuleCanvas {
             rect,
             0, // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // Title bar
@@ -4837,14 +4833,14 @@ impl ModuleCanvas {
         // Title bar background (Dark)
         painter.rect_filled(
             title_rect,
-            0, // Sharp corners
+            0.0, // Sharp corners
             colors::LIGHTER_GREY,
         );
 
         // Title bar Top Accent Stripe (Type Identifier)
         let stripe_height = 3.0 * self.zoom;
         let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), stripe_height));
-        painter.rect_filled(stripe_rect, 0, title_color);
+        painter.rect_filled(stripe_rect, 0.0, title_color);
 
         // Title separator line - make it sharper
         painter.line_segment(
@@ -5520,14 +5516,14 @@ impl ModuleCanvas {
         let painter = ui.painter();
         painter.rect_filled(
             popup_rect,
-            0.0,
+            0,
             Color32::from_rgba_unmultiplied(30, 35, 45, 245),
         );
         painter.rect_stroke(
             popup_rect,
             0,
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         let inner_rect = popup_rect.shrink(12.0);
@@ -6516,12 +6512,12 @@ impl ModuleCanvas {
         let rect = response.rect;
 
         // Background (Full Track)
-        painter.rect_filled(rect, 0.0, Color32::from_gray(30));
+        painter.rect_filled(rect, 0, Color32::from_gray(30));
         painter.rect_stroke(
             rect,
-            0.0,
+            0,
             Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // Data normalization
@@ -6538,14 +6534,14 @@ impl ModuleCanvas {
             Rect::from_min_max(Pos2::new(start_x, rect.min.y), Pos2::new(end_x, rect.max.y));
         painter.rect_filled(
             region_rect,
-            0.0,
+            0,
             Color32::from_rgba_unmultiplied(60, 180, 100, 80),
         );
         painter.rect_stroke(
             region_rect,
-            0.0,
+            0,
             Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
-            egui::StrokeKind::Inside,
+            egui::StrokeKind::Middle,
         );
 
         // INTERACTION LOGIC

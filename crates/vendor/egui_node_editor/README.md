@@ -1,0 +1,70 @@
+<div align="center">
+
+[![stable pipeline](https://gitlab.com/cyloncore/egui_node_editor/badges/stable/pipeline.svg?key_text=stable)](https://gitlab.com/cyloncore/egui_node_editor/-/pipelines?ref=stable)
+[![dev/1 pipeline](https://gitlab.com/cyloncore/egui_node_editor/badges/dev/1/pipeline.svg?key_text=dev/1)](https://gitlab.com/cyloncore/egui_node_editor/-/pipelines?ref=dev/1)
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+[![docs](https://docs.rs/cartography/badge.svg)](https://docs.rs/cartography)
+[![crates.io](https://img.shields.io/crates/v/cartography.svg)](https://crates.io/crates/cartography)
+</div>
+
+# Egui Node Graph Editor
+> There you have it! Now go build your next awesome node graph thing in Rust 🦀
+
+![Showcase image](showcase.png)
+
+**Egui node graph editor** is a featureful, customizable library to create node graph
+applications using [egui](https://github.com/emilk/egui). The library takes care
+of presenting a node graph to your users, and allows customizing many aspects of
+the interaction, creating the semantics you want for your specific application.
+This library is a fork of [egui_node_editor](https://gitlab.com/cyloncore/egui_node_editor),
+made to compile with more recent version of egui. Development occurs in the `dev/1` branch.
+
+## Features and goals
+This crate is meant to be a solid base for anyone wanting to expose a node graph
+interface to their users. Its main design goal is to be completely agnostic to
+the semantics of the graph, be it game logic, audio production, dialog trees,
+shader generators... we have you covered!
+
+The purpose of this library is to draw your graphs and handle the common user
+interaction, like adding new nodes, moving nodes or creating connections. All
+the additional functionality is provided by the user by means of custom user
+types implementing several traits.
+
+## Usage
+To see a node graph in action, simply clone this repository and launch the
+example using `cargo run`. This should open a window with an empty canvas. Right
+clicking anywhere on the screen will bring up the *node finder* menu.
+
+The [application code in the example](https://gitlab.com/cyloncore/egui_node_editor/blob/main/egui_node_editor_example/src/app.rs)
+is thoroughly commented and serves as a good introduction to embedding this
+library in your egui project.
+
+## A note on API visibility
+Contrary to the general tendency in the Rust ecosytem, this library exposes all
+types and fields that may be remotely relevant to a user as public. This is done
+with the intent to be as flexible as possible, so no implementation details are
+hidden from users who wish to tinker with the internals. Note that this crate
+forbids use of `unsafe` so there is no risk of introducing UB by breaking any of
+its invariants.
+
+That being said, for the most typical use cases, you will want to stick to the
+customization options this crate provides for you: The generic types in the
+`GraphEditorState` object and their associated traits are the main API, all of
+the other types and fields in this crate should be considered an implementation
+detail. The example project contains a detailed explanation of all the
+customization options and how are users supposed to interact with this crate.
+
+Finally, this does not change the fact that this crate follows semantic
+versioning, as is usual in the Rust ecosystem. Any change to a public field is
+still considered breaking.
+
+## Use cases
+
+**Egui node graph** is the library powering the graph user interface of
+[Blackjack](https://gitlab.com/cyloncore/blackjack), a 3d procedural modelling
+software built in Rust using egui, rend3 and wgpu.
+![Main interface of blackjack](https://raw.githubusercontent.com/setzer22/blackjack/main/doc/resources/showcase.png)
+Are you using this crate for something cool? Add yourself to this section by sending a PR!
+
+## Contributing 
+Contributions are welcome! Before writing a PR, please get in touch by filing an issue 😄

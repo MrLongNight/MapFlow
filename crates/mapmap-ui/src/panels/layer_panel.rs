@@ -135,12 +135,12 @@ impl LayerPanel {
                             Stroke::new(1.0, colors::STROKE_GREY.linear_multiply(0.5))
                         };
 
-                        egui::Frame::new()
+                        egui::Frame::NONE
                             .fill(bg_color)
                             .stroke(stroke)
-                            .corner_radius(egui::CornerRadius::same(0)) // Sharp corners for Cyber/Resolume style
+                            .corner_radius(0) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
-                            .show(ui, |ui| {
+                            .show(ui, |ui: &mut egui::Ui| {
                                 ui.horizontal(|ui| {
                                     // Reorder Buttons (Move Up/Down)
                                     ui.vertical(|ui| {

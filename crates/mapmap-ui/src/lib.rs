@@ -424,8 +424,8 @@ impl AppUI {
                     },
                 );
 
-                egui::Frame::new()
-                    .inner_margin(egui::Margin::symmetric(8, 8))
+                egui::Frame::NONE
+                    .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         let _ = self
                             .media_browser
@@ -521,10 +521,10 @@ impl AppUI {
             .order(egui::Order::Foreground)
             .interactable(false)
             .show(ctx, |ui| {
-                egui::Frame::popup(ui.style())
-                    .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .corner_radius(4.0)
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
+                egui::Frame::NONE
+                    .fill(egui::Color32::from_gray(30))
+                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(60)))
+                    .corner_radius(egui::CornerRadius::same(4))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -734,9 +734,9 @@ impl AppUI {
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
             ui.painter().rect_stroke(
                 rect.expand(2.0),
-                4,
+                egui::CornerRadius::same(4),
                 egui::Stroke::new(2.0, color),
-                egui::StrokeKind::Inside,
+                egui::StrokeKind::Middle,
             );
 
             // Check for recent MIDI activity (last 0.5s)
@@ -753,7 +753,7 @@ impl AppUI {
                         // Feedback: Flash Green
                         ui.painter().rect_filled(
                             rect.expand(2.0),
-                            4,
+                            4.0,
                             egui::Color32::GREEN.linear_multiply(0.5),
                         );
 
