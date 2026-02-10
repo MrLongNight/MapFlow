@@ -555,6 +555,23 @@ impl App {
                                     *strobe,
                                 );
                             }
+                            mapmap_core::SourceCommand::Bevy3DModel {
+                                path,
+                                position,
+                                rotation,
+                                scale,
+                                trigger_value: _,
+                            } => {
+                                if let Some(runner) = &mut self.bevy_runner {
+                                    runner.update_model(
+                                        *part_id,
+                                        path.clone(),
+                                        *position,
+                                        *rotation,
+                                        *scale,
+                                    );
+                                }
+                            }
                             _ => {}
                         }
                     }

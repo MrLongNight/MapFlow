@@ -627,6 +627,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::Bevy3DModel { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -1135,20 +1145,16 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
-    /// Control the Bevy Camera
-    BevyCamera {
-        /// Mode of operation (Orbit, Fly, Static)
-        mode: BevyCameraMode,
-        /// Target position to look at (for Orbit/Static)
-        target: [f32; 3],
-        /// Camera position (for Static)
+    /// Bevy 3D Model Loader (GLTF)
+    Bevy3DModel {
+        /// Path to GLTF/GLB file
+        path: String,
+        /// Transform: Position [x, y, z]
         position: [f32; 3],
-        /// Orbit distance
-        distance: f32,
-        /// Orbit speed
-        speed: f32,
-        /// Fly direction (for Fly mode)
-        direction: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Scale [x, y, z]
+        scale: [f32; 3],
     },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
@@ -1394,18 +1400,6 @@ impl SourceType {
             reverse_playback: false,
         }
     }
-}
-
-/// Bevy Camera Modes
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
-pub enum BevyCameraMode {
-    /// Rotates around a target point
-    #[default]
-    Orbit,
-    /// Moves continuously in a direction
-    Fly,
-    /// Fixed position and look-at
-    Static,
 }
 
 /// Types of masks

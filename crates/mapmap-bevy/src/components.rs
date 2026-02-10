@@ -69,43 +69,25 @@ pub struct BevyParticles {
     pub color_end: [f32; 4],
 }
 
-#[derive(Reflect, Clone, Copy, PartialEq, Eq, Default)]
-pub enum BevyCameraMode {
-    #[default]
-    Orbit,
-    Fly,
-    Static,
-}
-
+/// Component for 3D Model loading and transform control
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct BevyCamera {
-    pub mode: BevyCameraMode,
-    pub target: Vec3,
-    pub position: Vec3,
-    pub distance: f32,
-    pub speed: f32,
-    pub direction: Vec3,
+pub struct Bevy3DModel {
+    pub path: String,
+    pub position: [f32; 3],
+    pub rotation: [f32; 3],
+    pub scale: [f32; 3],
 }
 
-impl Default for BevyCamera {
+impl Default for Bevy3DModel {
     fn default() -> Self {
         Self {
-            mode: BevyCameraMode::Orbit,
-            target: Vec3::ZERO,
-            position: Vec3::new(0.0, 5.0, 10.0),
-            distance: 10.0,
-            speed: 1.0,
-            direction: Vec3::Z,
+            path: String::new(),
+            position: [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0],
+            scale: [1.0, 1.0, 1.0],
         }
     }
-}
-
-#[derive(Component, Default, Reflect)]
-#[reflect(Component)]
-pub struct BevyCameraState {
-    pub current_angle: f32,
-    pub current_pos: Vec3,
 }
 
 /// Tag component for the Shared Engine instance

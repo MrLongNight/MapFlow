@@ -4314,7 +4314,7 @@ dependencies = [
  "mapmap-core",
  "thiserror 1.0.69",
  "tracing",
- "wgpu 24.0.5",
+ "wgpu 27.0.1",
 ]
 
 [[package]]

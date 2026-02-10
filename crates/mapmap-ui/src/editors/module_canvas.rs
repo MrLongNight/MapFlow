@@ -901,7 +901,6 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
-                                                SourceType::BevyCamera { .. } => "📷 Camera",
                                             };
 
                                             let mut next_type = None;
@@ -1346,151 +1345,46 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
-                                            SourceType::BevyAtmosphere { .. }
-                                            | SourceType::BevyHexGrid { .. }
-                                            | SourceType::BevyParticles { .. } => {
-                                                ui.label(
-                                                    "Controls for this Bevy node are not yet implemented in UI.",
-                                                );
-                                            }
-                                            SourceType::BevyCamera {
-                                                mode,
-                                                target,
+                                            SourceType::Bevy3DModel {
+                                                path,
                                                 position,
-                                                distance,
-                                                speed,
-                                                direction,
+                                                rotation,
+                                                scale,
                                             } => {
-                                                ui.label("📷 Bevy Camera");
-
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Mode:");
-                                                    egui::ComboBox::from_id_salt("camera_mode")
-                                                        .selected_text(format!("{:?}", mode))
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(
-                                                                mode,
-                                                                mapmap_core::module::BevyCameraMode::Orbit,
-                                                                "Orbit",
-                                                            );
-                                                            ui.selectable_value(
-                                                                mode,
-                                                                mapmap_core::module::BevyCameraMode::Fly,
-                                                                "Fly",
-                                                            );
-                                                            ui.selectable_value(
-                                                                mode,
-                                                                mapmap_core::module::BevyCameraMode::Static,
-                                                                "Static",
-                                                            );
-                                                        });
-                                                });
-
+                                                ui.label("🧊 Bevy 3D Model");
                                                 ui.separator();
 
-                                                match mode {
-                                                    mapmap_core::module::BevyCameraMode::Orbit => {
-                                                        ui.label("Target:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut target[0])
-                                                                    .speed(0.1)
-                                                                    .prefix("X: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut target[1])
-                                                                    .speed(0.1)
-                                                                    .prefix("Y: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut target[2])
-                                                                    .speed(0.1)
-                                                                    .prefix("Z: "),
-                                                            );
-                                                        });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Path:");
+                                                    ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
+                                                    // TODO: Add file picker button if needed, but manual entry is fine for now
+                                                });
 
-                                                        ui.label("Height Offset (Y):");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut position[1])
-                                                                    .speed(0.1)
-                                                                    .prefix("Y: "),
-                                                            );
-                                                        });
+                                                ui.add_space(4.0);
+                                                ui.label("Transform:");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Pos:");
+                                                    ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
+                                                    ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
+                                                    ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
+                                                });
 
-                                                        ui.add(
-                                                            egui::Slider::new(distance, 1.0..=100.0)
-                                                                .text("Distance"),
-                                                        );
-                                                        ui.add(
-                                                            egui::Slider::new(speed, -5.0..=5.0)
-                                                                .text("Speed"),
-                                                        );
-                                                    }
-                                                    mapmap_core::module::BevyCameraMode::Fly => {
-                                                        ui.label("Direction:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut direction[0])
-                                                                    .speed(0.01)
-                                                                    .prefix("X: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut direction[1])
-                                                                    .speed(0.01)
-                                                                    .prefix("Y: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut direction[2])
-                                                                    .speed(0.01)
-                                                                    .prefix("Z: "),
-                                                            );
-                                                        });
-                                                        ui.add(
-                                                            egui::Slider::new(speed, 0.0..=20.0)
-                                                                .text("Speed"),
-                                                        );
-                                                    }
-                                                    mapmap_core::module::BevyCameraMode::Static => {
-                                                        ui.label("Position:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut position[0])
-                                                                    .speed(0.1)
-                                                                    .prefix("X: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut position[1])
-                                                                    .speed(0.1)
-                                                                    .prefix("Y: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut position[2])
-                                                                    .speed(0.1)
-                                                                    .prefix("Z: "),
-                                                            );
-                                                        });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Rot:");
+                                                    ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("°"));
+                                                });
 
-                                                        ui.label("Look At Target:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut target[0])
-                                                                    .speed(0.1)
-                                                                    .prefix("X: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut target[1])
-                                                                    .speed(0.1)
-                                                                    .prefix("Y: "),
-                                                            );
-                                                            ui.add(
-                                                                egui::DragValue::new(&mut target[2])
-                                                                    .speed(0.1)
-                                                                    .prefix("Z: "),
-                                                            );
-                                                        });
-                                                    }
-                                                }
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Scale:");
+                                                    ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01).prefix("X: "));
+                                                    ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01).prefix("Y: "));
+                                                    ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01).prefix("Z: "));
+                                                });
+                                            }
+                                            SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
+                                                ui.label("Controls for this Bevy node are not yet implemented in UI.");
                                             }
                                             SourceType::Bevy => {
                                                 ui.label("🎮 Bevy Scene");
@@ -5370,11 +5264,11 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
-            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+            ModulePartType::Source(SourceType::Bevy3DModel { .. }) => (
                 Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
-                "📷",
-                "Camera",
+                "🧊",
+                "3D Model",
             ),
             ModulePartType::Source(source) => {
                 let name = match source {
@@ -5392,7 +5286,6 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
-                    SourceType::BevyCamera { .. } => "Camera",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5599,7 +5492,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
-                SourceType::BevyCamera { mode, .. } => format!("📷 {:?}", mode),
+                SourceType::Bevy3DModel { path, .. } => format!("🧊 {}", path),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
