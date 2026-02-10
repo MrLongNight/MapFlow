@@ -6,7 +6,6 @@ use axum::{
         ws::{Message, WebSocket},
         State, WebSocketUpgrade,
     },
-    http::HeaderMap,
     response::Response,
 };
 
@@ -61,43 +60,8 @@ pub enum WsServerMessage {
 
 /// WebSocket upgrade handler
 #[cfg(feature = "http-api")]
-pub async fn ws_handler(
-    ws: WebSocketUpgrade,
-    headers: HeaderMap,
-    State(state): State<AppState>,
-) -> Response {
-    // Check if client requested a specific subprotocol (e.g. for auth)
-    // We need to check this before upgrade because the browser requires the server
-    // to echo back the selected protocol in the handshake response.
-    //
-    // Note: Authentication validation is performed by the `auth_middleware`
-    // which wraps this handler. If we reach this point, the token (if present)
-    // has already been validated. We just need to echo it back to satisfy the
-    // browser's WebSocket handshake requirements.
-    let protocol = extract_auth_protocol(&headers);
-
-    let ws = if let Some(protocol) = protocol {
-        ws.protocols([protocol])
-    } else {
-        ws
-    };
-
+pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
     ws.on_upgrade(|socket| handle_socket(socket, state))
-}
-
-/// Extract auth protocol from headers
-#[cfg(feature = "http-api")]
-fn extract_auth_protocol(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get(axum::http::header::SEC_WEBSOCKET_PROTOCOL)
-        .and_then(|value| value.to_str().ok())
-        .and_then(|protocols| {
-            protocols
-                .split(',')
-                .map(|p| p.trim())
-                .find(|p| p.starts_with("mapmap.auth."))
-                .map(|p| p.to_string())
-        })
 }
 
 #[cfg(not(feature = "http-api"))]
@@ -291,29 +255,5 @@ mod tests {
         let result = handle_text_message(&json).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid subscription target"));
-    }
-
-    #[cfg(feature = "http-api")]
-    #[test]
-    fn test_extract_auth_protocol() {
-        use axum::http::HeaderMap;
-
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "Sec-WebSocket-Protocol",
-            "mapmap.auth.secret, json".parse().unwrap(),
-        );
-
-        let proto = extract_auth_protocol(&headers);
-        assert_eq!(proto, Some("mapmap.auth.secret".to_string()));
-
-        let headers_empty = HeaderMap::new();
-        let proto_empty = extract_auth_protocol(&headers_empty);
-        assert_eq!(proto_empty, None);
-
-        let mut headers_other = HeaderMap::new();
-        headers_other.insert("Sec-WebSocket-Protocol", "json, xml".parse().unwrap());
-        let proto_other = extract_auth_protocol(&headers_other);
-        assert_eq!(proto_other, None);
     }
 }
