@@ -114,12 +114,14 @@ impl BevyRunner {
     /// Update the Bevy scene based on the MapFlow graph state.
     pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
         use mapmap_core::module::{ModulePartType, SourceType};
+        let module_id = module.id;
 
         self.app
             .world_mut()
             .resource_scope(|world, mut mapping: Mut<BevyNodeMapping>| {
                 for part in &module.parts {
                     if let ModulePartType::Source(source_type) = &part.part_type {
+                        let key = (module_id, part.id);
                         match source_type {
                             SourceType::BevyAtmosphere {
                                 turbidity,
@@ -130,7 +132,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                    *mapping.entities.entry(key).or_insert_with(|| {
                                         world
                                             .spawn(crate::components::BevyAtmosphere::default())
                                             .id()
@@ -153,7 +155,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                    *mapping.entities.entry(key).or_insert_with(|| {
                                         world.spawn(crate::components::BevyHexGrid::default()).id()
                                     });
                                 if let Some(mut hex) =
@@ -174,7 +176,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                    *mapping.entities.entry(key).or_insert_with(|| {
                                         world
                                             .spawn(crate::components::BevyParticles::default())
                                             .id()
@@ -199,7 +201,7 @@ impl BevyRunner {
                                 ..
                             } => {
                                 let entity =
-                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                    *mapping.entities.entry(key).or_insert_with(|| {
                                         world
                                             .spawn((
                                                 crate::components::Bevy3DShape::default(),
@@ -221,9 +223,9 @@ impl BevyRunner {
                                     transform.translation = Vec3::from(*position);
                                     transform.rotation = Quat::from_euler(
                                         EulerRot::XYZ,
-                                        rotation.x.to_radians(),
-                                        rotation.y.to_radians(),
-                                        rotation.z.to_radians(),
+                                        rotation[0].to_radians(),
+                                        rotation[1].to_radians(),
+                                        rotation[2].to_radians(),
                                     );
                                     transform.scale = Vec3::from(*scale);
                                 }
