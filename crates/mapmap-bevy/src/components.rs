@@ -8,7 +8,7 @@ pub struct AudioReactive {
     pub target: AudioReactiveTarget,
     /// Which audio data source to use
     pub source: AudioReactiveSource,
-    /// Multiplier for the audio value
+    /// Multiplier for the audio value.
     pub intensity: f32,
     /// Base value when audio is 0
     pub base: f32,
