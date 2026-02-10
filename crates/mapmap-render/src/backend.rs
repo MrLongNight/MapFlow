@@ -103,7 +103,8 @@ impl WgpuBackend {
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await;
+                .await
+                .ok();
         }
 
         let adapter =
@@ -124,7 +125,9 @@ impl WgpuBackend {
                     ..Default::default()
                 },
                 memory_hints: Default::default(),
-            }, None)
+                experimental_features: Default::default(),
+                trace: Default::default(),
+            })
             .await
             .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;
 
