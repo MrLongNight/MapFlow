@@ -79,7 +79,11 @@ impl AudioPanel {
 
         // --- Audio Device Selector ---
         ui.group(|ui| {
-            ui.label(egui::RichText::new("🎤 Input Source").strong().color(colors::CYAN_ACCENT));
+            ui.label(
+                egui::RichText::new("🎤 Input Source")
+                    .strong()
+                    .color(colors::CYAN_ACCENT),
+            );
             let no_device_text = locale.t("audio-panel-no-device");
             let selected_text = selected_audio_device.as_deref().unwrap_or(&no_device_text);
 
@@ -111,10 +115,7 @@ impl AudioPanel {
                 .show(ui, |ui| {
                     ui.label("Gain:");
                     if ui
-                        .add(
-                            egui::Slider::new(&mut config.gain, 0.1..=10.0)
-                                .logarithmic(true),
-                        )
+                        .add(egui::Slider::new(&mut config.gain, 0.1..=10.0).logarithmic(true))
                         .changed()
                     {
                         config_changed = true;
@@ -184,20 +185,23 @@ impl AudioPanel {
                 .fill(colors::DARKER_GREY)
                 .stroke(Stroke::new(1.0, colors::STROKE_GREY))
                 .inner_margin(4.0)
-                .show(ui, |ui| {
-                    match self.view_mode {
-                        ViewMode::Spectrum => self.render_spectrum(ui, analysis),
-                        ViewMode::Bars => self.render_frequency_bands(ui, locale, &analysis.band_energies),
-                        ViewMode::Waveform => self.render_waveform(ui, &analysis.waveform),
+                .show(ui, |ui| match self.view_mode {
+                    ViewMode::Spectrum => self.render_spectrum(ui, analysis),
+                    ViewMode::Bars => {
+                        self.render_frequency_bands(ui, locale, &analysis.band_energies)
                     }
+                    ViewMode::Waveform => self.render_waveform(ui, &analysis.waveform),
                 });
-
         } else {
             ui.vertical_centered(|ui| {
                 ui.add_space(10.0);
                 if selected_audio_device.is_none() {
                     ui.label(locale.t("audio-panel-select-device"));
-                    ui.label(egui::RichText::new("⚠️").size(24.0).color(colors::WARN_COLOR));
+                    ui.label(
+                        egui::RichText::new("⚠️")
+                            .size(24.0)
+                            .color(colors::WARN_COLOR),
+                    );
                 } else {
                     ui.label(locale.t("audio-panel-waiting-signal"));
                     ui.spinner();
@@ -213,12 +217,18 @@ impl AudioPanel {
     fn render_rms_volume(&self, ui: &mut Ui, locale: &LocaleManager, rms_volume: f32) {
         let rms_text = format!("{}: {:.2}", locale.t("audio-panel-rms"), rms_volume);
 
-        let (rect, _resp) = ui.allocate_at_least(Vec2::new(ui.available_width(), 18.0), Sense::hover());
+        let (rect, _resp) =
+            ui.allocate_at_least(Vec2::new(ui.available_width(), 18.0), Sense::hover());
         let painter = ui.painter();
 
         // Background
         painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
-        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Inside);
+        painter.rect_stroke(
+            rect,
+            2.0,
+            Stroke::new(1.0, colors::STROKE_GREY),
+            egui::StrokeKind::Inside,
+        );
 
         // Bar
         let width = rect.width() * rms_volume.clamp(0.0, 1.0);
@@ -256,16 +266,10 @@ impl AudioPanel {
             let (rect, _) = ui.allocate_exact_size(Vec2::splat(20.0), Sense::hover());
 
             // Base circle
-            ui.painter().circle_filled(
-                rect.center(),
-                8.0,
-                colors::DARKER_GREY,
-            );
-             ui.painter().circle_stroke(
-                rect.center(),
-                8.0,
-                Stroke::new(1.0, colors::STROKE_GREY),
-            );
+            ui.painter()
+                .circle_filled(rect.center(), 8.0, colors::DARKER_GREY);
+            ui.painter()
+                .circle_stroke(rect.center(), 8.0, Stroke::new(1.0, colors::STROKE_GREY));
 
             // Active pulse
             if beat_pulse > 0.01 {
