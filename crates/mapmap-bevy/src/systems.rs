@@ -345,15 +345,15 @@ pub fn frame_readback_system(
         );
 
         encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
-            wgpu::ImageCopyBuffer {
+            wgpu::TexelCopyBufferInfo {
                 buffer,
-                layout: wgpu::ImageDataLayout {
+                layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(bytes_per_row),
                     rows_per_image: Some(height),
@@ -412,7 +412,7 @@ pub fn camera_control_system(
     >,
     control_query: Query<&crate::components::BevyCamera>,
 ) {
-    if let Ok((mut transform, mut projection)) = camera_query.get_single_mut() {
+    if let Ok((mut transform, mut projection)) = camera_query.single_mut() {
         // Take the first active controller
         if let Some(config) = control_query.iter().next() {
             // Update FOV
