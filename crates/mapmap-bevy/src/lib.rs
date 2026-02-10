@@ -43,7 +43,8 @@ impl BevyRunner {
                     exit_condition: bevy::window::ExitCondition::DontExit,
                     close_when_requested: false,
                 })
-                .disable::<bevy::winit::WinitPlugin>(),
+                .disable::<bevy::winit::WinitPlugin>()
+                .disable::<bevy::log::LogPlugin>(),
         );
 
         // Register resources
