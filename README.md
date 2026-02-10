@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.png" alt="MapFlow Logo" width="500"/>
+</div>
+
 # MapFlow
 
 **MapFlow** is a modular, node-based **VJ (Video Jockey) Software** built in **Rust** 🦀, designed for high-performance real-time visual synthesis and
