@@ -1,6 +1,6 @@
 //! Bevy integration for MapFlow.
 //!
-//! This crate provides a bridge between MapFlow's orchestration and the Bevy game engine
+//! This crate provides a bridge between MapFlow's orchestration and the Bevy game engine.
 //! for high-performance 3D rendering and audio reactivity.
 
 pub mod components;
