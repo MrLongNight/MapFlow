@@ -74,10 +74,9 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 
 ## 2026-02-10 - Root & Docs Cleanup
 
-**Erkenntnis:** Das Root-Verzeichnis enthielt `apply_global_fix.ps1` (veralteter Patch-Script), `fix_formatting.py` (Utility-Script) und `.markdownlint.json` (Linter-Config), die dort nicht hingehören. Zudem befand sich ein Zip-Archiv `HueFlow-main.zip` in der Dokumentation.
+**Erkenntnis:** Das Root-Verzeichnis enthielt `apply_global_fix.ps1` (veralteter Patch-Script) und `fix_formatting.py` (Utility-Script), die dort nicht hingehören. Zudem befand sich ein Zip-Archiv `HueFlow-main.zip` in der Dokumentation.
 
 **Aktion:**
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
-- `.markdownlint.json` nach `.github/markdownlint.json` verschoben.
