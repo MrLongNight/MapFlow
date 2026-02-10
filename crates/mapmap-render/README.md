@@ -4,8 +4,7 @@ The low-level graphics rendering engine for MapFlow, built on top of `wgpu`.
 
 ## Overview
 
-MapFlow Render provides a robust abstraction over modern graphics APIs (Vulkan, Metal, DX12),
-handling the complex details of the rendering pipeline so the core application can focus on logic.
+MapFlow Render provides a robust abstraction over modern graphics APIs (Vulkan, Metal, DX12), handling the complex details of the rendering pipeline so the core application can focus on logic.
 
 ## Key Modules
 
