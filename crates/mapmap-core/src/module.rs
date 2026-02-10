@@ -3236,7 +3236,7 @@ mod additional_tests {
         ];
 
         for source in sources {
-            let part_type = ModulePartType::Source(source.clone());
+            let part_type: ModulePartType = ModulePartType::Source(source.clone());
             let (inputs, outputs) = part_type.get_default_sockets();
 
             // Check Input sockets (Trigger)

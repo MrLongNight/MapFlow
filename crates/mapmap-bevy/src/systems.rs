@@ -1,7 +1,7 @@
 use crate::components::{AudioReactive, AudioReactiveTarget};
 use crate::resources::AudioInputResource;
-use bevy::prelude::*;
 use bevy::gltf::GltfAssetLabel;
+use bevy::prelude::*;
 
 pub fn audio_reaction_system(
     audio: Res<AudioInputResource>,
@@ -173,7 +173,12 @@ pub fn model_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut query: Query<
-        (Entity, &crate::components::Bevy3DModel, &mut Transform, Option<&SceneRoot>),
+        (
+            Entity,
+            &crate::components::Bevy3DModel,
+            &mut Transform,
+            Option<&SceneRoot>,
+        ),
         Changed<crate::components::Bevy3DModel>,
     >,
 ) {
@@ -193,7 +198,8 @@ pub fn model_system(
         // Load Scene if path is set
         if !model_config.path.is_empty() {
             // Load GLTF Scene (Scene 0 by default)
-            let new_handle = asset_server.load(GltfAssetLabel::Scene(0).from_asset(model_config.path.clone()));
+            let new_handle =
+                asset_server.load(GltfAssetLabel::Scene(0).from_asset(model_config.path.clone()));
 
             // Only update if changed or missing
             let needs_update = if let Some(root) = current_scene {

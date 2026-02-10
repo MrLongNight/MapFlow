@@ -63,7 +63,9 @@ mod tests {
         let res = AbletonLinkHandle::new(10.0);
         assert!(res.is_err());
         match res {
-            Err(ControlError::LinkError(msg)) => assert_eq!(msg, "Tempo must be between 20 and 300 BPM"),
+            Err(ControlError::LinkError(msg)) => {
+                assert_eq!(msg, "Tempo must be between 20 and 300 BPM")
+            }
             _ => panic!("Expected LinkError"),
         }
 
@@ -83,6 +85,9 @@ mod tests {
         // Invalid update
         let res = handle.set_tempo_bpm(10.0);
         assert!(res.is_err());
-        assert!((handle.tempo_bpm() - 140.0).abs() < f64::EPSILON, "Tempo should not change on error");
+        assert!(
+            (handle.tempo_bpm() - 140.0).abs() < f64::EPSILON,
+            "Tempo should not change on error"
+        );
     }
 }
