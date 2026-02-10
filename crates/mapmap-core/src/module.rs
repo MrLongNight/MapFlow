@@ -1156,6 +1156,21 @@ pub enum SourceType {
         /// Transform: Scale [x, y, z]
         scale: [f32; 3],
     },
+    /// Bevy Camera control node
+    BevyCamera {
+        /// Mode of operation (Orbit, Fly, Static)
+        mode: BevyCameraMode,
+        /// Target position to look at (for Orbit/Static)
+        target: [f32; 3],
+        /// Camera position (for Static)
+        position: [f32; 3],
+        /// Orbit distance
+        distance: f32,
+        /// Orbit speed
+        speed: f32,
+        /// Fly direction (for Fly mode)
+        direction: [f32; 3],
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1400,6 +1415,18 @@ impl SourceType {
             reverse_playback: false,
         }
     }
+}
+
+/// Mode of operation for the Bevy camera
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Copy)]
+pub enum BevyCameraMode {
+    /// Rotates around a target point
+    #[default]
+    Orbit,
+    /// Moves continuously in a direction
+    Fly,
+    /// Fixed position and look-at
+    Static,
 }
 
 /// Types of masks

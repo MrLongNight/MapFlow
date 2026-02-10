@@ -446,6 +446,11 @@ pub enum SourceCommand {
         /// Trigger value
         trigger_value: f32,
     },
+    /// Bevy Camera Input
+    BevyCamera {
+        /// Trigger value
+        trigger_value: f32,
+    },
     /// Bevy 3D Model Input
     Bevy3DModel {
         /// Path to GLTF/GLB file
@@ -1391,6 +1396,7 @@ impl ModuleEvaluator {
                 scale: *scale,
                 trigger_value,
             }),
+            SourceType::BevyCamera { .. } => Some(SourceCommand::BevyCamera { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }
