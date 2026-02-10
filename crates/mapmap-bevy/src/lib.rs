@@ -61,10 +61,18 @@ impl BevyRunner {
         app.register_type::<BevyAtmosphere>();
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
+        app.register_type::<BevyCamera>();
 
         // Register systems
         app.add_systems(Update, print_status_system);
-        app.add_systems(Update, (audio_reaction_system, hex_grid_system));
+        app.add_systems(
+            Update,
+            (
+                audio_reaction_system,
+                hex_grid_system,
+                camera_control_system,
+            ),
+        );
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
         render_app.add_systems(bevy::render::Render, frame_readback_system);
@@ -94,11 +102,60 @@ impl BevyRunner {
     }
 
     /// Sync the MapFlow module graph state to Bevy entities.
-    pub fn apply_graph_state(&mut self, _module: &mapmap_core::module::MapFlowModule) {
-        let _mapping = self.app.world_mut().resource_mut::<BevyNodeMapping>();
-        // TODO: Implement full graph sync (spawn/despawn entities based on module parts)
-        // For now, this is a placeholder to satisfy the API.
-        // Real implementation would iterate module.parts, check mapping, spawn/update components.
+    pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
+        let world = self.app.world_mut();
+
+        let mut mapping = std::mem::take(&mut *world.resource_mut::<BevyNodeMapping>());
+        let mut active_parts = std::collections::HashSet::new();
+
+        for part in &module.parts {
+            active_parts.insert(part.id);
+
+            if let mapmap_core::module::ModulePartType::Source(
+                mapmap_core::module::SourceType::BevyCamera {
+                    mode,
+                    position,
+                    look_at,
+                    up,
+                    fov,
+                    speed,
+                },
+            ) = &part.part_type
+            {
+                let entity = if let Some(&e) = mapping.entities.get(&part.id) {
+                    if world.get_entity(e).is_ok() {
+                        e
+                    } else {
+                        world.spawn(BevyCamera::default()).id()
+                    }
+                } else {
+                    world.spawn(BevyCamera::default()).id()
+                };
+
+                mapping.entities.insert(part.id, entity);
+
+                if let Some(mut comp) = world.get_mut::<BevyCamera>(entity) {
+                    comp.mode = *mode;
+                    comp.position = Vec3::from_array(*position);
+                    comp.look_at = Vec3::from_array(*look_at);
+                    comp.up = Vec3::from_array(*up);
+                    comp.fov = *fov;
+                    comp.speed = *speed;
+                }
+            }
+        }
+
+        // Cleanup removed parts
+        mapping.entities.retain(|id, entity| {
+            if !active_parts.contains(id) {
+                let _ = world.despawn(*entity);
+                false
+            } else {
+                true
+            }
+        });
+
+        *world.resource_mut::<BevyNodeMapping>() = mapping;
     }
 }
 

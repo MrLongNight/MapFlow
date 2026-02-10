@@ -90,3 +90,29 @@ pub struct Particle {
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;
+
+/// Component for controlling the camera
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct BevyCamera {
+    #[reflect(ignore)]
+    pub mode: mapmap_core::module::BevyCameraMode,
+    pub position: Vec3,
+    pub look_at: Vec3,
+    pub up: Vec3,
+    pub fov: f32,
+    pub speed: f32,
+}
+
+impl Default for BevyCamera {
+    fn default() -> Self {
+        Self {
+            mode: Default::default(),
+            position: Vec3::new(0.0, 5.0, 10.0),
+            look_at: Vec3::ZERO,
+            up: Vec3::Y,
+            fov: 60.0,
+            speed: 1.0,
+        }
+    }
+}

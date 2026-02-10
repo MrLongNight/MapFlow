@@ -345,21 +345,21 @@ pub fn frame_readback_system(
         );
 
         encoder.copy_texture_to_buffer(
-            bevy::render::render_resource::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture,
                 mip_level: 0,
-                origin: bevy::render::render_resource::Origin3d::ZERO,
-                aspect: bevy::render::render_resource::TextureAspect::All,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
             },
-            bevy::render::render_resource::TexelCopyBufferInfo {
+            wgpu::ImageCopyBuffer {
                 buffer,
-                layout: bevy::render::render_resource::TexelCopyBufferLayout {
+                layout: wgpu::ImageDataLayout {
                     offset: 0,
                     bytes_per_row: Some(bytes_per_row),
                     rows_per_image: Some(height),
                 },
             },
-            bevy::render::render_resource::Extent3d {
+            wgpu::Extent3d {
                 width,
                 height,
                 depth_or_array_layers: 1,
@@ -401,5 +401,58 @@ pub fn frame_readback_system(
 
         // Must unmap to use buffer again next frame for writing
         buffer.unmap();
+    }
+}
+
+pub fn camera_control_system(
+    time: Res<Time>,
+    mut camera_query: Query<
+        (&mut Transform, &mut Projection),
+        With<crate::components::SharedEngineCamera>,
+    >,
+    control_query: Query<&crate::components::BevyCamera>,
+) {
+    if let Ok((mut transform, mut projection)) = camera_query.get_single_mut() {
+        // Take the first active controller
+        if let Some(config) = control_query.iter().next() {
+            // Update FOV
+            if let Projection::Perspective(ref mut persp) = *projection {
+                persp.fov = config.fov.to_radians();
+            }
+
+            match config.mode {
+                mapmap_core::module::BevyCameraMode::Static => {
+                    *transform = Transform::from_translation(config.position)
+                        .looking_at(config.look_at, config.up);
+                }
+                mapmap_core::module::BevyCameraMode::Orbit => {
+                    // Simple orbit around look_at point
+                    let t = time.elapsed_secs() * config.speed * 0.5;
+                    // Radius derived from initial distance
+                    let radius = config.position.distance(config.look_at).max(1.0);
+                    // Orbit in XZ plane
+                    let x = t.cos() * radius;
+                    let z = t.sin() * radius;
+                    let offset = Vec3::new(x, config.position.y, z); // Keep Y from position
+
+                    *transform = Transform::from_translation(config.look_at + offset)
+                        .looking_at(config.look_at, config.up);
+                }
+                mapmap_core::module::BevyCameraMode::Fly => {
+                    // Fly forward continuously
+                    // Use look_at as direction vector? Or just forward.
+                    let speed = config.speed * 5.0; // Scale up
+                    let t = time.elapsed_secs();
+                    // Fly in a figure-8 pattern for demo
+                    let x = (t * speed * 0.5).sin() * 10.0;
+                    let z = (t * speed).cos() * 5.0;
+                    let y = 5.0 + (t * speed * 0.2).sin() * 2.0;
+
+                    let pos = config.position + Vec3::new(x, y, z);
+                    *transform =
+                        Transform::from_translation(pos).looking_at(config.look_at, config.up);
+                }
+            }
+        }
     }
 }

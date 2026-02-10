@@ -35,6 +35,18 @@ fn default_scale() -> f32 {
     1.0
 }
 
+fn default_vec3_zero() -> [f32; 3] {
+    [0.0, 0.0, 0.0]
+}
+
+fn default_vec3_y() -> [f32; 3] {
+    [0.0, 1.0, 0.0]
+}
+
+fn default_fov() -> f32 {
+    60.0
+}
+
 fn default_next_part_id() -> ModulePartId {
     1
 }
@@ -636,6 +648,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -1146,6 +1168,26 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Bevy Camera Control
+    BevyCamera {
+        /// Camera mode (Orbit, Fly, Static)
+        mode: BevyCameraMode,
+        /// Position [x, y, z]
+        #[serde(default = "default_vec3_zero")]
+        position: [f32; 3],
+        /// Look At Target [x, y, z] (for Orbit/Static)
+        #[serde(default = "default_vec3_zero")]
+        look_at: [f32; 3],
+        /// Up Vector [x, y, z]
+        #[serde(default = "default_vec3_y")]
+        up: [f32; 3],
+        /// Field of View (degrees)
+        #[serde(default = "default_fov")]
+        fov: f32,
+        /// Movement/Rotation Speed
+        #[serde(default = "default_speed")]
+        speed: f32,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1360,6 +1402,18 @@ pub enum SourceType {
         #[serde(default)]
         flip_vertical: bool,
     },
+}
+
+/// Camera modes for Bevy Camera
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
+pub enum BevyCameraMode {
+    /// Rotates around a target point
+    #[default]
+    Orbit,
+    /// Moves freely in a direction (WASD-like or auto-fly)
+    Fly,
+    /// Fixed position looking at a target
+    Static,
 }
 
 impl SourceType {

@@ -902,6 +902,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::BevyCamera { .. } => "📷 Bevy Camera",
                                             };
 
                                             let mut next_type = None;
@@ -916,6 +917,8 @@ impl ModuleCanvas {
                                                     ui.label("--- Shared ---");
                                                     if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "🔗 Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "🔗 Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
+                                                    ui.label("--- Bevy ---");
+                                                    if ui.selectable_label(matches!(source, SourceType::BevyCamera { .. }), "📷 Bevy Camera").clicked() { next_type = Some("BevyCamera"); }
                                                 });
 
                                             if let Some(t) = next_type {
@@ -959,6 +962,14 @@ impl ModuleCanvas {
                                                         opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
                                                         scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
                                                         flip_horizontal: false, flip_vertical: false,
+                                                    },
+                                                    "BevyCamera" => SourceType::BevyCamera {
+                                                        mode: mapmap_core::module::BevyCameraMode::default(),
+                                                        position: [0.0, 5.0, 10.0],
+                                                        look_at: [0.0, 0.0, 0.0],
+                                                        up: [0.0, 1.0, 0.0],
+                                                        fov: 60.0,
+                                                        speed: 1.0,
                                                     },
                                                     _ => source.clone(),
                                                 };
@@ -1349,6 +1360,57 @@ impl ModuleCanvas {
                                             }
                                             SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
+                                            }
+                                            SourceType::BevyCamera { mode, position, look_at, up, fov, speed } => {
+                                                ui.label("📷 Bevy Camera");
+                                                ui.separator();
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Mode:");
+                                                    egui::ComboBox::from_id_salt(format!("cam_mode_{}", part_id))
+                                                        .selected_text(format!("{:?}", mode))
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(mode, mapmap_core::module::BevyCameraMode::Orbit, "Orbit");
+                                                            ui.selectable_value(mode, mapmap_core::module::BevyCameraMode::Fly, "Fly");
+                                                            ui.selectable_value(mode, mapmap_core::module::BevyCameraMode::Static, "Static");
+                                                        });
+                                                });
+
+                                                ui.separator();
+                                                ui.label("Transform:");
+
+                                                ui.label("Position:");
+                                                ui.horizontal(|ui| {
+                                                    styled_drag_value(ui, &mut position[0], 0.1, -100.0..=100.0, 0.0, "X: ", "");
+                                                    styled_drag_value(ui, &mut position[1], 0.1, -100.0..=100.0, 0.0, "Y: ", "");
+                                                    styled_drag_value(ui, &mut position[2], 0.1, -100.0..=100.0, 0.0, "Z: ", "");
+                                                });
+
+                                                ui.label("Look At Target:");
+                                                ui.horizontal(|ui| {
+                                                    styled_drag_value(ui, &mut look_at[0], 0.1, -100.0..=100.0, 0.0, "X: ", "");
+                                                    styled_drag_value(ui, &mut look_at[1], 0.1, -100.0..=100.0, 0.0, "Y: ", "");
+                                                    styled_drag_value(ui, &mut look_at[2], 0.1, -100.0..=100.0, 0.0, "Z: ", "");
+                                                });
+
+                                                ui.label("Up Vector:");
+                                                ui.horizontal(|ui| {
+                                                    styled_drag_value(ui, &mut up[0], 0.1, -1.0..=1.0, 0.0, "X: ", "");
+                                                    styled_drag_value(ui, &mut up[1], 0.1, -1.0..=1.0, 1.0, "Y: ", "");
+                                                    styled_drag_value(ui, &mut up[2], 0.1, -1.0..=1.0, 0.0, "Z: ", "");
+                                                });
+
+                                                ui.separator();
+                                                ui.horizontal(|ui| {
+                                                    ui.label("FOV:");
+                                                    styled_slider(ui, fov, 10.0..=170.0, 60.0);
+                                                    ui.label("°");
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Speed:");
+                                                    styled_slider(ui, speed, 0.0..=10.0, 1.0);
+                                                });
                                             }
                                             SourceType::Bevy => {
                                                 ui.label("🎮 Bevy Scene");
@@ -5228,6 +5290,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "📷",
+                "Bevy Camera",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5244,6 +5312,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::BevyCamera { .. } => "Bevy Camera",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5450,6 +5519,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::BevyCamera { mode, .. } => format!("📷 {:?}", mode),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
