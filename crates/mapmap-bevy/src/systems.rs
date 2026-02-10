@@ -110,13 +110,17 @@ pub fn hex_grid_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     query: Query<
-        (Entity, &crate::components::BevyHexGrid),
+        (Entity, &crate::components::BevyHexGrid, Option<&Children>),
         Changed<crate::components::BevyHexGrid>,
     >,
 ) {
-    for (entity, hex_config) in query.iter() {
+    for (entity, hex_config, children) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn_related::<Children>();
+        if let Some(children) = children {
+            for child in children.iter() {
+                commands.entity(child).despawn();
+            }
+        }
 
         let layout = hexx::HexLayout {
             scale: hexx::Vec2::splat(hex_config.radius),
@@ -161,6 +165,55 @@ pub fn particle_system(
     for (_entity, _p_config) in query.iter() {
         // Update particles logic (Simplified for now)
         // In a real implementation, we would update the bevy_enoki components here.
+    }
+}
+
+pub fn text_3d_system(
+    mut commands: Commands,
+    query: Query<
+        (Entity, &crate::components::Bevy3DText, Option<&Children>),
+        Changed<crate::components::Bevy3DText>,
+    >,
+) {
+    for (entity, config, children) in query.iter() {
+        if let Some(children) = children {
+            for child in children.iter() {
+                commands.entity(child).despawn();
+            }
+        }
+
+        let justify = match config.alignment {
+            mapmap_core::module::TextAlignment::Left => JustifyText::Left,
+            mapmap_core::module::TextAlignment::Center => JustifyText::Center,
+            mapmap_core::module::TextAlignment::Right => JustifyText::Right,
+        };
+
+        let color = Color::srgba(
+            config.color[0],
+            config.color[1],
+            config.color[2],
+            config.color[3],
+        );
+
+        commands.entity(entity).with_children(|parent| {
+            parent.spawn((
+                Text::new(&config.text),
+                TextFont {
+                    font_size: config.font_size,
+                    ..default()
+                },
+                TextColor(color),
+                TextLayout::new_with_justify(justify),
+                Text2d::default(),
+                Transform::from_xyz(config.position[0], config.position[1], config.position[2])
+                    .with_rotation(Quat::from_euler(
+                        EulerRot::XYZ,
+                        config.rotation[0].to_radians(),
+                        config.rotation[1].to_radians(),
+                        config.rotation[2].to_radians(),
+                    )),
+            ));
+        });
     }
 }
 

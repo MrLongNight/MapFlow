@@ -1135,6 +1135,21 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Specialized Bevy 3D Text
+    Bevy3DText {
+        /// Text content
+        text: String,
+        /// Font size
+        font_size: f32,
+        /// Text color (RGBA)
+        color: [f32; 4],
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Text alignment
+        alignment: TextAlignment,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1914,6 +1929,18 @@ fn default_mesh_quad() -> MeshType {
         br: (1.0, 1.0),
         bl: (0.0, 1.0),
     }
+}
+
+/// Text alignment options
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
+pub enum TextAlignment {
+    /// Left aligned
+    #[default]
+    Left,
+    /// Center aligned
+    Center,
+    /// Right aligned
+    Right,
 }
 
 /// Types of compositing layers

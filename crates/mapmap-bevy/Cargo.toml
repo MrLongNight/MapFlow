@@ -17,6 +17,9 @@ bevy = { version = "0.16", default-features = false, features = [
     "bevy_render",
     "bevy_scene",
     "bevy_winit",
+    "bevy_text",
+    "bevy_sprite",
+    "bevy_ui",
     "x11",
     "wayland",
     "tonemapping_luts",
@@ -31,4 +34,4 @@ hexx = "0.24" # Version compatible with Bevy 0.16
 mapmap-core = { path = "../mapmap-core" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts
+wgpu = { workspace = true }

@@ -901,6 +901,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DText { .. } => "3D Text",
                                             };
 
                                             let mut next_type = None;
@@ -1347,6 +1348,50 @@ impl ModuleCanvas {
                                             }
                                             SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
+                                            }
+                                            SourceType::Bevy3DText { text, font_size, color, position, rotation, alignment } => {
+                                                ui.label("📝 3D Text Settings");
+                                                ui.separator();
+
+                                                ui.label("Content:");
+                                                ui.text_edit_multiline(text);
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Size:");
+                                                    ui.add(egui::Slider::new(font_size, 1.0..=200.0));
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Color:");
+                                                    ui.color_edit_button_rgba_unmultiplied(color);
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Align:");
+                                                    egui::ComboBox::from_id_salt(format!("align_{}", part_id))
+                                                        .selected_text(format!("{:?}", alignment))
+                                                        .show_ui(ui, |ui| {
+                                                            use mapmap_core::module::TextAlignment;
+                                                            ui.selectable_value(alignment, TextAlignment::Left, "Left");
+                                                            ui.selectable_value(alignment, TextAlignment::Center, "Center");
+                                                            ui.selectable_value(alignment, TextAlignment::Right, "Right");
+                                                        });
+                                                });
+
+                                                ui.separator();
+                                                ui.label("Transform:");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Pos:");
+                                                    ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X:"));
+                                                    ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y:"));
+                                                    ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z:"));
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Rot:");
+                                                    ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X:").suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y:").suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z:").suffix("°"));
+                                                });
                                             }
                                             SourceType::Bevy => {
                                                 ui.label("🎮 Bevy Scene");
@@ -5226,6 +5271,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::Bevy3DText { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(220, 220, 100),
+                "T",
+                "3D Text",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5242,6 +5293,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::Bevy3DText { .. } => "3D Text",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5448,6 +5500,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::Bevy3DText { text, .. } => format!("T {}", text),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
