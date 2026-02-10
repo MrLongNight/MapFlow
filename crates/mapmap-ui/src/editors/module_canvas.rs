@@ -901,6 +901,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DModel { .. } => "📦 3D Model",
                                             };
 
                                             let mut next_type = None;
@@ -1343,6 +1344,43 @@ impl ModuleCanvas {
                                                 ui.horizontal(|ui| {
                                                     ui.label("Sender:");
                                                     ui.text_edit_singleline(sender_name);
+                                                });
+                                            }
+                                            SourceType::Bevy3DModel { path, position, rotation, scale } => {
+                                                ui.label("📦 Bevy 3D Model");
+                                                ui.collapsing("📁 Model", |ui| {
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Path:");
+                                                        ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
+                                                        if ui.button("📂").clicked() {
+                                                            if let Some(picked) = rfd::FileDialog::new()
+                                                                .add_filter("3D Model", &["gltf", "glb"])
+                                                                .pick_file()
+                                                            {
+                                                                *path = picked.display().to_string();
+                                                            }
+                                                        }
+                                                    });
+                                                });
+                                                ui.separator();
+                                                ui.label("Transform:");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Pos:");
+                                                    ui.add(egui::DragValue::new(&mut position[0]).speed(0.1));
+                                                    ui.add(egui::DragValue::new(&mut position[1]).speed(0.1));
+                                                    ui.add(egui::DragValue::new(&mut position[2]).speed(0.1));
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Rot:");
+                                                    ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).suffix("°"));
+                                                    ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).suffix("°"));
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Scale:");
+                                                    ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01));
+                                                    ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01));
+                                                    ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01));
                                                 });
                                             }
                                             SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
@@ -5252,6 +5290,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::Bevy3DModel { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "📦",
+                "3D Model",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5268,6 +5312,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::Bevy3DModel { .. } => "3D Model",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5474,6 +5519,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::Bevy3DModel { .. } => "📦 3D Model".to_string(),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
