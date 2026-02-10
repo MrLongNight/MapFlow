@@ -9,12 +9,10 @@ ci:
   autoupdate_schedule: weekly
 
   # Skip Rust hooks in CI (no toolchain available)
-  # Skip markdownlint (too many false positives with tables)
   skip:
     - fmt
     - clippy
     - cargo-sort
-    - markdownlint-fix
 
   submodules: false
 
@@ -74,7 +72,7 @@ repos:
   # MARKDOWN LINTING (only new files, not entire repo)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+    rev: v0.39.0
     hooks:
       - id: markdownlint-fix
         name: "Markdown: lint and fix"
@@ -83,13 +81,13 @@ repos:
           - '.markdownlint.json'
         files: \.(md|markdown)$
         # Exclude existing problematic files (legacy)
-        exclude: ^(CHANGELOG\.md|ROADMAP\.md|.*\.patch|\.jules/.*|\.agent/.*|docs/.*)$
+        exclude: ^(CHANGELOG\.md|.*\.patch|\.jules/.*|\.agent/.*|docs/.*)$
 
   # ═══════════════════════════════════════════════════════════════
   # SECURITY: SECRET DETECTION
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+    rev: v1.4.0
     hooks:
       - id: detect-secrets
         name: "Security: detect secrets"
@@ -102,7 +100,7 @@ repos:
   # CARGO.TOML SORTING (local only)
   # ═══════════════════════════════════════════════════════════════
   - repo: https://github.com/DevinR528/cargo-sort
-    rev: v2.0.2
+    rev: v1.0.9
     hooks:
       - id: cargo-sort
         name: "Rust: sort Cargo.toml"
