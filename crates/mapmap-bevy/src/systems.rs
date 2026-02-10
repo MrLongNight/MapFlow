@@ -53,6 +53,59 @@ pub fn audio_reaction_system(
     }
 }
 
+pub fn camera_control_system(
+    time: Res<Time>,
+    mut query: Query<(
+        &crate::components::BevyCamera,
+        &mut crate::components::BevyCameraState,
+    )>,
+    mut camera_query: Query<&mut Transform, With<crate::components::SharedEngineCamera>>,
+) {
+    // We assume only one active BevyCamera node controls the view for now.
+    // If multiple exist, the last one wins.
+    if let Some(mut camera_transform) = camera_query.iter_mut().next() {
+        for (config, mut state) in query.iter_mut() {
+            match config.mode {
+                crate::components::BevyCameraMode::Orbit => {
+                    // Update angle based on speed
+                    state.current_angle += config.speed * time.delta_secs();
+
+                    let x = config.distance * state.current_angle.cos();
+                    let z = config.distance * state.current_angle.sin();
+
+                    // Use config.position.y for height offset
+                    let pos = config.target + Vec3::new(x, config.position.y, z);
+
+                    // Sync state for continuity when switching modes
+                    state.current_pos = pos;
+
+                    *camera_transform =
+                        Transform::from_translation(pos).looking_at(config.target, Vec3::Y);
+                }
+                crate::components::BevyCameraMode::Fly => {
+                    // Move in direction
+                    // If direction is zero, default to Forward
+                    let dir = if config.direction.length_squared() < 0.001 {
+                        Vec3::NEG_Z
+                    } else {
+                        config.direction.normalize()
+                    };
+
+                    state.current_pos += dir * config.speed * time.delta_secs();
+                    *camera_transform =
+                        Transform::from_translation(state.current_pos).looking_to(dir, Vec3::Y);
+                }
+                crate::components::BevyCameraMode::Static => {
+                    *camera_transform = Transform::from_translation(config.position)
+                        .looking_at(config.target, Vec3::Y);
+                    // Sync state for seamless transitions
+                    state.current_pos = config.position;
+                }
+            }
+        }
+    }
+}
+
 pub fn setup_3d_scene(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
