@@ -81,7 +81,7 @@ impl IconDemoPanel {
                                         ui.set_width(icon_size + 60.0);
 
                                         // Icon background
-                                        egui::Frame::NONE
+                                        egui::Frame::none()
                                             .fill(egui::Color32::from_rgb(30, 35, 45))
                                             .corner_radius(8.0)
                                             .inner_margin(12.0)

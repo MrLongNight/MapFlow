@@ -107,8 +107,6 @@ impl BevyRunner {
         res.beat_detected = audio_data.beat_detected;
 
         // Perform cleanup of stale entities
-        // We do this here because apply_graph_state might be called multiple times (once per module)
-        // and we need to aggregate active IDs across all modules before cleanup.
         let world = self.app.world_mut();
         let mut stale_keys = Vec::new();
 
@@ -159,7 +157,7 @@ impl BevyRunner {
                         let entity = mapping.entities.get(&part.id).copied();
 
                         if let Some(e) = entity {
-                            // Update existing (optimize by checking equality if possible, but for simple types assign is fast)
+                            // Update existing
                             if let Some(mut component) = world.get_mut::<BevyParticles>(e) {
                                 component.rate = *rate;
                                 component.lifetime = *lifetime;
@@ -210,7 +208,6 @@ impl BevyRunner {
                         if let Some(e) = entity {
                             // Update existing
                             if let Some(mut component) = world.get_mut::<Bevy3DText>(e) {
-                                // Simple equality check to avoid dirty marking if not changed
                                 if component.text != *text
                                     || (component.font_size - *font_size).abs() > f32::EPSILON
                                     || component.color != *color
@@ -239,7 +236,7 @@ impl BevyRunner {
                                         rotation: *rotation,
                                         alignment: *alignment,
                                     },
-                                    Transform::default(), // System handles transform
+                                    Transform::default(),
                                     Visibility::default(),
                                 ))
                                 .id();

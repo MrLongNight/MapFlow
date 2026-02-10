@@ -18,7 +18,7 @@ pub fn cyber_panel_frame(_style: &egui::Style) -> Frame {
     Frame {
         inner_margin: egui::Margin::ZERO, // Header handles spacing
         outer_margin: egui::Margin::ZERO,
-        corner_radius: egui::CornerRadius::same(0),
+        rounding: 0.0.into(),
         shadow: egui::Shadow::NONE,
         fill: colors::DARK_GREY,
         stroke: Stroke::new(1.0, colors::STROKE_GREY),

@@ -901,7 +901,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
-                                                SourceType::Bevy3DText { .. } => "3D Text",
+                                                SourceType::Bevy3DText { .. } => "T 3D Text",
                                             };
 
                                             let mut next_type = None;
