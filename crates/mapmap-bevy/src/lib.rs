@@ -18,52 +18,38 @@ pub struct BevyRunner {
     app: App,
 }
 
-impl BevyRunner {
-    /// Creates a new BevyRunner instance with a shared WGPU context.
-    pub fn new(
-        instance: std::sync::Arc<wgpu::Instance>,
-        adapter: std::sync::Arc<wgpu::Adapter>,
-        device: std::sync::Arc<wgpu::Device>,
-        queue: std::sync::Arc<wgpu::Queue>,
-    ) -> Self {
-        info!("Initializing Bevy integration with shared WGPU context...");
+impl Default for BevyRunner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-        use bevy::render::renderer::{
-            RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue,
-            WgpuWrapper,
-        };
+impl BevyRunner {
+    /// Creates a new BevyRunner instance.
+    pub fn new() -> Self {
+        info!("Initializing Bevy integration...");
 
         let mut app = App::new();
 
-        // Wrap wgpu resources into Bevy's wrapper types (WgpuWrapper is required for Send/Sync)
-        let info = adapter.get_info();
-        let render_instance =
-            RenderInstance(std::sync::Arc::new(WgpuWrapper::new((*instance).clone())));
-        let render_adapter =
-            RenderAdapter(std::sync::Arc::new(WgpuWrapper::new((*adapter).clone())));
-        let render_device = RenderDevice::from((*device).clone());
-        let render_queue = RenderQueue(std::sync::Arc::new(WgpuWrapper::new((*queue).clone())));
-        let adapter_info = RenderAdapterInfo(WgpuWrapper::new(info));
-
-        // Use DefaultPlugins but with shared WGPU resources.
+        // Use DefaultPlugins but disable windowing and input loop to avoid Winit panic
         app.add_plugins(
             DefaultPlugins
-                .set(bevy::render::RenderPlugin {
-                    render_creation: bevy::render::settings::RenderCreation::manual(
-                        render_device,
-                        render_queue,
-                        adapter_info,
-                        render_adapter,
-                        render_instance,
-                    ),
-                    synchronous_pipeline_compilation: true,
-                    ..default()
-                })
                 .set(WindowPlugin {
                     primary_window: None,
                     exit_condition: bevy::window::ExitCondition::DontExit,
                     close_when_requested: false,
                 })
+                .set(bevy::render::RenderPlugin {
+                    render_creation: bevy::render::settings::RenderCreation::Automatic(
+                        bevy::render::settings::WgpuSettings {
+                            // Inherit backend preferences if possible, or default
+                            ..default()
+                        },
+                    ),
+                    synchronous_pipeline_compilation: false,
+                    ..default()
+                })
+                // CRITICAL: Disable WinitPlugin to prevent it from taking over the event loop!
                 .disable::<bevy::winit::WinitPlugin>(),
         );
 
@@ -115,74 +101,151 @@ impl BevyRunner {
         self.app.update();
     }
 
-    /// Sync module graph state to Bevy entities
-    pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
-        let world = self.app.world_mut();
-
-        for part in &module.parts {
-            // Check if we have an entity for this part
-            let entity = world
-                .resource::<BevyNodeMapping>()
-                .entities
-                .get(&part.id)
-                .copied();
-
-            use mapmap_core::module::{ModulePartType, SourceType};
-
-            if let ModulePartType::Source(SourceType::BevyCamera {
-                mode,
-                target,
-                position,
-                distance,
-                speed,
-                direction,
-            }) = &part.part_type
-            {
-                // Map Core Mode to Bevy Mode
-                let bevy_mode = match mode {
-                    mapmap_core::module::BevyCameraMode::Orbit => BevyCameraMode::Orbit,
-                    mapmap_core::module::BevyCameraMode::Fly => BevyCameraMode::Fly,
-                    mapmap_core::module::BevyCameraMode::Static => BevyCameraMode::Static,
-                };
-
-                let target = Vec3::from(*target);
-                let position = Vec3::from(*position);
-                let direction = Vec3::from(*direction);
-
-                if let Some(e) = entity {
-                    if let Some(mut cam) = world.get_mut::<BevyCamera>(e) {
-                        cam.mode = bevy_mode;
-                        cam.target = target;
-                        cam.position = position;
-                        cam.distance = *distance;
-                        cam.speed = *speed;
-                        cam.direction = direction;
-                    }
-                } else {
-                    // Spawn new
-                    let id = world
-                        .spawn((
-                            BevyCamera {
-                                mode: bevy_mode,
-                                target,
-                                position,
-                                distance: *distance,
-                                speed: *speed,
-                                direction,
-                            },
-                            BevyCameraState {
-                                current_pos: position,
-                                current_angle: 0.0,
-                            },
-                        ))
-                        .id();
-                    world
-                        .resource_mut::<BevyNodeMapping>()
-                        .entities
-                        .insert(part.id, id);
+    /// Get the rendered image data.
+    /// Returns (data, width, height).
+    pub fn get_image_data(&self) -> Option<(Vec<u8>, u32, u32)> {
+        // Access shared data from resource
+        if let Some(render_output) = self.app.world().get_resource::<BevyRenderOutput>() {
+            if let Ok(lock) = render_output.last_frame_data.lock() {
+                if let Some(data) = &*lock {
+                    return Some((data.clone(), render_output.width, render_output.height));
                 }
             }
         }
+
+        None
+    }
+
+    /// Update the Bevy scene based on the MapFlow graph state.
+    pub fn apply_graph_state(&mut self, module: &mapmap_core::module::MapFlowModule) {
+        use mapmap_core::module::{ModulePartType, SourceType};
+
+        self.app
+            .world_mut()
+            .resource_scope(|world, mut mapping: Mut<BevyNodeMapping>| {
+                for part in &module.parts {
+                    if let ModulePartType::Source(source_type) = &part.part_type {
+                        match source_type {
+                            SourceType::BevyAtmosphere {
+                                turbidity,
+                                rayleigh,
+                                mie_coeff,
+                                mie_directional_g,
+                                sun_position,
+                                ..
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world
+                                            .spawn(crate::components::BevyAtmosphere::default())
+                                            .id()
+                                    });
+                                if let Some(mut atmosphere) =
+                                    world.get_mut::<crate::components::BevyAtmosphere>(entity)
+                                {
+                                    atmosphere.turbidity = *turbidity;
+                                    atmosphere.rayleigh = *rayleigh;
+                                    atmosphere.mie_coeff = *mie_coeff;
+                                    atmosphere.mie_directional_g = *mie_directional_g;
+                                    atmosphere.sun_position = *sun_position;
+                                }
+                            }
+                            SourceType::BevyHexGrid {
+                                radius,
+                                rings,
+                                pointy_top,
+                                spacing,
+                                ..
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world.spawn(crate::components::BevyHexGrid::default()).id()
+                                    });
+                                if let Some(mut hex) =
+                                    world.get_mut::<crate::components::BevyHexGrid>(entity)
+                                {
+                                    hex.radius = *radius;
+                                    hex.rings = *rings;
+                                    hex.pointy_top = *pointy_top;
+                                    hex.spacing = *spacing;
+                                }
+                            }
+                            SourceType::BevyParticles {
+                                rate,
+                                lifetime,
+                                speed,
+                                color_start,
+                                color_end,
+                                ..
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(part.id).or_insert_with(|| {
+                                        world
+                                            .spawn(crate::components::BevyParticles::default())
+                                            .id()
+                                    });
+                                if let Some(mut p) =
+                                    world.get_mut::<crate::components::BevyParticles>(entity)
+                                {
+                                    p.rate = *rate;
+                                    p.lifetime = *lifetime;
+                                    p.speed = *speed;
+                                    p.color_start = *color_start;
+                                    p.color_end = *color_end;
+                                }
+                            }
+                            SourceType::BevyCamera {
+                                mode,
+                                target,
+                                position,
+                                distance,
+                                speed,
+                                direction,
+                            } => {
+                                // Map Core Mode to Bevy Mode
+                                let bevy_mode = match mode {
+                                    mapmap_core::module::BevyCameraMode::Orbit => BevyCameraMode::Orbit,
+                                    mapmap_core::module::BevyCameraMode::Fly => BevyCameraMode::Fly,
+                                    mapmap_core::module::BevyCameraMode::Static => BevyCameraMode::Static,
+                                };
+
+                                let target = Vec3::from(*target);
+                                let position = Vec3::from(*position);
+                                let direction = Vec3::from(*direction);
+
+                                let entity = *mapping.entities.entry(part.id).or_insert_with(|| {
+                                    world
+                                        .spawn((
+                                            BevyCamera {
+                                                mode: bevy_mode,
+                                                target,
+                                                position,
+                                                distance: *distance,
+                                                speed: *speed,
+                                                direction,
+                                            },
+                                            BevyCameraState {
+                                                current_pos: position,
+                                                current_angle: 0.0,
+                                            },
+                                        ))
+                                        .id()
+                                });
+
+                                if let Some(mut cam) = world.get_mut::<BevyCamera>(entity) {
+                                    cam.mode = bevy_mode;
+                                    cam.target = target;
+                                    cam.position = position;
+                                    cam.distance = *distance;
+                                    cam.speed = *speed;
+                                    cam.direction = direction;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            });
     }
 }
 
