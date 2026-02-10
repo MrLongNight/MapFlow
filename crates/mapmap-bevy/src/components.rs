@@ -69,10 +69,6 @@ pub struct BevyParticles {
     pub color_end: [f32; 4],
 }
 
-/// Tag component for the Shared Engine instance
-#[derive(Component)]
-pub struct SharedEngineCamera;
-
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct Bevy3DShape {
@@ -91,3 +87,28 @@ impl Default for Bevy3DShape {
         }
     }
 }
+
+/// Component for 3D Model loading and transform control
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct Bevy3DModel {
+    pub path: String,
+    pub position: [f32; 3],
+    pub rotation: [f32; 3],
+    pub scale: [f32; 3],
+}
+
+impl Default for Bevy3DModel {
+    fn default() -> Self {
+        Self {
+            path: String::new(),
+            position: [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0],
+            scale: [1.0, 1.0, 1.0],
+        }
+    }
+}
+
+/// Tag component for the Shared Engine instance
+#[derive(Component)]
+pub struct SharedEngineCamera;

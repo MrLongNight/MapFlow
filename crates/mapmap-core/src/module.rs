@@ -627,6 +627,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::Bevy3DModel { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -995,22 +1005,6 @@ impl AudioTriggerOutputConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub enum BevyShapeType {
-    Cube,
-    Sphere,
-    Capsule,
-    Torus,
-    Cylinder,
-    Plane,
-}
-
-impl Default for BevyShapeType {
-    fn default() -> Self {
-        Self::Cube
-    }
-}
-
 /// Types of media sources
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SourceType {
@@ -1159,12 +1153,23 @@ pub enum SourceType {
         position: [f32; 3],
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
-        /// Transform: Uniform Scale [x, y, z]
+        /// Transform: Scale [x, y, z]
         scale: [f32; 3],
-        /// Color (RGBA)
+        /// RGBA Color
         color: [f32; 4],
-        /// Unlit material (no shading)
+        /// Use unlit material
         unlit: bool,
+    },
+    /// Bevy 3D Model Loader (GLTF)
+    Bevy3DModel {
+        /// Path to GLTF/GLB file
+        path: String,
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Scale [x, y, z]
+        scale: [f32; 3],
     },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
@@ -1410,6 +1415,24 @@ impl SourceType {
             reverse_playback: false,
         }
     }
+}
+
+/// Primitive shape types for Bevy
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Copy)]
+pub enum BevyShapeType {
+    /// A simple cube
+    #[default]
+    Cube,
+    /// A sphere
+    Sphere,
+    /// A capsule
+    Capsule,
+    /// A torus (donut)
+    Torus,
+    /// A cylinder
+    Cylinder,
+    /// A simple plane
+    Plane,
 }
 
 /// Types of masks

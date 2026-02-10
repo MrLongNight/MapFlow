@@ -1,6 +1,7 @@
 use crate::components::{AudioReactive, AudioReactiveTarget};
 use crate::resources::AudioInputResource;
 use bevy::prelude::*;
+use bevy::gltf::GltfAssetLabel;
 
 pub fn audio_reaction_system(
     audio: Res<AudioInputResource>,
@@ -199,6 +200,49 @@ pub fn particle_system(
     for (_entity, _p_config) in query.iter() {
         // Update particles logic (Simplified for now)
         // In a real implementation, we would update the bevy_enoki components here.
+    }
+}
+
+pub fn model_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut query: Query<
+        (Entity, &crate::components::Bevy3DModel, &mut Transform, Option<&SceneRoot>),
+        Changed<crate::components::Bevy3DModel>,
+    >,
+) {
+    for (entity, model_config, mut transform, current_scene) in query.iter_mut() {
+        // Update Transform
+        transform.translation = Vec3::from_array(model_config.position);
+        // Bevy uses Radians for rotation, UI typically uses Degrees.
+        // Assuming input is in degrees as per typical UI standards.
+        transform.rotation = Quat::from_euler(
+            EulerRot::XYZ,
+            model_config.rotation[0].to_radians(),
+            model_config.rotation[1].to_radians(),
+            model_config.rotation[2].to_radians(),
+        );
+        transform.scale = Vec3::from_array(model_config.scale);
+
+        // Load Scene if path is set
+        if !model_config.path.is_empty() {
+            // Load GLTF Scene (Scene 0 by default)
+            let new_handle = asset_server.load(GltfAssetLabel::Scene(0).from_asset(model_config.path.clone()));
+
+            // Only update if changed or missing
+            let needs_update = if let Some(root) = current_scene {
+                root.0 != new_handle
+            } else {
+                true
+            };
+
+            if needs_update {
+                commands.entity(entity).insert(SceneRoot(new_handle));
+            }
+        } else if current_scene.is_some() {
+            // If path empty, remove scene
+            commands.entity(entity).remove::<SceneRoot>();
+        }
     }
 }
 

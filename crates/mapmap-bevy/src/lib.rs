@@ -69,12 +69,13 @@ impl BevyRunner {
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
         app.register_type::<Bevy3DShape>();
+        app.register_type::<Bevy3DModel>();
 
         // Register systems
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
-            (audio_reaction_system, hex_grid_system, shape_system),
+            (audio_reaction_system, hex_grid_system, model_system, shape_system),
         );
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
@@ -228,6 +229,42 @@ impl BevyRunner {
                                         rotation[2].to_radians(),
                                     );
                                     transform.scale = Vec3::from(*scale);
+                                }
+                            }
+                            SourceType::Bevy3DModel {
+                                path,
+                                position,
+                                rotation,
+                                scale,
+                                ..
+                            } => {
+                                let entity =
+                                    *mapping.entities.entry(key).or_insert_with(|| {
+                                        world
+                                            .spawn((
+                                                Bevy3DModel::default(),
+                                                Transform::default(),
+                                                Visibility::default(),
+                                            ))
+                                            .id()
+                                    });
+
+                                if let Some(mut model) =
+                                    world.get_mut::<Bevy3DModel>(entity)
+                                {
+                                    // Use clone/assignment as in HEAD's update_model
+                                    if model.path != *path {
+                                        model.path = path.clone();
+                                    }
+                                    if model.position != *position {
+                                        model.position = *position;
+                                    }
+                                    if model.rotation != *rotation {
+                                        model.rotation = *rotation;
+                                    }
+                                    if model.scale != *scale {
+                                        model.scale = *scale;
+                                    }
                                 }
                             }
                             _ => {}
