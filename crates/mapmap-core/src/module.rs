@@ -995,6 +995,22 @@ impl AudioTriggerOutputConfig {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum BevyShapeType {
+    Cube,
+    Sphere,
+    Capsule,
+    Torus,
+    Cylinder,
+    Plane,
+}
+
+impl Default for BevyShapeType {
+    fn default() -> Self {
+        Self::Cube
+    }
+}
+
 /// Types of media sources
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SourceType {
@@ -1134,6 +1150,21 @@ pub enum SourceType {
         position: [f32; 3],
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
+    },
+    /// Bevy 3D Primitive Shape
+    Bevy3DShape {
+        /// Type of shape (Cube, Sphere, etc.)
+        shape_type: BevyShapeType,
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Uniform Scale [x, y, z]
+        scale: [f32; 3],
+        /// Color (RGBA)
+        color: [f32; 4],
+        /// Unlit material (no shading)
+        unlit: bool,
     },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]

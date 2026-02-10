@@ -72,3 +72,22 @@ pub struct BevyParticles {
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct Bevy3DShape {
+    #[reflect(ignore)]
+    pub shape_type: mapmap_core::module::BevyShapeType,
+    pub color: [f32; 4],
+    pub unlit: bool,
+}
+
+impl Default for Bevy3DShape {
+    fn default() -> Self {
+        Self {
+            shape_type: mapmap_core::module::BevyShapeType::Cube,
+            color: [1.0, 1.0, 1.0, 1.0],
+            unlit: false,
+        }
+    }
+}
