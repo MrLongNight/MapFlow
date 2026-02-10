@@ -144,13 +144,17 @@ pub fn hex_grid_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     query: Query<
-        (Entity, &crate::components::BevyHexGrid),
+        (Entity, &crate::components::BevyHexGrid, Option<&Children>),
         Changed<crate::components::BevyHexGrid>,
     >,
 ) {
-    for (entity, hex_config) in query.iter() {
+    for (entity, hex_config, children) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn_related::<Children>();
+        if let Some(children) = children {
+            for &child in children {
+                commands.entity(child).despawn();
+            }
+        }
 
         let layout = hexx::HexLayout {
             scale: hexx::Vec2::splat(hex_config.radius),
