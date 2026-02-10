@@ -47,3 +47,8 @@
 **Vulnerability:** Browser-based WebSocket clients could not authenticate with the API server because the `extract_api_key` logic relied on standard HTTP headers (`Authorization`, `X-API-Key`) which browsers cannot set for WebSocket connections. This forced developers to potentially disable authentication for WebSocket endpoints.
 **Learning:** Browser WebSocket APIs are restrictive. Authentication tokens must be transmitted via the `Sec-WebSocket-Protocol` header (subprotocol negotiation) as a standard workaround.
 **Prevention:** Always support `Sec-WebSocket-Protocol` parsing in API key extraction logic for WebSocket endpoints. Implement specific parsing for custom subprotocol formats (e.g., `mapmap.auth.<TOKEN>`).
+
+## 2026-01-29 - Sensitive Data Exposure in Debug Logs
+**Vulnerability:** The `HueConfig` struct in `mapmap-control` and `mapmap-ui` implemented `Debug` via `derive`, which exposed sensitive credentials (`client_key`, `username`) in debug logs. This pattern is common but dangerous for structs containing secrets.
+**Learning:** `derive(Debug)` is convenient but automatically prints all fields. For configuration structs holding API keys, passwords, or tokens, this inadvertently leaks secrets to anyone with access to application logs.
+**Prevention:** Always manually implement `std::fmt::Debug` for structs containing sensitive data. Use `.field("secret", &"***REDACTED***")` to mask these fields while keeping the struct debuggable. Add unit tests to verify redaction.

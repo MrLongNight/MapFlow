@@ -57,3 +57,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-07 - Undocumented PRs Discovery (Feb 6)
 **Erkenntnis:** Discovered multiple merged PRs from 2026-02-06 (#589, #588, #584, #585) missing from CHANGELOG.md. Also corrected FUTURE DATE in ROADMAP.md (was 2026-02-15).
 **Aktion:** Added missing entries to CHANGELOG.md and corrected ROADMAP.md Stand date to current date.
+
+## 2026-02-10 - Discrepancy in PR Reference for Bevy Particles
+**Erkenntnis:** CHANGELOG referenced PR #638 for "Bevy Particles", but git history shows merged commit 52bf7e7 is linked to PR #650.
+**Aktion:** Corrected CHANGELOG entry to point to #650 and updated ROADMAP to reflect the new feature implementation details.
