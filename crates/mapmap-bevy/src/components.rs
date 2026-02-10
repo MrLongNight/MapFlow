@@ -69,6 +69,24 @@ pub struct BevyParticles {
     pub color_end: [f32; 4],
 }
 
+/// Internal state for particle emitter
+#[derive(Component, Default)]
+pub struct ParticleEmitter {
+    pub particles: Vec<Particle>,
+    pub spawn_accumulator: f32,
+}
+
+/// Individual particle data
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Particle {
+    pub position: Vec3,
+    pub velocity: Vec3,
+    pub lifetime: f32,
+    pub age: f32,
+    pub color_start: LinearRgba,
+    pub color_end: LinearRgba,
+}
+
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;

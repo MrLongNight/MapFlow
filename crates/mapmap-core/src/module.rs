@@ -93,6 +93,15 @@ impl MapFlowModule {
                 flip_vertical: false,
                 reverse_playback: false,
             }),
+            PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
+                rate: 100.0,
+                lifetime: 2.0,
+                speed: 1.0,
+                color_start: [1.0, 1.0, 1.0, 1.0],
+                color_end: [1.0, 1.0, 1.0, 0.0],
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+            }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
             PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
                 effect_type: EffectType::Blur,
@@ -724,6 +733,8 @@ pub enum PartType {
     Trigger,
     /// Video sources
     Source,
+    /// Bevy Particles
+    BevyParticles,
     /// Masks
     Mask,
     /// Effects and modifiers

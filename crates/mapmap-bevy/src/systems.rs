@@ -1,6 +1,7 @@
 use crate::components::{AudioReactive, AudioReactiveTarget};
 use crate::resources::AudioInputResource;
 use bevy::prelude::*;
+use rand::Rng;
 
 pub fn audio_reaction_system(
     audio: Res<AudioInputResource>,
@@ -152,15 +153,149 @@ pub fn hex_grid_system(
 }
 
 pub fn particle_system(
-    _commands: Commands,
-    query: Query<
-        (Entity, &crate::components::BevyParticles),
-        Changed<crate::components::BevyParticles>,
-    >,
+    mut commands: Commands,
+    time: Res<Time>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut query: Query<(
+        Entity,
+        &crate::components::BevyParticles,
+        Option<&mut crate::components::ParticleEmitter>,
+        Option<&Mesh3d>,
+    )>,
 ) {
-    for (_entity, _p_config) in query.iter() {
-        // Update particles logic (Simplified for now)
-        // In a real implementation, we would update the bevy_enoki components here.
+    let delta_time = time.delta_secs();
+
+    for (entity, config, mut emitter_opt, mesh_opt) in query.iter_mut() {
+        // Initialize emitter if missing
+        if emitter_opt.is_none() {
+            commands
+                .entity(entity)
+                .insert(crate::components::ParticleEmitter::default());
+            continue; // Wait for next frame
+        }
+        let emitter = emitter_opt.as_mut().unwrap();
+
+        // Initialize mesh if missing
+        if mesh_opt.is_none() {
+            let mut mesh = Mesh::new(
+                bevy::render::mesh::PrimitiveTopology::TriangleList,
+                bevy::render::render_asset::RenderAssetUsages::default(),
+            );
+            // Initial empty buffers to avoid validation errors
+            mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vec![[0.0, 0.0, 0.0]; 0]);
+            mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vec![[0.0, 0.0, 0.0, 0.0]; 0]);
+
+            let mesh_handle = meshes.add(mesh);
+
+            let material_handle = materials.add(StandardMaterial {
+                base_color: Color::WHITE,
+                alpha_mode: AlphaMode::Add,
+                unlit: true,
+                ..default()
+            });
+
+            commands.entity(entity).insert((
+                Mesh3d(mesh_handle),
+                MeshMaterial3d(material_handle),
+            ));
+            continue;
+        }
+
+        // Spawn new particles
+        emitter.spawn_accumulator += config.rate * delta_time;
+        while emitter.spawn_accumulator > 1.0 {
+            emitter.spawn_accumulator -= 1.0;
+
+            let mut rng = rand::rng();
+            let velocity = Vec3::new(
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+            )
+            .normalize_or_zero()
+                * config.speed;
+
+            emitter.particles.push(crate::components::Particle {
+                position: Vec3::ZERO, // Relative to entity transform
+                velocity,
+                lifetime: config.lifetime,
+                age: 0.0,
+                color_start: LinearRgba::new(
+                    config.color_start[0],
+                    config.color_start[1],
+                    config.color_start[2],
+                    config.color_start[3],
+                ),
+                color_end: LinearRgba::new(
+                    config.color_end[0],
+                    config.color_end[1],
+                    config.color_end[2],
+                    config.color_end[3],
+                ),
+            });
+        }
+
+        // Update particles
+        emitter.particles.retain_mut(|p| {
+            p.age += delta_time;
+            p.position += p.velocity * delta_time;
+            p.age < p.lifetime
+        });
+
+        // Update Mesh
+        if let Some(Mesh3d(mesh_handle)) = mesh_opt {
+            if let Some(mesh) = meshes.get_mut(mesh_handle) {
+                let count = emitter.particles.len();
+
+                let mut positions = Vec::with_capacity(count * 4);
+                let mut colors = Vec::with_capacity(count * 4);
+                let mut indices = Vec::with_capacity(count * 6);
+
+                let half_size = 0.05;
+
+                for (i, p) in emitter.particles.iter().enumerate() {
+                    let t = p.age / p.lifetime;
+                    // Lerp color
+                    let start = p.color_start;
+                    let end = p.color_end;
+                    let color = LinearRgba::new(
+                        start.red + (end.red - start.red) * t,
+                        start.green + (end.green - start.green) * t,
+                        start.blue + (end.blue - start.blue) * t,
+                        start.alpha + (end.alpha - start.alpha) * t,
+                    );
+
+                    // Add 4 vertices (Quad facing +Z)
+                    positions
+                        .push((p.position + Vec3::new(-half_size, -half_size, 0.0)).to_array());
+                    positions
+                        .push((p.position + Vec3::new(half_size, -half_size, 0.0)).to_array());
+                    positions
+                        .push((p.position + Vec3::new(half_size, half_size, 0.0)).to_array());
+                    positions
+                        .push((p.position + Vec3::new(-half_size, half_size, 0.0)).to_array());
+
+                    let c = [color.red, color.green, color.blue, color.alpha];
+                    colors.push(c);
+                    colors.push(c);
+                    colors.push(c);
+                    colors.push(c);
+
+                    let base = (i * 4) as u32;
+                    indices.push(base);
+                    indices.push(base + 1);
+                    indices.push(base + 2);
+                    indices.push(base + 2);
+                    indices.push(base + 3);
+                    indices.push(base);
+                }
+
+                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
+                mesh.insert_indices(bevy::render::mesh::Indices::U32(indices));
+            }
+        }
     }
 }
 

@@ -38,7 +38,7 @@ impl BevyRunner {
         let render_instance = RenderInstance(std::sync::Arc::new(WgpuWrapper::new((*instance).clone())));
         let render_adapter = RenderAdapter(std::sync::Arc::new(WgpuWrapper::new((*adapter).clone())));
         let render_device = RenderDevice::from((*device).clone());
-        let render_queue = RenderQueue::from((*queue).clone());
+        let render_queue = RenderQueue(std::sync::Arc::new(WgpuWrapper::new((*queue).clone())));
         let adapter_info = RenderAdapterInfo(WgpuWrapper::new(info));
 
         // Use DefaultPlugins but with shared WGPU resources.
