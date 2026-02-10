@@ -102,6 +102,14 @@ impl MapFlowModule {
                 position: [0.0, 0.0, 0.0],
                 rotation: [0.0, 0.0, 0.0],
             }),
+            PartType::Bevy3DShape => ModulePartType::Source(SourceType::Bevy3DShape {
+                shape_type: BevyShapeType::Cube,
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+                unlit: false,
+            }),
             PartType::Mask => ModulePartType::Mask(MaskType::Shape(MaskShape::Rectangle)),
             PartType::Modulator => ModulePartType::Modulizer(ModulizerType::Effect {
                 effect_type: EffectType::Blur,
@@ -735,6 +743,8 @@ pub enum PartType {
     Source,
     /// Bevy Particles
     BevyParticles,
+    /// Bevy 3D Shape
+    Bevy3DShape,
     /// Masks
     Mask,
     /// Effects and modifiers
@@ -1146,6 +1156,21 @@ pub enum SourceType {
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
     },
+    /// Bevy 3D Geometric Shape
+    Bevy3DShape {
+        /// Type of geometric primitive
+        shape_type: BevyShapeType,
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Scale [x, y, z]
+        scale: [f32; 3],
+        /// Material Color (RGBA)
+        color: [f32; 4],
+        /// Whether the material is unlit (emissive/flat)
+        unlit: bool,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1390,6 +1415,24 @@ impl SourceType {
             reverse_playback: false,
         }
     }
+}
+
+/// Supported 3D Primitive Shapes
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum BevyShapeType {
+    /// Cube primitive
+    #[default]
+    Cube,
+    /// Sphere primitive
+    Sphere,
+    /// Capsule primitive
+    Capsule,
+    /// Torus primitive
+    Torus,
+    /// Cylinder primitive
+    Cylinder,
+    /// Plane primitive
+    Plane,
 }
 
 /// Types of masks

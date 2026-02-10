@@ -90,3 +90,35 @@ pub struct Particle {
 /// Tag component for the Shared Engine instance
 #[derive(Component)]
 pub struct SharedEngineCamera;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct Bevy3DShape {
+    #[reflect(ignore)]
+    pub shape_type: mapmap_core::module::BevyShapeType,
+    pub position: Vec3,
+    pub rotation: Vec3,
+    pub scale: Vec3,
+    pub color: LinearRgba,
+    pub unlit: bool,
+}
+
+impl Default for Bevy3DShape {
+    fn default() -> Self {
+        Self {
+            shape_type: mapmap_core::module::BevyShapeType::Cube,
+            position: Vec3::ZERO,
+            rotation: Vec3::ZERO,
+            scale: Vec3::ONE,
+            color: LinearRgba::WHITE,
+            unlit: false,
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct BevyShapeCache {
+    pub shape_type: mapmap_core::module::BevyShapeType,
+    pub color: LinearRgba,
+    pub unlit: bool,
+}

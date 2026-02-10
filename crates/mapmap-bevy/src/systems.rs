@@ -403,3 +403,116 @@ pub fn frame_readback_system(
         buffer.unmap();
     }
 }
+
+pub fn shape_system(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut query: Query<
+        (
+            Entity,
+            &crate::components::Bevy3DShape,
+            Option<&mut crate::components::BevyShapeCache>,
+            Option<&mut Mesh3d>,
+            Option<&mut MeshMaterial3d<StandardMaterial>>,
+            Option<&mut Transform>,
+        ),
+        Changed<crate::components::Bevy3DShape>,
+    >,
+) {
+    for (entity, shape, cache_opt, mut mesh_opt, mut mat_opt, transform_opt) in
+        query.iter_mut()
+    {
+        let mut cache_dirty = false;
+
+        // 1. Initialize or Update Cache Check
+        if let Some(cache) = cache_opt.as_ref() {
+            if cache.shape_type != shape.shape_type
+                || cache.color != shape.color
+                || cache.unlit != shape.unlit
+            {
+                cache_dirty = true;
+            }
+        } else {
+            cache_dirty = true;
+        }
+
+        // 2. Asset Regeneration
+        if cache_dirty {
+            let mesh_changed =
+                cache_opt.as_ref().map_or(true, |c| c.shape_type != shape.shape_type);
+            let mat_changed = cache_opt
+                .as_ref()
+                .map_or(true, |c| c.color != shape.color || c.unlit != shape.unlit);
+
+            if mesh_changed || mesh_opt.is_none() {
+                let mesh = match shape.shape_type {
+                    mapmap_core::module::BevyShapeType::Cube => Mesh::from(Cuboid::default()),
+                    mapmap_core::module::BevyShapeType::Sphere => Mesh::from(Sphere::default()),
+                    mapmap_core::module::BevyShapeType::Capsule => Mesh::from(Capsule3d::default()),
+                    mapmap_core::module::BevyShapeType::Torus => Mesh::from(Torus::default()),
+                    mapmap_core::module::BevyShapeType::Cylinder => Mesh::from(Cylinder::default()),
+                    mapmap_core::module::BevyShapeType::Plane => {
+                        Mesh::from(Plane3d::default().mesh().size(1.0, 1.0))
+                    }
+                };
+                let handle = meshes.add(mesh);
+                if let Some(ref mut m) = mesh_opt {
+                    m.0 = handle;
+                } else {
+                    commands.entity(entity).insert(Mesh3d(handle));
+                }
+            }
+
+            if mat_changed || mat_opt.is_none() {
+                let material = StandardMaterial {
+                    base_color: Color::LinearRgba(shape.color),
+                    unlit: shape.unlit,
+                    alpha_mode: if shape.color.alpha < 1.0 {
+                        AlphaMode::Blend
+                    } else {
+                        AlphaMode::Opaque
+                    },
+                    ..default()
+                };
+                let handle = materials.add(material);
+                if let Some(ref mut m) = mat_opt {
+                    m.0 = handle;
+                } else {
+                    commands.entity(entity).insert(MeshMaterial3d(handle));
+                }
+            }
+
+            // Update Cache Component
+            if let Some(mut cache) = cache_opt {
+                cache.shape_type = shape.shape_type;
+                cache.color = shape.color;
+                cache.unlit = shape.unlit;
+            } else {
+                commands.entity(entity).insert(crate::components::BevyShapeCache {
+                    shape_type: shape.shape_type,
+                    color: shape.color,
+                    unlit: shape.unlit,
+                });
+            }
+        }
+
+        // 3. Update Transform (Always)
+        let new_transform = Transform {
+            translation: shape.position,
+            rotation: Quat::from_euler(
+                EulerRot::XYZ,
+                shape.rotation.x.to_radians(),
+                shape.rotation.y.to_radians(),
+                shape.rotation.z.to_radians(),
+            ),
+            scale: shape.scale,
+        };
+
+        if let Some(mut transform) = transform_opt {
+            *transform = new_transform;
+        } else {
+            commands.entity(entity).insert(new_transform);
+        }
+    }
+}

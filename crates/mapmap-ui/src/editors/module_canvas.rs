@@ -902,6 +902,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DShape { .. } => "🧊 3D Shape",
                                             };
 
                                             let mut next_type = None;
@@ -1347,8 +1348,170 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
-                                            SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
-                                                ui.label("Controls for this Bevy node are not yet implemented in UI.");
+                                            SourceType::Bevy3DShape {
+                                                shape_type,
+                                                position,
+                                                rotation,
+                                                scale,
+                                                color,
+                                                unlit,
+                                            } => {
+                                                ui.label("🧊 3D Primitive");
+                                                ui.separator();
+
+                                                // Shape Type Selector
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Type:");
+                                                    egui::ComboBox::from_id_salt(format!(
+                                                        "shape_type_{}",
+                                                        part_id
+                                                    ))
+                                                    .selected_text(format!("{:?}", shape_type))
+                                                    .show_ui(ui, |ui| {
+                                                        use mapmap_core::module::BevyShapeType;
+                                                        ui.selectable_value(
+                                                            shape_type,
+                                                            BevyShapeType::Cube,
+                                                            "Cube",
+                                                        );
+                                                        ui.selectable_value(
+                                                            shape_type,
+                                                            BevyShapeType::Sphere,
+                                                            "Sphere",
+                                                        );
+                                                        ui.selectable_value(
+                                                            shape_type,
+                                                            BevyShapeType::Capsule,
+                                                            "Capsule",
+                                                        );
+                                                        ui.selectable_value(
+                                                            shape_type,
+                                                            BevyShapeType::Torus,
+                                                            "Torus",
+                                                        );
+                                                        ui.selectable_value(
+                                                            shape_type,
+                                                            BevyShapeType::Cylinder,
+                                                            "Cylinder",
+                                                        );
+                                                        ui.selectable_value(
+                                                            shape_type,
+                                                            BevyShapeType::Plane,
+                                                            "Plane",
+                                                        );
+                                                    });
+                                                });
+
+                                                ui.separator();
+                                                ui.label("🎨 Appearance");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Color:");
+                                                    ui.color_edit_button_rgba_unmultiplied(color);
+                                                });
+                                                ui.checkbox(unlit, "Unlit (Flat Color)");
+
+                                                ui.separator();
+                                                ui.collapsing("📐 Transform", |ui| {
+                                                    ui.label("Position:");
+                                                    ui.horizontal(|ui| {
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut position[0],
+                                                            0.1,
+                                                            -100.0..=100.0,
+                                                            0.0,
+                                                            "X: ",
+                                                            "",
+                                                        );
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut position[1],
+                                                            0.1,
+                                                            -100.0..=100.0,
+                                                            0.0,
+                                                            "Y: ",
+                                                            "",
+                                                        );
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut position[2],
+                                                            0.1,
+                                                            -100.0..=100.0,
+                                                            0.0,
+                                                            "Z: ",
+                                                            "",
+                                                        );
+                                                    });
+
+                                                    ui.label("Rotation:");
+                                                    ui.horizontal(|ui| {
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut rotation[0],
+                                                            1.0,
+                                                            -360.0..=360.0,
+                                                            0.0,
+                                                            "X: ",
+                                                            "°",
+                                                        );
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut rotation[1],
+                                                            1.0,
+                                                            -360.0..=360.0,
+                                                            0.0,
+                                                            "Y: ",
+                                                            "°",
+                                                        );
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut rotation[2],
+                                                            1.0,
+                                                            -360.0..=360.0,
+                                                            0.0,
+                                                            "Z: ",
+                                                            "°",
+                                                        );
+                                                    });
+
+                                                    ui.label("Scale:");
+                                                    ui.horizontal(|ui| {
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut scale[0],
+                                                            0.01,
+                                                            0.0..=100.0,
+                                                            1.0,
+                                                            "X: ",
+                                                            "",
+                                                        );
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut scale[1],
+                                                            0.01,
+                                                            0.0..=100.0,
+                                                            1.0,
+                                                            "Y: ",
+                                                            "",
+                                                        );
+                                                        styled_drag_value(
+                                                            ui,
+                                                            &mut scale[2],
+                                                            0.01,
+                                                            0.0..=100.0,
+                                                            1.0,
+                                                            "Z: ",
+                                                            "",
+                                                        );
+                                                    });
+                                                });
+                                            }
+                                            SourceType::BevyAtmosphere { .. }
+                                            | SourceType::BevyHexGrid { .. }
+                                            | SourceType::BevyParticles { .. } => {
+                                                ui.label(
+                                                    "Controls for this Bevy node are not yet implemented in UI.",
+                                                );
                                             }
                                             SourceType::Bevy => {
                                                 ui.label("🎮 Bevy Scene");
@@ -5228,6 +5391,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::Bevy3DShape { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 200, 180),
+                "🧊",
+                "3D Shape",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5244,6 +5413,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                SourceType::Bevy3DShape { .. } => "3D Shape",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5450,6 +5620,7 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::Bevy3DShape { shape_type, .. } => format!("🧊 {:?}", shape_type),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
