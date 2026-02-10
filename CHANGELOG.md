@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - 2026-02-09: perf(render): Optimize MeshRenderer uniform buffer writes to avoid redundancy
+- 2026-02-09: ci: Validierung der GitHub Actions PR-Checks (Automatische Ausführung bestätigt)
 - 2026-02-06: feat(ui): Add Safe 'Reset Clip' button to Media Inspector (#589)
 - 2026-02-06: fix(ui): Make UI panels responsive using ResponsiveLayout (#588)
 - 2026-02-06: fix(security): Fix DoS risk in GIF decoder (Sentinel) (#584)

@@ -1,6 +1,6 @@
 # Refactoring Plan: `main.rs` Decomposition & Architecture
 
-This document serves as the master plan for refactoring the MapMap application. It is broken down into specific, actionable 
+This document serves as the master plan for refactoring the MapMap application. It is broken down into specific, actionable
 "Jules Tasks" that are self-contained and verifiable.
 
 ## 🎯 Strategic Goals
