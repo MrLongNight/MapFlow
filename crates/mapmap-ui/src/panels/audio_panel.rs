@@ -5,6 +5,7 @@
 
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
+use crate::widgets;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 use std::time::Instant;
@@ -74,16 +75,11 @@ impl AudioPanel {
         let mut config = self.local_config.clone().unwrap_or(current_config.clone());
         let mut config_changed = false;
 
-        ui.heading(locale.t("audio-panel-title"));
-        ui.separator();
+        widgets::panel::render_panel_header(ui, &locale.t("audio-panel-title"), |_| {});
 
         // --- Audio Device Selector ---
-        ui.group(|ui| {
-            ui.label(
-                egui::RichText::new("🎤 Input Source")
-                    .strong()
-                    .color(colors::CYAN_ACCENT),
-            );
+        widgets::custom::render_header(ui, "INPUT SOURCE");
+        egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
             let no_device_text = locale.t("audio-panel-no-device");
             let selected_text = selected_audio_device.as_deref().unwrap_or(&no_device_text);
 
@@ -107,43 +103,53 @@ impl AudioPanel {
         ui.add_space(8.0);
 
         // --- Settings (Gain, Gate, Smoothing) ---
-        ui.collapsing(locale.t("audio-panel-settings"), |ui| {
-            egui::Grid::new("audio_settings_grid")
-                .num_columns(2)
-                .spacing([10.0, 8.0])
-                .striped(true)
-                .show(ui, |ui| {
-                    ui.label("Gain:");
-                    if ui
-                        .add(egui::Slider::new(&mut config.gain, 0.1..=10.0).logarithmic(true))
-                        .changed()
-                    {
-                        config_changed = true;
-                    }
-                    ui.end_row();
+        widgets::custom::collapsing_header_with_reset(
+            ui,
+            &locale.t("audio-panel-settings"),
+            false,
+            |ui| {
+                egui::Grid::new("audio_settings_grid")
+                    .num_columns(2)
+                    .spacing([10.0, 8.0])
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Gain:");
+                        if ui
+                            .add(egui::Slider::new(&mut config.gain, 0.1..=10.0).logarithmic(true))
+                            .changed()
+                        {
+                            config_changed = true;
+                        }
+                        ui.end_row();
 
-                    ui.label("Noise Gate:");
-                    if ui
-                        .add(
-                            egui::Slider::new(&mut config.noise_gate, 0.0..=0.2)
-                                .clamping(egui::SliderClamping::Always),
+                        ui.label("Noise Gate:");
+                        if widgets::custom::styled_slider(
+                            ui,
+                            &mut config.noise_gate,
+                            0.0..=0.2,
+                            0.0,
                         )
                         .changed()
-                    {
-                        config_changed = true;
-                    }
-                    ui.end_row();
+                        {
+                            config_changed = true;
+                        }
+                        ui.end_row();
 
-                    ui.label("Smoothing:");
-                    if ui
-                        .add(egui::Slider::new(&mut config.smoothing, 0.0..=0.99))
+                        ui.label("Smoothing:");
+                        if widgets::custom::styled_slider(
+                            ui,
+                            &mut config.smoothing,
+                            0.0..=0.99,
+                            0.0,
+                        )
                         .changed()
-                    {
-                        config_changed = true;
-                    }
-                    ui.end_row();
-                });
-        });
+                        {
+                            config_changed = true;
+                        }
+                        ui.end_row();
+                    });
+            },
+        );
 
         if config_changed {
             self.local_config = Some(config.clone());
@@ -151,14 +157,28 @@ impl AudioPanel {
         }
 
         ui.add_space(8.0);
-        ui.separator();
 
         // --- View Mode Switcher ---
+        widgets::custom::render_header(ui, "VIEW MODE");
         ui.horizontal(|ui| {
-            ui.label("View:");
-            ui.selectable_value(&mut self.view_mode, ViewMode::Spectrum, "Spectrum");
-            ui.selectable_value(&mut self.view_mode, ViewMode::Bars, "Bands");
-            ui.selectable_value(&mut self.view_mode, ViewMode::Waveform, "Waveform");
+            if ui
+                .add(egui::Button::new("Spectrum").selected(self.view_mode == ViewMode::Spectrum))
+                .clicked()
+            {
+                self.view_mode = ViewMode::Spectrum;
+            }
+            if ui
+                .add(egui::Button::new("Bands").selected(self.view_mode == ViewMode::Bars))
+                .clicked()
+            {
+                self.view_mode = ViewMode::Bars;
+            }
+            if ui
+                .add(egui::Button::new("Waveform").selected(self.view_mode == ViewMode::Waveform))
+                .clicked()
+            {
+                self.view_mode = ViewMode::Waveform;
+            }
         });
 
         ui.add_space(4.0);
@@ -223,12 +243,7 @@ impl AudioPanel {
 
         // Background
         painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
-        painter.rect_stroke(
-            rect,
-            2.0,
-            Stroke::new(1.0, colors::STROKE_GREY),
-            egui::StrokeKind::Inside,
-        );
+        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY));
 
         // Bar
         let width = rect.width() * rms_volume.clamp(0.0, 1.0);
