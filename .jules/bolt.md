@@ -33,3 +33,7 @@
 ## 2026-05-28 - HashMap Allocations in Loops
 **Learning:** Updating a `HashMap` inside a loop using `insert` with a cloned key (`String`) every frame causes massive unnecessary allocations if the key already exists.
 **Action:** Always check `get_mut` first to update in place without allocating a new key. Only `insert` (and clone the key) if the entry is missing.
+
+## 2026-11-20 - Dynamic Mesh Buffer Reuse
+**Learning:** For dynamic meshes updated every frame (like particles), creating new `Vec`s and calling `mesh.insert_attribute` drops the old buffer, forcing a new allocation every frame. This causes significant allocator churn.
+**Action:** Use `mesh.remove_attribute(...)` to take ownership of the existing buffer, clear it (keeping capacity), refill it, and re-insert it. This results in zero steady-state allocations for dynamic mesh updates.
