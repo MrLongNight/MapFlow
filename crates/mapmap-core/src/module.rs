@@ -3202,12 +3202,15 @@ mod additional_tests {
                 }
                 ModulePartType::Output(_) => {
                     assert!(!inputs.is_empty(), "Outputs should have inputs");
-                    assert!(outputs.is_empty(), "Outputs should have no outputs (usually)");
+                    assert!(
+                        outputs.is_empty(),
+                        "Outputs should have no outputs (usually)"
+                    );
                 }
                 _ => {
                     // Most other nodes have I/O
                     if matches!(part_type, ModulePartType::Hue(_)) {
-                         assert!(outputs.is_empty(), "Hue is a sink");
+                        assert!(outputs.is_empty(), "Hue is a sink");
                     } else {
                         assert!(
                             !outputs.is_empty(),
