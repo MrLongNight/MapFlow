@@ -315,9 +315,11 @@ impl App {
             None,
         );
         let egui_renderer = Renderer::new(
-            &backend.device,
-            format,
-            egui_wgpu::RendererOptions::default(),
+            unsafe { std::mem::transmute(&*backend.device) },
+            unsafe { std::mem::transmute(format) },
+            None,
+            1,
+            false,
         );
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),

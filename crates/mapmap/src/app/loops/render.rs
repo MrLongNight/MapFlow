@@ -114,8 +114,12 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 .egui_context
                 .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
             for (id, delta) in full_output.textures_delta.set {
-                app.egui_renderer
-                    .update_texture(&device, &app.backend.queue, id, &delta);
+                app.egui_renderer.update_texture(
+                    unsafe { std::mem::transmute(&*device) },
+                    unsafe { std::mem::transmute(&*app.backend.queue) },
+                    id,
+                    &delta,
+                );
             }
 
             let screen_descriptor = egui_wgpu::ScreenDescriptor {
@@ -231,7 +235,6 @@ fn render_content(
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
                 },
-                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -267,7 +270,6 @@ fn render_content(
                     }),
                     store: wgpu::StoreOp::Store,
                 },
-                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -341,7 +343,6 @@ fn render_content(
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
-                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -372,7 +373,6 @@ fn render_content(
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
-                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -381,7 +381,7 @@ fn render_content(
 
             let renderer_static: &'static egui_wgpu::Renderer =
                 unsafe { std::mem::transmute(&*egui_renderer) };
-            let render_pass_static: &mut wgpu::RenderPass<'static> =
+            let render_pass_static: &mut egui_wgpu::wgpu::RenderPass<'static> =
                 unsafe { std::mem::transmute(&mut render_pass) };
 
             renderer_static.render(render_pass_static, tris, screen_desc);
@@ -456,18 +456,18 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     Entry::Occupied(mut e) => {
                         let (id, _old_view) = e.get_mut();
                         app.egui_renderer.update_egui_texture_from_wgpu_texture(
-                            &app.backend.device,
-                            &target_view_arc,
-                            wgpu::FilterMode::Linear,
+                            unsafe { std::mem::transmute(&*app.backend.device) },
+                            unsafe { std::mem::transmute(&*target_view_arc) },
+                            egui_wgpu::wgpu::FilterMode::Linear,
                             *id,
                         );
                         *e.into_mut() = (*id, target_view_arc.clone());
                     }
                     Entry::Vacant(e) => {
                         let id = app.egui_renderer.register_native_texture(
-                            &app.backend.device,
-                            &target_view_arc,
-                            wgpu::FilterMode::Linear,
+                            unsafe { std::mem::transmute(&*app.backend.device) },
+                            unsafe { std::mem::transmute(&*target_view_arc) },
+                            egui_wgpu::wgpu::FilterMode::Linear,
                         );
                         e.insert((id, target_view_arc.clone()));
                     }
@@ -492,7 +492,6 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
                             },
-                            depth_slice: None,
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,
