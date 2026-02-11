@@ -61,3 +61,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-10 - Discrepancy in PR Reference for Bevy Particles
 **Erkenntnis:** CHANGELOG referenced PR #638 for "Bevy Particles", but git history shows merged commit 52bf7e7 is linked to PR #650.
 **Aktion:** Corrected CHANGELOG entry to point to #650 and updated ROADMAP to reflect the new feature implementation details.
+
+## 2026-02-11 - Batch Update for Undocumented PRs
+**Erkenntnis:** Discovered a batch of ~8 merged PRs (#664, #663, #662, #661, #660, #659, #657, #654) that were missing from CHANGELOG.md. These included major features like Render Engine Overhaul and Bevy 3D Text.
+**Aktion:** Added all missing entries to CHANGELOG.md and synchronized ROADMAP.md with new feature statuses (Render Engine, UI Theme, Bevy 3D Text).
