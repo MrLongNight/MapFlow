@@ -312,8 +312,14 @@ pub fn particle_system(
                     indices.push(base);
                 }
 
-                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, VertexAttributeValues::Float32x3(positions));
-                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, VertexAttributeValues::Float32x4(colors));
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    VertexAttributeValues::Float32x3(positions),
+                );
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    VertexAttributeValues::Float32x4(colors),
+                );
                 mesh.insert_indices(Indices::U32(indices));
             }
         }
