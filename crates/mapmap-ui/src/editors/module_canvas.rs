@@ -3372,8 +3372,22 @@ impl ModuleCanvas {
         // Draw grid
         self.draw_grid(&painter, canvas_rect);
 
+        // Empty State Guidance
+        if module.parts.is_empty() {
+            let center = canvas_rect.center();
+            ui.painter().text(
+                center,
+                egui::Align2::CENTER_CENTER,
+                "Right-Click to Add Node\nOr Drop Media Files",
+                egui::FontId::proportional(24.0),
+                Color32::from_white_alpha(50),
+            );
+        }
+
         // Draw connections first (behind nodes)
-        self.draw_connections(ui, &painter, module, &to_screen);
+        if let Some(idx_to_remove) = self.draw_connections(ui, &painter, module, &to_screen) {
+            module.connections.remove(idx_to_remove);
+        }
 
         // Collect socket positions for hit detection
         let mut all_sockets: Vec<SocketInfo> = Vec::new();
@@ -3541,7 +3555,6 @@ impl ModuleCanvas {
                     select_rect,
                     0.0,
                     Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-                    egui::StrokeKind::Inside,
                 );
                 painter.rect_filled(
                     select_rect,
@@ -3779,7 +3792,6 @@ impl ModuleCanvas {
                     highlight_rect,
                     0, // Sharp corners
                     Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
-                    egui::StrokeKind::Inside,
                 );
 
                 // Draw resize handle at bottom-right corner
@@ -3920,7 +3932,6 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                egui::StrokeKind::Inside,
             );
 
             // Menu items
@@ -3972,7 +3983,6 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                egui::StrokeKind::Inside,
             );
 
             // Menu items
@@ -4016,7 +4026,6 @@ impl ModuleCanvas {
                     menu_rect,
                     4.0,
                     Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-                    egui::StrokeKind::Inside,
                 );
 
                 // Menu items
@@ -4067,7 +4076,6 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
-            egui::StrokeKind::Inside,
         );
 
         // Popup content
@@ -4148,7 +4156,6 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
-            egui::StrokeKind::Inside,
         );
 
         // Popup content
@@ -4240,7 +4247,6 @@ impl ModuleCanvas {
             rect,
             4,
             Stroke::new(1.0, Color32::GRAY),
-            egui::StrokeKind::Inside,
         );
 
         // Draw grid
@@ -4474,7 +4480,6 @@ impl ModuleCanvas {
             map_rect,
             0,
             Stroke::new(1.0, Color32::from_gray(80)),
-            egui::StrokeKind::Inside,
         );
 
         // Calculate bounds of all parts
@@ -4538,7 +4543,6 @@ impl ModuleCanvas {
             viewport_rect,
             0,
             Stroke::new(1.5, Color32::WHITE),
-            egui::StrokeKind::Inside,
         );
     }
 
@@ -4569,7 +4573,8 @@ impl ModuleCanvas {
         painter: &egui::Painter,
         module: &MapFlowModule,
         to_screen: &F,
-    ) where
+    ) -> Option<usize>
+    where
         F: Fn(Pos2) -> Pos2,
     {
         let node_width = 200.0;
@@ -4578,6 +4583,10 @@ impl ModuleCanvas {
         let socket_spacing = 22.0;
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
         let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
+        let alt_held = ui.input(|i| i.modifiers.alt);
+        let primary_clicked = ui.input(|i| i.pointer.primary_clicked());
+
+        let mut remove_idx = None;
 
         for (conn_idx, conn) in module.connections.iter().enumerate() {
             // Find source and target parts
@@ -4685,15 +4694,26 @@ impl ModuleCanvas {
                 }
 
                 // Handle Interaction
-                if is_hovered && secondary_clicked {
-                    self.context_menu_connection = Some(conn_idx);
-                    self.context_menu_pos = pointer_pos;
-                    self.context_menu_part = None;
+                if is_hovered {
+                    if secondary_clicked {
+                        self.context_menu_connection = Some(conn_idx);
+                        self.context_menu_pos = pointer_pos;
+                        self.context_menu_part = None;
+                    }
+                    if alt_held && primary_clicked {
+                        remove_idx = Some(conn_idx);
+                    }
                 }
 
                 // Visual Style
                 let (stroke_width, stroke_color, glow_width) = if is_hovered {
-                    (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
+                    if alt_held {
+                        // Destructive Mode
+                        (4.0 * self.zoom, Color32::RED, 10.0 * self.zoom)
+                    } else {
+                        // Normal Hover
+                        (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
+                    }
                 } else {
                     (2.0 * self.zoom, cable_color, 6.0 * self.zoom)
                 };
@@ -4761,6 +4781,8 @@ impl ModuleCanvas {
                 }
             }
         }
+
+        remove_idx
     }
 
     fn get_delete_button_rect(&self, part_rect: Rect) -> Rect {
@@ -4825,7 +4847,6 @@ impl ModuleCanvas {
                     rect.expand(expansion),
                     0.0,
                     Stroke::new(1.0 * self.zoom, color),
-                    egui::StrokeKind::Outside,
                 );
             }
 
@@ -4837,7 +4858,6 @@ impl ModuleCanvas {
                     2.0 * self.zoom,
                     Color32::WHITE.gamma_multiply(180.0 * glow_intensity / 255.0),
                 ),
-                egui::StrokeKind::Inside,
             );
         }
 
@@ -4852,7 +4872,6 @@ impl ModuleCanvas {
                 rect.expand(4.0 * self.zoom),
                 0.0,
                 Stroke::new(2.0 * self.zoom, learn_color),
-                egui::StrokeKind::Outside,
             );
 
             painter.text(
@@ -4894,7 +4913,6 @@ impl ModuleCanvas {
                         rect,
                         0,
                         egui::Stroke::new(2.0, egui::Color32::YELLOW),
-                        egui::StrokeKind::Outside,
                     );
 
                     if ui.input(|i| i.pointer.any_released()) {
@@ -4914,7 +4932,6 @@ impl ModuleCanvas {
             rect,
             0, // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
-            egui::StrokeKind::Inside,
         );
 
         // Title bar
@@ -5624,7 +5641,6 @@ impl ModuleCanvas {
             popup_rect,
             0,
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
-            egui::StrokeKind::Inside,
         );
 
         let inner_rect = popup_rect.shrink(12.0);
@@ -6602,7 +6618,6 @@ impl ModuleCanvas {
             rect,
             0.0,
             Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
-            egui::StrokeKind::Inside,
         );
 
         // Data normalization
@@ -6626,7 +6641,6 @@ impl ModuleCanvas {
             region_rect,
             0.0,
             Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
-            egui::StrokeKind::Inside,
         );
 
         // INTERACTION LOGIC
