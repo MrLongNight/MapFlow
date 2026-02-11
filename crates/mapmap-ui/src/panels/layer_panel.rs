@@ -135,10 +135,10 @@ impl LayerPanel {
                             Stroke::new(1.0, colors::STROKE_GREY.linear_multiply(0.5))
                         };
 
-                        egui::Frame::new()
+                        egui::Frame::default()
                             .fill(bg_color)
                             .stroke(stroke)
-                            .corner_radius(egui::CornerRadius::same(0)) // Sharp corners for Cyber/Resolume style
+                            .rounding(egui::Rounding::ZERO) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {

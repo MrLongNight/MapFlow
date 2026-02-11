@@ -3920,7 +3920,6 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                egui::StrokeKind::Inside,
             );
 
             // Menu items
@@ -3972,7 +3971,6 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                egui::StrokeKind::Inside,
             );
 
             // Menu items
