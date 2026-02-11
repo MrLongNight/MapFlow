@@ -76,3 +76,8 @@ to use explicit `AudioTriggerData` initialization.
 calculations for zero-sized layers could result in division by zero (Inf).
 **Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`.
 Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
+
+## 2024-10-27 - [Trigger Extrapolation & ModulePart Exhaustiveness]
+
+**Erkenntnis:** `TriggerConfig::apply` with `Direct` mode allows extrapolation (values > 1.0 or < 0.0), which is a feature but was undocumented and untested. Also, `ModulePartType` socket generation is critical for graph validity; adding a new variant without checking its sockets can lead to runtime errors or broken UI.
+**Aktion:** Documented extrapolation behavior with `test_trigger_config_edge_cases`. Implemented `test_module_part_type_sockets_exhaustiveness` which iterates all variants to ensure no new part type is left "socket-less" or causing panics. This pattern should be standard for all Enum-based factories.

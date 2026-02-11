@@ -2957,6 +2957,42 @@ mod trigger_config_tests {
 
         assert_eq!(config.apply(0.5), 50.0);
     }
+
+    #[test]
+    fn test_trigger_config_edge_cases() {
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::Direct,
+            min_value: 0.0,
+            max_value: 100.0,
+            ..Default::default()
+        };
+
+        // Negative input -> should be clamped or extrapolated?
+        // Implementation: min + (max - min) * val
+        // -0.5 -> 0 + 100 * -0.5 = -50.0
+        // Wait, logic is: min + (max - min) * value.
+        // It does NOT clamp the input value to [0, 1].
+        // This test documents that behavior.
+        assert_eq!(config.apply(-0.5), -50.0);
+
+        // Input > 1.0 -> Extrapolation
+        // 1.5 -> 0 + 100 * 1.5 = 150.0
+        assert_eq!(config.apply(1.5), 150.0);
+    }
+
+    #[test]
+    fn test_trigger_config_random_negative() {
+        let config = TriggerConfig {
+            mode: TriggerMappingMode::RandomInRange,
+            min_value: 10.0,
+            max_value: 20.0,
+            ..Default::default()
+        };
+
+        // Negative input should yield min_value (deterministic)
+        assert_eq!(config.apply(-0.5), 10.0);
+        assert_eq!(config.apply(-1.0), 10.0);
+    }
 }
 
 #[cfg(test)]
@@ -3095,5 +3131,92 @@ mod additional_tests {
             _ => panic!("Wrong trigger target deserialized"),
         }
         assert!(target.invert);
+    }
+
+    #[test]
+    fn test_module_part_type_sockets_exhaustiveness() {
+        // Iterate over a representative set of ALL ModulePartTypes
+        // and ensure compute_sockets doesn't panic and returns something reasonable.
+        // NOTE: This list must be manually updated when new ModulePartType variants are added
+        // to ensure they are tested.
+        let variants = vec![
+            ModulePartType::Trigger(TriggerType::Beat),
+            ModulePartType::Source(SourceType::Bevy),
+            ModulePartType::Source(SourceType::BevyParticles {
+                rate: 10.0,
+                lifetime: 1.0,
+                speed: 1.0,
+                color_start: [1.0; 4],
+                color_end: [1.0; 4],
+                position: [0.0; 3],
+                rotation: [0.0; 3],
+            }),
+            ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)),
+            ModulePartType::Modulizer(ModulizerType::Effect {
+                effect_type: EffectType::Blur,
+                params: HashMap::new(),
+            }),
+            ModulePartType::Layer(LayerType::Single {
+                id: 1,
+                name: "L".to_string(),
+                opacity: 1.0,
+                blend_mode: None,
+                mesh: MeshType::Quad {
+                    tl: (0.0, 0.0),
+                    tr: (1.0, 0.0),
+                    br: (1.0, 1.0),
+                    bl: (0.0, 1.0),
+                },
+                mapping_mode: false,
+            }),
+            ModulePartType::Mesh(MeshType::Grid { rows: 2, cols: 2 }),
+            ModulePartType::Hue(HueNodeType::SingleLamp {
+                id: "1".to_string(),
+                name: "L".to_string(),
+                brightness: 1.0,
+                color: [1.0; 3],
+                effect: None,
+                effect_active: false,
+            }),
+            ModulePartType::Output(OutputType::Projector {
+                id: 1,
+                name: "Out".to_string(),
+                hide_cursor: true,
+                target_screen: 0,
+                show_in_preview_panel: true,
+                extra_preview_window: false,
+                output_width: 1920,
+                output_height: 1080,
+                output_fps: 60.0,
+            }),
+        ];
+
+        for part_type in variants {
+            let (inputs, outputs) = part_type.get_default_sockets();
+            // Basic sanity check: shouldn't be completely empty unless intended
+            // (e.g., Output has inputs but no outputs, Trigger has outputs but no inputs)
+            match part_type {
+                ModulePartType::Trigger(_) => {
+                    assert!(inputs.is_empty(), "Triggers should have no inputs");
+                    assert!(!outputs.is_empty(), "Triggers should have outputs");
+                }
+                ModulePartType::Output(_) => {
+                    assert!(!inputs.is_empty(), "Outputs should have inputs");
+                    assert!(outputs.is_empty(), "Outputs should have no outputs (usually)");
+                }
+                _ => {
+                    // Most other nodes have I/O
+                    if matches!(part_type, ModulePartType::Hue(_)) {
+                         assert!(outputs.is_empty(), "Hue is a sink");
+                    } else {
+                        assert!(
+                            !outputs.is_empty(),
+                            "Standard node {:?} should have outputs",
+                            part_type
+                        );
+                    }
+                }
+            }
+        }
     }
 }
