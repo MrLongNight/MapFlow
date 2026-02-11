@@ -80,3 +80,13 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
+
+## 2026-02-11 - Script Cleanup
+
+**Erkenntnis:** Das Skript `scripts/fix_sg.py` war leer (0 Bytes) und damit funktionslos. `scripts/scripts_jules-pre_pr_checks.sh` hatte einen redundanten Präfix im Dateinamen. `scripts/jules-setup.sh` und `scripts/fix_formatting.py` fehlten die Ausführungsrechte bzw. der Shebang für die direkte Nutzung.
+
+**Aktion:**
+- `scripts/fix_sg.py` nach `.temp-archive/2026-02-11-fix_sg.py` archiviert.
+- `scripts/scripts_jules-pre_pr_checks.sh` zu `scripts/jules-pre_pr_checks.sh` umbenannt.
+- `scripts/fix_formatting.py` mit `#!/usr/bin/env python3` versehen und ausführbar gemacht.
+- `scripts/jules-setup.sh` ausführbar gemacht.
