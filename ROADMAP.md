@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-11 09:00
+> **Stand:** 2026-02-10 07:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -102,14 +102,8 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * ✅ **Bevy Engine Integration** (Bevy 0.16)
   * ✅ Shared WGPU Context
   * ✅ Bevy Particles Node (Custom Mesh-Based) (COMPLETED 2026-02-10)
-  * ✅ Bevy 3D Text Node (COMPLETED 2026-02-11)
 
 ### Rendering (Compositor / Edge-Blend / Color-Calib / Mesh / Oszillator / Effekt-Chain)
-
-* ✅ **Render Engine Overhaul** (`mapmap-render` v2) (COMPLETED 2026-02-11)
-  * ✅ New crate structure with WGPU Backend
-  * ✅ Multi-Pass Architecture
-  * ✅ Improved Pipeline Management
 
 * ✅ **Compositor** (`mapmap-render/src/compositor.rs`)
   * ✅ Multi-Layer-Komposition
@@ -381,10 +375,8 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ OSC Panel (`osc_panel.rs`) – Migriert (COMPLETED 2025-12-23)
   * ✅ ImGui Removal (Code Cleanup) – COMPLETED (2025-12-23)
 
-* ✅ **UI Redesign (Resolume Style)**
-  * ✅ Cyber Dark Theme (COMPLETED 2026-02-11)
-    * ✅ AudioPanel Cyber Dark Refactor (2026-02-11)
-    * ✅ Enhanced Parameter Widgets with Reset (2026-02-11)
+* 🟡 **UI Redesign (Resolume Style)**
+  * 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
   * ✅ Zone-Based Layout (Left MediaBrowser, Right Inspector, Bottom Timeline) - COMPLETED 2025-12-24
   * ✅ Performance Overlay (Top-Right, Real FPS) - COMPLETED 2025-12-24
   * ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - REMOVED 2025-12-30 (use Module Canvas)
