@@ -15,9 +15,9 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
     let mut actions = vec![];
 
     // Custom frame for modern look
-    let frame = egui::Frame::NONE
+    let frame = egui::Frame::none()
         .fill(ctx.style().visuals.window_fill())
-        .inner_margin(egui::Margin::symmetric(16_i8, 8_i8));
+        .inner_margin(egui::Margin::symmetric(16.0, 8.0));
 
     egui::TopBottomPanel::top("top_panel")
         .frame(frame)
@@ -39,7 +39,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             };
 
             // --- Main Menu Bar ---
-            egui::MenuBar::new().ui(ui, |ui| {
+            egui::menu::bar(ui, |ui| {
                 ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
 
                 // --- File Menu ---
@@ -50,7 +50,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Add),
                     ) {
                         actions.push(UIAction::NewProject);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if menu_item(
                         ui,
@@ -58,7 +58,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::LockOpen),
                     ) {
                         actions.push(UIAction::LoadProject(String::new()));
-                        ui.close();
+                        ui.close_menu();
                     }
 
                     // Recent files submenu
@@ -68,7 +68,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                             for path in &recent_files {
                                 if ui.button(path).clicked() {
                                     actions.push(UIAction::LoadRecentProject(path.clone()));
-                                    ui.close();
+                                    ui.close_menu();
                                 }
                             }
                         });
@@ -82,15 +82,15 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::FloppyDisk),
                     ) {
                         actions.push(UIAction::SaveProject(String::new()));
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(ui_state.i18n.t("menu-file-save-as")).clicked() {
                         actions.push(UIAction::SaveProjectAs);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(ui_state.i18n.t("menu-file-export")).clicked() {
                         actions.push(UIAction::Export);
-                        ui.close();
+                        ui.close_menu();
                     }
 
                     ui.separator();
@@ -101,7 +101,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Cog),
                     ) {
                         actions.push(UIAction::OpenSettings);
-                        ui.close();
+                        ui.close_menu();
                     }
 
                     ui.separator();
@@ -112,7 +112,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::ButtonStop),
                     ) {
                         actions.push(UIAction::Exit);
-                        ui.close();
+                        ui.close_menu();
                     }
                 });
 
@@ -124,7 +124,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::ArrowLeft),
                     ) {
                         actions.push(UIAction::Undo);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if menu_item(
                         ui,
@@ -132,20 +132,20 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::ArrowRight),
                     ) {
                         actions.push(UIAction::Redo);
-                        ui.close();
+                        ui.close_menu();
                     }
                     ui.separator();
                     if ui.button(ui_state.i18n.t("menu-edit-cut")).clicked() {
                         actions.push(UIAction::Cut);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(ui_state.i18n.t("menu-edit-copy")).clicked() {
                         actions.push(UIAction::Copy);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(ui_state.i18n.t("menu-edit-paste")).clicked() {
                         actions.push(UIAction::Paste);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if menu_item(
                         ui,
@@ -153,12 +153,12 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Remove),
                     ) {
                         actions.push(UIAction::Delete);
-                        ui.close();
+                        ui.close_menu();
                     }
                     ui.separator();
                     if ui.button(ui_state.i18n.t("menu-edit-select-all")).clicked() {
                         actions.push(UIAction::SelectAll);
-                        ui.close();
+                        ui.close_menu();
                     }
                 });
 
@@ -263,7 +263,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Monitor),
                     ) {
                         actions.push(UIAction::ToggleFullscreen);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if menu_item(
                         ui,
@@ -271,7 +271,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::AppWindow),
                     ) {
                         actions.push(UIAction::ResetLayout);
-                        ui.close();
+                        ui.close_menu();
                     }
                 });
 
@@ -279,7 +279,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                 ui.menu_button(ui_state.i18n.t("menu-help"), |ui| {
                     if ui.button(ui_state.i18n.t("menu-help-docs")).clicked() {
                         actions.push(UIAction::OpenDocs);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if menu_item(
                         ui,
@@ -287,21 +287,21 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::InfoCircle),
                     ) {
                         actions.push(UIAction::OpenAbout);
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(ui_state.i18n.t("menu-help-license")).clicked() {
                         actions.push(UIAction::OpenLicense);
-                        ui.close();
+                        ui.close_menu();
                     }
                     ui.separator();
                     ui.menu_button("Language", |ui| {
                         if ui.button("English").clicked() {
                             actions.push(UIAction::SetLanguage("en".to_string()));
-                            ui.close();
+                            ui.close_menu();
                         }
                         if ui.button("Deutsch").clicked() {
                             actions.push(UIAction::SetLanguage("de".to_string()));
-                            ui.close();
+                            ui.close_menu();
                         }
                     });
                 });

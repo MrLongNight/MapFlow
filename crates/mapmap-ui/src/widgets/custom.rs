@@ -15,7 +15,11 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     painter.rect_filled(rect, egui::Rounding::same(0.0), colors::LIGHTER_GREY);
 
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(stripe_rect, egui::Rounding::same(0.0), colors::CYAN_ACCENT);
+    painter.rect_filled(
+        stripe_rect,
+        egui::Rounding::same(0.0),
+        colors::CYAN_ACCENT,
+    );
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -231,8 +235,12 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter()
-        .rect(rect, egui::Rounding::same(0.0), bg_fill, stroke);
+    ui.painter().rect(
+        rect,
+        egui::Rounding::same(0.0),
+        bg_fill,
+        stroke,
+    );
 
     let text_pos = rect.center();
 

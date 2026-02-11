@@ -54,7 +54,11 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
     // 2. Accent Stripe (Left)
     let stripe_width = 3.0;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(stripe_width, rect.height()));
-    painter.rect_filled(stripe_rect, egui::Rounding::same(0.0), colors::CYAN_ACCENT);
+    painter.rect_filled(
+        stripe_rect,
+        egui::Rounding::same(0.0),
+        colors::CYAN_ACCENT,
+    );
 
     // 3. Title Text
     let text_pos = Pos2::new(rect.min.x + stripe_width + 8.0, rect.center().y);
