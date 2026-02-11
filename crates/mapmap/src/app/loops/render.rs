@@ -115,8 +115,8 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
             for (id, delta) in full_output.textures_delta.set {
                 app.egui_renderer.update_texture(
-                    unsafe { std::mem::transmute(&*device) },
-                    unsafe { std::mem::transmute(&*app.backend.queue) },
+                    &device,
+                    &app.backend.queue,
                     id,
                     &delta,
                 );
@@ -456,8 +456,8 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     Entry::Occupied(mut e) => {
                         let (id, _old_view) = e.get_mut();
                         app.egui_renderer.update_egui_texture_from_wgpu_texture(
-                            unsafe { std::mem::transmute(&*app.backend.device) },
-                            unsafe { std::mem::transmute(&*target_view_arc) },
+                            &app.backend.device,
+                            &target_view_arc,
                             egui_wgpu::wgpu::FilterMode::Linear,
                             *id,
                         );
@@ -465,8 +465,8 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     }
                     Entry::Vacant(e) => {
                         let id = app.egui_renderer.register_native_texture(
-                            unsafe { std::mem::transmute(&*app.backend.device) },
-                            unsafe { std::mem::transmute(&*target_view_arc) },
+                            &app.backend.device,
+                            &target_view_arc,
                             egui_wgpu::wgpu::FilterMode::Linear,
                         );
                         e.insert((id, target_view_arc.clone()));

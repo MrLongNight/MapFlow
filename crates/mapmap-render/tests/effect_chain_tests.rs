@@ -46,9 +46,14 @@ fn create_solid_color_texture(
     let data: Vec<u8> = (0..width * height).flat_map(|_| color).collect();
 
     queue.write_texture(
-        texture.as_image_copy(),
+        wgpu::ImageCopyTexture {
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
         &data,
-        wgpu::TexelCopyBufferLayout {
+        wgpu::ImageDataLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -90,10 +95,15 @@ async fn read_texture_data(
     });
 
     encoder.copy_texture_to_buffer(
-        texture.as_image_copy(),
-        wgpu::TexelCopyBufferInfo {
+        wgpu::ImageCopyTexture {
+            texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        wgpu::ImageCopyBuffer {
             buffer: &buffer,
-            layout: wgpu::TexelCopyBufferLayout {
+            layout: wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -106,7 +116,7 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     // Map the buffer
     let slice = buffer.slice(..);
@@ -114,7 +124,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+    device.poll(wgpu::Maintain::Wait);
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.

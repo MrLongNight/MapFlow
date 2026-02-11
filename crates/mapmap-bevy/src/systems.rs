@@ -89,7 +89,7 @@ pub fn setup_3d_scene(
         .spawn((
             Camera3d::default(),
             Camera {
-                target: bevy::render::camera::RenderTarget::Image(image_handle.into()),
+                target: bevy::render::camera::RenderTarget::Image(image_handle),
                 ..default()
             },
             Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -117,10 +117,10 @@ pub fn hex_grid_system(
 ) {
     for (entity, hex_config) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn_related::<Children>();
+        commands.entity(entity).despawn_descendants();
 
         let layout = hexx::HexLayout {
-            scale: hexx::Vec2::splat(hex_config.radius),
+            hex_size: hexx::Vec2::splat(hex_config.radius),
             orientation: if hex_config.pointy_top {
                 hexx::HexOrientation::Pointy
             } else {
@@ -311,8 +311,8 @@ pub fn frame_readback_system(
     if let Some(gpu_image) = gpu_images.get(&render_output.image_handle) {
         let texture = &gpu_image.texture;
 
-        let width = gpu_image.size.width;
-        let height = gpu_image.size.height;
+        let width = gpu_image.size.x;
+        let height = gpu_image.size.y;
         let block_size = gpu_image.texture_format.block_copy_size(None).unwrap();
 
         // bytes_per_row must be multiple of 256
@@ -345,15 +345,15 @@ pub fn frame_readback_system(
         );
 
         encoder.copy_texture_to_buffer(
-            bevy::render::render_resource::TexelCopyTextureInfo {
+            bevy::render::render_resource::ImageCopyTexture {
                 texture,
                 mip_level: 0,
                 origin: bevy::render::render_resource::Origin3d::ZERO,
                 aspect: bevy::render::render_resource::TextureAspect::All,
             },
-            bevy::render::render_resource::TexelCopyBufferInfo {
+            bevy::render::render_resource::ImageCopyBuffer {
                 buffer,
-                layout: bevy::render::render_resource::TexelCopyBufferLayout {
+                layout: bevy::render::render_resource::ImageDataLayout {
                     offset: 0,
                     bytes_per_row: Some(bytes_per_row),
                     rows_per_image: Some(height),

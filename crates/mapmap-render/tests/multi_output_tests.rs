@@ -50,14 +50,14 @@ fn create_solid_color_texture(
     }
 
     queue.write_texture(
-        wgpu::TexelCopyTextureInfo {
+        wgpu::ImageCopyTexture {
             texture: &texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         &data,
-        wgpu::TexelCopyBufferLayout {
+        wgpu::ImageDataLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -99,9 +99,9 @@ async fn read_texture_data(
 
     encoder.copy_texture_to_buffer(
         texture.as_image_copy(),
-        wgpu::TexelCopyBufferInfo {
+        wgpu::ImageCopyBuffer {
             buffer: &buffer,
-            layout: wgpu::TexelCopyBufferLayout {
+            layout: wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -114,14 +114,14 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
     slice.map_async(wgpu::MapMode::Read, |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+    device.poll(wgpu::Maintain::Wait);
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);
