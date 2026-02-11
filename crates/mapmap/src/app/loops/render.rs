@@ -114,12 +114,8 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 .egui_context
                 .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
             for (id, delta) in full_output.textures_delta.set {
-                app.egui_renderer.update_texture(
-                    &device,
-                    &app.backend.queue,
-                    id,
-                    &delta,
-                );
+                app.egui_renderer
+                    .update_texture(&device, &app.backend.queue, id, &delta);
             }
 
             let screen_descriptor = egui_wgpu::ScreenDescriptor {
