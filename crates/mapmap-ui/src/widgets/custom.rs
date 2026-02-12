@@ -15,11 +15,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     painter.rect_filled(rect, 0.0, colors::LIGHTER_GREY);
 
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(
-        stripe_rect,
-        0.0,
-        colors::CYAN_ACCENT,
-    );
+    painter.rect_filled(stripe_rect, 0.0, colors::CYAN_ACCENT);
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -235,12 +231,7 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter().rect(
-        rect,
-        0.0,
-        bg_fill,
-        stroke,
-    );
+    ui.painter().rect(rect, 0.0, bg_fill, stroke);
 
     let text_pos = rect.center();
 
@@ -345,11 +336,7 @@ pub fn draw_safety_vertical_fill(ui: &Ui, rect: Rect, progress: f32, color: Colo
     // Bottom-up fill
     fill_rect.min.y = rect.max.y - (rect.height() * progress);
 
-    painter.rect_filled(
-        fill_rect,
-        4.0,
-        color.linear_multiply(0.4),
-    );
+    painter.rect_filled(fill_rect, 4.0, color.linear_multiply(0.4));
 
     // Glowing border when active
     let stroke_alpha = (progress * 255.0) as u8;
@@ -358,7 +345,9 @@ pub fn draw_safety_vertical_fill(ui: &Ui, rect: Rect, progress: f32, color: Colo
         4.0,
         Stroke::new(
             1.0,
-            color.linear_multiply(0.8).gamma_multiply(stroke_alpha as f32 / 255.0),
+            color
+                .linear_multiply(0.8)
+                .gamma_multiply(stroke_alpha as f32 / 255.0),
         ),
     );
 }
@@ -372,11 +361,7 @@ pub fn draw_safety_radial_fill(ui: &Ui, center: Pos2, radius: f32, progress: f32
     let painter = ui.painter();
     // Expanding circle fill
     let fill_radius = radius * progress;
-    painter.circle_filled(
-        center,
-        fill_radius,
-        color.linear_multiply(0.6),
-    );
+    painter.circle_filled(center, fill_radius, color.linear_multiply(0.6));
 
     // Glowing ring
     let stroke_alpha = (progress * 255.0) as u8;
@@ -385,7 +370,9 @@ pub fn draw_safety_radial_fill(ui: &Ui, center: Pos2, radius: f32, progress: f32
         radius,
         Stroke::new(
             1.5,
-            color.linear_multiply(0.8).gamma_multiply(stroke_alpha as f32 / 255.0),
+            color
+                .linear_multiply(0.8)
+                .gamma_multiply(stroke_alpha as f32 / 255.0),
         ),
     );
 }
@@ -420,12 +407,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect(
-        rect,
-        4.0,
-        visuals.bg_fill,
-        visuals.bg_stroke,
-    );
+    painter.rect(rect, 4.0, visuals.bg_fill, visuals.bg_stroke);
 
     // Draw focus ring if focused
     if response.has_focus() {
@@ -480,12 +462,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect(
-        rect,
-        0.0,
-        visuals.bg_fill,
-        visuals.bg_stroke,
-    );
+    painter.rect(rect, 0.0, visuals.bg_fill, visuals.bg_stroke);
 
     // Draw focus ring if focused
     if response.has_focus() {
