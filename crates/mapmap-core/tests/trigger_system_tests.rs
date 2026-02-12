@@ -107,19 +107,25 @@ fn test_update_audio_volume_beat() {
     system.update(&module_manager, &audio_data);
 
     // 4. Assert
-    // Socket indices hardcoded in TriggerSystem::update:
-    // 9: RMS, 10: Peak, 11: Beat
+    // Socket indices are dynamic based on config:
+    // frequency_bands is FALSE, so NO band sockets (0-8 skipped)
+    // volume_outputs is TRUE:
+    //   - RMS: Index 0
+    //   - Peak: Index 1
+    // beat_output is TRUE:
+    //   - Beat: Index 2
+
     assert!(
-        system.is_active(part_id, 9),
-        "RMS trigger (socket 9) should be active"
+        system.is_active(part_id, 0),
+        "RMS trigger (socket 0) should be active"
     );
     assert!(
-        !system.is_active(part_id, 10),
-        "Peak trigger (socket 10) should NOT be active"
+        !system.is_active(part_id, 1),
+        "Peak trigger (socket 1) should NOT be active"
     );
     assert!(
-        system.is_active(part_id, 11),
-        "Beat trigger (socket 11) should be active"
+        system.is_active(part_id, 2),
+        "Beat trigger (socket 2) should be active"
     );
 }
 
@@ -133,6 +139,8 @@ fn test_update_clears_previous_state() {
 
     let config = AudioTriggerOutputConfig {
         beat_output: true,
+        frequency_bands: false, // Explicitly false
+        volume_outputs: false,
         ..Default::default()
     };
     let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
@@ -148,12 +156,14 @@ fn test_update_clears_previous_state() {
         ..AudioTriggerData::default()
     };
     system.update(&module_manager, &audio_data);
-    assert!(system.is_active(part_id, 11)); // Beat is socket 11
+    // Config: No bands, no volume, Beat is enabled.
+    // Index 0: Beat Out
+    assert!(system.is_active(part_id, 0));
 
     // 3. Deactivate (next frame)
     audio_data.beat_detected = false;
     system.update(&module_manager, &audio_data);
-    assert!(!system.is_active(part_id, 11));
+    assert!(!system.is_active(part_id, 0));
 }
 
 #[test]
@@ -185,4 +195,30 @@ fn test_trigger_system_update_thresholds() {
     audio_data.band_energies[1] = 0.81;
     system.update(&module_manager, &audio_data);
     assert!(system.is_active(part_id, 1));
+}
+
+#[test]
+fn test_trigger_beat_legacy() {
+    let mut system = TriggerSystem::new();
+    let mut module_manager = ModuleManager::new();
+    let module_id = module_manager.create_module("Test Module".to_string());
+    let module = module_manager.get_module_mut(module_id).unwrap();
+
+    // Create legacy Beat Trigger
+    let part_type = ModulePartType::Trigger(TriggerType::Beat);
+    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
+
+    // Simulate Beat
+    let audio_data = AudioTriggerData {
+        beat_detected: true,
+        ..AudioTriggerData::default()
+    };
+
+    system.update(&module_manager, &audio_data);
+
+    // Assert that the trigger system activated socket 0 (Trigger Out)
+    assert!(
+        system.is_active(part_id, 0),
+        "Legacy Beat Trigger (Socket 0) should be active"
+    );
 }

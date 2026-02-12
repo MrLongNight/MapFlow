@@ -25,31 +25,79 @@ impl TriggerSystem {
 
         for module in module_manager.modules() {
             for part in &module.parts {
-                if let ModulePartType::Trigger(TriggerType::AudioFFT {
-                    band: _,
-                    threshold,
-                    output_config: _,
-                }) = &part.part_type
-                {
-                    // Check each of the 9 frequency bands
-                    for i in 0..9 {
-                        if audio_data.band_energies[i] > *threshold {
-                            self.active_triggers.insert((part.id, i));
+                match &part.part_type {
+                    ModulePartType::Trigger(TriggerType::AudioFFT {
+                        band: _,
+                        threshold,
+                        output_config,
+                    }) => {
+                        let mut current_socket_idx = 0;
+                        let mut sockets_generated = false;
+
+                        // Check Frequency Bands (9 bands)
+                        if output_config.frequency_bands {
+                            sockets_generated = true;
+                            for i in 0..9 {
+                                // Check if band i is active
+                                if audio_data.band_energies[i] > *threshold {
+                                    self.active_triggers.insert((part.id, current_socket_idx));
+                                }
+                                current_socket_idx += 1;
+                            }
+                        }
+
+                        // Check Volume Outputs (RMS, Peak)
+                        if output_config.volume_outputs {
+                            sockets_generated = true;
+                            // RMS
+                            if audio_data.rms_volume > *threshold {
+                                self.active_triggers.insert((part.id, current_socket_idx));
+                            }
+                            current_socket_idx += 1;
+
+                            // Peak
+                            if audio_data.peak_volume > *threshold {
+                                self.active_triggers.insert((part.id, current_socket_idx));
+                            }
+                            current_socket_idx += 1;
+                        }
+
+                        // Check Beat Output
+                        if output_config.beat_output {
+                            sockets_generated = true;
+                            if audio_data.beat_detected {
+                                self.active_triggers.insert((part.id, current_socket_idx));
+                            }
+                            current_socket_idx += 1;
+                        }
+
+                        // Check BPM Output
+                        if output_config.bpm_output {
+                            sockets_generated = true;
+                            // BPM is a value, not a momentary trigger.
+                            // For boolean active state (e.g. UI light), we might just consider it always "active"
+                            // if BPM is detected, or pulsing on beat.
+                            // For now, let's say it's active if BPM is present.
+                            if audio_data.bpm.is_some() {
+                                self.active_triggers.insert((part.id, current_socket_idx));
+                            }
+                            current_socket_idx += 1;
+                        }
+
+                        // Fallback: If no outputs generated, a default "Beat Out" is added
+                        if !sockets_generated {
+                            if audio_data.beat_detected {
+                                self.active_triggers.insert((part.id, 0));
+                            }
                         }
                     }
-                    // Check RMS, Peak, Beat, BPM
-                    if audio_data.rms_volume > *threshold {
-                        self.active_triggers.insert((part.id, 9));
+                    ModulePartType::Trigger(TriggerType::Beat) => {
+                        // Legacy Beat trigger has 1 output: "Trigger Out"
+                        if audio_data.beat_detected {
+                            self.active_triggers.insert((part.id, 0));
+                        }
                     }
-                    if audio_data.peak_volume > *threshold {
-                        self.active_triggers.insert((part.id, 10));
-                    }
-                    if audio_data.beat_detected {
-                        self.active_triggers.insert((part.id, 11));
-                    }
-                    // For BPM, the trigger is usually just the beat itself.
-                    // A continuous BPM value doesn't make sense as a trigger here.
-                    // The "Beat Out" socket (index 11) handles the primary beat trigger.
+                    _ => {}
                 }
             }
         }
