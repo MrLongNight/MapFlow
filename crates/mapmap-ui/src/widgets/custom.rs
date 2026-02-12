@@ -75,7 +75,6 @@ pub fn styled_slider(
         egui::CornerRadius::same(0),
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
-        egui::StrokeKind::Inside,
     );
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
@@ -100,7 +99,6 @@ pub fn styled_slider(
         egui::CornerRadius::same(0),
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
-        egui::StrokeKind::Inside,
     );
 
     // Value Text
@@ -154,7 +152,6 @@ pub fn styled_drag_value(
             response.rect.expand(1.0),
             egui::CornerRadius::same(0),
             Stroke::new(1.0, colors::CYAN_ACCENT),
-            egui::StrokeKind::Outside,
         );
     }
 
@@ -243,7 +240,6 @@ pub fn icon_button(
         egui::CornerRadius::same(0),
         bg_fill,
         stroke,
-        egui::StrokeKind::Inside,
     );
 
     let text_pos = rect.center();
@@ -373,7 +369,6 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         egui::CornerRadius::same(4),
         visuals.bg_fill,
         visuals.bg_stroke,
-        egui::StrokeKind::Inside,
     );
 
     // Draw focus ring if focused
@@ -382,7 +377,6 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
             rect.expand(2.0),
             egui::CornerRadius::same(6),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Outside,
         );
     }
 
@@ -443,7 +437,6 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
         egui::CornerRadius::same(0),
         visuals.bg_fill,
         visuals.bg_stroke,
-        egui::StrokeKind::Inside,
     );
 
     // Draw focus ring if focused
@@ -452,7 +445,6 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
             rect.expand(2.0),
             egui::CornerRadius::same(0),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Outside,
         );
     }
 
