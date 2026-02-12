@@ -300,7 +300,7 @@ fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f3
     let painter = ui.painter();
 
     // Dark background
-    painter.rect_filled(rect, 0, Color32::from_rgb(10, 10, 12));
+    painter.rect_filled(rect, 0.0, Color32::from_rgb(10, 10, 12));
 
     // Layout:
     // Top: L
