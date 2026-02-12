@@ -106,7 +106,7 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     // Map the buffer
     let slice = buffer.slice(..);

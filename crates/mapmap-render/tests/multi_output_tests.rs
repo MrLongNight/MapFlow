@@ -114,7 +114,7 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
