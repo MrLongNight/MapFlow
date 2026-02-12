@@ -165,6 +165,7 @@ pub fn particle_system(
     )>,
 ) {
     let delta_time = time.delta_secs();
+    let mut rng = rand::rng();
 
     for (entity, config, mut emitter_opt, mesh_opt) in query.iter_mut() {
         // Initialize emitter if missing
@@ -204,7 +205,6 @@ pub fn particle_system(
         // Spawn new particles
         emitter.spawn_accumulator += config.rate * delta_time;
         if emitter.spawn_accumulator > 1.0 {
-            let mut rng = rand::rng();
             while emitter.spawn_accumulator > 1.0 {
                 emitter.spawn_accumulator -= 1.0;
 

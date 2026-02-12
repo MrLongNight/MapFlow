@@ -33,3 +33,7 @@
 ## 2026-05-28 - HashMap Allocations in Loops
 **Learning:** Updating a `HashMap` inside a loop using `insert` with a cloned key (`String`) every frame causes massive unnecessary allocations if the key already exists.
 **Action:** Always check `get_mut` first to update in place without allocating a new key. Only `insert` (and clone the key) if the entry is missing.
+
+## 2026-05-31 - Hoist RNG Initialization
+**Learning:** `rand::rng()` initialization inside a hot loop (e.g., particle spawning) causes redundant thread-local storage lookups for every iteration, adding overhead in performance-critical systems.
+**Action:** Hoist `rand::rng()` initialization outside the loop to retrieve the thread-local handle once per frame/system update.
