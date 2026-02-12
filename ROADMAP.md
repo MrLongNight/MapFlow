@@ -102,7 +102,6 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * ✅ **Bevy Engine Integration** (Bevy 0.16)
   * ✅ Shared WGPU Context
   * ✅ Bevy Particles Node (Custom Mesh-Based) (COMPLETED 2026-02-10)
-  * ✅ Bevy 3D Text Node (COMPLETED 2026-02-10)
 
 ### Rendering (Compositor / Edge-Blend / Color-Calib / Mesh / Oszillator / Effekt-Chain)
 

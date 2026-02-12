@@ -67,11 +67,3 @@ Generate dynamic particle systems directly within MapFlow.
 *   **Audio Reactive**: Control particle emission rate, speed, and color with audio triggers.
 *   **Customizable**: Adjust lifetime, speed, and color gradients to match your visual style.
 *   **Performance**: Lightweight implementation designed for high frame rates.
-
-## 9. Bevy 3D Text
-
-Display dynamic 3D text in your scenes.
-
-*   **Dynamic Content**: Change text on the fly.
-*   **Customizable Style**: Adjust font size, color, and alignment.
-*   **3D Transform**: Position, rotate, and scale text in 3D space.
