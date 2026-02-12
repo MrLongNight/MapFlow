@@ -227,7 +227,6 @@ impl AudioPanel {
             rect,
             2.0,
             Stroke::new(1.0, colors::STROKE_GREY),
-            egui::StrokeKind::Inside,
         );
 
         // Bar

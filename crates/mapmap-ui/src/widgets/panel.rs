@@ -49,14 +49,14 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
+    painter.rect_filled(rect, egui::Rounding::same(0.0), colors::LIGHTER_GREY);
 
     // 2. Accent Stripe (Left)
     let stripe_width = 3.0;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(stripe_width, rect.height()));
     painter.rect_filled(
         stripe_rect,
-        egui::CornerRadius::same(0),
+        egui::Rounding::same(0.0),
         colors::CYAN_ACCENT,
     );
 
