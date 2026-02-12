@@ -108,14 +108,14 @@ pub fn upload_compressed_texture(
     );
 
     queue.write_texture(
-        wgpu::TexelCopyTextureInfo {
+        wgpu::ImageCopyTexture {
             texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         data,
-        wgpu::TexelCopyBufferLayout {
+        wgpu::ImageDataLayout {
             offset: 0,
             bytes_per_row: Some(bytes_per_row),
             rows_per_image: Some(aligned_height.div_ceil(4)), // Number of block rows
