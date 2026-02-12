@@ -81,14 +81,12 @@ impl TriggerSystem {
                             if audio_data.bpm.is_some() {
                                 self.active_triggers.insert((part.id, current_socket_idx));
                             }
-                            current_socket_idx += 1;
+                            // current_socket_idx increment removed as it is the last item
                         }
 
                         // Fallback: If no outputs generated, a default "Beat Out" is added
-                        if !sockets_generated {
-                            if audio_data.beat_detected {
-                                self.active_triggers.insert((part.id, 0));
-                            }
+                        if !sockets_generated && audio_data.beat_detected {
+                            self.active_triggers.insert((part.id, 0));
                         }
                     }
                     ModulePartType::Trigger(TriggerType::Beat) => {
