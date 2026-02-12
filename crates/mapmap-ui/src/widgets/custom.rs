@@ -12,12 +12,12 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     // Header background
-    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
+    painter.rect_filled(rect, 0.0, colors::LIGHTER_GREY);
 
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
     painter.rect_filled(
         stripe_rect,
-        egui::CornerRadius::same(0),
+        0.0,
         colors::CYAN_ACCENT,
     );
 
@@ -72,10 +72,9 @@ pub fn styled_slider(
 
     ui.painter().rect(
         rect,
-        egui::CornerRadius::same(0),
+        0.0,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
-        egui::StrokeKind::Inside,
     );
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
@@ -97,10 +96,9 @@ pub fn styled_slider(
 
     ui.painter().rect(
         fill_rect,
-        egui::CornerRadius::same(0),
+        0.0,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
-        egui::StrokeKind::Inside,
     );
 
     // Value Text
@@ -152,9 +150,8 @@ pub fn styled_drag_value(
     if is_changed {
         ui.painter().rect_stroke(
             response.rect.expand(1.0),
-            egui::CornerRadius::same(0),
+            0.0,
             Stroke::new(1.0, colors::CYAN_ACCENT),
-            egui::StrokeKind::Outside,
         );
     }
 
@@ -240,10 +237,9 @@ pub fn icon_button(
 
     ui.painter().rect(
         rect,
-        egui::CornerRadius::same(0),
+        0.0,
         bg_fill,
         stroke,
-        egui::StrokeKind::Inside,
     );
 
     let text_pos = rect.center();
@@ -338,6 +334,62 @@ pub fn check_hold_state(ui: &mut Ui, id: egui::Id, is_interacting: bool) -> (boo
     (triggered, progress)
 }
 
+/// Draws a safety progress indicator (Bottom-Up Fill)
+pub fn draw_safety_vertical_fill(ui: &Ui, rect: Rect, progress: f32, color: Color32) {
+    if progress <= 0.0 {
+        return;
+    }
+
+    let painter = ui.painter();
+    let mut fill_rect = rect;
+    // Bottom-up fill
+    fill_rect.min.y = rect.max.y - (rect.height() * progress);
+
+    painter.rect_filled(
+        fill_rect,
+        4.0,
+        color.linear_multiply(0.4),
+    );
+
+    // Glowing border when active
+    let stroke_alpha = (progress * 255.0) as u8;
+    painter.rect_stroke(
+        rect,
+        4.0,
+        Stroke::new(
+            1.0,
+            color.linear_multiply(0.8).gamma_multiply(stroke_alpha as f32 / 255.0),
+        ),
+    );
+}
+
+/// Draws a safety progress indicator (Radial Fill)
+pub fn draw_safety_radial_fill(ui: &Ui, center: Pos2, radius: f32, progress: f32, color: Color32) {
+    if progress <= 0.0 {
+        return;
+    }
+
+    let painter = ui.painter();
+    // Expanding circle fill
+    let fill_radius = radius * progress;
+    painter.circle_filled(
+        center,
+        fill_radius,
+        color.linear_multiply(0.6),
+    );
+
+    // Glowing ring
+    let stroke_alpha = (progress * 255.0) as u8;
+    painter.circle_stroke(
+        center,
+        radius,
+        Stroke::new(
+            1.5,
+            color.linear_multiply(0.8).gamma_multiply(stroke_alpha as f32 / 255.0),
+        ),
+    );
+}
+
 /// A safety button that requires holding down for 0.6s to trigger (Mouse or Keyboard)
 pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // Small button size
@@ -364,38 +416,28 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let (triggered, progress) = check_hold_state(ui, state_id, is_interacting);
 
     // --- Visuals ---
-    let visuals = ui.style().interact(&response);
+    let visuals = *ui.style().interact(&response);
     let painter = ui.painter();
 
     // 1. Background
     painter.rect(
         rect,
-        egui::CornerRadius::same(4),
+        4.0,
         visuals.bg_fill,
         visuals.bg_stroke,
-        egui::StrokeKind::Inside,
     );
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-            egui::CornerRadius::same(6),
+            6.0,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Outside,
         );
     }
 
-    // 2. Progress Fill
-    if progress > 0.0 {
-        let mut fill_rect = rect;
-        fill_rect.max.x = rect.min.x + rect.width() * progress;
-        painter.rect_filled(
-            fill_rect,
-            egui::CornerRadius::same(4),
-            color.linear_multiply(0.4), // Transparent version of action color
-        );
-    }
+    // 2. Progress Fill (New Cyber Style)
+    draw_safety_vertical_fill(ui, rect, progress, color);
 
     // 3. Text
     let text_color = if triggered {
@@ -434,39 +476,28 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     let (triggered, progress) = check_hold_state(ui, state_id, is_interacting);
 
     // --- Visuals ---
-    let visuals = ui.style().interact(&response);
+    let visuals = *ui.style().interact(&response);
     let painter = ui.painter();
 
     // 1. Background
     painter.rect(
         rect,
-        egui::CornerRadius::same(0),
+        0.0,
         visuals.bg_fill,
         visuals.bg_stroke,
-        egui::StrokeKind::Inside,
     );
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-            egui::CornerRadius::same(0),
+            0.0,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Outside,
         );
     }
 
-    // 2. Progress Fill
-    if progress > 0.0 {
-        let mut fill_rect = rect;
-        fill_rect.max.y = rect.max.y;
-        fill_rect.min.y = rect.max.y - rect.height() * progress;
-        painter.rect_filled(
-            fill_rect,
-            egui::CornerRadius::same(0),
-            color.linear_multiply(0.4),
-        );
-    }
+    // 2. Progress Fill (Vertical for square icons)
+    draw_safety_vertical_fill(ui, rect, progress, color);
 
     // 3. Icon
     let text_color = if triggered {
