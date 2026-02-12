@@ -103,8 +103,7 @@ impl WgpuBackend {
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await
-                .ok();
+                .await;
         }
 
         let adapter =
