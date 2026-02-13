@@ -3096,4 +3096,134 @@ mod additional_tests {
         }
         assert!(target.invert);
     }
+
+    #[test]
+    fn test_module_part_type_sockets_exhaustiveness() {
+        // This test ensures that every known ModulePartType variant produces valid sockets.
+        // If you add a new variant, you MUST add it here.
+
+        let variants = vec![
+            // Trigger
+            ModulePartType::Trigger(TriggerType::Beat),
+            ModulePartType::Trigger(TriggerType::AudioFFT {
+                band: AudioBand::Bass,
+                threshold: 0.5,
+                output_config: AudioTriggerOutputConfig::default(),
+            }),
+            // Source
+            ModulePartType::Source(SourceType::MediaFile {
+                path: "test.mp4".to_string(),
+                speed: 1.0,
+                loop_enabled: true,
+                start_time: 0.0,
+                end_time: 0.0,
+                opacity: 1.0,
+                blend_mode: None,
+                brightness: 0.0,
+                contrast: 1.0,
+                saturation: 1.0,
+                hue_shift: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                rotation: 0.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                target_width: None,
+                target_height: None,
+                target_fps: None,
+                flip_horizontal: false,
+                flip_vertical: false,
+                reverse_playback: false,
+            }),
+            ModulePartType::Source(SourceType::BevyParticles {
+                rate: 100.0,
+                lifetime: 2.0,
+                speed: 1.0,
+                color_start: [1.0, 1.0, 1.0, 1.0],
+                color_end: [1.0, 1.0, 1.0, 0.0],
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+            }),
+            ModulePartType::Source(SourceType::BevyAtmosphere {
+                turbidity: 1.0,
+                rayleigh: 1.0,
+                mie_coeff: 1.0,
+                mie_directional_g: 1.0,
+                sun_position: (0.0, 0.0),
+                exposure: 1.0,
+            }),
+            ModulePartType::Source(SourceType::BevyHexGrid {
+                radius: 1.0,
+                rings: 1,
+                pointy_top: true,
+                spacing: 1.0,
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: 1.0,
+            }),
+            ModulePartType::Source(SourceType::Bevy3DText {
+                text: "Hello".to_string(),
+                font_size: 1.0,
+                color: [1.0, 1.0, 1.0, 1.0],
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                alignment: "Center".to_string(),
+            }),
+            ModulePartType::Source(SourceType::Shader {
+                name: "Test".to_string(),
+                params: vec![],
+            }),
+            ModulePartType::Source(SourceType::LiveInput { device_id: 0 }),
+            ModulePartType::Source(SourceType::NdiInput { source_name: None }),
+            // Mask
+            ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)),
+            // Modulizer
+            ModulePartType::Modulizer(ModulizerType::Effect {
+                effect_type: EffectType::Blur,
+                params: std::collections::HashMap::new(),
+            }),
+            // Layer
+            ModulePartType::Layer(LayerType::Single {
+                id: 1,
+                name: "Layer".to_string(),
+                opacity: 1.0,
+                blend_mode: None,
+                mesh: default_mesh_quad(),
+                mapping_mode: false,
+            }),
+            // Mesh
+            ModulePartType::Mesh(MeshType::Grid { cols: 10, rows: 10 }),
+            // Hue
+            ModulePartType::Hue(HueNodeType::SingleLamp {
+                id: "1".to_string(),
+                name: "Lamp".to_string(),
+                brightness: 1.0,
+                color: [1.0, 1.0, 1.0],
+                effect: None,
+                effect_active: false,
+            }),
+            // Output
+            ModulePartType::Output(OutputType::Projector {
+                id: 1,
+                name: "Output".to_string(),
+                hide_cursor: true,
+                target_screen: 0,
+                show_in_preview_panel: true,
+                extra_preview_window: false,
+                output_width: 1920,
+                output_height: 1080,
+                output_fps: 60.0,
+            }),
+        ];
+
+        for part_type in variants {
+            let (inputs, outputs) = part_type.get_default_sockets();
+            let total_sockets = inputs.len() + outputs.len();
+            assert!(
+            total_sockets > 0,
+            "ModulePartType {:?} generated 0 sockets! Check get_default_sockets() implementation.",
+            part_type
+        );
+        }
+    }
 }

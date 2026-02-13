@@ -938,4 +938,51 @@ mod tests {
         assert!(rms2 > rms1, "RMS should increase over time with smoothing");
         assert!(rms2 < 1.0, "RMS should not reach target instantly");
     }
+
+    #[test]
+    fn test_update_config_consistency() {
+        let mut config = AudioAnalyzerV2Config {
+            sample_rate: 44100,
+            fft_size: 1024,
+            ..Default::default()
+        };
+        let mut analyzer = AudioAnalyzerV2::new(config.clone());
+
+        // Process some samples to establish state
+        let samples: Vec<f32> = (0..1024).map(|i| (i as f32 * 0.1).sin()).collect();
+        analyzer.process_samples(&samples, 0.0);
+
+        let initial_hop = analyzer.hop_size;
+        // Default overlap 0.5 -> hop should be fft_size / 2 = 512
+        assert_eq!(initial_hop, 512);
+
+        // Update Sample Rate (should not affect buffer sizes, but might affect band calc logic)
+        config.sample_rate = 48000;
+        analyzer.update_config(config.clone());
+
+        assert_eq!(analyzer.sample_rate(), 48000);
+        // Buffers should remain same size
+        assert_eq!(analyzer.input_buffer.len(), 1024);
+
+        // Update FFT Size
+        config.fft_size = 2048;
+        analyzer.update_config(config.clone());
+
+        assert_eq!(analyzer.input_buffer.len(), 2048);
+        assert_eq!(analyzer.magnitude_buffer.len(), 1024);
+        // Hop size should update (2048 * 0.5 = 1024)
+        assert_eq!(analyzer.hop_size, 1024);
+
+        // Update Overlap
+        config.overlap = 0.75; // 75% overlap -> 25% hop
+        analyzer.update_config(config.clone());
+
+        // Hop size = 2048 * 0.25 = 512
+        assert_eq!(analyzer.hop_size, 512);
+
+        // Verify processing still works
+        let new_samples: Vec<f32> = (0..2048).map(|i| (i as f32 * 0.1).sin()).collect();
+        analyzer.process_samples(&new_samples, 1.0);
+        assert!(analyzer.get_latest_analysis().rms_volume > 0.0);
+    }
 }

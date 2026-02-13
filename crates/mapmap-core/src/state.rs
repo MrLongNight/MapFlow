@@ -363,4 +363,41 @@ mod tests {
             assert_eq!(Arc::strong_count(&state1.assignment_manager), 1);
         }
     }
+
+    #[test]
+    fn test_remaining_components_cow_behavior() {
+        let state1 = AppState::new("Remaining COW Test");
+
+        // 1. Effect Animator
+        {
+            let mut state = state1.clone();
+            assert_eq!(Arc::strong_count(&state1.effect_animator), 2);
+            let _ = state.effect_animator_mut();
+            assert_eq!(Arc::strong_count(&state1.effect_animator), 1);
+        }
+
+        // 2. Shader Graphs
+        {
+            let mut state = state1.clone();
+            assert_eq!(Arc::strong_count(&state1.shader_graphs), 2);
+            let _ = state.shader_graphs_mut();
+            assert_eq!(Arc::strong_count(&state1.shader_graphs), 1);
+        }
+
+        // 3. Effect Chain
+        {
+            let mut state = state1.clone();
+            assert_eq!(Arc::strong_count(&state1.effect_chain), 2);
+            let _ = state.effect_chain_mut();
+            assert_eq!(Arc::strong_count(&state1.effect_chain), 1);
+        }
+
+        // 4. Settings
+        {
+            let mut state = state1.clone();
+            assert_eq!(Arc::strong_count(&state1.settings), 2);
+            let _ = state.settings_mut();
+            assert_eq!(Arc::strong_count(&state1.settings), 1);
+        }
+    }
 }
