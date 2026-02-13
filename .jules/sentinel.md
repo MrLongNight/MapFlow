@@ -47,3 +47,7 @@
 **Vulnerability:** Browser-based WebSocket clients could not authenticate with the API server because the `extract_api_key` logic relied on standard HTTP headers (`Authorization`, `X-API-Key`) which browsers cannot set for WebSocket connections. This forced developers to potentially disable authentication for WebSocket endpoints.
 **Learning:** Browser WebSocket APIs are restrictive. Authentication tokens must be transmitted via the `Sec-WebSocket-Protocol` header (subprotocol negotiation) as a standard workaround.
 **Prevention:** Always support `Sec-WebSocket-Protocol` parsing in API key extraction logic for WebSocket endpoints. Implement specific parsing for custom subprotocol formats (e.g., `mapmap.auth.<TOKEN>`).
+## 2026-02-13 - [Sensitive Data Caching]
+**Vulnerability:** API responses containing sensitive system status and configuration were potentially cacheable by intermediaries and browsers because `Cache-Control` headers were missing.
+**Learning:** Default `security_headers` middleware in Axum does not automatically prevent caching. Explicit `no-store` is required for control interfaces exposing sensitive data.
+**Prevention:** Always add `Cache-Control: no-store, max-age=0` and `Pragma: no-cache` to the security headers middleware for authenticated API routes.

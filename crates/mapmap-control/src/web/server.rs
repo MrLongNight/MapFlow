@@ -269,6 +269,17 @@ async fn security_headers(req: Request, next: Next) -> Response {
         HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
     );
 
+    // Cache-Control
+    // Prevent caching of sensitive data
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-store, max-age=0"),
+    );
+
+    // Pragma
+    // Legacy support for HTTP/1.0 caches
+    headers.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
+
     response
 }
 
@@ -360,6 +371,14 @@ mod tests {
                 .get("Strict-Transport-Security")
                 .and_then(|h| h.to_str().ok()),
             Some("max-age=63072000; includeSubDomains; preload")
+        );
+        assert_eq!(
+            headers.get("Cache-Control").and_then(|h| h.to_str().ok()),
+            Some("no-store, max-age=0")
+        );
+        assert_eq!(
+            headers.get("Pragma").and_then(|h| h.to_str().ok()),
+            Some("no-cache")
         );
     }
 }
