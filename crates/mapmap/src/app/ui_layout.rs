@@ -435,7 +435,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 
     // === 5. CENTRAL PANEL: Module Canvas ===
     egui::CentralPanel::default()
-        .frame(egui::Frame::NONE.fill(ctx.style().visuals.panel_fill))
+        .frame(egui::Frame::default().fill(ctx.style().visuals.panel_fill))
         .show(ctx, |ui| {
             if app.ui_state.show_module_canvas {
                 ui::editors::module_canvas::show(
