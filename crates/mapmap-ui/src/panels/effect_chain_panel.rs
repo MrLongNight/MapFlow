@@ -490,7 +490,7 @@ impl EffectChainPanel {
                                                      }
 
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close();
+                                                     ui.close_menu();
                                                      self.show_add_menu = false;
                                                 }
                                             }
@@ -706,10 +706,10 @@ impl EffectChainPanel {
             egui::Stroke::NONE
         };
 
-        let response = egui::Frame::NONE
+        let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .corner_radius(8.0)
+            .rounding(8.0)
             .inner_margin(8.0)
             .outer_margin(2.0)
             .show(ui, |ui| {

@@ -15,11 +15,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     painter.rect_filled(rect, 0.0, colors::LIGHTER_GREY);
 
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(
-        stripe_rect,
-        0.0,
-        colors::CYAN_ACCENT,
-    );
+    painter.rect_filled(stripe_rect, 0.0, colors::CYAN_ACCENT);
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -235,12 +231,7 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter().rect(
-        rect,
-        0.0,
-        bg_fill,
-        stroke,
-    );
+    ui.painter().rect(rect, 0.0, bg_fill, stroke);
 
     let text_pos = rect.center();
 
@@ -364,12 +355,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect(
-        rect,
-        4.0,
-        visuals.bg_fill,
-        visuals.bg_stroke,
-    );
+    painter.rect(rect, 4.0, visuals.bg_fill, visuals.bg_stroke);
 
     // Draw focus ring if focused
     if response.has_focus() {
@@ -432,12 +418,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect(
-        rect,
-        0.0,
-        visuals.bg_fill,
-        visuals.bg_stroke,
-    );
+    painter.rect(rect, 0.0, visuals.bg_fill, visuals.bg_stroke);
 
     // Draw focus ring if focused
     if response.has_focus() {
@@ -453,11 +434,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
         let mut fill_rect = rect;
         fill_rect.max.y = rect.max.y;
         fill_rect.min.y = rect.max.y - rect.height() * progress;
-        painter.rect_filled(
-            fill_rect,
-            0.0,
-            color.linear_multiply(0.4),
-        );
+        painter.rect_filled(fill_rect, 0.0, color.linear_multiply(0.4));
     }
 
     // 3. Icon
