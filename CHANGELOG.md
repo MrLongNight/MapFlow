@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-02-10: fix(ci): Resolve wgpu v23 compatibility issues and dependency lock
 - 2026-02-10: feat(bevy): Add Bevy 3D Text Node (#663)
 - 2026-02-10: feat(bevy): Re-activate BevyParticles node with lightweight mesh-based implementation (#650)
 - 2026-02-09: perf(render): Optimize MeshRenderer uniform buffer writes to avoid redundancy
