@@ -90,3 +90,6 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `scripts/fix_sg.py` (0 Byte) nach `.temp-archive/2026-02-13-fix_sg.py` archiviert.
 - Ausführungsrechte (`chmod +x`) für Utility-Skripte gesetzt.
 - `*.bak` zu `.gitignore` hinzugefügt.
+
+**Zusatz (CI Fix):**
+- `crates/mapmap-render` Code an `wgpu` v23 angepasst (Entfernung von `depth_slice`, `.ok()` bei `request_adapter`, Update von `device.poll`), um Build-Fehler zu beheben.
