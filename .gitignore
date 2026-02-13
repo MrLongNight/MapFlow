@@ -72,7 +72,6 @@ check_*.txt
 *.txt
 *.tmp
 *.temp
-*.bak
 !README.txt
 !CHANGELOG.txt
 !LICENSE.txt
