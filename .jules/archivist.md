@@ -80,3 +80,13 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
+
+## 2026-02-13 - Script Cleanup & Permissions
+
+**Erkenntnis:** Das `scripts/` Verzeichnis enthielt Skripte mit redundanten Präfixen (`scripts_jules-pre_pr_checks.sh`) und fehlenden Ausführungsrechten. Zudem wurde eine leere, ungenutzte Datei `fix_sg.py` entdeckt. `.gitignore` fehlte der Eintrag für `*.bak` Dateien.
+
+**Aktion:**
+- `scripts/scripts_jules-pre_pr_checks.sh` nach `scripts/jules-pre_pr_checks.sh` umbenannt.
+- `scripts/fix_sg.py` (0 Byte) nach `.temp-archive/2026-02-13-fix_sg.py` archiviert.
+- Ausführungsrechte (`chmod +x`) für Utility-Skripte gesetzt.
+- `*.bak` zu `.gitignore` hinzugefügt.
