@@ -106,7 +106,7 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     // Map the buffer
     let slice = buffer.slice(..);
@@ -115,11 +115,8 @@ async fn read_texture_data(
         tx.send(result).unwrap();
     });
     device
-        .poll(wgpu::PollType::Wait {
-            submission_index: Some(index),
-            timeout: None,
-        })
-        .unwrap();
+        .poll(wgpu::Maintain::Wait)
+        .panic_on_timeout();
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.
