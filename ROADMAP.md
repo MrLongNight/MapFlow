@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-10 07:00
+> **Stand:** 2026-02-10 22:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -102,6 +102,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * ✅ **Bevy Engine Integration** (Bevy 0.16)
   * ✅ Shared WGPU Context
   * ✅ Bevy Particles Node (Custom Mesh-Based) (COMPLETED 2026-02-10)
+  * ✅ Bevy 3D Text Node (COMPLETED 2026-02-10)
 
 ### Rendering (Compositor / Edge-Blend / Color-Calib / Mesh / Oszillator / Effekt-Chain)
 
