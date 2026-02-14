@@ -15,7 +15,6 @@ It manages the interaction between the user and the core application state.
 - **Media Browser**: File explorer for managing assets.
 - **Inspector**: Context-sensitive property editor.
 - **Mapping Panel**: Tools for adjusting projection mapping meshes.
-- **Responsive Design**: The UI automatically adapts to different screen sizes and aspect ratios, optimizing panel layout for mobile or compact views.
 
 ## Architecture
 

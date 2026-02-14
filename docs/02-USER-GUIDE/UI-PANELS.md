@@ -54,7 +54,6 @@ The Media Browser allows you to browse and import content from your local file s
 The Inspector is a context-sensitive panel that shows the properties of the currently selected object.
 
 *   **Node Properties**: When a node is selected in the Canvas, its specific parameters (e.g., Opacity, Speed, Effect Strength) are shown here.
-*   **Media Controls**: For media nodes, controls for playback, speed, loop mode, and a safe 'Reset Clip' button are available.
 *   **Layer Properties**: Transform (Position, Scale, Rotation), Blend Mode, and Opacity.
 *   **Mapping Properties**: When editing a mesh, vertex coordinates and warping controls appear here.
 

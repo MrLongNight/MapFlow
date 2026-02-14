@@ -16,10 +16,3 @@ I have addressed several broken links and outdated status indicators in the docu
 ### Observations
 - The `docs/` structure is comprehensive but has some legacy references to files that have been moved or renamed.
 - `ROADMAP.md` status fields need regular manual verification against the Changelog.
-
-## Documentation Fixes & Updates - 2026-02-15
-
-### Actions Taken
-- **Bevy Particles**: Updated `crates/mapmap-bevy/README.md` to clarify the custom mesh-based implementation, removing outdated references to `bevy_enoki`.
-- **UI Panels**: Updated `docs/02-USER-GUIDE/UI-PANELS.md` to include the new "Reset Clip" button in the Inspector section.
-- **Responsive UI**: Added a note about "Responsive Design" in `crates/mapmap-ui/README.md` to reflect recent UI improvements.
