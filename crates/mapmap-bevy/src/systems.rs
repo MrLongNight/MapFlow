@@ -1,6 +1,7 @@
 use crate::components::{AudioReactive, AudioReactiveTarget};
 use crate::resources::AudioInputResource;
 use bevy::prelude::*;
+use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rand::Rng;
 
 pub fn audio_reaction_system(
@@ -165,6 +166,8 @@ pub fn particle_system(
     )>,
 ) {
     let delta_time = time.delta_secs();
+    // Hoist RNG outside loop to avoid reallocation
+    let mut rng = rand::rng();
 
     for (entity, config, mut emitter_opt, mesh_opt) in query.iter_mut() {
         // Initialize emitter if missing
@@ -204,7 +207,6 @@ pub fn particle_system(
         // Spawn new particles
         emitter.spawn_accumulator += config.rate * delta_time;
         if emitter.spawn_accumulator > 1.0 {
-            let mut rng = rand::rng();
             while emitter.spawn_accumulator > 1.0 {
                 emitter.spawn_accumulator -= 1.0;
 
@@ -249,9 +251,30 @@ pub fn particle_system(
             if let Some(mesh) = meshes.get_mut(mesh_handle) {
                 let count = emitter.particles.len();
 
-                let mut positions = Vec::with_capacity(count * 4);
-                let mut colors = Vec::with_capacity(count * 4);
-                let mut indices = Vec::with_capacity(count * 6);
+                // Reuse existing buffers to avoid allocation
+                let mut positions = match mesh.remove_attribute(Mesh::ATTRIBUTE_POSITION) {
+                    Some(VertexAttributeValues::Float32x3(mut v)) => {
+                        v.clear();
+                        v
+                    }
+                    _ => Vec::with_capacity(count * 4),
+                };
+
+                let mut colors = match mesh.remove_attribute(Mesh::ATTRIBUTE_COLOR) {
+                    Some(VertexAttributeValues::Float32x4(mut v)) => {
+                        v.clear();
+                        v
+                    }
+                    _ => Vec::with_capacity(count * 4),
+                };
+
+                let mut indices = match mesh.remove_indices() {
+                    Some(Indices::U32(mut v)) => {
+                        v.clear();
+                        v
+                    }
+                    _ => Vec::with_capacity(count * 6),
+                };
 
                 let half_size = 0.05;
 
@@ -289,9 +312,15 @@ pub fn particle_system(
                     indices.push(base);
                 }
 
-                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-                mesh.insert_indices(bevy::render::mesh::Indices::U32(indices));
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    VertexAttributeValues::Float32x3(positions),
+                );
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    VertexAttributeValues::Float32x4(colors),
+                );
+                mesh.insert_indices(Indices::U32(indices));
             }
         }
     }

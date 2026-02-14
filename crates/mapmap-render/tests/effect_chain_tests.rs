@@ -1,7 +1,7 @@
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
-use wgpu::{Device, Queue}; // Maintain removed
+use wgpu::{Device, Queue};
 
 // --- Test Setup Boilerplate (adapted from multi_output_tests.rs) ---
 
@@ -106,7 +106,7 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     // Map the buffer
     let slice = buffer.slice(..);
@@ -114,12 +114,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    device
-        .poll(wgpu::PollType::Wait {
-            submission_index: Some(index),
-            timeout: None,
-        })
-        .unwrap();
+    // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.

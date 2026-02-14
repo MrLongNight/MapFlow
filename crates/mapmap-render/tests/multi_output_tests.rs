@@ -114,19 +114,14 @@ async fn read_texture_data(
         },
     );
 
-    let index = queue.submit(Some(encoder.finish()));
+    let _index = queue.submit(Some(encoder.finish()));
 
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
     slice.map_async(wgpu::MapMode::Read, |result| {
         tx.send(result).unwrap();
     });
-    device
-        .poll(wgpu::PollType::Wait {
-            submission_index: Some(index),
-            timeout: None,
-        })
-        .unwrap();
+    // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);
