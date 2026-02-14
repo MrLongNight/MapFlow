@@ -80,3 +80,15 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
+
+## 2026-02-14 - Script Cleanup & Standardization
+
+**Erkenntnis:** Das Verzeichnis `scripts/` enthielt Skripte mit redundanten Präfixen (`scripts_jules-pre_pr_checks.sh`, `sh_make_tarball.sh`) und ungenutzte Dateien (`fix_sg.py`). Zudem fehlten einigen Utility-Skripten die Ausführungsrechte, und `fix_formatting.py` hatte keinen Shebang.
+
+**Aktion:**
+- `scripts/scripts_jules-pre_pr_checks.sh` in `scripts/jules-pre_pr_checks.sh` umbenannt.
+- `scripts/sh_make_tarball.sh` in `scripts/make_tarball.sh` umbenannt.
+- `scripts/fix_sg.py` (leer/ungenutzt) nach `.temp-archive/2026-02-14-fix_sg.py` archiviert.
+- `scripts/fix_formatting.py` mit Shebang `#!/usr/bin/env python3` versehen.
+- Ausführungsrechte (`chmod +x`) für `jules-pre_pr_checks.sh`, `make_tarball.sh`, `jules-setup.sh`, `encode4mmp` und `fix_formatting.py` gesetzt.
+- `jules-pre_pr_checks.sh` erfolgreich getestet (Logic funktioniert, Build scheitert an fehlendem nasm in Environment).
