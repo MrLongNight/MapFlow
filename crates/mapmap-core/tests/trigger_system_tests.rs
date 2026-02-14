@@ -107,19 +107,21 @@ fn test_update_audio_volume_beat() {
     system.update(&module_manager, &audio_data);
 
     // 4. Assert
-    // Socket indices hardcoded in TriggerSystem::update:
-    // 9: RMS, 10: Peak, 11: Beat
+    // Socket indices match dynamic generation:
+    // frequency_bands = false -> 0 sockets skipped
+    // volume_outputs = true -> RMS(0), Peak(1)
+    // beat_output = true -> Beat(2)
     assert!(
-        system.is_active(part_id, 9),
-        "RMS trigger (socket 9) should be active"
+        system.is_active(part_id, 0),
+        "RMS trigger (socket 0) should be active"
     );
     assert!(
-        !system.is_active(part_id, 10),
-        "Peak trigger (socket 10) should NOT be active"
+        !system.is_active(part_id, 1),
+        "Peak trigger (socket 1) should NOT be active"
     );
     assert!(
-        system.is_active(part_id, 11),
-        "Beat trigger (socket 11) should be active"
+        system.is_active(part_id, 2),
+        "Beat trigger (socket 2) should be active"
     );
 }
 
@@ -148,12 +150,12 @@ fn test_update_clears_previous_state() {
         ..AudioTriggerData::default()
     };
     system.update(&module_manager, &audio_data);
-    assert!(system.is_active(part_id, 11)); // Beat is socket 11
+    assert!(system.is_active(part_id, 0)); // Beat is socket 0 (first enabled)
 
     // 3. Deactivate (next frame)
     audio_data.beat_detected = false;
     system.update(&module_manager, &audio_data);
-    assert!(!system.is_active(part_id, 11));
+    assert!(!system.is_active(part_id, 0));
 }
 
 #[test]

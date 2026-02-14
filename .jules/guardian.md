@@ -76,3 +76,11 @@ to use explicit `AudioTriggerData` initialization.
 calculations for zero-sized layers could result in division by zero (Inf).
 **Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`.
 Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
+
+## 2024-10-28 - [Critical: TriggerSystem Socket Mismatch]
+
+**Erkenntnis:** `TriggerSystem` previously hardcoded output socket indices (RMS=9, Peak=10, Beat=11), ignoring the `AudioTriggerOutputConfig`
+which dynamically generates sockets. This meant disabling frequency bands shifted the actual socket indices (RMS became 0), but the logic
+still fired on index 9, breaking audio reactivity for custom configurations.
+**Aktion:** Refactored `TriggerSystem::update` to use a dynamic `socket_idx` counter that mirrors `module.rs` socket generation logic.
+Added regression tests `test_repro_dynamic_socket_indices` (merged into `trigger_system_tests.rs`) to verify correct alignment.

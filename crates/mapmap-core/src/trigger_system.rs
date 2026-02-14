@@ -28,28 +28,66 @@ impl TriggerSystem {
                 if let ModulePartType::Trigger(TriggerType::AudioFFT {
                     band: _,
                     threshold,
-                    output_config: _,
+                    output_config,
                 }) = &part.part_type
                 {
-                    // Check each of the 9 frequency bands
-                    for i in 0..9 {
-                        if audio_data.band_energies[i] > *threshold {
-                            self.active_triggers.insert((part.id, i));
+                    let mut socket_idx = 0;
+                    let mut any_output_enabled = false;
+
+                    // 1. Frequency Bands (9 outputs)
+                    if output_config.frequency_bands {
+                        any_output_enabled = true;
+                        for i in 0..9 {
+                            if audio_data.band_energies[i] > *threshold {
+                                self.active_triggers.insert((part.id, socket_idx));
+                            }
+                            socket_idx += 1;
                         }
                     }
-                    // Check RMS, Peak, Beat, BPM
-                    if audio_data.rms_volume > *threshold {
-                        self.active_triggers.insert((part.id, 9));
+
+                    // 2. Volume Outputs (RMS, Peak)
+                    if output_config.volume_outputs {
+                        any_output_enabled = true;
+                        // RMS
+                        if audio_data.rms_volume > *threshold {
+                            self.active_triggers.insert((part.id, socket_idx));
+                        }
+                        socket_idx += 1;
+
+                        // Peak
+                        if audio_data.peak_volume > *threshold {
+                            self.active_triggers.insert((part.id, socket_idx));
+                        }
+                        socket_idx += 1;
                     }
-                    if audio_data.peak_volume > *threshold {
-                        self.active_triggers.insert((part.id, 10));
+
+                    // 3. Beat Output
+                    if output_config.beat_output {
+                        any_output_enabled = true;
+                        if audio_data.beat_detected {
+                            self.active_triggers.insert((part.id, socket_idx));
+                        }
+                        socket_idx += 1;
                     }
-                    if audio_data.beat_detected {
-                        self.active_triggers.insert((part.id, 11));
+
+                    // 4. BPM Output
+                    if output_config.bpm_output {
+                        any_output_enabled = true;
+                        // BPM is usually a value, not a trigger, but if it changes significantly or exists?
+                        // For now, treat as trigger if BPM is present (confident)
+                        if audio_data.bpm.is_some() {
+                            self.active_triggers.insert((part.id, socket_idx));
+                        }
+                        // socket_idx += 1; // Last output, no need to increment
                     }
-                    // For BPM, the trigger is usually just the beat itself.
-                    // A continuous BPM value doesn't make sense as a trigger here.
-                    // The "Beat Out" socket (index 11) handles the primary beat trigger.
+
+                    // Fallback: If nothing enabled, default to Beat Output at index 0
+                    if !any_output_enabled {
+                        // socket_idx is 0
+                        if audio_data.beat_detected {
+                            self.active_triggers.insert((part.id, 0));
+                        }
+                    }
                 }
             }
         }
