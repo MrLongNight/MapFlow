@@ -114,30 +114,39 @@ impl AudioPanel {
                 .striped(true)
                 .show(ui, |ui| {
                     ui.label("Gain:");
-                    if ui
-                        .add(egui::Slider::new(&mut config.gain, 0.1..=10.0).logarithmic(true))
-                        .changed()
+                    if crate::widgets::custom::styled_slider_log(
+                        ui,
+                        &mut config.gain,
+                        0.1..=10.0,
+                        1.0,
+                    )
+                    .changed()
                     {
                         config_changed = true;
                     }
                     ui.end_row();
 
                     ui.label("Noise Gate:");
-                    if ui
-                        .add(
-                            egui::Slider::new(&mut config.noise_gate, 0.0..=0.2)
-                                .clamping(egui::SliderClamping::Always),
-                        )
-                        .changed()
+                    if crate::widgets::custom::styled_slider(
+                        ui,
+                        &mut config.noise_gate,
+                        0.0..=0.2,
+                        0.0001,
+                    )
+                    .changed()
                     {
                         config_changed = true;
                     }
                     ui.end_row();
 
                     ui.label("Smoothing:");
-                    if ui
-                        .add(egui::Slider::new(&mut config.smoothing, 0.0..=0.99))
-                        .changed()
+                    if crate::widgets::custom::styled_slider(
+                        ui,
+                        &mut config.smoothing,
+                        0.0..=0.99,
+                        0.8,
+                    )
+                    .changed()
                     {
                         config_changed = true;
                     }

@@ -2,7 +2,7 @@
 
 use crate::i18n::LocaleManager;
 use crate::responsive::ResponsiveLayout;
-use egui::{ComboBox, DragValue, Ui, Window};
+use egui::{ComboBox, Ui, Window};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
@@ -98,38 +98,58 @@ impl OscillatorPanel {
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-frequency-min"));
-            sim_changed |= ui
-                .add(DragValue::new(&mut config.frequency_min).speed(0.1))
-                .changed();
+            sim_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.frequency_min,
+                0.1,
+                0.0..=100.0,
+                0.5,
+                "",
+                " Hz",
+            )
+            .changed();
         });
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-frequency-max"));
-            sim_changed |= ui
-                .add(DragValue::new(&mut config.frequency_max).speed(0.1))
-                .changed();
+            sim_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.frequency_max,
+                0.1,
+                0.0..=100.0,
+                2.0,
+                "",
+                " Hz",
+            )
+            .changed();
         });
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-kernel-radius"));
-            sim_changed |= ui
-                .add(
-                    DragValue::new(&mut config.kernel_radius)
-                        .range(1.0..=64.0)
-                        .speed(0.5),
-                )
-                .changed();
+            sim_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.kernel_radius,
+                0.5,
+                1.0..=64.0,
+                16.0,
+                "",
+                " px",
+            )
+            .changed();
         });
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-noise-amount"));
-            sim_changed |= ui
-                .add(
-                    DragValue::new(&mut config.noise_amount)
-                        .range(0.0..=1.0)
-                        .speed(0.01),
-                )
-                .changed();
+            sim_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.noise_amount,
+                0.01,
+                0.0..=1.0,
+                0.1,
+                "",
+                "",
+            )
+            .changed();
         });
 
         sim_changed
@@ -145,35 +165,44 @@ impl OscillatorPanel {
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-distortion-amount"));
-            dist_changed |= ui
-                .add(
-                    DragValue::new(&mut config.distortion_amount)
-                        .range(0.0..=1.0)
-                        .speed(0.01),
-                )
-                .changed();
+            dist_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.distortion_amount,
+                0.01,
+                0.0..=1.0,
+                0.5,
+                "",
+                "",
+            )
+            .changed();
         });
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-distortion-scale"));
-            dist_changed |= ui
-                .add(
-                    DragValue::new(&mut config.distortion_scale)
-                        .range(0.0..=0.1)
-                        .speed(0.001),
-                )
-                .changed();
+            dist_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.distortion_scale,
+                0.001,
+                0.0..=0.1,
+                0.02,
+                "",
+                "",
+            )
+            .changed();
         });
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-distortion-speed"));
-            dist_changed |= ui
-                .add(
-                    DragValue::new(&mut config.distortion_speed)
-                        .range(0.0..=4.0)
-                        .speed(0.01),
-                )
-                .changed();
+            dist_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.distortion_speed,
+                0.01,
+                0.0..=4.0,
+                1.0,
+                "",
+                "x",
+            )
+            .changed();
         });
 
         dist_changed
@@ -189,13 +218,16 @@ impl OscillatorPanel {
 
         ui.horizontal(|ui| {
             ui.label(locale.t("oscillator-overlay-opacity"));
-            viz_changed |= ui
-                .add(
-                    DragValue::new(&mut config.overlay_opacity)
-                        .range(0.0..=1.0)
-                        .speed(0.01),
-                )
-                .changed();
+            viz_changed |= crate::widgets::custom::styled_drag_value(
+                ui,
+                &mut config.overlay_opacity,
+                0.01,
+                0.0..=1.0,
+                0.0,
+                "",
+                "",
+            )
+            .changed();
         });
 
         ui.horizontal(|ui| {
