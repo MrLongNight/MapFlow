@@ -300,7 +300,7 @@ fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f3
     let painter = ui.painter();
 
     // Dark background
-    painter.rect_filled(rect, 0, Color32::from_rgb(10, 10, 12));
+    painter.rect_filled(rect, 0.0, Color32::from_rgb(10, 10, 12));
 
     // Layout:
     // Top: L
@@ -381,7 +381,7 @@ fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
         let x = rect.min.x + i as f32 * (seg_w + 1.0);
         painter.rect_filled(
             Rect::from_min_size(Pos2::new(x, rect.min.y), Vec2::new(seg_w, rect.height())),
-            0,
+            0.0,
             final_color,
         );
     }
