@@ -734,9 +734,8 @@ impl AppUI {
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
             ui.painter().rect_stroke(
                 rect.expand(2.0),
-                4,
+        4.0,
                 egui::Stroke::new(2.0, color),
-                egui::StrokeKind::Inside,
             );
 
             // Check for recent MIDI activity (last 0.5s)
@@ -753,7 +752,7 @@ impl AppUI {
                         // Feedback: Flash Green
                         ui.painter().rect_filled(
                             rect.expand(2.0),
-                            4,
+                            4.0,
                             egui::Color32::GREEN.linear_multiply(0.5),
                         );
 
