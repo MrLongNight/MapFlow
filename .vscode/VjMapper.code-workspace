@@ -4,9 +4,5 @@
 			"path": ".."
 		}
 	],
-	"settings": {
-		"files.watcherExclude": {
-			"**/target": true
-		}
-	}
+	"settings": {}
 }

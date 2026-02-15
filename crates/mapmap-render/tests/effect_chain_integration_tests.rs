@@ -21,7 +21,7 @@ where
     let backend = WgpuBackend::new(None).await.unwrap();
     let device = &backend.device;
     let queue = &backend.queue;
-    let format = wgpu::TextureFormat::Rgba8Unorm;
+    let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
     // Create input texture
     let input_texture = device.create_texture_with_data(
@@ -71,12 +71,7 @@ where
 
     // Read back the data from the output texture
     let bytes_per_pixel = 4;
-    let bytes_per_row = {
-        let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let unaligned_bytes_per_row = width * bytes_per_pixel;
-        (unaligned_bytes_per_row + alignment - 1) & !(alignment - 1)
-    };
-    let buffer_size = (bytes_per_row * height) as u64;
+    let buffer_size = (width * height * bytes_per_pixel) as u64;
     let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Output Readback Buffer"),
         size: buffer_size,
@@ -87,6 +82,12 @@ where
     let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
         label: Some("Readback Encoder"),
     });
+
+    let bytes_per_row = {
+        let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+        let unaligned_bytes_per_row = width * bytes_per_pixel;
+        (unaligned_bytes_per_row + alignment - 1) & !(alignment - 1)
+    };
 
     encoder.copy_texture_to_buffer(
         output_texture.as_image_copy(),
@@ -115,10 +116,7 @@ where
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
-    let _ = device.poll(wgpu::PollType::Wait {
-        submission_index: None,
-        timeout: None,
-    });
+    // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

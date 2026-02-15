@@ -57,20 +57,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y \
-            libasound2-dev \
-            libavcodec-dev \
-            libavformat-dev \
-            libavutil-dev \
-            libavfilter-dev \
-            libavdevice-dev \
-            libswscale-dev \
-            libswresample-dev \
-            pkg-config \
-            clang \
-            nasm
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
 
       - name: Check Formatting
         id: fmt
@@ -162,6 +149,10 @@ jobs:
         with:
           components: llvm-tools-preview
 
+      - name: Install Setup Script
+        run: bash scripts/Final-Prepare-PreCommit.sh
+        continue-on-error: true
+
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
@@ -173,10 +164,6 @@ jobs:
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
             ffmpeg
 
-      - name: Install Setup Script
-        run: bash scripts/Final-Prepare-PreCommit.sh
-        continue-on-error: true
-
       - name: Install NDI SDK
         run: |
           wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
@@ -185,10 +172,8 @@ jobs:
           echo "NDI_SDK_DIR=$HOME/NDI SDK for Linux" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$HOME/NDI SDK for Linux/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
-      - name: Install cargo-nextest
-        uses: taiki-e/install-action@v2
-        with:
-          tool: nextest
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
 
       - name: Build (Release)
         id: build
@@ -253,7 +238,7 @@ jobs:
           }
           exit 1
 
-  # ═══════════════════════════════════════════════════════════════
+  # ═════════════════��═════════════════════════════════════════════
   # FINAL GATE & ERROR REPORTING
   # ═══════════════════════════════════════════════════════════════
   validation-success:

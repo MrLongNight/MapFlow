@@ -424,8 +424,8 @@ impl AppUI {
                     },
                 );
 
-                egui::Frame::NONE
-                    .inner_margin(egui::Margin::symmetric(16, 8))
+                egui::Frame::new()
+                    .inner_margin(egui::Margin::symmetric(8, 8))
                     .show(ui, |ui| {
                         let _ = self
                             .media_browser
@@ -735,7 +735,7 @@ impl AppUI {
                 rect.expand(2.0),
                 4.0,
                 egui::Stroke::new(2.0, color),
-                egui::StrokeKind::Middle,
+                egui::StrokeKind::Inside,
             );
 
             // Check for recent MIDI activity (last 0.5s)

@@ -17,7 +17,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
     // Custom frame for modern look
     let frame = egui::Frame::NONE
         .fill(ctx.style().visuals.window_fill())
-        .inner_margin(egui::Margin::symmetric(16, 8));
+        .inner_margin(egui::Margin::symmetric(16_i8, 8_i8));
 
     egui::TopBottomPanel::top("top_panel")
         .frame(frame)
@@ -39,7 +39,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             };
 
             // --- Main Menu Bar ---
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
 
                 // --- File Menu ---

@@ -54,7 +54,6 @@ impl App {
             backend.queue.clone(),
             backend.surface_format(),
         )?;
-
         let mesh_renderer = MeshRenderer::new(backend.device.clone(), backend.surface_format())?;
         let mesh_buffer_cache = MeshBufferCache::new();
         let quad_renderer = QuadRenderer::new(&backend.device, backend.surface_format())?;
@@ -318,9 +317,7 @@ impl App {
         let egui_renderer = Renderer::new(
             &backend.device,
             format,
-            None,
-            1,
-            false, // dithering
+            egui_wgpu::RendererOptions::default(),
         );
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
