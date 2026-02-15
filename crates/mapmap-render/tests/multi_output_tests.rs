@@ -150,6 +150,7 @@ async fn read_texture_data(
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
 =======
     device
+<<<<<<< HEAD
         .poll(wgpu::Maintain::Wait)
         .panic_on_timeout();
 <<<<<<< HEAD
@@ -159,6 +160,10 @@ async fn read_texture_data(
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
+=======
+        .poll(wgpu::Maintain::WaitForSubmissionIndex(index))
+        .panic_on_timeout();
+>>>>>>> origin/ux/safety-shield-standardization-4591480983604393855
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);

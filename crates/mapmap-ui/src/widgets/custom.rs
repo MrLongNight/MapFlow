@@ -73,7 +73,7 @@ Response
 
     ui.painter().rect(
         rect,
-        egui::Rounding::same(0.0),
+Response
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
     );
@@ -97,135 +97,7 @@ Response
 
     ui.painter().rect(
         fill_rect,
-        egui::Rounding::same(0.0),
-        fill_color,
-        Stroke::new(0.0, Color32::TRANSPARENT),
-    );
-
-    // Value Text
-    let text = format!("{:.2}", value);
-    let text_color = if response.hovered() || response.dragged() {
-        Color32::WHITE
-    } else if is_changed {
-        colors::CYAN_ACCENT
-    } else {
-        Color32::from_gray(180)
-    };
-
-    ui.painter().text(
-        rect.center(),
-        egui::Align2::CENTER_CENTER,
-        text,
-        egui::FontId::proportional(12.0),
-        text_color,
-    );
-
-    // Draw focus ring
-    if response.has_focus() {
-        ui.painter().rect_stroke(
-            rect.expand(2.0),
-            egui::Rounding::same(0.0),
-            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-        );
-    }
-
-    // Accessibility info
-    response.widget_info(|| {
-        let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "Custom Slider");
-        info.value = Some(*value as f64);
-        info
-    });
-
-    response.on_hover_text("Double-click to reset")
-}
-
-pub fn styled_slider_log(
-    ui: &mut Ui,
-    value: &mut f32,
-    range: std::ops::RangeInclusive<f32>,
-    default_value: f32,
-) -> Response {
-    let desired_size = ui.spacing().slider_width * Vec2::new(1.0, 0.5);
-    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
-    let visuals = ui.style().interact(&response);
-
-    // Keyboard support (multiplicative step)
-    if response.has_focus() {
-        let step_factor = if ui.input(|i| i.modifiers.shift) {
-            1.2 // Large step
-        } else {
-            1.05 // Small step
-        };
-
-        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
-            *value = (*value * step_factor).clamp(*range.start(), *range.end());
-            response.mark_changed();
-        }
-        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
-        {
-            *value = (*value / step_factor).clamp(*range.start(), *range.end());
-            response.mark_changed();
-        }
-    }
-
-    // Accessibility metadata
-    response.widget_info(|| {
-        let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "");
-        info.value = Some(*value as f64);
-        info
-    });
-
-    // Double-click to reset
-    if response.double_clicked() {
-        *value = default_value;
-        response.mark_changed();
-    } else if response.dragged() {
-        let min = *range.start();
-        let max = *range.end();
-        if let Some(mouse_pos) = response.interact_pointer_pos() {
-            let t = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), 0.0..=1.0);
-            if min > 0.0 && max > 0.0 {
-                *value = min * (max / min).powf(t);
-            } else {
-                *value = egui::remap_clamp(t, 0.0..=1.0, min..=max);
-            }
-            response.mark_changed();
-        }
-    }
-
-    ui.painter().rect(
-        rect,
-        0.0,
-        colors::DARKER_GREY, // Track background
-        visuals.bg_stroke,
-    );
-
-    let min = *range.start();
-    let max = *range.end();
-    let t = if min > 0.0 && max > 0.0 && *value > 0.0 {
-        ((value.max(min) / min).ln()) / ((max / min).ln())
-    } else {
-        (*value - min) / (max - min)
-    };
-
-    let fill_rect = Rect::from_min_max(
-        rect.min,
-        Pos2::new(
-            lerp((rect.left())..=(rect.right()), t.clamp(0.0, 1.0)),
-            rect.max.y,
-        ),
-    );
-
-    // Accent color logic
-    let is_changed = (*value - default_value).abs() > 0.001;
-    let fill_color = if is_changed {
-        colors::CYAN_ACCENT
-    } else {
-        colors::CYAN_ACCENT.linear_multiply(0.7)
-    };
-
-    ui.painter().rect(
-        fill_rect,
+Response
         0.0,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
@@ -512,6 +384,58 @@ pub fn check_hold_state(ui: &mut Ui, id: egui::Id, is_interacting: bool) -> (boo
     (triggered, progress)
 }
 
+/// Draws a safety progress indicator (Bottom-Up Fill)
+pub fn draw_safety_vertical_fill(ui: &Ui, rect: Rect, progress: f32, color: Color32) {
+    if progress <= 0.0 {
+        return;
+    }
+
+    let painter = ui.painter();
+    let mut fill_rect = rect;
+    // Bottom-up fill
+    fill_rect.min.y = rect.max.y - (rect.height() * progress);
+
+    painter.rect_filled(fill_rect, 4.0, color.linear_multiply(0.4));
+
+    // Glowing border when active
+    let stroke_alpha = (progress * 255.0) as u8;
+    painter.rect_stroke(
+        rect,
+        4.0,
+        Stroke::new(
+            1.0,
+            color
+                .linear_multiply(0.8)
+                .gamma_multiply(stroke_alpha as f32 / 255.0),
+        ),
+    );
+}
+
+/// Draws a safety progress indicator (Radial Fill)
+pub fn draw_safety_radial_fill(ui: &Ui, center: Pos2, radius: f32, progress: f32, color: Color32) {
+    if progress <= 0.0 {
+        return;
+    }
+
+    let painter = ui.painter();
+    // Expanding circle fill
+    let fill_radius = radius * progress;
+    painter.circle_filled(center, fill_radius, color.linear_multiply(0.6));
+
+    // Glowing ring
+    let stroke_alpha = (progress * 255.0) as u8;
+    painter.circle_stroke(
+        center,
+        radius,
+        Stroke::new(
+            1.5,
+            color
+                .linear_multiply(0.8)
+                .gamma_multiply(stroke_alpha as f32 / 255.0),
+        ),
+    );
+}
+
 /// A safety button that requires holding down for 0.6s to trigger (Mouse or Keyboard)
 pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // Small button size
@@ -538,7 +462,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let (triggered, progress) = check_hold_state(ui, state_id, is_interacting);
 
     // --- Visuals ---
-    let visuals = ui.style().interact(&response);
+    let visuals = *ui.style().interact(&response);
     let painter = ui.painter();
 
     // 1. Background
@@ -553,16 +477,7 @@ Response
         );
     }
 
-    // 2. Progress Fill
-    if progress > 0.0 {
-        let mut fill_rect = rect;
-        fill_rect.max.x = rect.min.x + rect.width() * progress;
-        painter.rect_filled(
-            fill_rect,
 Response
-            color.linear_multiply(0.4), // Transparent version of action color
-        );
-    }
 
     // 3. Text
     let text_color = if triggered {
@@ -604,7 +519,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     let (triggered, progress) = check_hold_state(ui, state_id, is_interacting);
 
     // --- Visuals ---
-    let visuals = ui.style().interact(&response);
+    let visuals = *ui.style().interact(&response);
     let painter = ui.painter();
 
     // 1. Background
@@ -619,13 +534,7 @@ Response
         );
     }
 
-    // 2. Progress Fill
-    if progress > 0.0 {
-        let mut fill_rect = rect;
-        fill_rect.max.y = rect.max.y;
-        fill_rect.min.y = rect.max.y - rect.height() * progress;
 Response
-    }
 
     // 3. Icon
     let text_color = if triggered {
@@ -675,5 +584,6 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
+
 
 

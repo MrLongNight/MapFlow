@@ -145,6 +145,7 @@ where
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
 =======
     device
+<<<<<<< HEAD
         .poll(wgpu::Maintain::Wait)
         .panic_on_timeout();
 <<<<<<< HEAD
@@ -154,6 +155,10 @@ where
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
+=======
+        .poll(wgpu::Maintain::WaitForSubmissionIndex(index))
+        .panic_on_timeout();
+>>>>>>> origin/ux/safety-shield-standardization-4591480983604393855
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

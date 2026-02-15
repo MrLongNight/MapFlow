@@ -4848,15 +4848,14 @@ source_size: egui::Vec2::new(width as f32, height as f32),
             .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
             .unwrap_or(0.0);
 
-        if progress > 0.0 {
-            // Draw loading circle/fill
-            let radius = 10.0 * self.zoom * progress;
-            painter.circle_filled(
-                delete_button_rect.center(),
-                radius,
-                Color32::from_rgb(255, 50, 50).linear_multiply(0.8),
-            );
-        }
+        // Use the shared helper for consistency
+        crate::widgets::custom::draw_safety_radial_fill(
+            ui,
+            delete_button_rect.center(),
+            10.0 * self.zoom,
+            progress,
+            Color32::from_rgb(255, 50, 50),
+        );
 
         painter.text(
             delete_button_rect.center(),
