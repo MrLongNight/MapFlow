@@ -1,6 +1,6 @@
 use mapmap_core::module::{
     HueMappingMode, MapFlowModule, ModuleManager, ModulePartType, ModulePlaybackMode,
-    ModuleSocketType, OutputType, PartType,
+    ModuleSocketType, OutputType, PartType, SourceType, TriggerType,
 };
 use std::collections::HashMap;
 
@@ -149,4 +149,157 @@ fn test_socket_generation_coverage() {
     // Inputs: Vertex In, Control In. Output: Geometry Out
     assert_eq!(part_mesh.inputs.len(), 2);
     assert_eq!(part_mesh.outputs.len(), 1);
+}
+
+#[test]
+fn test_comprehensive_source_sockets() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
+    };
+
+    // Helper to add part and check socket counts
+    let check_source = |module: &mut MapFlowModule, source_type: SourceType, expected_ins: usize, expected_outs: usize| {
+        let part_type = ModulePartType::Source(source_type);
+        let pid = module.add_part_with_type(part_type, (0.0, 0.0));
+        let part = module.parts.iter().find(|p| p.id == pid).unwrap();
+        assert_eq!(part.inputs.len(), expected_ins, "Inputs mismatch");
+        assert_eq!(part.outputs.len(), expected_outs, "Outputs mismatch");
+    };
+
+    // 1. MediaFile
+    check_source(&mut module, SourceType::new_media_file("test.mp4".into()), 1, 1);
+
+    // 2. Shader
+    check_source(
+        &mut module,
+        SourceType::Shader {
+            name: "Test".into(),
+            params: vec![],
+        },
+        1,
+        1,
+    );
+
+    // 3. LiveInput
+    check_source(&mut module, SourceType::LiveInput { device_id: 0 }, 1, 1);
+
+    // 4. NdiInput
+    check_source(&mut module, SourceType::NdiInput { source_name: None }, 1, 1);
+
+    // 5. BevyParticles (Has Spawn Trigger + Media Out = 1 In, 1 Out)
+    check_source(
+        &mut module,
+        SourceType::BevyParticles {
+            rate: 10.0,
+            lifetime: 1.0,
+            speed: 1.0,
+            color_start: [1.0; 4],
+            color_end: [1.0; 4],
+            position: [0.0; 3],
+            rotation: [0.0; 3],
+        },
+        1,
+        1,
+    );
+
+    // Check specific name for BevyParticles input
+    let last_part = module.parts.last().unwrap();
+    assert_eq!(last_part.inputs[0].name, "Spawn Trigger");
+
+    // 6. BevyAtmosphere
+    check_source(
+        &mut module,
+        SourceType::BevyAtmosphere {
+            turbidity: 1.0,
+            rayleigh: 1.0,
+            mie_coeff: 1.0,
+            mie_directional_g: 1.0,
+            sun_position: (0.0, 0.0),
+            exposure: 1.0,
+        },
+        1,
+        1,
+    );
+
+    // 7. BevyHexGrid
+    check_source(
+        &mut module,
+        SourceType::BevyHexGrid {
+            radius: 1.0,
+            rings: 1,
+            pointy_top: true,
+            spacing: 1.0,
+            position: [0.0; 3],
+            rotation: [0.0; 3],
+            scale: 1.0,
+        },
+        1,
+        1,
+    );
+
+    // 8. Bevy3DText
+    check_source(
+        &mut module,
+        SourceType::Bevy3DText {
+            text: "Hello".into(),
+            font_size: 10.0,
+            color: [1.0; 4],
+            position: [0.0; 3],
+            rotation: [0.0; 3],
+            alignment: "Center".into(),
+        },
+        1,
+        1,
+    );
+}
+
+#[test]
+fn test_comprehensive_trigger_sockets() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
+    };
+
+    // 1. AudioFFT (tested extensively in trigger_system_tests, but check basic)
+    let fft = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: mapmap_core::module::AudioBand::Bass,
+        threshold: 0.5,
+        output_config: Default::default(), // Defaults to Beat Out
+    });
+    let pid = module.add_part_with_type(fft, (0.0, 0.0));
+    let part = module.parts.iter().find(|p| p.id == pid).unwrap();
+    assert_eq!(part.outputs.len(), 1);
+    assert_eq!(part.outputs[0].name, "Beat Out");
+
+    // 2. Random
+    let rnd = ModulePartType::Trigger(TriggerType::Random {
+        min_interval_ms: 100,
+        max_interval_ms: 1000,
+        probability: 0.5,
+    });
+    let pid = module.add_part_with_type(rnd, (0.0, 0.0));
+    let part = module.parts.iter().find(|p| p.id == pid).unwrap();
+    assert_eq!(part.outputs.len(), 1);
+    assert_eq!(part.outputs[0].name, "Trigger Out");
+
+    // 3. Midi
+    let midi = ModulePartType::Trigger(TriggerType::Midi {
+        device: "Nano".into(),
+        channel: 1,
+        note: 60,
+    });
+    let pid = module.add_part_with_type(midi, (0.0, 0.0));
+    let part = module.parts.iter().find(|p| p.id == pid).unwrap();
+    assert_eq!(part.outputs.len(), 1);
 }
