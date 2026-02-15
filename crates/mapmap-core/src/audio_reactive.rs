@@ -32,6 +32,10 @@ pub struct AudioReactiveController {
     /// Previous values for smooth transitions
     previous_values: HashMap<String, f32>,
 
+    /// Empty values map (avoid allocation when disabled)
+    #[serde(skip)]
+    empty_values: HashMap<String, f32>,
+
     /// Last update time
     last_update_time: f64,
 
@@ -44,6 +48,7 @@ impl Default for AudioReactiveController {
         Self {
             mappings: HashMap::new(),
             previous_values: HashMap::new(),
+            empty_values: HashMap::new(),
             last_update_time: 0.0,
             enabled: true,
         }
@@ -68,15 +73,17 @@ impl AudioReactiveController {
     }
 
     /// Update all parameters based on audio analysis
-    pub fn update(&mut self, audio: &AudioAnalysis, current_time: f64) -> HashMap<String, f32> {
+    pub fn update(&mut self, audio: &AudioAnalysis, current_time: f64) -> &HashMap<String, f32> {
         if !self.enabled {
-            return HashMap::new();
+            return &self.empty_values;
         }
 
         let delta_time = (current_time - self.last_update_time) as f32;
         self.last_update_time = current_time;
 
-        let mut updated_values = HashMap::with_capacity(self.mappings.len());
+        // Clean up removed mappings from previous_values
+        self.previous_values
+            .retain(|key, _| self.mappings.contains_key(key));
 
         for (param_path, mapping) in &self.mappings {
             let previous = self.previous_values.get(param_path).copied().unwrap_or(0.0);
@@ -88,11 +95,9 @@ impl AudioReactiveController {
             } else {
                 self.previous_values.insert(param_path.clone(), new_value);
             }
-
-            updated_values.insert(param_path.clone(), new_value);
         }
 
-        updated_values
+        &self.previous_values
     }
 
     /// Apply audio-reactive values to shader graph parameters
@@ -337,11 +342,16 @@ impl AudioReactiveAnimationSystem {
             .map(|(name, value)| (name, Self::anim_value_to_f32(&value)))
             .collect();
 
+        // Capture blend parameters before mutable borrow
+        let blend_mode = self.blend_mode;
+        let blend_factor = self.blend_factor;
+
         // Get audio-reactive values
         let audio_values = self.audio_controller.update(audio, current_time);
 
         // Blend values based on blend mode
-        let final_values = self.blend_values(&animated_values, &audio_values);
+        let final_values =
+            Self::blend_values(&animated_values, audio_values, blend_mode, blend_factor);
 
         // Apply to shader graph
         for (param_path, value) in final_values {
@@ -383,9 +393,10 @@ impl AudioReactiveAnimationSystem {
 
     /// Blend animated and audio-reactive values
     fn blend_values(
-        &self,
         animated: &HashMap<String, f32>,
         audio: &HashMap<String, f32>,
+        blend_mode: AudioAnimationBlendMode,
+        blend_factor: f32,
     ) -> HashMap<String, f32> {
         // Pre-allocate assuming worst case (no overlap) to avoid resizing
         let mut result = HashMap::with_capacity(animated.len() + audio.len());
@@ -393,7 +404,8 @@ impl AudioReactiveAnimationSystem {
         // Process all keys from animated map
         for (param_path, &anim_value) in animated {
             let audio_value = audio.get(param_path).copied().unwrap_or(0.0);
-            let blended = self.calculate_blended(anim_value, audio_value);
+            let blended =
+                Self::calculate_blended(anim_value, audio_value, blend_mode, blend_factor);
             result.insert(param_path.clone(), blended);
         }
 
@@ -401,7 +413,7 @@ impl AudioReactiveAnimationSystem {
         for (param_path, &audio_value) in audio {
             if !animated.contains_key(param_path) {
                 // anim_value is 0.0
-                let blended = self.calculate_blended(0.0, audio_value);
+                let blended = Self::calculate_blended(0.0, audio_value, blend_mode, blend_factor);
                 result.insert(param_path.clone(), blended);
             }
         }
@@ -411,14 +423,19 @@ impl AudioReactiveAnimationSystem {
 
     /// Helper to calculate blended value based on mode
     #[inline]
-    fn calculate_blended(&self, anim_value: f32, audio_value: f32) -> f32 {
-        match self.blend_mode {
+    fn calculate_blended(
+        anim_value: f32,
+        audio_value: f32,
+        blend_mode: AudioAnimationBlendMode,
+        blend_factor: f32,
+    ) -> f32 {
+        match blend_mode {
             AudioAnimationBlendMode::Replace => {
-                anim_value * (1.0 - self.blend_factor) + audio_value * self.blend_factor
+                anim_value * (1.0 - blend_factor) + audio_value * blend_factor
             }
-            AudioAnimationBlendMode::Add => anim_value + audio_value * self.blend_factor,
+            AudioAnimationBlendMode::Add => anim_value + audio_value * blend_factor,
             AudioAnimationBlendMode::Multiply => {
-                anim_value * (1.0 + (audio_value - 1.0) * self.blend_factor)
+                anim_value * (1.0 + (audio_value - 1.0) * blend_factor)
             }
         }
     }
@@ -484,7 +501,12 @@ mod tests {
         let mut audio = HashMap::new();
         audio.insert("1.opacity".to_string(), 0.3);
 
-        let blended = system.blend_values(&animated, &audio);
+        let blended = AudioReactiveAnimationSystem::blend_values(
+            &animated,
+            &audio,
+            system.blend_mode,
+            system.blend_factor,
+        );
         assert!(blended.contains_key("1.opacity"));
     }
 }

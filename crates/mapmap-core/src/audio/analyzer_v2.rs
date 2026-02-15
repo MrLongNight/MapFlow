@@ -20,7 +20,7 @@ pub struct AudioAnalysisV2 {
     /// Peak volume (0.0 - 1.0)
     pub peak_volume: f32,
     /// FFT magnitude spectrum (half of FFT size)
-    pub fft_magnitudes: Vec<f32>,
+    pub fft_magnitudes: Arc<Vec<f32>>,
     /// 9 frequency band energies
     pub band_energies: [f32; 9],
     /// Beat detected this frame
@@ -28,7 +28,7 @@ pub struct AudioAnalysisV2 {
     /// Beat strength (0.0 - 1.0)
     pub beat_strength: f32,
     /// Current waveform samples
-    pub waveform: Vec<f32>,
+    pub waveform: Arc<Vec<f32>>,
     /// Estimated tempo in BPM (None if not enough data)
     pub tempo_bpm: Option<f32>,
 }
@@ -39,11 +39,11 @@ impl Default for AudioAnalysisV2 {
             timestamp: 0.0,
             rms_volume: 0.0,
             peak_volume: 0.0,
-            fft_magnitudes: Vec::new(),
+            fft_magnitudes: Arc::new(Vec::new()),
             band_energies: [0.0; 9],
             beat_detected: false,
             beat_strength: 0.0,
-            waveform: Vec::new(),
+            waveform: Arc::new(Vec::new()),
             tempo_bpm: None,
         }
     }
@@ -291,11 +291,11 @@ impl AudioAnalyzerV2 {
             timestamp: self.current_time,
             rms_volume: self.smoothed_rms,
             peak_volume: self.peak_volume,
-            fft_magnitudes: self.smoothed_magnitudes.clone(),
+            fft_magnitudes: Arc::new(self.smoothed_magnitudes.clone()),
             band_energies: self.smoothed_bands,
             beat_detected,
             beat_strength,
-            waveform: self.waveform_buffer.clone(),
+            waveform: Arc::new(self.waveform_buffer.clone()),
             tempo_bpm: self.estimated_bpm,
         };
 
