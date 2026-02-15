@@ -17,7 +17,7 @@ tokio = ["dep:tokio"]
 anyhow = { workspace = true }
 cpal = { workspace = true, optional = true }
 dirs = "6.0"
-ecolor = "0.31.0"
+ecolor = { workspace = true }
 
 # Phase 6: egui migration
 egui = { workspace = true, features = ["serde"] }

@@ -4700,7 +4700,7 @@ dependencies = [
  "anyhow",
  "cpal 0.17.1",
  "dirs",
- "ecolor 0.31.1",
+ "ecolor 0.33.3",
  "egui 0.33.3",
  "egui-wgpu",
  "egui-winit",

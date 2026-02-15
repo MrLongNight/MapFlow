@@ -38,6 +38,7 @@ bytemuck = { version = "1.14", features = ["derive"] }
 cbindgen = "0.29"
 cc = "1.2"
 chrono = { version = "0.4", features = ["serde"] }
+ecolor = "0.33.3"
 
 # Audio
 cpal = { version = "0.17", default-features = false }
