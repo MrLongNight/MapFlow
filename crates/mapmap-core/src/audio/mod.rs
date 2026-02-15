@@ -276,7 +276,7 @@ impl AudioAnalyzer {
         analysis
     }
 
-    /// Get the latest analysis result
+
     pub fn get_latest_analysis(&mut self) -> AudioAnalysis {
         // Drain channel to prevent memory leak, even though we push directly to last_analysis in process_samples
         while let Ok(analysis) = self.analysis_receiver.try_recv() {
@@ -666,3 +666,4 @@ mod tests {
         assert!(v2 > 0.0); // Should not drop to 0 immediately
     }
 }
+

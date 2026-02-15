@@ -108,6 +108,7 @@ async fn read_texture_data(
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
@@ -115,6 +116,9 @@ async fn read_texture_data(
 =======
     let _index = queue.submit(Some(encoder.finish()));
 >>>>>>> origin/jules-7419576384359145166-df4ba129
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
 
     // Map the buffer
     let slice = buffer.slice(..);
@@ -136,7 +140,10 @@ async fn read_texture_data(
     device
         .poll(wgpu::Maintain::Wait)
         .panic_on_timeout();
+<<<<<<< HEAD
 >>>>>>> origin/jules-7419576384359145166-df4ba129
+=======
+>>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.

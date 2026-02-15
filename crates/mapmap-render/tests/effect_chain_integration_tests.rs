@@ -108,6 +108,7 @@ where
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
@@ -115,6 +116,9 @@ where
 =======
     let _index = queue.submit(Some(encoder.finish()));
 >>>>>>> origin/jules-7419576384359145166-df4ba129
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -138,7 +142,10 @@ where
     device
         .poll(wgpu::Maintain::Wait)
         .panic_on_timeout();
+<<<<<<< HEAD
 >>>>>>> origin/jules-7419576384359145166-df4ba129
+=======
+>>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)
