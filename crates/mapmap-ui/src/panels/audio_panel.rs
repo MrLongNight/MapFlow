@@ -114,13 +114,8 @@ impl AudioPanel {
                 .striped(true)
                 .show(ui, |ui| {
                     ui.label("Gain:");
-                    if crate::widgets::custom::styled_slider_log(
-                        ui,
-                        &mut config.gain,
-                        0.1..=10.0,
-                        1.0,
-                    )
-                    .changed()
+                    if crate::widgets::custom::styled_slider(ui, &mut config.gain, 0.1..=10.0, 1.0)
+                        .changed()
                     {
                         config_changed = true;
                     }
@@ -232,7 +227,12 @@ impl AudioPanel {
 
         // Background
         painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
-        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY));
+        painter.rect_stroke(
+            rect,
+            2.0,
+            Stroke::new(1.0, colors::STROKE_GREY),
+            egui::StrokeKind::Middle,
+        );
 
         // Bar
         let width = rect.width() * rms_volume.clamp(0.0, 1.0);

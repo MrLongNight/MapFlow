@@ -416,6 +416,7 @@ impl EffectChainPanel {
             // Add effect button
             if ui
                 .button(locale.t("effect-add"))
+                .clone()
                 .on_hover_text(locale.t("effect-add"))
                 .clicked()
             {
@@ -425,6 +426,7 @@ impl EffectChainPanel {
             // Preset buttons
             if ui
                 .button(locale.t("effect-presets"))
+                .clone()
                 .on_hover_text(locale.t("effect-presets"))
                 .clicked()
             {
@@ -436,6 +438,7 @@ impl EffectChainPanel {
                     if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
                         if ui
                             .add(egui::Button::image(img))
+                            .clone()
                             .on_hover_text(locale.t("effect-clear"))
                             .clicked()
                         {
@@ -475,7 +478,7 @@ impl EffectChainPanel {
                                             ui.label("No recent configs");
                                         } else {
                                             for config in configs {
-                                                if ui.button(config.name.to_string()).on_hover_text(format!("{:?}", config.params)).clicked() {
+                                                if ui.button(config.name.to_string()).clone().on_hover_text(format!("{:?}", config.params)).clicked() {
                                                      self.chain.add_effect(*effect_type);
 
                                                      let id = self.chain.effects.last().unwrap().id;
@@ -490,7 +493,7 @@ impl EffectChainPanel {
                                                      }
 
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close_menu();
+                                                     ui.close();
                                                      self.show_add_menu = false;
                                                 }
                                             }
@@ -709,7 +712,7 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .rounding(8.0)
+            .corner_radius(8.0)
             .inner_margin(8.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -1202,6 +1205,7 @@ impl EffectChainPanel {
                     if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
                         if ui
                             .add(egui::Button::image(img))
+                            .clone()
                             .on_hover_text(locale.t("effect-save"))
                             .clicked()
                         {
@@ -1280,6 +1284,7 @@ impl EffectChainPanel {
                         if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
                             if ui
                                 .add(egui::Button::image(img))
+                                .clone()
                                 .on_hover_text(locale.t("effect-save"))
                                 .clicked()
                                 && !self.save_preset_name.is_empty()

@@ -129,7 +129,7 @@ impl ShortcutsPanel {
                             );
 
                             if is_conflict {
-                                key_label.on_hover_text(
+                                key_label.clone().on_hover_text(
                                     "⚠️ Conflict: This shortcut is used by multiple actions.",
                                 );
                             }
