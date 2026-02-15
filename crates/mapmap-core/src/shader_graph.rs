@@ -266,6 +266,8 @@ pub enum ParameterValue {
     Vec4([f32; 4]),
     /// Color value (RGBA)
     Color([f32; 4]),
+    /// String value (e.g. file paths)
+    String(String),
 }
 
 /// Shader graph node

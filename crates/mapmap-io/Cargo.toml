@@ -10,6 +10,7 @@ repository.workspace = true
 [features]
 default = []
 # Individual features
+ffmpeg = ["stream"] # Alias for stream feature
 ndi = ["dep:grafton-ndi", "dep:tokio"] # NDI support (requires NDI SDK)
 decklink = [] # DeckLink SDI support (requires DeckLink SDK)
 # spout = [

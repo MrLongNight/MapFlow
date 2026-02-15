@@ -365,6 +365,10 @@ impl NodeEditor {
             Color32::WHITE,
         );
 
+        // Content Area
+        let content_rect = Rect::from_min_max(rect.min + Vec2::new(0.0, 24.0 * zoom), rect.max);
+        Self::draw_node_content(ui, painter, node, content_rect, zoom);
+
         // Input sockets
         for (i, input) in node.inputs.iter().enumerate() {
             let socket_pos = Self::get_socket_pos(node, i, true);
@@ -398,6 +402,52 @@ impl NodeEditor {
         }
 
         response
+    }
+
+    fn draw_node_content(ui: &Ui, painter: &egui::Painter, node: &mut Node, rect: Rect, zoom: f32) {
+        if node.node_type == NodeType::TextureInput {
+            Self::draw_media_node_content(ui, painter, node, rect, zoom);
+        }
+    }
+
+    fn draw_media_node_content(
+        _ui: &Ui,
+        painter: &egui::Painter,
+        node: &mut Node,
+        rect: Rect,
+        zoom: f32,
+    ) {
+        // Draw a simple media placeholder/controls
+        let center = rect.center();
+
+        // Play button placeholder (Triangle)
+        let size = 20.0 * zoom;
+        let p1 = center + Vec2::new(-size * 0.5, -size * 0.5);
+        let p2 = center + Vec2::new(-size * 0.5, size * 0.5);
+        let p3 = center + Vec2::new(size * 0.5, 0.0);
+
+        painter.add(egui::Shape::convex_polygon(
+            vec![p1, p2, p3],
+            Color32::from_rgb(100, 200, 100),
+            Stroke::new(1.0, Color32::WHITE),
+        ));
+
+        // Filename label if parameter exists
+        if let Some(ParameterValue::String(path)) = node.parameters.get("path") {
+            let text_pos = center + Vec2::new(0.0, size);
+            let file_name = std::path::Path::new(path)
+                .file_name()
+                .map(|s| s.to_string_lossy())
+                .unwrap_or(std::borrow::Cow::Borrowed("No File"));
+
+            painter.text(
+                text_pos,
+                egui::Align2::CENTER_TOP,
+                file_name,
+                egui::FontId::proportional(10.0 * zoom),
+                Color32::LIGHT_GRAY,
+            );
+        }
     }
 
     fn draw_connection(painter: &egui::Painter, from: Pos2, to: Pos2, color: Color32) {
