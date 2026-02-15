@@ -1,4 +1,4 @@
-//! Axum HTTP server
+//! Axum HTTP server.
 
 #[cfg(feature = "http-api")]
 use axum::http::{header, HeaderValue, Method, StatusCode};
