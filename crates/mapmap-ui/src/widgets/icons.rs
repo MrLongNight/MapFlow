@@ -201,14 +201,19 @@ impl IconManager {
         let image = ColorImage {
             size: [size as usize, size as usize],
             pixels,
-            source_size: egui::Vec2::new(size as f32, size as f32),
+            source_size: None,
         };
 
         // Create texture
         let texture = ctx.load_texture(
             format!("icon_{}", path.file_stem()?.to_string_lossy()),
             image,
-            egui::TextureOptions::LINEAR,
+            egui::TextureOptions {
+                magnification: egui::TextureFilter::Linear,
+                minification: egui::TextureFilter::Linear,
+                wrap_mode: egui::TextureWrapMode::ClampToEdge,
+                mipmap_mode: None,
+            },
         );
 
         Some(texture)

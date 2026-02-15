@@ -66,7 +66,7 @@ jobs:
 
       - name: Check Clippy
         id: clippy
-        run: cargo clippy --workspace --features "mapmap-io/ci-linux" --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux,ffmpeg" -- -D warnings
         continue-on-error: true
 
       - name: Install cargo-sort
@@ -177,13 +177,13 @@ jobs:
 
       - name: Build (Release)
         id: build
-        run: cargo build --release --verbose --features "mapmap-io/ci-linux"
+        run: cargo build --release --verbose --features "mapmap-io/ci-linux,ffmpeg"
         continue-on-error: true
 
       - name: Test (Nextest)
         id: test
         if: ${{ github.event.inputs.skip_tests != 'true' }}
-        run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
+        run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux,ffmpeg"
         continue-on-error: true
 
       - name: Report Build/Test Issues

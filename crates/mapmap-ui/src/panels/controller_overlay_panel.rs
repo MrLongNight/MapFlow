@@ -221,13 +221,30 @@ impl ControllerOverlayPanel {
                 if let Ok(image_data) = std::fs::read(path) {
                     if let Ok(img) = image::load_from_memory(&image_data) {
                         let rgba = img.to_rgba8();
-                        let size = [rgba.width() as usize, rgba.height() as usize];
-                        let pixels = rgba.into_raw();
-                        let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+                        let width = rgba.width();
+                        let height = rgba.height();
+                        let size = [width as usize, height as usize];
+
+                        let pixels: Vec<egui::Color32> = rgba
+                            .pixels()
+                            .map(|p| egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
+                            .collect();
+
+                        let color_image = egui::ColorImage {
+                            size,
+                            pixels,
+                            source_size: None,
+                        };
+
                         return Some(ctx.load_texture(
                             name,
                             color_image,
-                            egui::TextureOptions::LINEAR,
+                            egui::TextureOptions {
+                                magnification: egui::TextureFilter::Linear,
+                                minification: egui::TextureFilter::Linear,
+                                wrap_mode: egui::TextureWrapMode::ClampToEdge,
+                                mipmap_mode: None,
+                            },
                         ));
                     }
                 }
