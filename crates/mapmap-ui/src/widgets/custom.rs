@@ -318,8 +318,6 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
         }
     }
 
-<<<<<<< HEAD
-=======
     // Accessibility metadata
     response.widget_info(|| {
         let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "Knob");
@@ -327,7 +325,6 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
         info
     });
 
->>>>>>> aea4d39f (Consolidate UI/UX improvements and Audio optimizations)
     if response.dragged() {
         let center = rect.center();
         if let Some(mouse_pos) = response.interact_pointer_pos() {
