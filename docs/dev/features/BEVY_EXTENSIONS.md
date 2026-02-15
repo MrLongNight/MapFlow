@@ -12,6 +12,7 @@ Jede Bevy-Extension wird als spezialisierter Node-Typ exponiert. Dies ermöglich
 | **🌌 Atmosphere** | `bevy_atmosphere` | ✅ Aktiv | Prozeduraler Himmel & Licht. | Sun-Pos, Turbidity, Sky-Color. |
 | **⬡ Hex Grid** | `hexx` | ✅ Aktiv | Prozedurale hexagonale Strukturen. | Radius, Rings, Audio-Scale, Rotation. |
 | **✨ Particles** | `bevy_enoki` | 🔄 Dev | GPU-beschleunigte Partikel. | Spawn-Rate, Lifetime, Velocity, Attractors. |
+| **🧊 3D Shapes** | Native (Mesh3d) | ✅ Aktiv | Einfache geometrische Primitive. | Cube, Sphere, Capsule, Torus, Unlit. |
 | **🎨 PostFX** | `bevy_mod_outline` | ✅ Aktiv | Mesh-Outlines & Border FX. | Width, Glow, Edge-Detection. |
 | **👆 Interaction** | `bevy_picking` | ⬜ Planned | Klickbare 3D-Elemente im Canvas. | Trigger-Emission auf Click. |
 
@@ -32,6 +33,11 @@ Das Hex-Grid ist ideal für techno-visuelle Hintergründe.
 Ein extrem performantes System für tausende Partikel.
 - **Trigger**: Verknüpfe den "Spawn"-Eingang mit einem Beat-Trigger für synchrone Bursts.
 - **Fields**: Definiere Gravitationsfelder oder Wind im 3D-Raum via Slider.
+
+### Bevy 3D Shapes
+Einfache geometrische Primitive für schnelles Prototyping oder minimalistische Designs.
+- **Formen**: Würfel, Kugel, Kapsel, Torus, Zylinder, Ebene.
+- **Material**: Wähle zwischen Standard-Shading (Licht-reaktiv) oder Unlit (reine Farbe).
 
 ## ⚠️ Inkompatible Extensions
 - `bevy-vfx-bag`: Veraltet (Bevy 0.10). Wir implementieren eigene Shader-Nodes basierend auf WGPU.

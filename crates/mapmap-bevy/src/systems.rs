@@ -55,6 +55,40 @@ pub fn audio_reaction_system(
     }
 }
 
+pub fn shape_system(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    query: Query<(Entity, &crate::components::Bevy3DShape), Changed<crate::components::Bevy3DShape>>,
+) {
+    for (entity, shape) in query.iter() {
+        let mesh = match shape.shape_type {
+            mapmap_core::module::BevyShapeType::Cube => Mesh::from(Cuboid::default()),
+            mapmap_core::module::BevyShapeType::Sphere => Mesh::from(Sphere::default()),
+            mapmap_core::module::BevyShapeType::Capsule => Mesh::from(Capsule3d::default()),
+            mapmap_core::module::BevyShapeType::Torus => Mesh::from(Torus::default()),
+            mapmap_core::module::BevyShapeType::Cylinder => Mesh::from(Cylinder::default()),
+            mapmap_core::module::BevyShapeType::Plane => Mesh::from(Plane3d::default()),
+        };
+
+        let material = StandardMaterial {
+            base_color: Color::srgba(
+                shape.color[0],
+                shape.color[1],
+                shape.color[2],
+                shape.color[3],
+            ),
+            unlit: shape.unlit,
+            ..default()
+        };
+
+        commands.entity(entity).insert((
+            Mesh3d(meshes.add(mesh)),
+            MeshMaterial3d(materials.add(material)),
+        ));
+    }
+}
+
 pub fn setup_3d_scene(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,

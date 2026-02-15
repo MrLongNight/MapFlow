@@ -169,7 +169,7 @@ impl ShaderGraphManager {
             label: Some(&format!("ShaderGraph_Pipeline_Layout_{}", id)),
             bind_group_layouts: &[bind_group_layout, uniform_bind_group_layout],
             push_constant_ranges: &[],
-        });
+                    });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(&format!("ShaderGraph_Pipeline_{}", id)),
@@ -287,7 +287,7 @@ impl ShaderGraphRendering for EffectChainRenderer {
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
-            occlusion_query_set: None,
+                        occlusion_query_set: None,
         });
 
         render_pass.set_pipeline(pipeline);
