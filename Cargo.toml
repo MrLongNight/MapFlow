@@ -63,7 +63,7 @@ ffmpeg-sys-next = "=7.1.0"
 fluent = "0.17"
 fluent-langneg = "0.14"
 futures = "0.3"
-glam = { version = "0.31", features = ["serde"] }
+glam = { version = "0.32", features = ["serde"] }
 hex = "0.4"
 hound = "3.5"
 hyper = "1.1"
