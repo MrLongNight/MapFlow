@@ -382,6 +382,9 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
+    // Accessibility metadata
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, text));
+
     ui.painter().rect(
         rect,
         egui::CornerRadius::same(0),

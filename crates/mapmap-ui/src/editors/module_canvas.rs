@@ -2115,7 +2115,7 @@ impl ModuleCanvas {
         let image = egui::ColorImage {
             size: [width as usize, height as usize],
             pixels,
-            source_size: None,
+            source_size: egui::vec2(width as f32, height as f32),
         };
 
         Some(ctx.load_texture(
