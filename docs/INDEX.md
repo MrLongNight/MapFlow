@@ -8,10 +8,12 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 - [Getting Started](01-GETTING-STARTED/) - Installation, Build, Quick Start
 - [User Guide](02-USER-GUIDE/) - Features, UI Panels, Keyboard Shortcuts
 - [MIDI Control](02-USER-GUIDE/MIDI_CONTROL.md) - Controller Setup & Mapping
+- [OSC Control](02-USER-GUIDE/OSC_CONTROL/) - OSC Command Reference & Setup
 - [General](01-GENERAL/) - Code of Conduct, Issues, Security
 
 ### For Developers
 - [Architecture](03-ARCHITECTURE/) - System Design, Crates, Data Flow
+- [Bevy Integration](03-ARCHITECTURE/BEVY_EXTENSIONS.md) - 3D Compositing & Extensions
 - [Development](05-DEVELOPMENT/) - Development Setup, Guidelines
 - [Technical Reference](08-TECHNICAL/) - Shaders, Rendering, Performance
 - [Audits & Reports](08-TECHNICAL/audits/) - Code & Security Audits
@@ -62,7 +64,7 @@ docs/
 | Architecture | `03-ARCHITECTURE/ARCHITECTURE.md` | System design |
 | Contributing | `CONTRIBUTING.md` | Contribution Guidelines (Project Root) |
 | Development | `05-DEVELOPMENT/` | Development Setup & Standards |
-| Roadmap | `06-ROADMAP/PROJECT-PHASES.md` | Phase overview |
+| Roadmap | `../ROADMAP.md` | Phase overview |
 | Features | `02-USER-GUIDE/FEATURES.md` | What MapFlow can do |
 | CI/CD | `10-CICD_PROZESS/README_CICD.md` | Automation Workflow |
 | Tutorials | `07-TUTORIALS/README.md` | Learning path |
