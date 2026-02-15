@@ -109,6 +109,7 @@ where
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
@@ -119,6 +120,9 @@ where
 =======
     let _index = queue.submit(Some(encoder.finish()));
 >>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -128,6 +132,7 @@ where
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -146,6 +151,9 @@ where
 >>>>>>> origin/jules-7419576384359145166-df4ba129
 =======
 >>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
+=======
+    device.poll(wgpu::Maintain::Wait);
+>>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)
