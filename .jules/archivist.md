@@ -80,3 +80,14 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
+
+## 2026-02-15 - Script Naming & Cleanup
+
+**Erkenntnis:** Das `scripts/` Verzeichnis enthielt Skripte mit redundanten Präfixen (`scripts_jules-pre_pr_checks.sh`, `sh_make_tarball.sh`), was gegen die Namenskonventionen verstößt. Zudem existierte eine leere `fix_sg.py` Datei.
+
+**Aktion:**
+- `scripts/scripts_jules-pre_pr_checks.sh` in `scripts/jules-pre_pr_checks.sh` umbenannt.
+- `scripts/sh_make_tarball.sh` in `scripts/make_tarball.sh` umbenannt und Referenzen in `docs/` aktualisiert.
+- `scripts/fix_sg.py` nach `.temp-archive/2026-02-15-fix_sg.py` archiviert.
+- Ausführungsrechte für diverse Skripte (`jules-setup.sh`, etc.) gesetzt.
+- Shebang zu `scripts/fix_formatting.py` hinzugefügt.

@@ -73,7 +73,7 @@ We want the 0 series to be backward-compatible. That means that a project create
 * Run `make`
 * Run `sh_build_doc.sh`
 * Merge to `master`, or to the `major.minor` branch
-* Run `sh_make_tarball.sh`
+* Run `make_tarball.sh`
 * Then untar it, cd to that dir and build the whole thing to see if it works
 * `git tag x.y.z`
 * Go back to your release branch
