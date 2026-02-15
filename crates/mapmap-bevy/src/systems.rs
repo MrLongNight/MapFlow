@@ -467,3 +467,51 @@ pub fn text_3d_system(
         ));
     }
 }
+
+pub fn camera_control_system(
+    time: Res<Time>,
+    mut camera_query: Query<
+        (&mut Transform, &mut Projection),
+        With<crate::components::SharedEngineCamera>,
+    >,
+    control_query: Query<&crate::components::BevyCamera>,
+) {
+    // Find the first active camera controller
+    if let Some(config) = control_query.iter().find(|c| c.active) {
+        if let Ok((mut transform, mut projection)) = camera_query.get_single_mut() {
+            // Update FOV if perspective
+            if let Projection::Perspective(ref mut persp) = *projection {
+                persp.fov = config.fov.to_radians();
+            }
+
+            match config.mode {
+                crate::components::BevyCameraMode::Orbit {
+                    radius,
+                    speed,
+                    target,
+                    height,
+                } => {
+                    let t = time.elapsed_secs() * speed.to_radians();
+                    let x = target.x + radius * t.cos();
+                    let z = target.z + radius * t.sin();
+                    let y = target.y + height;
+
+                    transform.translation = Vec3::new(x, y, z);
+                    transform.look_at(target, Vec3::Y);
+                }
+                crate::components::BevyCameraMode::Fly {
+                    speed,
+                    sensitivity: _,
+                } => {
+                    // Fly mode: Move forward continuously
+                    let forward = transform.forward();
+                    transform.translation += forward * speed * time.delta_secs();
+                }
+                crate::components::BevyCameraMode::Static { position, look_at } => {
+                    transform.translation = position;
+                    transform.look_at(look_at, Vec3::Y);
+                }
+            }
+        }
+    }
+}

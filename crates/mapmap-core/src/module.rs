@@ -636,6 +636,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(), // Represents the rendered view
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -1161,6 +1171,15 @@ pub enum SourceType {
         /// Text alignment ("Left", "Center", "Right")
         alignment: String,
     },
+    /// Specialized Bevy Camera Control
+    BevyCamera {
+        /// Camera mode (Orbit, Fly, Static)
+        mode: BevyCameraMode,
+        /// Field of View (vertical) in degrees
+        fov: f32,
+        /// Whether this camera is actively controlling the view
+        active: bool,
+    },
     /// Spout shared texture (Windows only)
     #[cfg(target_os = "windows")]
     SpoutInput {
@@ -1403,6 +1422,47 @@ impl SourceType {
             flip_horizontal: false,
             flip_vertical: false,
             reverse_playback: false,
+        }
+    }
+}
+
+/// Modes for Bevy Camera
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum BevyCameraMode {
+    /// Orbit around a target point
+    Orbit {
+        /// Distance from target
+        radius: f32,
+        /// Orbit speed (degrees per second)
+        speed: f32,
+        /// Target position (center)
+        target: [f32; 3],
+        /// Height offset
+        height: f32,
+    },
+    /// Fly mode (First Person / Drone)
+    Fly {
+        /// Movement speed
+        speed: f32,
+        /// Sensitivity (unused for now, maybe for look)
+        sensitivity: f32,
+    },
+    /// Static fixed position
+    Static {
+        /// Camera position
+        position: [f32; 3],
+        /// Look-at target
+        look_at: [f32; 3],
+    },
+}
+
+impl Default for BevyCameraMode {
+    fn default() -> Self {
+        BevyCameraMode::Orbit {
+            radius: 10.0,
+            speed: 20.0,
+            target: [0.0, 0.0, 0.0],
+            height: 2.0,
         }
     }
 }
@@ -3101,6 +3161,57 @@ mod additional_tests {
             _ => panic!("Wrong trigger target deserialized"),
         }
         assert!(target.invert);
+    }
+
+    #[test]
+    fn test_bevy_camera_part_creation() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
+        };
+
+        let camera_type = ModulePartType::Source(SourceType::BevyCamera {
+            mode: BevyCameraMode::Orbit {
+                radius: 15.0,
+                speed: 10.0,
+                target: [0.0, 1.0, 0.0],
+                height: 5.0,
+            },
+            fov: 60.0,
+            active: true,
+        });
+
+        let id = module.add_part_with_type(camera_type, (0.0, 0.0));
+        let part = module.parts.iter().find(|p| p.id == id).unwrap();
+
+        // Check sockets: Trigger In + Media Out
+        assert_eq!(part.inputs.len(), 1);
+        assert_eq!(part.inputs[0].name, "Trigger In");
+        assert_eq!(part.outputs.len(), 1);
+        assert_eq!(part.outputs[0].name, "Media Out");
+
+        // Check serialization
+        let json = serde_json::to_string(&module).unwrap();
+        let deserialized: MapFlowModule = serde_json::from_str(&json).unwrap();
+        let deser_part = deserialized.parts.iter().find(|p| p.id == id).unwrap();
+
+        if let ModulePartType::Source(SourceType::BevyCamera { mode, fov, active }) =
+            &deser_part.part_type
+        {
+            assert_eq!(*fov, 60.0);
+            assert!(*active);
+            match mode {
+                BevyCameraMode::Orbit { radius, .. } => assert_eq!(*radius, 15.0),
+                _ => panic!("Wrong camera mode deserialized"),
+            }
+        } else {
+            panic!("Wrong part type deserialized");
+        }
     }
 }
 

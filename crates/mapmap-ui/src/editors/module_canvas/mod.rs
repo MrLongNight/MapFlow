@@ -10,7 +10,7 @@ use mapmap_core::{
     module::{
         BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType, MapFlowModule,
         MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
-        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType,
+        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType, BevyCameraMode,
     },
 };
 
@@ -781,6 +781,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
                                                 SourceType::Bevy3DText { .. } => "📝 3D Text",
+                                                SourceType::BevyCamera { .. } => "🎥 Bevy Camera",
                                             };
 
                                             let mut next_type = None;
@@ -1307,6 +1308,101 @@ impl ModuleCanvas {
                                                             .suffix("°"),
                                                     );
                                                 });
+                                            }
+                                            SourceType::BevyCamera { mode, fov, active } => {
+                                                ui.label("🎥 Bevy Camera");
+                                                ui.checkbox(active, "Active Control");
+                                                ui.add(egui::Slider::new(fov, 10.0..=120.0).text("FOV"));
+
+                                                ui.separator();
+                                                ui.label("Mode:");
+
+                                                egui::ComboBox::from_id_salt("camera_mode")
+                                                    .selected_text(match mode {
+                                                        BevyCameraMode::Orbit { .. } => "Orbit",
+                                                        BevyCameraMode::Fly { .. } => "Fly",
+                                                        BevyCameraMode::Static { .. } => "Static",
+                                                    })
+                                                    .show_ui(ui, |ui| {
+                                                        if ui
+                                                            .selectable_label(
+                                                                matches!(mode, BevyCameraMode::Orbit { .. }),
+                                                                "Orbit",
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            *mode = BevyCameraMode::default(); // Default is Orbit
+                                                        }
+                                                        if ui
+                                                            .selectable_label(
+                                                                matches!(mode, BevyCameraMode::Fly { .. }),
+                                                                "Fly",
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            *mode = BevyCameraMode::Fly {
+                                                                speed: 5.0,
+                                                                sensitivity: 1.0,
+                                                            };
+                                                        }
+                                                        if ui
+                                                            .selectable_label(
+                                                                matches!(mode, BevyCameraMode::Static { .. }),
+                                                                "Static",
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            *mode = BevyCameraMode::Static {
+                                                                position: [0.0, 5.0, 10.0],
+                                                                look_at: [0.0, 0.0, 0.0],
+                                                            };
+                                                        }
+                                                    });
+
+                                                ui.separator();
+                                                match mode {
+                                                    BevyCameraMode::Orbit {
+                                                        radius,
+                                                        speed,
+                                                        target,
+                                                        height,
+                                                    } => {
+                                                        ui.label("Orbit Settings");
+                                                        ui.add(egui::Slider::new(radius, 1.0..=50.0).text("Radius"));
+                                                        ui.add(egui::Slider::new(speed, -90.0..=90.0).text("Speed (°/s)"));
+                                                        ui.add(egui::Slider::new(height, -10.0..=20.0).text("Height"));
+
+                                                        ui.label("Target:");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut target[0]).prefix("X:").speed(0.1));
+                                                            ui.add(egui::DragValue::new(&mut target[1]).prefix("Y:").speed(0.1));
+                                                            ui.add(egui::DragValue::new(&mut target[2]).prefix("Z:").speed(0.1));
+                                                        });
+                                                    }
+                                                    BevyCameraMode::Fly {
+                                                        speed,
+                                                        sensitivity: _,
+                                                    } => {
+                                                        ui.label("Fly Settings");
+                                                        ui.add(egui::Slider::new(speed, 0.0..=50.0).text("Speed"));
+                                                        ui.label("Direction: Forward (Z-)");
+                                                    }
+                                                    BevyCameraMode::Static { position, look_at } => {
+                                                        ui.label("Static Settings");
+                                                        ui.label("Position:");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
+                                                            ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
+                                                            ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
+                                                        });
+                                                        ui.label("Look At:");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut look_at[0]).prefix("X:").speed(0.1));
+                                                            ui.add(egui::DragValue::new(&mut look_at[1]).prefix("Y:").speed(0.1));
+                                                            ui.add(egui::DragValue::new(&mut look_at[2]).prefix("Z:").speed(0.1));
+                                                        });
+                                                    }
+                                                }
                                             }
                                             SourceType::BevyAtmosphere { .. }
                                             | SourceType::BevyHexGrid { .. }
@@ -5223,6 +5319,12 @@ impl ModuleCanvas {
                 "T",
                 "3D Text",
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(180, 100, 220),
+                "🎥",
+                "Camera",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5240,6 +5342,7 @@ impl ModuleCanvas {
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
                     SourceType::Bevy3DText { .. } => "3D Text",
+                    SourceType::BevyCamera { .. } => "Camera",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5449,6 +5552,11 @@ impl ModuleCanvas {
                 SourceType::Bevy3DText { text, .. } => {
                     format!("T: {}", text.chars().take(10).collect::<String>())
                 }
+                SourceType::BevyCamera { mode, .. } => match mode {
+                    BevyCameraMode::Orbit { .. } => "🎥 Orbit".to_string(),
+                    BevyCameraMode::Fly { .. } => "🎥 Fly".to_string(),
+                    BevyCameraMode::Static { .. } => "🎥 Static".to_string(),
+                },
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
