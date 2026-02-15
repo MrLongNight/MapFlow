@@ -46,9 +46,14 @@ fn create_solid_color_texture(
     let data: Vec<u8> = (0..width * height).flat_map(|_| color).collect();
 
     queue.write_texture(
-        texture.as_image_copy(),
+        wgpu::TexelCopyTextureInfo {
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
         &data,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -90,10 +95,15 @@ async fn read_texture_data(
     });
 
     encoder.copy_texture_to_buffer(
-        texture.as_image_copy(),
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyTextureInfo {
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        wgpu::TexelCopyBufferInfo {
             buffer: &buffer,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -251,7 +261,7 @@ async fn test_empty_chain_is_passthrough() {
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
         let source = create_solid_color_texture(&device, &queue, width, height, color);
-        let source_view = source.create_view(&Default::default());
+        let source_view = Arc::new(source.create_view(&Default::default()));
 
         let output = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Output"),
@@ -269,7 +279,7 @@ async fn test_empty_chain_is_passthrough() {
                 | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        let output_view = output.create_view(&Default::default());
+        let output_view = Arc::new(output.create_view(&Default::default()));
 
         let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
         let chain = EffectChain::new(); // Empty chain
@@ -307,7 +317,7 @@ async fn test_blur_plus_coloradjust_chain() {
 
         // Create a texture that is blue, to check color adjust
         let source = create_solid_color_texture(&device, &queue, width, height, color);
-        let source_view = source.create_view(&Default::default());
+        let source_view = Arc::new(source.create_view(&Default::default()));
 
         let output = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Output"),
@@ -323,7 +333,7 @@ async fn test_blur_plus_coloradjust_chain() {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
-        let output_view = output.create_view(&Default::default());
+        let output_view = Arc::new(output.create_view(&Default::default()));
 
         let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
         let mut chain = EffectChain::new();
@@ -394,7 +404,7 @@ async fn test_vignette_plus_filmgrain_chain() {
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
         let source = create_solid_color_texture(&device, &queue, width, height, color);
-        let source_view = source.create_view(&Default::default());
+        let source_view = Arc::new(source.create_view(&Default::default()));
 
         let output = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Output"),
@@ -410,7 +420,7 @@ async fn test_vignette_plus_filmgrain_chain() {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
-        let output_view = output.create_view(&Default::default());
+        let output_view = Arc::new(output.create_view(&Default::default()));
         let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
         let mut chain = EffectChain::new();
         let vignette_id = chain.add_effect(EffectType::Vignette);

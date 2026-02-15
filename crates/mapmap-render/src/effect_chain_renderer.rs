@@ -9,11 +9,11 @@
 //! - Parameter uniforms
 //! - Hot-reload support (via shader recompilation)
 
-use crate::{pipeline::UniformBufferAllocator, QuadRenderer, Result};
+use crate::{pipeline::Allocation, pipeline::UniformBufferAllocator, QuadRenderer, Result};
 use bytemuck::{Pod, Zeroable};
 use mapmap_core::{EffectChain, EffectType};
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use tracing::{debug, info, warn};
 use wgpu::util::DeviceExt;
 
@@ -52,7 +52,7 @@ impl Default for EffectParams {
 #[allow(dead_code)]
 struct PingPongBuffer {
     textures: [wgpu::Texture; 2],
-    views: [wgpu::TextureView; 2],
+    views: [Arc<wgpu::TextureView>; 2],
     current: usize,
 }
 
@@ -81,8 +81,8 @@ impl PingPongBuffer {
         let tex_a = create_texture();
         let tex_b = create_texture();
 
-        let view_a = tex_a.create_view(&wgpu::TextureViewDescriptor::default());
-        let view_b = tex_b.create_view(&wgpu::TextureViewDescriptor::default());
+        let view_a = Arc::new(tex_a.create_view(&wgpu::TextureViewDescriptor::default()));
+        let view_b = Arc::new(tex_b.create_view(&wgpu::TextureViewDescriptor::default()));
 
         Self {
             textures: [tex_a, tex_b],
@@ -91,11 +91,11 @@ impl PingPongBuffer {
         }
     }
 
-    fn current_view(&self) -> &wgpu::TextureView {
+    fn current_view(&self) -> &Arc<wgpu::TextureView> {
         &self.views[self.current]
     }
 
-    fn next_view(&self) -> &wgpu::TextureView {
+    fn next_view(&self) -> &Arc<wgpu::TextureView> {
         &self.views[1 - self.current]
     }
 
@@ -133,6 +133,10 @@ pub struct EffectChainRenderer {
 
     // Uniform buffer allocator
     allocator: UniformBufferAllocator,
+
+    // Caches
+    uniform_bg_cache: HashMap<(usize, u64, u64), Arc<wgpu::BindGroup>>,
+    texture_bg_cache: HashMap<usize, (Weak<wgpu::TextureView>, Arc<wgpu::BindGroup>)>,
 }
 
 impl EffectChainRenderer {
@@ -289,12 +293,23 @@ impl EffectChainRenderer {
             index_buffer,
             quad_renderer,
             allocator,
+            uniform_bg_cache: HashMap::new(),
+            texture_bg_cache: HashMap::new(),
         })
     }
 
     /// Reset allocator at start of frame
     pub fn begin_frame(&mut self) {
         self.allocator.reset();
+        // Clear uniform bind group cache since buffer pages might be reused/reset differently
+        // Actually, if allocator resets, page 0 offset 0 is reused. The bind group pointing to it is still valid!
+        // So we keep the cache. BUT if the buffer was destroyed (reallocated larger), the bind group is invalid?
+        // Allocator in `pipeline.rs` clears `pages`? No, it keeps `pages` and resets `current_page`.
+        // So buffers are stable. We can keep the cache!
+
+        // Prune dead texture bind groups
+        self.texture_bg_cache
+            .retain(|_, (weak, _)| weak.strong_count() > 0);
     }
 
     /// Create a render pipeline for a specific effect type
@@ -410,11 +425,25 @@ impl EffectChainRenderer {
         }
     }
 
-    /// Create a bind group for an input texture
-    pub fn create_bind_group(&self, input_view: &wgpu::TextureView) -> wgpu::BindGroup {
-        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    /// Get or create a bind group for an input texture
+    fn get_texture_bind_group_static(
+        device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
+        sampler: &wgpu::Sampler,
+        cache: &mut HashMap<usize, (Weak<wgpu::TextureView>, Arc<wgpu::BindGroup>)>,
+        input_view: &Arc<wgpu::TextureView>,
+    ) -> Arc<wgpu::BindGroup> {
+        let key = Arc::as_ptr(input_view) as usize;
+
+        if let Some((weak, bg)) = cache.get(&key) {
+            if weak.upgrade().is_some() {
+                return bg.clone();
+            }
+        }
+
+        let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Effect Chain Input Bind Group"),
-            layout: &self.bind_group_layout,
+            layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -422,10 +451,13 @@ impl EffectChainRenderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                    resource: wgpu::BindingResource::Sampler(sampler),
                 },
             ],
-        })
+        });
+        let bg = Arc::new(bg);
+        cache.insert(key, (Arc::downgrade(input_view), bg.clone()));
+        bg
     }
 
     /// Create a uniform buffer for effect parameters
@@ -438,16 +470,34 @@ impl EffectChainRenderer {
             })
     }
 
-    /// Create a uniform bind group
-    pub fn create_uniform_bind_group(&self, buffer: &wgpu::Buffer) -> wgpu::BindGroup {
-        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    /// Get or create a uniform bind group
+    fn get_uniform_bind_group_static(
+        device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
+        cache: &mut HashMap<(usize, u64, u64), Arc<wgpu::BindGroup>>,
+        allocation: &Allocation,
+        size: u64,
+    ) -> Arc<wgpu::BindGroup> {
+        let key = (allocation.page_index, allocation.offset, size);
+        if let Some(bg) = cache.get(&key) {
+            return bg.clone();
+        }
+
+        let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Effect Chain Uniform Bind Group"),
-            layout: &self.uniform_bind_group_layout,
+            layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: buffer.as_entire_binding(),
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: allocation.buffer,
+                    offset: allocation.offset,
+                    size: std::num::NonZeroU64::new(size),
+                }),
             }],
-        })
+        });
+        let bg = Arc::new(bg);
+        cache.insert(key, bg.clone());
+        bg
     }
 
     /// Apply the effect chain to an input texture
@@ -457,8 +507,8 @@ impl EffectChainRenderer {
     pub fn apply_chain(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
-        input_view: &wgpu::TextureView,
-        output_view: &wgpu::TextureView,
+        input_view: &Arc<wgpu::TextureView>,
+        output_view: &Arc<wgpu::TextureView>,
         chain: &EffectChain,
         shader_graph_manager: &crate::ShaderGraphManager,
         time: f32,
@@ -482,6 +532,7 @@ impl EffectChainRenderer {
                         load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -596,33 +647,34 @@ impl EffectChainRenderer {
 
             // Get input view
             let current_input = if use_input {
-                input_view
+                input_view.clone()
             } else {
                 let ping_pong = self.ping_pong.as_ref().unwrap();
-                &ping_pong.views[current_idx]
+                ping_pong.views[current_idx].clone()
             };
 
             // Create bind groups
-            let input_bind_group = self.create_bind_group(current_input);
+            let input_bind_group = Self::get_texture_bind_group_static(
+                &self.device,
+                &self.bind_group_layout,
+                &self.sampler,
+                &mut self.texture_bg_cache,
+                &current_input,
+            );
 
             // Allocate uniform buffer from pool
-            let (buffer, offset) = self
+            let allocation = self
                 .allocator
                 .allocate(&self.queue, bytemuck::cast_slice(&[params]));
             let size = std::mem::size_of::<EffectParams>() as u64;
 
-            let uniform_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Effect Chain Uniform Bind Group"),
-                layout: &self.uniform_bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                        buffer,
-                        offset,
-                        size: std::num::NonZeroU64::new(size),
-                    }),
-                }],
-            });
+            let uniform_bind_group = Self::get_uniform_bind_group_static(
+                &self.device,
+                &self.uniform_bind_group_layout,
+                &mut self.uniform_bg_cache,
+                &allocation,
+                size,
+            );
 
             // Determine output target
             let render_target = if is_last {
@@ -641,10 +693,10 @@ impl EffectChainRenderer {
                         self.apply_shader_graph(
                             encoder,
                             compiled,
-                            current_input,
+                            &current_input,
                             render_target,
-                            &input_bind_group,
-                            &uniform_bind_group,
+                            input_bind_group.as_ref(),
+                            uniform_bind_group.as_ref(),
                         );
                     } else {
                         // Fallback if not ready: Passthrough
@@ -675,8 +727,8 @@ impl EffectChainRenderer {
                     });
 
                     render_pass.set_pipeline(pipeline);
-                    render_pass.set_bind_group(0, &input_bind_group, &[]);
-                    render_pass.set_bind_group(1, &uniform_bind_group, &[]);
+                    render_pass.set_bind_group(0, input_bind_group.as_ref(), &[]);
+                    render_pass.set_bind_group(1, uniform_bind_group.as_ref(), &[]);
                     render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                     render_pass
                         .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);

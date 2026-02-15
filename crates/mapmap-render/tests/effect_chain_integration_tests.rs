@@ -2,9 +2,10 @@
 
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::{
-    CommandEncoderDescriptor, Extent3d, ImageCopyBuffer, ImageDataLayout, TextureDescriptor,
+    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout, TextureDescriptor,
     TextureUsages,
 };
 
@@ -16,7 +17,7 @@ async fn run_test_with_texture<F>(
     test_fn: F,
 ) -> Vec<u8>
 where
-    F: FnOnce(&mut EffectChainRenderer, &wgpu::TextureView, &wgpu::TextureView),
+    F: FnOnce(&mut EffectChainRenderer, &Arc<wgpu::TextureView>, &Arc<wgpu::TextureView>),
 {
     let backend = WgpuBackend::new(None).await.unwrap();
     let device = &backend.device;
@@ -43,7 +44,7 @@ where
         wgpu::util::TextureDataOrder::LayerMajor,
         &input_data,
     );
-    let input_view = input_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let input_view = Arc::new(input_texture.create_view(&wgpu::TextureViewDescriptor::default()));
 
     // Create output texture
     let output_texture = device.create_texture(&TextureDescriptor {
@@ -60,7 +61,7 @@ where
         usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
         view_formats: &[],
     });
-    let output_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let output_view = Arc::new(output_texture.create_view(&wgpu::TextureViewDescriptor::default()));
 
     // Create renderer
     let mut effect_chain_renderer =
@@ -90,10 +91,15 @@ where
     };
 
     encoder.copy_texture_to_buffer(
-        output_texture.as_image_copy(),
-        ImageCopyBuffer {
+        wgpu::TexelCopyTextureInfo {
+            texture: &output_texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        TexelCopyBufferInfo {
             buffer: &output_buffer,
-            layout: ImageDataLayout {
+            layout: TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(height),
