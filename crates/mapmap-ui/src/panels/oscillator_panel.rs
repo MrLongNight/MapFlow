@@ -94,24 +94,24 @@ impl OscillatorPanel {
 
     fn show_simulation_params(
         &mut self,
-        ui: &mut Ui,
-        locale: &LocaleManager,
-        config: &mut OscillatorConfig,
+        _ui: &mut Ui,
+        _locale: &LocaleManager,
+        _config: &mut OscillatorConfig,
     ) -> bool {
-        let mut sim_changed = false;
+        
 
-        sim_changed
+        false
     }
 
     fn show_distortion_params(
         &mut self,
-        ui: &mut Ui,
-        locale: &LocaleManager,
-        config: &mut OscillatorConfig,
+        _ui: &mut Ui,
+        _locale: &LocaleManager,
+        _config: &mut OscillatorConfig,
     ) -> bool {
-        let mut dist_changed = false;
+        
 
-        dist_changed
+        false
     }
 
     fn show_visual_params(

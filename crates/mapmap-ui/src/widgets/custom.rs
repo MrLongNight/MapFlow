@@ -84,6 +84,7 @@ pub fn styled_slider(
         0.0,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
+        egui::StrokeKind::Middle,
     );
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
@@ -108,6 +109,7 @@ pub fn styled_slider(
         0.0,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
+        egui::StrokeKind::Middle,
     );
 
     // Value Text
@@ -161,6 +163,7 @@ pub fn styled_drag_value(
             response.rect.expand(1.0),
             0.0,
             Stroke::new(1.0, colors::CYAN_ACCENT),
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -169,7 +172,7 @@ pub fn styled_drag_value(
 
 pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>) -> Response {
     let desired_size = Vec2::new(48.0, 48.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
 
     // Keyboard interaction
@@ -289,7 +292,8 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter().rect(rect, 4.0, bg_fill, stroke);
+    ui.painter()
+        .rect(rect, 4.0, bg_fill, stroke, egui::StrokeKind::Middle);
 
     let text_pos = rect.center();
 
@@ -415,6 +419,7 @@ pub fn draw_safety_vertical_fill(ui: &Ui, rect: Rect, progress: f32, color: Colo
                 .linear_multiply(0.8)
                 .gamma_multiply(stroke_alpha as f32 / 255.0),
         ),
+        egui::StrokeKind::Middle,
     );
 }
 
@@ -481,6 +486,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
             rect.expand(2.0),
             4.0,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -509,7 +515,9 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     if response.hovered() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
-    response.on_hover_text("Hold to confirm (Mouse or Space/Enter)");
+    response
+        .clone()
+        .on_hover_text("Hold to confirm (Mouse or Space/Enter)");
 
     // Accessibility info
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, text));
@@ -543,6 +551,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
             rect.expand(2.0),
             4.0,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -571,7 +580,7 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     if response.hovered() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
-    response.on_hover_text("Hold to confirm");
+    response.clone().on_hover_text("Hold to confirm");
 
     // Accessibility info
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, icon_text));

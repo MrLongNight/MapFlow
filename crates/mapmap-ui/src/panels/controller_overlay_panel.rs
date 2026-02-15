@@ -598,7 +598,7 @@ impl ControllerOverlayPanel {
                     } else {
                         egui::Button::new("🎨 Zuweisungen")
                     };
-                    if ui.add(assign_btn).on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 MapFlow\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
+                    if ui.add(assign_btn).clone().on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 MapFlow\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
                         self.show_assignment_colors = !self.show_assignment_colors;
                     }
 
@@ -609,7 +609,7 @@ impl ControllerOverlayPanel {
                     } else {
                         egui::Button::new("✏️ Edit")
                     };
-                    if ui.add(edit_btn).on_hover_text("Verschiebemodus aktivieren (Elemente am Overlay verschieben)").clicked() {
+                    if ui.add(edit_btn).clone().on_hover_text("Verschiebemodus aktivieren (Elemente am Overlay verschieben)").clicked() {
                         self.is_edit_mode = !self.is_edit_mode;
                         // Auto-save when exiting edit mode
                         if !self.is_edit_mode {
@@ -617,7 +617,7 @@ impl ControllerOverlayPanel {
                         }
                     }
 
-                    if self.is_edit_mode && ui.button("💾").on_hover_text("Positionen speichern").clicked() {
+                    if self.is_edit_mode && ui.button("💾").clone().on_hover_text("Positionen speichern").clicked() {
                         self.save_elements();
                     }
                 });
@@ -751,7 +751,7 @@ impl ControllerOverlayPanel {
                 rect,
                 4.0,
                 Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-                egui::StrokeKind::Inside,
+                egui::StrokeKind::Middle,
             );
             painter.text(
                 rect.center(),
@@ -958,7 +958,7 @@ impl ControllerOverlayPanel {
                             painter.circle_stroke(elem_rect.center(), radius, stroke);
                         }
                         _ => {
-                            painter.rect_stroke(elem_rect, 0.0, stroke, egui::StrokeKind::Inside);
+                            painter.rect_stroke(elem_rect, 0.0, stroke, egui::StrokeKind::Middle);
                         }
                     }
 
@@ -1058,7 +1058,7 @@ impl ControllerOverlayPanel {
                     painter.circle_stroke(elem_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4.0, stroke, egui::StrokeKind::Inside);
+                    painter.rect_stroke(elem_rect, 4.0, stroke, egui::StrokeKind::Middle);
                 }
             }
         }
@@ -1242,7 +1242,7 @@ impl ControllerOverlayPanel {
                             if let Some(assign) = assignment {
                                 ui.horizontal(|ui| {
                                     ui.label(assign.target.to_string());
-                                    if ui.small_button("🗑").on_hover_text("Zuweisung löschen").clicked() {
+                                    if ui.small_button("🗑").clone().on_hover_text("Zuweisung löschen").clicked() {
                                         element_to_remove = Some(element.id.clone());
                                     }
                                 });

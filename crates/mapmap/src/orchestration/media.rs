@@ -129,7 +129,7 @@ pub fn update_media_players(app: &mut App, dt: f32) {
             if *mod_id == active_id {
                 ui_state.module_canvas.player_info.insert(
                     *part_id,
-                    mapmap_ui::MediaPlayerInfo {
+                    mapmap_ui::types::MediaPlayerInfo {
                         current_time: player.current_time().as_secs_f64(),
                         duration: player.duration().as_secs_f64(),
                         is_playing: matches!(player.state(), mapmap_media::PlaybackState::Playing),
