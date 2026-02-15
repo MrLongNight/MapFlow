@@ -57,7 +57,13 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev pkg-config clang libclang-dev \
+            libavcodec-dev libavformat-dev libavutil-dev \
+            libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+            ffmpeg
 
       - name: Check Formatting
         id: fmt
