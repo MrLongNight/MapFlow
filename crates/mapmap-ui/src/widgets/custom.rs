@@ -583,7 +583,3 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
-
-
-
-
