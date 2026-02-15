@@ -14,32 +14,14 @@ on:
     branches: [ "main" ]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: 'Skip tests (faster builds)'
-        required: false
-        default: 'false'
-        type: choice
-        options: ['true', 'false']
-      run_windows:
-        description: 'Run Windows build'
-        required: false
-        default: 'false'
-        type: choice
-        options: ['true', 'false']
-
-env:
-  CARGO_TERM_COLOR: always
-  FREETYPE_SYS_USE_PKG_CONFIG: 1
-  RUST_BACKTRACE: 1
-  RUST_TOOLCHAIN: stable
 
 permissions:
-  contents: read
+  contents: write
   checks: write
-  security-events: write
+  statuses: write
   pull-requests: write
   issues: write
+  security-events: write
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
