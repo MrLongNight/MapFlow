@@ -62,12 +62,21 @@ impl BevyRunner {
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
         app.register_type::<Bevy3DText>();
+        app.register_type::<BevyCameraConfig>();
+        app.register_type::<CameraMode>();
 
         // Register systems
+        app.add_systems(Startup, setup_3d_scene);
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
-            (audio_reaction_system, hex_grid_system, text_3d_system),
+            (
+                audio_reaction_system,
+                hex_grid_system,
+                text_3d_system,
+                particle_system,
+                camera_control_system,
+            ),
         );
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
@@ -103,81 +112,126 @@ impl BevyRunner {
         let mut mapping_resource = world.resource_mut::<BevyNodeMapping>();
         let mut mapping = std::mem::take(&mut mapping_resource.entities);
         let mut active_ids = std::collections::HashSet::new();
+        let mut camera_node_found = false;
 
         for part in &module.parts {
-            if let mapmap_core::module::ModulePartType::Source(
-                mapmap_core::module::SourceType::Bevy3DText {
-                    text,
-                    font_size,
-                    color,
-                    position,
-                    rotation,
-                    alignment,
-                },
-            ) = &part.part_type
-            {
-                active_ids.insert(part.id);
+            if let mapmap_core::module::ModulePartType::Source(source) = &part.part_type {
+                match source {
+                    mapmap_core::module::SourceType::Bevy3DText {
+                        text,
+                        font_size,
+                        color,
+                        position,
+                        rotation,
+                        alignment,
+                    } => {
+                        active_ids.insert(part.id);
 
-                let entity = if let Some(&e) = mapping.get(&part.id) {
-                    if world.get_entity(e).is_ok() {
-                        e
-                    } else {
-                        world.spawn_empty().id()
+                        let entity = if let Some(&e) = mapping.get(&part.id) {
+                            if world.get_entity(e).is_ok() {
+                                e
+                            } else {
+                                world.spawn_empty().id()
+                            }
+                        } else {
+                            world.spawn_empty().id()
+                        };
+                        mapping.insert(part.id, entity);
+
+                        let align_enum = match alignment.as_str() {
+                            "Center" => BevyTextAlignment::Center,
+                            "Right" => BevyTextAlignment::Right,
+                            "Justify" => BevyTextAlignment::Justify,
+                            _ => BevyTextAlignment::Left,
+                        };
+
+                        let rotation_quat = Quat::from_euler(
+                            EulerRot::XYZ,
+                            rotation[0].to_radians(),
+                            rotation[1].to_radians(),
+                            rotation[2].to_radians(),
+                        );
+
+                        let mut entity_mut = world.entity_mut(entity);
+                        let new_text_comp = Bevy3DText {
+                            text: text.clone(),
+                            font_size: *font_size,
+                            color: *color,
+                            alignment: align_enum,
+                        };
+
+                        // Check change to avoid triggering Changed<Bevy3DText> every frame
+                        let needs_update = if let Some(current) = entity_mut.get::<Bevy3DText>() {
+                            current.text != new_text_comp.text
+                                || (current.font_size - new_text_comp.font_size).abs()
+                                    > f32::EPSILON
+                                || current.color != new_text_comp.color
+                                || current.alignment != new_text_comp.alignment
+                        } else {
+                            true
+                        };
+
+                        if needs_update {
+                            entity_mut.insert(new_text_comp);
+                        }
+
+                        entity_mut.insert(Transform {
+                            translation: Vec3::from(*position),
+                            rotation: rotation_quat,
+                            scale: Vec3::ONE,
+                        });
+
+                        if !entity_mut.contains::<GlobalTransform>() {
+                            entity_mut.insert((
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ));
+                        }
                     }
-                } else {
-                    world.spawn_empty().id()
-                };
-                mapping.insert(part.id, entity);
+                    mapmap_core::module::SourceType::BevyCamera {
+                        mode,
+                        target,
+                        position,
+                        radius,
+                        speed,
+                        yaw,
+                        pitch,
+                    } => {
+                        camera_node_found = true;
+                        // Find the shared engine camera
+                        // Since there is only one shared engine camera, we don't map it by part ID
+                        // but rather look for the component.
+                        let mut camera_entity = None;
+                        {
+                            let mut query =
+                                world.query_filtered::<Entity, With<SharedEngineCamera>>();
+                            if let Some(e) = query.iter(world).next() {
+                                camera_entity = Some(e);
+                            }
+                        }
 
-                let align_enum = match alignment.as_str() {
-                    "Center" => BevyTextAlignment::Center,
-                    "Right" => BevyTextAlignment::Right,
-                    "Justify" => BevyTextAlignment::Justify,
-                    _ => BevyTextAlignment::Left,
-                };
+                        if let Some(entity) = camera_entity {
+                            let bevy_mode = match mode {
+                                mapmap_core::module::CameraMode::Orbit => CameraMode::Orbit,
+                                mapmap_core::module::CameraMode::Fly => CameraMode::Fly,
+                                mapmap_core::module::CameraMode::Static => CameraMode::Static,
+                            };
 
-                let rotation_quat = Quat::from_euler(
-                    EulerRot::XYZ,
-                    rotation[0].to_radians(),
-                    rotation[1].to_radians(),
-                    rotation[2].to_radians(),
-                );
-
-                let mut entity_mut = world.entity_mut(entity);
-                let new_text_comp = Bevy3DText {
-                    text: text.clone(),
-                    font_size: *font_size,
-                    color: *color,
-                    alignment: align_enum,
-                };
-
-                // Check change to avoid triggering Changed<Bevy3DText> every frame
-                let needs_update = if let Some(current) = entity_mut.get::<Bevy3DText>() {
-                    current.text != new_text_comp.text
-                        || (current.font_size - new_text_comp.font_size).abs() > f32::EPSILON
-                        || current.color != new_text_comp.color
-                        || current.alignment != new_text_comp.alignment
-                } else {
-                    true
-                };
-
-                if needs_update {
-                    entity_mut.insert(new_text_comp);
-                }
-
-                entity_mut.insert(Transform {
-                    translation: Vec3::from(*position),
-                    rotation: rotation_quat,
-                    scale: Vec3::ONE,
-                });
-
-                if !entity_mut.contains::<GlobalTransform>() {
-                    entity_mut.insert((
-                        GlobalTransform::default(),
-                        Visibility::default(),
-                        InheritedVisibility::default(),
-                        ViewVisibility::default(),
-                    ));
+                            let mut entity_mut = world.entity_mut(entity);
+                            entity_mut.insert(BevyCameraConfig {
+                                mode: bevy_mode,
+                                target: *target,
+                                position: *position,
+                                radius: *radius,
+                                speed: *speed,
+                                yaw: *yaw,
+                                pitch: *pitch,
+                            });
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
@@ -188,11 +242,6 @@ impl BevyRunner {
                 // Only despawn if it looks like one of ours (has Bevy3DText)
                 // This prevents deleting entities from other node types if we add them later to mapping
                 // For now, since only Bevy3DText uses mapping, it's safe-ish.
-                // Better: check if module still has this part ID?
-                // If the part is GONE from the module, we should remove it.
-                // If the part exists but is NOT a Bevy3DText, we should also remove it (type changed).
-                // active_ids contains exactly the IDs of current Bevy3DText parts.
-                // So if it's in mapping but not active_ids, it should be removed.
                 world.despawn(*entity);
                 false
             } else {
@@ -201,6 +250,20 @@ impl BevyRunner {
         });
 
         world.resource_mut::<BevyNodeMapping>().entities = mapping;
+
+        // Cleanup Camera Config if node removed
+        if !camera_node_found {
+            let mut camera_entity = None;
+            {
+                let mut query = world.query_filtered::<Entity, With<SharedEngineCamera>>();
+                if let Some(e) = query.iter(world).next() {
+                    camera_entity = Some(e);
+                }
+            }
+            if let Some(entity) = camera_entity {
+                world.entity_mut(entity).remove::<BevyCameraConfig>();
+            }
+        }
     }
 }
 

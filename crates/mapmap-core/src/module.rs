@@ -35,6 +35,10 @@ fn default_scale() -> f32 {
     1.0
 }
 
+fn default_radius() -> f32 {
+    5.0
+}
+
 fn default_next_part_id() -> ModulePartId {
     1
 }
@@ -92,6 +96,15 @@ impl MapFlowModule {
                 flip_horizontal: false,
                 flip_vertical: false,
                 reverse_playback: false,
+            }),
+            PartType::BevyCamera => ModulePartType::Source(SourceType::BevyCamera {
+                mode: CameraMode::Orbit,
+                target: [0.0, 0.0, 0.0],
+                position: [0.0, 2.0, 5.0],
+                radius: 5.0,
+                speed: 1.0,
+                yaw: 0.0,
+                pitch: 0.0,
             }),
             PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
                 rate: 100.0,
@@ -315,6 +328,18 @@ pub struct ModulePart {
     /// Trigger target configuration (Input Socket Index -> Target Parameter)
     #[serde(default)]
     pub trigger_targets: HashMap<usize, TriggerConfig>,
+}
+
+/// Camera operation modes
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
+pub enum CameraMode {
+    /// Orbit around a target point
+    #[default]
+    Orbit,
+    /// Free fly movement
+    Fly,
+    /// Fixed static position
+    Static,
 }
 
 /// Target parameter for a trigger input
@@ -574,6 +599,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Modulizer(_) => (
                 vec![
                     ModuleSocket {
@@ -733,6 +768,8 @@ pub enum PartType {
     Trigger,
     /// Video sources
     Source,
+    /// Bevy Camera
+    BevyCamera,
     /// Bevy Particles
     BevyParticles,
     /// Masks
@@ -1097,6 +1134,30 @@ pub enum SourceType {
     },
     /// Bevy Engine Scene (Monolith) - Kept for backward compatibility or complex scenes
     Bevy,
+    /// Specialized Bevy Camera Control
+    BevyCamera {
+        /// Camera operation mode
+        #[serde(default)]
+        mode: CameraMode,
+        /// Look-at target (Orbit/Static)
+        #[serde(default)]
+        target: [f32; 3],
+        /// Position (Static) or Initial Position
+        #[serde(default)]
+        position: [f32; 3],
+        /// Orbit radius
+        #[serde(default = "default_radius")]
+        radius: f32,
+        /// Movement speed (Orbit/Fly)
+        #[serde(default = "default_speed")]
+        speed: f32,
+        /// Yaw rotation (Fly)
+        #[serde(default)]
+        yaw: f32,
+        /// Pitch rotation (Fly)
+        #[serde(default)]
+        pitch: f32,
+    },
     /// Specialized Bevy Atmosphere Control
     BevyAtmosphere {
         /// Turbidity (1.0 - 10.0)

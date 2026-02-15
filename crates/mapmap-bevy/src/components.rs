@@ -108,3 +108,23 @@ pub struct Bevy3DText {
     pub color: [f32; 4],
     pub alignment: BevyTextAlignment,
 }
+
+#[derive(Reflect, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CameraMode {
+    #[default]
+    Orbit,
+    Fly,
+    Static,
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BevyCameraConfig {
+    pub mode: CameraMode,
+    pub target: [f32; 3],
+    pub position: [f32; 3],
+    pub radius: f32,
+    pub speed: f32,
+    pub yaw: f32,
+    pub pitch: f32,
+}

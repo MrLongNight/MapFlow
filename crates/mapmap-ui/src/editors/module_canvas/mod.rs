@@ -1226,6 +1226,78 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
+                                            SourceType::BevyCamera {
+                                                mode,
+                                                target,
+                                                position,
+                                                radius,
+                                                speed,
+                                                yaw,
+                                                pitch,
+                                            } => {
+                                                ui.label("🎥 Bevy Camera");
+                                                egui::ComboBox::from_id_salt("camera_mode")
+                                                    .selected_text(format!("{:?}", mode))
+                                                    .show_ui(ui, |ui| {
+                                                        use mapmap_core::module::CameraMode;
+                                                        ui.selectable_value(mode, CameraMode::Orbit, "Orbit");
+                                                        ui.selectable_value(mode, CameraMode::Fly, "Fly");
+                                                        ui.selectable_value(mode, CameraMode::Static, "Static");
+                                                    });
+
+                                                ui.separator();
+
+                                                match mode {
+                                                    mapmap_core::module::CameraMode::Static => {
+                                                        ui.label("Target (Look At):");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut target[0]).prefix("X:"));
+                                                            ui.add(egui::DragValue::new(&mut target[1]).prefix("Y:"));
+                                                            ui.add(egui::DragValue::new(&mut target[2]).prefix("Z:"));
+                                                        });
+                                                        ui.label("Position:");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut position[0]).prefix("X:"));
+                                                            ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:"));
+                                                            ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:"));
+                                                        });
+                                                    }
+                                                    mapmap_core::module::CameraMode::Orbit => {
+                                                        ui.label("Target (Look At):");
+                                                        ui.horizontal(|ui| {
+                                                            ui.add(egui::DragValue::new(&mut target[0]).prefix("X:"));
+                                                            ui.add(egui::DragValue::new(&mut target[1]).prefix("Y:"));
+                                                            ui.add(egui::DragValue::new(&mut target[2]).prefix("Z:"));
+                                                        });
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Radius:");
+                                                            ui.add(egui::DragValue::new(radius).speed(0.1));
+                                                        });
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Speed:");
+                                                            ui.add(egui::DragValue::new(speed).speed(0.1));
+                                                        });
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Height (Y):");
+                                                            ui.add(egui::DragValue::new(&mut position[1]).speed(0.1));
+                                                        });
+                                                    }
+                                                    mapmap_core::module::CameraMode::Fly => {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Speed:");
+                                                            ui.add(egui::DragValue::new(speed).speed(0.1));
+                                                        });
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Yaw:");
+                                                            ui.add(egui::DragValue::new(yaw).suffix("°"));
+                                                        });
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Pitch:");
+                                                            ui.add(egui::DragValue::new(pitch).suffix("°"));
+                                                        });
+                                                    }
+                                                }
+                                            }
                                             SourceType::Bevy3DText {
                                                 text,
                                                 font_size,
@@ -5152,6 +5224,12 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 "☁️",
                 "Atmosphere",
             ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "🎥",
+                "Camera",
+            ),
             ModulePartType::Source(SourceType::BevyHexGrid { .. }) => (
                 Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
@@ -5391,6 +5469,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 SourceType::VideoMulti { shared_id, .. } => format!("📹 Shared: {}", shared_id),
                 SourceType::ImageMulti { shared_id, .. } => format!("🖼 Shared: {}", shared_id),
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
+                SourceType::BevyCamera { mode, .. } => format!("🎥 {:?}", mode),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
                 SourceType::Bevy3DText { text, .. } => {

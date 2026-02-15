@@ -467,3 +467,89 @@ pub fn text_3d_system(
         ));
     }
 }
+
+pub fn camera_control_system(
+    time: Res<Time>,
+    mut query: Query<
+        (&mut Transform, &crate::components::BevyCameraConfig),
+        With<crate::components::SharedEngineCamera>,
+    >,
+) {
+    let dt = time.delta_secs();
+
+    for (mut transform, config) in query.iter_mut() {
+        match config.mode {
+            crate::components::CameraMode::Static => {
+                let target = Vec3::from(config.target);
+                let position = Vec3::from(config.position);
+                transform.translation = position;
+                transform.look_at(target, Vec3::Y);
+            }
+            crate::components::CameraMode::Orbit => {
+                let target = Vec3::from(config.target);
+                // Orbit based on time and speed
+                let angle = time.elapsed_secs() * config.speed * 0.5;
+                let radius = config.radius;
+
+                let x = angle.sin() * radius;
+                let z = angle.cos() * radius;
+                let y = config.position[1];
+
+                transform.translation = target + Vec3::new(x, y, z);
+                transform.look_at(target, Vec3::Y);
+            }
+            crate::components::CameraMode::Fly => {
+                // Move forward continuously
+                let forward = transform.forward();
+                transform.translation += forward * config.speed * dt;
+
+                // Set orientation from yaw/pitch
+                let rotation = Quat::from_euler(
+                    EulerRot::YXZ,
+                    config.yaw.to_radians(),
+                    config.pitch.to_radians(),
+                    0.0,
+                );
+                transform.rotation = rotation;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::components::{BevyCameraConfig, CameraMode, SharedEngineCamera};
+
+    #[test]
+    fn test_camera_static_mode() {
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+        app.add_systems(Update, camera_control_system);
+
+        let target = [0.0, 0.0, 0.0];
+        let position = [0.0, 5.0, 10.0];
+
+        let entity = app
+            .world_mut()
+            .spawn((
+                Transform::default(),
+                SharedEngineCamera,
+                BevyCameraConfig {
+                    mode: CameraMode::Static,
+                    target,
+                    position,
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.update();
+
+        let transform = app.world().get::<Transform>(entity).unwrap();
+        assert_eq!(transform.translation, Vec3::from(position));
+        // Check look_at indirectly or roughly
+        let expected_forward = (Vec3::from(target) - Vec3::from(position)).normalize();
+        assert!((transform.forward().as_vec3() - expected_forward).length() < 0.001);
+    }
+}
