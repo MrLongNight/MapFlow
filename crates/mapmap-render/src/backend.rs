@@ -1,4 +1,4 @@
-//! Rendering backend abstraction
+//! Rendering backend abstraction.
 
 use crate::{RenderError, Result, ShaderHandle, ShaderSource, TextureDescriptor, TextureHandle};
 use std::sync::Arc;
