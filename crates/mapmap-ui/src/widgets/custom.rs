@@ -383,7 +383,7 @@ pub fn icon_button(
     };
 
     // Accessibility metadata
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, text));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, is_active, text));
 
     ui.painter().rect(
         rect,

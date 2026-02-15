@@ -87,8 +87,8 @@ pollster = "0.3"
 
 # Testing
 proptest = "1.4"
-tests_bin = "0.1"
 rayon = "1.8"
+tests_bin = "0.1"
 
 # SVG rendering for icons
 resvg = "0.46"
