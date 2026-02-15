@@ -27,6 +27,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 
         // Update Bevy Texture
         if let Some(runner) = &app.bevy_runner {
+            let runner: &mapmap_bevy::BevyRunner = runner;
             if let Some((data, width, height)) = runner.get_image_data() {
                 let tex_name = "bevy_output";
                 app.texture_pool.ensure_texture(
