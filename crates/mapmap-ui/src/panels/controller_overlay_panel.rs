@@ -230,11 +230,7 @@ impl ControllerOverlayPanel {
                             .map(|p| egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
                             .collect();
 
-                        let color_image = egui::ColorImage {
-                            size,
-                            pixels,
-                            source_size: egui::Vec2::new(width as f32, height as f32),
-                        };
+                        let color_image = egui::ColorImage { size, pixels };
 
                         return Some(ctx.load_texture(
                             name,
@@ -242,7 +238,7 @@ impl ControllerOverlayPanel {
                             egui::TextureOptions {
                                 magnification: egui::TextureFilter::Linear,
                                 minification: egui::TextureFilter::Linear,
-                                ..Default::default()
+                                wrap_mode: egui::TextureWrapMode::ClampToEdge,
                             },
                         ));
                     }
