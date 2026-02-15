@@ -268,9 +268,10 @@ impl Compositor {
         self.current_cache_index = 0;
 
         // Prune dead texture bind groups
-        self.bind_group_cache.retain(|_, (weak_base, weak_blend, _)| {
-            weak_base.strong_count() > 0 && weak_blend.strong_count() > 0
-        });
+        self.bind_group_cache
+            .retain(|_, (weak_base, weak_blend, _)| {
+                weak_base.strong_count() > 0 && weak_blend.strong_count() > 0
+            });
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources
