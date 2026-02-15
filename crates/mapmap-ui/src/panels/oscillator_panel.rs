@@ -98,8 +98,6 @@ impl OscillatorPanel {
         _locale: &LocaleManager,
         _config: &mut OscillatorConfig,
     ) -> bool {
-
-
         false
     }
 
@@ -109,8 +107,6 @@ impl OscillatorPanel {
         _locale: &LocaleManager,
         _config: &mut OscillatorConfig,
     ) -> bool {
-
-
         false
     }
 
