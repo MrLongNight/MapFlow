@@ -121,7 +121,7 @@ impl WgpuBackend {
                 label: Some("MapFlow Device"),
                 required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
                 required_limits: wgpu::Limits {
-                    
+
                     ..Default::default()
                 },
                 memory_hints: Default::default(),
