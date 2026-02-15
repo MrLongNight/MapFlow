@@ -37,3 +37,7 @@
 ## 2026-11-20 - Dynamic Mesh Buffer Reuse
 **Learning:** For dynamic meshes updated every frame (like particles), creating new `Vec`s and calling `mesh.insert_attribute` drops the old buffer, forcing a new allocation every frame. This causes significant allocator churn.
 **Action:** Use `mesh.remove_attribute(...)` to take ownership of the existing buffer, clear it (keeping capacity), refill it, and re-insert it. This results in zero steady-state allocations for dynamic mesh updates.
+
+## 2026-10-25 - Static Helpers for Disjoint Borrows
+**Learning:** `ModuleEvaluator` methods often need to mutate cached results while reading configuration state. Passing `&self` to helper methods prevents this due to borrowing rules, leading to unnecessary cloning (e.g. `triggers_to_eval`).
+**Action:** Convert helper methods to associated static functions (`fn helper(arg1, arg2)`) that take only the necessary fields, allowing the caller to split `self` borrows and avoid cloning.
