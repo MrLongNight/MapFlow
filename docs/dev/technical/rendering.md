@@ -36,6 +36,6 @@ Video-Decoding ist oft der Flaschenhals.
 ### HAP Codec Support
 Für extrem hochauflösende Videos nutzen wir den HAP-Codec.
 *   **Funktionsweise**: HAP ist ein Textur-Kompressions-Format (ähnlich DXT/BC1). Die CPU muss nur entpacken (Snappy), die GPU übernimmt das Decoding.
-*   **Implementation**: 
+*   **Implementation**:
     *   Decoder: `mapmap-media/src/hap_decoder.rs`
     *   Shader: `shaders/ycocg_to_rgb.wgsl` (für Farbkonvertierung).
