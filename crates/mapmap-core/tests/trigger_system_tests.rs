@@ -27,7 +27,7 @@ fn test_update_empty_manager() {
     let module_manager = ModuleManager::new();
     let audio_data = default_audio_data();
 
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
     assert!(system.get_active_triggers().is_empty());
 }
 
@@ -58,7 +58,7 @@ fn test_update_audio_fft_bands() {
         let mut audio_data = default_audio_data();
         audio_data.band_energies[i] = 0.8; // Trigger threshold is 0.5
 
-        system.update(&module_manager, &audio_data);
+        system.update(&module_manager, &audio_data, 0.016);
 
         assert!(
             system.is_active(part_id, i),
@@ -104,7 +104,7 @@ fn test_update_audio_volume_beat() {
     };
 
     // 3. Update
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
 
     // 4. Assert
     // Dynamic Socket indices:
@@ -155,12 +155,12 @@ fn test_update_clears_previous_state() {
         beat_detected: true,
         ..AudioTriggerData::default()
     };
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
     assert!(system.is_active(part_id, 0));
 
     // 3. Deactivate (next frame)
     audio_data.beat_detected = false;
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
     assert!(!system.is_active(part_id, 0));
 }
 
@@ -186,12 +186,12 @@ fn test_trigger_system_update_thresholds() {
     // 2. Test Below Threshold
     let mut audio_data = default_audio_data();
     audio_data.band_energies[1] = 0.79;
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
     assert!(!system.is_active(part_id, 1));
 
     // 3. Test Above Threshold
     audio_data.band_energies[1] = 0.81;
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
     assert!(system.is_active(part_id, 1));
 }
 
@@ -231,7 +231,7 @@ fn test_dynamic_socket_indexing() {
         ..AudioTriggerData::default()
     };
 
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
 
     assert!(system.is_active(part_id, 0), "RMS should be active");
     assert!(system.is_active(part_id, 1), "Peak should be active");
@@ -270,7 +270,7 @@ fn test_fallback_behavior() {
         ..AudioTriggerData::default()
     };
 
-    system.update(&module_manager, &audio_data);
+    system.update(&module_manager, &audio_data, 0.016);
 
     assert!(
         system.is_active(part_id, 0),

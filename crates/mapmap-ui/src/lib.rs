@@ -12,6 +12,7 @@
 #![allow(missing_docs)]
 
 // Categorized modules
+pub mod canvas;
 pub mod core;
 pub mod editors;
 pub mod panels;
@@ -19,6 +20,7 @@ pub mod view;
 pub mod widgets;
 
 // Re-export categorized modules to maintain API compatibility
+pub use crate::canvas::*;
 pub use crate::core::*;
 pub use crate::editors::*;
 pub use crate::panels::*;
