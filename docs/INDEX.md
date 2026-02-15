@@ -8,13 +8,14 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 - [Getting Started](01-GETTING-STARTED/) - Installation, Build, Quick Start
 - [User Guide](02-USER-GUIDE/) - Features, UI Panels, Keyboard Shortcuts
 - [MIDI Control](02-USER-GUIDE/MIDI_CONTROL.md) - Controller Setup & Mapping
-- [OSC Control](10-OSC-CONTROL/) - Open Sound Control Command Reference
+- [General](01-GENERAL/) - Code of Conduct, Issues, Security
 
 ### For Developers
 - [Architecture](03-ARCHITECTURE/) - System Design, Crates, Data Flow
 - [Development](05-DEVELOPMENT/) - Development Setup, Guidelines
 - [Technical Reference](08-TECHNICAL/) - Shaders, Rendering, Performance
 - [Audits & Reports](08-TECHNICAL/audits/) - Code & Security Audits
+- [CI/CD Workflow](10-CICD_PROZESS/README_CICD.md) - Continuous Integration & Deployment
 
 ### For Project Managers
 - [Roadmap & Phases](06-ROADMAP/) - Complete Phase Plan (0-7)
@@ -36,6 +37,7 @@ Welcome to MapFlow - Professional Open-Source Projection Mapping Software.
 
 ```
 docs/
+├── 01-GENERAL/             Code of Conduct, Issues, Security
 ├── 01-GETTING-STARTED/     Installation, Build, Quick Start
 ├── 02-USER-GUIDE/          Features, UI, Controls
 ├── 03-ARCHITECTURE/        System Design & Implementation
@@ -45,7 +47,7 @@ docs/
 ├── 07-TUTORIALS/           Learning Resources
 ├── 08-TECHNICAL/           Deep Technical Reference
 ├── 09-RESOURCES/           FAQ, Glossary, Links
-├── 10-OSC-CONTROL/         OSC Command Reference
+├── 10-CICD_PROZESS/        CI/CD Workflow & Automation
 └── assets/                 Images, Diagrams, Media
 ```
 
@@ -62,9 +64,10 @@ docs/
 | Development | `05-DEVELOPMENT/` | Development Setup & Standards |
 | Roadmap | `06-ROADMAP/PROJECT-PHASES.md` | Phase overview |
 | Features | `02-USER-GUIDE/FEATURES.md` | What MapFlow can do |
-| OSC Control | `10-OSC-CONTROL/COMMAND-REFERENCE.md` | OSC Address & Command Reference |
+| CI/CD | `10-CICD_PROZESS/README_CICD.md` | Automation Workflow |
 | Tutorials | `07-TUTORIALS/README.md` | Learning path |
+| General | `01-GENERAL/` | Project policies |
 
 ---
 
-Last Updated: 2026-01-20
+Last Updated: 2026-02-10

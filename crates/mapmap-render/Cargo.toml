@@ -29,3 +29,4 @@ criterion = { workspace = true }
 futures-channel = "0.3.30"
 pollster = { workspace = true }
 tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
+wgpu = { workspace = true }

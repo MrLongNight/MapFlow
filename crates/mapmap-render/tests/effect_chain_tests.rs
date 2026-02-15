@@ -1,7 +1,7 @@
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
-use wgpu::{Device, Queue}; // Maintain removed
+use wgpu::{Device, Queue};
 
 // --- Test Setup Boilerplate (adapted from multi_output_tests.rs) ---
 

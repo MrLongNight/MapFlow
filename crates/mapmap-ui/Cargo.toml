@@ -24,8 +24,7 @@ egui = { workspace = true, features = ["serde"] }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
 egui_extras = { workspace = true }
-egui_node_editor = "0.9.0"
-
+egui_node_editor = { workspace = true }
 fluent = { workspace = true }
 fluent-langneg = { workspace = true }
 glam = { workspace = true }

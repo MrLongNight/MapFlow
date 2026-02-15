@@ -521,10 +521,9 @@ impl AppUI {
             .order(egui::Order::Foreground)
             .interactable(false)
             .show(ctx, |ui| {
-                egui::Frame::NONE
-                    .fill(egui::Color32::from_gray(30))
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(60)))
-                    .corner_radius(egui::CornerRadius::same(4))
+                egui::Frame::popup(ui.style())
+                    .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
+                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -734,7 +733,7 @@ impl AppUI {
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
             ui.painter().rect_stroke(
                 rect.expand(2.0),
-                egui::CornerRadius::same(4),
+                4.0,
                 egui::Stroke::new(2.0, color),
                 egui::StrokeKind::Middle,
             );

@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-09 22:00
+> **Stand:** 2026-02-10 07:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -96,6 +96,12 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Stateful Triggers (Random Interval)
   * ✅ Trigger State Infrastructure
   * ✅ AudioFFT Trigger Completion (2026-01-15)
+
+### 3D / Bevy Integration
+
+* ✅ **Bevy Engine Integration** (Bevy 0.16)
+  * ✅ Shared WGPU Context
+  * ✅ Bevy Particles Node (Custom Mesh-Based) (COMPLETED 2026-02-10)
 
 ### Rendering (Compositor / Edge-Blend / Color-Calib / Mesh / Oszillator / Effekt-Chain)
 
@@ -988,7 +994,7 @@ graph TD
 ### `mapmap-bevy`
 
 * Integriert die Bevy Engine für 3D-Rendering.
-* Bietet Partikelsysteme via `bevy_enoki`.
+* Bietet Partikelsysteme via Custom Mesh-Based Implementation (Bevy 0.16 compatible).
 * Teilt den wgpu-Context mit der Hauptanwendung.
 
 ## Technologie-Stack und Entscheidungen

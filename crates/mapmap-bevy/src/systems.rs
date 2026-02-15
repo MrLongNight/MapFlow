@@ -1,6 +1,7 @@
 use crate::components::{AudioReactive, AudioReactiveTarget};
 use crate::resources::AudioInputResource;
 use bevy::prelude::*;
+use bevy::render::mesh::{Indices, VertexAttributeValues};
 use rand::Rng;
 
 pub fn audio_reaction_system(
@@ -165,6 +166,8 @@ pub fn particle_system(
     )>,
 ) {
     let delta_time = time.delta_secs();
+    // Hoist RNG outside loop to avoid reallocation
+    let mut rng = rand::rng();
 
     for (entity, config, mut emitter_opt, mesh_opt) in query.iter_mut() {
         // Initialize emitter if missing
@@ -203,36 +206,37 @@ pub fn particle_system(
 
         // Spawn new particles
         emitter.spawn_accumulator += config.rate * delta_time;
-        while emitter.spawn_accumulator > 1.0 {
-            emitter.spawn_accumulator -= 1.0;
+        if emitter.spawn_accumulator > 1.0 {
+            while emitter.spawn_accumulator > 1.0 {
+                emitter.spawn_accumulator -= 1.0;
 
-            let mut rng = rand::rng();
-            let velocity = Vec3::new(
-                rng.random_range(-1.0..1.0),
-                rng.random_range(-1.0..1.0),
-                rng.random_range(-1.0..1.0),
-            )
-            .normalize_or_zero()
-                * config.speed;
+                let velocity = Vec3::new(
+                    rng.random_range(-1.0..1.0),
+                    rng.random_range(-1.0..1.0),
+                    rng.random_range(-1.0..1.0),
+                )
+                .normalize_or_zero()
+                    * config.speed;
 
-            emitter.particles.push(crate::components::Particle {
-                position: Vec3::ZERO, // Relative to entity transform
-                velocity,
-                lifetime: config.lifetime,
-                age: 0.0,
-                color_start: LinearRgba::new(
-                    config.color_start[0],
-                    config.color_start[1],
-                    config.color_start[2],
-                    config.color_start[3],
-                ),
-                color_end: LinearRgba::new(
-                    config.color_end[0],
-                    config.color_end[1],
-                    config.color_end[2],
-                    config.color_end[3],
-                ),
-            });
+                emitter.particles.push(crate::components::Particle {
+                    position: Vec3::ZERO, // Relative to entity transform
+                    velocity,
+                    lifetime: config.lifetime,
+                    age: 0.0,
+                    color_start: LinearRgba::new(
+                        config.color_start[0],
+                        config.color_start[1],
+                        config.color_start[2],
+                        config.color_start[3],
+                    ),
+                    color_end: LinearRgba::new(
+                        config.color_end[0],
+                        config.color_end[1],
+                        config.color_end[2],
+                        config.color_end[3],
+                    ),
+                });
+            }
         }
 
         // Update particles
@@ -247,9 +251,30 @@ pub fn particle_system(
             if let Some(mesh) = meshes.get_mut(mesh_handle) {
                 let count = emitter.particles.len();
 
-                let mut positions = Vec::with_capacity(count * 4);
-                let mut colors = Vec::with_capacity(count * 4);
-                let mut indices = Vec::with_capacity(count * 6);
+                // Reuse existing buffers to avoid allocation
+                let mut positions = match mesh.remove_attribute(Mesh::ATTRIBUTE_POSITION) {
+                    Some(VertexAttributeValues::Float32x3(mut v)) => {
+                        v.clear();
+                        v
+                    }
+                    _ => Vec::with_capacity(count * 4),
+                };
+
+                let mut colors = match mesh.remove_attribute(Mesh::ATTRIBUTE_COLOR) {
+                    Some(VertexAttributeValues::Float32x4(mut v)) => {
+                        v.clear();
+                        v
+                    }
+                    _ => Vec::with_capacity(count * 4),
+                };
+
+                let mut indices = match mesh.remove_indices() {
+                    Some(Indices::U32(mut v)) => {
+                        v.clear();
+                        v
+                    }
+                    _ => Vec::with_capacity(count * 6),
+                };
 
                 let half_size = 0.05;
 
@@ -287,9 +312,15 @@ pub fn particle_system(
                     indices.push(base);
                 }
 
-                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-                mesh.insert_indices(bevy::render::mesh::Indices::U32(indices));
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    VertexAttributeValues::Float32x3(positions),
+                );
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    VertexAttributeValues::Float32x4(colors),
+                );
+                mesh.insert_indices(Indices::U32(indices));
             }
         }
     }
@@ -304,6 +335,7 @@ pub fn frame_readback_system(
     render_output: Res<crate::resources::BevyRenderOutput>,
     render_device: Res<bevy::render::renderer::RenderDevice>,
     render_queue: Res<bevy::render::renderer::RenderQueue>,
+    mut buffer_cache: Local<Option<bevy::render::render_resource::Buffer>>,
 ) {
     if let Some(gpu_image) = gpu_images.get(&render_output.image_handle) {
         let texture = &gpu_image.texture;
@@ -320,14 +352,20 @@ pub fn frame_readback_system(
 
         let output_buffer_size = (bytes_per_row * height) as u64;
 
-        let buffer =
-            render_device.create_buffer(&bevy::render::render_resource::BufferDescriptor {
-                label: Some("Readback Buffer"),
-                size: output_buffer_size,
-                usage: bevy::render::render_resource::BufferUsages::MAP_READ
-                    | bevy::render::render_resource::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
+        // Ensure buffer exists and is correct size
+        if buffer_cache.is_none() || buffer_cache.as_ref().unwrap().size() != output_buffer_size {
+            *buffer_cache = Some(render_device.create_buffer(
+                &bevy::render::render_resource::BufferDescriptor {
+                    label: Some("Readback Buffer"),
+                    size: output_buffer_size,
+                    usage: bevy::render::render_resource::BufferUsages::MAP_READ
+                        | bevy::render::render_resource::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                },
+            ));
+        }
+
+        let buffer = buffer_cache.as_ref().unwrap();
 
         let mut encoder = render_device.create_command_encoder(
             &bevy::render::render_resource::CommandEncoderDescriptor {
@@ -343,7 +381,7 @@ pub fn frame_readback_system(
                 aspect: bevy::render::render_resource::TextureAspect::All,
             },
             bevy::render::render_resource::TexelCopyBufferInfo {
-                buffer: &buffer,
+                buffer,
                 layout: bevy::render::render_resource::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(bytes_per_row),
@@ -389,5 +427,43 @@ pub fn frame_readback_system(
                 }
             }
         }
+
+        // Must unmap to use buffer again next frame for writing
+        buffer.unmap();
+    }
+}
+
+pub fn text_3d_system(
+    mut commands: Commands,
+    query: Query<(Entity, &crate::components::Bevy3DText), Changed<crate::components::Bevy3DText>>,
+) {
+    for (entity, config) in query.iter() {
+        let justify = match config.alignment {
+            crate::components::BevyTextAlignment::Left => JustifyText::Left,
+            crate::components::BevyTextAlignment::Center => JustifyText::Center,
+            crate::components::BevyTextAlignment::Right => JustifyText::Right,
+            crate::components::BevyTextAlignment::Justify => JustifyText::Justified,
+        };
+
+        let color = Color::srgba(
+            config.color[0],
+            config.color[1],
+            config.color[2],
+            config.color[3],
+        );
+
+        commands.entity(entity).insert((
+            Text2d::default(),
+            Text::new(config.text.clone()),
+            TextFont {
+                font_size: config.font_size,
+                ..default()
+            },
+            TextColor(color),
+            TextLayout {
+                justify,
+                ..default()
+            },
+        ));
     }
 }

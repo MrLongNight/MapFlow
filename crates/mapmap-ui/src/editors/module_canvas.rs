@@ -1,6 +1,7 @@
 use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
+use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
 use egui::epaint::CubicBezierShape;
 
@@ -902,6 +903,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DText { .. } => "📝 3D Text",
                                             };
 
                                             let mut next_type = None;
@@ -1056,7 +1058,8 @@ impl ModuleCanvas {
                                                 ui.add_space(8.0);
                                                 ui.horizontal(|ui| {
                                                     ui.label("Playback Speed:");
-                                                    let speed_slider = ui.add(egui::Slider::new(speed, 0.1..=4.0).suffix("x").show_value(true));
+                                                    let speed_slider = styled_slider(ui, speed, 0.1..=4.0, 1.0);
+                                                    ui.label("x");
                                                     if speed_slider.changed() {
                                                         actions.push(UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetSpeed(*speed)));
                                                     }
@@ -1346,7 +1349,91 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(sender_name);
                                                 });
                                             }
-                                            SourceType::BevyAtmosphere { .. } | SourceType::BevyHexGrid { .. } | SourceType::BevyParticles { .. } => {
+                                            SourceType::Bevy3DText {
+                                                text,
+                                                font_size,
+                                                color,
+                                                position,
+                                                rotation,
+                                                alignment,
+                                            } => {
+                                                ui.label("📝 3D Text");
+                                                ui.add(
+                                                    egui::TextEdit::multiline(text)
+                                                        .desired_rows(3)
+                                                        .desired_width(f32::INFINITY),
+                                                );
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Size:");
+                                                    ui.add(egui::Slider::new(font_size, 1.0..=200.0));
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Color:");
+                                                    ui.color_edit_button_rgba_unmultiplied(color);
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Align:");
+                                                    egui::ComboBox::from_id_salt("text_align")
+                                                        .selected_text(alignment.as_str())
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(
+                                                                alignment,
+                                                                "Left".to_string(),
+                                                                "Left",
+                                                            );
+                                                            ui.selectable_value(
+                                                                alignment,
+                                                                "Center".to_string(),
+                                                                "Center",
+                                                            );
+                                                            ui.selectable_value(
+                                                                alignment,
+                                                                "Right".to_string(),
+                                                                "Right",
+                                                            );
+                                                            ui.selectable_value(
+                                                                alignment,
+                                                                "Justify".to_string(),
+                                                                "Justify",
+                                                            );
+                                                        });
+                                                });
+
+                                                ui.separator();
+                                                ui.label("📐 Transform 3D");
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Pos:");
+                                                    ui.add(egui::DragValue::new(&mut position[0]).prefix("X:"));
+                                                    ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:"));
+                                                    ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:"));
+                                                });
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Rot:");
+                                                    ui.add(
+                                                        egui::DragValue::new(&mut rotation[0])
+                                                            .prefix("X:")
+                                                            .suffix("°"),
+                                                    );
+                                                    ui.add(
+                                                        egui::DragValue::new(&mut rotation[1])
+                                                            .prefix("Y:")
+                                                            .suffix("°"),
+                                                    );
+                                                    ui.add(
+                                                        egui::DragValue::new(&mut rotation[2])
+                                                            .prefix("Z:")
+                                                            .suffix("°"),
+                                                    );
+                                                });
+                                            }
+                                            SourceType::BevyAtmosphere { .. }
+                                            | SourceType::BevyHexGrid { .. }
+                                            | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
                                             }
                                             SourceType::Bevy => {
@@ -5222,6 +5309,12 @@ impl ModuleCanvas {
                 "✨",
                 "Particles",
             ),
+            ModulePartType::Source(SourceType::Bevy3DText { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 220, 180),
+                "T",
+                "3D Text",
+            ),
             ModulePartType::Source(source) => {
                 let name = match source {
                     SourceType::MediaFile { .. } => "Media File",
@@ -5238,6 +5331,7 @@ impl ModuleCanvas {
                     SourceType::BevyAtmosphere { .. } => "Atmosphere",
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::Bevy3DText { .. } => "3D Text",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5444,6 +5538,9 @@ impl ModuleCanvas {
                 SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
+                SourceType::Bevy3DText { text, .. } => {
+                    format!("T: {}", text.chars().take(10).collect::<String>())
+                }
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
@@ -6149,32 +6246,22 @@ impl ModuleCanvas {
                                 mapmap_core::module::TriggerMappingMode::Fixed => {
                                     ui.horizontal(|ui| {
                                         ui.label("Threshold:");
-                                        ui.add(egui::Slider::new(&mut config.threshold, 0.0..=1.0));
+                                        styled_slider(ui, &mut config.threshold, 0.0..=1.0, 0.5);
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Off:");
-                                        ui.add(egui::Slider::new(
-                                            &mut config.min_value,
-                                            -5.0..=5.0,
-                                        ));
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
                                         ui.label("On:");
-                                        ui.add(egui::Slider::new(
-                                            &mut config.max_value,
-                                            -5.0..=5.0,
-                                        ));
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                                 mapmap_core::module::TriggerMappingMode::RandomInRange => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.add(
-                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
-                                                .text("Min"),
-                                        );
-                                        ui.add(
-                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
-                                                .text("Max"),
-                                        );
+                                        ui.label("Min:");
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:");
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                                 mapmap_core::module::TriggerMappingMode::Smoothed {
@@ -6183,36 +6270,30 @@ impl ModuleCanvas {
                                 } => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.add(
-                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
-                                                .text("Min"),
-                                        );
-                                        ui.add(
-                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
-                                                .text("Max"),
-                                        );
+                                        ui.label("Min:");
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:");
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Attack:");
-                                        ui.add(egui::Slider::new(attack, 0.0..=2.0).text("s"));
+                                        styled_slider(ui, attack, 0.0..=2.0, 0.1);
+                                        ui.label("s");
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Release:");
-                                        ui.add(egui::Slider::new(release, 0.0..=2.0).text("s"));
+                                        styled_slider(ui, release, 0.0..=2.0, 0.1);
+                                        ui.label("s");
                                     });
                                 }
                                 _ => {
                                     // Direct
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
-                                        ui.add(
-                                            egui::Slider::new(&mut config.min_value, -5.0..=5.0)
-                                                .text("Min"),
-                                        );
-                                        ui.add(
-                                            egui::Slider::new(&mut config.max_value, -5.0..=5.0)
-                                                .text("Max"),
-                                        );
+                                        ui.label("Min:");
+                                        styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                        ui.label("Max:");
+                                        styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
                             }
@@ -6253,7 +6334,7 @@ impl ModuleCanvas {
                 .spacing([10.0, 8.0])
                 .show(ui, |ui| {
                     ui.label("Opacity:");
-                    ui.add(egui::Slider::new(opacity, 0.0..=1.0));
+                    styled_slider(ui, opacity, 0.0..=1.0, 1.0);
                     ui.end_row();
 
                     ui.label("Blend Mode:");
@@ -6338,19 +6419,19 @@ impl ModuleCanvas {
                 .spacing([10.0, 8.0])
                 .show(ui, |ui| {
                     ui.label("Brightness:");
-                    ui.add(egui::Slider::new(brightness, -1.0..=1.0));
+                    styled_slider(ui, brightness, -1.0..=1.0, 0.0);
                     ui.end_row();
 
                     ui.label("Contrast:");
-                    ui.add(egui::Slider::new(contrast, 0.0..=2.0));
+                    styled_slider(ui, contrast, 0.0..=2.0, 1.0);
                     ui.end_row();
 
                     ui.label("Saturation:");
-                    ui.add(egui::Slider::new(saturation, 0.0..=2.0));
+                    styled_slider(ui, saturation, 0.0..=2.0, 1.0);
                     ui.end_row();
 
                     ui.label("Hue Shift:");
-                    ui.add(egui::Slider::new(hue_shift, -180.0..=180.0).suffix("°"));
+                    styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
                     ui.end_row();
                 });
         }) {
@@ -6368,20 +6449,20 @@ impl ModuleCanvas {
                 .show(ui, |ui| {
                     ui.label("Scale:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(scale_x).speed(0.01).prefix("X: "));
-                        ui.add(egui::DragValue::new(scale_y).speed(0.01).prefix("Y: "));
+                        styled_drag_value(ui, scale_x, 0.01, 0.0..=10.0, 1.0, "X: ", "");
+                        styled_drag_value(ui, scale_y, 0.01, 0.0..=10.0, 1.0, "Y: ", "");
                     });
                     ui.end_row();
 
                     ui.label("Offset:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(offset_x).speed(1.0).prefix("X: "));
-                        ui.add(egui::DragValue::new(offset_y).speed(1.0).prefix("Y: "));
+                        styled_drag_value(ui, offset_x, 1.0, -2000.0..=2000.0, 0.0, "X: ", "px");
+                        styled_drag_value(ui, offset_y, 1.0, -2000.0..=2000.0, 0.0, "Y: ", "px");
                     });
                     ui.end_row();
 
                     ui.label("Rotation:");
-                    ui.add(egui::Slider::new(rotation, -180.0..=180.0).suffix("°"));
+                    styled_slider(ui, rotation, -180.0..=180.0, 0.0);
                     ui.end_row();
 
                     ui.label("Mirror:");
