@@ -4666,7 +4666,7 @@ dependencies = [
  "mapmap-render",
  "once_cell",
  "parking_lot",
- "resvg 0.46.0",
+ "resvg 0.47.0",
  "rfd",
  "rust-embed",
  "serde",
@@ -6384,9 +6384,9 @@ dependencies = [
 
 [[package]]
 name = "resvg"
-version = "0.46.0"
+version = "0.47.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b563218631706d614e23059436526d005b50ab5f2d506b55a17eb65c5eb83419"
+checksum = "9be183ad6a216aa96f33e4c8033b0988b8b3ea6fd2359d19af5bac4643fd8e81"
 dependencies = [
  "gif 0.14.1",
  "image-webp",
@@ -6394,8 +6394,8 @@ dependencies = [
  "pico-args",
  "rgb",
  "svgtypes 0.16.1",
- "tiny-skia 0.11.4",
- "usvg 0.46.0",
+ "tiny-skia 0.12.0",
+ "usvg 0.47.0",
  "zune-jpeg 0.5.12",
 ]
 
