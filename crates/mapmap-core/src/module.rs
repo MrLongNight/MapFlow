@@ -2155,6 +2155,19 @@ pub struct ModuleManager {
     pub shared_media: SharedMediaState,
 }
 
+impl Default for ModuleManager {
+    fn default() -> Self {
+        Self {
+            modules: HashMap::new(),
+            next_module_id: 1,
+            next_part_id: 1,
+            color_palette: default_color_palette(),
+            next_color_index: 0,
+            shared_media: SharedMediaState::default(),
+        }
+    }
+}
+
 impl PartialEq for ModuleManager {
     fn eq(&self, other: &Self) -> bool {
         self.modules == other.modules

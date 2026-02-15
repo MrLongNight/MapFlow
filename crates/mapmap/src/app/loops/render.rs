@@ -295,7 +295,7 @@ fn render_content(
                     &grid_tex_name,
                     width,
                     height,
-                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                    wgpu::TextureFormat::Bgra8UnormSrgb,
                     wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 );
                 ctx.texture_pool
@@ -485,6 +485,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                             view: &target_view_arc,
                             resolve_target: None,
                             ops: wgpu::Operations {
+                                from_color(wgpu::Color::BLACK), // Helper? No manually
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
                             },
@@ -514,9 +515,10 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 /// Generate a grid texture with Layer ID burned in
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
-    let bg_color = [0, 0, 0, 255]; // Black background
-    let grid_color = [255, 255, 255, 255]; // White grid
-    let text_color = [0, 255, 255, 255]; // Cyan text
+    // BGRA format requires swapping R and B
+    let bg_color = [0, 0, 0, 255]; // Black background (0,0,0) -> (0,0,0)
+    let grid_color = [255, 255, 255, 255]; // White grid (255,255,255) -> (255,255,255)
+    let text_color = [255, 255, 0, 255]; // Cyan text (0, 255, 255) -> BGRA: (255, 255, 0)
 
     // Fill background
     for i in 0..(width * height) {
