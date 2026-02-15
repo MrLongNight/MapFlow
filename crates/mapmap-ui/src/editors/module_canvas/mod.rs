@@ -1993,11 +1993,7 @@ impl ModuleCanvas {
         let image = egui::ColorImage {
             size: [width as usize, height as usize],
             pixels,
-<<<<<<< HEAD
-            source_size: egui::vec2(width as f32, height as f32),
-=======
             source_size: egui::Vec2::new(width as f32, height as f32),
->>>>>>> main
         };
 
         Some(ctx.load_texture(
