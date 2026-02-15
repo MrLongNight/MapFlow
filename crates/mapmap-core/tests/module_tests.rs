@@ -164,7 +164,10 @@ fn test_comprehensive_source_sockets() {
     };
 
     // Helper to add part and check socket counts
-    let check_source = |module: &mut MapFlowModule, source_type: SourceType, expected_ins: usize, expected_outs: usize| {
+    let check_source = |module: &mut MapFlowModule,
+                        source_type: SourceType,
+                        expected_ins: usize,
+                        expected_outs: usize| {
         let part_type = ModulePartType::Source(source_type);
         let pid = module.add_part_with_type(part_type, (0.0, 0.0));
         let part = module.parts.iter().find(|p| p.id == pid).unwrap();
@@ -173,7 +176,12 @@ fn test_comprehensive_source_sockets() {
     };
 
     // 1. MediaFile
-    check_source(&mut module, SourceType::new_media_file("test.mp4".into()), 1, 1);
+    check_source(
+        &mut module,
+        SourceType::new_media_file("test.mp4".into()),
+        1,
+        1,
+    );
 
     // 2. Shader
     check_source(
@@ -190,7 +198,12 @@ fn test_comprehensive_source_sockets() {
     check_source(&mut module, SourceType::LiveInput { device_id: 0 }, 1, 1);
 
     // 4. NdiInput
-    check_source(&mut module, SourceType::NdiInput { source_name: None }, 1, 1);
+    check_source(
+        &mut module,
+        SourceType::NdiInput { source_name: None },
+        1,
+        1,
+    );
 
     // 5. BevyParticles (Has Spawn Trigger + Media Out = 1 In, 1 Out)
     check_source(

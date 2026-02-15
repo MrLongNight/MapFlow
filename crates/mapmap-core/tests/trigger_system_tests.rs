@@ -228,7 +228,10 @@ fn test_trigger_system_dynamic_indices() {
 
     // 4. Assert Correct Indices (Dynamic)
     // RMS should be at index 0 (because bands are skipped)
-    assert!(system.is_active(part_id, 0), "RMS should be at index 0 when bands are disabled");
+    assert!(
+        system.is_active(part_id, 0),
+        "RMS should be at index 0 when bands are disabled"
+    );
     // Peak should be at index 1
     assert!(system.is_active(part_id, 1), "Peak should be at index 1");
     // Beat should be at index 2
