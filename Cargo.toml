@@ -25,7 +25,7 @@ repository = "https://github.com/MrLongNight/MapFlow"
 [workspace.dependencies]
 ableton-link-rs = { version = "0.1" }
 anyhow = "1.0"
-arc-swap = "1.6"
+arc-swap = "1.8"
 
 # HTTP API
 axum = "0.7"
