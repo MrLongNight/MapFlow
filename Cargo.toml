@@ -91,7 +91,7 @@ tests_bin = "0.1"
 rayon = "1.8"
 
 # SVG rendering for icons
-resvg = "0.46"
+resvg = "0.47"
 ron = "0.12"
 rosc = "0.11"
 rust-embed = "8.0"
