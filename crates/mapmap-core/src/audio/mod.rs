@@ -157,6 +157,8 @@ pub struct AudioAnalyzer {
     // Channel for async access (kept for API compatibility)
     analysis_sender: Sender<AudioAnalysis>,
     analysis_receiver: Receiver<AudioAnalysis>,
+    // Scratch buffer for processing samples to avoid allocation
+    scratch_buffer: Vec<f32>,
 }
 
 impl AudioAnalyzer {
@@ -172,12 +174,13 @@ impl AudioAnalyzer {
         let (tx, rx) = unbounded();
 
         Self {
-            config,
+            config: config.clone(),
             v2,
             onset_history: VecDeque::with_capacity(10),
             last_analysis: AudioAnalysis::default(),
             analysis_sender: tx,
             analysis_receiver: rx,
+            scratch_buffer: Vec::with_capacity(config.fft_size),
         }
     }
 
@@ -206,20 +209,18 @@ impl AudioAnalyzer {
     pub fn process_samples(&mut self, samples: &[f32], timestamp: f64) -> AudioAnalysis {
         // Apply gain and noise gate locally before passing to V2
         // Note: V2 also sanitizes inputs but doesn't apply gain/gate
-        let processed_samples: Vec<f32> = samples
-            .iter()
-            .map(|&s| {
-                let p = s * self.config.gain;
-                if p.abs() < self.config.noise_gate {
-                    0.0
-                } else {
-                    p
-                }
-            })
-            .collect();
+        self.scratch_buffer.clear();
+        self.scratch_buffer.extend(samples.iter().map(|&s| {
+            let p = s * self.config.gain;
+            if p.abs() < self.config.noise_gate {
+                0.0
+            } else {
+                p
+            }
+        }));
 
         // Process in V2
-        self.v2.process_samples(&processed_samples, timestamp);
+        self.v2.process_samples(&self.scratch_buffer, timestamp);
         let v2_analysis = self.v2.get_latest_analysis();
 
         // Calculate Onset (V2 doesn't do it)
@@ -277,6 +278,10 @@ impl AudioAnalyzer {
 
     /// Get the latest analysis result
     pub fn get_latest_analysis(&mut self) -> AudioAnalysis {
+        // Drain channel to prevent memory leak, even though we push directly to last_analysis in process_samples
+        while let Ok(analysis) = self.analysis_receiver.try_recv() {
+            self.last_analysis = analysis;
+        }
         self.last_analysis.clone()
     }
 
