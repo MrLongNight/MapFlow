@@ -110,6 +110,7 @@ where
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
@@ -123,6 +124,9 @@ where
 =======
     let _index = queue.submit(Some(encoder.finish()));
 >>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/lina-ui-oscillator-polish-9227819679485877388
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -132,6 +136,7 @@ where
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -159,6 +164,9 @@ where
         .poll(wgpu::Maintain::WaitForSubmissionIndex(index))
         .panic_on_timeout();
 >>>>>>> origin/ux/safety-shield-standardization-4591480983604393855
+=======
+    device.poll(wgpu::Maintain::Wait);
+>>>>>>> origin/lina-ui-oscillator-polish-9227819679485877388
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

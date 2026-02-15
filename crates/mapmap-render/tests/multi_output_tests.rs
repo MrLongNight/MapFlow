@@ -118,6 +118,7 @@ async fn read_texture_data(
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
@@ -131,12 +132,16 @@ async fn read_texture_data(
 =======
     let _index = queue.submit(Some(encoder.finish()));
 >>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/lina-ui-oscillator-polish-9227819679485877388
 
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
     slice.map_async(wgpu::MapMode::Read, |result| {
         tx.send(result).unwrap();
     });
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -164,6 +169,9 @@ async fn read_texture_data(
         .poll(wgpu::Maintain::WaitForSubmissionIndex(index))
         .panic_on_timeout();
 >>>>>>> origin/ux/safety-shield-standardization-4591480983604393855
+=======
+    device.poll(wgpu::Maintain::Wait);
+>>>>>>> origin/lina-ui-oscillator-polish-9227819679485877388
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);

@@ -98,7 +98,6 @@ Response
     ui.painter().rect(
         fill_rect,
 Response
-        0.0,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
     );
@@ -584,6 +583,7 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
+
 
 
 

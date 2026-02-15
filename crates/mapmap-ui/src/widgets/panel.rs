@@ -49,7 +49,7 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect_filled(rect, 0.0, colors::LIGHTER_GREY);
+
 
     // 2. Accent Stripe (Left)
     let stripe_width = 3.0;
@@ -79,4 +79,5 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
 
     add_actions(&mut actions_ui);
 }
+
 
