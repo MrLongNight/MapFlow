@@ -107,10 +107,14 @@ async fn read_texture_data(
     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/jules-7419576384359145166-df4ba129
 
     // Map the buffer
     let slice = buffer.slice(..);
@@ -120,6 +124,7 @@ async fn read_texture_data(
     });
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
 =======
     device.poll(wgpu::Maintain::Wait);
@@ -127,6 +132,11 @@ async fn read_texture_data(
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
+=======
+    device
+        .poll(wgpu::Maintain::Wait)
+        .panic_on_timeout();
+>>>>>>> origin/jules-7419576384359145166-df4ba129
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.

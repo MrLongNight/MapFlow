@@ -115,16 +115,21 @@ async fn read_texture_data(
     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/jules-7419576384359145166-df4ba129
 
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
     slice.map_async(wgpu::MapMode::Read, |result| {
         tx.send(result).unwrap();
     });
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
@@ -134,6 +139,11 @@ async fn read_texture_data(
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
+=======
+    device
+        .poll(wgpu::Maintain::Wait)
+        .panic_on_timeout();
+>>>>>>> origin/jules-7419576384359145166-df4ba129
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);

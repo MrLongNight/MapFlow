@@ -107,10 +107,14 @@ where
     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
 =======
     queue.submit(Some(encoder.finish()));
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
+=======
+    let _index = queue.submit(Some(encoder.finish()));
+>>>>>>> origin/jules-7419576384359145166-df4ba129
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -122,6 +126,7 @@ where
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
 =======
     device.poll(wgpu::Maintain::Wait);
@@ -129,6 +134,11 @@ where
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
+=======
+    device
+        .poll(wgpu::Maintain::Wait)
+        .panic_on_timeout();
+>>>>>>> origin/jules-7419576384359145166-df4ba129
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

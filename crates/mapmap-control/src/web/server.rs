@@ -277,14 +277,14 @@ async fn security_headers(req: Request, next: Next) -> Response {
     );
 
     // Cache-Control
-    // Prevent sensitive information from being cached
+
     headers.insert(
         header::CACHE_CONTROL,
         HeaderValue::from_static("no-store, max-age=0"),
     );
 
     // Pragma
-    // Legacy HTTP/1.0 cache control
+
     headers.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
 
     response
@@ -391,5 +391,14 @@ mod tests {
             headers.get("Pragma").and_then(|h| h.to_str().ok()),
             Some("no-cache")
         );
+        assert_eq!(
+            headers.get("Cache-Control").and_then(|h| h.to_str().ok()),
+            Some("no-store, max-age=0")
+        );
+        assert_eq!(
+            headers.get("Pragma").and_then(|h| h.to_str().ok()),
+            Some("no-cache")
+        );
     }
 }
+
