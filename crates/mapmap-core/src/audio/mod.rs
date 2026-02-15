@@ -231,7 +231,11 @@ impl AudioAnalyzer {
         }
 
         let onset_detected = if self.onset_history.len() >= 4 {
-            let recent_avg: f32 = self.onset_history.iter().take(self.onset_history.len() - 1).sum::<f32>()
+            let recent_avg: f32 = self
+                .onset_history
+                .iter()
+                .take(self.onset_history.len() - 1)
+                .sum::<f32>()
                 / (self.onset_history.len() - 1) as f32;
             current_energy > recent_avg * 1.5 && current_energy > 0.05
         } else {
