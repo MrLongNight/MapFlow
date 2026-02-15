@@ -93,6 +93,14 @@ impl MapFlowModule {
                 flip_vertical: false,
                 reverse_playback: false,
             }),
+            PartType::Bevy3DShape => ModulePartType::Source(SourceType::Bevy3DShape {
+                shape_type: BevyShapeType::Cube,
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+                unlit: false,
+            }),
             PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
                 rate: 100.0,
                 lifetime: 2.0,
@@ -626,6 +634,16 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            ModulePartType::Source(SourceType::Bevy3DShape { .. }) => (
+                vec![ModuleSocket {
+                    name: "Trigger In".to_string(),
+                    socket_type: ModuleSocketType::Trigger,
+                }],
+                vec![ModuleSocket {
+                    name: "Media Out".to_string(),
+                    socket_type: ModuleSocketType::Media,
+                }],
+            ),
             ModulePartType::Source(SourceType::BevyParticles { .. }) => (
                 vec![ModuleSocket {
                     name: "Spawn Trigger".to_string(),
@@ -745,6 +763,8 @@ pub enum PartType {
     Source,
     /// Bevy Particles
     BevyParticles,
+    /// Bevy 3D Shapes
+    Bevy3DShape,
     /// Masks
     Mask,
     /// Effects and modifiers
@@ -1016,6 +1036,22 @@ impl AudioTriggerOutputConfig {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum BevyShapeType {
+    Cube,
+    Sphere,
+    Capsule,
+    Torus,
+    Cylinder,
+    Plane,
+}
+
+impl Default for BevyShapeType {
+    fn default() -> Self {
+        Self::Cube
+    }
+}
+
 /// Types of media sources
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SourceType {
@@ -1155,6 +1191,21 @@ pub enum SourceType {
         position: [f32; 3],
         /// Transform: Rotation [x, y, z] in degrees
         rotation: [f32; 3],
+    },
+    /// Bevy 3D Primitive Shape
+    Bevy3DShape {
+        /// Type of shape (Cube, Sphere, etc.)
+        shape_type: BevyShapeType,
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Scale [x, y, z]
+        scale: [f32; 3],
+        /// Color (RGBA)
+        color: [f32; 4],
+        /// Unlit material (no shading)
+        unlit: bool,
     },
     /// Specialized Bevy 3D Text
     Bevy3DText {
