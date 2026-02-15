@@ -276,10 +276,10 @@ use mapmap_core::{MeshType, MeshVertex};
 /// Helper to create a fullscreen quad mesh
 fn create_fullscreen_quad_mesh() -> Mesh {
     let vertices = vec![
-        MeshVertex::new(glam::vec2(-1.0, -1.0), glam::vec2(0.0, 1.0)),
-        MeshVertex::new(glam::vec2(1.0, -1.0), glam::vec2(1.0, 1.0)),
-        MeshVertex::new(glam::vec2(1.0, 1.0), glam::vec2(1.0, 0.0)),
-        MeshVertex::new(glam::vec2(-1.0, 1.0), glam::vec2(0.0, 0.0)),
+        MeshVertex::new(glam::vec2(0.0, 0.0), glam::vec2(0.0, 0.0)),
+        MeshVertex::new(glam::vec2(1.0, 0.0), glam::vec2(1.0, 0.0)),
+        MeshVertex::new(glam::vec2(1.0, 1.0), glam::vec2(1.0, 1.0)),
+        MeshVertex::new(glam::vec2(0.0, 1.0), glam::vec2(0.0, 1.0)),
     ];
     let indices = vec![0, 1, 2, 0, 2, 3];
     Mesh {
@@ -326,8 +326,9 @@ fn test_individual_output_transforms() {
             let (vertex_buffer, index_buffer) = mesh_renderer.create_mesh_buffers(&mesh);
             let texture_bind_group = mesh_renderer.get_texture_bind_group(&source_view);
 
-            // Scale the quad to half size. It should now occupy the center quadrant.
-            let transform = Mat4::from_scale(glam::Vec3::new(0.5, 0.5, 1.0));
+            // Scale the quad to half size and center it.
+            let transform = Mat4::from_translation(glam::vec3(0.25, 0.25, 0.0))
+                * Mat4::from_scale(glam::vec3(0.5, 0.5, 1.0));
             let uniform_buffer = mesh_renderer.create_uniform_buffer(transform, 1.0);
             let uniform_bind_group = mesh_renderer.create_uniform_bind_group(&uniform_buffer);
 
