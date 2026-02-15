@@ -221,12 +221,12 @@ impl ControllerOverlayPanel {
                 if let Ok(image_data) = std::fs::read(path) {
                     if let Ok(img) = image::load_from_memory(&image_data) {
                         let rgba = img.to_rgba8();
+                        let width = rgba.width() as f32;
+                        let height = rgba.height() as f32;
                         let size = [rgba.width() as usize, rgba.height() as usize];
                         let pixels = rgba.into_raw();
-                        let mut color_image =
-                            egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
-                        color_image.source_size =
-                            egui::Vec2::new(rgba.width() as f32, rgba.height() as f32);
+                        let mut color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+                        color_image.source_size = egui::Vec2::new(width, height);
                         return Some(ctx.load_texture(
                             name,
                             color_image,
