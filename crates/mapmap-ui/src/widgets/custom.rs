@@ -112,6 +112,130 @@ pub fn styled_slider(
         egui::StrokeKind::Middle,
     );
 
+    // Visual focus indicator
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            egui::CornerRadius::same(0),
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Outside,
+        );
+    }
+
+    // Value Text
+    let text = format!("{:.2}", value);
+    let text_color = if response.hovered() || response.dragged() {
+        Color32::WHITE
+    } else if is_changed {
+        colors::CYAN_ACCENT
+    } else {
+        Color32::from_gray(180)
+    };
+
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(12.0),
+        text_color,
+    );
+
+    response.on_hover_text("Double-click to reset")
+}
+
+pub fn styled_slider_log(
+    ui: &mut Ui,
+    value: &mut f32,
+    range: std::ops::RangeInclusive<f32>,
+    default_value: f32,
+) -> Response {
+    let desired_size = ui.spacing().slider_width * Vec2::new(1.0, 0.5);
+    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+    let visuals = ui.style().interact(&response);
+
+    // Keyboard support (multiplicative step)
+    if response.has_focus() {
+        let step_factor = if ui.input(|i| i.modifiers.shift) {
+            1.2 // Large step
+        } else {
+            1.05 // Small step
+        };
+
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            *value = (*value * step_factor).clamp(*range.start(), *range.end());
+            response.mark_changed();
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
+        {
+            *value = (*value / step_factor).clamp(*range.start(), *range.end());
+            response.mark_changed();
+        }
+    }
+
+    // Accessibility metadata
+    response.widget_info(|| {
+        let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "");
+        info.value = Some(*value as f64);
+        info
+    });
+
+    // Double-click to reset
+    if response.double_clicked() {
+        *value = default_value;
+        response.mark_changed();
+    } else if response.dragged() {
+        let min = *range.start();
+        let max = *range.end();
+        if let Some(mouse_pos) = response.interact_pointer_pos() {
+            let t = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), 0.0..=1.0);
+            if min > 0.0 && max > 0.0 {
+                *value = min * (max / min).powf(t);
+            } else {
+                *value = egui::remap_clamp(t, 0.0..=1.0, min..=max);
+            }
+            response.mark_changed();
+        }
+    }
+
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(0),
+        colors::DARKER_GREY, // Track background
+        visuals.bg_stroke,
+        egui::StrokeKind::Middle,
+    );
+
+    let min = *range.start();
+    let max = *range.end();
+    let t = if min > 0.0 && max > 0.0 && *value > 0.0 {
+        ((value.max(min) / min).ln()) / ((max / min).ln())
+    } else {
+        (*value - min) / (max - min)
+    };
+
+    let fill_rect = Rect::from_min_max(
+        rect.min,
+        Pos2::new(
+            lerp((rect.left())..=(rect.right()), t.clamp(0.0, 1.0)),
+            rect.max.y,
+        ),
+    );
+
+    // Accent color logic
+    let is_changed = (*value - default_value).abs() > 0.001;
+    let fill_color = if is_changed {
+        colors::CYAN_ACCENT
+    } else {
+        colors::CYAN_ACCENT.linear_multiply(0.7)
+    };
+
+    ui.painter().rect(
+        fill_rect,
+        egui::CornerRadius::same(0),
+        fill_color,
+        Stroke::new(0.0, Color32::TRANSPARENT),
+        egui::StrokeKind::Middle,    );
+
     // Value Text
     let text = format!("{:.2}", value);
     let text_color = if response.hovered() || response.dragged() {
@@ -175,45 +299,44 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
     let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
 
-    // Keyboard interaction
+    // Keyboard support
     if response.has_focus() {
-        let range_span = range.end() - range.start();
-        let step = range_span / 100.0;
-        let large_step = range_span / 10.0;
+        let range_span = *range.end() - *range.start();
+        let step = if ui.input(|i| i.modifiers.shift) {
+            range_span * 0.1
+        } else {
+            range_span * 0.01
+        };
 
-        let mut delta = 0.0;
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            *value = (*value + step).clamp(*range.start(), *range.end());
+            response.mark_changed();
+        }
         if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
         {
-            delta -= if ui.input(|i| i.modifiers.shift) {
-                large_step
-            } else {
-                step
-            };
-        }
-        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
-            delta += if ui.input(|i| i.modifiers.shift) {
-                large_step
-            } else {
-                step
-            };
-        }
-
-        if delta != 0.0 {
-            *value = (*value + delta).clamp(*range.start(), *range.end());
-            response.mark_changed();
+            *value = (*value - step).clamp(*range.start(), *range.end());            response.mark_changed();
         }
     }
 
+    // Accessibility metadata
+    response.widget_info(|| {
+        let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "Knob");
+        info.value = Some(*value as f64);
+        info
+    });
+
     if response.dragged() {
         let center = rect.center();
-        let mouse_pos = response.interact_pointer_pos().unwrap();
-        let angle = (mouse_pos - center).angle();
-        let new_value = egui::remap_clamp(
-            angle,
-            -std::f32::consts::PI..=std::f32::consts::PI,
-            *range.start()..=*range.end(),
-        );
-        *value = new_value;
+        if let Some(mouse_pos) = response.interact_pointer_pos() {
+            let angle = (mouse_pos - center).angle();
+            let new_value = egui::remap_clamp(
+                angle,
+                -std::f32::consts::PI..=std::f32::consts::PI,
+                *range.start()..=*range.end(),
+            );
+            *value = new_value;
+            response.mark_changed();
+        }
     }
 
     let painter = ui.painter();
@@ -223,6 +346,15 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
         visuals.bg_fill,
         visuals.bg_stroke,
     );
+
+    // Visual focus indicator
+    if response.has_focus() {
+        painter.circle_stroke(
+            rect.center(),
+            rect.width() / 2.0 + 2.0,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+        );
+    }
 
     let angle = egui::remap_clamp(
         *value,

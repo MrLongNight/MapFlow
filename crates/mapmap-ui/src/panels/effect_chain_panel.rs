@@ -3,6 +3,7 @@
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
 
+use crate::core::theme::colors;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
 use crate::responsive::ResponsiveLayout;
@@ -571,6 +572,7 @@ impl EffectChainPanel {
                             is_first,
                             is_last,
                             is_dragging,
+                            idx,
                             locale,
                             icon_manager,
                         );
@@ -675,6 +677,7 @@ impl EffectChainPanel {
         is_first: bool,
         is_last: bool,
         is_dragging: bool,
+        index: usize,
         locale: &LocaleManager,
         icon_manager: Option<&IconManager>,
     ) -> (
@@ -698,8 +701,10 @@ impl EffectChainPanel {
             Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
         } else if enabled {
             Color32::from_rgba_premultiplied(60, 80, 120, 200)
+        } else if index % 2 == 0 {
+            colors::DARK_GREY
         } else {
-            Color32::from_rgba_premultiplied(60, 60, 60, 150)
+            colors::DARKER_GREY
         };
 
         // Add stroke if dragging
@@ -712,8 +717,8 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .corner_radius(8.0)
-            .inner_margin(8.0)
+            .corner_radius(0.0)
+            .inner_margin(4.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
                 // Header row
@@ -753,13 +758,9 @@ impl EffectChainPanel {
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        // Delete button
-                        if let Some(mgr) = icon_manager {
-                            if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
-                                if ui.add(egui::Button::image(img)).clicked() {
-                                    remove = true;
-                                }
-                            }
+                        // Delete button (Hold to Confirm)
+                        if crate::widgets::custom::delete_button(ui) {
+                            remove = true;
                         }
 
                         // Move buttons
