@@ -61,3 +61,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-10 - Discrepancy in PR Reference for Bevy Particles
 **Erkenntnis:** CHANGELOG referenced PR #638 for "Bevy Particles", but git history shows merged commit 52bf7e7 is linked to PR #650.
 **Aktion:** Corrected CHANGELOG entry to point to #650 and updated ROADMAP to reflect the new feature implementation details.
+
+## 2026-02-15 - Missing Documentation for PR #696
+**Erkenntnis:** PR #696 (Safety & Consistency Update) was merged on 2026-02-15 but missing from `CHANGELOG.md`.
+**Aktion:** Tracker added the entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
