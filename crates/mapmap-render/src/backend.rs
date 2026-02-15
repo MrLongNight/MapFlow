@@ -78,21 +78,57 @@ impl WgpuBackend {
 
         if let Some(gpu_name) = preferred_gpu {
             if !gpu_name.is_empty() {
-                let adapters = instance.enumerate_adapters(backends);
-                for a in adapters {
-                    let info = a.get_info();
-                    if info.name == gpu_name {
-                        info!("Found preferred adapter: {}", info.name);
-                        adapter = Some(a);
-                        break;
+                if gpu_name.contains("Microsoft Basic Render Driver") {
+                    tracing::warn!("Ignoring preferred GPU '{}' as it is a software renderer. Falling back to auto-selection.", gpu_name);
+                } else {
+                    let adapters = instance.enumerate_adapters(backends);
+                    for a in adapters {
+                        let info = a.get_info();
+                        if info.name == gpu_name {
+                            info!("Found preferred adapter: {}", info.name);
+                            adapter = Some(a);
+                            break;
+                        }
+                    }
+                    if adapter.is_none() {
+                        tracing::warn!(
+                            "Preferred GPU '{}' not found, falling back to auto-selection.",
+                            gpu_name
+                        );
                     }
                 }
-                if adapter.is_none() {
-                    tracing::warn!(
-                        "Preferred GPU '{}' not found, falling back to auto-selection.",
-                        gpu_name
-                    );
+            }
+        }
+
+        if adapter.is_none() {
+            // Manual selection to prioritize Discrete > Integrated > CPU
+            let adapters = instance.enumerate_adapters(backends);
+            let mut best_adapter = None;
+            let mut best_score = -1;
+
+            for a in adapters {
+                let info = a.get_info();
+                let score = match info.device_type {
+                    wgpu::DeviceType::DiscreteGpu => 3,
+                    wgpu::DeviceType::IntegratedGpu => 2,
+                    wgpu::DeviceType::VirtualGpu => 1,
+                    wgpu::DeviceType::Cpu => 0,
+                    wgpu::DeviceType::Other => 0,
+                };
+
+                if score > best_score {
+                    best_score = score;
+                    best_adapter = Some(a);
                 }
+            }
+
+            if let Some(a) = best_adapter {
+                let info = a.get_info();
+                info!(
+                    "Auto-selected best adapter: {} ({:?})",
+                    info.name, info.device_type
+                );
+                adapter = Some(a);
             }
         }
 
