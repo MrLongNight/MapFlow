@@ -485,7 +485,6 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                             view: &target_view_arc,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                from_color(wgpu::Color::BLACK), // Helper? No manually
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
                             },
