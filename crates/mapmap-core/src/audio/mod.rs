@@ -101,7 +101,7 @@ pub struct AudioAnalysis {
     pub timestamp: f64,
 
     /// FFT magnitudes (frequency domain)
-    pub fft_magnitudes: Vec<f32>,
+    pub fft_magnitudes: Arc<Vec<f32>>,
 
     /// Frequency band energies
     pub band_energies: [f32; 7],
@@ -125,14 +125,14 @@ pub struct AudioAnalysis {
     pub tempo_bpm: Option<f32>,
 
     /// Raw waveform data (latest samples, for visualization)
-    pub waveform: Vec<f32>,
+    pub waveform: Arc<Vec<f32>>,
 }
 
 impl Default for AudioAnalysis {
     fn default() -> Self {
         Self {
             timestamp: 0.0,
-            fft_magnitudes: vec![0.0; 512],
+            fft_magnitudes: Arc::new(vec![0.0; 512]),
             band_energies: [0.0; 7],
             rms_volume: 0.0,
             peak_volume: 0.0,
@@ -140,7 +140,7 @@ impl Default for AudioAnalysis {
             beat_strength: 0.0,
             onset_detected: false,
             tempo_bpm: None,
-            waveform: vec![0.0; 512],
+            waveform: Arc::new(vec![0.0; 512]),
         }
     }
 }
@@ -323,7 +323,7 @@ impl AudioAnalyzer {
 
         AudioAnalysis {
             timestamp: self.current_time,
-            fft_magnitudes: self.magnitude_buffer.clone(),
+            fft_magnitudes: Arc::new(self.magnitude_buffer.clone()),
             band_energies,
             rms_volume,
             peak_volume,
@@ -331,12 +331,13 @@ impl AudioAnalyzer {
             beat_strength,
             onset_detected,
             tempo_bpm,
-            waveform: self
-                .input_buffer
-                .iter()
-                .take(self.config.fft_size)
-                .copied()
-                .collect(),
+            waveform: Arc::new(
+                self.input_buffer
+                    .iter()
+                    .take(self.config.fft_size)
+                    .copied()
+                    .collect(),
+            ),
         }
     }
 
@@ -773,7 +774,7 @@ mod tests {
             onset_detected: true,
             tempo_bpm: Some(120.0),
             band_energies: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7],
-            fft_magnitudes: vec![0.1; 512],
+            fft_magnitudes: Arc::new(vec![0.1; 512]),
             ..Default::default()
         };
 

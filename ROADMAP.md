@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-10 07:00
+> **Stand:** 2026-02-11 08:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -172,6 +172,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ AudioReactiveAnimationSystem
   * ✅ AudioMappingType (Volume, FrequencyBand, Beat, Onset, Spectral)
   * ✅ Audio-zu-Parameter-Mappings mit Smooth/Attack/Decay
+  * ✅ Performance Optimization: Arc<Vec> & Zero-Alloc Update (2026-02-11)
 
 * ✅ **Audio-Backend-Integration** (COMPLETED 2025-12-19)
   * ✅ CPAL-Backend verdrahtet (Feature: `audio` in `mapmap-core/Cargo.toml`)
