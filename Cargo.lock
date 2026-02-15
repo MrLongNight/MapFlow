@@ -3385,9 +3385,9 @@ checksum = "19fc433e8437a212d1b6f1e68c7824af3aed907da60afa994e7f542d18d12aa9"
 
 [[package]]
 name = "glam"
-version = "0.31.1"
+version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "556f6b2ea90b8d15a74e0e7bb41671c9bdf38cd9f78c284d750b9ce58a2b5be7"
+checksum = "34627c5158214743a374170fed714833fdf4e4b0cbcc1ea98417866a4c5d4441"
 dependencies = [
  "serde_core",
 ]
@@ -4439,7 +4439,7 @@ dependencies = [
  "egui_extras",
  "ffmpeg-next",
  "futures",
- "glam 0.31.1",
+ "glam 0.32.0",
  "hound",
  "hyper",
  "image 0.24.9",
@@ -4528,7 +4528,7 @@ dependencies = [
  "cpal 0.17.1",
  "crossbeam-channel",
  "dirs",
- "glam 0.31.1",
+ "glam 0.32.0",
  "hound",
  "num-complex",
  "num-traits",
@@ -4628,7 +4628,7 @@ dependencies = [
  "criterion",
  "crossbeam-channel",
  "futures-channel",
- "glam 0.31.1",
+ "glam 0.32.0",
  "image 0.24.9",
  "mapmap-core",
  "notify",
@@ -4658,7 +4658,7 @@ dependencies = [
  "egui_node_editor",
  "fluent",
  "fluent-langneg 0.14.2",
- "glam 0.31.1",
+ "glam 0.32.0",
  "image 0.24.9",
  "mapmap-control",
  "mapmap-core",
