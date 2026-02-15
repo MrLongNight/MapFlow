@@ -224,7 +224,7 @@ impl ControllerOverlayPanel {
                         let width = rgba.width();
                         let height = rgba.height();
                         let size = [width as usize, height as usize];
-                        
+
                         let pixels: Vec<egui::Color32> = rgba
                             .pixels()
                             .map(|p| egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
