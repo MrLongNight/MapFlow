@@ -38,7 +38,6 @@ bytemuck = { version = "1.14", features = ["derive"] }
 cbindgen = "0.29"
 cc = "1.2"
 chrono = { version = "0.4", features = ["serde"] }
-ecolor = "0.33.3"
 
 # Audio
 cpal = { version = "0.17", default-features = false }
@@ -138,6 +137,3 @@ inherits = "release"
 # incompatibility warning for Rust 2024 never type fallback. This will be
 # resolved when rfd is updated to v0.15+ (requires libwayland-dev system package).
 # The warning does not affect functionality in current Rust versions.
-
-[patch.crates-io]
-egui_node_editor = { path = "crates/vendor/egui_node_editor" }

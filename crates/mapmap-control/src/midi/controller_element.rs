@@ -23,8 +23,6 @@ pub enum ElementType {
     Encoder,
     /// Crossfader (horizontal fader)
     Crossfader,
-    /// LED indicator
-    Led,
 }
 
 /// Visual position and size of an element in the overlay
