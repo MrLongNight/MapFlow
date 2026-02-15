@@ -560,28 +560,24 @@ impl ModuleEvaluator {
         // keeping it as it was but maybe less frequently? leaving as is per instructions to preserve functionality)
 
         // Step 1: Evaluate all trigger nodes
-        // Collect (part_id, trigger_type clone) to avoid borrow issues
-        let triggers_to_eval: Vec<_> = module
-            .parts
-            .iter()
-            .filter_map(|part| {
-                if let ModulePartType::Trigger(trigger_type) = &part.part_type {
-                    Some((part.id, trigger_type.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
+        for part in &module.parts {
+            if let ModulePartType::Trigger(trigger_type) = &part.part_type {
+                // Get/Create the buffer
+                let values = self
+                    .cached_result
+                    .trigger_values
+                    .entry(part.id)
+                    .or_default();
+                values.clear();
 
-        for (part_id, trigger_type) in triggers_to_eval {
-            let mut values = Vec::new();
-            self.compute_trigger_output(
-                &trigger_type,
-                &self.audio_trigger_data,
-                self.start_time,
-                &mut values,
-            );
-            self.cached_result.trigger_values.insert(part_id, values);
+                Self::compute_trigger_output(
+                    trigger_type,
+                    &self.audio_trigger_data,
+                    self.start_time,
+                    &self.active_keys,
+                    values,
+                );
+            }
         }
 
         // Step 2: First propagation (Triggers -> Nodes)
@@ -1158,10 +1154,10 @@ impl ModuleEvaluator {
 
     /// Evaluate a trigger node and write output values to the provided buffer
     fn compute_trigger_output(
-        &self,
         trigger_type: &TriggerType,
         audio_data: &AudioTriggerData,
         start_time: Instant,
+        active_keys: &std::collections::HashSet<String>,
         output: &mut Vec<f32>,
     ) {
         match trigger_type {
@@ -1261,7 +1257,7 @@ impl ModuleEvaluator {
             } => {
                 // Check if the key is currently pressed
                 // key_code is stored as the winit KeyCode debug format (e.g., "KeyA")
-                let is_pressed = self.active_keys.contains(key_code);
+                let is_pressed = active_keys.contains(key_code);
                 // TODO: Check modifiers (Ctrl, Shift, Alt) if needed
                 let _ = modifiers; // Suppress unused warning for now
                 output.push(if is_pressed { 1.0 } else { 0.0 });
@@ -1409,21 +1405,23 @@ mod tests_logic {
     fn test_compute_trigger_output_beat() {
         let mut output = Vec::new();
         let data_true = create_audio_data(true);
-        let evaluator = ModuleEvaluator::new();
-        evaluator.compute_trigger_output(
+        let keys = std::collections::HashSet::new();
+        ModuleEvaluator::compute_trigger_output(
             &TriggerType::Beat,
             &data_true,
             Instant::now(),
+            &keys,
             &mut output,
         );
         assert_eq!(output, vec![1.0]);
 
         output.clear();
         let data_false = create_audio_data(false);
-        evaluator.compute_trigger_output(
+        ModuleEvaluator::compute_trigger_output(
             &TriggerType::Beat,
             &data_false,
             Instant::now(),
+            &keys,
             &mut output,
         );
         assert_eq!(output, vec![0.0]);
@@ -1433,6 +1431,7 @@ mod tests_logic {
     fn test_compute_trigger_output_audio_fft() {
         let mut output = Vec::new();
         let data = create_audio_data(true);
+        let keys = std::collections::HashSet::new();
 
         let config = AudioTriggerOutputConfig {
             frequency_bands: true,
@@ -1442,8 +1441,7 @@ mod tests_logic {
             inverted_outputs: vec!["Bass Out".to_string()].into_iter().collect(),
         };
 
-        let evaluator = ModuleEvaluator::new();
-        evaluator.compute_trigger_output(
+        ModuleEvaluator::compute_trigger_output(
             &TriggerType::AudioFFT {
                 band: AudioBand::Bass,
                 threshold: 0.5,
@@ -1451,6 +1449,7 @@ mod tests_logic {
             },
             &data,
             Instant::now(),
+            &keys,
             &mut output,
         );
 
@@ -1474,6 +1473,7 @@ mod tests_logic {
     fn test_compute_trigger_output_fixed() {
         let mut output = Vec::new();
         let data = create_audio_data(false);
+        let keys = std::collections::HashSet::new();
 
         // Interval 1000ms. Pulse duration 100ms.
         // At 50ms: Phase 50 < 100 -> 1.0
@@ -1482,14 +1482,14 @@ mod tests_logic {
         // Emulate 50ms elapsed
         let start_past_50 = Instant::now() - Duration::from_millis(50);
         output.clear();
-        let evaluator = ModuleEvaluator::new();
-        evaluator.compute_trigger_output(
+        ModuleEvaluator::compute_trigger_output(
             &TriggerType::Fixed {
                 interval_ms: 1000,
                 offset_ms: 0,
             },
             &data,
             start_past_50,
+            &keys,
             &mut output,
         );
         assert_eq!(output[0], 1.0);
@@ -1497,13 +1497,14 @@ mod tests_logic {
         // 150ms
         let start_past_150 = Instant::now() - Duration::from_millis(150);
         output.clear();
-        evaluator.compute_trigger_output(
+        ModuleEvaluator::compute_trigger_output(
             &TriggerType::Fixed {
                 interval_ms: 1000,
                 offset_ms: 0,
             },
             &data,
             start_past_150,
+            &keys,
             &mut output,
         );
         assert_eq!(output[0], 0.0);
