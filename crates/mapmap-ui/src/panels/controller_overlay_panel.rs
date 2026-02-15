@@ -234,9 +234,7 @@ impl ControllerOverlayPanel {
                             size,
                             pixels,
 source_size: egui::Vec2::new(width as f32, height as f32),
-=======
                             source_size: egui::Vec2::new(size[0] as f32, size[1] as f32),
->>>>>>> origin/perf/optimize-trigger-eval-5025564681143441822
                         };
 
                         return Some(ctx.load_texture(
