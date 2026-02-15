@@ -108,3 +108,40 @@ pub struct Bevy3DText {
     pub color: [f32; 4],
     pub alignment: BevyTextAlignment,
 }
+
+#[derive(Reflect, Clone, PartialEq)]
+pub enum BevyCameraMode {
+    Orbit {
+        radius: f32,
+        speed: f32,
+        target: Vec3,
+        height: f32,
+    },
+    Fly {
+        speed: f32,
+        sensitivity: f32,
+    },
+    Static {
+        position: Vec3,
+        look_at: Vec3,
+    },
+}
+
+impl Default for BevyCameraMode {
+    fn default() -> Self {
+        Self::Orbit {
+            radius: 10.0,
+            speed: 20.0,
+            target: Vec3::ZERO,
+            height: 2.0,
+        }
+    }
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BevyCamera {
+    pub mode: BevyCameraMode,
+    pub fov: f32,
+    pub active: bool,
+}

@@ -62,12 +62,18 @@ impl BevyRunner {
         app.register_type::<BevyHexGrid>();
         app.register_type::<BevyParticles>();
         app.register_type::<Bevy3DText>();
+        app.register_type::<BevyCamera>();
 
         // Register systems
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
-            (audio_reaction_system, hex_grid_system, text_3d_system),
+            (
+                audio_reaction_system,
+                hex_grid_system,
+                text_3d_system,
+                camera_control_system,
+            ),
         );
 
         let render_app = app.sub_app_mut(bevy::render::RenderApp);
@@ -179,6 +185,65 @@ impl BevyRunner {
                         ViewVisibility::default(),
                     ));
                 }
+            }
+
+            if let mapmap_core::module::ModulePartType::Source(
+                mapmap_core::module::SourceType::BevyCamera {
+                    mode,
+                    fov,
+                    active,
+                },
+            ) = &part.part_type
+            {
+                active_ids.insert(part.id);
+
+                let entity = if let Some(&e) = mapping.get(&part.id) {
+                    if world.get_entity(e).is_ok() {
+                        e
+                    } else {
+                        world.spawn_empty().id()
+                    }
+                } else {
+                    world.spawn_empty().id()
+                };
+                mapping.insert(part.id, entity);
+
+                let mut entity_mut = world.entity_mut(entity);
+
+                // Convert Core mode to Component mode
+                let comp_mode = match mode {
+                    mapmap_core::module::BevyCameraMode::Orbit {
+                        radius,
+                        speed,
+                        target,
+                        height,
+                    } => crate::components::BevyCameraMode::Orbit {
+                        radius: *radius,
+                        speed: *speed,
+                        target: Vec3::from(*target),
+                        height: *height,
+                    },
+                    mapmap_core::module::BevyCameraMode::Fly { speed, sensitivity } => {
+                        crate::components::BevyCameraMode::Fly {
+                            speed: *speed,
+                            sensitivity: *sensitivity,
+                        }
+                    }
+                    mapmap_core::module::BevyCameraMode::Static { position, look_at } => {
+                        crate::components::BevyCameraMode::Static {
+                            position: Vec3::from(*position),
+                            look_at: Vec3::from(*look_at),
+                        }
+                    }
+                };
+
+                let new_camera_comp = crate::components::BevyCamera {
+                    mode: comp_mode,
+                    fov: *fov,
+                    active: *active,
+                };
+
+                entity_mut.insert(new_camera_comp);
             }
         }
 
