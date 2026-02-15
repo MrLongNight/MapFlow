@@ -5,8 +5,8 @@ use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::{
-    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout, TextureDescriptor,
-    TextureUsages,
+    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    TextureDescriptor, TextureUsages,
 };
 
 // Helper function to run a test with a given texture setup
