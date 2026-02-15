@@ -2113,11 +2113,11 @@ impl ModuleCanvas {
             ));
         }
 
-        let mut image = egui::ColorImage::new(
-            [width as usize, height as usize],
-            egui::Color32::TRANSPARENT,
-        );
-        image.pixels = pixels;
+        let image = egui::ColorImage {
+            size: [width as usize, height as usize],
+            pixels,
+            source_size: egui::Vec2::new(width as f32, height as f32),
+        };
 
         Some(ctx.load_texture(
             path.file_name()?.to_string_lossy(),
