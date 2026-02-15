@@ -57,7 +57,20 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libasound2-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libavfilter-dev \
+            libavdevice-dev \
+            libswscale-dev \
+            libswresample-dev \
+            pkg-config \
+            clang \
+            nasm
 
       - name: Check Formatting
         id: fmt
@@ -66,7 +79,7 @@ jobs:
 
       - name: Check Clippy
         id: clippy
-        run: cargo clippy --workspace --features "mapmap-io/ci-linux" --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux,ffmpeg" -- -D warnings
         continue-on-error: true
 
       - name: Install cargo-sort
@@ -149,10 +162,6 @@ jobs:
         with:
           components: llvm-tools-preview
 
-      - name: Install Setup Script
-        run: bash scripts/Final-Prepare-PreCommit.sh
-        continue-on-error: true
-
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
@@ -164,6 +173,10 @@ jobs:
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
             ffmpeg
 
+      - name: Install Setup Script
+        run: bash scripts/Final-Prepare-PreCommit.sh
+        continue-on-error: true
+
       - name: Install NDI SDK
         run: |
           wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v5_Linux.tar.gz
@@ -173,20 +186,19 @@ jobs:
           echo "LD_LIBRARY_PATH=$HOME/NDI SDK for Linux/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Install cargo-nextest
-        uses: cargo-bins/cargo-binstall@main
-
-      - name: Install nextest
-        run: cargo binstall -y cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
 
       - name: Build (Release)
         id: build
-        run: cargo build --release --verbose --features "mapmap-io/ci-linux"
+        run: cargo build --release --verbose --features "mapmap-io/ci-linux,ffmpeg"
         continue-on-error: true
 
       - name: Test (Nextest)
         id: test
         if: ${{ github.event.inputs.skip_tests != 'true' }}
-        run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
+        run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux,ffmpeg"
         continue-on-error: true
 
       - name: Report Build/Test Issues
@@ -241,7 +253,7 @@ jobs:
           }
           exit 1
 
-  # ═════════════════��═════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════════════
   # FINAL GATE & ERROR REPORTING
   # ═══════════════════════════════════════════════════════════════
   validation-success:

@@ -114,7 +114,10 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+    let _ = device.poll(wgpu::PollType::Wait {
+        submission_index: None,
+        timeout: None,
+    });
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.
