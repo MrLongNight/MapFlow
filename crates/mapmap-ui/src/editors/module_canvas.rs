@@ -2122,7 +2122,11 @@ impl ModuleCanvas {
         Some(ctx.load_texture(
             path.file_name()?.to_string_lossy(),
             image,
-            egui::TextureOptions::LINEAR,
+            egui::TextureOptions {
+                magnification: egui::TextureFilter::Linear,
+                minification: egui::TextureFilter::Linear,
+                ..Default::default()
+            },
         ))
     }
 

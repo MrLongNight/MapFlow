@@ -208,7 +208,11 @@ impl IconManager {
         let texture = ctx.load_texture(
             format!("icon_{}", path.file_stem()?.to_string_lossy()),
             image,
-            egui::TextureOptions::LINEAR,
+            egui::TextureOptions {
+                magnification: egui::TextureFilter::Linear,
+                minification: egui::TextureFilter::Linear,
+                ..Default::default()
+            },
         );
 
         Some(texture)
