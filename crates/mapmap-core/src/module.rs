@@ -2207,17 +2207,23 @@ impl ModuleManager {
 
     /// Get the next available unique name for a module
     pub fn get_next_available_name(&self, base_name: &str) -> String {
-        let mut name = base_name.to_string();
         let mut i = 1;
-        while self.modules.values().any(|m| m.name == name) {
-            name = format!("{} {}", base_name, i);
+        loop {
+            let name = format!("{} {}", base_name, i);
+            if !self.modules.values().any(|m| m.name == name) {
+                return name;
+            }
             i += 1;
         }
-        name
     }
 
     /// Create a new module
-    pub fn create_module(&mut self, name: String) -> ModuleId {
+    pub fn create_module(&mut self, mut name: String) -> ModuleId {
+        // Enforce uniqueness to prevent duplicate names
+        if self.modules.values().any(|m| m.name == name) {
+            name = self.get_next_available_name(&name);
+        }
+
         let id = self.next_module_id;
         self.next_module_id += 1;
 
@@ -3096,4 +3102,26 @@ mod additional_tests {
         }
         assert!(target.invert);
     }
+}
+
+#[test]
+fn test_issue_535_fix() {
+    let mut manager = ModuleManager::new();
+
+    // 1. First suggested name should be "New Module 1" (not "New Module")
+    let name1 = manager.get_next_available_name("New Module");
+    assert_eq!(name1, "New Module 1");
+    manager.create_module(name1);
+
+    // 2. Second suggested name should be "New Module 2"
+    let name2 = manager.get_next_available_name("New Module");
+    assert_eq!(name2, "New Module 2");
+    manager.create_module(name2);
+
+    // 3. Test duplicate enforcement in create_module
+    // If we try to force create "New Module 2" again (which exists), it should be renamed
+    let id3 = manager.create_module("New Module 2".to_string());
+    let module3 = manager.get_module(id3).unwrap();
+    // Should be "New Module 2 1" because "New Module 2" is taken, so we append " 1"
+    assert_eq!(module3.name, "New Module 2 1");
 }
