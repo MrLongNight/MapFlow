@@ -79,5 +79,3 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
 
     add_actions(&mut actions_ui);
 }
-
-
