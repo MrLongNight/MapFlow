@@ -28,28 +28,65 @@ impl TriggerSystem {
                 if let ModulePartType::Trigger(TriggerType::AudioFFT {
                     band: _,
                     threshold,
-                    output_config: _,
+                    output_config,
                 }) = &part.part_type
                 {
-                    // Check each of the 9 frequency bands
-                    for i in 0..9 {
-                        if audio_data.band_energies[i] > *threshold {
-                            self.active_triggers.insert((part.id, i));
+                    let mut socket_index = 0;
+                    let mut any_output_enabled = false;
+
+                    // 1. Frequency Bands (9 outputs)
+                    if output_config.frequency_bands {
+                        any_output_enabled = true;
+                        for i in 0..9 {
+                            if audio_data.band_energies[i] > *threshold {
+                                self.active_triggers.insert((part.id, socket_index));
+                            }
+                            socket_index += 1;
                         }
                     }
-                    // Check RMS, Peak, Beat, BPM
-                    if audio_data.rms_volume > *threshold {
-                        self.active_triggers.insert((part.id, 9));
+
+                    // 2. Volume Outputs (RMS, Peak)
+                    if output_config.volume_outputs {
+                        any_output_enabled = true;
+                        // RMS
+                        if audio_data.rms_volume > *threshold {
+                            self.active_triggers.insert((part.id, socket_index));
+                        }
+                        socket_index += 1;
+
+                        // Peak
+                        if audio_data.peak_volume > *threshold {
+                            self.active_triggers.insert((part.id, socket_index));
+                        }
+                        socket_index += 1;
                     }
-                    if audio_data.peak_volume > *threshold {
-                        self.active_triggers.insert((part.id, 10));
+
+                    // 3. Beat Output
+                    if output_config.beat_output {
+                        any_output_enabled = true;
+                        if audio_data.beat_detected {
+                            self.active_triggers.insert((part.id, socket_index));
+                        }
+                        socket_index += 1;
                     }
-                    if audio_data.beat_detected {
-                        self.active_triggers.insert((part.id, 11));
+
+                    // 4. BPM Output (Reserved Index)
+                    if output_config.bpm_output {
+                        any_output_enabled = true;
+                        // BPM is a continuous value, not a trigger event.
+                        // However, we must reserve the socket index to maintain alignment
+                        // with the module graph (which generates a "BPM Out" socket).
+                        // No trigger is inserted here.
+                        // socket_index += 1; // Unused increment (BPM is last)
                     }
-                    // For BPM, the trigger is usually just the beat itself.
-                    // A continuous BPM value doesn't make sense as a trigger here.
-                    // The "Beat Out" socket (index 11) handles the primary beat trigger.
+
+                    // Fallback: If no outputs are enabled, we default to a single Beat output (index 0)
+                    if !any_output_enabled && audio_data.beat_detected {
+                        self.active_triggers.insert((part.id, 0));
+                    }
+
+                    // Silence unused assignment warning for the last increment
+                    let _ = socket_index;
                 }
             }
         }
