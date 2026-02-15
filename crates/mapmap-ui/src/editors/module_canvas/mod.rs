@@ -19,7 +19,6 @@ use self::types::*;
 use egui_node_editor::*;
 use std::borrow::Cow;
 
-
 impl NodeTemplateTrait for MyNodeTemplate {
     type NodeData = MyNodeData;
     type DataType = MyDataType;
