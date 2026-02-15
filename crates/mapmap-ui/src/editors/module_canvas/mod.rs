@@ -10,7 +10,7 @@ use mapmap_core::{
     module::{
         BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType, MapFlowModule,
         MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
-        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType,
+        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType, BevyCameraMode,
     },
 };
 
@@ -781,6 +781,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
                                                 SourceType::BevyParticles { .. } => "✨ Particles",
                                                 SourceType::Bevy3DText { .. } => "📝 3D Text",
+                                                SourceType::BevyCamera { .. } => "🎥 Bevy Camera",
                                             };
 
                                             let mut next_type = None;
