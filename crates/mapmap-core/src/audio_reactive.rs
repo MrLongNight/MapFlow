@@ -350,7 +350,8 @@ impl AudioReactiveAnimationSystem {
         let audio_values = self.audio_controller.update(audio, current_time);
 
         // Blend values based on blend mode
-        let final_values = Self::blend_values(&animated_values, audio_values, blend_mode, blend_factor);
+        let final_values =
+            Self::blend_values(&animated_values, audio_values, blend_mode, blend_factor);
 
         // Apply to shader graph
         for (param_path, value) in final_values {
@@ -403,7 +404,8 @@ impl AudioReactiveAnimationSystem {
         // Process all keys from animated map
         for (param_path, &anim_value) in animated {
             let audio_value = audio.get(param_path).copied().unwrap_or(0.0);
-            let blended = Self::calculate_blended(anim_value, audio_value, blend_mode, blend_factor);
+            let blended =
+                Self::calculate_blended(anim_value, audio_value, blend_mode, blend_factor);
             result.insert(param_path.clone(), blended);
         }
 
