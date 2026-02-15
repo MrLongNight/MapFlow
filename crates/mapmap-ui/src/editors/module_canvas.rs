@@ -2125,6 +2125,7 @@ impl ModuleCanvas {
                 magnification: egui::TextureFilter::Linear,
                 minification: egui::TextureFilter::Linear,
                 wrap_mode: egui::TextureWrapMode::ClampToEdge,
+                mipmap_mode: None,
             },
         ))
     }
