@@ -69,7 +69,7 @@ impl WgpuBackend {
     ) -> Result<Self> {
         info!("Initializing wgpu backend");
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
             ..Default::default()
         });
@@ -103,7 +103,8 @@ impl WgpuBackend {
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await;
+                .await
+                .ok();
         }
 
         let adapter =
