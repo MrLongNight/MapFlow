@@ -101,6 +101,7 @@ serde_json = "1.0"
 
 # Crypto
 sha2 = "0.10"
+tests_bin = "0.1"
 # Error handling
 thiserror = "1.0"
 tiny-skia = "0.12"

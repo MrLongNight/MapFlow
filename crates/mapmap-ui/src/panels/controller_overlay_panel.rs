@@ -233,12 +233,10 @@ impl ControllerOverlayPanel {
                         let color_image = egui::ColorImage {
                             size,
                             pixels,
-<<<<<<< HEAD
-                            source_size: egui::Vec2::new(width as f32, height as f32),
-                        };
+source_size: egui::Vec2::new(width as f32, height as f32),
 =======
-                            source_size: egui::vec2(width as f32, height as f32),
->>>>>>> origin/ui/mapping-panel-modernize-16204580659367847472
+                            source_size: egui::Vec2::ZERO,
+>>>>>>> origin/sentinel-security-fix-websocket-dos-7164900302885316629
                         };
 
                         return Some(ctx.load_texture(
@@ -1274,3 +1272,4 @@ fn ui_time_seconds() -> f64 {
         .unwrap_or_default()
         .as_secs_f64()
 }
+

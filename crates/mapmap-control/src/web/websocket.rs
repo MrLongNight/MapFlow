@@ -61,7 +61,9 @@ pub enum WsServerMessage {
 /// WebSocket upgrade handler
 #[cfg(feature = "http-api")]
 pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
-    ws.on_upgrade(|socket| handle_socket(socket, state))
+    // Set max message size to prevent DoS attacks
+    ws.max_message_size(MAX_MESSAGE_SIZE)
+        .on_upgrade(|socket| handle_socket(socket, state))
 }
 
 #[cfg(not(feature = "http-api"))]

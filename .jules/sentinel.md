@@ -47,3 +47,13 @@
 **Vulnerability:** Browser-based WebSocket clients could not authenticate with the API server because the `extract_api_key` logic relied on standard HTTP headers (`Authorization`, `X-API-Key`) which browsers cannot set for WebSocket connections. This forced developers to potentially disable authentication for WebSocket endpoints.
 **Learning:** Browser WebSocket APIs are restrictive. Authentication tokens must be transmitted via the `Sec-WebSocket-Protocol` header (subprotocol negotiation) as a standard workaround.
 **Prevention:** Always support `Sec-WebSocket-Protocol` parsing in API key extraction logic for WebSocket endpoints. Implement specific parsing for custom subprotocol formats (e.g., `mapmap.auth.<TOKEN>`).
+
+## 2026-10-31 - WebSocket DoS and Compliance Fixes
+**Vulnerability:** The WebSocket handler in `mapmap-control` allowed unlimited message sizes (defaulting to underlying library limits which can be large), exposing the server to Memory Exhaustion DoS. Additionally, the server sent `Strict-Transport-Security` (HSTS) headers over plain HTTP, violating RFC 6797 and potentially causing availability issues for local development.
+**Learning:** Application-level limits are often applied too late (after full message buffering). Proper resource limits must be configured at the protocol/transport layer (e.g., `max_message_size` in the WebSocket upgrade handshake). Security headers like HSTS must be context-aware; sending them blindly on insecure transports is harmful.
+**Prevention:** Configure `max_message_size` on all WebSocket endpoints. Remove HSTS from plain HTTP servers and rely on TLS termination proxies to handle strict transport security.
+
+## 2026-10-31 - Insufficient Validation of Custom Targets
+**Vulnerability:** `ControlTarget::Custom` allowed arbitrary strings including path traversal characters (`/`, `..`, `\`). While no direct exploit was found, this permissive validation could lead to injection or path traversal vulnerabilities if these strings are ever used in file system or command contexts.
+**Learning:** Input validation must be restrictive by default. "Custom" does not mean "Unsafe". Even internal identifiers should be validated against a strict character set (e.g., alphanumeric) to prevent future misuse.
+**Prevention:** Enforce strict validation (disallow control chars, path separators) on all user-supplied identifiers at the type level (`validate()` method).
