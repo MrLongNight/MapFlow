@@ -18,7 +18,7 @@ pub fn cyber_panel_frame(_style: &egui::Style) -> Frame {
     Frame {
         inner_margin: egui::Margin::ZERO, // Header handles spacing
         outer_margin: egui::Margin::ZERO,
-        corner_radius: egui::CornerRadius::same(0),
+        rounding: egui::Rounding::ZERO,
         shadow: egui::Shadow::NONE,
         fill: colors::DARK_GREY,
         stroke: Stroke::new(1.0, colors::STROKE_GREY),
@@ -49,16 +49,12 @@ pub fn render_panel_header(ui: &mut Ui, title: &str, add_actions: impl FnOnce(&m
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
+    painter.rect_filled(rect, 0.0, colors::LIGHTER_GREY);
 
     // 2. Accent Stripe (Left)
     let stripe_width = 3.0;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(stripe_width, rect.height()));
-    painter.rect_filled(
-        stripe_rect,
-        egui::CornerRadius::same(0),
-        colors::CYAN_ACCENT,
-    );
+    painter.rect_filled(stripe_rect, 0.0, colors::CYAN_ACCENT);
 
     // 3. Title Text
     let text_pos = Pos2::new(rect.min.x + stripe_width + 8.0, rect.center().y);

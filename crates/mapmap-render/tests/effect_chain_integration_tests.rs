@@ -4,8 +4,8 @@ use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use wgpu::util::DeviceExt;
 use wgpu::{
-    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
-    TextureDescriptor, TextureUsages,
+    CommandEncoderDescriptor, Extent3d, ImageCopyBuffer, ImageDataLayout, TextureDescriptor,
+    TextureUsages,
 };
 
 // Helper function to run a test with a given texture setup
@@ -91,9 +91,9 @@ where
 
     encoder.copy_texture_to_buffer(
         output_texture.as_image_copy(),
-        TexelCopyBufferInfo {
+        ImageCopyBuffer {
             buffer: &output_buffer,
-            layout: TexelCopyBufferLayout {
+            layout: ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(height),
@@ -106,7 +106,11 @@ where
         },
     );
 
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
+=======
+    queue.submit(Some(encoder.finish()));
+>>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -117,10 +121,14 @@ where
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
 <<<<<<< HEAD
+<<<<<<< HEAD
     // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/ux/accessibility-custom-widgets-3047621584255357057
+=======
+    device.poll(wgpu::Maintain::Wait);
+>>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

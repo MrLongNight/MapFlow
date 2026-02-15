@@ -50,14 +50,14 @@ fn create_solid_color_texture(
     }
 
     queue.write_texture(
-        wgpu::TexelCopyTextureInfo {
+        wgpu::ImageCopyTexture {
             texture: &texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         &data,
-        wgpu::TexelCopyBufferLayout {
+        wgpu::ImageDataLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -99,9 +99,9 @@ async fn read_texture_data(
 
     encoder.copy_texture_to_buffer(
         texture.as_image_copy(),
-        wgpu::TexelCopyBufferInfo {
+        wgpu::ImageCopyBuffer {
             buffer: &buffer,
-            layout: wgpu::TexelCopyBufferLayout {
+            layout: wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -114,7 +114,11 @@ async fn read_texture_data(
         },
     );
 
+<<<<<<< HEAD
     let _index = queue.submit(Some(encoder.finish()));
+=======
+    queue.submit(Some(encoder.finish()));
+>>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
 
     let slice = buffer.slice(..);
     let (tx, rx) = futures_channel::oneshot::channel();
@@ -122,10 +126,14 @@ async fn read_texture_data(
         tx.send(result).unwrap();
     });
 <<<<<<< HEAD
+<<<<<<< HEAD
     // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
 =======
     device.poll(wgpu::Maintain::Wait);
 >>>>>>> origin/ux/accessibility-custom-widgets-3047621584255357057
+=======
+    device.poll(wgpu::Maintain::Wait);
+>>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);

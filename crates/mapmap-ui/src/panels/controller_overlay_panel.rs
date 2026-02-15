@@ -749,13 +749,8 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         } else {
             // Fallback: dark background
             let bg_color = Color32::from_rgb(30, 30, 35);
-            painter.rect_filled(rect, 4, bg_color);
-            painter.rect_stroke(
-                rect,
-                4,
-                Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-                egui::StrokeKind::Inside,
-            );
+            painter.rect_filled(rect, 4.0, bg_color);
+            painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -961,7 +956,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                             painter.circle_stroke(elem_rect.center(), radius, stroke);
                         }
                         _ => {
-                            painter.rect_stroke(elem_rect, 0, stroke, egui::StrokeKind::Inside);
+                            painter.rect_stroke(elem_rect, 0.0, stroke);
                         }
                     }
 
@@ -1061,7 +1056,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     painter.circle_stroke(elem_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4, stroke, egui::StrokeKind::Inside);
+                    painter.rect_stroke(elem_rect, 4.0, stroke);
                 }
             }
         }
