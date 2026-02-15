@@ -54,7 +54,6 @@ impl App {
             backend.queue.clone(),
             backend.surface_format(),
         )?;
-
         let mesh_renderer = MeshRenderer::new(backend.device.clone(), backend.surface_format())?;
         let mesh_buffer_cache = MeshBufferCache::new();
         let quad_renderer = QuadRenderer::new(&backend.device, backend.surface_format())?;

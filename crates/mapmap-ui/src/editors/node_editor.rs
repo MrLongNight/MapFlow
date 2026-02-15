@@ -351,7 +351,7 @@ impl NodeEditor {
             rect,
             4,
             Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-            egui::StrokeKind::Middle,
+            egui::StrokeKind::Inside,
         );
 
         // Title bar
