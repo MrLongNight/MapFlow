@@ -63,7 +63,7 @@ rosc = { workspace = true }
 rustfft = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-sysinfo = "0.33"
+sysinfo = "0.38"
 thiserror = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
