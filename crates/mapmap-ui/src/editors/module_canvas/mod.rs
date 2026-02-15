@@ -3255,8 +3255,22 @@ impl ModuleCanvas {
         // Draw grid
         self.draw_grid(&painter, canvas_rect);
 
+        // Empty State Guidance
+        if module.parts.is_empty() {
+            ui.painter().text(
+                response.rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "🖱 Right-Click to Add Node",
+                egui::FontId::proportional(24.0),
+                ui.visuals().weak_text_color(),
+            );
+        }
+
         // Draw connections first (behind nodes)
-        self.draw_connections(ui, &painter, module, &to_screen);
+        if let Some(idx_to_remove) = self.draw_connections(ui, &painter, module, &to_screen) {
+            let conn = module.connections[idx_to_remove].clone();
+            actions.push(UIAction::DeleteConnection(module_id, conn));
+        }
 
         // Collect socket positions for hit detection
         let mut all_sockets: Vec<SocketInfo> = Vec::new();
@@ -4452,7 +4466,8 @@ impl ModuleCanvas {
         painter: &egui::Painter,
         module: &MapFlowModule,
         to_screen: &F,
-    ) where
+    ) -> Option<usize>
+    where
         F: Fn(Pos2) -> Pos2,
     {
         let node_width = 200.0;
@@ -4461,6 +4476,10 @@ impl ModuleCanvas {
         let socket_spacing = 22.0;
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
         let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
+        let alt_held = ui.input(|i| i.modifiers.alt);
+        let primary_clicked = ui.input(|i| i.pointer.primary_clicked());
+
+        let mut remove_idx = None;
 
         for (conn_idx, conn) in module.connections.iter().enumerate() {
             // Find source and target parts
@@ -4568,15 +4587,26 @@ impl ModuleCanvas {
                 }
 
                 // Handle Interaction
-                if is_hovered && secondary_clicked {
-                    self.context_menu_connection = Some(conn_idx);
-                    self.context_menu_pos = pointer_pos;
-                    self.context_menu_part = None;
+                if is_hovered {
+                    if secondary_clicked {
+                        self.context_menu_connection = Some(conn_idx);
+                        self.context_menu_pos = pointer_pos;
+                        self.context_menu_part = None;
+                    }
+                    if alt_held && primary_clicked {
+                        remove_idx = Some(conn_idx);
+                    }
                 }
 
                 // Visual Style
                 let (stroke_width, stroke_color, glow_width) = if is_hovered {
-                    (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
+                    if alt_held {
+                        // Destructive Mode
+                        (4.0 * self.zoom, Color32::RED, 10.0 * self.zoom)
+                    } else {
+                        // Normal Hover
+                        (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
+                    }
                 } else {
                     (2.0 * self.zoom, cable_color, 6.0 * self.zoom)
                 };
@@ -4644,6 +4674,8 @@ impl ModuleCanvas {
                 }
             }
         }
+
+        remove_idx
     }
 
     fn get_delete_button_rect(&self, part_rect: Rect) -> Rect {
