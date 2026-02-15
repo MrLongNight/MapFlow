@@ -13,3 +13,10 @@
 - **Group Drag:** Moving one selected node moves all selected nodes, maintaining relative positions.
 - **Collision:** Group movement checks collisions against non-selected nodes only.
 - **Snapping:** Default 20px grid snap. Hold 'Alt' to bypass (Precision Mode).
+
+## 2024-06-03 – Widget Safety & Accessibility
+**Learning:** Custom interactive widgets (like sliders) must manually implement accessibility features that `egui` standard widgets provide out-of-the-box (keyboard navigation, `WidgetInfo`). Also, "Hold-to-trigger" buttons require careful state management to prevent auto-repeating triggers that can cause accidental destructive actions.
+**Action:** When creating custom widgets:
+1.  Implement `response.widget_info(...)`.
+2.  Handle `has_focus()` and keyboard inputs (Arrows, Shift).
+3.  For hold interactions, use a persistent "triggered" flag to enforce "trigger once per press".
