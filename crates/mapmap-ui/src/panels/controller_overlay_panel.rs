@@ -223,7 +223,10 @@ impl ControllerOverlayPanel {
                         let rgba = img.to_rgba8();
                         let size = [rgba.width() as usize, rgba.height() as usize];
                         let pixels = rgba.into_raw();
-                        let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+                        let mut color_image =
+                            egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+                        color_image.source_size =
+                            egui::Vec2::new(rgba.width() as f32, rgba.height() as f32);
                         return Some(ctx.load_texture(
                             name,
                             color_image,
