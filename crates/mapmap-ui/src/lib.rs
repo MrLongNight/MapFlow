@@ -168,7 +168,7 @@ pub enum UIAction {
     // Media commands for specific module parts
     MediaCommand(
         mapmap_core::module::ModulePartId,
-        crate::module_canvas::MediaPlaybackCommand,
+        crate::canvas::types::MediaPlaybackCommand,
     ),
 }
 

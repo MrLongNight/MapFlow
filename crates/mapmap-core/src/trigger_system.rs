@@ -24,7 +24,12 @@ impl TriggerSystem {
     }
 
     /// Update the trigger states based on the current audio data and module configuration.
-    pub fn update(&mut self, module_manager: &ModuleManager, audio_data: &AudioTriggerData, dt: f32) {
+    pub fn update(
+        &mut self,
+        module_manager: &ModuleManager,
+        audio_data: &AudioTriggerData,
+        dt: f32,
+    ) {
         self.active_triggers.clear();
 
         for module in module_manager.modules() {
@@ -127,9 +132,9 @@ impl TriggerSystem {
                                 // Pick new target
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                let next_target = rng.random_range(*min_interval_ms..=*max_interval_ms)
-                                    as f32
-                                    / 1000.0;
+                                let next_target =
+                                    rng.random_range(*min_interval_ms..=*max_interval_ms) as f32
+                                        / 1000.0;
                                 self.random_targets.insert(part.id, next_target);
                             }
                         }

@@ -233,7 +233,6 @@ impl ControllerOverlayPanel {
                         let color_image = egui::ColorImage {
                             size,
                             pixels,
-                            source_size: None,
                         };
 
                         return Some(ctx.load_texture(
