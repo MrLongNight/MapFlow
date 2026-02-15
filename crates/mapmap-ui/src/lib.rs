@@ -425,7 +425,7 @@ impl AppUI {
                 );
 
                 egui::Frame::default()
-                    .inner_margin(egui::Margin::symmetric(8.0, 8.0))
+                    .inner_margin(egui::Margin::symmetric(8, 8))
                     .show(ui, |ui| {
                         let _ = self
                             .media_browser
@@ -525,7 +525,7 @@ impl AppUI {
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
 
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
-                    .inner_margin(egui::Margin::symmetric(16.0, 8.0))
+                    .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.label(
@@ -733,6 +733,12 @@ impl AppUI {
             let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
 
+            ui.painter().rect_stroke(
+                rect.expand(2.0),
+                egui::CornerRadius::same(2),
+                egui::Stroke::new(2.0, color),
+                egui::StrokeKind::Middle,
+            );
 
             // Check for recent MIDI activity (last 0.5s)
             if let Some(last_time) = last_active_time {

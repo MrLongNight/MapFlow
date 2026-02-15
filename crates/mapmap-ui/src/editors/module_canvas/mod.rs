@@ -1993,7 +1993,7 @@ impl ModuleCanvas {
         let image = egui::ColorImage {
             size: [width as usize, height as usize],
             pixels,
-source_size: egui::Vec2::new(width as f32, height as f32),
+            source_size: egui::Vec2::new(width as f32, height as f32),
         };
 
         Some(ctx.load_texture(
@@ -2332,7 +2332,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 SourceType::new_media_file(String::new()),
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("📹 Video (Uni)").clicked() {
             self.add_source_node(
@@ -2363,7 +2363,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("🖼 Image (Uni)").clicked() {
             self.add_source_node(
@@ -2388,7 +2388,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
 
         ui.add_space(4.0);
@@ -2414,7 +2414,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("🖼 Image (Multi)").clicked() {
             self.add_source_node(
@@ -2437,7 +2437,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
 
         ui.add_space(4.0);
@@ -2448,7 +2448,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 SourceType::LiveInput { device_id: 0 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("📡 NDI Input").clicked() {
             self.add_source_node(
@@ -2456,7 +2456,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 SourceType::NdiInput { source_name: None },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         #[cfg(target_os = "windows")]
         if ui.button("🚰 Spout Input").clicked() {
@@ -2467,7 +2467,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
 
         ui.add_space(4.0);
@@ -2481,11 +2481,11 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("🎮 Bevy Scene").clicked() {
             self.add_source_node(manager, SourceType::Bevy, pos_override);
-            ui.close_menu();
+            ui.close();
         }
     }
 
@@ -2513,7 +2513,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("🎲 Random").clicked() {
                 self.add_trigger_node(
@@ -2525,7 +2525,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("⏱ Fixed").clicked() {
                 self.add_trigger_node(
@@ -2536,7 +2536,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("🎹 MIDI").clicked() {
                 self.add_trigger_node(
@@ -2548,7 +2548,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2559,7 +2559,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     MaskType::Shape(mapmap_core::module::MaskShape::Circle),
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("🌈 Gradient").clicked() {
                 self.add_mask_node(
@@ -2570,7 +2570,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2581,7 +2581,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     ModulizerType::BlendMode(mapmap_core::module::BlendModeType::Normal),
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2599,7 +2599,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2837,7 +2837,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
 
         // === CANVAS TOOLBAR ===
         egui::Frame::default()
-            .inner_margin(egui::Margin::symmetric(8.0, 6.0))
+            .inner_margin(egui::Margin::symmetric(8, 6))
             .fill(ui.visuals().panel_fill)
             .show(ui, |ui| {
                 ui.vertical(|ui| {
@@ -3422,8 +3422,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 let select_rect = Rect::from_two_pos(start_pos, current_pos);
                 painter.rect_stroke(
                     select_rect,
-                    0.0,
+                    egui::CornerRadius::same(0),
                     Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+                    egui::StrokeKind::Middle,
                 );
                 painter.rect_filled(
                     select_rect,
@@ -3659,8 +3660,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 // "Cyber" selection: Neon Cyan, Sharp Corners
                 painter.rect_stroke(
                     highlight_rect,
-                    0.0, // Sharp corners
+                    egui::CornerRadius::same(0), // Sharp corners
                     Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
+                    egui::StrokeKind::Middle,
                 );
 
                 // Draw resize handle at bottom-right corner
@@ -3799,8 +3801,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
             );
             painter.rect_stroke(
                 menu_rect,
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
+                egui::StrokeKind::Middle,
             );
 
             // Menu items
@@ -3850,8 +3853,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
             );
             painter.rect_stroke(
                 menu_rect,
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
+                egui::StrokeKind::Middle,
             );
 
             // Menu items
@@ -3893,8 +3897,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                 );
                 painter.rect_stroke(
                     menu_rect,
-                    4.0,
+                    egui::CornerRadius::same(4),
                     Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
+                    egui::StrokeKind::Middle,
                 );
 
                 // Menu items
@@ -3943,8 +3948,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
+            egui::StrokeKind::Middle,
         );
 
         // Popup content
@@ -4023,8 +4029,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
+            egui::StrokeKind::Middle,
         );
 
         // Popup content
@@ -4112,7 +4119,12 @@ source_size: egui::Vec2::new(width as f32, height as f32),
 
         // Draw background (Room representation)
         painter.rect_filled(rect, 4.0, Color32::from_gray(30));
-        painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::GRAY));
+        painter.rect_stroke(
+            rect,
+            egui::CornerRadius::same(4),
+            Stroke::new(1.0, Color32::GRAY),
+            egui::StrokeKind::Middle,
+        );
 
         // Draw grid
         let grid_steps = 5;
@@ -4341,7 +4353,12 @@ source_size: egui::Vec2::new(width as f32, height as f32),
             0.0,
             Color32::from_rgba_unmultiplied(30, 30, 40, 200),
         );
-        painter.rect_stroke(map_rect, 0.0, Stroke::new(1.0, Color32::from_gray(80)));
+        painter.rect_stroke(
+            map_rect,
+            egui::CornerRadius::same(0),
+            Stroke::new(1.0, Color32::from_gray(80)),
+            egui::StrokeKind::Middle,
+        );
 
         // Calculate bounds of all parts
         let mut min_x = f32::MAX;
@@ -4400,7 +4417,12 @@ source_size: egui::Vec2::new(width as f32, height as f32),
             (-self.pan_offset.y + canvas_rect.height()) / self.zoom,
         ));
         let viewport_rect = Rect::from_min_max(viewport_min, viewport_max).intersect(map_rect);
-        painter.rect_stroke(viewport_rect, 0.0, Stroke::new(1.5, Color32::WHITE));
+        painter.rect_stroke(
+            viewport_rect,
+            egui::CornerRadius::same(0),
+            Stroke::new(1.5, Color32::WHITE),
+            egui::StrokeKind::Middle,
+        );
     }
 
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
@@ -4684,19 +4706,21 @@ source_size: egui::Vec2::new(width as f32, height as f32),
 
                 painter.rect_stroke(
                     rect.expand(expansion),
-                    0.0,
+                    egui::CornerRadius::same(0),
                     Stroke::new(1.0 * self.zoom, color),
+                    egui::StrokeKind::Middle,
                 );
             }
 
             // Inner "Light" border
             painter.rect_stroke(
                 rect,
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(
                     2.0 * self.zoom,
                     Color32::WHITE.gamma_multiply(180.0 * glow_intensity / 255.0),
                 ),
+                egui::StrokeKind::Middle,
             );
         }
 
@@ -4709,8 +4733,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
 
             painter.rect_stroke(
                 rect.expand(4.0 * self.zoom),
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(2.0 * self.zoom, learn_color),
+                egui::StrokeKind::Middle,
             );
 
             painter.text(
@@ -4723,12 +4748,14 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         }
 
         // Draw shadow behind node
+        /*
         let _shadow = Shadow {
             offset: Vec2::new(2.0 * self.zoom, 4.0 * self.zoom),
-source_size: egui::Vec2::new(width as f32, height as f32),
+            blur: 0.0,
             spread: 0.0,
             color: Color32::from_black_alpha(100),
         };
+        */
         // TODO: Shadow::tessellate was removed in egui 0.33
         // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
 
@@ -4748,7 +4775,12 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     .ctx()
                     .data(|d| d.get_temp::<std::path::PathBuf>(egui::Id::new("media_path")))
                 {
-                    painter.rect_stroke(rect, 0.0, egui::Stroke::new(2.0, egui::Color32::YELLOW));
+                    painter.rect_stroke(
+                        rect,
+                        egui::CornerRadius::same(0),
+                        egui::Stroke::new(2.0, egui::Color32::YELLOW),
+                        egui::StrokeKind::Middle,
+                    );
 
                     if ui.input(|i| i.pointer.any_released()) {
                         actions.push(UIAction::SetMediaFile(
@@ -4765,8 +4797,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         // This replaces the generic gray border
         painter.rect_stroke(
             rect,
-            0.0, // Sharp corners
+            egui::CornerRadius::same(0), // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
+            egui::StrokeKind::Middle,
         );
 
         // Title bar
@@ -5473,8 +5506,9 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
+            egui::StrokeKind::Middle,
         );
 
         let inner_rect = popup_rect.shrink(12.0);
@@ -6450,8 +6484,9 @@ impl ModuleCanvas {
         painter.rect_filled(rect, 0.0, Color32::from_gray(30));
         painter.rect_stroke(
             rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
+            egui::StrokeKind::Middle,
         );
 
         // Data normalization
@@ -6473,8 +6508,9 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             region_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
+            egui::StrokeKind::Middle,
         );
 
         // INTERACTION LOGIC

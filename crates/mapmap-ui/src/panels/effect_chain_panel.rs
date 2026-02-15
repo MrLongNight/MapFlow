@@ -490,7 +490,7 @@ impl EffectChainPanel {
                                                      }
 
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close_menu();
+                                                     ui.close();
                                                      self.show_add_menu = false;
                                                 }
                                             }
