@@ -100,8 +100,6 @@ impl OscillatorPanel {
     ) -> bool {
         let mut sim_changed = false;
 
-
-
         sim_changed
     }
 
@@ -112,8 +110,6 @@ impl OscillatorPanel {
         config: &mut OscillatorConfig,
     ) -> bool {
         let mut dist_changed = false;
-
-
 
         dist_changed
     }
@@ -126,8 +122,10 @@ impl OscillatorPanel {
     ) -> bool {
         let mut viz_changed = false;
 
-
-
+        egui::Grid::new("visual_params_grid")
+            .num_columns(2)
+            .spacing([8.0, 4.0])
+            .show(ui, |ui| {
                 ui.label(locale.t("oscillator-color-mode"));
                 let selected_text = format!("{:?}", config.color_mode);
                 viz_changed |= ComboBox::from_id_salt("color_mode")

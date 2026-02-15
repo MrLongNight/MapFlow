@@ -1993,7 +1993,7 @@ impl ModuleCanvas {
         let image = egui::ColorImage {
             size: [width as usize, height as usize],
             pixels,
-source_size: egui::Vec2::new(width as f32, height as f32),
+            source_size: egui::Vec2::new(width as f32, height as f32),
         };
 
         Some(ctx.load_texture(
@@ -4725,7 +4725,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
         // Draw shadow behind node
         let _shadow = Shadow {
             offset: Vec2::new(2.0 * self.zoom, 4.0 * self.zoom),
-source_size: egui::Vec2::new(width as f32, height as f32),
+            source_size: egui::Vec2::new(width as f32, height as f32),
             spread: 0.0,
             color: Color32::from_black_alpha(100),
         };

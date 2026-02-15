@@ -12,7 +12,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     // Header background
-Response
+    painter.rect_filled(rect, 0.0, colors::DARK_GREY);
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -51,12 +51,20 @@ pub fn styled_slider(
     let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
 
-Response
+    // Keyboard interaction
+    if response.has_focus() {
+        let range_span = range.end() - range.start();
+        let step = range_span / 100.0;
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+            *value = (*value - step).clamp(*range.start(), *range.end());
+            response.mark_changed();
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+            *value = (*value + step).clamp(*range.start(), *range.end());
             response.mark_changed();
         }
     }
 
-Response
     // Double-click to reset
     if response.double_clicked() {
         *value = default_value;
@@ -73,7 +81,7 @@ Response
 
     ui.painter().rect(
         rect,
-Response
+        0.0,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
     );
@@ -97,7 +105,7 @@ Response
 
     ui.painter().rect(
         fill_rect,
-Response
+        0.0,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
     );
@@ -151,7 +159,7 @@ pub fn styled_drag_value(
     if is_changed {
         ui.painter().rect_stroke(
             response.rect.expand(1.0),
-Response
+            0.0,
             Stroke::new(1.0, colors::CYAN_ACCENT),
         );
     }
@@ -281,7 +289,7 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-Response
+    ui.painter().rect(rect, 4.0, bg_fill, stroke);
 
     let text_pos = rect.center();
 
@@ -465,18 +473,23 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let painter = ui.painter();
 
     // 1. Background
-Response
+    painter.rect_filled(rect, 4.0, visuals.bg_fill);
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-Response
+            4.0,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
         );
     }
 
-Response
+    // 2. Progress fill
+    if triggered {
+        painter.rect_filled(rect, 4.0, color);
+    } else if progress > 0.0 {
+        draw_safety_vertical_fill(ui, rect, progress, color);
+    }
 
     // 3. Text
     let text_color = if triggered {
@@ -522,18 +535,23 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     let painter = ui.painter();
 
     // 1. Background
-Response
+    painter.rect_filled(rect, 4.0, visuals.bg_fill);
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-Response
+            4.0,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
         );
     }
 
-Response
+    // 2. Progress fill
+    if triggered {
+        painter.rect_filled(rect, 4.0, color);
+    } else if progress > 0.0 {
+        draw_safety_radial_fill(ui, rect.center(), 12.0, progress, color);
+    }
 
     // 3. Icon
     let text_color = if triggered {

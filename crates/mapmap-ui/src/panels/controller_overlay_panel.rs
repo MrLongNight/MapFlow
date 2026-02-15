@@ -233,10 +233,7 @@ impl ControllerOverlayPanel {
                         let color_image = egui::ColorImage {
                             size,
                             pixels,
-source_size: egui::Vec2::new(width as f32, height as f32),
-=======
-                            source_size: egui::Vec2::new(size[0] as f32, size[1] as f32),
->>>>>>> origin/perf/optimize-trigger-eval-5025564681143441822
+                            source_size: egui::Vec2::new(width as f32, height as f32),
                         };
 
                         return Some(ctx.load_texture(
@@ -1267,5 +1264,3 @@ fn ui_time_seconds() -> f64 {
         .unwrap_or_default()
         .as_secs_f64()
 }
-
-
