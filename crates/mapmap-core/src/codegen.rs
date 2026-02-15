@@ -767,6 +767,7 @@ impl std::fmt::Display for ParameterValue {
             ParameterValue::Color(c) => {
                 write!(f, "vec4<f32>({}, {}, {}, {})", c[0], c[1], c[2], c[3])
             }
+            ParameterValue::String(_) => write!(f, "0.0"), // Strings not supported in WGSL
         }
     }
 }

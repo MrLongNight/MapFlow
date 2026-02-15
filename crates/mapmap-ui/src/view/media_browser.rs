@@ -149,9 +149,9 @@ impl Default for MediaFolders {
     fn default() -> Self {
         let default = std::env::current_dir().unwrap_or_default();
         Self {
-            video_folder: default.clone(),
-            image_folder: default.clone(),
-            audio_folder: default.clone(),
+            video_folder: dirs::video_dir().unwrap_or(default.clone()),
+            image_folder: dirs::picture_dir().unwrap_or(default.clone()),
+            audio_folder: dirs::audio_dir().unwrap_or(default.clone()),
             default_folder: default,
         }
     }

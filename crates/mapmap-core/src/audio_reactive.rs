@@ -115,6 +115,7 @@ impl AudioReactiveController {
                                 ParameterValue::Vec3(v) => v[0] = value,
                                 ParameterValue::Vec4(v) => v[0] = value,
                                 ParameterValue::Color(c) => c[0] = value,
+                                ParameterValue::String(_) => {}
                             }
                         }
                     }
@@ -365,6 +366,7 @@ impl AudioReactiveAnimationSystem {
                                 ParameterValue::Vec3(v) => v[0] = value,
                                 ParameterValue::Vec4(v) => v[0] = value,
                                 ParameterValue::Color(c) => c[0] = value,
+                                ParameterValue::String(_) => {}
                             }
                         }
                     }

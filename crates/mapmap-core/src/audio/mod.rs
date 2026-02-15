@@ -7,7 +7,6 @@ pub mod analyzer_v2;
 pub mod backend;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use rustfft::{num_complex::Complex, Fft, FftPlanner};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -145,314 +144,135 @@ impl Default for AudioAnalysis {
     }
 }
 
-/// Audio analyzer - performs FFT and beat detection
+use self::analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config};
+
+/// Audio analyzer - Wrapper around AudioAnalyzerV2 for backward compatibility
 pub struct AudioAnalyzer {
     config: AudioConfig,
-    fft: Arc<dyn Fft<f32>>,
-
-    // FFT buffers
-    input_buffer: VecDeque<f32>,
-    fft_buffer: Vec<Complex<f32>>,
-    magnitude_buffer: Vec<f32>,
-    previous_magnitudes: Vec<f32>,
-
-    // Beat detection
-    beat_history: VecDeque<f32>,
-    energy_history: VecDeque<f32>,
-    last_beat_time: f64,
-
-    // Tempo tracking
-    beat_intervals: VecDeque<f64>,
-
-    // Communication
+    v2: AudioAnalyzerV2,
+    // Onset detection history (V2 doesn't provide onset)
+    onset_history: VecDeque<f32>,
+    // Last analysis for caching
+    last_analysis: AudioAnalysis,
+    // Channel for async access (kept for API compatibility)
     analysis_sender: Sender<AudioAnalysis>,
     analysis_receiver: Receiver<AudioAnalysis>,
-
-    // Time tracking
-    current_time: f64,
-
-    // Caching
-    last_analysis: AudioAnalysis,
 }
 
 impl AudioAnalyzer {
     /// Create a new audio analyzer
     pub fn new(config: AudioConfig) -> Self {
-        let mut planner = FftPlanner::new();
-        let fft = planner.plan_fft_forward(config.fft_size);
-
+        let v2_config = AudioAnalyzerV2Config {
+            sample_rate: config.sample_rate,
+            fft_size: config.fft_size,
+            overlap: config.overlap,
+            smoothing: config.smoothing,
+        };
+        let v2 = AudioAnalyzerV2::new(v2_config);
         let (tx, rx) = unbounded();
 
         Self {
-            config: config.clone(),
-            fft,
-            input_buffer: VecDeque::with_capacity(config.fft_size * 2),
-            fft_buffer: vec![Complex::new(0.0, 0.0); config.fft_size],
-            magnitude_buffer: vec![0.0; config.fft_size / 2],
-            previous_magnitudes: vec![0.0; config.fft_size / 2],
-            beat_history: VecDeque::with_capacity(100),
-            energy_history: VecDeque::with_capacity(100),
-            last_beat_time: 0.0,
-            beat_intervals: VecDeque::with_capacity(10),
+            config,
+            v2,
+            onset_history: VecDeque::with_capacity(10),
+            last_analysis: AudioAnalysis::default(),
             analysis_sender: tx,
             analysis_receiver: rx,
-            current_time: 0.0,
-            last_analysis: AudioAnalysis::default(),
         }
     }
 
     /// Update audio configuration
     pub fn update_config(&mut self, config: AudioConfig) {
-        // If FFT size changed, we need to re-initialize buffers
-        if config.fft_size != self.config.fft_size {
-            let mut planner = FftPlanner::new();
-            self.fft = planner.plan_fft_forward(config.fft_size);
-            self.input_buffer = VecDeque::with_capacity(config.fft_size * 2);
-            self.fft_buffer = vec![Complex::new(0.0, 0.0); config.fft_size];
-            self.magnitude_buffer = vec![0.0; config.fft_size / 2];
-            self.previous_magnitudes = vec![0.0; config.fft_size / 2];
-        }
-        self.config = config;
+        self.config = config.clone();
+        let v2_config = AudioAnalyzerV2Config {
+            sample_rate: config.sample_rate,
+            fft_size: config.fft_size,
+            overlap: config.overlap,
+            smoothing: config.smoothing,
+        };
+        self.v2.update_config(v2_config);
     }
 
-    /// Reset all buffers and state - call when switching audio devices
+    /// Reset all buffers and state
     pub fn reset(&mut self) {
-        self.input_buffer.clear();
-        self.fft_buffer.fill(Complex::new(0.0, 0.0));
-        self.magnitude_buffer.fill(0.0);
-        self.previous_magnitudes.fill(0.0);
-        self.beat_history.clear();
-        self.energy_history.clear();
-        self.last_beat_time = 0.0;
-        self.beat_intervals.clear();
+        self.v2.reset();
+        self.onset_history.clear();
         self.last_analysis = AudioAnalysis::default();
-        // Drain any pending analysis messages
+        // Drain channel
         while self.analysis_receiver.try_recv().is_ok() {}
     }
 
     /// Process audio samples
     pub fn process_samples(&mut self, samples: &[f32], timestamp: f64) -> AudioAnalysis {
-        self.current_time = timestamp;
+        // Apply gain and noise gate locally before passing to V2
+        // Note: V2 also sanitizes inputs but doesn't apply gain/gate
+        let processed_samples: Vec<f32> = samples
+            .iter()
+            .map(|&s| {
+                let p = s * self.config.gain;
+                if p.abs() < self.config.noise_gate {
+                    0.0
+                } else {
+                    p
+                }
+            })
+            .collect();
 
-        // Add samples to input buffer with gain and noise gate
-        for &sample in samples {
-            let mut processed = sample * self.config.gain;
-            if processed.abs() < self.config.noise_gate {
-                processed = 0.0;
-            }
-            self.input_buffer.push_back(processed);
+        // Process in V2
+        self.v2.process_samples(&processed_samples, timestamp);
+        let v2_analysis = self.v2.get_latest_analysis();
+
+        // Calculate Onset (V2 doesn't do it)
+        // Simple onset detection based on sudden energy increase
+        let current_energy = v2_analysis.rms_volume;
+        self.onset_history.push_back(current_energy);
+        if self.onset_history.len() > 8 {
+            self.onset_history.pop_front();
         }
 
-        // Check if we have enough samples for FFT
-        let hop_size = (self.config.fft_size as f32 * (1.0 - self.config.overlap)) as usize;
-        if self.input_buffer.len() < self.config.fft_size {
-            return self.get_latest_analysis();
-        }
+        let onset_detected = if self.onset_history.len() >= 4 {
+            let recent_avg: f32 = self.onset_history.iter().take(self.onset_history.len() - 1).sum::<f32>()
+                / (self.onset_history.len() - 1) as f32;
+            current_energy > recent_avg * 1.5 && current_energy > 0.05
+        } else {
+            false
+        };
 
-        // Perform FFT
-        self.perform_fft();
+        // Map 9 bands (V2) to 7 bands (V1)
+        // V2: SubBass, Bass, LowMid, Mid, HighMid, UpperMid, Presence, Brilliance, Air
+        // V1: SubBass, Bass, LowMid, Mid, HighMid, Presence, Brilliance
+        let b = v2_analysis.band_energies;
+        let mapped_bands = [
+            b[0], // SubBass -> SubBass
+            b[1], // Bass -> Bass
+            b[2], // LowMid -> LowMid
+            b[3], // Mid -> Mid
+            b[4], // HighMid -> HighMid
+            b[6], // Presence -> Presence (skip UpperMid)
+            b[7], // Brilliance -> Brilliance (skip Air)
+        ];
 
-        // Calculate analysis metrics
-        let analysis = self.calculate_analysis();
+        let analysis = AudioAnalysis {
+            timestamp: v2_analysis.timestamp,
+            fft_magnitudes: v2_analysis.fft_magnitudes,
+            band_energies: mapped_bands,
+            rms_volume: v2_analysis.rms_volume,
+            peak_volume: v2_analysis.peak_volume,
+            beat_detected: v2_analysis.beat_detected,
+            beat_strength: v2_analysis.beat_strength,
+            onset_detected,
+            tempo_bpm: v2_analysis.tempo_bpm,
+            waveform: v2_analysis.waveform,
+        };
 
-        // Send analysis to receiver channel
+        self.last_analysis = analysis.clone();
         let _ = self.analysis_sender.send(analysis.clone());
-
-        // Remove processed samples
-        for _ in 0..hop_size {
-            self.input_buffer.pop_front();
-        }
 
         analysis
     }
 
-    /// Perform FFT on current buffer
-    fn perform_fft(&mut self) {
-        // Apply Hann window and copy to FFT buffer
-        for i in 0..self.config.fft_size {
-            let sample = self.input_buffer[i];
-            let window = 0.5
-                * (1.0
-                    - (2.0 * std::f32::consts::PI * i as f32 / (self.config.fft_size - 1) as f32)
-                        .cos());
-            self.fft_buffer[i] = Complex::new(sample * window, 0.0);
-        }
-
-        // Perform FFT
-        self.fft.process(&mut self.fft_buffer);
-
-        // Calculate magnitudes (only first half due to symmetry)
-        let half_size = self.config.fft_size / 2;
-        for i in 0..half_size {
-            let magnitude = self.fft_buffer[i].norm() / self.config.fft_size as f32;
-
-            // Apply smoothing
-            let smoothed = self.config.smoothing * self.previous_magnitudes[i]
-                + (1.0 - self.config.smoothing) * magnitude;
-
-            self.magnitude_buffer[i] = smoothed;
-            self.previous_magnitudes[i] = smoothed;
-        }
-    }
-
-    /// Calculate audio analysis from FFT results
-    fn calculate_analysis(&mut self) -> AudioAnalysis {
-        let _half_size = self.config.fft_size / 2;
-
-        // Calculate RMS volume
-        let rms_volume = self.calculate_rms();
-
-        // Calculate peak volume
-        let peak_volume = self
-            .magnitude_buffer
-            .iter()
-            .copied()
-            .fold(0.0f32, |a, b| a.max(b));
-
-        // Calculate frequency band energies
-        let band_energies = self.calculate_band_energies();
-
-        // Detect beats
-        let (beat_detected, beat_strength) = self.detect_beat(&band_energies);
-
-        // Detect onsets
-        let onset_detected = self.detect_onset();
-
-        // Estimate tempo
-        let tempo_bpm = self.estimate_tempo();
-
-        AudioAnalysis {
-            timestamp: self.current_time,
-            fft_magnitudes: Arc::new(self.magnitude_buffer.clone()),
-            band_energies,
-            rms_volume,
-            peak_volume,
-            beat_detected,
-            beat_strength,
-            onset_detected,
-            tempo_bpm,
-            waveform: Arc::new(
-                self.input_buffer
-                    .iter()
-                    .take(self.config.fft_size)
-                    .copied()
-                    .collect(),
-            ),
-        }
-    }
-
-    /// Calculate RMS (Root Mean Square) volume
-    fn calculate_rms(&self) -> f32 {
-        let sum: f32 = self
-            .input_buffer
-            .iter()
-            .take(self.config.fft_size)
-            .map(|&s| s * s)
-            .sum();
-
-        (sum / self.config.fft_size as f32).sqrt()
-    }
-
-    /// Calculate energy in each frequency band
-    fn calculate_band_energies(&self) -> [f32; 7] {
-        let mut energies = [0.0f32; 7];
-
-        let bands = FrequencyBand::all();
-        let bin_width = self.config.sample_rate as f32 / self.config.fft_size as f32;
-
-        for (i, band) in bands.iter().enumerate() {
-            let (min_freq, max_freq) = band.frequency_range();
-            let min_bin = (min_freq / bin_width) as usize;
-            let max_bin = ((max_freq / bin_width) as usize).min(self.magnitude_buffer.len() - 1);
-
-            let energy: f32 = self.magnitude_buffer[min_bin..=max_bin].iter().sum();
-            energies[i] = energy / (max_bin - min_bin + 1) as f32;
-        }
-
-        energies
-    }
-
-    /// Detect beat (kick drum) using energy threshold
-    fn detect_beat(&mut self, band_energies: &[f32; 7]) -> (bool, f32) {
-        // Focus on bass frequencies for beat detection
-        let bass_energy = band_energies[0] + band_energies[1]; // SubBass + Bass
-
-        self.energy_history.push_back(bass_energy);
-        if self.energy_history.len() > 43 {
-            // ~1 second at 43Hz update rate
-            self.energy_history.pop_front();
-        }
-
-        // Calculate average energy
-        let avg_energy: f32 =
-            self.energy_history.iter().sum::<f32>() / self.energy_history.len() as f32;
-
-        // Beat detection threshold
-        let threshold = avg_energy * 1.5;
-        let beat_detected =
-            bass_energy > threshold && (self.current_time - self.last_beat_time) > 0.1; // Min 100ms between beats
-
-        let beat_strength = if beat_detected {
-            ((bass_energy - threshold) / threshold).min(1.0)
-        } else {
-            0.0
-        };
-
-        if beat_detected {
-            // Track beat interval for tempo estimation
-            if self.last_beat_time > 0.0 {
-                let interval = self.current_time - self.last_beat_time;
-                self.beat_intervals.push_back(interval);
-                if self.beat_intervals.len() > 10 {
-                    self.beat_intervals.pop_front();
-                }
-            }
-            self.last_beat_time = self.current_time;
-        }
-
-        (beat_detected, beat_strength)
-    }
-
-    /// Detect onset (sudden increase in energy across all frequencies)
-    fn detect_onset(&mut self) -> bool {
-        let total_energy: f32 = self.magnitude_buffer.iter().sum();
-
-        self.beat_history.push_back(total_energy);
-        if self.beat_history.len() > 5 {
-            self.beat_history.pop_front();
-        }
-
-        if self.beat_history.len() < 5 {
-            return false;
-        }
-
-        let avg: f32 = self.beat_history.iter().take(4).sum::<f32>() / 4.0;
-        let current = self.beat_history.back().unwrap();
-
-        current > &(avg * 1.8)
-    }
-
-    /// Estimate tempo in BPM from beat intervals
-    fn estimate_tempo(&self) -> Option<f32> {
-        if self.beat_intervals.len() < 4 {
-            return None;
-        }
-
-        let avg_interval: f64 =
-            self.beat_intervals.iter().sum::<f64>() / self.beat_intervals.len() as f64;
-
-        if avg_interval > 0.0 {
-            Some((60.0 / avg_interval) as f32)
-        } else {
-            None
-        }
-    }
-
-    /// Get the latest analysis result, draining any pending updates
+    /// Get the latest analysis result
     pub fn get_latest_analysis(&mut self) -> AudioAnalysis {
-        while let Ok(analysis) = self.analysis_receiver.try_recv() {
-            self.last_analysis = analysis;
-        }
         self.last_analysis.clone()
     }
 
@@ -619,13 +439,6 @@ mod tests {
     }
 
     #[test]
-    fn test_audio_analyzer_creation() {
-        let config = AudioConfig::default();
-        let analyzer = AudioAnalyzer::new(config);
-        assert_eq!(analyzer.magnitude_buffer.len(), 512);
-    }
-
-    #[test]
     fn test_frequency_bands() {
         let bass = FrequencyBand::Bass;
         let (min, max) = bass.frequency_range();
@@ -731,23 +544,6 @@ mod tests {
         assert_eq!(config.fft_size, 1024);
         assert!((config.overlap - 0.5).abs() < 0.01);
         assert!((config.smoothing - 0.8).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_fft_size_variations() {
-        // Test with different FFT sizes
-        for fft_size in [512, 1024, 2048] {
-            let config = AudioConfig {
-                sample_rate: 44100,
-                fft_size,
-                overlap: 0.5,
-                smoothing: 0.8,
-                gain: 1.0,
-                noise_gate: 0.0,
-            };
-            let analyzer = AudioAnalyzer::new(config);
-            assert_eq!(analyzer.magnitude_buffer.len(), fft_size / 2);
-        }
     }
 
     #[test]

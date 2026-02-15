@@ -227,6 +227,7 @@ fn render_content(
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,
+                depth_slice: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
@@ -253,6 +254,7 @@ fn render_content(
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: mesh_target_view_ref,
                 resolve_target: None,
+                depth_slice: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(if output_id == 0 {
                         wgpu::Color {
@@ -335,6 +337,7 @@ fn render_content(
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: mesh_target_view_ref,
                     resolve_target: None,
+                    depth_slice: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
@@ -365,6 +368,7 @@ fn render_content(
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view,
                     resolve_target: None,
+                    depth_slice: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
@@ -484,6 +488,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                             view: &target_view_arc,
                             resolve_target: None,
+                            depth_slice: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
