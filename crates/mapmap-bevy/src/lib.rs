@@ -31,7 +31,11 @@ impl BevyRunner {
 
         let mut app = App::new();
 
-        // Use DefaultPlugins with standard rendering creation
+        // Use DefaultPlugins with standard rendering creation.
+        // We disable WinitPlugin (MapFlow manages its own window), LogPlugin (MapFlow
+        // has its own logging), and PbrPlugin (registers systems like
+        // `no_automatic_skin_batching` that require RenderDevice, which may not exist
+        // without a windowing surface).
         app.add_plugins(
             DefaultPlugins
                 .set(bevy::render::RenderPlugin {
@@ -44,7 +48,8 @@ impl BevyRunner {
                     close_when_requested: false,
                 })
                 .disable::<bevy::winit::WinitPlugin>()
-                .disable::<bevy::log::LogPlugin>(),
+                .disable::<bevy::log::LogPlugin>()
+                .disable::<bevy::pbr::PbrPlugin>(),
         );
 
         // Register resources
