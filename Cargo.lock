@@ -2685,16 +2685,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui_node_editor"
-version = "0.9.0"
-dependencies = [
- "egui",
- "slotmap",
- "smallvec",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4654,7 +4644,6 @@ dependencies = [
  "egui-wgpu",
  "egui-winit",
  "egui_extras",
- "egui_node_editor",
  "fluent",
  "fluent-langneg 0.14.2",
  "glam 0.31.1",

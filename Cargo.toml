@@ -51,7 +51,6 @@ egui = { version = "0.33.3", features = ["serde"] }
 egui-wgpu = "0.33.3"
 egui-winit = "0.33.3"
 egui_extras = { version = "0.33.3", features = ["image", "file", "svg"] }
-egui_node_editor = "0.9.0"
 
 # Media
 ffmpeg-next = { version = "7.1", default-features = false, features = [
@@ -88,8 +87,8 @@ pollster = "0.3"
 
 # Testing
 proptest = "1.4"
-tests_bin = "0.1"
 rayon = "1.8"
+tests_bin = "0.1"
 
 # SVG rendering for icons
 resvg = "0.46"
@@ -141,4 +140,3 @@ inherits = "release"
 # The warning does not affect functionality in current Rust versions.
 
 [patch.crates-io]
-egui_node_editor = { path = "crates/vendor/egui_node_editor" }
