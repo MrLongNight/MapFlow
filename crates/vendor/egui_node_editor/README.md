@@ -66,5 +66,5 @@ software built in Rust using egui, rend3 and wgpu.
 ![Main interface of blackjack](https://raw.githubusercontent.com/setzer22/blackjack/main/doc/resources/showcase.png)
 Are you using this crate for something cool? Add yourself to this section by sending a PR!
 
-## Contributing 
+## Contributing
 Contributions are welcome! Before writing a PR, please get in touch by filing an issue 😄

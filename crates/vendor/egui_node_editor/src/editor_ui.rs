@@ -132,7 +132,7 @@ where
 
         // Render graph zoomed
         let zoomed_style = self.pan_zoom.zoomed_style.clone();
-        
+
 
         show_zoomed(ui.style().clone(), zoomed_style, ui, |ui| {
             self.draw_graph_editor_inside_zoom(ui, all_kinds, user_state, prepend_responses)
