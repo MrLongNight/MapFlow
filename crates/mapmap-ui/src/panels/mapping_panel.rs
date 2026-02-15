@@ -1,5 +1,7 @@
 //! Egui-based Mapping Management Panel
 use crate::i18n::LocaleManager;
+use crate::theme::colors;
+use crate::widgets::custom;
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{MappingId, MappingManager};
@@ -26,13 +28,17 @@ impl MappingPanel {
             .open(&mut open)
             .default_size([380.0, 400.0])
             .show(ctx, |ui| {
+                ui.heading(i18n.t("panel-mappings"));
+                ui.separator();
+                ui.add_space(4.0);
+
                 ui.horizontal(|ui| {
                     ui.label(i18n.t_args(
                         "label-total-mappings",
                         &[("count", &mapping_manager.mappings().len().to_string())],
                     ));
                 });
-                ui.separator();
+                ui.add_space(4.0);
 
                 // Scrollable mapping list
                 egui::ScrollArea::vertical()
@@ -42,73 +48,100 @@ impl MappingPanel {
                         let mapping_ids: Vec<MappingId> =
                             mapping_manager.mappings().iter().map(|m| m.id).collect();
 
-                        for mapping_id in mapping_ids {
-                            if let Some(mapping) = mapping_manager.get_mapping_mut(mapping_id) {
+                        for (i, mapping_id) in mapping_ids.iter().enumerate() {
+                            if let Some(mapping) = mapping_manager.get_mapping_mut(*mapping_id) {
                                 ui.push_id(mapping.id, |ui| {
-                                    ui.group(|ui| {
-                                        ui.horizontal(|ui| {
-                                            // Visibility
-                                            let _old_visible = mapping.visible;
-                                            if ui.checkbox(&mut mapping.visible, "").changed() {
-                                                actions.push(UIAction::ToggleMappingVisibility(
-                                                    mapping.id,
-                                                    mapping.visible,
-                                                ));
-                                            }
+                                    // Zebra striping
+                                    let bg_color = if i % 2 == 0 {
+                                        colors::DARK_GREY
+                                    } else {
+                                        colors::DARKER_GREY
+                                    };
 
-                                            // Name (Click to select)
-                                            // We don't have a specific "selected_mapping_id" passed in yet,
-                                            // but we can fire an action to select it.
-                                            let label = format!(
-                                                "{} (Paint #{})",
-                                                mapping.name, mapping.paint_id
-                                            );
-                                            if ui.button(label).clicked() {
-                                                actions.push(UIAction::SelectMapping(mapping.id));
-                                            }
-
-                                            ui.with_layout(
-                                                egui::Layout::right_to_left(egui::Align::Center),
-                                                |ui| {
-                                                    if ui
-                                                        .button(i18n.t("btn-remove"))
-                                                        .on_hover_text(i18n.t("btn-remove"))
-                                                        .clicked()
-                                                    {
-                                                        actions.push(UIAction::RemoveMapping(
-                                                            mapping.id,
-                                                        ));
-                                                    }
-                                                },
-                                            );
-                                        });
-
-                                        // Indented properties
-                                        ui.indent("mapping_props", |ui| {
+                                    egui::Frame::new().fill(bg_color).inner_margin(4.0).show(
+                                        ui,
+                                        |ui| {
                                             ui.horizontal(|ui| {
-                                                ui.checkbox(
-                                                    &mut mapping.solo,
-                                                    i18n.t("check-solo"),
+                                                // Visibility
+                                                if ui.checkbox(&mut mapping.visible, "").changed() {
+                                                    actions.push(
+                                                        UIAction::ToggleMappingVisibility(
+                                                            mapping.id,
+                                                            mapping.visible,
+                                                        ),
+                                                    );
+                                                }
+
+                                                // Name (Click to select)
+                                                let label = format!(
+                                                    "{} (Paint #{})",
+                                                    mapping.name, mapping.paint_id
                                                 );
-                                                ui.checkbox(
-                                                    &mut mapping.locked,
-                                                    i18n.t("check-lock"),
+                                                if ui
+                                                    .add(
+                                                        egui::Label::new(label)
+                                                            .sense(Sense::click()),
+                                                    )
+                                                    .clicked()
+                                                {
+                                                    actions
+                                                        .push(UIAction::SelectMapping(mapping.id));
+                                                }
+
+                                                // Spacer
+                                                ui.with_layout(
+                                                    egui::Layout::right_to_left(
+                                                        egui::Align::Center,
+                                                    ),
+                                                    |ui| {
+                                                        // Delete Button
+                                                        if custom::delete_button(ui) {
+                                                            actions.push(UIAction::RemoveMapping(
+                                                                mapping.id,
+                                                            ));
+                                                        }
+
+                                                        ui.add_space(8.0);
+
+                                                        // Solo Button
+                                                        if custom::solo_button(ui, mapping.solo)
+                                                            .clicked()
+                                                        {
+                                                            mapping.solo = !mapping.solo;
+                                                        }
+
+                                                        ui.add_space(8.0);
+
+                                                        // Lock Button
+                                                        ui.checkbox(
+                                                            &mut mapping.locked,
+                                                            i18n.t("check-lock"),
+                                                        );
+                                                    },
                                                 );
                                             });
 
-                                            // Opacity
-                                            ui.add(
-                                                Slider::new(&mut mapping.opacity, 0.0..=1.0)
-                                                    .text(i18n.t("label-master-opacity")),
-                                            );
-                                        });
-                                    });
+                                            // Second row: Opacity
+                                            ui.horizontal(|ui| {
+                                                ui.add_space(24.0); // Indent to align with name
+                                                ui.label(i18n.t("label-master-opacity"));
+                                                custom::styled_slider(
+                                                    ui,
+                                                    &mut mapping.opacity,
+                                                    0.0..=1.0,
+                                                    1.0,
+                                                );
+                                            });
+                                        },
+                                    );
                                 });
+                                ui.add_space(2.0);
                             }
                         }
                     });
 
                 ui.separator();
+                ui.add_space(4.0);
 
                 // Add Mapping Button
                 if ui.button(i18n.t("btn-add-mapping")).clicked() {

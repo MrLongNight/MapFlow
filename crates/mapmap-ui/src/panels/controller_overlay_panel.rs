@@ -233,8 +233,12 @@ impl ControllerOverlayPanel {
                         let color_image = egui::ColorImage {
                             size,
                             pixels,
+<<<<<<< HEAD
                             source_size: egui::Vec2::new(width as f32, height as f32),
                         };
+=======
+                            source_size: egui::vec2(width as f32, height as f32),
+>>>>>>> origin/ui/mapping-panel-modernize-16204580659367847472
                         };
 
                         return Some(ctx.load_texture(
