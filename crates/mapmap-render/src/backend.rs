@@ -312,14 +312,14 @@ mod tests {
     fn test_backend_creation() {
         pollster::block_on(async {
             let backend = WgpuBackend::new(None).await.ok();
-            if backend.is_err() {
+            if backend.is_none() {
                 // Skipping test on CI/Headless systems without GPU support.
                 eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
                 return;
             }
-            assert!(backend.is_ok());
+            assert!(backend.is_some());
 
-            if let Ok(backend) = backend {
+            if let Some(backend) = backend {
                 println!("Backend: {:?}", backend.adapter_info);
             }
         });
@@ -332,8 +332,8 @@ mod tests {
             // even if it fails.
             let result = WgpuBackend::new(None).await.ok();
             match result {
-                Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
-                Err(e) => println!("Backend init failed gracefully: {}", e),
+                Some(b) => println!("Backend init success: {:?}", b.adapter_info),
+                None => println!("Backend init failed gracefully"),
             }
         });
     }
