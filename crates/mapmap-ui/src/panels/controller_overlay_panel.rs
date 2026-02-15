@@ -233,10 +233,7 @@ impl ControllerOverlayPanel {
                         let color_image = egui::ColorImage {
                             size,
                             pixels,
-source_size: egui::Vec2::new(width as f32, height as f32),
-=======
-                            source_size: egui::Vec2::new(size[0] as f32, size[1] as f32),
->>>>>>> origin/perf/optimize-trigger-eval-5025564681143441822
+                            source_size: egui::Vec2::new(width as f32, height as f32),
                         };
 
                         return Some(ctx.load_texture(
@@ -750,7 +747,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
             // Fallback: dark background
             let bg_color = Color32::from_rgb(30, 30, 35);
             painter.rect_filled(rect, 4.0, bg_color);
-            painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
+            painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)), egui::StrokeKind::Middle);
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -956,7 +953,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                             painter.circle_stroke(elem_rect.center(), radius, stroke);
                         }
                         _ => {
-                            painter.rect_stroke(elem_rect, 0.0, stroke);
+                            painter.rect_stroke(elem_rect, 0.0, stroke, egui::StrokeKind::Middle);
                         }
                     }
 
@@ -1056,7 +1053,7 @@ source_size: egui::Vec2::new(width as f32, height as f32),
                     painter.circle_stroke(elem_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4.0, stroke);
+                    painter.rect_stroke(elem_rect, 4.0, stroke, egui::StrokeKind::Middle);
                 }
             }
         }
@@ -1267,5 +1264,3 @@ fn ui_time_seconds() -> f64 {
         .unwrap_or_default()
         .as_secs_f64()
 }
-
-

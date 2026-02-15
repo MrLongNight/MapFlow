@@ -1,9 +1,10 @@
 use mapmap_core::output::{CanvasRegion, OutputConfig};
 use mapmap_render::{QuadRenderer, WgpuBackend};
 use std::sync::Arc;
-use wgpu::{Device, Queue};
+use wgpu::{Device, Instance, Queue};
 
 struct TestEnvironment {
+    instance: Arc<Instance>,
     device: Arc<Device>,
     queue: Arc<Queue>,
 }
@@ -11,6 +12,7 @@ struct TestEnvironment {
 async fn setup_test_environment() -> Option<TestEnvironment> {
     match WgpuBackend::new(None).await {
         Ok(backend) => Some(TestEnvironment {
+            instance: backend.instance.clone(),
             device: backend.device.clone(),
             queue: backend.queue.clone(),
         }),
@@ -50,14 +52,14 @@ fn create_solid_color_texture(
     }
 
     queue.write_texture(
-        wgpu::ImageCopyTexture {
+        wgpu::TexelCopyTextureInfo {
             texture: &texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         &data,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -99,9 +101,9 @@ async fn read_texture_data(
 
     encoder.copy_texture_to_buffer(
         texture.as_image_copy(),
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &buffer,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -121,7 +123,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::Wait);
+    // device.poll(wgpu::Maintain::wait()); // Maintain not found
     rx.await.unwrap().unwrap();
 
     let mut unpadded_data = Vec::with_capacity((unpadded_bytes_per_row * height) as usize);
@@ -169,7 +171,7 @@ async fn read_texture_data(
 fn test_render_to_multiple_outputs() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+            let TestEnvironment { instance, device, queue } = env;
             let width = 64;
             let height = 64;
             let color = [255, 0, 0, 255]; // Red
@@ -236,6 +238,7 @@ fn test_render_to_multiple_outputs() {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
                             },
+                            depth_slice: None,
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,
@@ -249,6 +252,8 @@ fn test_render_to_multiple_outputs() {
 
             // 6. Verify the contents of each output texture
             for (i, texture) in output_textures.iter().enumerate() {
+                // Poll to ensure completion
+                instance.poll_all(true);
                 let data = read_texture_data(&device, &queue, texture, width, height).await;
                 for chunk in data.chunks_exact(4) {
                     assert_eq!(chunk, color, "Pixel mismatch in output {}", i + 1);
@@ -291,7 +296,7 @@ fn create_fullscreen_quad_mesh() -> Mesh {
 fn test_individual_output_transforms() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+            let TestEnvironment { instance, device, queue } = env;
             let width: u32 = 64;
             let height: u32 = 64;
             let color = [0, 255, 0, 255]; // Green
@@ -339,6 +344,7 @@ fn test_individual_output_transforms() {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
@@ -356,6 +362,7 @@ fn test_individual_output_transforms() {
             }
             queue.submit(Some(encoder.finish()));
 
+            instance.poll_all(true);
             let data = read_texture_data(&device, &queue, &output_texture, width, height).await;
 
             // Check a pixel that should be green (e.g., center of the scaled quad)
@@ -384,7 +391,7 @@ fn test_individual_output_transforms() {
 fn test_edge_blending_between_outputs() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+            let TestEnvironment { instance, device, queue } = env;
             let width: u32 = 256;
             let height: u32 = 256;
             let color = [255, 0, 0, 255]; // Red
@@ -438,6 +445,7 @@ fn test_edge_blending_between_outputs() {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
@@ -447,6 +455,7 @@ fn test_edge_blending_between_outputs() {
             }
             queue.submit(Some(encoder.finish()));
 
+            instance.poll_all(true);
             let data = read_texture_data(&device, &queue, &output_texture, width, height).await;
 
             // Check the pixel values in the blend zone
@@ -490,7 +499,7 @@ fn test_edge_blending_between_outputs() {
 fn test_color_calibration_per_output() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+            let TestEnvironment { instance, device, queue } = env;
             let width: u32 = 64;
             let height: u32 = 64;
             let gray_color = [128, 128, 128, 255];
@@ -541,6 +550,7 @@ fn test_color_calibration_per_output() {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
@@ -550,6 +560,7 @@ fn test_color_calibration_per_output() {
             }
             queue.submit(Some(encoder.finish()));
 
+            instance.poll_all(true);
             let data = read_texture_data(&device, &queue, &output_texture, width, height).await;
             let calibrated_pixel = &data[0..4];
 
@@ -573,7 +584,7 @@ fn test_color_calibration_per_output() {
 fn test_different_output_resolutions() {
     pollster::block_on(async {
         if let Some(env) = setup_test_environment().await {
-            let TestEnvironment { device, queue } = env;
+            let TestEnvironment { instance, device, queue } = env;
             let color = [0, 0, 255, 255]; // Blue
 
             let resolutions = [(128, 64), (80, 100)];
@@ -615,6 +626,7 @@ fn test_different_output_resolutions() {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
                             },
+                            depth_slice: None,
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,
@@ -624,6 +636,7 @@ fn test_different_output_resolutions() {
                 }
                 queue.submit(Some(encoder.finish()));
 
+                instance.poll_all(true);
                 let data = read_texture_data(&device, &queue, &output_texture, width, height).await;
                 for (i, chunk) in data.chunks_exact(4).enumerate() {
                     assert_eq!(

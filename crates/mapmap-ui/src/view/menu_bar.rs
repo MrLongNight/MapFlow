@@ -17,7 +17,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
     // Custom frame for modern look
     let frame = egui::Frame::default()
         .fill(ctx.style().visuals.window_fill())
-        .inner_margin(egui::Margin::symmetric(16.0, 8.0));
+        .inner_margin(egui::Margin::symmetric(16, 8));
 
     egui::TopBottomPanel::top("top_panel")
         .frame(frame)

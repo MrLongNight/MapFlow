@@ -3,10 +3,7 @@
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use wgpu::util::DeviceExt;
-use wgpu::{
-    CommandEncoderDescriptor, Extent3d, ImageCopyBuffer, ImageDataLayout, TextureDescriptor,
-    TextureUsages,
-};
+use wgpu::{CommandEncoderDescriptor, Extent3d, TextureDescriptor, TextureUsages};
 
 // Helper function to run a test with a given texture setup
 async fn run_test_with_texture<F>(
@@ -19,6 +16,7 @@ where
     F: FnOnce(&mut EffectChainRenderer, &wgpu::TextureView, &wgpu::TextureView),
 {
     let backend = WgpuBackend::new(None).await.unwrap();
+    let instance = &backend.instance;
     let device = &backend.device;
     let queue = &backend.queue;
     let format = wgpu::TextureFormat::Rgba8UnormSrgb;
@@ -91,9 +89,9 @@ where
 
     encoder.copy_texture_to_buffer(
         output_texture.as_image_copy(),
-        ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &output_buffer,
-            layout: ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(height),
@@ -106,27 +104,7 @@ where
         },
     );
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    let _index = queue.submit(Some(encoder.finish()));
-=======
     queue.submit(Some(encoder.finish()));
->>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
-=======
-    let _index = queue.submit(Some(encoder.finish()));
->>>>>>> origin/jules-7419576384359145166-df4ba129
-=======
-    let _index = queue.submit(Some(encoder.finish()));
->>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
-=======
-    let _index = queue.submit(Some(encoder.finish()));
->>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
-=======
-    let _index = queue.submit(Some(encoder.finish()));
->>>>>>> origin/lina-ui-oscillator-polish-9227819679485877388
 
     // Add a small delay to give the GPU time to process the command buffer.
     // This is a workaround for potential race conditions in headless environments.
@@ -136,37 +114,8 @@ where
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    // device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
-=======
-    device.poll(wgpu::Maintain::Wait);
->>>>>>> origin/ux/accessibility-custom-widgets-3047621584255357057
-=======
-    device.poll(wgpu::Maintain::Wait);
->>>>>>> origin/jules-ui-cyber-effect-panel-12215865592445160390
-=======
-    device
-<<<<<<< HEAD
-        .poll(wgpu::Maintain::Wait)
-        .panic_on_timeout();
-<<<<<<< HEAD
->>>>>>> origin/jules-7419576384359145166-df4ba129
-=======
->>>>>>> origin/bolt/optimize-audio-analysis-allocation-16814173430346295439
-=======
-    device.poll(wgpu::Maintain::Wait);
->>>>>>> origin/tracker-update-roadmap-changelog-1-62932857170364482
-=======
-        .poll(wgpu::Maintain::WaitForSubmissionIndex(index))
-        .panic_on_timeout();
->>>>>>> origin/ux/safety-shield-standardization-4591480983604393855
-=======
-    device.poll(wgpu::Maintain::Wait);
->>>>>>> origin/lina-ui-oscillator-polish-9227819679485877388
+    // device.poll(wgpu::Maintain::Wait); // Maintain not found
+    instance.poll_all(true);
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

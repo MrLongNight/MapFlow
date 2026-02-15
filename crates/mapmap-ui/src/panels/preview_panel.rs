@@ -149,7 +149,7 @@ impl PreviewPanel {
                                 } else {
                                     egui::Stroke::NONE
                                 })
-                                .rounding(4.0)
+                                .corner_radius(4)
                                 .inner_margin(4.0)
                                 .show(ui, |ui| {
                                     ui.vertical(|ui| {

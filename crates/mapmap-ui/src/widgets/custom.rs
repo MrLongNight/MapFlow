@@ -12,7 +12,7 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     // Header background
-Response
+    painter.rect_filled(rect, egui::CornerRadius::from(4), colors::DARK_GREY);
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -51,12 +51,35 @@ pub fn styled_slider(
     let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
 
-Response
+    // Keyboard interaction
+    if response.has_focus() {
+        let range_span = range.end() - range.start();
+        let step = range_span / 100.0;
+        let large_step = range_span / 10.0;
+
+        let mut delta = 0.0;
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
+        {
+            delta -= if ui.input(|i| i.modifiers.shift) {
+                large_step
+            } else {
+                step
+            };
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            delta += if ui.input(|i| i.modifiers.shift) {
+                large_step
+            } else {
+                step
+            };
+        }
+
+        if delta != 0.0 {
+            *value = (*value + delta).clamp(*range.start(), *range.end());
             response.mark_changed();
         }
     }
 
-Response
     // Double-click to reset
     if response.double_clicked() {
         *value = default_value;
@@ -73,9 +96,10 @@ Response
 
     ui.painter().rect(
         rect,
-Response
+        egui::CornerRadius::from(4),
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
+        egui::StrokeKind::Middle,
     );
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
@@ -97,9 +121,10 @@ Response
 
     ui.painter().rect(
         fill_rect,
-Response
+        egui::CornerRadius::from(4),
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
+        egui::StrokeKind::Middle,
     );
 
     // Value Text
@@ -151,8 +176,9 @@ pub fn styled_drag_value(
     if is_changed {
         ui.painter().rect_stroke(
             response.rect.expand(1.0),
-Response
+            egui::CornerRadius::from(4),
             Stroke::new(1.0, colors::CYAN_ACCENT),
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -161,7 +187,7 @@ Response
 
 pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>) -> Response {
     let desired_size = Vec2::new(48.0, 48.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
 
     // Keyboard interaction
@@ -203,6 +229,7 @@ pub fn styled_knob(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive
             *range.start()..=*range.end(),
         );
         *value = new_value;
+        response.mark_changed();
     }
 
     let painter = ui.painter();
@@ -281,7 +308,13 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-Response
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::from(4),
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Middle,
+    );
 
     let text_pos = rect.center();
 
@@ -394,19 +427,20 @@ pub fn draw_safety_vertical_fill(ui: &Ui, rect: Rect, progress: f32, color: Colo
     // Bottom-up fill
     fill_rect.min.y = rect.max.y - (rect.height() * progress);
 
-    painter.rect_filled(fill_rect, 4.0, color.linear_multiply(0.4));
+    painter.rect_filled(fill_rect, egui::CornerRadius::from(4), color.linear_multiply(0.4));
 
     // Glowing border when active
     let stroke_alpha = (progress * 255.0) as u8;
     painter.rect_stroke(
         rect,
-        4.0,
+        egui::CornerRadius::from(4),
         Stroke::new(
             1.0,
             color
                 .linear_multiply(0.8)
                 .gamma_multiply(stroke_alpha as f32 / 255.0),
         ),
+        egui::StrokeKind::Middle,
     );
 }
 
@@ -465,18 +499,28 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     let painter = ui.painter();
 
     // 1. Background
-Response
+    painter.rect_filled(
+        rect,
+        egui::CornerRadius::from(4),
+        if response.hovered() {
+            visuals.bg_fill
+        } else {
+            colors::DARK_GREY
+        },
+    );
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-Response
+            egui::CornerRadius::from(4),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
         );
     }
 
-Response
+    // 2. Safety Fill
+    draw_safety_vertical_fill(ui, rect, progress, color);
 
     // 3. Text
     let text_color = if triggered {
@@ -496,7 +540,8 @@ Response
     if response.hovered() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
-    response.on_hover_text("Hold to confirm (Mouse or Space/Enter)");
+    // Shadow response to avoid moved value error
+    let response = response.on_hover_text("Hold to confirm (Mouse or Space/Enter)");
 
     // Accessibility info
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, text));
@@ -522,18 +567,28 @@ pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool
     let painter = ui.painter();
 
     // 1. Background
-Response
+    painter.rect_filled(
+        rect,
+        egui::CornerRadius::from(4),
+        if response.hovered() {
+            visuals.bg_fill
+        } else {
+            Color32::TRANSPARENT
+        },
+    );
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-Response
+            egui::CornerRadius::from(4),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
         );
     }
 
-Response
+    // 2. Safety Fill (Radial for icons)
+    draw_safety_radial_fill(ui, rect.center(), rect.width() / 2.0, progress, color);
 
     // 3. Icon
     let text_color = if triggered {
@@ -553,12 +608,101 @@ Response
     if response.hovered() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
-    response.on_hover_text("Hold to confirm");
+    let response = response.on_hover_text("Hold to confirm");
 
     // Accessibility info
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, icon_text));
 
     triggered
+}
+
+pub fn styled_slider_log(
+    ui: &mut Ui,
+    value: &mut f32,
+    range: std::ops::RangeInclusive<f32>,
+    default_value: f32,
+) -> Response {
+    let desired_size = ui.spacing().slider_width * Vec2::new(1.0, 0.5);
+    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+    let visuals = ui.style().interact(&response);
+
+    // Helper for log mapping
+    let to_log = |v: f32| v.ln();
+    let from_log = |v: f32| v.exp();
+
+    let min = *range.start();
+    let max = *range.end();
+    let min_log = to_log(min.max(0.0001));
+    let max_log = to_log(max);
+
+    // Input handling
+    if response.dragged() {
+        if let Some(mouse_pos) = response.interact_pointer_pos() {
+            let t = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), 0.0..=1.0);
+            let val_log = lerp(min_log..=max_log, t);
+            *value = from_log(val_log);
+            response.mark_changed();
+        }
+    }
+
+    if response.double_clicked() {
+        *value = default_value;
+        response.mark_changed();
+    }
+
+    // Draw track
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::from(4),
+        colors::DARKER_GREY,
+        visuals.bg_stroke,
+        egui::StrokeKind::Middle,
+    );
+
+    // Draw fill
+    let t = (to_log(*value) - min_log) / (max_log - min_log);
+    let fill_rect = Rect::from_min_max(
+        rect.min,
+        Pos2::new(
+            lerp((rect.left())..=(rect.right()), t.clamp(0.0, 1.0)),
+            rect.max.y,
+        ),
+    );
+
+    let is_changed = (*value - default_value).abs() > 0.001;
+    let fill_color = if is_changed {
+        colors::CYAN_ACCENT
+    } else {
+        colors::CYAN_ACCENT.linear_multiply(0.7)
+    };
+
+    ui.painter().rect(
+        fill_rect,
+        egui::CornerRadius::from(4),
+        fill_color,
+        Stroke::new(0.0, Color32::TRANSPARENT),
+        egui::StrokeKind::Middle,
+    );
+
+    // Text
+    let text = format!("{:.0}", value);
+    let text_color = if response.hovered() || response.dragged() {
+        Color32::WHITE
+    } else if is_changed {
+        colors::CYAN_ACCENT
+    } else {
+        Color32::from_gray(180)
+    };
+
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(12.0),
+        text_color,
+    );
+
+    response.on_hover_text("Double-click to reset")
 }
 
 pub fn collapsing_header_with_reset(
@@ -583,7 +727,3 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
-
-
-
-

@@ -231,8 +231,9 @@ impl MediaManagerUI {
                     if response.hovered() {
                         ui.painter().rect_stroke(
                             rect,
-                            2.0,
+                            egui::CornerRadius::from(2),
                             egui::Stroke::new(2.0, Color32::LIGHT_BLUE),
+                            egui::StrokeKind::Middle,
                         );
                     }
                 }

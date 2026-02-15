@@ -1,11 +1,12 @@
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
-use wgpu::{Device, Queue};
+use wgpu::{Device, Instance, Queue};
 
 // --- Test Setup Boilerplate (adapted from multi_output_tests.rs) ---
 
 struct TestEnvironment {
+    instance: Arc<Instance>,
     device: Arc<Device>,
     queue: Arc<Queue>,
 }
@@ -15,6 +16,7 @@ async fn setup_test_environment() -> Option<TestEnvironment> {
         .await
         .ok()
         .map(|backend| TestEnvironment {
+            instance: backend.instance.clone(),
             device: backend.device.clone(),
             queue: backend.queue.clone(),
         })
@@ -46,9 +48,14 @@ fn create_solid_color_texture(
     let data: Vec<u8> = (0..width * height).flat_map(|_| color).collect();
 
     queue.write_texture(
-        texture.as_image_copy(),
+        wgpu::TexelCopyTextureInfo {
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
         &data,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(4 * width),
             rows_per_image: Some(height),
@@ -90,10 +97,15 @@ async fn read_texture_data(
     });
 
     encoder.copy_texture_to_buffer(
-        texture.as_image_copy(),
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyTextureInfo {
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        wgpu::TexelCopyBufferInfo {
             buffer: &buffer,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_bytes_per_row),
                 rows_per_image: Some(height),
@@ -114,7 +126,7 @@ async fn read_texture_data(
     slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::Wait);
+    // device.poll(wgpu::Maintain::wait());
     rx.await.unwrap().unwrap();
 
     // The view is a guard that must be dropped before unmap is called.
@@ -244,7 +256,11 @@ fn test_effect_chain_serialization() {
 #[ignore = "GPU tests are unstable in headless CI environment"]
 async fn test_empty_chain_is_passthrough() {
     if let Some(env) = setup_test_environment().await {
-        let TestEnvironment { device, queue } = env;
+        let TestEnvironment {
+            instance,
+            device,
+            queue,
+        } = env;
         let width = 32;
         let height = 32;
         let color = [255, 0, 0, 255]; // Red
@@ -288,6 +304,7 @@ async fn test_empty_chain_is_passthrough() {
         );
         queue.submit(Some(encoder.finish()));
 
+        instance.poll_all(true);
         let data = read_texture_data(&device, &queue, &output, width, height).await;
 
         // With the fix, an empty chain should copy the source, so the output should be red.
@@ -299,7 +316,11 @@ async fn test_empty_chain_is_passthrough() {
 #[ignore = "GPU tests are unstable in headless CI environment"]
 async fn test_blur_plus_coloradjust_chain() {
     if let Some(env) = setup_test_environment().await {
-        let TestEnvironment { device, queue } = env;
+        let TestEnvironment {
+            instance,
+            device,
+            queue,
+        } = env;
         let width = 32;
         let height = 32;
         let color = [0, 0, 255, 255]; // Blue
@@ -355,6 +376,7 @@ async fn test_blur_plus_coloradjust_chain() {
         );
         queue.submit(Some(encoder.finish()));
 
+        instance.poll_all(true);
         let data = read_texture_data(&device, &queue, &output, width, height).await;
         let pixel = &data[0..4];
 
@@ -387,7 +409,11 @@ async fn test_blur_plus_coloradjust_chain() {
 #[ignore = "GPU tests are unstable in headless CI environment"]
 async fn test_vignette_plus_filmgrain_chain() {
     if let Some(env) = setup_test_environment().await {
-        let TestEnvironment { device, queue } = env;
+        let TestEnvironment {
+            instance,
+            device,
+            queue,
+        } = env;
         let width = 32;
         let height = 32;
         let color = [255, 255, 255, 255]; // White
@@ -438,6 +464,7 @@ async fn test_vignette_plus_filmgrain_chain() {
         );
         queue.submit(Some(encoder.finish()));
 
+        instance.poll_all(true);
         let data = read_texture_data(&device, &queue, &output, width, height).await;
 
         // Center pixel should be affected by grain, so not pure white
