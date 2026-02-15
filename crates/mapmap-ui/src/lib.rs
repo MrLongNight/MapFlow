@@ -12,7 +12,6 @@
 #![allow(missing_docs)]
 
 // Categorized modules
-pub mod canvas;
 pub mod core;
 pub mod editors;
 pub mod panels;
@@ -20,7 +19,6 @@ pub mod view;
 pub mod widgets;
 
 // Re-export categorized modules to maintain API compatibility
-pub use crate::canvas::*;
 pub use crate::core::*;
 pub use crate::editors::*;
 pub use crate::panels::*;
@@ -168,7 +166,7 @@ pub enum UIAction {
     // Media commands for specific module parts
     MediaCommand(
         mapmap_core::module::ModulePartId,
-        crate::canvas::types::MediaPlaybackCommand,
+        crate::editors::module_canvas::types::MediaPlaybackCommand,
     ),
 }
 
@@ -426,8 +424,8 @@ impl AppUI {
                     },
                 );
 
-                egui::Frame::NONE
-                    .inner_margin(egui::Margin::symmetric(16, 8))
+                egui::Frame::new()
+                    .inner_margin(egui::Margin::symmetric(8, 8))
                     .show(ui, |ui| {
                         let _ = self
                             .media_browser
@@ -737,7 +735,7 @@ impl AppUI {
                 rect.expand(2.0),
                 4.0,
                 egui::Stroke::new(2.0, color),
-                egui::StrokeKind::Middle,
+                egui::StrokeKind::Inside,
             );
 
             // Check for recent MIDI activity (last 0.5s)

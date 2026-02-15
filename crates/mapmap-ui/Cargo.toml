@@ -17,13 +17,13 @@ tokio = ["dep:tokio"]
 anyhow = { workspace = true }
 cpal = { workspace = true, optional = true }
 dirs = "6.0"
-ecolor = { workspace = true }
 
 # Phase 6: egui migration
 egui = { workspace = true, features = ["serde"] }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
 egui_extras = { workspace = true }
+egui_node_editor = { workspace = true }
 fluent = { workspace = true }
 fluent-langneg = { workspace = true }
 glam = { workspace = true }
