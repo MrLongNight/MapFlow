@@ -116,7 +116,7 @@ where
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
-    device.poll(wgpu::Maintain::Wait);
+    // device.poll(wgpu::Maintain::Wait);
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)
