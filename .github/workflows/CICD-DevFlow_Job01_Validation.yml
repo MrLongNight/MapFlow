@@ -57,7 +57,14 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config yasm nasm clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config yasm nasm clang libclang-dev llvm-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev build-essential
+
+      - name: Debug Environment
+        run: |
+          nasm --version
+          yasm --version
+          clang --version
+          pkg-config --version
 
       - name: Check Formatting
         id: fmt
