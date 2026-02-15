@@ -96,6 +96,10 @@ impl ControlTarget {
                 if name.chars().any(|c| c.is_control()) {
                     return Err("Name contains control characters".to_string());
                 }
+                // Prevent path traversal and potential injection
+                if name.contains('/') || name.contains('\\') || name.contains("..") {
+                    return Err("Name contains invalid characters (/, \\, ..)".to_string());
+                }
             }
             _ => {}
         }
@@ -276,6 +280,16 @@ mod tests {
 
         let control_char = ControlTarget::Custom("Name\nWith\tControl".to_string());
         assert!(control_char.validate().is_err());
+
+        // Test path traversal protection
+        let path_trav = ControlTarget::Custom("../secret".to_string());
+        assert!(path_trav.validate().is_err());
+
+        let slash = ControlTarget::Custom("foo/bar".to_string());
+        assert!(slash.validate().is_err());
+
+        let backslash = ControlTarget::Custom("foo\\bar".to_string());
+        assert!(backslash.validate().is_err());
     }
 
     #[test]

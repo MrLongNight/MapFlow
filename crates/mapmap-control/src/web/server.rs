@@ -262,11 +262,16 @@ async fn security_headers(req: Request, next: Next) -> Response {
         HeaderValue::from_static("default-src 'none'; frame-ancestors 'none';"),
     );
 
-    // Strict Transport Security (HSTS)
-    // Enforce HTTPS usage (if applicable) and prevent downgrade attacks
+    // Strict Transport Security (HSTS) - REMOVED
+    // This server runs on plain HTTP. Sending HSTS is a violation of RFC 6797 and can cause
+    // availability issues for localhost development.
+    // If deployed behind a TLS termination proxy, the proxy should handle HSTS.
+
+    // Permissions Policy
+    // Disable sensitive features that are not used by the control interface
     headers.insert(
-        header::STRICT_TRANSPORT_SECURITY,
-        HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
+        "Permissions-Policy",
+        HeaderValue::from_static("microphone=(), camera=(), geolocation=(), usb=(), interest-cohort=()"),
     );
 
     // Cache-Control
@@ -366,12 +371,16 @@ mod tests {
                 .and_then(|h| h.to_str().ok()),
             Some("default-src 'none'; frame-ancestors 'none';")
         );
+        // HSTS removed
+        assert!(headers.get("Strict-Transport-Security").is_none());
+
         assert_eq!(
             headers
-                .get("Strict-Transport-Security")
+                .get("Permissions-Policy")
                 .and_then(|h| h.to_str().ok()),
-            Some("max-age=63072000; includeSubDomains; preload")
+            Some("microphone=(), camera=(), geolocation=(), usb=(), interest-cohort=()")
         );
+
         assert_eq!(
             headers.get("Cache-Control").and_then(|h| h.to_str().ok()),
             Some("no-store, max-age=0")
