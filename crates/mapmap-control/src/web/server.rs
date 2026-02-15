@@ -271,7 +271,9 @@ async fn security_headers(req: Request, next: Next) -> Response {
     // Disable sensitive features that are not used by the control interface
     headers.insert(
         "Permissions-Policy",
-        HeaderValue::from_static("microphone=(), camera=(), geolocation=(), usb=(), interest-cohort=()"),
+        HeaderValue::from_static(
+            "microphone=(), camera=(), geolocation=(), usb=(), interest-cohort=()",
+        ),
     );
 
     // Cache-Control
