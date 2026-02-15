@@ -311,7 +311,7 @@ mod tests {
     #[test]
     fn test_backend_creation() {
         pollster::block_on(async {
-            let backend = WgpuBackend::new(None).await;
+            let backend = WgpuBackend::new(None).await.ok();
             if backend.is_err() {
                 // Skipping test on CI/Headless systems without GPU support.
                 eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
@@ -330,7 +330,7 @@ mod tests {
         pollster::block_on(async {
             // This test ensures that trying to create a backend doesn't panic,
             // even if it fails.
-            let result = WgpuBackend::new(None).await;
+            let result = WgpuBackend::new(None).await.ok();
             match result {
                 Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
                 Err(e) => println!("Backend init failed gracefully: {}", e),

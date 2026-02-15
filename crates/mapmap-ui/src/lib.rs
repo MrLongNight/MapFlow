@@ -172,6 +172,12 @@ pub enum UIAction {
         mapmap_core::module::ModulePartId,
         crate::editors::module_canvas::types::MediaPlaybackCommand,
     ),
+
+    // Module Connection Deletion
+    DeleteConnection(
+        mapmap_core::module::ModuleId,
+        mapmap_core::module::ModuleConnection,
+    ),
 }
 
 use mapmap_control::ControlTarget;
