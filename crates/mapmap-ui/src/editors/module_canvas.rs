@@ -2451,7 +2451,7 @@ impl ModuleCanvas {
                 SourceType::new_media_file(String::new()),
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("📹 Video (Uni)").clicked() {
             self.add_source_node(
@@ -2482,7 +2482,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("🖼 Image (Uni)").clicked() {
             self.add_source_node(
@@ -2507,7 +2507,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
 
         ui.add_space(4.0);
@@ -2533,7 +2533,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("🖼 Image (Multi)").clicked() {
             self.add_source_node(
@@ -2556,7 +2556,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
 
         ui.add_space(4.0);
@@ -2567,7 +2567,7 @@ impl ModuleCanvas {
                 SourceType::LiveInput { device_id: 0 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("📡 NDI Input").clicked() {
             self.add_source_node(
@@ -2575,7 +2575,7 @@ impl ModuleCanvas {
                 SourceType::NdiInput { source_name: None },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         #[cfg(target_os = "windows")]
         if ui.button("🚰 Spout Input").clicked() {
@@ -2586,7 +2586,7 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
 
         ui.add_space(4.0);
@@ -2600,11 +2600,11 @@ impl ModuleCanvas {
                 },
                 pos_override,
             );
-            ui.close_menu();
+            ui.close();
         }
         if ui.button("🎮 Bevy Scene").clicked() {
             self.add_source_node(manager, SourceType::Bevy, pos_override);
-            ui.close_menu();
+            ui.close();
         }
     }
 
@@ -2632,7 +2632,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("🎲 Random").clicked() {
                 self.add_trigger_node(
@@ -2644,7 +2644,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("⏱ Fixed").clicked() {
                 self.add_trigger_node(
@@ -2655,7 +2655,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("🎹 MIDI").clicked() {
                 self.add_trigger_node(
@@ -2667,7 +2667,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2678,7 +2678,7 @@ impl ModuleCanvas {
                     MaskType::Shape(mapmap_core::module::MaskShape::Circle),
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("🌈 Gradient").clicked() {
                 self.add_mask_node(
@@ -2689,7 +2689,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2700,7 +2700,7 @@ impl ModuleCanvas {
                     ModulizerType::BlendMode(mapmap_core::module::BlendModeType::Normal),
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2718,7 +2718,7 @@ impl ModuleCanvas {
                     },
                     pos_override,
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
 
@@ -2747,7 +2747,7 @@ impl ModuleCanvas {
                     );
                 }
             }
-            ui.close_menu();
+            ui.close();
         }
     }
 
