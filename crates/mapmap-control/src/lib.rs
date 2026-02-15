@@ -29,7 +29,7 @@
 //! - [`midi`]: MIDI input/output system
 //! - [`osc`]: OSC server and client
 //! - [`dmx`]: DMX output via Art-Net and sACN
-//! - `web`: Web API and WebSocket
+//! - [`web`]: Web API and WebSocket
 //! - [`cue`]: Cue system for show automation
 //! - [`shortcuts`]: Keyboard shortcuts and macros
 //! - [`target`]: Control target abstraction

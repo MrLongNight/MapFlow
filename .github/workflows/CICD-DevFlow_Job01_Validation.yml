@@ -57,7 +57,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install System Deps (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config yasm nasm clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev
 
       - name: Check Formatting
         id: fmt
@@ -66,7 +66,7 @@ jobs:
 
       - name: Check Clippy
         id: clippy
-        run: cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux,ffmpeg" -- -D warnings
+        run: cargo clippy --workspace --features "mapmap-io/ci-linux" --all-targets -- -D warnings
         continue-on-error: true
 
       - name: Install cargo-sort
@@ -177,13 +177,13 @@ jobs:
 
       - name: Build (Release)
         id: build
-        run: cargo build --release --verbose --features "mapmap-io/ci-linux,ffmpeg"
+        run: cargo build --release --verbose --features "mapmap-io/ci-linux"
         continue-on-error: true
 
       - name: Test (Nextest)
         id: test
         if: ${{ github.event.inputs.skip_tests != 'true' }}
-        run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux,ffmpeg"
+        run: cargo nextest run --release --workspace --features "mapmap-io/ci-linux"
         continue-on-error: true
 
       - name: Report Build/Test Issues

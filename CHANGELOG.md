@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-02-06: perf(ui): Optimize Inspector with hot-path allocation removal (Bolt) (#585)
 - 2026-02-06: fix(ci): Restore cargo audit ignores in workflow (ecbd6bc)
 - 2026-02-06: fix(ui): Resolve CI formatting issues in responsive.rs (1a42255)
+- 2026-02-06: feat(ux): Add Safe 'Reset Clip' button to Media Inspector (#589)
 - 2026-02-01: feat: Add responsive layout helper with viewport-based sizing and mobile/compact detection
 - 2026-02-01: docs: Update Roadmap status for NDI/MIDI and fix documentation duplicates in core (Scribe)
 - 2026-01-31: feat: Implement the main application entry point and core orchestration logic for MapFlow
@@ -46,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-16: test(core): Add comprehensive ModuleEvaluator tests (Guardian) (#263)
 - 2026-01-16: chore: Clean up repository artifacts (Archivist) (#261)
 - 2026-01-15: feat(core): Implement stateful trigger infrastructure and random intervals (#252)
+- 2026-01-15: assets: Add comprehensive icon library for UI (#252)
+- 2026-01-15: chore: Add maintenance and setup scripts (#252)
 - 2026-01-15: fix(render): Fix Windows surface format crash (#260)
 - 2026-01-15: feat(ui): Media clip region editor (#258)
 - 2026-01-15: feat(ui): Node graph visual refinements (#257)
@@ -73,7 +76,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-09: docs: add README.md for core workspace crates (#213)
 - 2026-01-09: docs: Prioritize libraries by Core function relevance
 - 2026-01-09: docs: Expand Phase 7 with detailed implementation plan
-- 2026-01-09: docs: 📚 Scribe: Add mapmap-mcp README and update ROADMAP/CHANGELOG
 - 2026-01-08: feat(ui): add Source Scaling UI controls for MediaFile nodes
 - 2026-01-08: feat(ui): add Output Settings UI controls for Projector nodes
 - 2026-01-08: docs: Clarify Cue-System integration and Phase 7 playback modes
@@ -82,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-01-07: perf(ci): optimize GitHub Actions to reduce minutes usage
 - 2026-01-07: test(core): Guardian Module Tests - socket, mesh, CRUD (#205)
 - 2026-01-07: docs: Add crate READMEs (#196)
+- 2026-01-09: docs: 📚 Scribe: Add mapmap-mcp README and update ROADMAP/CHANGELOG
 - 2026-01-02: feat(render): Advanced Output Rendering & NDI Integration (#155)
 - 2026-01-02: feat: Advanced Link System & Audio Trigger Improvements (#157)
 - 2026-01-02: fix: Remove build artifact files from repository (#156)
@@ -105,11 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-31: ⚡ Bolt: Remove unnecessary allocations in render/UI hot paths (#144)
 - 2025-12-31: merge: Resolve NDI/Spout conflicts with Unified Node Menu (#131, #137, #139)
 - 2025-12-31: feat(ui): Unified "Add Node" menu with search and NDI/Spout integration
-- 2025-12-31: refactor: optimize logging structure and levels (#138)
-- 2025-12-31: Knoteneigenschaften als Popup-Dialog implementieren (#136)
-- 2025-12-31: ⚡ Bolt: Implement Vertex Buffer Caching (#133)
-- 2025-12-31: 🛡️ Sentinel: [CRITICAL] Fix missing API authentication enforcement (#134)
-- 2025-12-31: ⚡ Bolt: optimize mesh vector allocations (#135)
 - 2025-12-30: feat(ui): Add proper Fader SVG icon for MIDI controller button (replaces broken emoji)
 - 2025-12-30: feat(ui): Remove Layers section and Inspector Panel from sidebar (use Module Canvas)
 - 2025-12-30: feat(config): Complete settings persistence (window size/position, panel visibility)
@@ -120,6 +118,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2025-12-29: fix(control): Stabilize MIDI clock BPM with sliding window average
 - 2025-12-29: fix(audio): Improve BPM stability with median filtering and outlier removal
 - 2025-12-29: fix(ui): Fix app settings window toggle logic and ID stability
+- 2025-12-31: refactor: optimize logging structure and levels (#138)
+- 2025-12-31: Knoteneigenschaften als Popup-Dialog implementieren (#136)
+- 2025-12-31: ⚡ Bolt: Implement Vertex Buffer Caching (#133)
+- 2025-12-31: 🛡️ Sentinel: [CRITICAL] Fix missing API authentication enforcement (#134)
+- 2025-12-31: ⚡ Bolt: optimize mesh vector allocations (#135)
 - 2025-12-29: 🛡️ Sentinel: Fix timing attack in API key validation (#132)
 - 2025-12-29: feat(audio): Add real-time BPM detection from beat intervals
 - 2025-12-29: feat(module-canvas): Add live audio trigger visualization (VU meter, threshold, glow)

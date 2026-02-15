@@ -36,4 +36,4 @@ Run the application (`mapflow` or `mapflow.exe`). You will see the **Dashboard**
 - **Effects**: Add an **Effect Node** (e.g., Blur, Colorize) between the Source and the Layer.
 - **Audio**: Import an audio file or select an input device in Settings to make effects react to sound.
 
-[Read the Full User Guide](../02-USER-GUIDE/README.md)
+[Read the Full User Guide](../04-USER-GUIDE/README.md)
