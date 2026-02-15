@@ -645,4 +645,3 @@ fn test_different_output_resolutions() {
         }
     });
 }
-

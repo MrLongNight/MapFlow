@@ -240,9 +240,3 @@ source_size: egui::Vec2::new(size as f32, size as f32),
         self.image(icon, size).map(|img| ui.add(img))
     }
 }
-
-
-
-
-
-

@@ -667,4 +667,3 @@ mod tests {
         assert!(v2 > 0.0); // Should not drop to 0 immediately
     }
 }
-

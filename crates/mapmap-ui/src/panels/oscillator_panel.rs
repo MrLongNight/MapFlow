@@ -172,4 +172,3 @@ impl OscillatorPanel {
         viz_changed
     }
 }
-
