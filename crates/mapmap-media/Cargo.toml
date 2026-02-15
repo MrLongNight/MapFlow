@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-default = []
+default = ["ffmpeg"]
 ffmpeg = ["ffmpeg-next", "ffmpeg-sys-next"]
 libmpv = ["dep:libmpv2"] # MPV-based video playback
 hap = ["snap", "ffmpeg"]

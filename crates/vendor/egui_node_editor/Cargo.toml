@@ -30,7 +30,7 @@ name = "egui_node_editor"
 path = "src/lib.rs"
 
 [dependencies.egui]
-version = "0.31"
+version = "0.33.3"
 
 [dependencies.serde]
 version = "1"
