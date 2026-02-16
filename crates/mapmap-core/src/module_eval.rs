@@ -448,10 +448,15 @@ pub enum SourceCommand {
     },
     /// Bevy 3D Model Loading and control
     Bevy3DModel {
+        /// Path to the model file
         path: String,
+        /// Position in 3D space
         position: [f32; 3],
+        /// Rotation in degrees
         rotation: [f32; 3],
+        /// Scale multiplier
         scale: [f32; 3],
+        /// Trigger/Intensity value
         trigger_value: f32,
     },
     /// Philips Hue output (Trigger/Effect data)
