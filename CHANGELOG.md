@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- 2026-02-16: feat(ui): Implement Resize Drag Interaction for nodes (e1e8f37)
-- 2026-02-16: feat(ui): Enable Mesh Editor for Layers (e1e8f37)
-- 2026-02-16: feat(ui): Add MIDI Device Selector in Trigger Node (e1e8f37)
-- 2026-02-16: feat(audio): Implement Multi-band Audio Outputs (9 bands) in UI (e1e8f37)
 - 2026-02-10: feat(bevy): Re-activate BevyParticles node with lightweight mesh-based implementation (#650)
 - 2026-02-09: perf(render): Optimize MeshRenderer uniform buffer writes to avoid redundancy
 - 2026-02-09: ci: Validierung der GitHub Actions PR-Checks (Automatische Ausführung bestätigt)

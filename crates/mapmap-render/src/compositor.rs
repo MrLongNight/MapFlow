@@ -37,15 +37,14 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<
-        (usize, usize),
-        (
-            Weak<wgpu::TextureView>,
-            Weak<wgpu::TextureView>,
-            Arc<wgpu::BindGroup>,
-        ),
-    >,
+    bind_group_cache: HashMap<(usize, usize), BindGroupCacheEntry>,
 }
+
+type BindGroupCacheEntry = (
+    Weak<wgpu::TextureView>,
+    Weak<wgpu::TextureView>,
+    Arc<wgpu::BindGroup>,
+);
 
 impl Compositor {
     /// Create a new compositor
