@@ -520,6 +520,3 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
 
     actions
 }
-
-
-

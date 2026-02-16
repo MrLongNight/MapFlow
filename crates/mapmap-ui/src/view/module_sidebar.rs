@@ -128,5 +128,3 @@ pub enum ModuleSidebarAction {
     SetColor(u64, [f32; 4]),
     // Other actions like Rename, Duplicate etc.
 }
-
-
