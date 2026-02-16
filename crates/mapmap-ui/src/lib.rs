@@ -1,4 +1,4 @@
-﻿//! MapFlow UI - ImGui and egui Integration
+//! MapFlow UI - ImGui and egui Integration
 //!
 //! This crate provides the user interface layer using ImGui (legacy) and egui (Phase 6+), including:
 //! - ImGui context setup (Phase 0-5)
@@ -629,20 +629,15 @@ impl AppUI {
                     Some(crate::widgets::icons::AppIcon::MenuFile),
                     self.icon_manager.as_ref(),
                     |ui| {
-                        if ui.button("✕").clicked() {
+                        if ui.button("?").clicked() {
                             self.show_media_browser = false;
                         }
                     },
                 );
 
                 egui::Frame::default()
-<<<<<<< HEAD
                     .inner_margin(egui::Margin::symmetric(8, 8))
-                    .show(ui, |ui: &mut egui::Ui| {
-=======
-                    .inner_margin(egui::Margin::symmetric(8.0, 8.0))
                     .show(ui, |ui| {
->>>>>>> mary-ux-connections-14566841787494652284
                         let _ = self
                             .media_browser
                             .ui(ui, &self.i18n, self.icon_manager.as_ref());
@@ -739,22 +734,13 @@ impl AppUI {
             .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0]) // Offset from menu bar
             .order(egui::Order::Foreground)
             .interactable(false)
-<<<<<<< HEAD
-            .show(ctx, |ui: &mut egui::Ui| {
-                egui::Frame::popup(ui.style())
-                    .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
-                    .inner_margin(egui::Margin::symmetric(16, 8))
-                    .show(ui, |ui: &mut egui::Ui| {
-=======
             .show(ctx, |ui| {
                 egui::Frame::default()
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .rounding(4.0)
+                    .corner_radius(4)
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
-                    .inner_margin(egui::Margin::symmetric(16.0, 8.0))
+                    .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
->>>>>>> mary-ux-connections-14566841787494652284
                         ui.horizontal(|ui| {
                             ui.label(
                                 egui::RichText::new(format!("FPS: {:.0}", fps))
@@ -959,13 +945,9 @@ impl AppUI {
             // Visual indicator (Pulse yellow)
             let time = ui.input(|i| i.time);
             let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
-<<<<<<< HEAD
-            let _color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
-=======
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
             ui.painter()
-                .rect_stroke(rect.expand(2.0), 4.0, egui::Stroke::new(2.0, color));
->>>>>>> mary-ux-connections-14566841787494652284
+                .rect_stroke(rect.expand(2.0), 4.0, egui::Stroke::new(2.0, color), egui::StrokeKind::Middle);
 
             // Check for recent MIDI activity (last 0.5s)
             if let Some(last_time) = last_active_time {

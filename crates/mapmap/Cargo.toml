@@ -43,6 +43,7 @@ glam = { workspace = true }
 hound = { workspace = true }
 hyper = { workspace = true }
 image = { workspace = true }
+mapmap-bevy = { path = "../mapmap-bevy" }
 mapmap-control = { path = "../mapmap-control" }
 mapmap-core = { path = "../mapmap-core" }
 mapmap-io = { path = "../mapmap-io" }

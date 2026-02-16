@@ -61,11 +61,11 @@ impl AudioPanel {
                     ui.label(locale.t("audio-device"));
                     let current_text = selected_device.as_deref().unwrap_or("Kein Gerät ausgewählt");
                     
-                    egui::ComboBox::from_id_source("audio_device_combo")
+                    egui::ComboBox::from_id_salt("audio_device_combo")
                         .selected_text(current_text)
                         .show_ui(ui, |ui| {
                             for device in available_devices {
-                                let mut is_selected = selected_device.as_ref() == Some(device);
+                                let is_selected = selected_device.as_ref() == Some(device);
                                 if ui.selectable_label(is_selected, device).clicked() {
                                     *selected_device = Some(device.clone());
                                     action = Some(AudioPanelAction::DeviceChanged(device.clone()));

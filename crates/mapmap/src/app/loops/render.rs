@@ -212,7 +212,7 @@ fn render_content(
     let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();     
     let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
 
-    let mesh_target_view_ref = view;
+    let _mesh_target_view_ref = view;
     // Clear Pass
     {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -419,9 +419,9 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
-    let bg_color = [0, 0, 0, 255]; 
-    let grid_color = [255, 255, 255, 255];
-    let text_color = [0, 255, 255, 255];
+    let _bg_color = [0, 0, 0, 255]; 
+    let _grid_color = [255, 255, 255, 255];
+    let _text_color = [0, 255, 255, 255];
 
     for i in 0..(width * height) {
         let idx = (i * 4) as usize;

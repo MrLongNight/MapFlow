@@ -524,6 +524,7 @@ impl App {
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
             media_library: MediaLibrary::new(),
+            bevy_runner: None,
         };
 
         // --- INITIALIZATION STATUS REPORT ---

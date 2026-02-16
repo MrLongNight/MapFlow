@@ -10,9 +10,6 @@ use tracing::{error, info};
 
 /// Renders the implementation of the UI.
 pub fn show(app: &mut App, ctx: &egui::Context) {
-    // Responsive Layout initialisieren
-    let layout = ResponsiveLayout::new(ctx);
-
     // 1. GLOBAL THEME & SETUP
     // Update Responsive Styles (every 500ms)
     app.ui_state.update_responsive_styles(ctx);

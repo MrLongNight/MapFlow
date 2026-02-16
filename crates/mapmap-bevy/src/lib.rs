@@ -38,7 +38,6 @@ impl BevyRunner {
             ..default()
         });
         app.add_plugins(bevy::render::RenderPlugin {
-            render_creation: bevy::render::settings::RenderCreation::Manual(None, None),
             ..default()
         });
         app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);

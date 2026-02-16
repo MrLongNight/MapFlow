@@ -502,6 +502,24 @@ pub fn text_3d_system(
     }
 }
 
+pub fn print_status_system(time: Res<Time>) {
+    if time.elapsed_secs() as u32 % 10 == 0 {
+        // debug!("Bevy Runner active: {:.1}s", time.elapsed_secs());
+    }
+}
+
+pub fn model_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    query: Query<(Entity, &crate::components::Bevy3DModel), Changed<crate::components::Bevy3DModel>>,
+) {
+    for (entity, model) in query.iter() {
+        if !model.path.is_empty() {
+            commands.entity(entity).insert(SceneRoot(asset_server.load(format!("{}#Scene0", model.path))));
+        }
+    }
+}
+
 pub fn camera_control_system(
     time: Res<Time>,
     mut camera_query: Query<
