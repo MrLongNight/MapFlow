@@ -37,14 +37,13 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<
-        (usize, usize),
-        (
-            Weak<wgpu::TextureView>,
-            Weak<wgpu::TextureView>,
-            Arc<wgpu::BindGroup>,
-        ),
-    >,
+    bind_group_cache: HashMap<(usize, usize), CachedBindGroup>,
+}
+
+struct CachedBindGroup {
+    base_view: Weak<wgpu::TextureView>,
+    blend_view: Weak<wgpu::TextureView>,
+    bind_group: Arc<wgpu::BindGroup>,
 }
 
 impl Compositor {
@@ -205,9 +204,9 @@ impl Compositor {
             Arc::as_ptr(blend_view) as usize,
         );
 
-        if let Some((weak_base, weak_blend, bg)) = self.bind_group_cache.get(&key) {
-            if weak_base.upgrade().is_some() && weak_blend.upgrade().is_some() {
-                return bg.clone();
+        if let Some(cached) = self.bind_group_cache.get(&key) {
+            if cached.base_view.upgrade().is_some() && cached.blend_view.upgrade().is_some() {
+                return cached.bind_group.clone();
             }
         }
 
@@ -237,11 +236,11 @@ impl Compositor {
         let bg = Arc::new(bg);
         self.bind_group_cache.insert(
             key,
-            (
-                Arc::downgrade(base_view),
-                Arc::downgrade(blend_view),
-                bg.clone(),
-            ),
+            CachedBindGroup {
+                base_view: Arc::downgrade(base_view),
+                blend_view: Arc::downgrade(blend_view),
+                bind_group: bg.clone(),
+            },
         );
 
         bg
@@ -268,10 +267,9 @@ impl Compositor {
         self.current_cache_index = 0;
 
         // Prune dead texture bind groups
-        self.bind_group_cache
-            .retain(|_, (weak_base, weak_blend, _)| {
-                weak_base.strong_count() > 0 && weak_blend.strong_count() > 0
-            });
+        self.bind_group_cache.retain(|_, cached| {
+            cached.base_view.strong_count() > 0 && cached.blend_view.strong_count() > 0
+        });
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources
