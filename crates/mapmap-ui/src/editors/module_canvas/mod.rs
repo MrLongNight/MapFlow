@@ -5053,7 +5053,7 @@ impl ModuleCanvas {
 
         // Retrieve hold progress for visualization (Mary StyleUX)
         let delete_id = egui::Id::new((part.id, "delete"));
-        let progress = ui
+        let _progress = ui
             .ctx()
             .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
             .unwrap_or(0.0);
