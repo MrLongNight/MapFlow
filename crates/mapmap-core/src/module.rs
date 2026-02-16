@@ -49,10 +49,16 @@ pub struct MapFlowModule {
     /// UI color for the module button
     pub color: [f32; 4],
     /// List of nodes (parts)
+    ///
+    /// Contains all functional blocks in the graph, such as Sources, Filters, Effects, and Outputs.
     pub parts: Vec<ModulePart>,
     /// List of wires (connections)
+    ///
+    /// Defines the data flow between parts by connecting output sockets to input sockets.
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
+    ///
+    /// Determines if the module loops indefinitely or plays for a fixed duration on the timeline.
     pub playback_mode: ModulePlaybackMode,
 
     /// Counter for generating part IDs (persistent)
@@ -314,6 +320,8 @@ pub struct ModulePart {
     #[serde(default)]
     pub size: Option<(f32, f32)>,
     /// Link system configuration
+    ///
+    /// Defines how this node interacts with the Master/Slave system for synchronized visibility/activation.
     #[serde(default)]
     pub link_data: NodeLinkData,
     /// Input sockets
@@ -321,6 +329,9 @@ pub struct ModulePart {
     /// Output sockets
     pub outputs: Vec<ModuleSocket>,
     /// Trigger target configuration (Input Socket Index -> Target Parameter)
+    ///
+    /// Maps incoming trigger signals (0.0-1.0) to node parameters (e.g. Opacity, Scale),
+    /// allowing for audio-reactive or time-based animation.
     #[serde(default)]
     pub trigger_targets: HashMap<usize, TriggerConfig>,
 }
@@ -2183,15 +2194,18 @@ fn default_output_fps() -> f32 {
 }
 
 /// Represents a connection between two modules/parts
+///
+/// A "wire" that carries signals (Media, Trigger, etc.) from an output socket
+/// of one node to an input socket of another node.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleConnection {
-    /// Source part ID
+    /// Source part ID (Where the signal comes from)
     pub from_part: ModulePartId,
-    /// Source socket index
+    /// Source socket index on the source part
     pub from_socket: usize,
-    /// Target part ID
+    /// Target part ID (Where the signal goes to)
     pub to_part: ModulePartId,
-    /// Target socket index
+    /// Target socket index on the target part
     pub to_socket: usize,
 }
 
