@@ -87,7 +87,7 @@ impl AudioPanel {
                     ui.label(locale.t("dashboard-device"));
                     let no_device_text = locale.t("no-device");
                     let current_text = selected_device.as_deref().unwrap_or(&no_device_text);
-                    
+
                     egui::ComboBox::from_id_salt("audio_device_combo")
                         .selected_text(current_text)
                         .show_ui(ui, |ui| {

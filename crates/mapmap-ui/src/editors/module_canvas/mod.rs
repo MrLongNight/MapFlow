@@ -6800,12 +6800,3 @@ impl ModuleCanvas {
         ));
     }
 }
-
-
-
-
-
-
-
-
-

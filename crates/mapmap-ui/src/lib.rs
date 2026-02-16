@@ -934,4 +934,3 @@ impl AppUI {
         self.show_shader_graph = open;
     }
 }
-
