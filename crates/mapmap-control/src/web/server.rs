@@ -400,4 +400,52 @@ mod tests {
             Some("no-cache")
         );
     }
+
+    #[tokio::test]
+    async fn test_auth_middleware_websocket() {
+        use axum::body::Body;
+        use tower::Service;
+
+        // Setup state with auth enabled
+        let mut auth_config = AuthConfig::new();
+        auth_config.add_key("secret123".to_string());
+
+        let state = AppState {
+            auth: Arc::new(RwLock::new(auth_config)),
+        };
+
+        // Dummy handler to simulate WebSocket endpoint
+        async fn dummy_handler() -> &'static str {
+            "OK"
+        }
+
+        // Build app
+        let mut app = axum::Router::new()
+            .route("/ws", axum::routing::get(dummy_handler))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                auth_middleware,
+            ))
+            .with_state(state);
+
+        // Test request with valid token in subprotocol
+        let req = Request::builder()
+            .uri("/ws")
+            .header(header::SEC_WEBSOCKET_PROTOCOL, "mapmap.auth.secret123")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.call(req).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Test request with INVALID token
+        let req_invalid = Request::builder()
+            .uri("/ws")
+            .header(header::SEC_WEBSOCKET_PROTOCOL, "mapmap.auth.WRONG")
+            .body(Body::empty())
+            .unwrap();
+
+        let response_invalid = app.call(req_invalid).await.unwrap();
+        assert_eq!(response_invalid.status(), StatusCode::UNAUTHORIZED);
+    }
 }
