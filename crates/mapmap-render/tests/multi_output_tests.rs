@@ -9,6 +9,6 @@ mod tests {
     #[ignore = "RenderOp structure changed fundamentally, needs refactoring"]
     fn test_multi_output_render_ops() {
         // Placeholder to satisfy imports
-        let _ = ModulePartId(0);
+        let _ = 0 as ModulePartId;
     }
 }

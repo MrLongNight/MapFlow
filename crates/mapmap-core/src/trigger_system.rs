@@ -139,7 +139,9 @@ impl TriggerSystem {
                             if state.target < 0.0 {
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms) as f32 / 1000.0;
+                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
+                                    as f32
+                                    / 1000.0;
                             }
 
                             state.timer += dt;
@@ -151,7 +153,9 @@ impl TriggerSystem {
                                 // Pick new target
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms) as f32 / 1000.0;
+                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
+                                    as f32
+                                    / 1000.0;
                             }
                         }
                         // Other triggers (Midi, Osc, Shortcut) handled by event system or direct inputs
