@@ -33,7 +33,7 @@ impl GpuVertex {
 /// Uniforms for mesh rendering (matches mesh_warp.wgsl)
 /// Note: Must be padded to 128 bytes (multiple of 16) for std140 layout
 #[repr(C)]
-#[derive(Copy, Clone, Debug, PartialEq, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
 struct MeshUniforms {
     transform: [[f32; 4]; 4], // 64 bytes
     opacity: f32,             // 4 bytes
@@ -367,7 +367,10 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
-                last_uniforms: Some(uniforms),
+            self.uniform_cache.push(CachedMeshUniform {
+                buffer,
+                bind_group: Arc::new(bind_group),
+                last_uniforms: None,
             });
         }
 
@@ -389,14 +392,12 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        if cache_entry.last_uniforms.as_ref() != Some(&uniforms) {
+        if cache_entry.last_uniforms != Some(uniforms) {
             queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
             cache_entry.last_uniforms = Some(uniforms);
         }
 
-        let bind_group = self.uniform_cache[self.current_cache_index]
-            .bind_group
-            .clone();
+        let bind_group = cache_entry.bind_group.clone();
         self.current_cache_index += 1;
 
         bind_group
@@ -454,7 +455,10 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
-                last_uniforms: Some(uniforms),
+            self.uniform_cache.push(CachedMeshUniform {
+                buffer,
+                bind_group: Arc::new(bind_group),
+                last_uniforms: None,
             });
         }
 
@@ -476,14 +480,12 @@ impl MeshRenderer {
             _padding: 0.0,
         };
 
-        if cache_entry.last_uniforms.as_ref() != Some(&uniforms) {
+        if cache_entry.last_uniforms != Some(uniforms) {
             queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
             cache_entry.last_uniforms = Some(uniforms);
         }
 
-        let bind_group = self.uniform_cache[self.current_cache_index]
-            .bind_group
-            .clone();
+        let bind_group = cache_entry.bind_group.clone();
         self.current_cache_index += 1;
 
         bind_group
