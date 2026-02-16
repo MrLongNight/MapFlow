@@ -1037,9 +1037,10 @@ impl AudioTriggerOutputConfig {
 }
 
 /// Types of 3D shapes available in Bevy nodes.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum BevyShapeType {
     /// A standard cube.
+    #[default]
     Cube,
     /// A sphere.
     Sphere,
@@ -1051,12 +1052,6 @@ pub enum BevyShapeType {
     Cylinder,
     /// A plane.
     Plane,
-}
-
-impl Default for BevyShapeType {
-    fn default() -> Self {
-        Self::Cube
-    }
 }
 
 /// Types of media sources

@@ -3,7 +3,8 @@
 use crate::core::theme::colors;
 use crate::i18n::LocaleManager;
 use crate::responsive::ResponsiveLayout;
-use crate::widgets::custom;use egui::{ComboBox, Ui, Window};
+use crate::widgets::custom;
+use egui::{ComboBox, Ui, Window};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
@@ -214,7 +215,8 @@ impl OscillatorPanel {
                 ui.end_row();
             });
 
-        dist_changed    }
+        dist_changed
+    }
 
     fn show_visual_params(
         &mut self,
