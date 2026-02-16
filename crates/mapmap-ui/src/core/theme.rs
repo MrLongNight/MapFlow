@@ -136,7 +136,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(245, 245, 245),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(200, 200, 200)),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(60, 60, 60)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    rounding: egui::Rounding::same(2.0),
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -144,7 +144,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(235, 235, 235),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(190, 190, 190)),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(50, 50, 50)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    rounding: egui::Rounding::same(2.0),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -152,7 +152,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(225, 225, 225),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(170, 170, 170)),
                     fg_stroke: egui::Stroke::new(1.5, Color32::from_rgb(30, 30, 30)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    rounding: egui::Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -160,7 +160,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(70, 130, 210),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(50, 110, 190)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::same(2),
+                    rounding: egui::Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -168,7 +168,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(240, 240, 240),
                     bg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(40, 40, 40)),
-                    corner_radius: egui::CornerRadius::same(2),
+                    rounding: egui::Rounding::same(2.0),
                     expansion: 0.0,
                 },
             },
@@ -200,7 +200,11 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(10, 10, 10),
                     bg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -208,7 +212,11 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(15, 15, 15),
                     bg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(200, 200, 200)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -216,7 +224,11 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(40, 40, 40),
                     bg_stroke: egui::Stroke::new(3.0, Color32::from_rgb(255, 255, 0)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 2.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -224,7 +236,11 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(0, 180, 230),
                     bg_stroke: egui::Stroke::new(3.0, Color32::WHITE),
                     fg_stroke: egui::Stroke::new(3.0, Color32::BLACK),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 2.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -232,7 +248,11 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(25, 25, 25),
                     bg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(220, 220, 220)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
             },
@@ -303,7 +323,11 @@ impl ThemeConfig {
                     weak_bg_fill: colors::DARK_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO, // Sharp corners
+=======
+                    rounding: egui::Rounding::same(0.0), // Sharp corners
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -311,7 +335,11 @@ impl ThemeConfig {
                     weak_bg_fill: colors::LIGHTER_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -319,7 +347,11 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(60, 60, 60),
                     bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT), // Cyan border on hover
                     fg_stroke: egui::Stroke::new(1.5, Color32::WHITE),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -327,7 +359,11 @@ impl ThemeConfig {
                     weak_bg_fill: colors::CYAN_ACCENT,
                     bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT),
                     fg_stroke: egui::Stroke::new(2.0, Color32::BLACK), // Black text on Cyan
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -335,7 +371,11 @@ impl ThemeConfig {
                     weak_bg_fill: colors::DARK_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
+<<<<<<< HEAD
                     corner_radius: egui::CornerRadius::ZERO,
+=======
+                    rounding: egui::Rounding::same(0.0),
+>>>>>>> mary-ux-connections-14566841787494652284
                     expansion: 0.0,
                 },
             },
@@ -373,7 +413,7 @@ impl ThemeConfig {
                     weak_bg_fill: deep_purple,
                     bg_stroke: egui::Stroke::new(1.0, light_purple),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 160, 200)),
-                    corner_radius: egui::CornerRadius::same(4),
+                    rounding: egui::Rounding::same(4.0),
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -381,7 +421,7 @@ impl ThemeConfig {
                     weak_bg_fill: mid_purple,
                     bg_stroke: egui::Stroke::new(1.0, light_purple),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(200, 200, 255)),
-                    corner_radius: egui::CornerRadius::same(4),
+                    rounding: egui::Rounding::same(4.0),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -389,7 +429,7 @@ impl ThemeConfig {
                     weak_bg_fill: light_purple,
                     bg_stroke: egui::Stroke::new(1.0, neon_cyan),
                     fg_stroke: egui::Stroke::new(1.5, neon_cyan),
-                    corner_radius: egui::CornerRadius::same(4),
+                    rounding: egui::Rounding::same(4.0),
                     expansion: 1.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -397,7 +437,7 @@ impl ThemeConfig {
                     weak_bg_fill: neon_pink.linear_multiply(0.5),
                     bg_stroke: egui::Stroke::new(1.0, neon_pink),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::same(4),
+                    rounding: egui::Rounding::same(4.0),
                     expansion: 1.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -405,7 +445,7 @@ impl ThemeConfig {
                     weak_bg_fill: mid_purple,
                     bg_stroke: egui::Stroke::new(1.0, light_purple),
                     fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::same(4),
+                    rounding: egui::Rounding::same(4.0),
                     expansion: 0.0,
                 },
             },
