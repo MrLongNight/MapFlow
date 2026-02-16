@@ -1036,13 +1036,20 @@ impl AudioTriggerOutputConfig {
     }
 }
 
+/// Types of 3D shapes available in Bevy nodes.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum BevyShapeType {
+    /// A standard cube.
     Cube,
+    /// A sphere.
     Sphere,
+    /// A capsule.
     Capsule,
+    /// A torus.
     Torus,
+    /// A cylinder.
     Cylinder,
+    /// A plane.
     Plane,
 }
 

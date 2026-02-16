@@ -1,4 +1,4 @@
-use egui::{Response, Ui, Color32, Rect, Stroke, Sense, Pos2};
+use egui::{Response, Ui, Color32, Pos2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     ui.vertical(|ui| {

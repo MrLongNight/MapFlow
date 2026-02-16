@@ -5,7 +5,7 @@
 
 use crate::theme::colors;
 use crate::widgets::{custom, panel::StyledPanel};
-use egui::{Color32, Rect, Stroke, Ui};
+use egui::{Rect, Stroke, Ui};
 use mapmap_core::audio::{AudioConfig, AudioAnalysis};
 use crate::core::i18n::LocaleManager;
 

@@ -2,7 +2,7 @@
 //!
 //! Provides a consistent frame and background for UI panels.
 
-use egui::{Color32, Rect, Stroke, Ui, Style};
+use egui::{Color32, Stroke, Ui, Style};
 
 pub struct StyledPanel {
     title: String,
