@@ -1,13 +1,8 @@
-use egui::{Response, Ui, Color32, Pos2};
+use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, Rounding, Stroke, lerp};
+use crate::theme::colors;
+use crate::widgets::icons::{AppIcon, IconManager};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
-<<<<<<< HEAD
-    ui.vertical(|ui| {
-        ui.add_space(4.0);
-        ui.strong(title);
-        ui.separator();
-    });
-=======
     let desired_size = Vec2::new(ui.available_width(), 24.0);
     // Allocate space for the header
     let (rect, _response) = ui.allocate_at_least(desired_size, Sense::hover());
@@ -27,7 +22,6 @@ pub fn render_header(ui: &mut Ui, title: &str) {
         egui::FontId::proportional(14.0),
         ui.visuals().text_color(),
     );
->>>>>>> mary-ux-connections-14566841787494652284
 }
 
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
@@ -38,20 +32,13 @@ pub fn styled_slider(
     ui: &mut Ui,
     value: &mut f32,
     range: std::ops::RangeInclusive<f32>,
-    _default_value: f32,
+    default_value: f32,
 ) -> Response {
-    ui.add(egui::Slider::new(value, range))
-}
+    let desired_size = Vec2::new(ui.available_width(), 20.0);
+    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
 
-<<<<<<< HEAD
-pub fn styled_slider_log(
-    ui: &mut Ui,
-    value: &mut f32,
-    range: std::ops::RangeInclusive<f32>,
-    _default_value: f32,
-) -> Response {
-    ui.add(egui::Slider::new(value, range).logarithmic(true))
-=======
+    let visuals = ui.style().interact(&response);
+
     // Double-click to reset
     if response.double_clicked() {
         *value = default_value;
@@ -114,21 +101,26 @@ pub fn styled_slider_log(
     );
 
     response.on_hover_text("Double-click to reset")
->>>>>>> mary-ux-connections-14566841787494652284
+}
+
+pub fn styled_slider_log(
+    ui: &mut Ui,
+    value: &mut f32,
+    range: std::ops::RangeInclusive<f32>,
+    _default_value: f32,
+) -> Response {
+    ui.add(egui::Slider::new(value, range).logarithmic(true))
 }
 
 pub fn styled_drag_value(
     ui: &mut Ui,
     value: &mut f32,
-    _speed: f32,
+    speed: f32,
     range: std::ops::RangeInclusive<f32>,
-    _default_value: f32,
-    _prefix: &str,
-    _suffix: &str,
+    default_value: f32,
+    prefix: &str,
+    suffix: &str,
 ) -> Response {
-<<<<<<< HEAD
-    ui.add(egui::DragValue::new(value).range(range))
-=======
     let is_changed = (*value - default_value).abs() > 0.001;
 
     // Use scope to customize spacing or style if needed
@@ -154,17 +146,12 @@ pub fn styled_drag_value(
     }
 
     response.on_hover_text("Double-click to reset")
->>>>>>> mary-ux-connections-14566841787494652284
 }
 
 pub fn styled_button(ui: &mut Ui, text: &str, _active: bool) -> Response {
     ui.button(text)
 }
 
-<<<<<<< HEAD
-pub fn styled_checkbox(ui: &mut Ui, value: &mut bool, text: &str) -> Response {
-    ui.checkbox(value, text)
-=======
 /// Generic Icon Button Helper
 pub fn icon_button(
     ui: &mut Ui,
@@ -237,27 +224,10 @@ pub fn param_button(ui: &mut Ui) -> Response {
 pub fn duplicate_button(ui: &mut Ui) -> Response {
     icon_button(ui, "D", colors::CYAN_ACCENT, colors::CYAN_ACCENT, false)
         .on_hover_text("Duplicate Layer")
->>>>>>> mary-ux-connections-14566841787494652284
 }
 
 pub fn delete_button(ui: &mut Ui) -> bool {
     ui.button("🗑").clicked()
-}
-
-pub fn solo_button(ui: &mut Ui, active: bool) -> Response {
-    let mut btn = egui::Button::new("S");
-    if active {
-        btn = btn.fill(Color32::from_rgb(255, 200, 0));
-    }
-    ui.add(btn)
-}
-
-pub fn bypass_button(ui: &mut Ui, active: bool) -> Response {
-    let mut btn = egui::Button::new("B");
-    if active {
-        btn = btn.fill(Color32::from_rgb(255, 80, 80));
-    }
-    ui.add(btn)
 }
 
 pub fn move_up_button(ui: &mut Ui) -> Response {
@@ -268,18 +238,51 @@ pub fn move_down_button(ui: &mut Ui) -> Response {
     ui.button("⏷")
 }
 
-pub fn duplicate_button(ui: &mut Ui) -> Response {
-    ui.button("⧉")
+/// Helper function to handle hold-to-confirm logic.
+///
+/// Returns a tuple: `(triggered, progress)`
+/// - `triggered`: `true` if the hold action completed successfully.
+/// - `progress`: Normalized progress (0.0 to 1.0) of the hold action.
+pub fn check_hold_state(ui: &mut Ui, id: egui::Id, is_interacting: bool) -> (bool, f32) {
+    let hold_duration = 0.6; // seconds
+
+    // Use specific IDs for state storage to avoid collisions
+    let start_time_id = id.with("start_time");
+    let progress_id = id.with("progress");
+
+    let mut start_time: Option<f64> = ui.data_mut(|d| d.get_temp(start_time_id));
+    let mut triggered = false;
+    let mut progress = 0.0;
+
+    if is_interacting {
+        let now = ui.input(|i| i.time);
+        if start_time.is_none() {
+            start_time = Some(now);
+            ui.data_mut(|d| d.insert_temp(start_time_id, start_time));
+        }
+
+        let elapsed = now - start_time.unwrap();
+        progress = (elapsed as f32 / hold_duration).clamp(0.0, 1.0);
+
+        // Store progress for external visualization if needed
+        ui.data_mut(|d| d.insert_temp(progress_id, progress));
+
+        if progress >= 1.0 {
+            triggered = true;
+            ui.data_mut(|d| d.remove_temp::<Option<f64>>(start_time_id)); // Reset
+            ui.data_mut(|d| d.remove_temp::<f32>(progress_id));
+        } else {
+            ui.ctx().request_repaint(); // Animate
+        }
+    } else if start_time.is_some() {
+        // Reset if released early
+        ui.data_mut(|d| d.remove_temp::<Option<f64>>(start_time_id));
+        ui.data_mut(|d| d.remove_temp::<f32>(progress_id));
+    }
+
+    (triggered, progress)
 }
 
-<<<<<<< HEAD
-pub fn hold_to_action_button(ui: &mut Ui, text: &str, _color: Color32) -> bool {
-    ui.button(text).clicked()
-}
-
-pub fn check_hold_state(_ui: &mut Ui, _id: egui::Id, _is_holding: bool) -> (bool, f32) {
-    (false, 0.0)
-=======
 /// A safety button that requires holding down for 0.6s to trigger (Mouse or Keyboard)
 pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // Small button size
@@ -360,79 +363,119 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     triggered
 }
 
-/// A safety icon button that requires holding down for 0.6s to trigger
-pub fn hold_to_action_icon(ui: &mut Ui, icon_text: &str, color: Color32) -> bool {
-    let desired_size = Vec2::new(24.0, 24.0);
+/// A safety icon button that requires holding down for 0.6s to trigger.
+/// Visualizes progress with a ring overlay.
+pub fn hold_to_action_icon(
+    ui: &mut Ui,
+    icon_manager: Option<&IconManager>,
+    icon: AppIcon,
+    size: f32,
+    color: Color32,
+) -> bool {
+    let desired_size = Vec2::splat(size + 8.0); // Add padding for ring
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
+    let state_id = response.id.with("hold_state");
 
-    // State
-    let state_id = response.id.with("hold_icon");
+    // Check inputs
     let is_interacting = response.is_pointer_button_down_on()
         || (response.has_focus()
             && (ui.input(|i| i.key_down(egui::Key::Space) || i.key_down(egui::Key::Enter))));
 
     let (triggered, progress) = check_hold_state(ui, state_id, is_interacting);
 
-    // --- Visuals ---
-    let visuals = ui.style().interact(&response);
+    // Visuals
     let painter = ui.painter();
+    let center = rect.center();
 
-    // 1. Background
-    painter.rect(
-        rect,
-        egui::Rounding::same(0.0),
-        visuals.bg_fill,
-        visuals.bg_stroke,
-    );
-
-    // Draw focus ring if focused
-    if response.has_focus() {
-        painter.rect_stroke(
-            rect.expand(2.0),
-            egui::Rounding::same(0.0),
-            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-        );
-    }
-
-    // 2. Progress Fill
-    if progress > 0.0 {
-        let mut fill_rect = rect;
-        fill_rect.max.y = rect.max.y;
-        fill_rect.min.y = rect.max.y - rect.height() * progress;
-        painter.rect_filled(
-            fill_rect,
-            egui::Rounding::same(0.0),
-            color.linear_multiply(0.4),
-        );
-    }
-
-    // 3. Icon
-    let text_color = if triggered {
-        color
+    // Draw Icon
+    if let Some(mgr) = icon_manager {
+        if let Some(texture) = mgr.get(icon) {
+            let icon_rect = Rect::from_center_size(center, Vec2::splat(size));
+            let tint = if response.hovered() || is_interacting {
+                Color32::WHITE
+            } else {
+                Color32::from_gray(200)
+            };
+            painter.image(
+                texture.id(),
+                icon_rect,
+                Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                tint,
+            );
+        } else {
+            // Fallback text if texture not found
+            painter.text(
+                center,
+                egui::Align2::CENTER_CENTER,
+                "?",
+                egui::FontId::proportional(size),
+                color,
+            );
+        }
     } else {
-        visuals.text_color()
-    };
-    painter.text(
-        rect.center(),
-        egui::Align2::CENTER_CENTER,
-        icon_text,
-        egui::FontId::proportional(14.0),
-        text_color,
-    );
+        // Fallback if no manager
+        painter.text(
+            center,
+            egui::Align2::CENTER_CENTER,
+            "!",
+            egui::FontId::proportional(size),
+            color,
+        );
+    }
 
-    // Tooltip
+    // Draw Progress Ring
+    if progress > 0.0 {
+        use std::f32::consts::TAU;
+        let radius = size / 2.0 + 2.0;
+        let stroke = Stroke::new(2.0, color);
+
+        // Background ring (faint)
+        painter.circle_stroke(center, radius, Stroke::new(2.0, color.linear_multiply(0.2)));
+
+        // Better visual: Arc using points
+        let start_angle = -TAU / 4.0; // Top
+        let end_angle = start_angle + progress * TAU;
+        let n_points = 32;
+        let points: Vec<Pos2> = (0..=n_points)
+            .map(|i| {
+                let t = i as f32 / n_points as f32;
+                let angle = lerp(start_angle..=end_angle, t);
+                center + Vec2::new(angle.cos(), angle.sin()) * radius
+            })
+            .collect();
+
+        painter.add(egui::Shape::line(points, stroke));
+    }
+
     if response.hovered() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
     }
     response.on_hover_text("Hold to confirm");
 
     triggered
->>>>>>> mary-ux-connections-14566841787494652284
 }
 
 pub fn draw_safety_radial_fill(_painter: &egui::Painter, _center: Pos2, _radius: f32, _progress: f32, _color: Color32) {}
 
-pub fn collapsing_header_with_reset<R>(ui: &mut Ui, title: &str, _default_open: bool, add_contents: impl FnOnce(&mut Ui) -> R) -> bool {
-    ui.collapsing(title, add_contents);
-    false
+pub fn collapsing_header_with_reset(
+    ui: &mut Ui,
+    title: &str,
+    default_open: bool,
+    add_contents: impl FnOnce(&mut Ui),
+) -> bool {
+    let id = ui.make_persistent_id(title);
+    let mut reset_clicked = false;
+    egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, default_open)
+        .show_header(ui, |ui| {
+            ui.label(title);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+                    reset_clicked = true;
+                }
+            });
+        })
+        .body(|ui| {
+            add_contents(ui);
+        });
+    reset_clicked
 }

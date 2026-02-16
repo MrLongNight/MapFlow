@@ -10,6 +10,8 @@ use mapmap_control::{
 use crate::{
     i18n::LocaleManager,
     icons::{AppIcon, IconManager},
+    theme::colors,
+    widgets::hold_to_action_icon,
     widgets::panel::{cyber_panel_frame, render_panel_header},
     UIAction,
 };
@@ -109,15 +111,25 @@ impl CuePanel {
 
             // --- Stop Button ---
             let stop_enabled = cue_list.current_cue().is_some();
-            if self.icon_button(
-                ui,
-                icon_manager,
-                AppIcon::ButtonStop,
-                "btn-stop",
-                i18n,
-                stop_enabled,
-            ) {
-                actions.push(UIAction::StopCue);
+            if stop_enabled {
+                if hold_to_action_icon(
+                    ui,
+                    icon_manager,
+                    AppIcon::ButtonStop,
+                    24.0,
+                    colors::ERROR_COLOR,
+                ) {
+                    actions.push(UIAction::StopCue);
+                }
+            } else {
+                self.icon_button(
+                    ui,
+                    icon_manager,
+                    AppIcon::ButtonStop,
+                    "btn-stop",
+                    i18n,
+                    false,
+                );
             }
 
             ui.separator();
