@@ -1038,8 +1038,11 @@ impl AudioTriggerOutputConfig {
 
 /// Types of 3D shapes available in Bevy nodes.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+/// Primitive shape types for Bevy
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum BevyShapeType {
     /// A standard cube.
+    #[default]
     Cube,
     /// A sphere.
     Sphere,
@@ -1051,12 +1054,6 @@ pub enum BevyShapeType {
     Cylinder,
     /// A plane.
     Plane,
-}
-
-impl Default for BevyShapeType {
-    fn default() -> Self {
-        Self::Cube
-    }
 }
 
 /// Types of media sources
@@ -1203,6 +1200,21 @@ pub enum SourceType {
     Bevy3DShape {
         /// Type of shape (Cube, Sphere, etc.)
         shape_type: BevyShapeType,
+        /// Transform: Position [x, y, z]
+        position: [f32; 3],
+        /// Transform: Rotation [x, y, z] in degrees
+        rotation: [f32; 3],
+        /// Transform: Scale [x, y, z]
+        scale: [f32; 3],
+        /// RGBA Color
+        color: [f32; 4],
+        /// Use unlit material
+        unlit: bool,
+    },
+    /// Bevy 3D Model Loader (GLTF)
+    Bevy3DModel {
+        /// Path to GLTF/GLB file
+        path: String,
         /// Transform: Position [x, y, z]
         position: [f32; 3],
         /// Transform: Rotation [x, y, z] in degrees
@@ -1523,6 +1535,7 @@ impl Default for BevyCameraMode {
             height: 2.0,
         }
     }
+}
 }
 
 /// Types of masks

@@ -446,6 +446,14 @@ pub enum SourceCommand {
         /// Trigger value
         trigger_value: f32,
     },
+    /// Bevy 3D Model Loading and control
+    Bevy3DModel {
+        path: String,
+        position: [f32; 3],
+        rotation: [f32; 3],
+        scale: [f32; 3],
+        trigger_value: f32,
+    },
     /// Philips Hue output (Trigger/Effect data)
     HueOutput {
         /// Brightness (0.0 - 1.0)
@@ -1364,6 +1372,18 @@ impl ModuleEvaluator {
             SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy3DText { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyCamera { .. } => Some(SourceCommand::BevyInput { trigger_value }),
+            SourceType::Bevy3DModel {
+                path,
+                position,
+                rotation,
+                scale,
+            } => Some(SourceCommand::Bevy3DModel {
+                path: path.clone(),
+                position: *position,
+                rotation: *rotation,
+                scale: *scale,
+                trigger_value,
+            }),
             SourceType::Bevy3DShape { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
