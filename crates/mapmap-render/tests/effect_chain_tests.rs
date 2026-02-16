@@ -4,10 +4,7 @@ use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
-use wgpu::{
-    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
-    TextureDescriptor, TextureUsages,
-};
+use wgpu::{CommandEncoderDescriptor, Extent3d, TextureDescriptor, TextureUsages};
 
 #[tokio::test]
 #[ignore = "GPU tests are unstable in headless CI environment"]
