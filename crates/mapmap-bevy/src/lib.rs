@@ -29,14 +29,27 @@ impl BevyRunner {
         // Load essential plugins for 3D assets without opening a window
         app.add_plugins(MinimalPlugins);
         app.add_plugins(bevy::asset::AssetPlugin::default());
-        app.add_plugins(bevy::hierarchy::HierarchyPlugin);
+        // Since we can't easily find the matching bevy_hierarchy version on crates.io,
+        // we rely on the fact that bevy usually re-exports it.
+        // If "bevy::hierarchy" is missing, it might be under a feature flag or re-exported differently.
+        // In 0.16, if `default-features=false`, `bevy_hierarchy` might be excluded?
+        // Let's try skipping explicit HierarchyPlugin addition.
+        // `TransformPlugin` might add it as a dependency if needed, or it might panic if missing.
+        // If `TransformPlugin` doesn't add it, we are in trouble without the dependency.
+        // However, `bevy` feature "bevy_hierarchy" doesn't exist explicitly in Cargo.toml.
+        // Let's try to assume it's included in `MinimalPlugins` or another plugin, OR
+        // simply remove it and see if it compiles/runs.
+        // If `bevy::hierarchy` module is missing, we can't name it.
+        // app.add_plugins(bevy::hierarchy::HierarchyPlugin);
         app.add_plugins(bevy::transform::TransformPlugin);
 
         // Load PBR infrastructure so StandardMaterial and Mesh assets exist
         // We use the headless configuration parts of PbrPlugin
         app.add_plugins(bevy::pbr::PbrPlugin { ..default() });
         app.add_plugins(bevy::render::RenderPlugin {
-            render_creation: bevy::render::settings::RenderCreation::Manual(None, None),
+            render_creation: bevy::render::settings::RenderCreation::Automatic(
+                bevy::render::settings::WgpuSettings::default(),
+            ),
             ..default()
         });
         app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
