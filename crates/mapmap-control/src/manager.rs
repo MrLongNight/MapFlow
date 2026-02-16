@@ -43,6 +43,17 @@ pub struct ControlManager {
     control_callback: Option<Arc<Mutex<dyn FnMut(ControlTarget, ControlValue) + Send>>>,
 }
 
+// Helper functions for security validation
+fn is_path_parameter(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    lower.contains("path") || lower.contains("file") || lower.contains("source")
+}
+
+fn contains_traversal(path: &str) -> bool {
+    // Check for ".." segment in path
+    path.split(['/', '\\']).any(|part| part == "..")
+}
+
 impl ControlManager {
     pub fn new() -> Self {
         Self {
@@ -236,6 +247,24 @@ impl ControlManager {
 
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
+        // Security check: Prevent path traversal in string parameters
+        if let ControlValue::String(s) = &value {
+            let is_suspicious = match &target {
+                ControlTarget::PaintParameter(_, name)
+                | ControlTarget::EffectParameter(_, name)
+                | ControlTarget::Custom(name) => is_path_parameter(name),
+                _ => false,
+            };
+
+            if is_suspicious && contains_traversal(s) {
+                warn!(
+                    "Security: Blocked potential path traversal in control value for {:?}: {}",
+                    target, s
+                );
+                return;
+            }
+        }
+
         info!("Control change: {:?} = {:?}", target, value);
 
         // Call the control callback if set
@@ -374,6 +403,69 @@ mod tests {
 
         assert!(called.load(Ordering::SeqCst));
     }
+    #[test]
+    fn test_apply_control_security_traversal() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let mut manager = ControlManager::new();
+        let called = Arc::new(AtomicBool::new(false));
+        let called_clone = called.clone();
+
+        manager.set_control_callback(move |_target, _value| {
+            called_clone.store(true, Ordering::SeqCst);
+        });
+
+        // 1. Test PaintParameter with "source_path" and ".." - SHOULD BLOCK
+        manager.apply_control(
+            ControlTarget::PaintParameter(1, "source_path".to_string()),
+            ControlValue::String("../../secret".to_string()),
+        );
+        assert!(
+            !called.load(Ordering::SeqCst),
+            "Should block traversal in path parameter"
+        );
+
+        // 2. Test Custom with "MyFile" and ".." - SHOULD BLOCK
+        manager.apply_control(
+            ControlTarget::Custom("MyFile".to_string()),
+            ControlValue::String("folder/../secret".to_string()),
+        );
+        assert!(
+            !called.load(Ordering::SeqCst),
+            "Should block traversal in custom file parameter"
+        );
+
+        // 3. Test Safe Path - SHOULD ALLOW
+        manager.apply_control(
+            ControlTarget::PaintParameter(1, "source_path".to_string()),
+            ControlValue::String("assets/video.mp4".to_string()),
+        );
+        assert!(called.load(Ordering::SeqCst), "Should allow safe path");
+        called.store(false, Ordering::SeqCst); // Reset
+
+        // 4. Test Non-Path Parameter with ".." - SHOULD ALLOW (False positive check)
+        // e.g. a text label that happens to have ".."
+        manager.apply_control(
+            ControlTarget::PaintParameter(1, "label".to_string()),
+            ControlValue::String("Waiting..".to_string()),
+        );
+        assert!(
+            called.load(Ordering::SeqCst),
+            "Should allow '..' in non-path parameter"
+        );
+        called.store(false, Ordering::SeqCst);
+
+        // 5. Test "my..file" in path - SHOULD ALLOW (Valid filename)
+        manager.apply_control(
+            ControlTarget::PaintParameter(1, "path".to_string()),
+            ControlValue::String("my..file.mp4".to_string()),
+        );
+        assert!(
+            called.load(Ordering::SeqCst),
+            "Should allow '..' as part of filename"
+        );
+    }
+
     #[test]
     fn test_cue_execution() {
         let mut manager = ControlManager::new();
