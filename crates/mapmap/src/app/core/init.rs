@@ -1,4 +1,4 @@
-//! Application initialization logic.
+﻿//! Application initialization logic.
 
 use super::app_struct::App;
 use crate::media_manager_ui::MediaManagerUI;
@@ -556,3 +556,5 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
+
+

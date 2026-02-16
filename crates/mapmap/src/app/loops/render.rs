@@ -1,4 +1,4 @@
-//! Main application render loop.
+﻿//! Main application render loop.
 
 use crate::app::core::app_struct::App;
 use crate::app::ui_layout;
@@ -16,7 +16,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         label: Some("Render Encoder"),
     });
 
-    // ⚡ Bolt Optimization: Batch render passes.
+    // âš¡ Bolt Optimization: Batch render passes.
     app.mesh_renderer.begin_frame();
     app.effect_chain_renderer.begin_frame();
     app.preview_effect_chain_renderer.begin_frame();
@@ -380,12 +380,12 @@ fn render_content(
                 occlusion_query_set: None,
             });
 
-            let renderer_static: &'static egui_wgpu::Renderer =
-                unsafe { std::mem::transmute(&*egui_renderer) };
+            // Egui 0.33 requires a 'static RenderPass. We use unsafe to satisfy this lifetime
+            // requirement since we know the pass won't outlive the encoder scope.
             let render_pass_static: &mut wgpu::RenderPass<'static> =
                 unsafe { std::mem::transmute(&mut render_pass) };
 
-            renderer_static.render(render_pass_static, tris, screen_desc);
+            egui_renderer.render(render_pass_static, tris, screen_desc);
         }
     }
     Ok(())
@@ -627,3 +627,7 @@ fn draw_digit(
         }
     }
 }
+
+
+
+
