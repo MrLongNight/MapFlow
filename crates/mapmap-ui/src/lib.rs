@@ -1,4 +1,4 @@
-﻿//! MapFlow UI - ImGui and egui Integration
+//! MapFlow UI - ImGui and egui Integration
 //!
 //! This crate provides the user interface layer using ImGui (legacy) and egui (Phase 6+), including:
 //! - ImGui context setup (Phase 0-5)
@@ -30,6 +30,7 @@ pub use crate::panels::*;
 pub use crate::view::*;
 pub use crate::widgets::*;
 
+/// Re-export types for public use
 pub mod types {
     pub use crate::editors::module_canvas::types::*;
 }
@@ -266,6 +267,7 @@ pub enum UIAction {
     ),
 
     // Module Connection Deletion
+    /// Delete a connection between two module parts
     DeleteConnection(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModuleConnection,
@@ -627,7 +629,7 @@ impl AppUI {
                     Some(crate::widgets::icons::AppIcon::MenuFile),
                     self.icon_manager.as_ref(),
                     |ui| {
-                        if ui.button("✕").clicked() {
+                        if ui.button("?").clicked() {
                             self.show_media_browser = false;
                         }
                     },
@@ -735,7 +737,7 @@ impl AppUI {
             .show(ctx, |ui| {
                 egui::Frame::default()
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .rounding(4.0)
+                    .corner_radius(4)
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {

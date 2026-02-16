@@ -109,7 +109,7 @@ impl PreviewPanel {
             let preview_area = egui::Frame::default()
                 .fill(ui.style().visuals.extreme_bg_color)
                 .inner_margin(8.0)
-                .rounding(4.0);
+                .corner_radius(4);
 
             preview_area.show(ui, |ui| {
                 ui.set_min_height(self.panel_height - 40.0);
@@ -149,7 +149,7 @@ impl PreviewPanel {
                                 } else {
                                     egui::Stroke::NONE
                                 })
-                                .rounding(4.0)
+                                .corner_radius(4)
                                 .inner_margin(4.0)
                                 .show(ui, |ui| {
                                     ui.vertical(|ui| {
