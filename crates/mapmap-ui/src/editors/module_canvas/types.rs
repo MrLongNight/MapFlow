@@ -1,3 +1,4 @@
+use crate::theme::colors;
 use egui::Color32;
 use egui_node_editor::*;
 use mapmap_core::module::{ModulePartId, ModulePartType};
@@ -76,10 +77,10 @@ impl DataTypeTrait<MyUserState> for MyDataType {
         match self {
             MyDataType::Trigger => Color32::from_rgb(180, 100, 220),
             MyDataType::Media => Color32::from_rgb(100, 180, 220),
-            MyDataType::Effect => Color32::from_rgb(220, 180, 100),
-            MyDataType::Layer => Color32::from_rgb(100, 220, 140),
-            MyDataType::Output => Color32::from_rgb(220, 100, 100),
-            MyDataType::Link => Color32::from_rgb(200, 200, 200),
+            MyDataType::Effect => colors::WARN_COLOR,
+            MyDataType::Layer => colors::MINT_ACCENT,
+            MyDataType::Output => colors::ERROR_COLOR,
+            MyDataType::Link => colors::STROKE_GREY,
         }
     }
 
