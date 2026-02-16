@@ -22,25 +22,24 @@ impl Default for BevyRunner {
 
 impl BevyRunner {
     pub fn new() -> Self {
-        info!("Initializing Bevy integration (Full Asset Mode)...");
+        info!("Initializing Bevy integration (Headless DefaultPlugins)...");
 
         let mut app = App::new();
 
-        // Load essential plugins for 3D assets without opening a window
-        app.add_plugins(MinimalPlugins);
-        app.add_plugins(bevy::asset::AssetPlugin::default());
-        app.add_plugins(bevy::hierarchy::HierarchyPlugin);
-        app.add_plugins(bevy::transform::TransformPlugin);
-        
-        // Load PBR infrastructure so StandardMaterial and Mesh assets exist
-        // We use the headless configuration parts of PbrPlugin
-        app.add_plugins(bevy::pbr::PbrPlugin {
+        // Use DefaultPlugins but disable the window
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: None,
+            exit_condition: bevy::window::ExitCondition::DontExit,
+            close_when_requested: false,
+        }).set(bevy::render::RenderPlugin {
+            render_creation: bevy::render::settings::RenderCreation::Automatic(
+                bevy::render::settings::WgpuSettings {
+                    backends: Some(bevy::render::settings::Backends::VULKAN | bevy::render::settings::Backends::DX12),
+                    ..default()
+                }
+            ),
             ..default()
-        });
-        app.add_plugins(bevy::render::RenderPlugin {
-            ..default()
-        });
-        app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
+        }));
 
         // Register Extensions
         app.add_plugins(bevy_mod_outline::OutlinePlugin);
@@ -61,6 +60,7 @@ impl BevyRunner {
         app.register_type::<BevyCamera>();
 
         // Register systems
+        app.add_systems(Startup, setup_3d_scene);
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
