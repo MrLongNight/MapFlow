@@ -1,7 +1,8 @@
-//! Egui-based Mapping Management Panel
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::custom;
+use crate::widgets::icons::{AppIcon, IconManager};
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{MappingId, MappingManager};
@@ -18,6 +19,7 @@ impl MappingPanel {
         mapping_manager: &mut MappingManager,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -27,10 +29,17 @@ impl MappingPanel {
         egui::Window::new(i18n.t("panel-mappings"))
             .open(&mut open)
             .default_size([380.0, 400.0])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                ui.heading(i18n.t("panel-mappings"));
-                ui.separator();
-                ui.add_space(4.0);
+                render_panel_header(
+                    ui,
+                    &i18n.t("panel-mappings"),
+                    Some(AppIcon::Screen),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
                     ui.label(i18n.t_args(

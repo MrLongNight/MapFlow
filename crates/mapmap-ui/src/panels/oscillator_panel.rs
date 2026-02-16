@@ -1,9 +1,12 @@
 //! Egui-based Oscillator Control Panel
 
-use crate::core::theme::colors;
+use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
-use crate::responsive::ResponsiveLayout;
-use crate::widgets::custom;use egui::{ComboBox, Ui, Window};
+use crate::widgets::custom;
+use crate::widgets::icons::{AppIcon, IconManager};
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
+use egui::{ComboBox, Ui};
+use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
@@ -27,6 +30,7 @@ impl OscillatorPanel {
         ctx: &egui::Context,
         locale: &LocaleManager,
         config: &mut OscillatorConfig,
+        icon_manager: Option<&IconManager>,
     ) -> bool {
         let mut changed = false;
         let mut is_open = self.visible;
@@ -38,12 +42,23 @@ impl OscillatorPanel {
         let layout = ResponsiveLayout::new(ctx);
         let window_size = layout.window_size(400.0, 500.0);
 
-        Window::new(locale.t("oscillator-panel-title"))
+        egui::Window::new(locale.t("oscillator-panel-title"))
             .open(&mut is_open)
             .resizable(true)
             .default_size(window_size)
             .scroll([false, true])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &locale.t("oscillator-panel-title"),
+                    Some(AppIcon::MagicWand),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 ui.vertical_centered_justified(|ui| {
                     changed |= ui
                         .toggle_value(&mut config.enabled, locale.t("oscillator-enable"))
@@ -52,42 +67,35 @@ impl OscillatorPanel {
 
                 ui.separator();
 
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    // Simulation Section
-                    ui.add_space(4.0);
-                    custom::render_header(ui, &locale.t("oscillator-simulation-params"));
-                    egui::Frame::NONE
-                        .fill(colors::DARK_GREY)
-                        .inner_margin(4.0)
-                        .show(ui, |ui| {
-                            if self.show_simulation_params(ui, locale, config) {
-                                changed = true;
-                            }
-                        });
+                if ui
+                    .collapsing(locale.t("oscillator-simulation-params"), |ui| {
+                        self.show_simulation_params(ui, locale, config)
+                    })
+                    .body_returned
+                    .unwrap_or(false)
+                {
+                    changed = true;
+                }
 
-                    // Distortion Section
-                    ui.add_space(4.0);
-                    custom::render_header(ui, &locale.t("oscillator-distortion-params"));
-                    egui::Frame::NONE
-                        .fill(colors::DARK_GREY)
-                        .inner_margin(4.0)
-                        .show(ui, |ui| {
-                            if self.show_distortion_params(ui, locale, config) {
-                                changed = true;
-                            }
-                        });
-                    // Visual Section
-                    ui.add_space(4.0);
-                    custom::render_header(ui, &locale.t("oscillator-visual-params"));
-                    egui::Frame::NONE
-                        .fill(colors::DARK_GREY)
-                        .inner_margin(4.0)
-                        .show(ui, |ui| {
-                            if self.show_visual_params(ui, locale, config) {
-                                changed = true;
-                            }
-                        });
-                });
+                if ui
+                    .collapsing(locale.t("oscillator-distortion-params"), |ui| {
+                        self.show_distortion_params(ui, locale, config)
+                    })
+                    .body_returned
+                    .unwrap_or(false)
+                {
+                    changed = true;
+                }
+
+                if ui
+                    .collapsing(locale.t("oscillator-visual-params"), |ui| {
+                        self.show_visual_params(ui, locale, config)
+                    })
+                    .body_returned
+                    .unwrap_or(false)
+                {
+                    changed = true;
+                }
             });
 
         self.visible = is_open;

@@ -1,8 +1,9 @@
 // crates/mapmap-ui/src/paint_panel.rs
 
+use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
-use crate::responsive::ResponsiveLayout;
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::Context;
 use mapmap_core::{PaintId, PaintManager, PaintType};
 
@@ -23,7 +24,7 @@ impl PaintPanel {
         self.action.take()
     }
 
-    pub fn render(
+    pub fn show(
         &mut self,
         ctx: &Context,
         i18n: &LocaleManager,
@@ -42,7 +43,18 @@ impl PaintPanel {
             .default_size(window_size)
             .resizable(true)
             .scroll([false, true])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &i18n.t("panel-paints"),
+                    Some(AppIcon::PaintBucket),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 ui.heading(i18n.t_args(
                     "label-total-paints",
                     &[("count", &paint_manager.paints().len().to_string())],

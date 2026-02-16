@@ -39,7 +39,7 @@ impl App {
         let backend = WgpuBackend::new(saved_config.preferred_gpu.as_deref()).await?;
 
         // Version marker to confirm correct build is running
-        tracing::info!(">>> BUILD VERSION: 2026-01-04-FIX-RENDER-CHECK <<<");
+        tracing::info!(">>> BUILD VERSION: 2026-02-06-BEVY-REMOVED-ULTIMATE <<<");
 
         // Initialize renderers
         let texture_pool = TexturePool::new(backend.device.clone());
@@ -524,8 +524,23 @@ impl App {
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
             media_library: MediaLibrary::new(),
-            bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
+
+        // --- INITIALIZATION STATUS REPORT ---
+        info!("==========================================");
+        info!("   MapFlow Initialization Status Report   ");
+        info!("------------------------------------------");
+        info!("- Render Backend: {} ({:?})", app.backend.adapter_info().name, app.backend.adapter_info().backend);
+        info!("- Edge Blend:     {}", if app.edge_blend_renderer.is_some() { "ENABLED" } else { "DISABLED" });
+        info!("- Color Calib:    {}", if app.color_calibration_renderer.is_some() { "ENABLED" } else { "DISABLED" });
+        info!("- Bevy Engine:    REMOVED");
+        
+        #[cfg(feature = "midi")]
+        info!("- MIDI System:    {}", if app.midi_handler.is_some() { "CONNECTED" } else { "DISCONNECTED" });
+        
+        info!("- Hue System:     {}", if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() { "CONFIGURED" } else { "UNCONFIGURED" });
+        info!("- Media Library:  {} items", app.media_library.items.len());
+        info!("==========================================");
 
         Ok(app)
     }

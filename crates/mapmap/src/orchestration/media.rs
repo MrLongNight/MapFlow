@@ -73,19 +73,6 @@ pub fn sync_media_players(app: &mut App) {
     // Cleanup removed players
     app.media_players
         .retain(|key, _| active_sources.contains(key));
-
-    // Handle Bevy Sources (Aliasing)
-    for module in app.state.module_manager.modules() {
-        for part in &module.parts {
-            if let ModulePartType::Source(SourceType::Bevy) = &part.part_type {
-                let tex_name = format!("part_{}_{}", module.id, part.id);
-                // Alias bevy_output to this part's texture name
-                if app.texture_pool.has_texture("bevy_output") {
-                    app.texture_pool.alias_texture("bevy_output", &tex_name);
-                }
-            }
-        }
-    }
 }
 
 /// Update all media players and upload frames to texture pool

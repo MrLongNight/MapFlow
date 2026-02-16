@@ -43,6 +43,9 @@ impl BevyRunner {
         });
         app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
 
+        // Register Extensions
+        app.add_plugins(bevy_mod_outline::OutlinePlugin);
+
         // Register resources
         app.init_resource::<AudioInputResource>();
         app.init_resource::<BevyNodeMapping>();
@@ -71,8 +74,10 @@ impl BevyRunner {
             ),
         );
 
-        let render_app = app.sub_app_mut(bevy::render::RenderApp);
-        render_app.add_systems(bevy::render::Render, frame_readback_system);
+        // Add readback system to the RENDER APP, not the main app
+        if let Some(render_app) = app.get_sub_app_mut(bevy::render::RenderApp) {
+            render_app.add_systems(bevy::render::Render, frame_readback_system);
+        }
 
         Self { app }
     }

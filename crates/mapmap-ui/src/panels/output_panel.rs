@@ -1,4 +1,10 @@
-use crate::{i18n::LocaleManager, responsive::ResponsiveLayout, UIAction};
+use crate::{
+    core::responsive::ResponsiveLayout,
+    i18n::LocaleManager,
+    widgets::icons::{AppIcon, IconManager},
+    widgets::panel::{cyber_panel_frame, render_panel_header},
+    UIAction,
+};
 
 /// Represents the UI panel for configuring render outputs.
 pub struct OutputPanel {
@@ -27,12 +33,13 @@ impl OutputPanel {
     }
 
     /// Renders the output configuration panel using `egui`.
-    pub fn render(
+    pub fn show(
         &mut self,
         ctx: &egui::Context,
         i18n: &LocaleManager,
         output_manager: &mut mapmap_core::OutputManager,
         _monitors: &[mapmap_core::monitor::MonitorInfo],
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -43,8 +50,20 @@ impl OutputPanel {
 
         egui::Window::new(i18n.t("panel-outputs"))
             .default_size(window_size)
+            .resizable(true)
             .scroll([false, true])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                render_panel_header(
+                    ui,
+                    &i18n.t("panel-outputs"),
+                    Some(AppIcon::Monitor),
+                    icon_manager,
+                    |_| {},
+                );
+
+                ui.add_space(8.0);
+
                 ui.heading(i18n.t("header-multi-output"));
                 ui.separator();
 

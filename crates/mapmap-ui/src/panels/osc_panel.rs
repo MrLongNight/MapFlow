@@ -1,13 +1,11 @@
+use crate::widgets::icons::AppIcon;
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::AppUI;
 use egui;
 use mapmap_control::ControlManager;
 
 /// Renders the OSC server status panel.
-pub fn show_osc_panel(
-    ctx: &egui::Context,
-    app_ui: &mut AppUI,
-    control_manager: &mut ControlManager,
-) {
+pub fn show_osc_panel(ctx: &egui::Context, app_ui: &mut AppUI, control_manager: &mut ControlManager) {
     let mut open = app_ui.show_osc_panel;
     if !open {
         return;
@@ -16,7 +14,18 @@ pub fn show_osc_panel(
     egui::Window::new(app_ui.i18n.t("panel-osc-title"))
         .open(&mut open)
         .default_size([400.0, 500.0])
+        .frame(cyber_panel_frame(&ctx.style()))
         .show(ctx, |ui| {
+            render_panel_header(
+                ui,
+                &app_ui.i18n.t("panel-osc-title"),
+                Some(AppIcon::Repeat),
+                app_ui.icon_manager.as_ref(),
+                |_| {},
+            );
+
+            ui.add_space(8.0);
+
             ui.heading(app_ui.i18n.t("header-osc-server"));
             ui.separator();
 

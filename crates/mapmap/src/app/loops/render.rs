@@ -15,7 +15,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         label: Some("Render Encoder"),
     });
 
-    // Bolt Optimization: Batch render passes.
+    // Batch render passes.
     app.mesh_renderer.begin_frame();
     app.effect_chain_renderer.begin_frame();
     app.preview_effect_chain_renderer.begin_frame();
@@ -23,7 +23,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     if output_id == 0 {
         // Sync Texture Previews
         prepare_texture_previews(app, &mut encoder);
-
         // Update Bevy Texture
         if let Some(runner) = &app.bevy_runner {
             let runner: &mapmap_bevy::BevyRunner = runner;
@@ -69,14 +68,14 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             let raw_input = app.egui_state.take_egui_input(&window_context.window);
 
             let full_output = app.egui_context.run(raw_input, |ctx| {
-                // SAFETY: Disjoint access to App fields
+                // SAFETY: We ensure window_context doesn't overlap with fields used in show.  
                 unsafe {
                     ui_layout::show(&mut *app_ptr, ctx);
                 }
             });
 
             app.egui_state
-                .handle_platform_output(&window_context.window, full_output.platform_output);
+                .handle_platform_output(&window_context.window, full_output.platform_output);  
 
             let tris = app
                 .egui_context
@@ -95,9 +94,11 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 pixels_per_point: app.egui_context.pixels_per_point(),
             };
 
-            // egui 0.33 requires update_buffers before rendering
+            // CRITICAL: Update GPU buffers before rendering - this prepares vertex/index buffers
+            // and ensures all texture references are valid. Without this, egui-wgpu may panic
+            // when looking up textures that haven't been properly registered yet.
             app.egui_renderer.update_buffers(
-                &app.backend.device,
+                &device,
                 &app.backend.queue,
                 &mut encoder,
                 &tris,
@@ -207,6 +208,11 @@ fn render_content(
         return Ok(());
     }
 
+    let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
+    let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();     
+    let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
+
+    let mesh_target_view_ref = view;
     // Clear Pass
     {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -249,7 +255,7 @@ fn render_content(
                     width,
                     height,
                     wgpu::TextureFormat::Rgba8UnormSrgb,
-                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,      
                 );
                 ctx.texture_pool.upload_data(queue, &grid_tex_name, &data, width, height);
             }
@@ -262,7 +268,7 @@ fn render_content(
 
         if let Some(src_ref) = source_view {
             let transform = glam::Mat4::IDENTITY;
-            let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(
+            let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(   
                 queue,
                 transform,
                 op.opacity * op.source_props.opacity,
@@ -356,7 +362,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 };
 
                 if needs_recreate {
-                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor {
+                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor { 
                         label: Some(&format!("Preview Tex {}", output_id)),
                         size: wgpu::Extent3d { width: preview_width, height: preview_height, depth_or_array_layers: 1 },
                         mip_level_count: 1,
@@ -413,6 +419,10 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
+    let bg_color = [0, 0, 0, 255]; 
+    let grid_color = [255, 255, 255, 255];
+    let text_color = [0, 255, 255, 255];
+
     for i in 0..(width * height) {
         let idx = (i * 4) as usize;
         data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
@@ -420,12 +430,13 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let grid_step = 64;
     for y in 0..height {
         for x in 0..width {
-            if x % grid_step == 0 || y % grid_step == 0 {
+            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 { 
                 let idx = ((y * width + x) * 4) as usize;
                 data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
             }
         }
     }
+
     let id_str = format!("{}", layer_id);
     let digit_scale = 8;
     let digit_w = 3 * digit_scale;
@@ -445,7 +456,15 @@ const BITMAPS: [[u8; 5]; 10] = [
     [7, 4, 7, 1, 7], [7, 4, 7, 5, 7], [7, 1, 1, 1, 1], [7, 5, 7, 5, 7], [7, 5, 7, 1, 7],
 ];
 
-fn draw_digit(data: &mut [u8], width: u32, digit: usize, offset_x: u32, offset_y: u32, scale: u32, color: [u8; 4]) {
+fn draw_digit(
+    data: &mut [u8],
+    width: u32,
+    digit: usize,
+    offset_x: u32,
+    offset_y: u32,
+    scale: u32,
+    color: [u8; 4],
+) {
     if digit > 9 { return; }
     let bitmap = BITMAPS[digit];
     for (row, row_bits) in bitmap.iter().enumerate() {
@@ -455,7 +474,7 @@ fn draw_digit(data: &mut [u8], width: u32, digit: usize, offset_x: u32, offset_y
                     for dx in 0..scale {
                         let x = offset_x + col as u32 * scale + dx;
                         let y = offset_y + row as u32 * scale + dy;
-                        if x < width && y < (data.len() as u32 / (width * 4)) {
+                        if x < width && y < (data.len() as u32 / width / 4) {
                             let idx = ((y * width + x) * 4) as usize;
                             data[idx] = color[0]; data[idx+1] = color[1]; data[idx+2] = color[2]; data[idx+3] = color[3];
                         }
