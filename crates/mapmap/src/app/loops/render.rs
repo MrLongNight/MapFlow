@@ -81,7 +81,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             let tris = app
                 .egui_context
                 .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
-            
+
             for (id, delta) in full_output.textures_delta.set {
                 app.egui_renderer
                     .update_texture(&device, &app.backend.queue, id, &delta);

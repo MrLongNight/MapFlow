@@ -60,7 +60,7 @@ impl AudioPanel {
                     // Device Selection
                     ui.label(locale.t("audio-device"));
                     let current_text = selected_device.as_deref().unwrap_or("Kein Gerät ausgewählt");
-                    
+
                     egui::ComboBox::from_id_source("audio_device_combo")
                         .selected_text(current_text)
                         .show_ui(ui, |ui| {
