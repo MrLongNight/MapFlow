@@ -1,6 +1,6 @@
 //! Integration tests for the EffectChainRenderer
 
-use mapmap_core::{EffectChain, EffectType};
+use mapmap_core::EffectChain;
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
