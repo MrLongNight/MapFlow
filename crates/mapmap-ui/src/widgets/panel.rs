@@ -27,16 +27,18 @@ impl StyledPanel {
             ..Default::default()
         };
 
-        frame.show(ui, |ui| {
-            ui.vertical(|ui| {
-                ui.horizontal(|ui| {
-                    ui.strong(&self.title);
-                });
-                ui.separator();
-                add_contents(ui)
+        frame
+            .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.strong(&self.title);
+                    });
+                    ui.separator();
+                    add_contents(ui)
+                })
+                .inner
             })
             .inner
-        }).inner
     }
 }
 

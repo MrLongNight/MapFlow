@@ -1,12 +1,12 @@
-﻿//! Effect Chain UI Panel
+//! Effect Chain UI Panel
 //!
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
 
-use crate::theme::colors;
 use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
+use crate::theme::colors;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
@@ -1270,7 +1270,11 @@ impl EffectChainPanel {
                             }
 
                             ui.horizontal(|ui| {
-                                let star = if preset.is_favorite { "â­" } else { "â˜†" };
+                                let star = if preset.is_favorite {
+                                    "â­"
+                                } else {
+                                    "â˜†"
+                                };
                                 ui.label(star);
 
                                 if ui.button(&preset.name).clicked() {

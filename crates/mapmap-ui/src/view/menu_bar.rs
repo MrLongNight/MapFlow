@@ -1,4 +1,4 @@
-﻿//! Egui-based Main Menu Bar and Toolbar
+//! Egui-based Main Menu Bar and Toolbar
 //!
 //! This module provides the main menu bar and toolbar for the application.
 

@@ -1,6 +1,6 @@
-use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, CornerRadius, Stroke, lerp};
 use crate::theme::colors;
 use crate::widgets::icons::{AppIcon, IconManager};
+use egui::{lerp, Color32, CornerRadius, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
@@ -225,8 +225,13 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter()
-        .rect(rect, CornerRadius::ZERO, bg_fill, stroke, egui::StrokeKind::Middle);
+    ui.painter().rect(
+        rect,
+        CornerRadius::ZERO,
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Middle,
+    );
 
     let text_pos = rect.center();
 
@@ -499,7 +504,14 @@ pub fn hold_to_action_icon(
     triggered
 }
 
-pub fn draw_safety_radial_fill(_painter: &egui::Painter, _center: Pos2, _radius: f32, _progress: f32, _color: Color32) {}
+pub fn draw_safety_radial_fill(
+    _painter: &egui::Painter,
+    _center: Pos2,
+    _radius: f32,
+    _progress: f32,
+    _color: Color32,
+) {
+}
 
 pub fn collapsing_header_with_reset(
     ui: &mut Ui,

@@ -90,8 +90,8 @@ impl IconDemoPanel {
                                             .inner_margin(12.0)
                                             .show(ui, |ui| {
                                                 ui.centered_and_justified(|ui| {
-                                                    if let Some(img) = icon_manager
-                                                        .image(*icon, display_icon_size)
+                                                    if let Some(img) =
+                                                        icon_manager.image(*icon, display_icon_size)
                                                     {
                                                         ui.add(img);
                                                     } else {

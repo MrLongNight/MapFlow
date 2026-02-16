@@ -59,7 +59,10 @@ pub fn shape_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    query: Query<(Entity, &crate::components::Bevy3DShape), Changed<crate::components::Bevy3DShape>>,
+    query: Query<
+        (Entity, &crate::components::Bevy3DShape),
+        Changed<crate::components::Bevy3DShape>,
+    >,
 ) {
     for (entity, shape) in query.iter() {
         let mesh = match shape.shape_type {
@@ -511,11 +514,16 @@ pub fn print_status_system(time: Res<Time>) {
 pub fn model_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    query: Query<(Entity, &crate::components::Bevy3DModel), Changed<crate::components::Bevy3DModel>>,
+    query: Query<
+        (Entity, &crate::components::Bevy3DModel),
+        Changed<crate::components::Bevy3DModel>,
+    >,
 ) {
     for (entity, model) in query.iter() {
         if !model.path.is_empty() {
-            commands.entity(entity).insert(SceneRoot(asset_server.load(format!("{}#Scene0", model.path))));
+            commands.entity(entity).insert(SceneRoot(
+                asset_server.load(format!("{}#Scene0", model.path)),
+            ));
         }
     }
 }

@@ -564,19 +564,19 @@ impl AppUI {
 
         style.text_styles.insert(
             egui::TextStyle::Body,
-            egui::FontId::proportional(scaled_size)
+            egui::FontId::proportional(scaled_size),
         );
         style.text_styles.insert(
             egui::TextStyle::Button,
-            egui::FontId::proportional(scaled_size)
+            egui::FontId::proportional(scaled_size),
         );
         style.text_styles.insert(
             egui::TextStyle::Heading,
-            egui::FontId::proportional(scaled_size * 1.4)
+            egui::FontId::proportional(scaled_size * 1.4),
         );
         style.text_styles.insert(
             egui::TextStyle::Small,
-            egui::FontId::proportional(scaled_size * 0.85)
+            egui::FontId::proportional(scaled_size * 0.85),
         );
 
         // Scale spacing
@@ -946,8 +946,12 @@ impl AppUI {
             let time = ui.input(|i| i.time);
             let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
             let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
-            ui.painter()
-                .rect_stroke(rect.expand(2.0), 4.0, egui::Stroke::new(2.0, color), egui::StrokeKind::Middle);
+            ui.painter().rect_stroke(
+                rect.expand(2.0),
+                4.0,
+                egui::Stroke::new(2.0, color),
+                egui::StrokeKind::Middle,
+            );
 
             // Check for recent MIDI activity (last 0.5s)
             if let Some(last_time) = last_active_time {

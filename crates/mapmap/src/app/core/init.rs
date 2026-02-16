@@ -1,4 +1,4 @@
-﻿//! Application initialization logic.
+//! Application initialization logic.
 
 use super::app_struct::App;
 use crate::media_manager_ui::MediaManagerUI;
@@ -531,15 +531,47 @@ impl App {
         info!("==========================================");
         info!("   MapFlow Initialization Status Report   ");
         info!("------------------------------------------");
-        info!("- Render Backend: {} ({:?})", app.backend.adapter_info().name, app.backend.adapter_info().backend);
-        info!("- Edge Blend:     {}", if app.edge_blend_renderer.is_some() { "ENABLED" } else { "DISABLED" });
-        info!("- Color Calib:    {}", if app.color_calibration_renderer.is_some() { "ENABLED" } else { "DISABLED" });
+        info!(
+            "- Render Backend: {} ({:?})",
+            app.backend.adapter_info().name,
+            app.backend.adapter_info().backend
+        );
+        info!(
+            "- Edge Blend:     {}",
+            if app.edge_blend_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
+        info!(
+            "- Color Calib:    {}",
+            if app.color_calibration_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
         info!("- Bevy Engine:    REMOVED");
 
         #[cfg(feature = "midi")]
-        info!("- MIDI System:    {}", if app.midi_handler.is_some() { "CONNECTED" } else { "DISCONNECTED" });
+        info!(
+            "- MIDI System:    {}",
+            if app.midi_handler.is_some() {
+                "CONNECTED"
+            } else {
+                "DISCONNECTED"
+            }
+        );
 
-        info!("- Hue System:     {}", if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() { "CONFIGURED" } else { "UNCONFIGURED" });
+        info!(
+            "- Hue System:     {}",
+            if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() {
+                "CONFIGURED"
+            } else {
+                "UNCONFIGURED"
+            }
+        );
         info!("- Media Library:  {} items", app.media_library.items.len());
         info!("==========================================");
 

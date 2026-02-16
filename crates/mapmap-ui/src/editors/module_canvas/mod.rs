@@ -1,4 +1,4 @@
-﻿use crate::editors::mesh_editor::MeshEditor;
+use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::{styled_drag_value, styled_slider};
@@ -8,9 +8,9 @@ use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
     module::{
-        BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType, MapFlowModule,
-        MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
-        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType, BevyCameraMode,
+        BevyCameraMode, BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType,
+        MapFlowModule, MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
+        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType,
     },
 };
 
@@ -3089,7 +3089,8 @@ impl ModuleCanvas {
                                         module.color = color_f32;
                                     }
 
-                                    if ui.button("ðŸ—‘").on_hover_text("Delete Module").clicked() {
+                                    if ui.button("ðŸ—‘").on_hover_text("Delete Module").clicked()
+                                    {
                                         manager.delete_module(module_id);
                                         self.active_module_id = None;
                                     }
@@ -5613,7 +5614,10 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "ðŸ“ Select file...".to_string()
                     } else {
-                        format!("ðŸ“ {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                        format!(
+                            "ðŸ“ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
                     }
                 }
                 SourceType::Shader { name, .. } => format!("ðŸŽ¨ {}", name),
@@ -5628,14 +5632,20 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "ðŸ“ Select video...".to_string()
                     } else {
-                        format!("ðŸ“¹ {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                        format!(
+                            "ðŸ“¹ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
                     }
                 }
                 SourceType::ImageUni { path, .. } => {
                     if path.is_empty() {
                         "ðŸ–¼ Select image...".to_string()
                     } else {
-                        format!("ðŸ–¼ {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                        format!(
+                            "ðŸ–¼ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
                     }
                 }
                 SourceType::VideoMulti { shared_id, .. } => format!("ðŸ“¹ Shared: {}", shared_id),
@@ -5653,7 +5663,10 @@ impl ModuleCanvas {
                 },
                 SourceType::Bevy3DShape { shape_type, .. } => format!("ðŸ§Š {:?}", shape_type),
                 SourceType::Bevy3DModel { path, .. } => {
-                    format!("ðŸ“¦ {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                    format!(
+                        "ðŸ“¦ {}",
+                        path.split(['/', '\\']).next_back().unwrap_or(path)
+                    )
                 }
             },
             ModulePartType::Mask(mask_type) => match mask_type {
@@ -5661,7 +5674,10 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "ðŸ“ Select mask...".to_string()
                     } else {
-                        format!("ðŸ“ {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                        format!(
+                            "ðŸ“ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
                     }
                 }
                 MaskType::Shape(shape) => format!("ðŸ”· {:?}", shape),
@@ -5698,7 +5714,9 @@ impl ModuleCanvas {
                 }
             },
             ModulePartType::Hue(hue) => match hue {
-                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => format!("ðŸ’¡ {}", name),
+                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => {
+                    format!("ðŸ’¡ {}", name)
+                }
                 mapmap_core::module::HueNodeType::MultiLamp { name, .. } => {
                     format!("ðŸ’¡ðŸ’¡ {}", name)
                 }
@@ -6527,28 +6545,33 @@ impl ModuleCanvas {
         });
 
         // === COLOR CORRECTION ===
-        if crate::widgets::collapsing_header_with_reset(ui, "ðŸŒˆ Color Correction", false, |ui| {
-            egui::Grid::new("color_correction_grid")
-                .num_columns(2)
-                .spacing([10.0, 8.0])
-                .show(ui, |ui| {
-                    ui.label("Brightness:");
-                    styled_slider(ui, brightness, -1.0..=1.0, 0.0);
-                    ui.end_row();
+        if crate::widgets::collapsing_header_with_reset(
+            ui,
+            "ðŸŒˆ Color Correction",
+            false,
+            |ui| {
+                egui::Grid::new("color_correction_grid")
+                    .num_columns(2)
+                    .spacing([10.0, 8.0])
+                    .show(ui, |ui| {
+                        ui.label("Brightness:");
+                        styled_slider(ui, brightness, -1.0..=1.0, 0.0);
+                        ui.end_row();
 
-                    ui.label("Contrast:");
-                    styled_slider(ui, contrast, 0.0..=2.0, 1.0);
-                    ui.end_row();
+                        ui.label("Contrast:");
+                        styled_slider(ui, contrast, 0.0..=2.0, 1.0);
+                        ui.end_row();
 
-                    ui.label("Saturation:");
-                    styled_slider(ui, saturation, 0.0..=2.0, 1.0);
-                    ui.end_row();
+                        ui.label("Saturation:");
+                        styled_slider(ui, saturation, 0.0..=2.0, 1.0);
+                        ui.end_row();
 
-                    ui.label("Hue Shift:");
-                    styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
-                    ui.end_row();
-                });
-        }) {
+                        ui.label("Hue Shift:");
+                        styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
+                        ui.end_row();
+                    });
+            },
+        ) {
             *brightness = 0.0;
             *contrast = 1.0;
             *saturation = 1.0;

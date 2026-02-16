@@ -26,6 +26,13 @@ struct CachedUniform {
     last_params: Option<CompositeParams>,
 }
 
+type BindGroupCacheKey = (usize, usize);
+type BindGroupCacheEntry = (
+    Weak<wgpu::TextureView>,
+    Weak<wgpu::TextureView>,
+    Arc<wgpu::BindGroup>,
+);
+
 /// Compositor for blending layers
 pub struct Compositor {
     pipeline: wgpu::RenderPipeline,
@@ -37,14 +44,7 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<
-        (usize, usize),
-        (
-            Weak<wgpu::TextureView>,
-            Weak<wgpu::TextureView>,
-            Arc<wgpu::BindGroup>,
-        ),
-    >,
+    bind_group_cache: HashMap<BindGroupCacheKey, BindGroupCacheEntry>,
 }
 
 impl Compositor {
@@ -134,7 +134,7 @@ impl Compositor {
             label: Some("Compositor Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout, &uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

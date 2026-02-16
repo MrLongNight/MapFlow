@@ -34,12 +34,8 @@ impl BevyRunner {
 
         // Load PBR infrastructure so StandardMaterial and Mesh assets exist
         // We use the headless configuration parts of PbrPlugin
-        app.add_plugins(bevy::pbr::PbrPlugin {
-            ..default()
-        });
-        app.add_plugins(bevy::render::RenderPlugin {
-            ..default()
-        });
+        app.add_plugins(bevy::pbr::PbrPlugin { ..default() });
+        app.add_plugins(bevy::render::RenderPlugin { ..default() });
         app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
 
         // Register Extensions
@@ -82,7 +78,11 @@ impl BevyRunner {
     }
 
     pub fn update(&mut self, audio_data: &mapmap_core::audio_reactive::AudioTriggerData) {
-        if let Some(mut res) = self.app.world_mut().get_resource_mut::<AudioInputResource>() {
+        if let Some(mut res) = self
+            .app
+            .world_mut()
+            .get_resource_mut::<AudioInputResource>()
+        {
             res.band_energies = audio_data.band_energies;
             res.rms_volume = audio_data.rms_volume;
             res.peak_volume = audio_data.peak_volume;
@@ -116,12 +116,11 @@ impl BevyRunner {
                                 sun_position,
                                 ..
                             } => {
-                                let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
-                                        world
-                                            .spawn(crate::components::BevyAtmosphere::default())
-                                            .id()
-                                    });
+                                let entity = *mapping.entities.entry(key).or_insert_with(|| {
+                                    world
+                                        .spawn(crate::components::BevyAtmosphere::default())
+                                        .id()
+                                });
                                 if let Some(mut atmosphere) =
                                     world.get_mut::<crate::components::BevyAtmosphere>(entity)
                                 {
@@ -139,10 +138,9 @@ impl BevyRunner {
                                 spacing,
                                 ..
                             } => {
-                                let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
-                                        world.spawn(crate::components::BevyHexGrid::default()).id()
-                                    });
+                                let entity = *mapping.entities.entry(key).or_insert_with(|| {
+                                    world.spawn(crate::components::BevyHexGrid::default()).id()
+                                });
                                 if let Some(mut hex) =
                                     world.get_mut::<crate::components::BevyHexGrid>(entity)
                                 {
@@ -160,12 +158,11 @@ impl BevyRunner {
                                 color_end,
                                 ..
                             } => {
-                                let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
-                                        world
-                                            .spawn(crate::components::BevyParticles::default())
-                                            .id()
-                                    });
+                                let entity = *mapping.entities.entry(key).or_insert_with(|| {
+                                    world
+                                        .spawn(crate::components::BevyParticles::default())
+                                        .id()
+                                });
                                 if let Some(mut p) =
                                     world.get_mut::<crate::components::BevyParticles>(entity)
                                 {
@@ -185,16 +182,15 @@ impl BevyRunner {
                                 scale,
                                 ..
                             } => {
-                                let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
-                                        world
-                                            .spawn((
-                                                crate::components::Bevy3DShape::default(),
-                                                Transform::default(),
-                                                Visibility::default(),
-                                            ))
-                                            .id()
-                                    });
+                                let entity = *mapping.entities.entry(key).or_insert_with(|| {
+                                    world
+                                        .spawn((
+                                            crate::components::Bevy3DShape::default(),
+                                            Transform::default(),
+                                            Visibility::default(),
+                                        ))
+                                        .id()
+                                });
 
                                 if let Some(mut shape) =
                                     world.get_mut::<crate::components::Bevy3DShape>(entity)
@@ -222,20 +218,17 @@ impl BevyRunner {
                                 scale,
                                 ..
                             } => {
-                                let entity =
-                                    *mapping.entities.entry(key).or_insert_with(|| {
-                                        world
-                                            .spawn((
-                                                Bevy3DModel::default(),
-                                                Transform::default(),
-                                                Visibility::default(),
-                                            ))
-                                            .id()
-                                    });
+                                let entity = *mapping.entities.entry(key).or_insert_with(|| {
+                                    world
+                                        .spawn((
+                                            Bevy3DModel::default(),
+                                            Transform::default(),
+                                            Visibility::default(),
+                                        ))
+                                        .id()
+                                });
 
-                                if let Some(mut model) =
-                                    world.get_mut::<Bevy3DModel>(entity)
-                                {
+                                if let Some(mut model) = world.get_mut::<Bevy3DModel>(entity) {
                                     if model.path != *path {
                                         model.path = path.clone();
                                     }
@@ -305,26 +298,31 @@ impl BevyRunner {
                                 {
                                     // Convert BevyCameraMode (Core) to BevyCameraMode (Component)
                                     c.mode = match mode {
-                                        mapmap_core::module::BevyCameraMode::Orbit { radius, speed, target, height } => {
-                                            crate::components::BevyCameraMode::Orbit {
-                                                radius: *radius,
-                                                speed: *speed,
-                                                target: Vec3::from(*target),
-                                                height: *height,
-                                            }
-                                        }
-                                        mapmap_core::module::BevyCameraMode::Fly { speed, sensitivity } => {
-                                            crate::components::BevyCameraMode::Fly {
-                                                speed: *speed,
-                                                sensitivity: *sensitivity,
-                                            }
-                                        }
-                                        mapmap_core::module::BevyCameraMode::Static { position, look_at } => {
-                                            crate::components::BevyCameraMode::Static {
-                                                position: Vec3::from(*position),
-                                                look_at: Vec3::from(*look_at),
-                                            }
-                                        }
+                                        mapmap_core::module::BevyCameraMode::Orbit {
+                                            radius,
+                                            speed,
+                                            target,
+                                            height,
+                                        } => crate::components::BevyCameraMode::Orbit {
+                                            radius: *radius,
+                                            speed: *speed,
+                                            target: Vec3::from(*target),
+                                            height: *height,
+                                        },
+                                        mapmap_core::module::BevyCameraMode::Fly {
+                                            speed,
+                                            sensitivity,
+                                        } => crate::components::BevyCameraMode::Fly {
+                                            speed: *speed,
+                                            sensitivity: *sensitivity,
+                                        },
+                                        mapmap_core::module::BevyCameraMode::Static {
+                                            position,
+                                            look_at,
+                                        } => crate::components::BevyCameraMode::Static {
+                                            position: Vec3::from(*position),
+                                            look_at: Vec3::from(*look_at),
+                                        },
                                     };
                                     c.fov = *fov;
                                     c.active = *active;
