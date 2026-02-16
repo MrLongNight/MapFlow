@@ -1406,12 +1406,204 @@ impl ModuleCanvas {
                                                     }
                                                 }
                                             }
-                                            SourceType::BevyAtmosphere { .. }
-                                            | SourceType::BevyHexGrid { .. }
-                                            | SourceType::BevyParticles { .. } => {
-                                                ui.label("Controls for this Bevy node are not yet implemented in UI.");
+                                            SourceType::BevyAtmosphere {
+                                                turbidity,
+                                                rayleigh,
+                                                mie_coeff,
+                                                mie_directional_g,
+                                                sun_position,
+                                                exposure,
+                                            } => {
+                                                ui.label("☁️ Bevy Atmosphere");
+                                                ui.separator();
+                                                ui.add(
+                                                    egui::Slider::new(turbidity, 1.0..=10.0)
+                                                        .text("Turbidity"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(rayleigh, 0.0..=10.0)
+                                                        .text("Rayleigh"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(mie_coeff, 0.0..=0.1)
+                                                        .text("Mie Coeff"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(mie_directional_g, 0.0..=1.0)
+                                                        .text("Mie Anisotropy"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(exposure, 0.0..=2.0).text("Exposure"),
+                                                );
+
+                                                ui.label("Sun Position:");
+                                                ui.horizontal(|ui| {
+                                                    ui.add(
+                                                        egui::DragValue::new(&mut sun_position.0)
+                                                            .prefix("Azimuth: "),
+                                                    );
+                                                    ui.add(
+                                                        egui::DragValue::new(&mut sun_position.1)
+                                                            .prefix("Elevation: "),
+                                                    );
+                                                });
                                             }
-                                            SourceType::Bevy3DShape { shape_type, position, rotation, scale, color, unlit } => {
+                                            SourceType::BevyHexGrid {
+                                                radius,
+                                                rings,
+                                                pointy_top,
+                                                spacing,
+                                                position,
+                                                rotation,
+                                                scale,
+                                            } => {
+                                                ui.label("🛑 Bevy Hex Grid");
+                                                ui.separator();
+                                                ui.add(
+                                                    egui::Slider::new(radius, 0.1..=10.0).text("Radius"),
+                                                );
+                                                ui.add(egui::Slider::new(rings, 1..=50).text("Rings"));
+                                                ui.checkbox(pointy_top, "Pointy Top");
+                                                ui.add(
+                                                    egui::Slider::new(spacing, 1.0..=2.0).text("Spacing"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(scale, 0.1..=5.0)
+                                                        .text("Overall Scale"),
+                                                );
+
+                                                ui.collapsing("📐 Transform (3D)", |ui| {
+                                                    ui.label("Position:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut position[0])
+                                                                .speed(0.1)
+                                                                .prefix("X: "),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut position[1])
+                                                                .speed(0.1)
+                                                                .prefix("Y: "),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut position[2])
+                                                                .speed(0.1)
+                                                                .prefix("Z: "),
+                                                        );
+                                                    });
+
+                                                    ui.label("Rotation:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut rotation[0])
+                                                                .speed(1.0)
+                                                                .prefix("X: ")
+                                                                .suffix("°"),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut rotation[1])
+                                                                .speed(1.0)
+                                                                .prefix("Y: ")
+                                                                .suffix("°"),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut rotation[2])
+                                                                .speed(1.0)
+                                                                .prefix("Z: ")
+                                                                .suffix("°"),
+                                                        );
+                                                    });
+                                                });
+                                            }
+                                            SourceType::BevyParticles {
+                                                rate,
+                                                lifetime,
+                                                speed,
+                                                color_start,
+                                                color_end,
+                                                position,
+                                                rotation,
+                                            } => {
+                                                ui.label("✨ Bevy Particles");
+                                                ui.separator();
+                                                ui.add(
+                                                    egui::Slider::new(rate, 1.0..=1000.0)
+                                                        .text("Spawn Rate"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(lifetime, 0.1..=10.0)
+                                                        .text("Lifetime (s)"),
+                                                );
+                                                ui.add(
+                                                    egui::Slider::new(speed, 0.0..=20.0).text("Speed"),
+                                                );
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Start Color:");
+                                                    ui.color_edit_button_rgba_unmultiplied(
+                                                        color_start,
+                                                    );
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("End Color:");
+                                                    ui.color_edit_button_rgba_unmultiplied(
+                                                        color_end,
+                                                    );
+                                                });
+
+                                                ui.collapsing("📐 Transform (3D)", |ui| {
+                                                    ui.label("Position:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut position[0])
+                                                                .speed(0.1)
+                                                                .prefix("X: "),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut position[1])
+                                                                .speed(0.1)
+                                                                .prefix("Y: "),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut position[2])
+                                                                .speed(0.1)
+                                                                .prefix("Z: "),
+                                                        );
+                                                    });
+
+                                                    ui.label("Rotation:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut rotation[0])
+                                                                .speed(1.0)
+                                                                .prefix("X: ")
+                                                                .suffix("°"),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut rotation[1])
+                                                                .speed(1.0)
+                                                                .prefix("Y: ")
+                                                                .suffix("°"),
+                                                        );
+                                                        ui.add(
+                                                            egui::DragValue::new(&mut rotation[2])
+                                                                .speed(1.0)
+                                                                .prefix("Z: ")
+                                                                .suffix("°"),
+                                                        );
+                                                    });
+                                                });
+                                            }
+                                            SourceType::Bevy3DShape {
+                                                shape_type,
+                                                position,
+                                                rotation,
+                                                scale,
+                                                color,
+                                                unlit,
+                                                outline_width,
+                                                outline_color,
+                                            } => {
                                                 ui.label("🧊 Bevy 3D Shape");
                                                 ui.separator();
 
@@ -1435,6 +1627,19 @@ impl ModuleCanvas {
                                                 });
 
                                                 ui.checkbox(unlit, "Unlit (No Shading)");
+
+                                                ui.separator();
+                                                ui.label("🎨 Outline (PostFX)");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Width:");
+                                                    ui.add(egui::Slider::new(outline_width, 0.0..=10.0));
+                                                });
+                                                if *outline_width > 0.0 {
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Color:");
+                                                        ui.color_edit_button_rgba_unmultiplied(outline_color);
+                                                    });
+                                                }
 
                                                 ui.separator();
 
@@ -1461,7 +1666,15 @@ impl ModuleCanvas {
                                                     });
                                                 });
                                             }
-                                            SourceType::Bevy3DModel { path, position, rotation, scale, .. } => {
+                                            SourceType::Bevy3DModel {
+                                                path,
+                                                position,
+                                                rotation,
+                                                scale,
+                                                outline_width,
+                                                outline_color,
+                                                ..
+                                            } => {
                                                 ui.label("📦 Bevy 3D Model");
                                                 ui.separator();
 
@@ -1469,6 +1682,21 @@ impl ModuleCanvas {
                                                     ui.label("Path:");
                                                     ui.text_edit_singleline(path);
                                                 });
+
+                                                ui.separator();
+                                                ui.label("🎨 Outline (PostFX)");
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Width:");
+                                                    ui.add(egui::Slider::new(outline_width, 0.0..=10.0));
+                                                });
+                                                if *outline_width > 0.0 {
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Color:");
+                                                        ui.color_edit_button_rgba_unmultiplied(
+                                                            outline_color,
+                                                        );
+                                                    });
+                                                }
 
                                                 ui.separator();
 
@@ -2668,6 +2896,122 @@ impl ModuleCanvas {
             self.add_source_node(manager, SourceType::Bevy, pos_override);
             ui.close_menu();
         }
+
+        ui.menu_button("🎮 Bevy Modular", |ui| {
+            if ui.button("☁️ Atmosphere").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::BevyAtmosphere {
+                        turbidity: 2.0,
+                        rayleigh: 1.0,
+                        mie_coeff: 0.005,
+                        mie_directional_g: 0.8,
+                        sun_position: (0.0, 0.0),
+                        exposure: 1.0,
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+            if ui.button("🛑 Hex Grid").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::BevyHexGrid {
+                        radius: 1.0,
+                        rings: 5,
+                        pointy_top: true,
+                        spacing: 1.1,
+                        position: [0.0, 0.0, 0.0],
+                        rotation: [0.0, 0.0, 0.0],
+                        scale: 1.0,
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+            if ui.button("✨ Particles").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::BevyParticles {
+                        rate: 100.0,
+                        lifetime: 2.0,
+                        speed: 1.0,
+                        color_start: [1.0, 1.0, 1.0, 1.0],
+                        color_end: [0.0, 0.0, 0.0, 0.0],
+                        position: [0.0, 0.0, 0.0],
+                        rotation: [0.0, 0.0, 0.0],
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+            if ui.button("🧊 3D Shape").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::Bevy3DShape {
+                        shape_type: mapmap_core::module::BevyShapeType::Cube,
+                        position: [0.0, 0.0, 0.0],
+                        rotation: [0.0, 0.0, 0.0],
+                        scale: [1.0, 1.0, 1.0],
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        unlit: false,
+                        outline_width: 0.0,
+                        outline_color: [1.0, 1.0, 1.0, 1.0],
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+            if ui.button("📦 3D Model").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::Bevy3DModel {
+                        path: String::new(),
+                        position: [0.0, 0.0, 0.0],
+                        rotation: [0.0, 0.0, 0.0],
+                        scale: [1.0, 1.0, 1.0],
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        unlit: false,
+                        outline_width: 0.0,
+                        outline_color: [1.0, 1.0, 1.0, 1.0],
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+            if ui.button("📝 3D Text").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::Bevy3DText {
+                        text: "MapFlow".to_string(),
+                        font_size: 32.0,
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        position: [0.0, 0.0, 0.0],
+                        rotation: [0.0, 0.0, 0.0],
+                        alignment: "Center".to_string(),
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+            if ui.button("🎥 Bevy Camera").clicked() {
+                self.add_source_node(
+                    manager,
+                    SourceType::BevyCamera {
+                        mode: BevyCameraMode::Orbit {
+                            radius: 10.0,
+                            speed: 10.0,
+                            target: [0.0, 0.0, 0.0],
+                            height: 2.0,
+                        },
+                        fov: 45.0,
+                        active: true,
+                    },
+                    pos_override,
+                );
+                ui.close_menu();
+            }
+        });
     }
 
     /// Content for the Add Node menu (used by both toolbar and context menu)

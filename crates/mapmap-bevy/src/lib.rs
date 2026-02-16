@@ -48,6 +48,7 @@ impl BevyRunner {
         // Register resources
         app.init_resource::<AudioInputResource>();
         app.init_resource::<BevyNodeMapping>();
+        app.init_resource::<MapFlowTriggerResource>();
 
         // Register components
         app.register_type::<AudioReactive>();
@@ -70,6 +71,7 @@ impl BevyRunner {
                 model_system,
                 shape_system,
                 text_3d_system,
+                node_reactivity_system,
             ),
         );
 
@@ -81,19 +83,37 @@ impl BevyRunner {
         Self { app }
     }
 
-    pub fn update(&mut self, audio_data: &mapmap_core::audio_reactive::AudioTriggerData) {
+    pub fn update(
+        &mut self,
+        audio_data: &mapmap_core::audio_reactive::AudioTriggerData,
+        node_triggers: &std::collections::HashMap<(u64, u64), f32>,
+    ) {
         if let Some(mut res) = self.app.world_mut().get_resource_mut::<AudioInputResource>() {
             res.band_energies = audio_data.band_energies;
             res.rms_volume = audio_data.rms_volume;
             res.peak_volume = audio_data.peak_volume;
             res.beat_detected = audio_data.beat_detected;
         }
+
+        if let Some(mut res) = self
+            .app
+            .world_mut()
+            .get_resource_mut::<crate::resources::MapFlowTriggerResource>()
+        {
+            res.trigger_values = node_triggers.clone();
+        }
+
         self.app.update();
     }
 
     pub fn get_image_data(&self) -> Option<(Vec<u8>, u32, u32)> {
-        // Dummy for now, real readback needs RenderDevice synchronization
-        Some((vec![0, 0, 0, 0], 1, 1))
+        let render_output = self.app.world().get_resource::<crate::resources::BevyRenderOutput>()?;
+        if let Ok(lock) = render_output.last_frame_data.lock() {
+            if let Some(data) = lock.as_ref() {
+                return Some((data.clone(), render_output.width, render_output.height));
+            }
+        }
+        None
     }
 
     /// Update the Bevy scene based on the MapFlow graph state.
@@ -183,6 +203,8 @@ impl BevyRunner {
                                 position,
                                 rotation,
                                 scale,
+                                outline_width,
+                                outline_color,
                                 ..
                             } => {
                                 let entity =
@@ -202,6 +224,8 @@ impl BevyRunner {
                                     shape.shape_type = *shape_type;
                                     shape.color = *color;
                                     shape.unlit = *unlit;
+                                    shape.outline_width = *outline_width;
+                                    shape.outline_color = *outline_color;
                                 }
 
                                 if let Some(mut transform) = world.get_mut::<Transform>(entity) {
@@ -220,6 +244,8 @@ impl BevyRunner {
                                 position,
                                 rotation,
                                 scale,
+                                outline_width,
+                                outline_color,
                                 ..
                             } => {
                                 let entity =
@@ -239,15 +265,11 @@ impl BevyRunner {
                                     if model.path != *path {
                                         model.path = path.clone();
                                     }
-                                    if model.position != *position {
-                                        model.position = *position;
-                                    }
-                                    if model.rotation != *rotation {
-                                        model.rotation = *rotation;
-                                    }
-                                    if model.scale != *scale {
-                                        model.scale = *scale;
-                                    }
+                                    model.position = *position;
+                                    model.rotation = *rotation;
+                                    model.scale = *scale;
+                                    model.outline_width = *outline_width;
+                                    model.outline_color = *outline_color;
                                 }
                             }
                             SourceType::Bevy3DText {

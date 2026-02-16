@@ -4,7 +4,7 @@ use std::sync::Arc;
 use wgpu::Instance;
 
 fn mesh_renderer_benchmark(c: &mut Criterion) {
-    let instance = Instance::new(&wgpu::InstanceDescriptor::default());
+    let instance = Instance::new(wgpu::InstanceDescriptor::default());
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::LowPower,
         force_fallback_adapter: true,
@@ -17,7 +17,7 @@ fn mesh_renderer_benchmark(c: &mut Criterion) {
         required_features: wgpu::Features::empty(),
         required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
         ..Default::default()
-    }))
+    }, None))
     .expect("Failed to create device");
 
     let device = Arc::new(device);

@@ -25,6 +25,10 @@ fn default_speed() -> f32 {
 fn default_opacity() -> f32 {
     1.0
 }
+
+fn default_white_rgba() -> [f32; 4] {
+    [1.0, 1.0, 1.0, 1.0]
+}
 fn default_contrast() -> f32 {
     1.0
 }
@@ -100,6 +104,8 @@ impl MapFlowModule {
                 scale: [1.0, 1.0, 1.0],
                 color: [1.0, 1.0, 1.0, 1.0],
                 unlit: false,
+                outline_width: 0.0,
+                outline_color: [1.0, 1.0, 1.0, 1.0],
             }),
             PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
                 rate: 100.0,
@@ -1208,6 +1214,12 @@ pub enum SourceType {
         color: [f32; 4],
         /// Use unlit material
         unlit: bool,
+        /// Outline width (0.0 = disabled)
+        #[serde(default)]
+        outline_width: f32,
+        /// Outline color (RGBA)
+        #[serde(default = "default_white_rgba")]
+        outline_color: [f32; 4],
     },
     /// Bevy 3D Model Loader (GLTF)
     Bevy3DModel {
@@ -1223,6 +1235,12 @@ pub enum SourceType {
         color: [f32; 4],
         /// Unlit material (no shading)
         unlit: bool,
+        /// Outline width (0.0 = disabled)
+        #[serde(default)]
+        outline_width: f32,
+        /// Outline color (RGBA)
+        #[serde(default = "default_white_rgba")]
+        outline_color: [f32; 4],
     },
     /// Specialized Bevy 3D Text
     Bevy3DText {

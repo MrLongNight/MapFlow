@@ -48,6 +48,7 @@ pub struct BevyAtmosphere {
     pub mie_coeff: f32,
     pub mie_directional_g: f32,
     pub sun_position: (f32, f32),
+    pub exposure: f32,
 }
 
 #[derive(Component, Reflect, Default)]
@@ -83,6 +84,8 @@ pub struct Bevy3DShape {
     pub shape_type: mapmap_core::module::BevyShapeType,
     pub color: [f32; 4],
     pub unlit: bool,
+    pub outline_width: f32,
+    pub outline_color: [f32; 4],
 }
 
 impl Default for Bevy3DShape {
@@ -91,6 +94,8 @@ impl Default for Bevy3DShape {
             shape_type: mapmap_core::module::BevyShapeType::Cube,
             color: [1.0, 1.0, 1.0, 1.0],
             unlit: false,
+            outline_width: 0.0,
+            outline_color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 }
@@ -103,6 +108,8 @@ pub struct Bevy3DModel {
     pub position: [f32; 3],
     pub rotation: [f32; 3],
     pub scale: [f32; 3],
+    pub outline_width: f32,
+    pub outline_color: [f32; 4],
 }
 
 impl Default for Bevy3DModel {
@@ -112,6 +119,8 @@ impl Default for Bevy3DModel {
             position: [0.0, 0.0, 0.0],
             rotation: [0.0, 0.0, 0.0],
             scale: [1.0, 1.0, 1.0],
+            outline_width: 0.0,
+            outline_color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 }

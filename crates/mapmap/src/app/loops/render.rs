@@ -327,8 +327,11 @@ fn render_content(
             });
 
             // SAFETY: Hack to bypass lifetime issues in older egui-wgpu versions
-            let render_pass_static: &mut wgpu::RenderPass<'static> = unsafe { std::mem::transmute(&mut render_pass) };
-            egui_renderer.render(render_pass_static, tris, screen_desc);
+            unsafe {
+                let render_pass_static: &mut wgpu::RenderPass<'static> = std::mem::transmute(&mut render_pass);
+                egui_renderer.render(render_pass_static, tris, screen_desc);
+            }
+            drop(render_pass);
         }
     }
     Ok(())

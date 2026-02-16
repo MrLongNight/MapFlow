@@ -1,5 +1,4 @@
 use crate::theme::colors;
-use egui::Color32;
 use egui_node_editor::*;
 use mapmap_core::module::{ModulePartId, ModulePartType};
 use std::borrow::Cow;

@@ -5,7 +5,7 @@ use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::{
-    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    CommandEncoderDescriptor, Extent3d, ImageCopyBuffer, ImageDataLayout,
     TextureDescriptor, TextureUsages,
 };
 
@@ -91,15 +91,15 @@ where
     };
 
     encoder.copy_texture_to_buffer(
-        wgpu::TexelCopyTextureInfo {
+        wgpu::ImageCopyTexture {
             texture: &output_texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
-        TexelCopyBufferInfo {
+        ImageCopyBuffer {
             buffer: &output_buffer,
-            layout: TexelCopyBufferLayout {
+            layout: ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(height),
@@ -120,7 +120,7 @@ where
     // Map the buffer and get the data
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None }).unwrap();
+    device.poll(wgpu::Maintain::Wait);
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

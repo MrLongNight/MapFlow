@@ -28,9 +28,24 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
         let runner: &mut mapmap_bevy::BevyRunner = runner;
-        // First sync graph state
+        let mut node_triggers = std::collections::HashMap::new();
+
+        // First sync graph state and collect triggers
         for module in app.state.module_manager.list_modules() {
+            let module_id = module.id;
             runner.apply_graph_state(module);
+
+            if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
+                let eval_result = app
+                    .module_evaluator
+                    .evaluate(module_ref, &app.state.module_manager.shared_media);
+
+                for (part_id, values) in &eval_result.trigger_values {
+                    if let Some(last_val) = values.last() {
+                        node_triggers.insert((module_id, *part_id), *last_val);
+                    }
+                }
+            }
         }
 
         let analysis = app.audio_analyzer.get_latest_analysis();
@@ -42,7 +57,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             beat_strength: analysis.beat_strength,
             bpm: analysis.tempo_bpm,
         };
-        runner.update(&trigger_data);
+        runner.update(&trigger_data, &node_triggers);
     }
     // --- Module Graph Evaluation ---
     // Evaluate ALL modules and merge render_ops for multi-output support
