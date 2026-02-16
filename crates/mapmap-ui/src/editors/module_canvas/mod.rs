@@ -3821,15 +3821,9 @@ impl ModuleCanvas {
                 // "Cyber" selection: Neon Cyan, Sharp Corners
                 painter.rect_stroke(
                     highlight_rect,
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     0.0, // Sharp corners
                     Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
                     egui::StrokeKind::Middle,
-=======
-                    0, // Sharp corners
-                    Stroke::new(2.0 * self.zoom, colors::CYAN_ACCENT),
-                    egui::StrokeKind::Inside,
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                 );
 
                 // Draw resize handle at bottom-right corner
@@ -3842,11 +3836,7 @@ impl ModuleCanvas {
                     Vec2::splat(handle_size),
                 );
                 // Cyan resize handle, sharp
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                 painter.rect_filled(handle_rect, 0.0, Color32::from_rgb(0, 229, 255));
-=======
-                painter.rect_filled(handle_rect, 0, colors::CYAN_ACCENT);
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                 // Draw diagonal lines for resize indicator
                 painter.line_segment(
                     [
@@ -5350,32 +5340,26 @@ impl ModuleCanvas {
                     TriggerType::Fixed { .. } => "Fixed Timer",
                 };
                 (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     Color32::from_rgb(60, 50, 70),
                     Color32::from_rgb(130, 80, 180),
                     "âš¡",
-=======
-                    colors::DARK_GREY,               // Use standard dark grey background
-                    Color32::from_rgb(130, 80, 180), // Trigger Accent (Purple)
-                    "⚡",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                     name,
                 )
             }
             ModulePartType::Source(SourceType::BevyAtmosphere { .. }) => (
-                colors::DARK_GREY,
+                Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
                 "â˜ï¸",
                 "Atmosphere",
             ),
             ModulePartType::Source(SourceType::BevyHexGrid { .. }) => (
-                colors::DARK_GREY,
+                Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
                 "ðŸ›‘",
                 "Hex Grid",
             ),
             ModulePartType::Source(SourceType::BevyParticles { .. }) => (
-                colors::DARK_GREY,
+                Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
                 "âœ¨",
                 "Particles",
@@ -5419,15 +5403,9 @@ impl ModuleCanvas {
                     SourceType::Bevy3DShape { .. } => "3D Shape",
                 };
                 (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     Color32::from_rgb(50, 60, 70),
                     Color32::from_rgb(80, 140, 180),
                     "ðŸŽ¬",
-=======
-                    colors::DARK_GREY,
-                    Color32::from_rgb(80, 140, 180), // Media Accent (Blue)
-                    "🎬",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                     name,
                 )
             }
@@ -5445,15 +5423,9 @@ impl ModuleCanvas {
                     MaskType::Gradient { .. } => "Gradient",
                 };
                 (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     Color32::from_rgb(60, 55, 70),
                     Color32::from_rgb(160, 100, 180),
                     "ðŸŽ­",
-=======
-                    colors::DARK_GREY,
-                    Color32::from_rgb(160, 100, 180), // Mask Accent (Purple/Blue)
-                    "🎭",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                     name,
                 )
             }
@@ -5501,28 +5473,16 @@ impl ModuleCanvas {
                     ModulizerType::AudioReactive { .. } => "Audio Reactive",
                 };
                 (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     egui::Color32::from_rgb(60, 60, 50),
                     egui::Color32::from_rgb(180, 140, 60),
                     "ã€°ï¸",
-=======
-                    colors::DARK_GREY,
-                    colors::WARN_COLOR, // Modulator Accent (Orange)
-                    "〰️",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                     name,
                 )
             }
             ModulePartType::Mesh(_) => (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                 egui::Color32::from_rgb(60, 60, 80),
                 egui::Color32::from_rgb(100, 100, 200),
                 "ðŸ•¸ï¸",
-=======
-                colors::DARK_GREY,
-                Color32::from_rgb(100, 100, 200), // Mesh Accent
-                "🕸️",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                 "Mesh",
             ),
             ModulePartType::Layer(layer) => {
@@ -5532,15 +5492,9 @@ impl ModuleCanvas {
                     LayerType::All { .. } => "All Layers",
                 };
                 (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     Color32::from_rgb(50, 70, 60),
                     Color32::from_rgb(80, 180, 120),
                     "ðŸ“‘",
-=======
-                    colors::DARK_GREY,
-                    colors::MINT_ACCENT, // Layer Accent (Mint)
-                    "📑",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                     name,
                 )
             }
@@ -5553,15 +5507,9 @@ impl ModuleCanvas {
                     OutputType::Hue { .. } => "Philips Hue",
                 };
                 (
-<<<<<<< HEAD:crates/mapmap-ui/src/editors/module_canvas/mod.rs
                     Color32::from_rgb(70, 50, 50),
                     Color32::from_rgb(180, 80, 80),
                     "ðŸ“º",
-=======
-                    colors::DARK_GREY,
-                    colors::ERROR_COLOR, // Output Accent (Red)
-                    "📺",
->>>>>>> cyber-dark-theme-refactor-797630662481252128:crates/mapmap-ui/src/editors/module_canvas.rs
                     name,
                 )
             }
@@ -5603,10 +5551,10 @@ impl ModuleCanvas {
         match socket_type {
             ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220),
             ModuleSocketType::Media => Color32::from_rgb(100, 180, 220),
-            ModuleSocketType::Effect => colors::WARN_COLOR,
-            ModuleSocketType::Layer => colors::MINT_ACCENT,
-            ModuleSocketType::Output => colors::ERROR_COLOR,
-            ModuleSocketType::Link => colors::STROKE_GREY,
+            ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
+            ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
+            ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
+            ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
         }
     }
 
