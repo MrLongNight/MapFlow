@@ -1,4 +1,4 @@
-﻿//! Application initialization logic.
+//! Application initialization logic.
 
 use super::app_struct::App;
 use crate::media_manager_ui::MediaManagerUI;
@@ -317,12 +317,9 @@ impl App {
         let egui_renderer = Renderer::new(
             &backend.device,
             format,
-            egui_wgpu::RendererOptions {
-                msaa_samples: 1,
-                dithering: false,
-                depth_stencil_format: None,
-                predictable_texture_filtering: false,
-            },
+            None, // depth_stencil_format
+            1,    // msaa_samples
+            false, // dithering
         );
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
@@ -524,7 +521,7 @@ impl App {
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
             media_library: MediaLibrary::new(),
-            bevy_runner: None,
+            bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
 
         // --- INITIALIZATION STATUS REPORT ---
@@ -534,7 +531,7 @@ impl App {
         info!("- Render Backend: {} ({:?})", app.backend.adapter_info().name, app.backend.adapter_info().backend);
         info!("- Edge Blend:     {}", if app.edge_blend_renderer.is_some() { "ENABLED" } else { "DISABLED" });
         info!("- Color Calib:    {}", if app.color_calibration_renderer.is_some() { "ENABLED" } else { "DISABLED" });
-        info!("- Bevy Engine:    REMOVED");
+        info!("- Bevy Engine:    INITIALIZED");
         
         #[cfg(feature = "midi")]
         info!("- MIDI System:    {}", if app.midi_handler.is_some() { "CONNECTED" } else { "DISCONNECTED" });

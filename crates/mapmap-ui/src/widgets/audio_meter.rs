@@ -187,7 +187,7 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
         glass_rect,
         4.0,
         Stroke::new(1.0, Color32::from_white_alpha(30)),
-        egui::StrokeKind::Middle,
+        
     );
 }
 

@@ -20,9 +20,9 @@ impl StyledPanel {
     pub fn show<R>(self, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> R {
         let frame = egui::Frame {
             fill: Color32::from_rgb(35, 35, 40),
-            corner_radius: egui::CornerRadius::same(4),
-            inner_margin: egui::Margin::same(8),
-            outer_margin: egui::Margin::same(0),
+            rounding: egui::Rounding::same(4.0),
+            inner_margin: egui::Margin::same(8.0),
+            outer_margin: egui::Margin::same(0.0),
             stroke: Stroke::new(1.0, Color32::from_gray(60)),
             ..Default::default()
         };
@@ -43,8 +43,8 @@ impl StyledPanel {
 pub fn cyber_panel_frame(_style: &Style) -> egui::Frame {
     egui::Frame {
         fill: Color32::from_rgb(20, 20, 25),
-        corner_radius: egui::CornerRadius::same(2),
-        inner_margin: egui::Margin::same(4),
+        rounding: egui::Rounding::same(2.0),
+        inner_margin: egui::Margin::same(4.0),
         stroke: Stroke::new(1.0, Color32::from_gray(40)),
         ..Default::default()
     }
@@ -67,14 +67,14 @@ pub fn render_panel_header(
     let painter = ui.painter();
 
     // 1. Background
-    painter.rect_filled(rect, egui::CornerRadius::same(0), colors::LIGHTER_GREY);
+    painter.rect_filled(rect, egui::Rounding::same(0.0), colors::LIGHTER_GREY);
 
     // 2. Accent Stripe (Left)
     let stripe_width = 3.0;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(stripe_width, rect.height()));
     painter.rect_filled(
         stripe_rect,
-        egui::CornerRadius::same(0),
+        egui::Rounding::same(0.0),
         colors::CYAN_ACCENT,
     );
 

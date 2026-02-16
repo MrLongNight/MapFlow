@@ -195,7 +195,7 @@ fn render_content(
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,
-                depth_slice: None,
+                
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
@@ -220,7 +220,7 @@ fn render_content(
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,
-                depth_slice: None,
+                
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(if output_id == 0 {
                         wgpu::Color { r: 0.05, g: 0.05, b: 0.05, a: 1.0 }
@@ -293,7 +293,7 @@ fn render_content(
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view,
                     resolve_target: None,
-                    depth_slice: None,
+                    
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
                 depth_stencil_attachment: None,
@@ -318,7 +318,7 @@ fn render_content(
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view,
                     resolve_target: None,
-                    depth_slice: None,
+                    
                     ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
                 depth_stencil_attachment: None,
@@ -326,7 +326,9 @@ fn render_content(
                 occlusion_query_set: None,
             });
 
-            egui_renderer.render(&mut render_pass, tris, screen_desc);
+            // SAFETY: Hack to bypass lifetime issues in older egui-wgpu versions
+            let render_pass_static: &mut wgpu::RenderPass<'static> = unsafe { std::mem::transmute(&mut render_pass) };
+            egui_renderer.render(render_pass_static, tris, screen_desc);
         }
     }
     Ok(())
@@ -377,23 +379,27 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 let target_tex = app.output_temp_textures.get(&output_id).unwrap();
                 
                 use std::collections::hash_map::Entry;
-                match app.output_preview_cache.entry(output_id) {
+                let current_view_arc = match app.output_preview_cache.entry(output_id) {
                     Entry::Occupied(mut e) => {
                         let (id, old_view) = e.get_mut();
                         if needs_recreate {
                             let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
                             let target_view_arc = std::sync::Arc::new(target_view);
                             app.egui_renderer.update_egui_texture_from_wgpu_texture(&app.backend.device, &target_view_arc, wgpu::FilterMode::Linear, *id);
-                            *e.get_mut() = (*id, target_view_arc);
+                            *e.get_mut() = (*id, target_view_arc.clone());
+                            target_view_arc
+                        } else {
+                            old_view.clone()
                         }
                     }
                     Entry::Vacant(e) => {
                         let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
                         let target_view_arc = std::sync::Arc::new(target_view);
                         let id = app.egui_renderer.register_native_texture(&app.backend.device, &target_view_arc, wgpu::FilterMode::Linear);
-                        e.insert((id, target_view_arc));
+                        e.insert((id, target_view_arc.clone()));
+                        target_view_arc
                     }
-                }
+                };
 
                 {
                     let transform = glam::Mat4::IDENTITY;
@@ -404,9 +410,9 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Preview Render Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &target_view_arc,
+                            view: &current_view_arc,
                             resolve_target: None,
-                            depth_slice: None,
+                            
                             ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
                         })],
                         depth_stencil_attachment: None,

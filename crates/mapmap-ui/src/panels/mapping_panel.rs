@@ -67,10 +67,10 @@ impl MappingPanel {
                                         colors::DARKER_GREY
                                     };
 
-                                    egui::Frame::new().fill(bg_color).inner_margin(4.0).show(
+                                    egui::Frame::none().fill(bg_color).inner_margin(4.0).show(
                                         ui,
-                                        |ui| {
-                                            ui.horizontal(|ui| {
+                                        |ui: &mut egui::Ui| {
+                                            ui.horizontal(|ui: &mut egui::Ui| {
                                                 // Visibility
                                                 if ui.checkbox(&mut mapping.visible, "").changed() {
                                                     actions.push(
@@ -102,7 +102,7 @@ impl MappingPanel {
                                                     egui::Layout::right_to_left(
                                                         egui::Align::Center,
                                                     ),
-                                                    |ui| {
+                                                    |ui: &mut egui::Ui| {
                                                         // Delete Button
                                                         if custom::delete_button(ui) {
                                                             actions.push(UIAction::RemoveMapping(
@@ -131,7 +131,7 @@ impl MappingPanel {
                                             });
 
                                             // Second row: Opacity
-                                            ui.horizontal(|ui| {
+                                            ui.horizontal(|ui: &mut egui::Ui| {
                                                 ui.add_space(24.0); // Indent to align with name
                                                 ui.label(i18n.t("label-master-opacity"));
                                                 custom::styled_slider(

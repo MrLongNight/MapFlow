@@ -528,7 +528,7 @@ impl EffectChainRenderer {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: output_view,
                     resolve_target: None,
-                    depth_slice: None,
+                    
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
@@ -719,7 +719,7 @@ impl EffectChainRenderer {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                                 store: wgpu::StoreOp::Store,
                             },
-                            depth_slice: None,
+                            
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,

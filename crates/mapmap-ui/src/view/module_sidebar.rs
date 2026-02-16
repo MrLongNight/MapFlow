@@ -1,4 +1,4 @@
-﻿use crate::i18n::LocaleManager;
+use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Response, Sense, Ui, Vec2};
 use mapmap_core::module::{MapFlowModule, ModuleManager};
 
@@ -34,15 +34,15 @@ impl ModuleSidebar {
                 response.context_menu(|ui| {
                     if ui.button(locale.t("menu-rename")).clicked() {
                         // TODO: Implement renaming
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(locale.t("menu-duplicate")).clicked() {
                         // TODO: Implement duplication
-                        ui.close();
+                        ui.close_menu();
                     }
                     if ui.button(locale.t("menu-delete")).clicked() {
                         action = Some(ModuleSidebarAction::DeleteModule(module.id));
-                        ui.close();
+                        ui.close_menu();
                     }
                     ui.separator();
                     // Color picker
@@ -75,7 +75,7 @@ impl ModuleSidebar {
                             );
                             if color_button(ui, color32, Vec2::splat(16.0)).clicked() {
                                 action = Some(ModuleSidebarAction::SetColor(module.id, color));
-                                ui.close();
+                                ui.close_menu();
                             }
                         }
                     });

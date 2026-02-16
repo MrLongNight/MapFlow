@@ -347,7 +347,7 @@ impl NodeEditor {
 
         // Node background
         painter.rect_filled(rect, 4.0, bg_color);
-        painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)), egui::StrokeKind::Middle);
+        painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
 
         // Title bar
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 24.0 * zoom));
