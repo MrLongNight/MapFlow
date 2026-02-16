@@ -159,7 +159,8 @@ impl OscillatorPanel {
                 ui.end_row();
             });
 
-        sim_changed    }
+        sim_changed
+    }
 
     fn show_distortion_params(
         &mut self,

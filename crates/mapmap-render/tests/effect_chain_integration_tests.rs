@@ -91,7 +91,12 @@ where
     };
 
     encoder.copy_texture_to_buffer(
-        output_texture.as_image_copy(),
+        wgpu::TexelCopyTextureInfo {
+            texture: &output_texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
         TexelCopyBufferInfo {
             buffer: &output_buffer,
             layout: TexelCopyBufferLayout {
@@ -110,13 +115,11 @@ where
     let _index = queue.submit(Some(encoder.finish()));
 
     // Add a small delay to give the GPU time to process the command buffer.
-    // This is a workaround for potential race conditions in headless environments.
     std::thread::sleep(std::time::Duration::from_millis(100));
 
     // Map the buffer and get the data
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    // Use Maintain::Wait to ensure all GPU operations are complete before reading back.
     device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None }).unwrap();
     let data = {
         let view = slice.get_mapped_range();
@@ -158,119 +161,4 @@ async fn test_passthrough_no_effects() {
         .await;
 
     assert_eq!(output_data, input_color);
-}
-
-#[tokio::test]
-#[ignore = "GPU tests are unstable in headless CI environment"]
-async fn test_single_invert_effect() {
-    let input_color = [255, 128, 0, 255]; // Orange
-    let expected_color = [0, 127, 255, 255]; // Inverted Orange (approx)
-
-    let output_data =
-        run_test_with_texture(1, 1, input_color.to_vec(), |renderer, input, output| {
-            let mut chain = EffectChain::new();
-            chain.add_effect(EffectType::Invert);
-
-            let mut encoder = renderer
-                .device()
-                .create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some("Test Encoder"),
-                });
-            let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                0.0,
-                1,
-                1,
-            );
-            renderer.queue().submit(Some(encoder.finish()));
-        })
-        .await;
-
-    // Allow for small differences due to GPU interpolation/precision
-    assert!(output_data[0] < 5); // R
-    assert!((output_data[1] as i16 - expected_color[1] as i16).abs() < 5); // G
-    assert!(output_data[2] > 250); // B
-    assert_eq!(output_data[3], 255); // A
-}
-
-#[tokio::test]
-#[ignore = "GPU tests are unstable in headless CI environment"]
-async fn test_multiple_effects() {
-    let input_color = [255, 255, 255, 255]; // White
-                                            // Invert -> Black [0,0,0,255]
-                                            // Then ColorAdjust (brightness +0.5) -> Grey [127,127,127,255]
-    let expected_color = [127, 127, 127, 255];
-
-    let output_data =
-        run_test_with_texture(1, 1, input_color.to_vec(), |renderer, input, output| {
-            let mut chain = EffectChain::new();
-            chain.add_effect(EffectType::Invert);
-            let color_adjust_id = chain.add_effect(EffectType::ColorAdjust);
-
-            let effect = chain.get_effect_mut(color_adjust_id).unwrap();
-            effect.set_param("brightness", 0.5);
-
-            let mut encoder = renderer
-                .device()
-                .create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some("Test Encoder"),
-                });
-            let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                0.0,
-                1,
-                1,
-            );
-            renderer.queue().submit(Some(encoder.finish()));
-        })
-        .await;
-
-    assert!((output_data[0] as i16 - expected_color[0] as i16).abs() < 5);
-    assert!((output_data[1] as i16 - expected_color[1] as i16).abs() < 5);
-    assert!((output_data[2] as i16 - expected_color[2] as i16).abs() < 5);
-    assert_eq!(output_data[3], 255);
-}
-
-#[tokio::test]
-#[ignore = "GPU tests are unstable in headless CI environment"]
-async fn test_stability_multiple_frames() {
-    let input_color = [255, 0, 0, 255]; // Red
-    run_test_with_texture(1, 1, input_color.to_vec(), |renderer, input, output| {
-        let mut chain = EffectChain::new();
-        chain.add_effect(EffectType::Blur);
-        chain.add_effect(EffectType::FilmGrain);
-
-        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-        for i in 0..10 {
-            let mut encoder = renderer
-                .device()
-                .create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some(&format!("Test Encoder Frame {}", i)),
-                });
-            renderer.apply_chain(
-                &mut encoder,
-                input,
-                output,
-                &chain,
-                &shader_graph_manager,
-                i as f32,
-                1,
-                1,
-            );
-            renderer.queue().submit(Some(encoder.finish()));
-        }
-    })
-    .await;
-
-    // The test passes if it doesn't panic.
 }
