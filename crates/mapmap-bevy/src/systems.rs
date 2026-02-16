@@ -515,7 +515,7 @@ pub fn camera_control_system(
 ) {
     // Find the first active camera controller
     if let Some(config) = control_query.iter().find(|c| c.active) {
-        if let Ok((mut transform, mut projection)) = camera_query.get_single_mut() {
+        if let Ok((mut transform, mut projection)) = camera_query.single_mut() {
             // Update FOV if perspective
             if let Projection::Perspective(ref mut persp) = *projection {
                 persp.fov = config.fov.to_radians();
