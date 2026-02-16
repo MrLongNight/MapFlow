@@ -7,14 +7,31 @@ use std::collections::{HashMap, HashSet};
 /// A set of active trigger outputs. Each entry is (part_id, socket_idx).
 pub type ActiveTriggers = HashSet<(u64, usize)>;
 
+/// State for time-based triggers
+#[derive(Debug, Clone, Copy)]
+pub struct TriggerState {
+    /// Accumulated time since last trigger
+    pub timer: f32,
+    /// Target interval for the next trigger (used for Random triggers).
+    /// Initialize to -1.0 to indicate "uninitialized".
+    pub target: f32,
+}
+
+impl Default for TriggerState {
+    fn default() -> Self {
+        Self {
+            timer: 0.0,
+            target: -1.0,
+        }
+    }
+}
+
 /// System for processing and tracking active trigger states
 #[derive(Default)]
 pub struct TriggerSystem {
     active_triggers: ActiveTriggers,
-    /// Timer states for time-based triggers (Part ID -> Elapsed Time)
-    timer_states: HashMap<u64, f32>,
-    /// Timer targets for random triggers (Part ID -> Target Interval)
-    random_targets: HashMap<u64, f32>,
+    /// Combined state for time-based triggers (Part ID -> State)
+    states: HashMap<u64, TriggerState>,
 }
 
 impl TriggerSystem {
@@ -104,10 +121,10 @@ impl TriggerSystem {
                         }
                         TriggerType::Fixed { interval_ms, .. } => {
                             let interval = *interval_ms as f32 / 1000.0;
-                            let timer = self.timer_states.entry(part.id).or_insert(0.0);
-                            *timer += dt;
-                            if *timer >= interval {
-                                *timer -= interval;
+                            let state = self.states.entry(part.id).or_default();
+                            state.timer += dt;
+                            if state.timer >= interval {
+                                state.timer -= interval;
                                 self.active_triggers.insert((part.id, 0));
                             }
                         }
@@ -116,26 +133,25 @@ impl TriggerSystem {
                             max_interval_ms,
                             ..
                         } => {
-                            let timer = self.timer_states.entry(part.id).or_insert(0.0);
-                            *timer += dt;
+                            let state = self.states.entry(part.id).or_default();
 
-                            let target = *self.random_targets.entry(part.id).or_insert_with(|| {
+                            // Initialize target if needed
+                            if state.target < 0.0 {
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                rng.random_range(*min_interval_ms..=*max_interval_ms) as f32
-                                    / 1000.0
-                            });
+                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms) as f32 / 1000.0;
+                            }
 
-                            if *timer >= target {
-                                *timer = 0.0;
+                            state.timer += dt;
+
+                            if state.timer >= state.target {
+                                state.timer = 0.0;
                                 self.active_triggers.insert((part.id, 0));
+
                                 // Pick new target
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                let next_target =
-                                    rng.random_range(*min_interval_ms..=*max_interval_ms) as f32
-                                        / 1000.0;
-                                self.random_targets.insert(part.id, next_target);
+                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms) as f32 / 1000.0;
                             }
                         }
                         // Other triggers (Midi, Osc, Shortcut) handled by event system or direct inputs
