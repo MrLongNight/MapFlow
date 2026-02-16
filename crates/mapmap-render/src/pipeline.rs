@@ -55,7 +55,7 @@ impl UniformBufferAllocator {
     /// Allocate a uniform buffer with the given content.
     /// Returns the buffer, the offset within it, and the page index.
     /// Note: The buffer might be shared, so use dynamic offsets or the returned offset.
-    pub fn allocate(&mut self, queue: &wgpu::Queue, content: &[u8]) -> Allocation {
+    pub fn allocate(&mut self, queue: &wgpu::Queue, content: &[u8]) -> Allocation<'_> {
         let size = content.len() as u64;
 
         // Alignment for uniform buffers is typically 256 bytes
