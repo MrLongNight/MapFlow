@@ -1,6 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
+> **Stand:** 2026-02-16
 
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
@@ -410,10 +411,10 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Undo/Redo, Node Inspector Dropdowns
   * ✅ "Add Node" Menu: Unified dropdown with search/filter (COMPLETED 2025-12-29)
   * 🟡 Neue Trigger-Nodes: MIDI Clock & Ableton Link (Tempo/Phase Sync)
-  * ⬜ Resize Drag Interaction (Handle vorhanden, Drag-Logik fehlt)
-  * ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
-  * ⬜ MIDI/OSC Device Selectors
-  * ⬜ Mesh Editor für Layer
+  * ✅ Resize Drag Interaction (COMPLETED 2026-02-16)
+  * ✅ Multi-band Audio Outputs (9 Frequenzbänder) (COMPLETED 2026-02-16)
+  * ✅ MIDI/OSC Device Selectors (COMPLETED 2026-02-16)
+  * ✅ Mesh Editor für Layer (COMPLETED 2026-02-16)
   * ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   * ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
   * ✅ Node Graph Visual Refinements (COMPLETED 2026-01-15)

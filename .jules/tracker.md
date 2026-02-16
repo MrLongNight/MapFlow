@@ -61,3 +61,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-10 - Discrepancy in PR Reference for Bevy Particles
 **Erkenntnis:** CHANGELOG referenced PR #638 for "Bevy Particles", but git history shows merged commit 52bf7e7 is linked to PR #650.
 **Aktion:** Corrected CHANGELOG entry to point to #650 and updated ROADMAP to reflect the new feature implementation details.
+
+## 2026-02-16 - Squash Commit Discovery & Feature Verification
+**Erkenntnis:** Discovered a massive squash commit (e1e8f37) adding 600+ files. Git history prior to this is unavailable in the current environment.
+**Aktion:** Manually verified implementation of "Resize Drag", "Mesh Editor for Layers", "MIDI Selector", and "Audio Bands" in `module_canvas/mod.rs` and updated ROADMAP/CHANGELOG accordingly to reflect the current state.
