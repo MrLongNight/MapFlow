@@ -35,19 +35,48 @@ pub fn styled_slider(
     default_value: f32,
 ) -> Response {
     let desired_size = Vec2::new(ui.available_width(), 20.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+    // Sense::click_and_drag() implies interactivity, but we want to ensure focusability for keyboard.
+    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+
+    // Accessibility Info
+    response.widget_info(|| egui::WidgetInfo::new(egui::WidgetType::Slider));
 
     let visuals = ui.style().interact(&response);
+
+    // Keyboard Interaction
+    if response.has_focus() {
+        let mut step = (*range.end() - *range.start()) / 100.0;
+        if ui.input(|i| i.modifiers.shift) {
+            step *= 10.0;
+        }
+
+        let mut new_value = *value;
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
+        {
+            new_value -= step;
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            new_value += step;
+        }
+
+        new_value = new_value.clamp(*range.start(), *range.end());
+        if (new_value - *value).abs() > f32::EPSILON {
+            *value = new_value;
+            response.mark_changed();
+        }
+    }
 
     // Double-click to reset
     if response.double_clicked() {
         *value = default_value;
+        response.mark_changed(); // Ensure change is tracked
     } else if response.dragged() {
         let min = *range.start();
         let max = *range.end();
         if let Some(mouse_pos) = response.interact_pointer_pos() {
             let new_value = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), min..=max);
             *value = new_value;
+            response.mark_changed();
         }
     }
 
@@ -58,6 +87,16 @@ pub fn styled_slider(
         visuals.bg_stroke,
         egui::StrokeKind::Middle,
     );
+
+    // Focus Ring
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::ZERO,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
     let fill_rect = Rect::from_min_max(
@@ -86,7 +125,7 @@ pub fn styled_slider(
 
     // Value Text
     let text = format!("{:.2}", value);
-    let text_color = if response.hovered() || response.dragged() {
+    let text_color = if response.hovered() || response.dragged() || response.has_focus() {
         Color32::WHITE
     } else if is_changed {
         colors::CYAN_ACCENT
