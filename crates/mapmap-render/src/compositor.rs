@@ -26,6 +26,13 @@ struct CachedUniform {
     last_params: Option<CompositeParams>,
 }
 
+/// Type alias for cached bind group entry to reduce type complexity
+type CachedBindGroupEntry = (
+    Weak<wgpu::TextureView>,
+    Weak<wgpu::TextureView>,
+    Arc<wgpu::BindGroup>,
+);
+
 /// Compositor for blending layers
 pub struct Compositor {
     pipeline: wgpu::RenderPipeline,
@@ -37,14 +44,7 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<
-        (usize, usize),
-        (
-            Weak<wgpu::TextureView>,
-            Weak<wgpu::TextureView>,
-            Arc<wgpu::BindGroup>,
-        ),
-    >,
+    bind_group_cache: HashMap<(usize, usize), CachedBindGroupEntry>,
 }
 
 impl Compositor {
