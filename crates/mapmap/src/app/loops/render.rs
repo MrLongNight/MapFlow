@@ -189,6 +189,10 @@ fn render_content(
 
     target_ops.sort_by(|(_, a), (_, b)| b.output_part_id.cmp(&a.output_part_id));
 
+    if output_id != 0 {
+        tracing::info!("Rendering output {}: {} ops", output_id, target_ops.len());
+    }
+
     if target_ops.is_empty() && output_id != 0 {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Pass"),
@@ -237,14 +241,23 @@ fn render_content(
     }
 
     // Accumulate Layers
-    for (module_id, op) in target_ops {
+    for (module_id, mut op) in target_ops {
+        if op.mapping_mode {
+            tracing::info!("Layer {} has mapping_mode ENABLED (forcing false for debug)", op.layer_part_id);
+            op.mapping_mode = false;
+        }
+
         let tex_name = if let Some(src_id) = op.source_part_id {
             format!("part_{}_{}", module_id, src_id)
         } else {
             "".to_string()
         };
 
-        let source_view = if op.mapping_mode {
+        if !tex_name.is_empty() && !ctx.texture_pool.has_texture(&tex_name) {
+             tracing::warn!("Texture NOT FOUND in pool: {}", tex_name);
+        }
+
+        let mut source_view = if op.mapping_mode {
             let grid_tex_name = format!("grid_layer_{}", op.layer_part_id);
             if !ctx.texture_pool.has_texture(&grid_tex_name) {
                 let width = 512;
@@ -262,6 +275,9 @@ fn render_content(
             Some(ctx.texture_pool.get_view(&grid_tex_name))
         } else if ctx.texture_pool.has_texture(&tex_name) {
             Some(ctx.texture_pool.get_view(&tex_name))
+        } else if ctx.texture_pool.has_texture("bevy_output") {
+            // Fallback for Bevy nodes if they don't have individual textures yet
+            Some(ctx.texture_pool.get_view("bevy_output"))
         } else {
             ctx.dummy_view.as_ref().map(|v| v.clone())
         };
@@ -430,36 +446,11 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     }
 }
 
-fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
+fn generate_grid_texture(width: u32, height: u32, _layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
-    let _bg_color = [0, 0, 0, 255]; 
-    let _grid_color = [255, 255, 255, 255];
-    let _text_color = [0, 255, 255, 255];
-
     for i in 0..(width * height) {
         let idx = (i * 4) as usize;
-        data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
-    }
-    let grid_step = 64;
-    for y in 0..height {
-        for x in 0..width {
-            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 { 
-                let idx = ((y * width + x) * 4) as usize;
-                data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
-            }
-        }
-    }
-
-    let id_str = format!("{}", layer_id);
-    let digit_scale = 8;
-    let digit_w = 3 * digit_scale;
-    let total_w = id_str.len() as u32 * (digit_w + 2 * digit_scale);
-    let start_x = (width.saturating_sub(total_w)) / 2;
-    let start_y = (height.saturating_sub(5 * digit_scale)) / 2;
-    for (i, char) in id_str.chars().enumerate() {
-        if let Some(digit) = char.to_digit(10) {
-            draw_digit(&mut data, width, digit as usize, start_x + i as u32 * (digit_w + 2 * digit_scale), start_y, digit_scale, [0, 255, 255, 255]);
-        }
+        data[idx] = 255; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
     }
     data
 }

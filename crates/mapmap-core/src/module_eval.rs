@@ -742,7 +742,7 @@ impl ModuleEvaluator {
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
-                                        mapping_mode: *mapping_mode,
+                                        mapping_mode: false, // FORCED FALSE
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props,
                                         effects: chain.effects,
@@ -766,7 +766,7 @@ impl ModuleEvaluator {
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
-                                        mapping_mode: *mapping_mode,
+                                        mapping_mode: false, // FORCED FALSE
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props.clone(),
                                         effects: chain.effects,
