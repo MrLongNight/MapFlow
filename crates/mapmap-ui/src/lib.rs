@@ -1,4 +1,4 @@
-//! MapFlow UI - ImGui and egui Integration
+﻿//! MapFlow UI - ImGui and egui Integration
 //!
 //! This crate provides the user interface layer using ImGui (legacy) and egui (Phase 6+), including:
 //! - ImGui context setup (Phase 0-5)
@@ -569,12 +569,12 @@ impl AppUI {
             .min_width(200.0)
             .max_width(400.0)
             .frame(crate::widgets::panel::cyber_panel_frame(&ctx.style()))
-            .show(ctx, |ui| {
+            .show(ctx, |ui: &mut egui::Ui| {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("panel-media-browser"),
-                    |ui| {
-                        if ui.button("✕").clicked() {
+                    |ui: &mut egui::Ui| {
+                        if ui.button("âœ•").clicked() {
                             self.show_media_browser = false;
                         }
                     },
@@ -582,7 +582,7 @@ impl AppUI {
 
                 egui::Frame::default()
                     .inner_margin(egui::Margin::symmetric(8, 8))
-                    .show(ui, |ui| {
+                    .show(ui, |ui: &mut egui::Ui| {
                         let _ = self
                             .media_browser
                             .ui(ui, &self.i18n, self.icon_manager.as_ref());
@@ -598,7 +598,7 @@ impl AppUI {
 
         egui::Window::new(self.i18n.t("panel-playback"))
             .default_size([320.0, 360.0])
-            .show(ctx, |ui| {
+            .show(ctx, |ui: &mut egui::Ui| {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("header-video-playback"),
@@ -638,7 +638,7 @@ impl AppUI {
                         mapmap_media::LoopMode::Loop => self.i18n.t("mode-loop"),
                         mapmap_media::LoopMode::PlayOnce => self.i18n.t("mode-play-once"),
                     })
-                    .show_ui(ui, |ui| {
+                    .show_ui(ui, |ui: &mut egui::Ui| {
                         if ui
                             .selectable_value(
                                 &mut self.loop_mode,
@@ -676,12 +676,12 @@ impl AppUI {
             .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0]) // Offset from menu bar
             .order(egui::Order::Foreground)
             .interactable(false)
-            .show(ctx, |ui| {
+            .show(ctx, |ui: &mut egui::Ui| {
                 egui::Frame::popup(ui.style())
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
                     .inner_margin(egui::Margin::symmetric(16, 8))
-                    .show(ui, |ui| {
+                    .show(ui, |ui: &mut egui::Ui| {
                         ui.horizontal(|ui| {
                             ui.label(
                                 egui::RichText::new(format!("FPS: {:.0}", fps))
@@ -806,7 +806,7 @@ impl AppUI {
 
         egui::Window::new(self.i18n.t("panel-master"))
             .default_size([360.0, 300.0])
-            .show(ctx, |ui| {
+            .show(ctx, |ui: &mut egui::Ui| {
                 self.render_master_controls_embedded(ui, layer_manager);
             });
     }
@@ -926,7 +926,7 @@ impl AppUI {
             .resizable(true)
             .vscroll(false) // Canvas handles panning
             .open(&mut open)
-            .show(ctx, |ui| {
+            .show(ctx, |ui: &mut egui::Ui| {
                 if let Some(action) = self.node_editor_panel.ui(ui, &self.i18n) {
                     self.actions.push(UIAction::NodeAction(action));
                 }
@@ -934,3 +934,4 @@ impl AppUI {
         self.show_shader_graph = open;
     }
 }
+

@@ -2,7 +2,7 @@
 //!
 //! Provides a consistent frame and background for UI panels.
 
-use egui::{Color32, Rect, Stroke, Ui};
+use egui::{Color32, Rect, Stroke, Ui, Style};
 
 pub struct StyledPanel {
     title: String,
@@ -36,32 +36,24 @@ impl StyledPanel {
             .inner
         }).inner
     }
+}
 
-    pub fn show_with_stripe<R>(self, ui: &mut Ui, stripe_color: Color32, add_contents: impl FnOnce(&mut Ui) -> R) -> R {
-        let frame = egui::Frame {
-            fill: Color32::from_rgb(30, 30, 35),
-            corner_radius: egui::CornerRadius::same(4),
-            inner_margin: egui::Margin::same(8),
-            outer_margin: egui::Margin::same(0),
-            stroke: Stroke::new(1.0, Color32::from_gray(50)),
-            ..Default::default()
-        };
-
-        frame.show(ui, |ui| {
-            // Draw colored stripe
-            let rect = ui.max_rect();
-            let _stripe_rect = Rect::from_min_max(rect.min, egui::pos2(rect.min.x + 4.0, rect.max.y));
-            ui.painter().rect_filled(_stripe_rect, egui::CornerRadius::ZERO, stripe_color);
-
-            ui.vertical(|ui| {
-                ui.horizontal(|ui| {
-                    ui.add_space(8.0);
-                    ui.strong(&self.title);
-                });
-                ui.separator();
-                add_contents(ui)
-            })
-            .inner
-        }).inner
+pub fn cyber_panel_frame(_style: &Style) -> egui::Frame {
+    egui::Frame {
+        fill: Color32::from_rgb(20, 20, 25),
+        corner_radius: egui::CornerRadius::same(2),
+        inner_margin: egui::Margin::same(4),
+        stroke: Stroke::new(1.0, Color32::from_gray(40)),
+        ..Default::default()
     }
+}
+
+pub fn render_panel_header<R>(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui) -> R) {
+    ui.horizontal(|ui| {
+        ui.strong(title);
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            add_contents(ui)
+        });
+    });
+    ui.separator();
 }

@@ -5049,8 +5049,7 @@ impl ModuleCanvas {
             .unwrap_or(0.0);
 
         // Use the shared helper for consistency
-        crate::widgets::custom::draw_safety_radial_fill(
-            ui,
+        crate::widgets::custom::draw_safety_radial_fill(ui.painter(),
             delete_button_rect.center(),
             10.0 * self.zoom,
             progress,
@@ -6800,6 +6799,7 @@ impl ModuleCanvas {
         ));
     }
 }
+
 
 
 
