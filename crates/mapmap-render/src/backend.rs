@@ -69,7 +69,7 @@ impl WgpuBackend {
     ) -> Result<Self> {
         info!("Initializing wgpu backend");
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
             ..Default::default()
         });
@@ -103,7 +103,8 @@ impl WgpuBackend {
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await;
+                .await
+                .ok();
         }
 
         let adapter =
@@ -251,14 +252,14 @@ impl RenderBackend for WgpuBackend {
 
         // Use direct write for all textures (queue.write_texture is efficient)
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(handle.height),

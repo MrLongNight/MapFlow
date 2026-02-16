@@ -781,6 +781,7 @@ impl ModuleCanvas {
                                                 SourceType::BevyHexGrid { .. } => "ðŸ›‘ Hex Grid",
                                                 SourceType::BevyParticles { .. } => "âœ¨ Particles",
                                                 SourceType::Bevy3DShape { .. } => "ðŸ§Š 3D Shape",
+                                                SourceType::Bevy3DModel { .. } => "ðŸ“¦ 3D Model",
                                                 SourceType::Bevy3DText { .. } => "ðŸ“ 3D Text",
                                                 SourceType::BevyCamera { .. } => "ðŸŽ¥ Bevy Camera",
                                             };
@@ -1434,6 +1435,40 @@ impl ModuleCanvas {
                                                 });
 
                                                 ui.checkbox(unlit, "Unlit (No Shading)");
+
+                                                ui.separator();
+
+                                                ui.collapsing("ðŸ“ Transform (3D)", |ui| {
+                                                    ui.label("Position:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
+                                                        ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
+                                                        ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
+                                                    });
+
+                                                    ui.label("Rotation:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("Â°"));
+                                                        ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("Â°"));
+                                                        ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("Â°"));
+                                                    });
+
+                                                    ui.label("Scale:");
+                                                    ui.horizontal(|ui| {
+                                                        ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01).prefix("X: "));
+                                                        ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01).prefix("Y: "));
+                                                        ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01).prefix("Z: "));
+                                                    });
+                                                });
+                                            }
+                                            SourceType::Bevy3DModel { path, position, rotation, scale, .. } => {
+                                                ui.label("ðŸ“¦ Bevy 3D Model");
+                                                ui.separator();
+
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Path:");
+                                                    ui.text_edit_singleline(path);
+                                                });
 
                                                 ui.separator();
 
@@ -5401,6 +5436,7 @@ impl ModuleCanvas {
                     SourceType::Bevy3DText { .. } => "3D Text",
                     SourceType::BevyCamera { .. } => "Camera",
                     SourceType::Bevy3DShape { .. } => "3D Shape",
+                    SourceType::Bevy3DModel { .. } => "3D Model",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5616,6 +5652,9 @@ impl ModuleCanvas {
                     BevyCameraMode::Static { .. } => "ðŸŽ¥ Static".to_string(),
                 },
                 SourceType::Bevy3DShape { shape_type, .. } => format!("ðŸ§Š {:?}", shape_type),
+                SourceType::Bevy3DModel { path, .. } => {
+                    format!("ðŸ“¦ {}", path.split(['/', '\\']).next_back().unwrap_or(path))
+                }
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {

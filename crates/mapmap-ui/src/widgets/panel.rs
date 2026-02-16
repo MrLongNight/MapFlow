@@ -121,4 +121,3 @@ pub fn render_panel_header(
 
     add_actions(&mut actions_ui);
 }
-}

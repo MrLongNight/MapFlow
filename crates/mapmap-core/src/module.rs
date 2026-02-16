@@ -1036,8 +1036,6 @@ impl AudioTriggerOutputConfig {
     }
 }
 
-/// Types of 3D shapes available in Bevy nodes.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 /// Primitive shape types for Bevy
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum BevyShapeType {
@@ -1535,7 +1533,6 @@ impl Default for BevyCameraMode {
             height: 2.0,
         }
     }
-}
 }
 
 /// Types of masks

@@ -367,9 +367,6 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
-            self.uniform_cache.push(CachedMeshUniform {
-                buffer,
-                bind_group: Arc::new(bind_group),
                 last_uniforms: None,
             });
         }
@@ -452,9 +449,6 @@ impl MeshRenderer {
                 }],
             });
 
-            self.uniform_cache.push(CachedMeshUniform {
-                buffer,
-                bind_group: Arc::new(bind_group),
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),

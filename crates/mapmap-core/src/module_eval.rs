@@ -1377,6 +1377,7 @@ impl ModuleEvaluator {
                 position,
                 rotation,
                 scale,
+                ..
             } => Some(SourceCommand::Bevy3DModel {
                 path: path.clone(),
                 position: *position,

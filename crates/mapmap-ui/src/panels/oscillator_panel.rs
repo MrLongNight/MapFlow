@@ -7,7 +7,6 @@ use crate::widgets::icons::{AppIcon, IconManager};
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::{ComboBox, Ui};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
-use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
 
 /// UI for the oscillator control panel.
 #[derive(Debug, Clone, Default)]
