@@ -1,4 +1,4 @@
-﻿use crate::i18n::LocaleManager;
+use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Response, Sense, Ui, Vec2};
 use mapmap_core::module::{MapFlowModule, ModuleManager};
 

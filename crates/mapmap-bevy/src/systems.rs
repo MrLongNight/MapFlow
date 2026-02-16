@@ -59,7 +59,10 @@ pub fn shape_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    query: Query<(Entity, &crate::components::Bevy3DShape), Changed<crate::components::Bevy3DShape>>,
+    query: Query<
+        (Entity, &crate::components::Bevy3DShape),
+        Changed<crate::components::Bevy3DShape>,
+    >,
 ) {
     for (entity, shape) in query.iter() {
         let mesh = match shape.shape_type {
