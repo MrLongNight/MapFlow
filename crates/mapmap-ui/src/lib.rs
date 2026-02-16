@@ -267,6 +267,7 @@ pub enum UIAction {
     ),
 
     // Module Connection Deletion
+    /// Delete a connection between two module parts
     DeleteConnection(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModuleConnection,
