@@ -387,7 +387,7 @@ mod tests {
             let backend = crate::WgpuBackend::new(None).await;
             if let Ok(backend) = backend {
                 let compositor =
-                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8Unorm);
+                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8UnormSrgb);
                 assert!(compositor.is_ok());
             }
         });

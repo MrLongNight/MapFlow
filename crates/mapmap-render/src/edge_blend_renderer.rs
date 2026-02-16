@@ -325,7 +325,7 @@ mod tests {
             let backend = crate::WgpuBackend::new(None).await;
             if let Ok(backend) = backend {
                 let renderer =
-                    EdgeBlendRenderer::new(backend.device.clone(), wgpu::TextureFormat::Bgra8Unorm);
+                    EdgeBlendRenderer::new(backend.device.clone(), wgpu::TextureFormat::Bgra8UnormSrgb);
                 assert!(renderer.is_ok());
             }
         });

@@ -326,8 +326,7 @@ fn render_content(
                 occlusion_query_set: None,
             });
 
-            let render_pass_static: &mut wgpu::RenderPass<'static> = unsafe { std::mem::transmute(&mut render_pass) };
-            egui_renderer.render(render_pass_static, tris, screen_desc);
+            egui_renderer.render(&mut render_pass, tris, screen_desc);
         }
     }
     Ok(())
@@ -376,18 +375,23 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 }
 
                 let target_tex = app.output_temp_textures.get(&output_id).unwrap();
-                let target_view_arc = std::sync::Arc::new(target_tex.create_view(&wgpu::TextureViewDescriptor::default()));
-
+                
                 use std::collections::hash_map::Entry;
                 match app.output_preview_cache.entry(output_id) {
                     Entry::Occupied(mut e) => {
-                        let (id, _old_view) = e.get_mut();
-                        app.egui_renderer.update_egui_texture_from_wgpu_texture(&app.backend.device, &target_view_arc, wgpu::FilterMode::Linear, *id);
-                        *e.into_mut() = (*id, target_view_arc.clone());
+                        let (id, old_view) = e.get_mut();
+                        if needs_recreate {
+                            let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
+                            let target_view_arc = std::sync::Arc::new(target_view);
+                            app.egui_renderer.update_egui_texture_from_wgpu_texture(&app.backend.device, &target_view_arc, wgpu::FilterMode::Linear, *id);
+                            *e.get_mut() = (*id, target_view_arc);
+                        }
                     }
                     Entry::Vacant(e) => {
+                        let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
+                        let target_view_arc = std::sync::Arc::new(target_view);
                         let id = app.egui_renderer.register_native_texture(&app.backend.device, &target_view_arc, wgpu::FilterMode::Linear);
-                        e.insert((id, target_view_arc.clone()));
+                        e.insert((id, target_view_arc));
                     }
                 }
 

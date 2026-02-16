@@ -125,7 +125,7 @@ impl WindowManager {
         let surface = backend.create_surface(window.clone())?;
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: backend.surface_format(),
             width: default_width,
             height: default_height,
             present_mode: vsync_mode_to_present_mode(vsync_mode),
