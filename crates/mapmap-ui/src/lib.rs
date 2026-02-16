@@ -30,6 +30,7 @@ pub use crate::panels::*;
 pub use crate::view::*;
 pub use crate::widgets::*;
 
+/// Re-export types for public use
 pub mod types {
     pub use crate::editors::module_canvas::types::*;
 }
