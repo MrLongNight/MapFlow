@@ -1964,7 +1964,7 @@ impl ModuleCanvas {
                                                     }
                                                 });
 
-                                                ui.collapsing("ðŸŽ­ Area & Mode", |ui| {
+                                                ui.collapsing("\u{1F3AD} Area & Mode", |ui| {
                                                      ui.label("Entertainment Area:");
                                                      ui.text_edit_singleline(entertainment_area);
                                                      // TODO: Fetch areas from bridge if paired
@@ -2734,8 +2734,8 @@ impl ModuleCanvas {
             }
         });
 
-        ui.menu_button("ðŸŽ­ Masks", |ui| {
-            if ui.button("â­• Shape").clicked() {
+        ui.menu_button("\u{1F3AD} Masks", |ui| {
+            if ui.button("\u{2B55} Shape").clicked() {
                 self.add_mask_node(
                     manager,
                     MaskType::Shape(mapmap_core::module::MaskShape::Circle),
@@ -5462,7 +5462,7 @@ impl ModuleCanvas {
                 (
                     Color32::from_rgb(60, 55, 70),
                     Color32::from_rgb(160, 100, 180),
-                    "ðŸŽ­",
+                    "\u{1F3AD}",
                     name,
                 )
             }
@@ -5721,7 +5721,7 @@ impl ModuleCanvas {
                     format!("ðŸ’¡ðŸ’¡ {}", name)
                 }
                 mapmap_core::module::HueNodeType::EntertainmentGroup { name, .. } => {
-                    format!("ðŸŽ­ {}", name)
+                    format!("\u{1F3AD} {}", name)
                 }
             },
         }

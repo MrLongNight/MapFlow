@@ -1271,9 +1271,9 @@ impl EffectChainPanel {
 
                             ui.horizontal(|ui| {
                                 let star = if preset.is_favorite {
-                                    "â­"
+                                    "\u{2B50} "
                                 } else {
-                                    "â˜†"
+                                    "\u{2606}"
                                 };
                                 ui.label(star);
 
