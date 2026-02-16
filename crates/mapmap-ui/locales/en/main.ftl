@@ -382,3 +382,10 @@ param-offset = Offset
 param-cell-size = Cell Size
 param-distortion = Distortion
 param-zoom = Zoom
+
+# Added by Lina StyleUI
+audio-gain = Gain
+audio-smoothing = Smoothing
+btn-add-mapping = Add Mapping
+no-signal = No Signal
+no-device = No Device
