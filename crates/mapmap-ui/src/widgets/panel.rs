@@ -2,7 +2,7 @@
 //!
 //! Provides a consistent frame and background for UI panels.
 
-use egui::{Color32, Stroke, Ui, Style};
+use egui::{Color32, Stroke, Style, Ui};
 
 pub struct StyledPanel {
     title: String,
@@ -25,16 +25,18 @@ impl StyledPanel {
             ..Default::default()
         };
 
-        frame.show(ui, |ui| {
-            ui.vertical(|ui| {
-                ui.horizontal(|ui| {
-                    ui.strong(&self.title);
-                });
-                ui.separator();
-                add_contents(ui)
+        frame
+            .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.strong(&self.title);
+                    });
+                    ui.separator();
+                    add_contents(ui)
+                })
+                .inner
             })
             .inner
-        }).inner
     }
 }
 

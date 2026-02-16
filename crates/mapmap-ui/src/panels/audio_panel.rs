@@ -3,11 +3,11 @@
 //! Provides visual feedback for frequency bands, beat detection,
 //! and controls for audio analysis parameters.
 
+use crate::core::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::{custom, panel::StyledPanel};
 use egui::{Rect, Stroke, Ui};
-use mapmap_core::audio::{AudioConfig, AudioAnalysis};
-use crate::core::i18n::LocaleManager;
+use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 
 /// Actions that can be triggered from the Audio Panel
 #[derive(Debug, Clone)]
@@ -59,7 +59,9 @@ impl AudioPanel {
                 .show(ui, |ui| {
                     // Device Selection
                     ui.label(locale.t("audio-device"));
-                    let current_text = selected_device.as_deref().unwrap_or("Kein Gerät ausgewählt");
+                    let current_text = selected_device
+                        .as_deref()
+                        .unwrap_or("Kein Gerät ausgewählt");
 
                     egui::ComboBox::from_id_source("audio_device_combo")
                         .selected_text(current_text)
@@ -101,12 +103,20 @@ impl AudioPanel {
 
     fn show_visualizer(&self, ui: &mut Ui, analysis: &AudioAnalysis) {
         let height = 60.0;
-        let (rect, _response) = ui.allocate_at_least(egui::vec2(ui.available_width(), height), egui::Sense::hover());
+        let (rect, _response) = ui.allocate_at_least(
+            egui::vec2(ui.available_width(), height),
+            egui::Sense::hover(),
+        );
         let painter = ui.painter();
 
         // Background
         painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
-        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+        painter.rect_stroke(
+            rect,
+            2.0,
+            Stroke::new(1.0, colors::STROKE_GREY),
+            egui::StrokeKind::Middle,
+        );
 
         // Draw Bands
         let num_bands = analysis.band_energies.len();

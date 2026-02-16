@@ -331,7 +331,7 @@ impl EffectChainRenderer {
             label: Some(&format!("Effect Pipeline Layout: {:?}", effect_type)),
             bind_group_layouts: &[bind_group_layout, uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(&format!("Effect Pipeline: {:?}", effect_type)),
@@ -536,7 +536,7 @@ impl EffectChainRenderer {
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
-                                occlusion_query_set: None,
+                occlusion_query_set: None,
             });
             self.quad_renderer.draw(&mut rpass, &bind_group);
             return;
@@ -723,7 +723,7 @@ impl EffectChainRenderer {
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,
-                                                occlusion_query_set: None,
+                        occlusion_query_set: None,
                     });
 
                     render_pass.set_pipeline(pipeline);
