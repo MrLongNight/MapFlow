@@ -389,3 +389,4 @@ audio-smoothing = Smoothing
 btn-add-mapping = Add Mapping
 no-signal = No Signal
 no-device = No Device
+panel-audio = Audio Panel

@@ -38,22 +38,29 @@ impl StyledPanel {
     }
 }
 
+/// Create a standard "Cyber Dark" panel frame
 pub fn cyber_panel_frame(_style: &Style) -> egui::Frame {
     egui::Frame {
-        fill: Color32::from_rgb(20, 20, 25),
-        corner_radius: egui::CornerRadius::same(2),
+        fill: crate::theme::colors::DARK_GREY,
+        corner_radius: egui::CornerRadius::ZERO, // Sharp corners
         inner_margin: egui::Margin::same(4),
-        stroke: Stroke::new(1.0, Color32::from_gray(40)),
+        stroke: Stroke::new(1.0, crate::theme::colors::STROKE_GREY),
         ..Default::default()
     }
 }
 
-pub fn render_panel_header<R>(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui) -> R) {
+/// Render a standard panel header with title and optional right-side content
+pub fn render_panel_header<R>(
+    ui: &mut Ui,
+    title: &str,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> R {
     ui.horizontal(|ui| {
         ui.strong(title);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             add_contents(ui)
-        });
-    });
-    ui.separator();
+        })
+        .inner
+    })
+    .inner
 }

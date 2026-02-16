@@ -29,16 +29,12 @@ impl MappingPanel {
             .default_size([380.0, 400.0])
             .show(ctx, |ui| {
                 // Header
-                panel::render_panel_header(
-                    ui,
-                    &i18n.t("panel-mappings"),
-                    |ui| {
-                         ui.label(i18n.t_args(
-                            "label-total-mappings",
-                            &[("count", &mapping_manager.mappings().len().to_string())],
-                        ));
-                    }
-                );
+                panel::render_panel_header(ui, &i18n.t("panel-mappings"), |ui| {
+                    ui.label(i18n.t_args(
+                        "label-total-mappings",
+                        &[("count", &mapping_manager.mappings().len().to_string())],
+                    ));
+                });
 
                 ui.add_space(4.0);
 
@@ -51,7 +47,7 @@ impl MappingPanel {
                             mapping_manager.mappings().iter().map(|m| m.id).collect();
 
                         if mapping_ids.is_empty() {
-                             ui.vertical_centered(|ui| {
+                            ui.vertical_centered(|ui| {
                                 ui.add_space(20.0);
                                 ui.label(RichText::new("No mappings created yet.").weak());
                                 ui.add_space(20.0);
@@ -93,7 +89,8 @@ impl MappingPanel {
                                                 // so we can't highlight selection state perfectly here without changing signature.
                                                 // But we can make it clickable.
                                                 if ui.selectable_label(false, label).clicked() {
-                                                     actions.push(UIAction::SelectMapping(mapping.id));
+                                                    actions
+                                                        .push(UIAction::SelectMapping(mapping.id));
                                                 }
 
                                                 // Right Aligned Actions
@@ -112,7 +109,9 @@ impl MappingPanel {
                                                         ui.add_space(4.0);
 
                                                         // Lock Button
-                                                        if custom::lock_button(ui, mapping.locked).clicked() {
+                                                        if custom::lock_button(ui, mapping.locked)
+                                                            .clicked()
+                                                        {
                                                             mapping.locked = !mapping.locked;
                                                         }
 
@@ -133,7 +132,11 @@ impl MappingPanel {
                                             // Let's keep it always for quick access.
                                             ui.horizontal(|ui| {
                                                 ui.add_space(24.0); // Indent to align with name text
-                                                ui.label(RichText::new(i18n.t("label-master-opacity")).size(10.0).weak());
+                                                ui.label(
+                                                    RichText::new(i18n.t("label-master-opacity"))
+                                                        .size(10.0)
+                                                        .weak(),
+                                                );
                                                 custom::styled_slider(
                                                     ui,
                                                     &mut mapping.opacity,
@@ -141,8 +144,7 @@ impl MappingPanel {
                                                     1.0,
                                                 );
                                             });
-                                        },
-                                    );
+                                        });
                                 });
                                 // Small spacing between items
                                 ui.add_space(1.0);
@@ -154,7 +156,10 @@ impl MappingPanel {
 
                 // Add Mapping Button Area
                 ui.horizontal(|ui| {
-                     if ui.button(format!("➕ {}", i18n.t("btn-add-mapping"))).clicked() {
+                    if ui
+                        .button(format!("➕ {}", i18n.t("btn-add-mapping")))
+                        .clicked()
+                    {
                         actions.push(UIAction::AddMapping);
                     }
                 });

@@ -34,9 +34,7 @@ impl BevyRunner {
 
         // Load PBR infrastructure so StandardMaterial and Mesh assets exist
         // We use the headless configuration parts of PbrPlugin
-        app.add_plugins(bevy::pbr::PbrPlugin {
-            ..default()
-        });
+        app.add_plugins(bevy::pbr::PbrPlugin { ..default() });
         app.add_plugins(bevy::render::RenderPlugin {
             render_creation: bevy::render::settings::RenderCreation::Manual(None, None),
             ..default()
@@ -54,18 +52,25 @@ impl BevyRunner {
         app.register_type::<Bevy3DShape>();
 
         // Re-enable all systems now that assets should be present
-        app.add_systems(Update, (
-            audio_reaction_system,
-            camera_control_system,
-            text_3d_system,
-            shape_system,
-        ));
+        app.add_systems(
+            Update,
+            (
+                audio_reaction_system,
+                camera_control_system,
+                text_3d_system,
+                shape_system,
+            ),
+        );
 
         Self { app }
     }
 
     pub fn update(&mut self, audio_data: &mapmap_core::audio_reactive::AudioTriggerData) {
-        if let Some(mut res) = self.app.world_mut().get_resource_mut::<AudioInputResource>() {
+        if let Some(mut res) = self
+            .app
+            .world_mut()
+            .get_resource_mut::<AudioInputResource>()
+        {
             res.band_energies = audio_data.band_energies;
             res.rms_volume = audio_data.rms_volume;
             res.peak_volume = audio_data.peak_volume;

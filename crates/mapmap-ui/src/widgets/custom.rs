@@ -1,4 +1,4 @@
-use egui::{Response, Ui, Color32, Pos2};
+use egui::{Color32, Pos2, Response, Ui};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     ui.vertical(|ui| {
@@ -100,9 +100,21 @@ pub fn check_hold_state(_ui: &mut Ui, _id: egui::Id, _is_holding: bool) -> (bool
     (false, 0.0)
 }
 
-pub fn draw_safety_radial_fill(_painter: &egui::Painter, _center: Pos2, _radius: f32, _progress: f32, _color: Color32) {}
+pub fn draw_safety_radial_fill(
+    _painter: &egui::Painter,
+    _center: Pos2,
+    _radius: f32,
+    _progress: f32,
+    _color: Color32,
+) {
+}
 
-pub fn collapsing_header_with_reset<R>(ui: &mut Ui, title: &str, _default_open: bool, add_contents: impl FnOnce(&mut Ui) -> R) -> bool {
+pub fn collapsing_header_with_reset<R>(
+    ui: &mut Ui,
+    title: &str,
+    _default_open: bool,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> bool {
     ui.collapsing(title, add_contents);
     false
 }

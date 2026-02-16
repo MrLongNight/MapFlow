@@ -1,4 +1,4 @@
-﻿//! Effect Chain UI Panel
+//! Effect Chain UI Panel
 //!
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
@@ -1258,7 +1258,11 @@ impl EffectChainPanel {
                             }
 
                             ui.horizontal(|ui| {
-                                let star = if preset.is_favorite { "â­" } else { "â˜†" };
+                                let star = if preset.is_favorite {
+                                    "★"
+                                } else {
+                                    "☆"
+                                };
                                 ui.label(star);
 
                                 if ui.button(&preset.name).clicked() {

@@ -349,3 +349,4 @@ audio-smoothing = Glättung
 btn-add-mapping = Mapping hinzufügen
 no-signal = Kein Signal
 no-device = Kein Gerät
+panel-audio = Audio-Panel

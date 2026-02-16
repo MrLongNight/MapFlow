@@ -3,11 +3,11 @@
 //! Provides visual feedback for frequency bands, beat detection,
 //! and controls for audio analysis parameters.
 
+use crate::core::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::{custom, panel};
-use egui::{Rect, Stroke, Ui, Sense};
-use mapmap_core::audio::{AudioConfig, AudioAnalysis};
-use crate::core::i18n::LocaleManager;
+use egui::{Rect, Sense, Stroke, Ui};
+use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 
 /// Actions that can be triggered from the Audio Panel
 #[derive(Debug, Clone)]
@@ -50,23 +50,31 @@ impl AudioPanel {
             panel::render_panel_header(
                 ui,
                 &locale.t("panel-audio"),
-                |_| {} // No header actions for now
+                |_| {}, // No header actions for now
             );
 
             ui.add_space(4.0);
 
             // Visualizer Section
             ui.vertical(|ui| {
-                 if let Some(analysis) = analysis {
+                if let Some(analysis) = analysis {
                     self.show_visualizer(ui, analysis);
                 } else {
                     // Placeholder visualizer when no signal
-                     let height = 60.0;
-                    let (rect, _) = ui.allocate_at_least(egui::vec2(ui.available_width(), height), Sense::hover());
+                    let height = 60.0;
+                    let (rect, _) = ui.allocate_at_least(
+                        egui::vec2(ui.available_width(), height),
+                        Sense::hover(),
+                    );
                     ui.painter().rect_filled(rect, 2.0, colors::DARKER_GREY);
-                    ui.painter().rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+                    ui.painter().rect_stroke(
+                        rect,
+                        2.0,
+                        Stroke::new(1.0, colors::STROKE_GREY),
+                        egui::StrokeKind::Middle,
+                    );
 
-                    ui.allocate_new_ui(egui::UiBuilder::new().max_rect(rect), |ui| {
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
                         ui.centered_and_justified(|ui| {
                             ui.label(locale.t("no-signal"));
                         });
@@ -128,20 +136,29 @@ impl AudioPanel {
 
     fn show_visualizer(&self, ui: &mut Ui, analysis: &AudioAnalysis) {
         let height = 60.0;
-        let (rect, _response) = ui.allocate_at_least(egui::vec2(ui.available_width(), height), Sense::hover());
+        let (rect, _response) =
+            ui.allocate_at_least(egui::vec2(ui.available_width(), height), Sense::hover());
         let painter = ui.painter();
 
         // Background
         painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
-        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+        painter.rect_stroke(
+            rect,
+            2.0,
+            Stroke::new(1.0, colors::STROKE_GREY),
+            egui::StrokeKind::Middle,
+        );
 
         // Draw Bands
         let num_bands = analysis.band_energies.len();
-        if num_bands == 0 { return; }
+        if num_bands == 0 {
+            return;
+        }
 
         let spacing = 2.0;
         // Ensure band_width is positive
-        let band_width = ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
+        let band_width =
+            ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
 
         for i in 0..num_bands {
             let energy = analysis.band_energies[i];

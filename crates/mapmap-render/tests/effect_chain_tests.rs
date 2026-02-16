@@ -135,7 +135,12 @@ async fn test_simple_invert() {
 
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None }).unwrap();
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .unwrap();
 
     let data = slice.get_mapped_range();
     // First pixel should be cyan (inverted red) [0, 255, 255, 255]
