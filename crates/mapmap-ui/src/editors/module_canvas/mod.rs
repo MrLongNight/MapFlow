@@ -2104,7 +2104,7 @@ impl ModuleCanvas {
                                     part.position.0, part.position.1
                                 ));
                                 if let Some((w, h)) = part.size {
-                                    ui.label(format!("Size: {:.0} Ã— {:.0}", w, h));
+                                    ui.label(format!("Size: {:.0} x {:.0}", w, h));
                                 }
                                 ui.label(format!("Inputs: {}", part.inputs.len()));
                                 ui.label(format!("Outputs: {}", part.outputs.len()));
@@ -3766,7 +3766,7 @@ impl ModuleCanvas {
                 self.dragging_part = None;
             }
 
-            // Check for delete button click (Ã— in top-right corner of title bar)
+            // Check for delete button click (x in top-right corner of title bar)
             let delete_button_rect = self.get_delete_button_rect(*rect);
             let delete_id = egui::Id::new((*part_id, "delete"));
             let delete_response = ui
@@ -5038,7 +5038,7 @@ impl ModuleCanvas {
             Color32::WHITE,
         );
 
-        // Delete button (Ã— in top-right corner)
+        // Delete button (x in top-right corner)
         let delete_button_rect = self.get_delete_button_rect(rect);
 
         // Retrieve hold progress for visualization (Mary StyleUX)
@@ -5060,7 +5060,7 @@ impl ModuleCanvas {
         painter.text(
             delete_button_rect.center(),
             egui::Align2::CENTER_CENTER,
-            "Ã—",
+            "x",
             egui::FontId::proportional(16.0 * self.zoom),
             Color32::from_rgba_unmultiplied(255, 100, 100, 200),
         );
@@ -6800,6 +6800,7 @@ impl ModuleCanvas {
         ));
     }
 }
+
 
 
 

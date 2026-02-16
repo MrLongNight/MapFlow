@@ -22,14 +22,27 @@ impl Default for BevyRunner {
 
 impl BevyRunner {
     pub fn new() -> Self {
-        info!("Initializing Bevy integration (Final Stable Mode)...");
+        info!("Initializing Bevy integration (Full Asset Mode)...");
 
         let mut app = App::new();
 
-        // Use MinimalPlugins to avoid any GPU/Windowing dependencies
+        // Load essential plugins for 3D assets without opening a window
         app.add_plugins(MinimalPlugins);
         app.add_plugins(bevy::asset::AssetPlugin::default());
+        app.add_plugins(bevy::hierarchy::HierarchyPlugin);
+        app.add_plugins(bevy::transform::TransformPlugin);
         
+        // Load PBR infrastructure so StandardMaterial and Mesh assets exist
+        // We use the headless configuration parts of PbrPlugin
+        app.add_plugins(bevy::pbr::PbrPlugin {
+            ..default()
+        });
+        app.add_plugins(bevy::render::RenderPlugin {
+            render_creation: bevy::render::settings::RenderCreation::Manual(None, None),
+            ..default()
+        });
+        app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
+
         // Register resources
         app.init_resource::<AudioInputResource>();
         app.init_resource::<BevyNodeMapping>();
@@ -40,13 +53,12 @@ impl BevyRunner {
         app.register_type::<BevyCamera>();
         app.register_type::<Bevy3DShape>();
 
-        // IMPORTANT: We only add systems that DON'T depend on Mesh/Material assets
-        // which are missing because we don't load the full PbrPlugin yet.
+        // Re-enable all systems now that assets should be present
         app.add_systems(Update, (
             audio_reaction_system,
-            // text_3d_system, // Depends on Assets<Mesh>
             camera_control_system,
-            // shape_system,   // Depends on Assets<Mesh>
+            text_3d_system,
+            shape_system,
         ));
 
         Self { app }
@@ -63,11 +75,11 @@ impl BevyRunner {
     }
 
     pub fn get_image_data(&self) -> Option<(Vec<u8>, u32, u32)> {
-        // Dummy 1x1 to satisfy the pipeline
+        // Dummy for now, real readback needs RenderDevice synchronization
         Some((vec![0, 0, 0, 0], 1, 1))
     }
 
     pub fn apply_graph_state(&mut self, _module: &mapmap_core::module::MapFlowModule) {
-        // Safe no-op
+        // Logic for syncing Bevy entities with MapFlow graph
     }
 }
