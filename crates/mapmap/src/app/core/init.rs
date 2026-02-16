@@ -535,10 +535,10 @@ impl App {
         info!("- Edge Blend:     {}", if app.edge_blend_renderer.is_some() { "ENABLED" } else { "DISABLED" });
         info!("- Color Calib:    {}", if app.color_calibration_renderer.is_some() { "ENABLED" } else { "DISABLED" });
         info!("- Bevy Engine:    REMOVED");
-        
+
         #[cfg(feature = "midi")]
         info!("- MIDI System:    {}", if app.midi_handler.is_some() { "CONNECTED" } else { "DISCONNECTED" });
-        
+
         info!("- Hue System:     {}", if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() { "CONFIGURED" } else { "UNCONFIGURED" });
         info!("- Media Library:  {} items", app.media_library.items.len());
         info!("==========================================");
@@ -572,5 +572,3 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
-
-

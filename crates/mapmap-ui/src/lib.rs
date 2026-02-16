@@ -431,10 +431,10 @@ pub struct AppUI {
     pub sys_info: sysinfo::System,
     /// Active keyboard keys (for Shortcut triggers)
     pub active_keys: std::collections::HashSet<String>,
-    
+
     /// Active tab in compact sidebar (0 = Controls, 1 = Preview)
     pub active_sidebar_tab: usize,
-    
+
     /// Last time responsive styles were updated
     last_style_update: std::time::Instant,
 }
@@ -555,13 +555,13 @@ impl AppUI {
         self.last_style_update = std::time::Instant::now();
 
         let layout = crate::core::responsive::ResponsiveLayout::new(ctx);
-        
+
         let mut style = (*ctx.style()).clone();
         let base_font_size = 14.0;
-        
+
         // Scale font sizes
         let scaled_size = layout.scale_font(base_font_size);
-        
+
         style.text_styles.insert(
             egui::TextStyle::Body,
             egui::FontId::proportional(scaled_size)
@@ -578,12 +578,12 @@ impl AppUI {
             egui::TextStyle::Small,
             egui::FontId::proportional(scaled_size * 0.85)
         );
-        
+
         // Scale spacing
         let spacing_scale = layout.scale_font(1.0) / 14.0; // Normalize scale factor
         style.spacing.item_spacing = egui::vec2(8.0, 6.0) * spacing_scale;
         style.spacing.button_padding = egui::vec2(8.0, 4.0) * spacing_scale;
-        
+
         ctx.set_style(style);
     }
 
@@ -995,4 +995,3 @@ impl AppUI {
         self.show_shader_graph = open;
     }
 }
-

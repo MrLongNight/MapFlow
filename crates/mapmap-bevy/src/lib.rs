@@ -31,7 +31,7 @@ impl BevyRunner {
         app.add_plugins(bevy::asset::AssetPlugin::default());
         app.add_plugins(bevy::hierarchy::HierarchyPlugin);
         app.add_plugins(bevy::transform::TransformPlugin);
-        
+
         // Load PBR infrastructure so StandardMaterial and Mesh assets exist
         // We use the headless configuration parts of PbrPlugin
         app.add_plugins(bevy::pbr::PbrPlugin {

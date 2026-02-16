@@ -68,19 +68,19 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             let raw_input = app.egui_state.take_egui_input(&window_context.window);
 
             let full_output = app.egui_context.run(raw_input, |ctx| {
-                // SAFETY: We ensure window_context doesn't overlap with fields used in show.  
+                // SAFETY: We ensure window_context doesn't overlap with fields used in show.
                 unsafe {
                     ui_layout::show(&mut *app_ptr, ctx);
                 }
             });
 
             app.egui_state
-                .handle_platform_output(&window_context.window, full_output.platform_output);  
+                .handle_platform_output(&window_context.window, full_output.platform_output);
 
             let tris = app
                 .egui_context
                 .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
-            
+
             for (id, delta) in full_output.textures_delta.set {
                 app.egui_renderer
                     .update_texture(&device, &app.backend.queue, id, &delta);
@@ -209,7 +209,7 @@ fn render_content(
     }
 
     let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
-    let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();     
+    let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();
     let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
 
     let _mesh_target_view_ref = view;
@@ -255,7 +255,7 @@ fn render_content(
                     width,
                     height,
                     wgpu::TextureFormat::Rgba8UnormSrgb,
-                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,      
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 );
                 ctx.texture_pool.upload_data(queue, &grid_tex_name, &data, width, height);
             }
@@ -268,7 +268,7 @@ fn render_content(
 
         if let Some(src_ref) = source_view {
             let transform = glam::Mat4::IDENTITY;
-            let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(   
+            let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(
                 queue,
                 transform,
                 op.opacity * op.source_props.opacity,
@@ -362,7 +362,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 };
 
                 if needs_recreate {
-                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor { 
+                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor {
                         label: Some(&format!("Preview Tex {}", output_id)),
                         size: wgpu::Extent3d { width: preview_width, height: preview_height, depth_or_array_layers: 1 },
                         mip_level_count: 1,
@@ -419,7 +419,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
-    let _bg_color = [0, 0, 0, 255]; 
+    let _bg_color = [0, 0, 0, 255];
     let _grid_color = [255, 255, 255, 255];
     let _text_color = [0, 255, 255, 255];
 
@@ -430,7 +430,7 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let grid_step = 64;
     for y in 0..height {
         for x in 0..width {
-            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 { 
+            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 {
                 let idx = ((y * width + x) * 4) as usize;
                 data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
             }
