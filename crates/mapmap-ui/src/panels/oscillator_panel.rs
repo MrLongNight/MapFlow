@@ -221,8 +221,7 @@ impl OscillatorPanel {
                 ui.end_row();
             });
 
-        dist_changed
-    }
+        dist_changed    }
 
     fn show_visual_params(
         &mut self,

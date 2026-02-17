@@ -79,6 +79,7 @@ pub async fn ws_handler(
     ws.max_message_size(MAX_MESSAGE_SIZE)
         .on_upgrade(|socket| handle_socket(socket, state))
 }
+}
 
 /// Extract auth protocol from headers
 #[cfg(feature = "http-api")]

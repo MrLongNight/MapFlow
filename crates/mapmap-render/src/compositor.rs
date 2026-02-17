@@ -37,15 +37,15 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<BindGroupCacheKey, BindGroupCacheValue>,
+    bind_group_cache: HashMap<
+        (usize, usize),
+        (
+            Weak<wgpu::TextureView>,
+            Weak<wgpu::TextureView>,
+            Arc<wgpu::BindGroup>,
+        ),
+    >,
 }
-
-type BindGroupCacheKey = (usize, usize);
-type BindGroupCacheValue = (
-    Weak<wgpu::TextureView>,
-    Weak<wgpu::TextureView>,
-    Arc<wgpu::BindGroup>,
-);
 
 impl Compositor {
     /// Create a new compositor
@@ -134,7 +134,7 @@ impl Compositor {
             label: Some("Compositor Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout, &uniform_bind_group_layout],
             push_constant_ranges: &[],
-        });
+                    });
 
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

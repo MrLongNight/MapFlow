@@ -136,7 +136,7 @@ impl MeshRenderer {
             label: Some("Mesh Pipeline Layout"),
             bind_group_layouts: &[&uniform_bind_group_layout, &texture_bind_group_layout],
             push_constant_ranges: &[],
-        });
+                    });
 
         // Create render pipeline (perspective-correct)
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

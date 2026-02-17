@@ -267,7 +267,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         ctx,
         &app.ui_state.i18n,
         &mut app.state.oscillator_config,
-        app.ui_state.icon_manager.as_ref(),
+        app.ui_state.icon_manager.as_ref()
     );
 
     // Handle Effect Chain Actions
@@ -399,21 +399,33 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 /// Renders compact sidebar with tabs (for small screens)
 fn render_compact_sidebar(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveLayout) {
     // Tab Bar
-    egui::TopBottomPanel::top("sidebar_tabs").show_inside(ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.selectable_value(&mut app.ui_state.active_sidebar_tab, 0, "🎛️ Controls");
-            ui.selectable_value(&mut app.ui_state.active_sidebar_tab, 1, "👁 Preview");
+    egui::TopBottomPanel::top("sidebar_tabs")
+        .show_inside(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.selectable_value(
+                    &mut app.ui_state.active_sidebar_tab,
+                    0,
+                    "🎛️ Controls"
+                );
+                ui.selectable_value(
+                    &mut app.ui_state.active_sidebar_tab,
+                    1,
+                    "👁 Preview"
+                );
+            });
         });
-    });
 
     ui.separator();
 
     // Content based on active tab
-    egui::CentralPanel::default().show_inside(ui, |ui| match app.ui_state.active_sidebar_tab {
-        0 => render_controls_section(ui, app, layout),
-        1 => render_preview_section(ui, app, layout),
-        _ => {}
-    });
+    egui::CentralPanel::default()
+        .show_inside(ui, |ui| {
+            match app.ui_state.active_sidebar_tab {
+                0 => render_controls_section(ui, app, layout),
+                1 => render_preview_section(ui, app, layout),
+                _ => {}
+            }
+        });
 }
 
 /// Renders full sidebar (for large screens)
@@ -470,10 +482,7 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
             if splitter_response.dragged() {
                 app.ui_state.control_panel_height += splitter_response.drag_delta().y;
                 let total_available = ui.available_height();
-                app.ui_state.control_panel_height = app
-                    .ui_state
-                    .control_panel_height
-                    .clamp(100.0, total_available - 50.0);
+                app.ui_state.control_panel_height = app.ui_state.control_panel_height.clamp(100.0, total_available - 50.0);
             }
 
             if is_hovered || is_dragged {
@@ -488,11 +497,7 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
     if app.ui_state.show_preview_panel {
         ui.separator();
         ui.horizontal(|ui| {
-            let arrow = if app.ui_state.show_preview_panel {
-                "▼"
-            } else {
-                "▶"
-            };
+            let arrow = if app.ui_state.show_preview_panel { "▼" } else { "▶" };
             if ui.button(arrow).clicked() {
                 app.ui_state.show_preview_panel = !app.ui_state.show_preview_panel;
             }
@@ -509,8 +514,7 @@ fn render_controls_section(ui: &mut egui::Ui, app: &mut App, layout: &Responsive
         .id_salt("controls_scroll")
         .show(ui, |ui| {
             // Master Controls
-            app.ui_state
-                .render_master_controls_embedded(ui, app.state.layer_manager_mut());
+            app.ui_state.render_master_controls_embedded(ui, app.state.layer_manager_mut());
             ui.separator();
 
             // Media Browser
@@ -528,12 +532,12 @@ fn render_controls_section(ui: &mut egui::Ui, app: &mut App, layout: &Responsive
                             | MediaBrowserAction::FileDoubleClicked(path) => {
                                 if let (Some(module_id), Some(part_id)) = (
                                     app.ui_state.module_canvas.active_module_id,
-                                    app.ui_state.module_canvas.editing_part_id,
+                                    app.ui_state.module_canvas.editing_part_id
                                 ) {
                                     app.ui_state.actions.push(mapmap_ui::UIAction::SetMediaFile(
                                         module_id,
                                         part_id,
-                                        path.to_string_lossy().to_string(),
+                                        path.to_string_lossy().to_string()
                                     ));
                                 }
                             }
@@ -583,9 +587,7 @@ fn render_controls_section(ui: &mut egui::Ui, app: &mut App, layout: &Responsive
                         match action {
                             mapmap_ui::audio_panel::AudioPanelAction::DeviceChanged(device) => {
                                 info!("Audio device changed to: {}", device);
-                                app.ui_state
-                                    .user_config
-                                    .set_audio_device(Some(device.clone()));
+                                app.ui_state.user_config.set_audio_device(Some(device.clone()));
                                 app.audio_analyzer.reset();
                                 if let Some(backend) = &mut app.audio_backend {
                                     backend.stop();
@@ -601,10 +603,7 @@ fn render_controls_section(ui: &mut egui::Ui, app: &mut App, layout: &Responsive
                                         app.audio_backend = Some(backend);
                                     }
                                     Err(e) => {
-                                        error!(
-                                            "Failed to create audio backend for device '{}': {}",
-                                            device, e
-                                        );
+                                        error!("Failed to create audio backend for device '{}': {}", device, e);
                                     }
                                 }
                             }
@@ -635,25 +634,22 @@ fn render_preview_section(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
                 .iter()
                 .flat_map(|module| {
                     module.parts.iter().filter_map(|part| {
-                        if let mapmap_core::module::ModulePartType::Output(output_type) =
-                            &part.part_type
-                        {
+                        if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
                             match output_type {
                                 mapmap_core::module::OutputType::Projector {
                                     ref id,
                                     ref name,
                                     ref show_in_preview_panel,
                                     ..
-                                } => Some(mapmap_ui::OutputPreviewInfo {
-                                    id: *id,
-                                    name: name.clone(),
-                                    show_in_panel: *show_in_preview_panel,
-                                    texture_name: app
-                                        .output_assignments
-                                        .get(id)
-                                        .and_then(|v| v.last().cloned()),
-                                    texture_id: app.output_preview_cache.get(id).map(|(id, _)| *id),
-                                }),
+                                } => {
+                                    Some(mapmap_ui::OutputPreviewInfo {
+                                        id: *id,
+                                        name: name.clone(),
+                                        show_in_panel: *show_in_preview_panel,
+                                        texture_name: app.output_assignments.get(id).and_then(|v| v.last().cloned()),
+                                        texture_id: app.output_preview_cache.get(id).map(|(id, _)| *id),
+                                    })
+                                }
                                 _ => None,
                             }
                         } else {
@@ -664,16 +660,19 @@ fn render_preview_section(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
                 .collect();
 
             // Thumbnail size based on layout
-            let thumbnail_size = if layout.is_compact() { 120.0 } else { 180.0 };
+            let thumbnail_size = if layout.is_compact() {
+                120.0
+            } else {
+                180.0
+            };
 
             // Deduplicate output previews
             let mut seen_ids = std::collections::HashSet::new();
             for info in output_infos {
-                if seen_ids.insert(info.id) {
-                    if info.show_in_panel {
-                        ui.group(|ui| {
-                            ui.label(&info.name);
-                            if let Some(tex_id) = info.texture_id {
+                if seen_ids.insert(info.id) && info.show_in_panel {
+                    ui.group(|ui| {
+                        ui.label(&info.name);
+                        if let Some(tex_id) = info.texture_id {
                                 ui.image((
                                     tex_id,
                                     egui::vec2(thumbnail_size, thumbnail_size * 9.0 / 16.0),
@@ -681,8 +680,7 @@ fn render_preview_section(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
                             } else {
                                 ui.label("No Preview");
                             }
-                        });
-                    }
+                    });
                 }
             }
         });
