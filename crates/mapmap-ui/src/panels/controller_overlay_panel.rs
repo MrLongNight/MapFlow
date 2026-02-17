@@ -750,7 +750,7 @@ impl ControllerOverlayPanel {
                 rect,
                 4.0,
                 Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
-                
+
             );
             painter.text(
                 rect.center(),

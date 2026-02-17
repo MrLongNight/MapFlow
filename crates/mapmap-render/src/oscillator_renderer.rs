@@ -726,7 +726,7 @@ impl OscillatorRenderer {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: output_view,
                     resolve_target: None,
-                    
+
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
@@ -814,7 +814,7 @@ impl OscillatorRenderer {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: output_view,
                     resolve_target: None,
-                    
+
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,

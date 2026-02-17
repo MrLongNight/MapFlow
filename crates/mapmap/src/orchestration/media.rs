@@ -113,7 +113,7 @@ pub fn update_media_players(app: &mut App, dt: f32) {
                         frame.format.height
                     );
                 }
-                
+
                 // CRITICAL: Ensure texture exists in pool with correct format and size
                 texture_pool.ensure_texture(
                     &tex_name,
