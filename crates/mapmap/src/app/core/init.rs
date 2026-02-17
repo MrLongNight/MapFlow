@@ -570,7 +570,19 @@ impl App {
             hue_controller,
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
-            media_library: MediaLibrary::new(),
+            media_library: {
+                let mut lib = MediaLibrary::new();
+                // Add default search paths for media
+                if let Some(video_dir) = dirs::video_dir() {
+                    lib.add_scan_path(video_dir);
+                }
+                // Also add project relative media dir if it exists
+                let project_media = std::path::PathBuf::from("resources/app_videos");
+                if project_media.exists() {
+                    lib.add_scan_path(project_media);
+                }
+                lib
+            },
             bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
 
