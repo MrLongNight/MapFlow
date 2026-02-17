@@ -51,8 +51,6 @@ impl OscillatorPanel {
                 render_panel_header(
                     ui,
                     &locale.t("oscillator-panel-title"),
-                    Some(AppIcon::MagicWand),
-                    icon_manager,
                     |_| {},
                 );
 
@@ -221,7 +219,8 @@ impl OscillatorPanel {
                 ui.end_row();
             });
 
-        dist_changed    }
+        dist_changed
+    }
 
     fn show_visual_params(
         &mut self,
@@ -291,3 +290,7 @@ impl OscillatorPanel {
         viz_changed
     }
 }
+
+
+
+

@@ -40,3 +40,7 @@ pub fn load_project_file(app: &mut App, path: &PathBuf) {
 pub fn save_app_project(app: &App, path: &Path) -> Result<()> {
     save_project(&app.state, path).context("Failed to save project")
 }
+
+
+
+

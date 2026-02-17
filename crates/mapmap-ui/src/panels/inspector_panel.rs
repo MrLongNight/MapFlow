@@ -84,8 +84,6 @@ impl InspectorPanel {
                 render_panel_header(
                     ui,
                     &i18n.t("panel-inspector"),
-                    Some(AppIcon::InfoCircle),
-                    icon_manager,
                     |ui| {
                         if ui.button("✕").clicked() {
                             self.visible = false;
@@ -338,3 +336,7 @@ pub enum InspectorAction {
     /// Update layer opacity
     UpdateOpacity(u64, f32),
 }
+
+
+
+

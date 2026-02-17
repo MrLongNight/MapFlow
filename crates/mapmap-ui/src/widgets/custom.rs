@@ -1,6 +1,9 @@
-use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, Rounding, Stroke, lerp};
 use crate::theme::colors;
 use crate::widgets::icons::{AppIcon, IconManager};
+use egui::{
+    lerp, Color32, CornerRadius, Key, Pos2, Rect, Response, Rounding, Sense, Stroke, Ui, Vec2,
+    WidgetInfo, WidgetType,
+};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
@@ -9,10 +12,10 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     // Header background
-    painter.rect_filled(rect, Rounding::ZERO, colors::LIGHTER_GREY);
+    painter.rect_filled(rect, CornerRadius::ZERO, colors::LIGHTER_GREY);
 
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(stripe_rect, Rounding::ZERO, colors::CYAN_ACCENT);
+    painter.rect_filled(stripe_rect, CornerRadius::ZERO, colors::CYAN_ACCENT);
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -49,15 +52,55 @@ pub fn styled_slider(
             let new_value = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), min..=max);
             *value = new_value;
         }
+    } else if response.has_focus() {
+        // Keyboard support
+        let step = (*range.end() - *range.start()) / 100.0;
+        let small_step = step * 0.1;
+        let large_step = step * 10.0;
+
+        let mut new_value = *value;
+
+        if ui.input(|i| i.key_pressed(Key::ArrowLeft)) {
+            let s = if ui.input(|i| i.modifiers.shift) {
+                large_step
+            } else if ui.input(|i| i.modifiers.ctrl) {
+                small_step
+            } else {
+                step
+            };
+            new_value -= s;
+        }
+        if ui.input(|i| i.key_pressed(Key::ArrowRight)) {
+            let s = if ui.input(|i| i.modifiers.shift) {
+                large_step
+            } else if ui.input(|i| i.modifiers.ctrl) {
+                small_step
+            } else {
+                step
+            };
+            new_value += s;
+        }
+
+        *value = new_value.clamp(*range.start(), *range.end());
     }
 
     ui.painter().rect(
         rect,
-        Rounding::ZERO,
+        CornerRadius::ZERO,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
-
+        egui::StrokeKind::Middle,
     );
+
+    // Draw focus ring if focused
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::ZERO,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
     let fill_rect = Rect::from_min_max(
@@ -78,10 +121,10 @@ pub fn styled_slider(
 
     ui.painter().rect(
         fill_rect,
-        Rounding::ZERO,
+        CornerRadius::ZERO,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
-
+        egui::StrokeKind::Middle,
     );
 
     // Value Text
@@ -102,7 +145,14 @@ pub fn styled_slider(
         text_color,
     );
 
-    response.on_hover_text("Double-click to reset")
+    // Accessibility
+    response.widget_info(|| {
+        let mut info = WidgetInfo::labeled(WidgetType::Slider, ui.is_enabled(), "Slider");
+        info.value = Some(*value as f64);
+        info
+    });
+
+    response.on_hover_text("Double-click to reset, Drag to adjust, Arrows to fine tune")
 }
 
 pub fn styled_slider_log(
@@ -142,9 +192,9 @@ pub fn styled_drag_value(
     if is_changed {
         ui.painter().rect_stroke(
             response.rect.expand(1.0),
-            Rounding::ZERO,
+            CornerRadius::ZERO,
             Stroke::new(1.0, colors::CYAN_ACCENT),
-
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -187,7 +237,7 @@ pub fn icon_button(
     };
 
     ui.painter()
-        .rect(rect, Rounding::ZERO, bg_fill, stroke);
+        .rect(rect, CornerRadius::ZERO, bg_fill, stroke, egui::StrokeKind::Middle);
 
     let text_pos = rect.center();
 
@@ -231,6 +281,16 @@ pub fn duplicate_button(ui: &mut Ui) -> Response {
 
 pub fn delete_button(ui: &mut Ui) -> bool {
     ui.button("🗑").clicked()
+}
+
+pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
+    // Using a simple "L" as fallback for Lock icon
+    let mut btn = egui::Button::new("🔒");
+    if active {
+        // Reddish fill for Locked state
+        btn = btn.fill(Color32::from_rgb(200, 50, 50));
+    }
+    ui.add(btn)
 }
 
 pub fn move_up_button(ui: &mut Ui) -> Response {
@@ -318,19 +378,19 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // 1. Background
     painter.rect(
         rect,
-        Rounding::same(4.0),
+        CornerRadius::same(4),
         visuals.bg_fill,
         visuals.bg_stroke,
-
+        egui::StrokeKind::Middle,
     );
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-            Rounding::same(6.0),
+            CornerRadius::same(6),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -340,7 +400,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         fill_rect.max.x = rect.min.x + rect.width() * progress;
         painter.rect_filled(
             fill_rect,
-            Rounding::same(4.0),
+            CornerRadius::same(4),
             color.linear_multiply(0.4), // Transparent version of action color
         );
     }
@@ -460,7 +520,14 @@ pub fn hold_to_action_icon(
     triggered
 }
 
-pub fn draw_safety_radial_fill(_painter: &egui::Painter, _center: Pos2, _radius: f32, _progress: f32, _color: Color32) {}
+pub fn draw_safety_radial_fill(
+    _painter: &egui::Painter,
+    _center: Pos2,
+    _radius: f32,
+    _progress: f32,
+    _color: Color32,
+) {
+}
 
 pub fn collapsing_header_with_reset(
     ui: &mut Ui,
@@ -484,3 +551,8 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
+
+
+
+
+

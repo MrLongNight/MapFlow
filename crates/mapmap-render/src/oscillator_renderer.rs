@@ -309,7 +309,7 @@ impl OscillatorRenderer {
             label: Some("Sim Pipeline Layout"),
             bind_group_layouts: &[&sim_texture_layout, &sim_uniform_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         let simulation_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Simulation Pipeline"),
@@ -354,7 +354,7 @@ impl OscillatorRenderer {
             label: Some("Dist Pipeline Layout"),
             bind_group_layouts: &[&dist_texture_layout, &dist_uniform_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         let distortion_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Distortion Pipeline"),
@@ -578,14 +578,14 @@ impl OscillatorRenderer {
 
         // Upload to both phase textures
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.phase_texture_a,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             bytemuck::cast_slice(&phase_data),
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(self.sim_width * 4),
                 rows_per_image: Some(self.sim_height),
@@ -598,14 +598,14 @@ impl OscillatorRenderer {
         );
 
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.phase_texture_b,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             bytemuck::cast_slice(&phase_data),
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(self.sim_width * 4),
                 rows_per_image: Some(self.sim_height),
@@ -723,7 +723,7 @@ impl OscillatorRenderer {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Oscillator Simulation Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -735,7 +735,7 @@ impl OscillatorRenderer {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
-                            });
+            });
 
             render_pass.set_pipeline(&self.simulation_pipeline);
             render_pass.set_bind_group(0, input_bind_group, &[]);
@@ -811,7 +811,7 @@ impl OscillatorRenderer {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Oscillator Distortion Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -823,7 +823,7 @@ impl OscillatorRenderer {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
-                            });
+            });
 
             render_pass.set_pipeline(&self.distortion_pipeline);
             render_pass.set_bind_group(0, &dist_bind_group, &[]);
@@ -834,3 +834,7 @@ impl OscillatorRenderer {
         }
     }
 }
+
+
+
+

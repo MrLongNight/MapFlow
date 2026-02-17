@@ -52,8 +52,6 @@ impl LayerPanel {
                 render_panel_header(
                     ui,
                     &i18n.t("panel-layers"),
-                    Some(AppIcon::AppWindow),
-                    icon_manager,
                     |_| {},
                 );
 
@@ -151,7 +149,7 @@ impl LayerPanel {
                         egui::Frame::default()
                             .fill(bg_color)
                             .stroke(stroke)
-                            .rounding(0.0) // Sharp corners for Cyber/Resolume style
+                            .corner_radius(0.0) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
@@ -333,3 +331,7 @@ impl LayerPanel {
         }
     }
 }
+
+
+
+

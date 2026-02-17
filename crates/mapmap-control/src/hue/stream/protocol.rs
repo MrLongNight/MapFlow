@@ -79,3 +79,7 @@ pub fn create_message(area_id: &str, lights: &HashMap<u8, (u8, u8, u8)>) -> Vec<
 
     buffer
 }
+
+
+
+

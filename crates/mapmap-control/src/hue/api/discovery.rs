@@ -69,3 +69,7 @@ pub async fn discover_bridge() -> Result<String, HueError> {
         .map(|b| b.ip.clone())
         .ok_or(HueError::DiscoveryFailed)
 }
+
+
+
+

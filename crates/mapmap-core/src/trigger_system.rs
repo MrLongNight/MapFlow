@@ -9,13 +9,13 @@ pub type ActiveTriggers = HashSet<(u64, usize)>;
 
 /// State for a trigger (timer, target interval, etc.)
 #[derive(Debug, Clone, Copy)]
-struct TriggerState {
+pub struct TriggerState {
     /// Accumulated time since last trigger
-    timer: f32,
+    pub timer: f32,
     /// Target interval for the next trigger (used for Random triggers)
     ///
     /// A value < 0.0 indicates that the target has not been initialized.
-    target: f32,
+    pub target: f32,
 }
 
 impl Default for TriggerState {
@@ -127,7 +127,6 @@ impl TriggerSystem {
                             // Unified state lookup (O(1))
                             let state = self.states.entry(part.id).or_default();
                             state.timer += dt;
-
                             if state.timer >= interval {
                                 state.timer -= interval;
                                 self.active_triggers.insert((part.id, 0));
@@ -140,16 +139,17 @@ impl TriggerSystem {
                         } => {
                             // Unified state lookup (O(1)) - Handles both timer and target
                             let state = self.states.entry(part.id).or_default();
-                            state.timer += dt;
 
                             // Initialize target if needed (first run or after type switch)
                             if state.target < 0.0 {
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                state.target =
-                                    rng.random_range(*min_interval_ms..=*max_interval_ms) as f32
-                                        / 1000.0;
+                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
+                                    as f32
+                                    / 1000.0;
                             }
+
+                            state.timer += dt;
 
                             if state.timer >= state.target {
                                 state.timer = 0.0;
@@ -158,9 +158,9 @@ impl TriggerSystem {
                                 // Pick new target
                                 use rand::Rng;
                                 let mut rng = rand::rng();
-                                state.target =
-                                    rng.random_range(*min_interval_ms..=*max_interval_ms) as f32
-                                        / 1000.0;
+                                state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
+                                    as f32
+                                    / 1000.0;
                             }
                         }
                         // Other triggers (Midi, Osc, Shortcut) handled by event system or direct inputs
@@ -199,12 +199,14 @@ mod tests {
         });
 
         // add_part creates a default trigger (Beat), we replace it
-        let part_id = manager.add_part_to_module(module_id, PartType::Trigger, (0.0, 0.0)).unwrap();
+        let part_id = manager
+            .add_part_to_module(module_id, PartType::Trigger, (0.0, 0.0))
+            .unwrap();
 
         if let Some(module) = manager.get_module_mut(module_id) {
-             if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                 part.part_type = trigger_type;
-             }
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                part.part_type = trigger_type;
+            }
         }
 
         let mut system = TriggerSystem::new();
@@ -239,12 +241,14 @@ mod tests {
             probability: 1.0,
         });
 
-        let part_id = manager.add_part_to_module(module_id, PartType::Trigger, (0.0, 0.0)).unwrap();
+        let part_id = manager
+            .add_part_to_module(module_id, PartType::Trigger, (0.0, 0.0))
+            .unwrap();
 
         if let Some(module) = manager.get_module_mut(module_id) {
-             if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
-                 part.part_type = trigger_type;
-             }
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                part.part_type = trigger_type;
+            }
         }
 
         let mut system = TriggerSystem::new();
@@ -254,7 +258,10 @@ mod tests {
         system.update(&manager, &audio, 0.01);
 
         // Verify state exists and has valid target
-        let state = system.states.get(&part_id).expect("State should be initialized");
+        let state = system
+            .states
+            .get(&part_id)
+            .expect("State should be initialized");
         assert!(state.target >= 0.1 && state.target <= 0.2);
         assert!(state.timer > 0.0);
 
@@ -277,3 +284,7 @@ mod tests {
         assert!(new_state.target >= 0.1 && new_state.target <= 0.2);
     }
 }
+
+
+
+

@@ -331,7 +331,7 @@ impl EffectChainRenderer {
             label: Some(&format!("Effect Pipeline Layout: {:?}", effect_type)),
             bind_group_layouts: &[bind_group_layout, uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(&format!("Effect Pipeline: {:?}", effect_type)),
@@ -525,7 +525,7 @@ impl EffectChainRenderer {
                 .create_bind_group(&self.device, input_view);
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Passthrough Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -536,7 +536,7 @@ impl EffectChainRenderer {
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
-                                occlusion_query_set: None,
+                occlusion_query_set: None,
             });
             self.quad_renderer.draw(&mut rpass, &bind_group);
             return;
@@ -712,18 +712,17 @@ impl EffectChainRenderer {
                 if let Some(pipeline) = pipeline {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some(&format!("Effect Pass: {:?}", effect.effect_type)),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                             view: render_target,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                                 store: wgpu::StoreOp::Store,
                             },
-
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,
-                                                occlusion_query_set: None,
+                        occlusion_query_set: None,
                     });
 
                     render_pass.set_pipeline(pipeline);
@@ -788,3 +787,7 @@ impl EffectChainRenderer {
         &self.queue
     }
 }
+
+
+
+

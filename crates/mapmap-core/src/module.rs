@@ -1042,7 +1042,7 @@ impl AudioTriggerOutputConfig {
     }
 }
 
-/// Primitive shape types for Bevy
+/// Types of 3D shapes available in Bevy nodes.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum BevyShapeType {
     /// A standard cube.
@@ -3322,3 +3322,7 @@ fn test_issue_535_fix() {
     // Should be "New Module 2 1" because "New Module 2" is taken, so we append " 1"
     assert_eq!(module3.name, "New Module 2 1");
 }
+
+
+
+

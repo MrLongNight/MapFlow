@@ -3,10 +3,10 @@
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
 
-use crate::theme::colors;
 use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
+use crate::theme::colors;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
@@ -398,8 +398,6 @@ impl EffectChainPanel {
                 render_panel_header(
                     ui,
                     &locale.t("panel-effect-chain"),
-                    Some(AppIcon::MagicWand),
-                    icon_manager,
                     |_| {},
                 );
 
@@ -506,7 +504,7 @@ impl EffectChainPanel {
                                                      }
 
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close_menu();
+                                                     ui.close();
                                                      self.show_add_menu = false;
                                                 }
                                             }
@@ -729,7 +727,7 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .rounding(0.0)
+            .corner_radius(0.0)
             .inner_margin(4.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -1395,3 +1393,7 @@ mod tests {
         assert!(panel.actions.is_empty());
     }
 }
+
+
+
+

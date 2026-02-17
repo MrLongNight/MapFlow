@@ -53,8 +53,6 @@ impl CuePanel {
                 render_panel_header(
                     ui,
                     &i18n.t("panel-cues"),
-                    Some(AppIcon::VinylRecord),
-                    icon_manager,
                     |_| {},
                 );
 
@@ -337,3 +335,7 @@ impl CuePanel {
             .clicked()
     }
 }
+
+
+
+

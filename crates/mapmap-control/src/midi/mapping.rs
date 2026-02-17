@@ -231,3 +231,7 @@ mod tests {
         assert_eq!(curve.apply(1.5), 1.0);
     }
 }
+
+
+
+

@@ -404,3 +404,7 @@ mod tests {
         assert_eq!(manager.cue_list.current_cue(), Some(1));
     }
 }
+
+
+
+

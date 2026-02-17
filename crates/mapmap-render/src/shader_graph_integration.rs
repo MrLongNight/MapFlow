@@ -169,7 +169,7 @@ impl ShaderGraphManager {
             label: Some(&format!("ShaderGraph_Pipeline_Layout_{}", id)),
             bind_group_layouts: &[bind_group_layout, uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(&format!("ShaderGraph_Pipeline_{}", id)),
@@ -276,18 +276,17 @@ impl ShaderGraphRendering for EffectChainRenderer {
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(&format!("ShaderGraph_RenderPass_{}", compiled.graph_id)),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: output_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
                 },
-
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
-                        occlusion_query_set: None,
+            occlusion_query_set: None,
         });
 
         render_pass.set_pipeline(pipeline);
@@ -322,3 +321,7 @@ mod tests {
         assert_eq!(graphs[0].0, id);
     }
 }
+
+
+
+

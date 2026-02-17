@@ -117,7 +117,7 @@ impl QuadRenderer {
             label: Some("Quad Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Quad Render Pipeline"),
@@ -230,3 +230,7 @@ mod tests {
         assert_eq!(QUAD_INDICES.len(), 6);
     }
 }
+
+
+
+

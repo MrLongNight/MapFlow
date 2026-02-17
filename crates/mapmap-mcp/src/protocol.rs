@@ -103,3 +103,7 @@ pub enum ToolContent {
     Image { data: String, mime_type: String },
     // Resource { resource: Resource },
 }
+
+
+
+

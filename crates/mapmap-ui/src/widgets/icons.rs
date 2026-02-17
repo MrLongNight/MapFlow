@@ -201,6 +201,7 @@ impl IconManager {
         let image = ColorImage {
             size: [size as usize, size as usize],
             pixels,
+            source_size: egui::Vec2::new(size as f32, size as f32),
         };
 
         // Create texture
@@ -239,3 +240,7 @@ impl IconManager {
         self.image(icon, size).map(|img| ui.add(img))
     }
 }
+
+
+
+

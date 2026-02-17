@@ -59,7 +59,10 @@ pub fn shape_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    query: Query<(Entity, &crate::components::Bevy3DShape), Changed<crate::components::Bevy3DShape>>,
+    query: Query<
+        (Entity, &crate::components::Bevy3DShape),
+        Changed<crate::components::Bevy3DShape>,
+    >,
 ) {
     for (entity, shape) in query.iter() {
         let mesh = match shape.shape_type {
@@ -88,18 +91,22 @@ pub fn shape_system(
         ));
 
         if shape.outline_width > 0.0 {
-            commands.entity(entity).insert(bevy_mod_outline::OutlineVolume {
-                visible: true,
-                width: shape.outline_width,
-                colour: Color::srgba(
-                    shape.outline_color[0],
-                    shape.outline_color[1],
-                    shape.outline_color[2],
-                    shape.outline_color[3],
-                ),
-            });
+            commands
+                .entity(entity)
+                .insert(bevy_mod_outline::OutlineVolume {
+                    visible: true,
+                    width: shape.outline_width,
+                    colour: Color::srgba(
+                        shape.outline_color[0],
+                        shape.outline_color[1],
+                        shape.outline_color[2],
+                        shape.outline_color[3],
+                    ),
+                });
         } else {
-            commands.entity(entity).remove::<bevy_mod_outline::OutlineVolume>();
+            commands
+                .entity(entity)
+                .remove::<bevy_mod_outline::OutlineVolume>();
         }
     }
 }
@@ -139,7 +146,7 @@ pub fn setup_3d_scene(
         .spawn((
             Camera3d::default(),
             Camera {
-                target: bevy::render::camera::RenderTarget::Image(image_handle),
+                target: bevy::render::camera::RenderTarget::Image(image_handle.into()),
                 ..default()
             },
             Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -167,7 +174,7 @@ pub fn hex_grid_system(
 ) {
     for (entity, hex_config) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn_descendants();
+        commands.entity(entity).despawn_recursive();
 
         let layout = hexx::HexLayout {
             hex_size: hexx::Vec2::splat(hex_config.radius),
@@ -389,8 +396,8 @@ pub fn frame_readback_system(
     if let Some(gpu_image) = gpu_images.get(&render_output.image_handle) {
         let texture = &gpu_image.texture;
 
-        let width = gpu_image.size.x;
-        let height = gpu_image.size.y;
+        let width = gpu_image.size.width;
+        let height = gpu_image.size.height;
         let block_size = gpu_image.texture_format.block_copy_size(None).unwrap();
 
         // bytes_per_row must be multiple of 256
@@ -423,15 +430,15 @@ pub fn frame_readback_system(
         );
 
         encoder.copy_texture_to_buffer(
-            bevy::render::render_resource::ImageCopyTexture {
+            bevy::render::render_resource::TexelCopyTextureInfo {
                 texture,
                 mip_level: 0,
                 origin: bevy::render::render_resource::Origin3d::ZERO,
                 aspect: bevy::render::render_resource::TextureAspect::All,
             },
-            bevy::render::render_resource::ImageCopyBuffer {
+            bevy::render::render_resource::TexelCopyBufferInfo {
                 buffer,
-                layout: bevy::render::render_resource::ImageDataLayout {
+                layout: bevy::render::render_resource::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(bytes_per_row),
                     rows_per_image: Some(height),
@@ -453,7 +460,7 @@ pub fn frame_readback_system(
             tx.send(res).unwrap();
         });
 
-        render_device.poll(bevy::render::render_resource::Maintain::Wait);
+        render_device.poll(wgpu::Maintain::Wait);
 
         if rx.recv().is_ok() {
             let data = buffer_slice.get_mapped_range();
@@ -526,26 +533,35 @@ pub fn print_status_system(time: Res<Time>) {
 pub fn model_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    query: Query<(Entity, &crate::components::Bevy3DModel), Changed<crate::components::Bevy3DModel>>,
+    query: Query<
+        (Entity, &crate::components::Bevy3DModel),
+        Changed<crate::components::Bevy3DModel>,
+    >,
 ) {
     for (entity, model) in query.iter() {
         if !model.path.is_empty() {
-            commands.entity(entity).insert(SceneRoot(asset_server.load(format!("{}#Scene0", model.path))));
+            commands.entity(entity).insert(SceneRoot(
+                asset_server.load(format!("{}#Scene0", model.path)),
+            ));
         }
 
         if model.outline_width > 0.0 {
-            commands.entity(entity).insert(bevy_mod_outline::OutlineVolume {
-                visible: true,
-                width: model.outline_width,
-                colour: Color::srgba(
-                    model.outline_color[0],
-                    model.outline_color[1],
-                    model.outline_color[2],
-                    model.outline_color[3],
-                ),
-            });
+            commands
+                .entity(entity)
+                .insert(bevy_mod_outline::OutlineVolume {
+                    visible: true,
+                    width: model.outline_width,
+                    colour: Color::srgba(
+                        model.outline_color[0],
+                        model.outline_color[1],
+                        model.outline_color[2],
+                        model.outline_color[3],
+                    ),
+                });
         } else {
-            commands.entity(entity).remove::<bevy_mod_outline::OutlineVolume>();
+            commands
+                .entity(entity)
+                .remove::<bevy_mod_outline::OutlineVolume>();
         }
     }
 }
@@ -624,3 +640,7 @@ pub fn node_reactivity_system(
         }
     }
 }
+
+
+
+

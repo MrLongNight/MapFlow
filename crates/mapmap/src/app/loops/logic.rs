@@ -178,10 +178,15 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // We can use the app.last_sysinfo_refresh as a rough proxy or just log every N frames.
     // Let's use a frame counter based approach since we don't want to modify App struct.
     // 600 frames @ 60fps = 10 seconds.
-    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
+        std::sync::atomic::AtomicUsize::new(0);
+    #[allow(clippy::manual_is_multiple_of)]
     if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
         let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
-            app.sys_info.process(pid).map(|p| p.memory() as f32 / 1024.0 / 1024.0).unwrap_or(0.0)
+            app.sys_info
+                .process(pid)
+                .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
+                .unwrap_or(0.0)
         } else {
             0.0
         };
@@ -195,9 +200,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // Periodic Cleanups (every 600 frames ~ 10s at 60fps)
-    if (app.backend.queue.get_timestamp_period() as u64).is_multiple_of(600) { // Just using a periodic check via backend or frame count if available
-         // ... (This logic was implicit in main loop, here we might need frame count or timer)
-    }
+    // Removed unstable is_multiple_of usage
 
     Ok(())
 }
+
+
+
+

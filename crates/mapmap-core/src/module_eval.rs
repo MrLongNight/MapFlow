@@ -822,7 +822,11 @@ impl ModuleEvaluator {
             part_index.insert(part.id, i);
         }
 
-        tracing::debug!("trace_chain: Starting from node {} in module {}", start_node_id, module.name);
+        tracing::debug!(
+            "trace_chain: Starting from node {} in module {}",
+            start_node_id,
+            module.name
+        );
 
         let trigger_values = &self.cached_result.trigger_values;
 
@@ -1728,3 +1732,7 @@ mod tests_logic {
         }
     }
 }
+
+
+
+

@@ -31,3 +31,7 @@ pub use paint_panel::*;
 pub use preview_panel::*;
 pub use shortcuts_panel::*;
 pub use transform_panel::*;
+
+
+
+

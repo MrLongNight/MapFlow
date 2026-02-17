@@ -86,12 +86,12 @@ impl IconDemoPanel {
                                         // Icon background
                                         egui::Frame::default()
                                             .fill(egui::Color32::from_rgb(30, 35, 45))
-                                            .rounding(8.0)
+                                            .corner_radius(8)
                                             .inner_margin(12.0)
                                             .show(ui, |ui| {
                                                 ui.centered_and_justified(|ui| {
-                                                    if let Some(img) = icon_manager
-                                                        .image(*icon, display_icon_size)
+                                                    if let Some(img) =
+                                                        icon_manager.image(*icon, display_icon_size)
                                                     {
                                                         ui.add(img);
                                                     } else {
@@ -129,3 +129,8 @@ impl IconDemoPanel {
             });
     }
 }
+
+
+
+
+

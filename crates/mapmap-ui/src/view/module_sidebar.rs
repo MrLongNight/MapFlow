@@ -34,15 +34,15 @@ impl ModuleSidebar {
                 response.context_menu(|ui| {
                     if ui.button(locale.t("menu-rename")).clicked() {
                         // TODO: Implement renaming
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.button(locale.t("menu-duplicate")).clicked() {
                         // TODO: Implement duplication
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.button(locale.t("menu-delete")).clicked() {
                         action = Some(ModuleSidebarAction::DeleteModule(module.id));
-                        ui.close_menu();
+                        ui.close();
                     }
                     ui.separator();
                     // Color picker
@@ -75,7 +75,7 @@ impl ModuleSidebar {
                             );
                             if color_button(ui, color32, Vec2::splat(16.0)).clicked() {
                                 action = Some(ModuleSidebarAction::SetColor(module.id, color));
-                                ui.close_menu();
+                                ui.close();
                             }
                         }
                     });
@@ -128,3 +128,8 @@ pub enum ModuleSidebarAction {
     SetColor(u64, [f32; 4]),
     // Other actions like Rename, Duplicate etc.
 }
+
+
+
+
+
