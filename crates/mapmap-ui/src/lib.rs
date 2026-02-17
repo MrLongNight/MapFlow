@@ -564,19 +564,19 @@ impl AppUI {
 
         style.text_styles.insert(
             egui::TextStyle::Body,
-            egui::FontId::proportional(scaled_size)
+            egui::FontId::proportional(scaled_size),
         );
         style.text_styles.insert(
             egui::TextStyle::Button,
-            egui::FontId::proportional(scaled_size)
+            egui::FontId::proportional(scaled_size),
         );
         style.text_styles.insert(
             egui::TextStyle::Heading,
-            egui::FontId::proportional(scaled_size * 1.4)
+            egui::FontId::proportional(scaled_size * 1.4),
         );
         style.text_styles.insert(
             egui::TextStyle::Small,
-            egui::FontId::proportional(scaled_size * 0.85)
+            egui::FontId::proportional(scaled_size * 0.85),
         );
 
         // Scale spacing

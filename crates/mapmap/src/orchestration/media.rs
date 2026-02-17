@@ -17,7 +17,11 @@ pub fn sync_media_players(app: &mut App) {
                     SourceType::VideoUni { path, .. } => Some(path.clone()),
                     SourceType::VideoMulti { shared_id, .. } => {
                         // Look up path in shared media
-                        app.state.module_manager.shared_media.get(shared_id).map(|item| item.path.clone())
+                        app.state
+                            .module_manager
+                            .shared_media
+                            .get(shared_id)
+                            .map(|item| item.path.clone())
                     }
                     _ => None,
                 };
