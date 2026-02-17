@@ -278,6 +278,16 @@ pub fn delete_button(ui: &mut Ui) -> bool {
     ui.button("🗑").clicked()
 }
 
+pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
+    // Using a simple "L" as fallback for Lock icon
+    let mut btn = egui::Button::new("🔒");
+    if active {
+        // Reddish fill for Locked state
+        btn = btn.fill(Color32::from_rgb(200, 50, 50));
+    }
+    ui.add(btn)
+}
+
 pub fn move_up_button(ui: &mut Ui) -> Response {
     ui.button("⏶")
 }

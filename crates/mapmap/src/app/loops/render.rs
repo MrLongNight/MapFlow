@@ -442,7 +442,6 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 use std::collections::hash_map::Entry;
                 let current_view_arc = match app.output_preview_cache.entry(output_id) {
                     Entry::Occupied(mut e) => {
-<<<<<<< HEAD
                         let (id, old_view) = e.get_mut();
                         if needs_recreate {
                             let target_view =
@@ -609,4 +608,5 @@ fn draw_digit(
         }
     }
 }
+
 
