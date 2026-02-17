@@ -28,7 +28,7 @@ impl BevyRunner {
 
         // Use MinimalPlugins for core logic
         app.add_plugins(MinimalPlugins);
-        
+
         // Add infrastructure for scene and asset management (no rendering)
         app.add_plugins((
             bevy::hierarchy::HierarchyPlugin,
@@ -64,7 +64,7 @@ impl BevyRunner {
         app.add_systems(
             Update,
             (
-                // audio_reaction_system, 
+                // audio_reaction_system,
                 // camera_control_system,
                 // hex_grid_system,
                 // model_system,
