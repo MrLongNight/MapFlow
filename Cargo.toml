@@ -46,6 +46,7 @@ criterion = "0.8"
 crossbeam-channel = "0.5"
 ecolor = "=0.30.0"
 # Phase 6: egui migration
+ecolor = "=0.30.0"
 egui = { version = "=0.30.0", features = ["serde"] }
 egui-wgpu = "=0.30.0"
 egui-winit = "=0.30.0"
