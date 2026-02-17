@@ -3337,6 +3337,142 @@ fn test_issue_535_fix() {
     assert_eq!(module3.name, "New Module 2 1");
 }
 
+#[test]
+fn test_mesh_type_cylinder_generation() {
+    let cylinder = MeshType::Cylinder {
+        segments: 10,
+        height: 2.0,
+    };
+    let mesh = cylinder.to_mesh();
+
+    // Cylinder wraps a grid.
+    // Rows = (height * 10.0).max(2.0) = (2.0 * 10.0) = 20
+    // Cols = segments.max(3) = 10
+    // Grid vertices = (rows + 1) * (cols + 1) = 21 * 11 = 231
+    assert_eq!(mesh.vertex_count(), 231);
+}
+
+#[test]
+fn test_mesh_type_trimesh_generation() {
+    let trimesh = MeshType::TriMesh;
+    let mesh = trimesh.to_mesh();
+
+    // TriMesh creates a single triangle -> 3 vertices
+    assert_eq!(mesh.vertex_count(), 3);
+}
+
+#[test]
+fn test_mesh_type_circle_generation() {
+    let segments = 32;
+    let circle = MeshType::Circle {
+        segments,
+        arc_angle: std::f32::consts::TAU,
+    };
+    let mesh = circle.to_mesh();
+
+    // Circle creates vertices for the center + segments around
+    assert!(mesh.vertex_count() >= segments as usize);
+}
+
+#[test]
+fn test_add_part_with_type_increments_id() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 10,
+    };
+
+    let p1 = module.add_part_with_type(ModulePartType::Trigger(TriggerType::Beat), (0.0, 0.0));
+    assert_eq!(p1, 10);
+    assert_eq!(module.next_part_id, 11);
+}
+
+#[test]
+fn test_remove_non_existent_connection() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
+    };
+
+    // Should not panic or error
+    module.remove_connection(1, 0, 2, 0);
+    assert_eq!(module.connections.len(), 0);
+}
+
+#[test]
+fn test_update_part_sockets_adds_new_sockets() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
+    };
+
+    // 1. Create AudioFFT with limited outputs (just Beat)
+    let config = AudioTriggerOutputConfig {
+        frequency_bands: false,
+        volume_outputs: false,
+        beat_output: true,
+        bpm_output: false,
+        inverted_outputs: Default::default(),
+    };
+    let fft_part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: AudioBand::Bass,
+        threshold: 0.5,
+        output_config: config,
+    });
+
+    let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
+
+    // 2. Enable Frequency Bands (adds 9 outputs)
+    if let Some(part) = module.parts.iter_mut().find(|p| p.id == p1) {
+        if let ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) =
+            &mut part.part_type
+        {
+            output_config.frequency_bands = true;
+        }
+    }
+
+    // 3. Update sockets
+    module.update_part_sockets(p1);
+
+    // Check: 1 (Beat) + 9 (Bands) = 10 outputs
+    let part = module.parts.iter().find(|p| p.id == p1).unwrap();
+    assert_eq!(part.outputs.len(), 10);
+    assert!(part.outputs.iter().any(|s| s.name == "SubBass Out"));
+}
+
+#[test]
+fn test_trigger_config_smoothed_fallback_with_invert_external() {
+    let config = TriggerConfig {
+        mode: TriggerMappingMode::Smoothed {
+            attack: 0.1,
+            release: 0.1,
+        },
+        min_value: 0.0,
+        max_value: 100.0,
+        invert: true,
+        ..Default::default()
+    };
+
+    // Invert happens before mode application
+    // 0.2 -> 0.8
+    // Smoothed (Direct Fallback): 0.0 + (100.0 - 0.0) * 0.8 = 80.0
+    assert_eq!(config.apply(0.2), 80.0);
+}
+
 
 
 
