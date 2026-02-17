@@ -186,8 +186,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             0.0
         };
         info!(
-            "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}", 
-            app.current_fps, 
+            "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}",
+            app.current_fps,
             app.current_frame_time_ms,
             ram_mb,
             app.state.module_manager.list_modules().len()
