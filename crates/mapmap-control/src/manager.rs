@@ -234,8 +234,57 @@ impl ControlManager {
         }
     }
 
+    /// Validate control value for security issues (e.g. path traversal)
+    fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
+        if let ControlValue::String(s) = value {
+            let param_name = match target {
+                ControlTarget::PaintParameter(_, name) => Some(name.as_str()),
+                ControlTarget::EffectParameter(_, name) => Some(name.as_str()),
+                ControlTarget::Custom(name) => Some(name.as_str()),
+                _ => None,
+            };
+
+            if let Some(name) = param_name {
+                let name_lower = name.to_lowercase();
+                if name_lower.contains("path")
+                    || name_lower.contains("file")
+                    || name_lower.contains("source")
+                {
+                    // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
+                    // We block:
+                    // - Exact match ".."
+                    // - Start with "../" or "..\"
+                    // - Contains "/../" or "\..\" or mixed separators
+                    // - End with "/.." or "\.."
+                    if s == ".."
+                        || s.starts_with("../")
+                        || s.starts_with("..\\")
+                        || s.contains("/../")
+                        || s.contains("\\..\\")
+                        || s.contains("/..\\")
+                        || s.contains("\\../")
+                        || s.ends_with("/..")
+                        || s.ends_with("\\..")
+                    {
+                        return Err(ControlError::InvalidParameter(format!(
+                            "Security violation: Path traversal detected in value for {}",
+                            name
+                        )));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
+        // SECURITY: Validate potential file paths to prevent traversal
+        if let Err(e) = self.validate_security(&target, &value) {
+            warn!("Security violation in apply_control: {}", e);
+            return;
+        }
+
         info!("Control change: {:?} = {:?}", target, value);
 
         // Call the control callback if set
@@ -402,6 +451,54 @@ mod tests {
         manager.execute_action(Action::PrevCue);
         manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(1));
+    }
+
+    #[test]
+    fn test_security_validation() {
+        let mut manager = ControlManager::new();
+        let called = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called_clone = called.clone();
+
+        manager.set_control_callback(move |_target, _value| {
+            called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+
+        // 1. Safe value should pass
+        manager.apply_control(
+            ControlTarget::EffectParameter(0, "file_path".to_string()),
+            ControlValue::String("safe_file.txt".to_string()),
+        );
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // 2. Unsafe value should be blocked (contains "..")
+        manager.apply_control(
+            ControlTarget::EffectParameter(0, "file_path".to_string()),
+            ControlValue::String("../secret.txt".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+
+        // 3. Unsafe value with different casing in parameter name
+        manager.apply_control(
+            ControlTarget::EffectParameter(0, "MySourceFile".to_string()),
+            ControlValue::String("../secret.txt".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+
+        // 4. ".." in non-sensitive parameter should pass (debatable, but current logic allows it)
+        manager.apply_control(
+            ControlTarget::Custom("MyLabel".to_string()),
+            ControlValue::String("Dots..are..okay..here".to_string()),
+        );
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // 5. "Loading..." should pass for a "source" parameter (ellipses are valid text)
+        manager.apply_control(
+            ControlTarget::Custom("TextSource".to_string()),
+            ControlValue::String("Loading...".to_string()),
+        );
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
     }
 }
 
