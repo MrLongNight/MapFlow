@@ -1,5 +1,4 @@
 use mapmap_core::module::*;
-use serde_json;
 
 #[test]
 fn test_add_part_defaults() {
