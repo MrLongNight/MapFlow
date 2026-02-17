@@ -92,6 +92,41 @@ pub fn styled_slider(
         egui::StrokeKind::Middle,
     );
 
+    // Draw focus ring if focused
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::ZERO,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
+
+    let t = (*value - *range.start()) / (*range.end() - *range.start());
+    let fill_rect = Rect::from_min_max(
+        rect.min,
+        Pos2::new(
+            lerp((rect.left())..=(rect.right()), t.clamp(0.0, 1.0)),
+            rect.max.y,
+        ),
+    );
+
+    // Accent color logic
+    let is_changed = (*value - default_value).abs() > 0.001;
+    let fill_color = if is_changed {
+        colors::CYAN_ACCENT
+    } else {
+        colors::CYAN_ACCENT.linear_multiply(0.7)
+    };
+
+    ui.painter().rect(
+        fill_rect,
+        CornerRadius::ZERO,
+        fill_color,
+        Stroke::new(0.0, Color32::TRANSPARENT),
+        egui::StrokeKind::Middle,
+    );
+
     // Value Text
     let text = format!("{:.2}", value);
     let text_color = if response.hovered() || response.dragged() {
@@ -160,6 +195,49 @@ pub fn styled_drag_value(
             CornerRadius::ZERO,
             Stroke::new(1.0, colors::CYAN_ACCENT),
             egui::StrokeKind::Middle,
+        );
+    }
+
+    response.on_hover_text("Double-click to reset")
+}
+
+pub fn styled_button(ui: &mut Ui, text: &str, _active: bool) -> Response {
+    ui.button(text)
+}
+
+/// Generic Icon Button Helper
+pub fn icon_button(
+    ui: &mut Ui,
+    text: &str,
+    hover_color: Color32,
+    active_color: Color32,
+    is_active: bool,
+) -> Response {
+    let desired_size = Vec2::new(24.0, 24.0);
+    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
+
+    let visuals = ui.style().interact(&response);
+
+    // Background fill logic
+    let bg_fill = if is_active {
+        active_color
+    } else if response.hovered() && hover_color != Color32::TRANSPARENT {
+        hover_color
+    } else if response.hovered() {
+        ui.visuals().widgets.hovered.bg_fill
+    } else {
+        visuals.bg_fill
+    };
+
+    // Stroke logic
+    let stroke = if is_active {
+        Stroke::new(1.0, active_color)
+    } else {
+        visuals.bg_stroke
+    };
+
+    ui.painter()
+        .rect(rect, CornerRadius::ZERO, bg_fill, stroke, egui::StrokeKind::Middle);
 
     let text_pos = rect.center();
 
@@ -304,6 +382,15 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         visuals.bg_fill,
         visuals.bg_stroke,
         egui::StrokeKind::Middle,
+    );
+
+    // Draw focus ring if focused
+    if response.has_focus() {
+        painter.rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::same(6),
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -440,19 +527,6 @@ pub fn draw_safety_radial_fill(
     _progress: f32,
     _color: Color32,
 ) {
-<<<<<<< HEAD
-=======
-}
-
-pub fn collapsing_header_with_reset<R>(
-    ui: &mut Ui,
-    title: &str,
-    _default_open: bool,
-    add_contents: impl FnOnce(&mut Ui) -> R,
-) -> bool {
-    ui.collapsing(title, add_contents);
-    false
->>>>>>> origin/scribe-core-docs-v1-12524433962227166378
 }
 
 pub fn collapsing_header_with_reset(

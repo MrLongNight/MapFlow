@@ -125,10 +125,6 @@ impl WgpuBackend {
                     },
                     ..Default::default()
                 },
-<<<<<<< HEAD
-=======
-                None,
->>>>>>> origin/tracker-roadmap-sync-12753300942955728712
             )
             .await
             .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;

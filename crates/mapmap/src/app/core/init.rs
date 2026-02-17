@@ -680,8 +680,4 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/scribe-core-docs-v1-12524433962227166378
 

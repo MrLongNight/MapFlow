@@ -236,10 +236,7 @@ impl MediaManagerUI {
                             rect,
                             2.0,
                             egui::Stroke::new(2.0, Color32::LIGHT_BLUE),
-<<<<<<< HEAD
                             egui::StrokeKind::Middle,
-=======
->>>>>>> origin/tracker-roadmap-sync-12753300942955728712
                         );
                     }
                 }

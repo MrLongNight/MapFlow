@@ -433,16 +433,10 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 }
 
                 let target_tex = app.output_temp_textures.get(&output_id).unwrap();
-=======
-                let target_view_arc = std::sync::Arc::new(
-                    target_tex.create_view(&wgpu::TextureViewDescriptor::default()),
-                );
->>>>>>> origin/scribe-core-docs-v1-12524433962227166378
 
                 use std::collections::hash_map::Entry;
                 let current_view_arc = match app.output_preview_cache.entry(output_id) {
                     Entry::Occupied(mut e) => {
-<<<<<<< HEAD
                         let (id, old_view) = e.get_mut();
                         if needs_recreate {
                             let target_view =
