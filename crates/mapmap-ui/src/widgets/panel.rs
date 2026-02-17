@@ -27,16 +27,18 @@ impl StyledPanel {
             ..Default::default()
         };
 
-        frame.show(ui, |ui| {
-            ui.vertical(|ui| {
-                ui.horizontal(|ui| {
-                    ui.strong(&self.title);
-                });
-                ui.separator();
-                add_contents(ui)
+        frame
+            .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.strong(&self.title);
+                    });
+                    ui.separator();
+                    add_contents(ui)
+                })
+                .inner
             })
             .inner
-        }).inner
     }
 }
 
@@ -72,11 +74,7 @@ pub fn render_panel_header(
     // 2. Accent Stripe (Left)
     let stripe_width = 3.0;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(stripe_width, rect.height()));
-    painter.rect_filled(
-        stripe_rect,
-        egui::Rounding::same(0.0),
-        colors::CYAN_ACCENT,
-    );
+    painter.rect_filled(stripe_rect, egui::Rounding::same(0.0), colors::CYAN_ACCENT);
 
     let mut current_x = rect.min.x + stripe_width + 8.0;
 

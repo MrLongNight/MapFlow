@@ -178,16 +178,20 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // We can use the app.last_sysinfo_refresh as a rough proxy or just log every N frames.
     // Let's use a frame counter based approach since we don't want to modify App struct.
     // 600 frames @ 60fps = 10 seconds.
-    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
+        std::sync::atomic::AtomicUsize::new(0);
     if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
         let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
-            app.sys_info.process(pid).map(|p| p.memory() as f32 / 1024.0 / 1024.0).unwrap_or(0.0)
+            app.sys_info
+                .process(pid)
+                .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
+                .unwrap_or(0.0)
         } else {
             0.0
         };
         info!(
-            "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}", 
-            app.current_fps, 
+            "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}",
+            app.current_fps,
             app.current_frame_time_ms,
             ram_mb,
             app.state.module_manager.list_modules().len()

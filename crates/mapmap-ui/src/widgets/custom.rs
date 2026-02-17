@@ -1,6 +1,6 @@
-use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, Rounding, Stroke, lerp};
 use crate::theme::colors;
 use crate::widgets::icons::{AppIcon, IconManager};
+use egui::{lerp, Color32, Pos2, Rect, Response, Rounding, Sense, Stroke, Ui, Vec2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
@@ -56,7 +56,6 @@ pub fn styled_slider(
         Rounding::ZERO,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
-        
     );
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
@@ -81,7 +80,6 @@ pub fn styled_slider(
         Rounding::ZERO,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
-        
     );
 
     // Value Text
@@ -144,7 +142,6 @@ pub fn styled_drag_value(
             response.rect.expand(1.0),
             Rounding::ZERO,
             Stroke::new(1.0, colors::CYAN_ACCENT),
-            
         );
     }
 
@@ -186,8 +183,7 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter()
-        .rect(rect, Rounding::ZERO, bg_fill, stroke);
+    ui.painter().rect(rect, Rounding::ZERO, bg_fill, stroke);
 
     let text_pos = rect.center();
 
@@ -321,7 +317,6 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         Rounding::same(4.0),
         visuals.bg_fill,
         visuals.bg_stroke,
-        
     );
 
     // Draw focus ring if focused
@@ -330,7 +325,6 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
             rect.expand(2.0),
             Rounding::same(6.0),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            
         );
     }
 
@@ -460,7 +454,14 @@ pub fn hold_to_action_icon(
     triggered
 }
 
-pub fn draw_safety_radial_fill(_painter: &egui::Painter, _center: Pos2, _radius: f32, _progress: f32, _color: Color32) {}
+pub fn draw_safety_radial_fill(
+    _painter: &egui::Painter,
+    _center: Pos2,
+    _radius: f32,
+    _progress: f32,
+    _color: Color32,
+) {
+}
 
 pub fn collapsing_header_with_reset(
     ui: &mut Ui,

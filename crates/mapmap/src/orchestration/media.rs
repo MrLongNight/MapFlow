@@ -17,7 +17,11 @@ pub fn sync_media_players(app: &mut App) {
                     SourceType::VideoUni { path, .. } => Some(path.clone()),
                     SourceType::VideoMulti { shared_id, .. } => {
                         // Look up path in shared media
-                        app.state.module_manager.shared_media.get(shared_id).map(|item| item.path.clone())
+                        app.state
+                            .module_manager
+                            .shared_media
+                            .get(shared_id)
+                            .map(|item| item.path.clone())
                     }
                     _ => None,
                 };
@@ -113,7 +117,7 @@ pub fn update_media_players(app: &mut App, dt: f32) {
                         frame.format.height
                     );
                 }
-                
+
                 // CRITICAL: Ensure texture exists in pool with correct format and size
                 texture_pool.ensure_texture(
                     &tex_name,

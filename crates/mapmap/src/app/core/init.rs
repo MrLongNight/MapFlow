@@ -229,11 +229,19 @@ impl App {
             }
 
             // --- SELF-HEAL: Ensure Output Windows exist for active Projector nodes ---
-            let existing_output_ids: std::collections::HashSet<u64> = state.output_manager.outputs().iter().map(|o| o.id).collect();
+            let existing_output_ids: std::collections::HashSet<u64> = state
+                .output_manager
+                .outputs()
+                .iter()
+                .map(|o| o.id)
+                .collect();
             let mut missing_outputs = Vec::new();
             for module in state.module_manager.modules() {
                 for part in &module.parts {
-                    if let mapmap_core::module::ModulePartType::Output(mapmap_core::module::OutputType::Projector { id, name, .. }) = &part.part_type {
+                    if let mapmap_core::module::ModulePartType::Output(
+                        mapmap_core::module::OutputType::Projector { id, name, .. },
+                    ) = &part.part_type
+                    {
                         if !existing_output_ids.contains(id) {
                             missing_outputs.push((*id, name.clone()));
                         }
@@ -242,20 +250,27 @@ impl App {
             }
 
             for (id, name) in missing_outputs {
-                info!("Self-Heal: Creating missing Output Window '{}' (ID {})", name, id);
+                info!(
+                    "Self-Heal: Creating missing Output Window '{}' (ID {})",
+                    name, id
+                );
                 state.output_manager_mut().add_output(
-                    name, 
+                    name,
                     mapmap_core::output::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
-                    (1920, 1080)
+                    (1920, 1080),
                 );
             }
 
             // --- SELF-HEAL: Remove dangling connections ---
             let mut graph_fixed = false;
             for module in state.module_manager_mut().modules_mut() {
-                let part_ids: std::collections::HashSet<u64> = module.parts.iter().map(|p| p.id).collect();
-                info!("Self-Heal: Module '{}' has nodes: {:?}", module.name, part_ids);
-                
+                let part_ids: std::collections::HashSet<u64> =
+                    module.parts.iter().map(|p| p.id).collect();
+                info!(
+                    "Self-Heal: Module '{}' has nodes: {:?}",
+                    module.name, part_ids
+                );
+
                 let initial_count = module.connections.len();
                 module.connections.retain(|c| {
                     let from_exists = part_ids.contains(&c.from_part);
@@ -270,7 +285,11 @@ impl App {
                 });
                 let final_count = module.connections.len();
                 if initial_count != final_count {
-                    info!("Self-Heal: Cleaned {} dangling connections in module '{}'", initial_count - final_count, module.name);
+                    info!(
+                        "Self-Heal: Cleaned {} dangling connections in module '{}'",
+                        initial_count - final_count,
+                        module.name
+                    );
                     graph_fixed = true;
                 }
             }
@@ -367,8 +386,8 @@ impl App {
         let egui_renderer = Renderer::new(
             &backend.device,
             format,
-            None, // depth_stencil_format
-            1,    // msaa_samples
+            None,  // depth_stencil_format
+            1,     // msaa_samples
             false, // dithering
         );
         let oscillator_renderer = match OscillatorRenderer::new(
@@ -590,15 +609,47 @@ impl App {
         info!("==========================================");
         info!("   MapFlow Initialization Status Report   ");
         info!("------------------------------------------");
-        info!("- Render Backend: {} ({:?})", app.backend.adapter_info().name, app.backend.adapter_info().backend);
-        info!("- Edge Blend:     {}", if app.edge_blend_renderer.is_some() { "ENABLED" } else { "DISABLED" });
-        info!("- Color Calib:    {}", if app.color_calibration_renderer.is_some() { "ENABLED" } else { "DISABLED" });
+        info!(
+            "- Render Backend: {} ({:?})",
+            app.backend.adapter_info().name,
+            app.backend.adapter_info().backend
+        );
+        info!(
+            "- Edge Blend:     {}",
+            if app.edge_blend_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
+        info!(
+            "- Color Calib:    {}",
+            if app.color_calibration_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
         info!("- Bevy Engine:    INITIALIZED");
-        
+
         #[cfg(feature = "midi")]
-        info!("- MIDI System:    {}", if app.midi_handler.is_some() { "CONNECTED" } else { "DISCONNECTED" });
-        
-        info!("- Hue System:     {}", if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() { "CONFIGURED" } else { "UNCONFIGURED" });
+        info!(
+            "- MIDI System:    {}",
+            if app.midi_handler.is_some() {
+                "CONNECTED"
+            } else {
+                "DISCONNECTED"
+            }
+        );
+
+        info!(
+            "- Hue System:     {}",
+            if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() {
+                "CONFIGURED"
+            } else {
+                "UNCONFIGURED"
+            }
+        );
         info!("- Media Library:  {} items", app.media_library.items.len());
         info!("==========================================");
 
@@ -631,5 +682,3 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
-
-

@@ -134,7 +134,7 @@ impl Compositor {
             label: Some("Compositor Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout, &uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
