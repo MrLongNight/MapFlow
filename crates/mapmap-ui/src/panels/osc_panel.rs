@@ -23,8 +23,6 @@ pub fn show_osc_panel(
             render_panel_header(
                 ui,
                 &app_ui.i18n.t("panel-osc-title"),
-                Some(AppIcon::Repeat),
-                app_ui.icon_manager.as_ref(),
                 |_| {},
             );
 
@@ -130,3 +128,7 @@ pub fn show_osc_panel(
         });
     app_ui.show_osc_panel = open;
 }
+
+
+
+

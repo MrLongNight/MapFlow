@@ -230,7 +230,11 @@ impl ControllerOverlayPanel {
                             .map(|p| egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
                             .collect();
 
-                        let color_image = egui::ColorImage { size, pixels };
+                        let color_image = egui::ColorImage {
+                            size,
+                            pixels,
+                            source_size: egui::Vec2::new(width as f32, height as f32),
+                        };
 
                         return Some(ctx.load_texture(
                             name,
@@ -743,7 +747,12 @@ impl ControllerOverlayPanel {
             // Fallback: dark background
             let bg_color = Color32::from_rgb(30, 30, 35);
             painter.rect_filled(rect, 4.0, bg_color);
-            painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
+            painter.rect_stroke(
+                rect,
+                4.0,
+                Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+                egui::StrokeKind::Middle,
+            );
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -949,7 +958,7 @@ impl ControllerOverlayPanel {
                             painter.circle_stroke(elem_rect.center(), radius, stroke);
                         }
                         _ => {
-                            painter.rect_stroke(elem_rect, 0.0, stroke);
+                            painter.rect_stroke(elem_rect, 0.0, stroke, egui::StrokeKind::Middle);
                         }
                     }
 
@@ -1049,7 +1058,7 @@ impl ControllerOverlayPanel {
                     painter.circle_stroke(elem_rect.center(), radius, stroke);
                 }
                 _ => {
-                    painter.rect_stroke(elem_rect, 4.0, stroke);
+                    painter.rect_stroke(elem_rect, 4.0, stroke, egui::StrokeKind::Middle);
                 }
             }
         }
@@ -1260,3 +1269,7 @@ fn ui_time_seconds() -> f64 {
         .unwrap_or_default()
         .as_secs_f64()
 }
+
+
+
+

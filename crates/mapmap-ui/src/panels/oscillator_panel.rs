@@ -51,8 +51,6 @@ impl OscillatorPanel {
                 render_panel_header(
                     ui,
                     &locale.t("oscillator-panel-title"),
-                    Some(AppIcon::MagicWand),
-                    icon_manager,
                     |_| {},
                 );
 
@@ -292,3 +290,7 @@ impl OscillatorPanel {
         viz_changed
     }
 }
+
+
+
+

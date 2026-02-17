@@ -15,3 +15,7 @@ pub enum HueError {
     #[error("Other error: {0}")]
     Other(String),
 }
+
+
+
+

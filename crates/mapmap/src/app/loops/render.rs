@@ -192,7 +192,7 @@ fn render_content(
     if target_ops.is_empty() && output_id != 0 {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view,
                 resolve_target: None,
 
@@ -217,7 +217,7 @@ fn render_content(
     {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Output Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view,
                 resolve_target: None,
 
@@ -315,7 +315,7 @@ fn render_content(
 
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Mesh Layer Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view,
                     resolve_target: None,
 
@@ -351,7 +351,7 @@ fn render_content(
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Egui Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view,
                     resolve_target: None,
 
@@ -433,11 +433,6 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 }
 
                 let target_tex = app.output_temp_textures.get(&output_id).unwrap();
-=======
-                let target_view_arc = std::sync::Arc::new(
-                    target_tex.create_view(&wgpu::TextureViewDescriptor::default()),
-                );
->>>>>>> origin/bolt-optimize-trigger-system-18271879632868210782
 
                 use std::collections::hash_map::Entry;
                 let current_view_arc = match app.output_preview_cache.entry(output_id) {
@@ -485,7 +480,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Preview Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                             view: &current_view_arc,
                             resolve_target: None,
 
@@ -608,5 +603,9 @@ fn draw_digit(
         }
     }
 }
+
+
+
+
 
 

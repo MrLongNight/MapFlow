@@ -578,14 +578,14 @@ impl OscillatorRenderer {
 
         // Upload to both phase textures
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.phase_texture_a,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             bytemuck::cast_slice(&phase_data),
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(self.sim_width * 4),
                 rows_per_image: Some(self.sim_height),
@@ -598,14 +598,14 @@ impl OscillatorRenderer {
         );
 
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.phase_texture_b,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             bytemuck::cast_slice(&phase_data),
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(self.sim_width * 4),
                 rows_per_image: Some(self.sim_height),
@@ -723,7 +723,7 @@ impl OscillatorRenderer {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Oscillator Simulation Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -811,7 +811,7 @@ impl OscillatorRenderer {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Oscillator Distortion Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -834,3 +834,7 @@ impl OscillatorRenderer {
         }
     }
 }
+
+
+
+

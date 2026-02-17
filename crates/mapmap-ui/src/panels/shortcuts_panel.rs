@@ -329,3 +329,7 @@ fn to_mapmap_modifiers(modifiers: egui::Modifiers) -> mapmap_control::shortcuts:
         meta: modifiers.mac_cmd || modifiers.command,
     }
 }
+
+
+
+

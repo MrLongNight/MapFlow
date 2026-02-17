@@ -386,9 +386,7 @@ impl App {
         let egui_renderer = Renderer::new(
             &backend.device,
             format,
-            None,  // depth_stencil_format
-            1,     // msaa_samples
-            false, // dithering
+            egui_wgpu::RendererOptions::default(),
         );
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
@@ -682,3 +680,7 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
+
+
+
+

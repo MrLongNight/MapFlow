@@ -573,3 +573,7 @@ pub fn handle_mcp_actions(app: &mut App) {
         }
     }
 }
+
+
+
+

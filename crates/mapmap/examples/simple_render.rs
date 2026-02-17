@@ -108,7 +108,7 @@ fn main() {
                 {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Main Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                             view: &view,
                             resolve_target: None,
 
@@ -137,3 +137,7 @@ fn main() {
         })
         .unwrap();
 }
+
+
+
+

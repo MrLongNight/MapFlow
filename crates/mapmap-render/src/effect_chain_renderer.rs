@@ -525,7 +525,7 @@ impl EffectChainRenderer {
                 .create_bind_group(&self.device, input_view);
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Passthrough Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -712,7 +712,7 @@ impl EffectChainRenderer {
                 if let Some(pipeline) = pipeline {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some(&format!("Effect Pass: {:?}", effect.effect_type)),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                             view: render_target,
                             resolve_target: None,
                             ops: wgpu::Operations {
@@ -787,3 +787,7 @@ impl EffectChainRenderer {
         &self.queue
     }
 }
+
+
+
+

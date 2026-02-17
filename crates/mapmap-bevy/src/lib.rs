@@ -31,7 +31,6 @@ impl BevyRunner {
 
         // Add infrastructure for scene and asset management
         app.add_plugins((
-            bevy::hierarchy::HierarchyPlugin,
             bevy::transform::TransformPlugin,
             bevy::asset::AssetPlugin::default(),
             bevy::scene::ScenePlugin,
@@ -363,4 +362,8 @@ impl BevyRunner {
             });
     }
 }
+
+
+
+
 

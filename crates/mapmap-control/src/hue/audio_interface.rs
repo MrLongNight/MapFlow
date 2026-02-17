@@ -9,3 +9,7 @@ pub struct AudioSpectrum {
 pub trait AudioProcessor {
     fn process(&mut self, samples: &[f32]) -> AudioSpectrum;
 }
+
+
+
+

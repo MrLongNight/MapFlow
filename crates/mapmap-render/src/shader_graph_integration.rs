@@ -276,7 +276,7 @@ impl ShaderGraphRendering for EffectChainRenderer {
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(&format!("ShaderGraph_RenderPass_{}", compiled.graph_id)),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: output_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -321,3 +321,7 @@ mod tests {
         assert_eq!(graphs[0].0, id);
     }
 }
+
+
+
+

@@ -69,12 +69,12 @@ impl WgpuBackend {
     ) -> Result<Self> {
         info!("Initializing wgpu backend");
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
             ..Default::default()
         });
 
-        let mut adapter = None;
+        let mut adapter_res = None;
 
         if let Some(gpu_name) = preferred_gpu {
             if !gpu_name.is_empty() {
@@ -83,11 +83,11 @@ impl WgpuBackend {
                     let info = a.get_info();
                     if info.name == gpu_name {
                         info!("Found preferred adapter: {}", info.name);
-                        adapter = Some(a);
+                        adapter_res = Some(Ok(a));
                         break;
                     }
                 }
-                if adapter.is_none() {
+                if adapter_res.is_none() {
                     tracing::warn!(
                         "Preferred GPU '{}' not found, falling back to auto-selection.",
                         gpu_name
@@ -96,18 +96,18 @@ impl WgpuBackend {
             }
         }
 
-        if adapter.is_none() {
-            adapter = instance
+        if adapter_res.is_none() {
+            adapter_res = Some(instance
                 .request_adapter(&wgpu::RequestAdapterOptions {
                     power_preference,
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await;
+                .await);
         }
 
         let adapter =
-            adapter.ok_or_else(|| RenderError::DeviceError("No adapter found".to_string()))?;
+            adapter_res.unwrap().map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -125,7 +125,6 @@ impl WgpuBackend {
                     },
                     ..Default::default()
                 },
-                None,
             )
             .await
             .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;
@@ -252,14 +251,14 @@ impl RenderBackend for WgpuBackend {
 
         // Use direct write for all textures (queue.write_texture is efficient)
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(handle.height),
@@ -338,3 +337,7 @@ mod tests {
         });
     }
 }
+
+
+
+
