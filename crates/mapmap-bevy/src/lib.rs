@@ -29,18 +29,24 @@ impl BevyRunner {
         // Use MinimalPlugins for core logic
         app.add_plugins(MinimalPlugins);
 
-        // Add infrastructure for scene and asset management (no rendering)
+        // Add infrastructure for scene and asset management
         app.add_plugins((
             bevy::hierarchy::HierarchyPlugin,
             bevy::transform::TransformPlugin,
             bevy::asset::AssetPlugin::default(),
             bevy::scene::ScenePlugin,
             bevy::gltf::GltfPlugin::default(),
-            // TextPlugin disabled to fix headless screenshot/image asset panics
         ));
 
-        // NOTE: RenderPlugin is disabled for now to fix headless screenshot panics in Bevy 0.15.3.
-        // Offscreen rendering will be restored once a stable wgpu 23 bypass is implemented.
+        // Load PBR infrastructure so StandardMaterial and Mesh assets exist
+        app.add_plugins(bevy::pbr::PbrPlugin { ..default() });
+        app.add_plugins(bevy::render::RenderPlugin {
+            render_creation: bevy::render::settings::RenderCreation::Automatic(
+                bevy::render::settings::WgpuSettings::default(),
+            ),
+            ..default()
+        });
+        app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
 
         // Register resources
         app.init_resource::<AudioInputResource>();
@@ -59,17 +65,16 @@ impl BevyRunner {
         app.register_type::<BevyCamera>();
 
         // Register systems
-        // NOTE: rendering-dependent systems are disabled because RenderPlugin is inactive.
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
             (
-                // audio_reaction_system,
-                // camera_control_system,
-                // hex_grid_system,
-                // model_system,
-                // shape_system,
-                // text_3d_system,
+                audio_reaction_system,
+                camera_control_system,
+                hex_grid_system,
+                model_system,
+                shape_system,
+                text_3d_system,
                 node_reactivity_system,
             ),
         );

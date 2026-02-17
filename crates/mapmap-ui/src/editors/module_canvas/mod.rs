@@ -6847,19 +6847,20 @@ impl ModuleCanvas {
                     styled_slider(ui, brightness, -1.0..=1.0, 0.0);
                     ui.end_row();
 
-                    ui.label("Contrast:");
-                    styled_slider(ui, contrast, 0.0..=2.0, 1.0);
-                    ui.end_row();
+                        ui.label("Contrast:");
+                        styled_slider(ui, contrast, 0.0..=2.0, 1.0);
+                        ui.end_row();
 
-                    ui.label("Saturation:");
-                    styled_slider(ui, saturation, 0.0..=2.0, 1.0);
-                    ui.end_row();
+                        ui.label("Saturation:");
+                        styled_slider(ui, saturation, 0.0..=2.0, 1.0);
+                        ui.end_row();
 
-                    ui.label("Hue Shift:");
-                    styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
-                    ui.end_row();
-                });
-        }) {
+                        ui.label("Hue Shift:");
+                        styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
+                        ui.end_row();
+                    });
+            },
+        ) {
             *brightness = 0.0;
             *contrast = 1.0;
             *saturation = 1.0;
@@ -7148,3 +7149,4 @@ impl ModuleCanvas {
         ));
     }
 }
+

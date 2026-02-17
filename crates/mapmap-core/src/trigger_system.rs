@@ -9,13 +9,13 @@ pub type ActiveTriggers = HashSet<(u64, usize)>;
 
 /// State for a trigger (timer, target interval, etc.)
 #[derive(Debug, Clone, Copy)]
-struct TriggerState {
+pub struct TriggerState {
     /// Accumulated time since last trigger
-    timer: f32,
+    pub timer: f32,
     /// Target interval for the next trigger (used for Random triggers)
     ///
     /// A value < 0.0 indicates that the target has not been initialized.
-    target: f32,
+    pub target: f32,
 }
 
 impl Default for TriggerState {
@@ -127,7 +127,6 @@ impl TriggerSystem {
                             // Unified state lookup (O(1))
                             let state = self.states.entry(part.id).or_default();
                             state.timer += dt;
-
                             if state.timer >= interval {
                                 state.timer -= interval;
                                 self.active_triggers.insert((part.id, 0));
@@ -140,7 +139,6 @@ impl TriggerSystem {
                         } => {
                             // Unified state lookup (O(1)) - Handles both timer and target
                             let state = self.states.entry(part.id).or_default();
-                            state.timer += dt;
 
                             // Initialize target if needed (first run or after type switch)
                             if state.target < 0.0 {
@@ -150,6 +148,8 @@ impl TriggerSystem {
                                     as f32
                                     / 1000.0;
                             }
+
+                            state.timer += dt;
 
                             if state.timer >= state.target {
                                 state.timer = 0.0;

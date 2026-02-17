@@ -111,7 +111,12 @@ impl AudioPanel {
 
         // Background
         painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
-        painter.rect_stroke(rect, 2.0, Stroke::new(1.0, colors::STROKE_GREY));
+        painter.rect_stroke(
+            rect,
+            2.0,
+            Stroke::new(1.0, colors::STROKE_GREY),
+            egui::StrokeKind::Middle,
+        );
 
         // Draw Bands
         let num_bands = analysis.band_energies.len();
