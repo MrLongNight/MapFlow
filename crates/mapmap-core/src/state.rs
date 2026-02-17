@@ -18,34 +18,52 @@ pub struct AppState {
     pub version: String,
 
     /// Paint manager (media sources)
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     pub paint_manager: Arc<PaintManager>,
 
     /// Mapping manager (geometry mapping)
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     pub mapping_manager: Arc<MappingManager>,
 
     /// Layer manager (compositing)
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     pub layer_manager: Arc<LayerManager>,
 
     /// Output manager (display configuration)
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     pub output_manager: Arc<OutputManager>,
 
     /// Module manager (show control)
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     #[serde(default)]
     pub module_manager: Arc<ModuleManager>,
 
     /// Effect automation
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     #[serde(default)]
     pub effect_animator: Arc<crate::EffectParameterAnimator>,
 
     /// Custom shader graphs
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     #[serde(default)]
     pub shader_graphs: Arc<std::collections::HashMap<crate::GraphId, crate::ShaderGraph>>,
 
     /// Effect chain
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     #[serde(default)]
     pub effect_chain: Arc<crate::effects::EffectChain>,
 
     /// Assignment manager (MIDI, OSC, etc.)
+    ///
+    /// Stored in an `Arc` for thread-safe shared access and cheap cloning (CoW) for undo/redo snapshots.
     #[serde(default)]
     pub assignment_manager: Arc<AssignmentManager>,
 

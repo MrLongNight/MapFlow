@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-02-12: docs: Enhance core data structure documentation (Scribe)
 - 2026-02-10: feat(bevy): Re-activate BevyParticles node with lightweight mesh-based implementation (#650)
 - 2026-02-09: perf(render): Optimize MeshRenderer uniform buffer writes to avoid redundancy
 - 2026-02-09: ci: Validierung der GitHub Actions PR-Checks (Automatische Ausführung bestätigt)

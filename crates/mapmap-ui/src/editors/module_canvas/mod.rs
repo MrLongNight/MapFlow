@@ -4859,6 +4859,751 @@ impl ModuleCanvas {
             egui::StrokeKind::Middle,
         );
 
+=======
+        // Title bar
+        let title_height = 28.0 * self.zoom;
+        let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), title_height));
+
+        // Title bar background (Dark)
+        painter.rect_filled(
+            title_rect,
+            0.0, // Sharp corners
+            colors::LIGHTER_GREY,
+        );
+
+        // Title bar Top Accent Stripe (Type Identifier)
+        let stripe_height = 3.0 * self.zoom;
+        let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), stripe_height));
+        painter.rect_filled(stripe_rect, 0.0, title_color);
+
+        // Title separator line - make it sharper
+        painter.line_segment(
+            [
+                Pos2::new(rect.min.x, rect.min.y + title_height),
+                Pos2::new(rect.max.x, rect.min.y + title_height),
+            ],
+            Stroke::new(1.0, colors::STROKE_GREY),
+        );
+
+        // Enhanced Title Rendering (Icon | Category | Name)
+        let mut cursor_x = rect.min.x + 8.0 * self.zoom;
+        let center_y = title_rect.center().y;
+
+        // 1. Icon
+        let icon_galley = ui.painter().layout_no_wrap(
+            icon.to_string(),
+            egui::FontId::proportional(16.0 * self.zoom),
+            Color32::WHITE,
+        );
+        painter.galley(
+            Pos2::new(cursor_x, center_y - icon_galley.size().y / 2.0),
+            icon_galley.clone(),
+            Color32::WHITE,
+        );
+        cursor_x += icon_galley.size().x + 6.0 * self.zoom;
+
+        // 2. Category (Small Caps style, Dimmed)
+        let category_text = category.to_uppercase();
+        let category_color = Color32::from_white_alpha(160);
+        let category_galley = ui.painter().layout_no_wrap(
+            category_text,
+            egui::FontId::proportional(10.0 * self.zoom),
+            category_color,
+        );
+        painter.galley(
+            Pos2::new(cursor_x, center_y - category_galley.size().y / 2.0),
+            category_galley.clone(),
+            category_color,
+        );
+        cursor_x += category_galley.size().x + 6.0 * self.zoom;
+
+        // 3. Name (Bold/Bright)
+        let name_galley = ui.painter().layout_no_wrap(
+            name.to_string(),
+            egui::FontId::proportional(14.0 * self.zoom),
+            Color32::WHITE,
+        );
+        painter.galley(
+            Pos2::new(cursor_x, center_y - name_galley.size().y / 2.0),
+            name_galley,
+            Color32::WHITE,
+        );
+
+        // Delete button (x in top-right corner)
+        let delete_button_rect = self.get_delete_button_rect(rect);
+
+        // Retrieve hold progress for visualization (Mary StyleUX)
+        let delete_id = egui::Id::new((part.id, "delete"));
+        let progress = ui
+            .ctx()
+            .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
+            .unwrap_or(0.0);
+
+        /*
+        crate::widgets::custom::draw_safety_radial_fill(ui.painter(),
+            delete_button_rect.center(),
+            10.0 * self.zoom,
+            progress,
+            Color32::from_rgb(255, 50, 50),
+        );
+        */
+
+        painter.text(
+            delete_button_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            "x",
+            egui::FontId::proportional(16.0 * self.zoom),
+            Color32::from_rgba_unmultiplied(255, 100, 100, 200),
+        );
+
+        // Draw property display based on part type
+        let property_text = Self::get_part_property_text(&part.part_type);
+        let has_property_text = !property_text.is_empty();
+
+        if has_property_text {
+            // Position at the bottom of the node to avoid overlapping sockets
+            let property_y = rect.max.y - 10.0 * self.zoom;
+            painter.text(
+                Pos2::new(rect.center().x, property_y),
+                egui::Align2::CENTER_CENTER,
+                property_text,
+                egui::FontId::proportional(10.0 * self.zoom),
+                Color32::from_gray(180), // Slightly brighter for readability
+            );
+        }
+
+        // Draw Media Playback Progress Bar
+        if let mapmap_core::module::ModulePartType::Source(
+            mapmap_core::module::SourceType::MediaFile { .. },
+        ) = &part.part_type
+        {
+            if let Some(info) = self.player_info.get(&part.id) {
+                let duration = info.duration.max(0.001);
+                let progress = (info.current_time / duration).clamp(0.0, 1.0) as f32;
+                let is_playing = info.is_playing;
+
+                let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
+                let bar_height = 4.0 * self.zoom;
+                let bar_y = rect.max.y - (offset_from_bottom * self.zoom) - bar_height;
+                let bar_width = rect.width() - 20.0 * self.zoom;
+                let bar_x = rect.min.x + 10.0 * self.zoom;
+
+                // Background
+                let bar_bg =
+                    Rect::from_min_size(Pos2::new(bar_x, bar_y), Vec2::new(bar_width, bar_height));
+                painter.rect_filled(bar_bg, 2.0 * self.zoom, Color32::from_gray(30));
+
+                // Progress
+                let progress_width = (progress * bar_width).max(2.0 * self.zoom);
+                let progress_rect = Rect::from_min_size(
+                    Pos2::new(bar_x, bar_y),
+                    Vec2::new(progress_width, bar_height),
+                );
+
+                let color = if is_playing {
+                    Color32::from_rgb(100, 255, 100) // Green
+                } else {
+                    Color32::from_rgb(255, 200, 50) // Yellow/Orange
+                };
+
+                painter.rect_filled(progress_rect, 2.0 * self.zoom, color);
+
+                // Interaction (Seek)
+                let interact_rect = bar_bg.expand(6.0 * self.zoom);
+                let bar_response = ui.interact(
+                    interact_rect,
+                    ui.id().with(("seek", part.id)),
+                    Sense::click_and_drag(),
+                );
+
+                if bar_response.hovered() {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                }
+
+                if bar_response.clicked() || bar_response.dragged() {
+                    if let Some(pos) = bar_response.interact_pointer_pos() {
+                        let seek_norm = ((pos.x - bar_x) / bar_width).clamp(0.0, 1.0);
+                        let seek_s = seek_norm as f64 * duration;
+                        actions.push(UIAction::MediaCommand(
+                            part.id,
+                            MediaPlaybackCommand::Seek(seek_s),
+                        ));
+                    }
+                }
+            }
+        }
+
+        // Draw audio trigger VU meter and live value display
+        if is_audio_trigger {
+            let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
+            let meter_height = 4.0 * self.zoom; // Thinner meter
+            let meter_y = rect.max.y - (offset_from_bottom * self.zoom) - meter_height;
+            let meter_width = rect.width() - 20.0 * self.zoom;
+            let meter_x = rect.min.x + 10.0 * self.zoom;
+
+            // Background bar
+            let meter_bg = Rect::from_min_size(
+                Pos2::new(meter_x, meter_y),
+                Vec2::new(meter_width, meter_height),
+            );
+            painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
+
+            // Value bar with Hardware-Segments
+            let num_segments = 20;
+            let segment_spacing = 1.0 * self.zoom;
+            let segment_width =
+                (meter_width - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
+
+            for i in 0..num_segments {
+                let t = i as f32 / num_segments as f32;
+                if t > trigger_value {
+                    break;
+                }
+
+                let seg_x = meter_x + i as f32 * (segment_width + segment_spacing);
+                let seg_rect = Rect::from_min_size(
+                    Pos2::new(seg_x, meter_y),
+                    Vec2::new(segment_width, meter_height),
+                );
+
+                let seg_color = if t < 0.6 {
+                    Color32::from_rgb(0, 255, 100) // Green
+                } else if t < 0.85 {
+                    Color32::from_rgb(255, 180, 0) // Orange
+                } else {
+                    Color32::from_rgb(255, 50, 50) // Red
+                };
+
+                painter.rect_filled(seg_rect, 1.0, seg_color);
+            }
+
+            // Threshold line
+            let threshold_x = meter_x + threshold * meter_width;
+            painter.line_segment(
+                [
+                    Pos2::new(threshold_x, meter_y - 2.0),
+                    Pos2::new(threshold_x, meter_y + meter_height + 2.0),
+                ],
+                Stroke::new(1.5, Color32::from_rgba_unmultiplied(255, 50, 50, 200)),
+            );
+        }
+
+        // Draw input sockets (left side)
+        let socket_start_y = rect.min.y + title_height + 10.0 * self.zoom;
+        for (i, socket) in part.inputs.iter().enumerate() {
+            let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
+            let socket_pos = Pos2::new(rect.min.x, socket_y);
+            let socket_radius = 7.0 * self.zoom;
+
+            // Socket "Port" style (dark hole with colored ring)
+            let socket_color = Self::get_socket_color(&socket.socket_type);
+
+            // Check hover
+            let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                socket_pos.distance(pointer_pos) < socket_radius * 1.5
+            } else {
+                false
+            };
+
+            // Outer ring (Socket Color)
+            let ring_stroke = if is_hovered {
+                let pulse = (ui.input(|i| i.time) * 10.0).sin() as f32 * 0.2 + 0.8;
+                Stroke::new(3.0 * self.zoom, Color32::WHITE.linear_multiply(pulse))
+            } else {
+                Stroke::new(2.0 * self.zoom, socket_color)
+            };
+            painter.circle_stroke(socket_pos, socket_radius, ring_stroke);
+            // Inner hole (Dark)
+            painter.circle_filled(
+                socket_pos,
+                socket_radius - 2.0 * self.zoom,
+                Color32::from_gray(20),
+            );
+            // Inner dot (Connector contact)
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                if is_hovered {
+                    socket_color
+                } else {
+                    Color32::from_gray(100)
+                },
+            );
+
+            // Socket label
+            painter.text(
+                Pos2::new(rect.min.x + 14.0 * self.zoom, socket_y),
+                egui::Align2::LEFT_CENTER,
+                &socket.name,
+                egui::FontId::proportional(11.0 * self.zoom),
+                Color32::from_gray(230), // Brighter text
+            );
+        }
+
+        // Draw output sockets (right side)
+        for (i, socket) in part.outputs.iter().enumerate() {
+            let socket_y = socket_start_y + i as f32 * 22.0 * self.zoom;
+            let socket_pos = Pos2::new(rect.max.x, socket_y);
+            let socket_radius = 7.0 * self.zoom;
+
+            // Socket "Port" style
+            let socket_color = Self::get_socket_color(&socket.socket_type);
+
+            // Check hover
+            let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                socket_pos.distance(pointer_pos) < socket_radius * 1.5
+            } else {
+                false
+            };
+
+            // Outer ring (Socket Color)
+            let ring_stroke = if is_hovered {
+                let pulse = (ui.input(|i| i.time) * 10.0).sin() as f32 * 0.2 + 0.8;
+                Stroke::new(3.0 * self.zoom, Color32::WHITE.linear_multiply(pulse))
+            } else {
+                Stroke::new(2.0 * self.zoom, socket_color)
+            };
+            painter.circle_stroke(socket_pos, socket_radius, ring_stroke);
+            // Inner hole (Dark)
+            painter.circle_filled(
+                socket_pos,
+                socket_radius - 2.0 * self.zoom,
+                Color32::from_gray(20),
+            );
+            // Inner dot (Connector contact)
+            painter.circle_filled(
+                socket_pos,
+                2.0 * self.zoom,
+                if is_hovered {
+                    socket_color
+                } else {
+                    Color32::from_gray(100)
+                },
+            );
+
+            // Socket label
+            painter.text(
+                Pos2::new(rect.max.x - 14.0 * self.zoom, socket_y),
+                egui::Align2::RIGHT_CENTER,
+                &socket.name,
+                egui::FontId::proportional(11.0 * self.zoom),
+                Color32::from_gray(230), // Brighter text
+            );
+
+            // Draw live value meter for output sockets
+            if let Some(value) = self.get_socket_live_value(part, i) {
+                let meter_width = 30.0 * self.zoom;
+                let meter_height = 8.0 * self.zoom;
+                let meter_x = rect.max.x - 12.0 * self.zoom - meter_width;
+
+                let meter_bg = Rect::from_min_size(
+                    Pos2::new(meter_x, socket_y - meter_height / 2.0),
+                    Vec2::new(meter_width, meter_height),
+                );
+                painter.rect_filled(meter_bg, 2.0, Color32::from_gray(40));
+
+                let value_width = (value.clamp(0.0, 1.0) * meter_width).max(1.0);
+                let value_bar = Rect::from_min_size(
+                    Pos2::new(meter_x, socket_y - meter_height / 2.0),
+                    Vec2::new(value_width, meter_height),
+                );
+                painter.rect_filled(value_bar, 2.0, Color32::from_rgb(100, 180, 220));
+            }
+        }
+    }
+
+    fn get_part_style(
+        part_type: &mapmap_core::module::ModulePartType,
+    ) -> (Color32, Color32, &'static str, &'static str) {
+        use mapmap_core::module::{
+            BlendModeType, EffectType, MaskShape, MaskType, ModulePartType, ModulizerType,
+            OutputType, SourceType, TriggerType,
+        };
+        match part_type {
+            ModulePartType::Trigger(trigger) => {
+                let name = match trigger {
+                    TriggerType::AudioFFT { .. } => "Audio FFT",
+                    TriggerType::Beat => "Beat",
+                    TriggerType::Midi { .. } => "MIDI",
+                    TriggerType::Osc { .. } => "OSC",
+                    TriggerType::Shortcut { .. } => "Shortcut",
+                    TriggerType::Random { .. } => "Random",
+                    TriggerType::Fixed { .. } => "Fixed Timer",
+                };
+                (
+                    Color32::from_rgb(60, 50, 70),
+                    Color32::from_rgb(130, 80, 180),
+                    "âš¡",
+                    name,
+                )
+            }
+            ModulePartType::Source(SourceType::BevyAtmosphere { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "â˜ï¸",
+                "Atmosphere",
+            ),
+            ModulePartType::Source(SourceType::BevyHexGrid { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "ðŸ›‘",
+                "Hex Grid",
+            ),
+            ModulePartType::Source(SourceType::BevyParticles { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "âœ¨",
+                "Particles",
+            ),
+            ModulePartType::Source(SourceType::Bevy3DText { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 220, 180),
+                "T",
+                "3D Text",
+            ),
+            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(180, 100, 220),
+                "ðŸŽ¥",
+                "Camera",
+            ),
+            ModulePartType::Source(SourceType::Bevy3DShape { .. }) => (
+                Color32::from_rgb(40, 60, 80),
+                Color32::from_rgb(100, 180, 220),
+                "ðŸ§Š",
+                "3D Shape",
+            ),
+            ModulePartType::Source(source) => {
+                let name = match source {
+                    SourceType::MediaFile { .. } => "Media File",
+                    SourceType::Shader { .. } => "Shader",
+                    SourceType::LiveInput { .. } => "Live Input",
+                    SourceType::NdiInput { .. } => "NDI Input",
+                    #[cfg(target_os = "windows")]
+                    SourceType::SpoutInput { .. } => "Spout Input",
+                    SourceType::VideoUni { .. } => "Video (Uni)",
+                    SourceType::ImageUni { .. } => "Image (Uni)",
+                    SourceType::VideoMulti { .. } => "Video (Multi)",
+                    SourceType::ImageMulti { .. } => "Image (Multi)",
+                    SourceType::Bevy => "Bevy Scene",
+                    SourceType::BevyAtmosphere { .. } => "Atmosphere",
+                    SourceType::BevyHexGrid { .. } => "Hex Grid",
+                    SourceType::BevyParticles { .. } => "Particles",
+                    SourceType::Bevy3DText { .. } => "3D Text",
+                    SourceType::BevyCamera { .. } => "Camera",
+                    SourceType::Bevy3DShape { .. } => "3D Shape",
+                };
+                (
+                    Color32::from_rgb(50, 60, 70),
+                    Color32::from_rgb(80, 140, 180),
+                    "ðŸŽ¬",
+                    name,
+                )
+            }
+
+            ModulePartType::Mask(mask) => {
+                let name = match mask {
+                    MaskType::File { .. } => "File Mask",
+                    MaskType::Shape(shape) => match shape {
+                        MaskShape::Circle => "Circle",
+                        MaskShape::Rectangle => "Rectangle",
+                        MaskShape::Triangle => "Triangle",
+                        MaskShape::Star => "Star",
+                        MaskShape::Ellipse => "Ellipse",
+                    },
+                    MaskType::Gradient { .. } => "Gradient",
+                };
+                (
+                    Color32::from_rgb(60, 55, 70),
+                    Color32::from_rgb(160, 100, 180),
+                    "ðŸŽ­",
+                    name,
+                )
+            }
+            ModulePartType::Modulizer(mod_type) => {
+                let name = match mod_type {
+                    ModulizerType::Effect {
+                        effect_type: effect,
+                        ..
+                    } => match effect {
+                        EffectType::Blur => "Blur",
+                        EffectType::Sharpen => "Sharpen",
+                        EffectType::Invert => "Invert",
+                        EffectType::Threshold => "Threshold",
+                        EffectType::Brightness => "Brightness",
+                        EffectType::Contrast => "Contrast",
+                        EffectType::Saturation => "Saturation",
+                        EffectType::HueShift => "Hue Shift",
+                        EffectType::Colorize => "Colorize",
+                        EffectType::Wave => "Wave",
+                        EffectType::Spiral => "Spiral",
+                        EffectType::Pinch => "Pinch",
+                        EffectType::Mirror => "Mirror",
+                        EffectType::Kaleidoscope => "Kaleidoscope",
+                        EffectType::Pixelate => "Pixelate",
+                        EffectType::Halftone => "Halftone",
+                        EffectType::EdgeDetect => "Edge Detect",
+                        EffectType::Posterize => "Posterize",
+                        EffectType::Glitch => "Glitch",
+                        EffectType::RgbSplit => "RGB Split",
+                        EffectType::ChromaticAberration => "Chromatic",
+                        EffectType::VHS => "VHS",
+                        EffectType::FilmGrain => "Film Grain",
+                        EffectType::Vignette => "Vignette",
+                        EffectType::ShaderGraph(_) => "Custom Graph",
+                    },
+                    ModulizerType::BlendMode(blend) => match blend {
+                        BlendModeType::Normal => "Normal",
+                        BlendModeType::Add => "Add",
+                        BlendModeType::Multiply => "Multiply",
+                        BlendModeType::Screen => "Screen",
+                        BlendModeType::Overlay => "Overlay",
+                        BlendModeType::Difference => "Difference",
+                        BlendModeType::Exclusion => "Exclusion",
+                    },
+                    ModulizerType::AudioReactive { .. } => "Audio Reactive",
+                };
+                (
+                    egui::Color32::from_rgb(60, 60, 50),
+                    egui::Color32::from_rgb(180, 140, 60),
+                    "ã€°ï¸",
+                    name,
+                )
+            }
+            ModulePartType::Mesh(_) => (
+                egui::Color32::from_rgb(60, 60, 80),
+                egui::Color32::from_rgb(100, 100, 200),
+                "ðŸ•¸ï¸",
+                "Mesh",
+            ),
+            ModulePartType::Layer(layer) => {
+                let name = match layer {
+                    LayerType::Single { .. } => "Single Layer",
+                    LayerType::Group { .. } => "Layer Group",
+                    LayerType::All { .. } => "All Layers",
+                };
+                (
+                    Color32::from_rgb(50, 70, 60),
+                    Color32::from_rgb(80, 180, 120),
+                    "ðŸ“‘",
+                    name,
+                )
+            }
+            ModulePartType::Output(output) => {
+                let name = match output {
+                    OutputType::Projector { .. } => "Projector",
+                    OutputType::NdiOutput { .. } => "NDI Output",
+                    #[cfg(target_os = "windows")]
+                    OutputType::Spout { .. } => "Spout Output",
+                    OutputType::Hue { .. } => "Philips Hue",
+                };
+                (
+                    Color32::from_rgb(70, 50, 50),
+                    Color32::from_rgb(180, 80, 80),
+                    "ðŸ“º",
+                    name,
+                )
+            }
+            ModulePartType::Hue(hue) => {
+                let name = match hue {
+                    mapmap_core::module::HueNodeType::SingleLamp { .. } => "Single Lamp",
+                    mapmap_core::module::HueNodeType::MultiLamp { .. } => "Multi Lamp",
+                    mapmap_core::module::HueNodeType::EntertainmentGroup { .. } => {
+                        "Entertainment Group"
+                    }
+                };
+                (
+                    Color32::from_rgb(60, 60, 40),
+                    Color32::from_rgb(200, 200, 100),
+                    "ðŸ’¡",
+                    name,
+                )
+            }
+        }
+    }
+
+    /// Returns the category name for a module part type
+    fn get_part_category(part_type: &mapmap_core::module::ModulePartType) -> &'static str {
+        use mapmap_core::module::ModulePartType;
+        match part_type {
+            ModulePartType::Trigger(_) => "Trigger",
+            ModulePartType::Source(_) => "Source",
+            ModulePartType::Mask(_) => "Mask",
+            ModulePartType::Modulizer(_) => "Modulator",
+            ModulePartType::Mesh(_) => "Mesh",
+            ModulePartType::Layer(_) => "Layer",
+            ModulePartType::Output(_) => "Output",
+            ModulePartType::Hue(_) => "Hue",
+        }
+    }
+
+    fn get_socket_color(socket_type: &mapmap_core::module::ModuleSocketType) -> Color32 {
+        use mapmap_core::module::ModuleSocketType;
+        match socket_type {
+            ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220),
+            ModuleSocketType::Media => Color32::from_rgb(100, 180, 220),
+            ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
+            ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
+            ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
+            ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
+        }
+    }
+
+    fn get_part_property_text(part_type: &mapmap_core::module::ModulePartType) -> String {
+        use mapmap_core::module::{
+            MaskType, ModulePartType, ModulizerType, OutputType, SourceType, TriggerType,
+        };
+        match part_type {
+            ModulePartType::Trigger(trigger_type) => match trigger_type {
+                TriggerType::AudioFFT { band, .. } => format!("ðŸ”Š Audio: {:?}", band),
+                TriggerType::Random { .. } => "ðŸŽ² Random".to_string(),
+                TriggerType::Fixed { interval_ms, .. } => format!("â±ï¸ {}ms", interval_ms),
+                TriggerType::Midi { channel, note, .. } => format!("ðŸŽ¹ Ch{} N{}", channel, note),
+                TriggerType::Osc { address } => format!("ðŸ“¡ {}", address),
+                TriggerType::Shortcut { key_code, .. } => format!("âŒ¨ï¸ {}", key_code),
+                TriggerType::Beat => "ðŸ¥ Beat".to_string(),
+            },
+            ModulePartType::Source(source_type) => match source_type {
+                SourceType::MediaFile { path, .. } => {
+                    if path.is_empty() {
+                        "ðŸ“ Select file...".to_string()
+                    } else {
+                        format!(
+                            "ðŸ“ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
+                    }
+                }
+                SourceType::Shader { name, .. } => format!("ðŸŽ¨ {}", name),
+                SourceType::LiveInput { device_id } => format!("ðŸ“¹ Device {}", device_id),
+                SourceType::NdiInput { source_name } => {
+                    format!("ðŸ“¡ {}", source_name.as_deref().unwrap_or("None"))
+                }
+                SourceType::Bevy => "ðŸŽ® Bevy Scene".to_string(),
+                #[cfg(target_os = "windows")]
+                SourceType::SpoutInput { sender_name } => format!("ðŸš° {}", sender_name),
+                SourceType::VideoUni { path, .. } => {
+                    if path.is_empty() {
+                        "ðŸ“ Select video...".to_string()
+                    } else {
+                        format!(
+                            "ðŸ“¹ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
+                    }
+                }
+                SourceType::ImageUni { path, .. } => {
+                    if path.is_empty() {
+                        "ðŸ–¼ Select image...".to_string()
+                    } else {
+                        format!(
+                            "ðŸ–¼ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
+                    }
+                }
+                SourceType::VideoMulti { shared_id, .. } => format!("ðŸ“¹ Shared: {}", shared_id),
+                SourceType::ImageMulti { shared_id, .. } => format!("ðŸ–¼ Shared: {}", shared_id),
+                SourceType::BevyAtmosphere { .. } => "â˜ï¸ Atmosphere".to_string(),
+                SourceType::BevyHexGrid { .. } => "ðŸ›‘ Hex Grid".to_string(),
+                SourceType::BevyParticles { .. } => "âœ¨ Particles".to_string(),
+                SourceType::Bevy3DText { text, .. } => {
+                    format!("T: {}", text.chars().take(10).collect::<String>())
+                }
+                SourceType::BevyCamera { mode, .. } => match mode {
+                    BevyCameraMode::Orbit { .. } => "ðŸŽ¥ Orbit".to_string(),
+                    BevyCameraMode::Fly { .. } => "ðŸŽ¥ Fly".to_string(),
+                    BevyCameraMode::Static { .. } => "ðŸŽ¥ Static".to_string(),
+                },
+                SourceType::Bevy3DShape { shape_type, .. } => format!("ðŸ§Š {:?}", shape_type),
+            },
+            ModulePartType::Mask(mask_type) => match mask_type {
+                MaskType::File { path } => {
+                    if path.is_empty() {
+                        "ðŸ“ Select mask...".to_string()
+                    } else {
+                        format!(
+                            "ðŸ“ {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
+                    }
+                }
+                MaskType::Shape(shape) => format!("ðŸ”· {:?}", shape),
+                MaskType::Gradient { angle, .. } => format!("ðŸŒˆ Gradient {}Â°", *angle as i32),
+            },
+            ModulePartType::Modulizer(modulizer_type) => match modulizer_type {
+                ModulizerType::Effect {
+                    effect_type: effect,
+                    ..
+                } => format!("âœ¨ {}", effect.name()),
+                ModulizerType::BlendMode(blend) => format!("ðŸ”€ {}", blend.name()),
+                ModulizerType::AudioReactive { source } => format!("ðŸ”Š {}", source),
+            },
+            ModulePartType::Mesh(_) => "ðŸ•¸ï¸ Mesh".to_string(),
+            ModulePartType::Layer(layer_type) => {
+                use mapmap_core::module::LayerType;
+                match layer_type {
+                    LayerType::Single { name, .. } => format!("ðŸ“‘ {}", name),
+                    LayerType::Group { name, .. } => format!("ðŸ“ {}", name),
+                    LayerType::All { .. } => "ðŸ“‘ All Layers".to_string(),
+                }
+            }
+            ModulePartType::Output(output_type) => match output_type {
+                OutputType::Projector { name, .. } => format!("ðŸ“º {}", name),
+                OutputType::NdiOutput { name } => format!("ðŸ“¡ {}", name),
+                #[cfg(target_os = "windows")]
+                OutputType::Spout { name } => format!("ðŸš° {}", name),
+                OutputType::Hue { bridge_ip, .. } => {
+                    if bridge_ip.is_empty() {
+                        "ðŸ’¡ Not Connected".to_string()
+                    } else {
+                        format!("ðŸ’¡ {}", bridge_ip)
+                    }
+                }
+            },
+            ModulePartType::Hue(hue) => match hue {
+                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => {
+                    format!("ðŸ’¡ {}", name)
+                }
+                mapmap_core::module::HueNodeType::MultiLamp { name, .. } => {
+                    format!("ðŸ’¡ðŸ’¡ {}", name)
+                }
+                mapmap_core::module::HueNodeType::EntertainmentGroup { name, .. } => {
+                    format!("ðŸŽ­ {}", name)
+                }
+            },
+        }
+    }
+
+    /// Render the diagnostics popup window
+    fn render_diagnostics_popup(&mut self, ui: &mut Ui) {
+        if !self.show_diagnostics {
+            return;
+        }
+
+        let popup_size = Vec2::new(350.0, 250.0);
+        let available = ui.available_rect_before_wrap();
+        let popup_pos = Pos2::new(
+            (available.min.x + available.max.x - popup_size.x) / 2.0,
+            (available.min.y + available.max.y - popup_size.y) / 2.0,
+        );
+        let popup_rect = egui::Rect::from_min_size(popup_pos, popup_size);
+
+        // Background
+        let painter = ui.painter();
+        painter.rect_filled(
+            popup_rect,
+            0.0,
+            Color32::from_rgba_unmultiplied(30, 35, 45, 245),
+        );
+        painter.rect_stroke(
+            popup_rect,
+            0.0,
+            Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
+            egui::StrokeKind::Middle,
+        );
+
+>>>>>>> origin/scribe-core-docs-v1-12524433962227166378
         let inner_rect = popup_rect.shrink(12.0);
         ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
@@ -5649,6 +6394,7 @@ impl ModuleCanvas {
         });
 
         // === COLOR CORRECTION ===
+<<<<<<< HEAD
         if crate::widgets::collapsing_header_with_reset(ui, "🌈 Color Correction", false, |ui| {
             egui::Grid::new("color_correction_grid")
                 .num_columns(2)
@@ -5939,6 +6685,7 @@ impl ModuleCanvas {
     }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 
 
@@ -5946,4 +6693,7 @@ impl ModuleCanvas {
 
 
 
+
+=======
+>>>>>>> origin/scribe-core-docs-v1-12524433962227166378
 

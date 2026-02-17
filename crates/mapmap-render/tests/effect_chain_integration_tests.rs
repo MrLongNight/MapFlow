@@ -120,7 +120,12 @@ where
     // Map the buffer and get the data
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None }).unwrap();
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .unwrap();
     let data = {
         let view = slice.get_mapped_range();
         view.chunks_exact(bytes_per_row as usize)

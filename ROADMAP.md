@@ -963,7 +963,7 @@ graph TD
     * Integration-Tests für `OSC` -> `Parameter` Mapping.
 
 3. **Documentation (Priorität: Niedrig)**
-    * Rustdoc für alle `pub` Structs in `mapmap-core`.
+    * ✅ Rustdoc für alle `pub` Structs in `mapmap-core` (COMPLETED 2026-02-12).
     * Tutorial "Wie erstelle ich einen neuen Node-Typ?".
 
 ## Task-Gruppen (Adaptiert für Rust)

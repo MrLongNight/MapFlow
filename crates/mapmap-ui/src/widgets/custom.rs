@@ -440,6 +440,19 @@ pub fn draw_safety_radial_fill(
     _progress: f32,
     _color: Color32,
 ) {
+<<<<<<< HEAD
+=======
+}
+
+pub fn collapsing_header_with_reset<R>(
+    ui: &mut Ui,
+    title: &str,
+    _default_open: bool,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> bool {
+    ui.collapsing(title, add_contents);
+    false
+>>>>>>> origin/scribe-core-docs-v1-12524433962227166378
 }
 
 pub fn collapsing_header_with_reset(
@@ -464,6 +477,7 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
+
 
 
 
