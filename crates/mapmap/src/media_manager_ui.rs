@@ -236,6 +236,7 @@ impl MediaManagerUI {
                             rect,
                             2.0,
                             egui::Stroke::new(2.0, Color32::LIGHT_BLUE),
+
                         );
                     }
                 }

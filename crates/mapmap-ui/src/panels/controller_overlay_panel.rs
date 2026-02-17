@@ -230,7 +230,10 @@ impl ControllerOverlayPanel {
                             .map(|p| egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
                             .collect();
 
-                        let color_image = egui::ColorImage { size, pixels };
+                        let color_image = egui::ColorImage {
+                            size,
+                            pixels,
+                        };
 
                         return Some(ctx.load_texture(
                             name,
@@ -743,7 +746,12 @@ impl ControllerOverlayPanel {
             // Fallback: dark background
             let bg_color = Color32::from_rgb(30, 30, 35);
             painter.rect_filled(rect, 4.0, bg_color);
-            painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
+            painter.rect_stroke(
+                rect,
+                4.0,
+                Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+
+            );
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,

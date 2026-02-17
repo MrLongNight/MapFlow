@@ -1,0 +1,900 @@
+{
+  "controller": "Ecler NUO 4",
+  "elements": [
+    {
+      "id": "ch2_gain",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Gain",
+      "position": {
+        "x": 0.277665,
+        "y": 0.10729928,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 16
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch2_treble",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Treble",
+      "position": {
+        "x": 0.24382406,
+        "y": 0.18832117,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 17
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-EQ_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch2_mid",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Mid",
+      "position": {
+        "x": 0.24382405,
+        "y": 0.27518243,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 18
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-EQ_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch2_bass",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 Bass",
+      "position": {
+        "x": 0.24382405,
+        "y": 0.36204386,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 19
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-EQ_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch2_fx_send",
+      "element_type": "knob",
+      "section": "channel_2",
+      "label": "Ch2 FX Send",
+      "position": {
+        "x": 0.24213196,
+        "y": 0.5175182,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 12
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-FX-Send_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch2_fader",
+      "element_type": "fader",
+      "section": "channel_2",
+      "label": "Ch2 Fader",
+      "position": {
+        "x": 0.2522843,
+        "y": 0.6525549,
+        "width": 0.031692047,
+        "height": 0.19379556
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 7
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4-Fader_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch2_bass_off",
+      "element_type": "button",
+      "section": "channel_2",
+      "label": "Ch2 Bass Kill",
+      "position": {
+        "x": 0.3250423,
+        "y": 0.020438002,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 0,
+        "note": 50
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "ch2_pfl",
+      "element_type": "button",
+      "section": "channel_2",
+      "label": "Ch2 PFL",
+      "position": {
+        "x": 0.26412854,
+        "y": 0.013503647,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 0,
+        "note": 51
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "ch3_gain",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Gain",
+      "position": {
+        "x": 0.59179354,
+        "y": 0.107299276,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 16
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch3_treble",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Treble",
+      "position": {
+        "x": 0.5562606,
+        "y": 0.18832119,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 17
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-EQ_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch3_mid",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Mid",
+      "position": {
+        "x": 0.55626065,
+        "y": 0.2751825,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 18
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-EQ_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch3_bass",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 Bass",
+      "position": {
+        "x": 0.5562606,
+        "y": 0.3620438,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 19
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-EQ_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch3_fx_send",
+      "element_type": "knob",
+      "section": "channel_3",
+      "label": "Ch3 FX Send",
+      "position": {
+        "x": 0.5562605,
+        "y": 0.51751834,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 12
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-FX-Send_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch3_fader",
+      "element_type": "fader",
+      "section": "channel_3",
+      "label": "Ch3 Fader",
+      "position": {
+        "x": 0.56472075,
+        "y": 0.65401465,
+        "width": 0.033384092,
+        "height": 0.19087587
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 1,
+        "controller": 7
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4-Fader_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "ch3_bass_off",
+      "element_type": "button",
+      "section": "channel_3",
+      "label": "Ch3 Bass Kill",
+      "position": {
+        "x": 0.41751269,
+        "y": 0.01167897,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 1,
+        "note": 50
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "ch3_pfl",
+      "element_type": "button",
+      "section": "channel_3",
+      "label": "Ch3 PFL",
+      "position": {
+        "x": 0.49196276,
+        "y": 0.012043815,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": {
+        "type": "note",
+        "channel": 1,
+        "note": 51
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "xfader",
+      "element_type": "crossfader",
+      "section": "crossfader",
+      "label": "Crossfader",
+      "position": {
+        "x": 0.33231816,
+        "y": 0.88394165,
+        "width": 0.1830795,
+        "height": 0.0650365
+      },
+      "midi": {
+        "type": "cc",
+        "channel": 0,
+        "controller": 3
+      },
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4-Fader_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (A/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.11,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 20
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_b1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (B/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.11,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 24
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (A/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.11,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 28
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (B/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.11,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 102
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (A/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.11,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 106
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_1_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 1 (B/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.11,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 110
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (A/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.24,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 21
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_b1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (B/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.24,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 25
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (A/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.24,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 29
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (B/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.24,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 103
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (A/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.24,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 107
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_2_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 2 (B/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.24,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 111
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (A/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.37,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 22
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_b1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (B/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.37,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 26
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (A/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.37,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 30
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (B/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.37,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 104
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (A/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.37,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 108
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_3_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 3 (B/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.37,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 112
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_a1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (A/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 23
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_b1",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (B/L1)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 27
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_a2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (A/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 31
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_b2",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (B/L2)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 105
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_a3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (A/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 109
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "encoder_4_b3",
+      "element_type": "encoder",
+      "section": "midi_section",
+      "label": "MIDI Encoder 4 (B/L3)",
+      "position": {
+        "x": 0.39299999999999996,
+        "y": 0.5,
+        "width": 0.05,
+        "height": 0.05
+      },
+      "midi": {
+        "type": "cc_relative",
+        "channel": 15,
+        "controller": 113
+      },
+      "layout_aware": true,
+      "ab_aware": false,
+      "asset": "nuo4_Poti-Gain_Cap.png",
+      "animation_range": null
+    },
+    {
+      "id": "layout_toggle",
+      "element_type": "button",
+      "section": "midi_section",
+      "label": "Layout Selector",
+      "position": {
+        "x": 0.415,
+        "y": 0.76,
+        "width": 0.04,
+        "height": 0.04
+      },
+      "midi": null,
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": null,
+      "animation_range": null
+    },
+    {
+      "id": "layout_led",
+      "element_type": "led",
+      "section": "midi_section",
+      "label": "Layout LED",
+      "position": {
+        "x": 0.46,
+        "y": 0.77,
+        "width": 0.02,
+        "height": 0.02
+      },
+      "midi": null,
+      "layout_aware": false,
+      "ab_aware": false,
+      "asset": "nuo4_Midi-Layout_AB-LED-On.png",
+      "animation_range": null
+    }
+  ]
+}
