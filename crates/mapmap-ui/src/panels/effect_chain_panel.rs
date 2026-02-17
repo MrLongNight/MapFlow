@@ -1393,7 +1393,3 @@ mod tests {
         assert!(panel.actions.is_empty());
     }
 }
-
-
-
-
