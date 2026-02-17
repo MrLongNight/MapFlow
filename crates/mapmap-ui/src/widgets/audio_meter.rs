@@ -187,7 +187,10 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
         glass_rect,
         4.0,
         Stroke::new(1.0, Color32::from_white_alpha(30)),
+<<<<<<< HEAD
         egui::StrokeKind::Middle,
+=======
+>>>>>>> origin/tracker-roadmap-sync-12753300942955728712
     );
 }
 
@@ -415,6 +418,7 @@ fn draw_horizontal_scale(painter: &egui::Painter, rect: Rect) {
         }
     }
 }
+
 
 
 

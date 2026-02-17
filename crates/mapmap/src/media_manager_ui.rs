@@ -236,7 +236,10 @@ impl MediaManagerUI {
                             rect,
                             2.0,
                             egui::Stroke::new(2.0, Color32::LIGHT_BLUE),
+<<<<<<< HEAD
                             egui::StrokeKind::Middle,
+=======
+>>>>>>> origin/tracker-roadmap-sync-12753300942955728712
                         );
                     }
                 }
@@ -286,6 +289,7 @@ fn format_size(bytes: u64) -> String {
     }
     format!("{:.2} {}", size, UNITS[unit_idx])
 }
+
 
 
 

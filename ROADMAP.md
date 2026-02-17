@@ -1,9 +1,9 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 2.0
-> **Stand:** 2026-02-08 07:00
+> **Version:** 2.1
+> **Stand:** 2026-02-17 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
-> **Projekt-Version:** 0.2.0
+> **Projekt-Version:** 0.2.1
 
 ---
 
@@ -47,6 +47,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * **Priorität:** 🛡️ **HIGH**
 * **Ziel:** Fixen von Fehlern und Problemen, Verbesserung der Performance.
 * **Cleanup:** Entfernen von UI-Elementen, die keine Funktion haben.
+* **Refactoring:** Aufteilung übergroßer Dateien (insb. `module_canvas/mod.rs`).
 
 ### D) Release-Artefakte
 

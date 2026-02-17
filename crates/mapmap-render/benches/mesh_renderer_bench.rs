@@ -19,6 +19,10 @@ fn mesh_renderer_benchmark(c: &mut Criterion) {
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
             ..Default::default()
         },
+<<<<<<< HEAD
+=======
+        None,
+>>>>>>> origin/tracker-roadmap-sync-12753300942955728712
     ))
     .expect("Failed to create device");
 
@@ -44,6 +48,7 @@ fn mesh_renderer_benchmark(c: &mut Criterion) {
 
 criterion_group!(benches, mesh_renderer_benchmark);
 criterion_main!(benches);
+
 
 
 
