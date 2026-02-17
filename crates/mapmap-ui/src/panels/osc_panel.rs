@@ -1,4 +1,3 @@
-use crate::widgets::icons::AppIcon;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::AppUI;
 use egui;

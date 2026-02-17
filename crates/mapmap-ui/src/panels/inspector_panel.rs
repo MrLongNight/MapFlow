@@ -8,7 +8,7 @@
 use egui::Ui;
 
 use crate::i18n::LocaleManager;
-use crate::icons::{AppIcon, IconManager};
+use crate::icons::IconManager;
 use crate::transform_panel::TransformPanel;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use mapmap_core::{Layer, OutputConfig, Transform};

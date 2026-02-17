@@ -39,7 +39,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             };
 
             // --- Main Menu Bar ---
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
 
                 // --- File Menu ---

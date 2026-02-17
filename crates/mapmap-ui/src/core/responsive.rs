@@ -19,7 +19,7 @@ pub struct ResponsiveLayout {
 impl ResponsiveLayout {
     /// Erstellt neue ResponsiveLayout-Instanz basierend auf aktuellem Context
     pub fn new(ctx: &Context) -> Self {
-        let size = ctx.input(|i| i.screen_rect().size());
+        let size = ctx.input(|i| i.content_rect().size());
         Self {
             viewport_size: size,
         }

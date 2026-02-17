@@ -2,9 +2,7 @@
 //!
 //! Provides a consistent frame and background for UI panels.
 
-use crate::theme::colors;
-use crate::widgets::icons::{AppIcon, IconManager};
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Style, Ui, Vec2};
+use egui::{Color32, Stroke, Style, Ui};
 
 pub struct StyledPanel {
     title: String,

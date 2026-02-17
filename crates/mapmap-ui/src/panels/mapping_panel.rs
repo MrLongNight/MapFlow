@@ -19,7 +19,7 @@ impl MappingPanel {
         mapping_manager: &mut MappingManager,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
-        icon_manager: Option<&IconManager>,
+        _icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;

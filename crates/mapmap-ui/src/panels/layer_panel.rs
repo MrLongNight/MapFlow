@@ -1,7 +1,7 @@
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets;
-use crate::widgets::icons::{AppIcon, IconManager};
+use crate::widgets::icons::IconManager;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::UIAction;
 use egui::*;
@@ -37,7 +37,7 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
-        icon_manager: Option<&IconManager>,
+        _icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;

@@ -1,7 +1,7 @@
 use crate::{
     core::responsive::ResponsiveLayout,
     i18n::LocaleManager,
-    widgets::icons::{AppIcon, IconManager},
+    widgets::icons::IconManager,
     widgets::panel::{cyber_panel_frame, render_panel_header},
     UIAction,
 };
@@ -39,7 +39,7 @@ impl OutputPanel {
         i18n: &LocaleManager,
         output_manager: &mut mapmap_core::OutputManager,
         _monitors: &[mapmap_core::monitor::MonitorInfo],
-        icon_manager: Option<&IconManager>,
+        _icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;

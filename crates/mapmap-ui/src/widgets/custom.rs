@@ -1,8 +1,8 @@
 use crate::theme::colors;
 use crate::widgets::icons::{AppIcon, IconManager};
 use egui::{
-    lerp, Color32, CornerRadius, Key, Pos2, Rect, Response, Rounding, Sense, Stroke, Ui, Vec2,
-    WidgetInfo, WidgetType,
+    lerp, Color32, CornerRadius, Key, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, WidgetInfo,
+    WidgetType,
 };
 
 pub fn render_header(ui: &mut Ui, title: &str) {

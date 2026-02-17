@@ -3,7 +3,7 @@
 use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
 use crate::widgets::custom;
-use crate::widgets::icons::{AppIcon, IconManager};
+use crate::widgets::icons::IconManager;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::{ComboBox, Ui};
 use mapmap_core::oscillator::{ColorMode, OscillatorConfig};
@@ -29,7 +29,7 @@ impl OscillatorPanel {
         ctx: &egui::Context,
         locale: &LocaleManager,
         config: &mut OscillatorConfig,
-        icon_manager: Option<&IconManager>,
+        _icon_manager: Option<&IconManager>,
     ) -> bool {
         let mut changed = false;
         let mut is_open = self.visible;
