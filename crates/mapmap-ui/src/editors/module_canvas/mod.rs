@@ -8,9 +8,9 @@ use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
     module::{
-        BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType, MapFlowModule,
-        MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
-        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType, BevyCameraMode,
+        BevyCameraMode, BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType,
+        MapFlowModule, MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
+        ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType,
     },
 };
 
@@ -3963,7 +3963,6 @@ impl ModuleCanvas {
                     select_rect,
                     0.0,
                     Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-
                 );
                 painter.rect_filled(
                     select_rect,
@@ -4201,7 +4200,6 @@ impl ModuleCanvas {
                     highlight_rect,
                     0.0, // Sharp corners
                     Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
-
                 );
 
                 // Draw resize handle at bottom-right corner
@@ -4342,7 +4340,6 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-
             );
 
             // Menu items
@@ -4394,7 +4391,6 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-
             );
 
             // Menu items
@@ -4438,7 +4434,6 @@ impl ModuleCanvas {
                     menu_rect,
                     4.0,
                     Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-
                 );
 
                 // Menu items
@@ -4489,7 +4484,6 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
-
         );
 
         // Popup content
@@ -4570,7 +4564,6 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
-
         );
 
         // Popup content
@@ -4658,12 +4651,7 @@ impl ModuleCanvas {
 
         // Draw background (Room representation)
         painter.rect_filled(rect, 4.0, Color32::from_gray(30));
-        painter.rect_stroke(
-            rect,
-            4.0,
-            Stroke::new(1.0, Color32::GRAY),
-
-        );
+        painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::GRAY));
 
         // Draw grid
         let grid_steps = 5;
@@ -4892,12 +4880,7 @@ impl ModuleCanvas {
             0.0,
             Color32::from_rgba_unmultiplied(30, 30, 40, 200),
         );
-        painter.rect_stroke(
-            map_rect,
-            0.0,
-            Stroke::new(1.0, Color32::from_gray(80)),
-
-        );
+        painter.rect_stroke(map_rect, 0.0, Stroke::new(1.0, Color32::from_gray(80)));
 
         // Calculate bounds of all parts
         let mut min_x = f32::MAX;
@@ -4956,12 +4939,7 @@ impl ModuleCanvas {
             (-self.pan_offset.y + canvas_rect.height()) / self.zoom,
         ));
         let viewport_rect = Rect::from_min_max(viewport_min, viewport_max).intersect(map_rect);
-        painter.rect_stroke(
-            viewport_rect,
-            0.0,
-            Stroke::new(1.5, Color32::WHITE),
-
-        );
+        painter.rect_stroke(viewport_rect, 0.0, Stroke::new(1.5, Color32::WHITE));
     }
 
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
@@ -5265,7 +5243,6 @@ impl ModuleCanvas {
                     rect.expand(expansion),
                     0.0,
                     Stroke::new(1.0 * self.zoom, color),
-
                 );
             }
 
@@ -5277,7 +5254,6 @@ impl ModuleCanvas {
                     2.0 * self.zoom,
                     Color32::WHITE.gamma_multiply(180.0 * glow_intensity / 255.0),
                 ),
-
             );
         }
 
@@ -5292,7 +5268,6 @@ impl ModuleCanvas {
                 rect.expand(4.0 * self.zoom),
                 0.0,
                 Stroke::new(2.0 * self.zoom, learn_color),
-
             );
 
             painter.text(
@@ -5320,12 +5295,7 @@ impl ModuleCanvas {
                     .ctx()
                     .data(|d| d.get_temp::<std::path::PathBuf>(egui::Id::new("media_path")))
                 {
-                    painter.rect_stroke(
-                        rect,
-                        0.0,
-                        egui::Stroke::new(2.0, egui::Color32::YELLOW),
-
-                    );
+                    painter.rect_stroke(rect, 0.0, egui::Stroke::new(2.0, egui::Color32::YELLOW));
 
                     if ui.input(|i| i.pointer.any_released()) {
                         actions.push(UIAction::SetMediaFile(
@@ -5344,7 +5314,6 @@ impl ModuleCanvas {
             rect,
             0.0, // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
-
         );
 
         // Title bar
@@ -6077,7 +6046,6 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
-
         );
 
         let inner_rect = popup_rect.shrink(12.0);
@@ -7055,7 +7023,6 @@ impl ModuleCanvas {
             rect,
             0.0,
             Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
-
         );
 
         // Data normalization
@@ -7079,7 +7046,6 @@ impl ModuleCanvas {
             region_rect,
             0.0,
             Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
-
         );
 
         // INTERACTION LOGIC

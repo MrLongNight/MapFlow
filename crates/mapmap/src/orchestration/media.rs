@@ -17,7 +17,11 @@ pub fn sync_media_players(app: &mut App) {
                     SourceType::VideoUni { path, .. } => Some(path.clone()),
                     SourceType::VideoMulti { shared_id, .. } => {
                         // Look up path in shared media
-                        app.state.module_manager.shared_media.get(shared_id).map(|item| item.path.clone())
+                        app.state
+                            .module_manager
+                            .shared_media
+                            .get(shared_id)
+                            .map(|item| item.path.clone())
                     }
                     _ => None,
                 };
@@ -88,6 +92,7 @@ pub fn sync_media_players(app: &mut App) {
 }
 
 /// Update all media players and upload frames to texture pool
+#[allow(clippy::manual_is_multiple_of)]
 pub fn update_media_players(app: &mut App, dt: f32) {
     static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
     let num_frames = FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

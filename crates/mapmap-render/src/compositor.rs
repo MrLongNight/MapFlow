@@ -37,6 +37,7 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
+    #[allow(clippy::type_complexity)]
     bind_group_cache: HashMap<
         (usize, usize),
         (
@@ -134,7 +135,7 @@ impl Compositor {
             label: Some("Compositor Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout, &uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
