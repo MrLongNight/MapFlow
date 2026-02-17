@@ -1,4 +1,4 @@
-use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, Rounding, Stroke, lerp};
+use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, Rounding, Stroke, lerp, Key, WidgetInfo, WidgetType};
 use crate::theme::colors;
 use crate::widgets::icons::{AppIcon, IconManager};
 
@@ -49,6 +49,36 @@ pub fn styled_slider(
             let new_value = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), min..=max);
             *value = new_value;
         }
+    } else if response.has_focus() {
+        // Keyboard support
+        let step = (*range.end() - *range.start()) / 100.0;
+        let small_step = step * 0.1;
+        let large_step = step * 10.0;
+
+        let mut new_value = *value;
+
+        if ui.input(|i| i.key_pressed(Key::ArrowLeft)) {
+            let s = if ui.input(|i| i.modifiers.shift) {
+                 large_step
+            } else if ui.input(|i| i.modifiers.ctrl) {
+                 small_step
+            } else {
+                 step
+            };
+            new_value -= s;
+        }
+        if ui.input(|i| i.key_pressed(Key::ArrowRight)) {
+            let s = if ui.input(|i| i.modifiers.shift) {
+                 large_step
+            } else if ui.input(|i| i.modifiers.ctrl) {
+                 small_step
+            } else {
+                 step
+            };
+            new_value += s;
+        }
+
+        *value = new_value.clamp(*range.start(), *range.end());
     }
 
     ui.painter().rect(
@@ -58,6 +88,15 @@ pub fn styled_slider(
         visuals.bg_stroke,
 
     );
+
+    // Draw focus ring if focused
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            Rounding::ZERO,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+        );
+    }
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
     let fill_rect = Rect::from_min_max(
@@ -102,7 +141,14 @@ pub fn styled_slider(
         text_color,
     );
 
-    response.on_hover_text("Double-click to reset")
+    // Accessibility
+    response.widget_info(|| {
+        let mut info = WidgetInfo::labeled(WidgetType::Slider, ui.is_enabled(), "Slider");
+        info.value = Some(*value as f64);
+        info
+    });
+
+    response.on_hover_text("Double-click to reset, Drag to adjust, Arrows to fine tune")
 }
 
 pub fn styled_slider_log(
