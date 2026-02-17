@@ -18,27 +18,17 @@ full = ["midi", "osc", "http-api", "link"]
 [dependencies]
 ableton-link-rs = { workspace = true, optional = true }
 anyhow = "1.0"
-
-# HTTP API (optional)
 axum = { workspace = true, optional = true, features = ["ws"] }
 futures = { version = "0.3", optional = true }
 hex = { workspace = true }
 http = { version = "1.1", optional = true }
-
-# MIDI (optional)
 midir = { workspace = true, optional = true }
 openssl = { version = "0.10", features = ["vendored"] }
 palette = "0.7"
-
-# Hue dependencies
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-
-# OSC (optional)
 rosc = { workspace = true, optional = true }
-# Core dependencies
 serde = { workspace = true }
 serde_json = { workspace = true }
-# Security
 sha2 = { workspace = true }
 subtle = "2.6.1"
 thiserror = { workspace = true }
@@ -46,6 +36,4 @@ tokio = { workspace = true, features = ["full"] }
 tower = { version = "0.5", optional = true }
 tower-http = { version = "0.5", features = ["cors"], optional = true }
 tracing = { workspace = true }
-
-# DMX dependencies
 uuid = { version = "1.10", features = ["v4"] }
