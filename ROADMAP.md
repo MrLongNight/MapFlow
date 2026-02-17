@@ -410,10 +410,10 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Undo/Redo, Node Inspector Dropdowns
   * ✅ "Add Node" Menu: Unified dropdown with search/filter (COMPLETED 2025-12-29)
   * 🟡 Neue Trigger-Nodes: MIDI Clock & Ableton Link (Tempo/Phase Sync)
-  * ⬜ Resize Drag Interaction (Handle vorhanden, Drag-Logik fehlt)
-  * ⬜ Multi-band Audio Outputs (9 Frequenzbänder)
-  * ⬜ MIDI/OSC Device Selectors
-  * ⬜ Mesh Editor für Layer
+  * ✅ Resize Drag Interaction (Handle vorhanden, Drag-Logik implementiert)
+  * ✅ Multi-band Audio Outputs (9 Frequenzbänder)
+  * ✅ MIDI/OSC Device Selectors
+  * ✅ Mesh Editor für Layer
   * ✅ File Picker für Source/Mask (COMPLETED 2025-12-27)
   * ✅ MeshRenderer in Layer-Compose-Loop integriert (COMPLETED 2025-12-26)
   * ✅ Node Graph Visual Refinements (COMPLETED 2026-01-15)
@@ -688,7 +688,7 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
 
 MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optionen sind geplant:
 
-> **Detaillierte Dokumentation:** [`docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md`](docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md)
+> **Detaillierte Dokumentation:** [`docs/dev/architecture/MULTI-PC-FEASIBILITY.md`](docs/dev/architecture/MULTI-PC-FEASIBILITY.md)
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 

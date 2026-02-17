@@ -41,21 +41,21 @@ projection mapping.
 
 ## 📚 Documentation
 
-Detailed documentation is available in the [`docs/`](docs/INDEX.md) directory:
+Detailed documentation is available in the [`docs/`](docs/README.md) directory:
 
-* [**User Guide**](docs/02-USER-GUIDE/): Features and controls.
-* [**Developer Guide**](docs/05-DEVELOPMENT/): Setup and guidelines.
-* [**Architecture**](docs/03-ARCHITECTURE/): System design.
+* [**User Guide**](docs/user/manual/): Features and controls.
+* [**Developer Guide**](docs/dev/): Setup and guidelines.
+* [**Architecture**](docs/dev/architecture/): System design.
 * [**Roadmap**](ROADMAP.md): Project status and plans.
 
 ## ⚙️ CI/CD
 
 MapFlow uses a comprehensive GitHub Actions workflow for validation and release management.
-See [CI/CD Workflow](docs/10-CICD_PROZESS/README_CICD.md) for details.
+See [CI/CD Workflow](docs/project/cicd/README_CICD.md) for details.
 
 ## 📦 Installation
 
-See [INSTALLATION.md](docs/01-GETTING-STARTED/INSTALLATION.md).
+See [INSTALLATION.md](docs/user/getting-started/INSTALLATION.md).
 
 ## 📄 License
 
