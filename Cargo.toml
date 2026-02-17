@@ -45,12 +45,12 @@ criterion = "0.8"
 # Concurrency
 crossbeam-channel = "0.5"
 # Phase 6: egui migration
+ecolor = "=0.30.0"
 egui = { version = "=0.30.0", features = ["serde"] }
 egui-wgpu = "=0.30.0"
 egui-winit = "=0.30.0"
 egui_extras = { version = "=0.30.0", features = ["image", "file", "svg"] }
 egui_node_editor = "0.6.0"
-ecolor = "=0.30.0"
 emath = "=0.30.0"
 epaint = "=0.30.0"
 

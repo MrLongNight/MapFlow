@@ -35,7 +35,9 @@ fn test_add_part_defaults() {
     // 3. BevyParticles -> Specific defaults
     let id = module.add_part(PartType::BevyParticles, (0.0, 0.0));
     let part = module.parts.iter().find(|p| p.id == id).unwrap();
-    if let ModulePartType::Source(SourceType::BevyParticles { rate, lifetime, .. }) = &part.part_type {
+    if let ModulePartType::Source(SourceType::BevyParticles { rate, lifetime, .. }) =
+        &part.part_type
+    {
         assert_eq!(*rate, 100.0);
         assert_eq!(*lifetime, 2.0);
     } else {
@@ -103,7 +105,12 @@ fn test_add_part_defaults() {
     // Currently no outputs exist, so it should start at 1.
     let id = module.add_part(PartType::Output, (0.0, 0.0));
     let part = module.parts.iter().find(|p| p.id == id).unwrap();
-    if let ModulePartType::Output(OutputType::Projector { id: output_id, name, .. }) = &part.part_type {
+    if let ModulePartType::Output(OutputType::Projector {
+        id: output_id,
+        name,
+        ..
+    }) = &part.part_type
+    {
         assert_eq!(*output_id, 1);
         assert_eq!(name, "Output 1");
     } else {
@@ -113,7 +120,12 @@ fn test_add_part_defaults() {
     // Add another output to test increment
     let id2 = module.add_part(PartType::Output, (0.0, 0.0));
     let part2 = module.parts.iter().find(|p| p.id == id2).unwrap();
-    if let ModulePartType::Output(OutputType::Projector { id: output_id, name, .. }) = &part2.part_type {
+    if let ModulePartType::Output(OutputType::Projector {
+        id: output_id,
+        name,
+        ..
+    }) = &part2.part_type
+    {
         assert_eq!(*output_id, 2);
         assert_eq!(name, "Output 2");
     } else {
