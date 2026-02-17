@@ -264,9 +264,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 
     // Render Oscillator Panel
     app.ui_state.oscillator_panel.render(
-        ctx, 
-        &app.ui_state.i18n, 
-        &mut app.state.oscillator_config, 
+        ctx,
+        &app.ui_state.i18n,
+        &mut app.state.oscillator_config,
         app.ui_state.icon_manager.as_ref()
     );
 
@@ -431,7 +431,7 @@ fn render_compact_sidebar(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
 /// Renders full sidebar (for large screens)
 fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
     let layout = ResponsiveLayout::new(ui.ctx());
-    
+
     // Header with collapse button
     ui.horizontal(|ui| {
         ui.heading("Sidebar");
@@ -462,7 +462,7 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
                 egui::vec2(ui.available_width(), splitter_height),
                 egui::Sense::drag(),
             );
-            
+
             let is_hovered = splitter_response.hovered();
             let is_dragged = splitter_response.dragged();
             let color = if is_dragged {
@@ -478,13 +478,13 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
                 splitter_response.rect.center().y,
                 (2.0, color),
             );
-            
+
             if splitter_response.dragged() {
                 app.ui_state.control_panel_height += splitter_response.drag_delta().y;
                 let total_available = ui.available_height();
                 app.ui_state.control_panel_height = app.ui_state.control_panel_height.clamp(100.0, total_available - 50.0);
             }
-            
+
             if is_hovered || is_dragged {
                 ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
             }
@@ -503,7 +503,7 @@ fn render_full_sidebar(ui: &mut egui::Ui, app: &mut App) {
             }
             ui.heading("👁 Preview");
         });
-        
+
         render_preview_section(ui, app, &layout);
     }
 }
@@ -528,7 +528,7 @@ fn render_controls_section(ui: &mut egui::Ui, app: &mut App, layout: &Responsive
                     ) {
                         use mapmap_ui::media_browser::MediaBrowserAction;
                         match action {
-                            MediaBrowserAction::FileSelected(path) 
+                            MediaBrowserAction::FileSelected(path)
                             | MediaBrowserAction::FileDoubleClicked(path) => {
                                 if let (Some(module_id), Some(part_id)) = (
                                     app.ui_state.module_canvas.active_module_id,
@@ -545,7 +545,7 @@ fn render_controls_section(ui: &mut egui::Ui, app: &mut App, layout: &Responsive
                         }
                     }
                 });
-                
+
             // Audio Section
             egui::CollapsingHeader::new("🔊 Audio")
                 .default_open(true)
@@ -636,11 +636,11 @@ fn render_preview_section(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
                     module.parts.iter().filter_map(|part| {
                         if let mapmap_core::module::ModulePartType::Output(output_type) = &part.part_type {
                             match output_type {
-                                mapmap_core::module::OutputType::Projector { 
-                                    ref id, 
-                                    ref name, 
-                                    ref show_in_preview_panel, 
-                                    .. 
+                                mapmap_core::module::OutputType::Projector {
+                                    ref id,
+                                    ref name,
+                                    ref show_in_preview_panel,
+                                    ..
                                 } => {
                                     Some(mapmap_ui::OutputPreviewInfo {
                                         id: *id,

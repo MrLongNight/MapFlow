@@ -56,7 +56,7 @@ pub fn styled_slider(
         Rounding::ZERO,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
-        
+
     );
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
@@ -81,7 +81,7 @@ pub fn styled_slider(
         Rounding::ZERO,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
-        
+
     );
 
     // Value Text
@@ -144,7 +144,7 @@ pub fn styled_drag_value(
             response.rect.expand(1.0),
             Rounding::ZERO,
             Stroke::new(1.0, colors::CYAN_ACCENT),
-            
+
         );
     }
 
@@ -321,7 +321,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         Rounding::same(4.0),
         visuals.bg_fill,
         visuals.bg_stroke,
-        
+
     );
 
     // Draw focus ring if focused
@@ -330,7 +330,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
             rect.expand(2.0),
             Rounding::same(6.0),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            
+
         );
     }
 
