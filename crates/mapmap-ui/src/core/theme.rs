@@ -82,7 +82,7 @@ impl ThemeConfig {
         };
 
         style.visuals = visuals;
-        
+
         // Base Spacing (will be overridden by responsive logic if necessary)
         style.spacing.item_spacing = egui::vec2(8.0, 6.0);
         style.spacing.button_padding = egui::vec2(8.0, 4.0);

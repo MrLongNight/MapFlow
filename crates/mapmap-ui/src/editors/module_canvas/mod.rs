@@ -3963,7 +3963,7 @@ impl ModuleCanvas {
                     select_rect,
                     0.0,
                     Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-                    
+
                 );
                 painter.rect_filled(
                     select_rect,
@@ -4201,7 +4201,7 @@ impl ModuleCanvas {
                     highlight_rect,
                     0.0, // Sharp corners
                     Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
-                    
+
                 );
 
                 // Draw resize handle at bottom-right corner
@@ -4342,7 +4342,7 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                
+
             );
 
             // Menu items
@@ -4394,7 +4394,7 @@ impl ModuleCanvas {
                 menu_rect,
                 0.0,
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
-                
+
             );
 
             // Menu items
@@ -4438,7 +4438,7 @@ impl ModuleCanvas {
                     menu_rect,
                     4.0,
                     Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-                    
+
                 );
 
                 // Menu items
@@ -4489,7 +4489,7 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
-            
+
         );
 
         // Popup content
@@ -4570,7 +4570,7 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
-            
+
         );
 
         // Popup content
@@ -4662,7 +4662,7 @@ impl ModuleCanvas {
             rect,
             4.0,
             Stroke::new(1.0, Color32::GRAY),
-            
+
         );
 
         // Draw grid
@@ -4896,7 +4896,7 @@ impl ModuleCanvas {
             map_rect,
             0.0,
             Stroke::new(1.0, Color32::from_gray(80)),
-            
+
         );
 
         // Calculate bounds of all parts
@@ -4960,7 +4960,7 @@ impl ModuleCanvas {
             viewport_rect,
             0.0,
             Stroke::new(1.5, Color32::WHITE),
-            
+
         );
     }
 
@@ -5265,7 +5265,7 @@ impl ModuleCanvas {
                     rect.expand(expansion),
                     0.0,
                     Stroke::new(1.0 * self.zoom, color),
-                    
+
                 );
             }
 
@@ -5277,7 +5277,7 @@ impl ModuleCanvas {
                     2.0 * self.zoom,
                     Color32::WHITE.gamma_multiply(180.0 * glow_intensity / 255.0),
                 ),
-                
+
             );
         }
 
@@ -5292,7 +5292,7 @@ impl ModuleCanvas {
                 rect.expand(4.0 * self.zoom),
                 0.0,
                 Stroke::new(2.0 * self.zoom, learn_color),
-                
+
             );
 
             painter.text(
@@ -5324,7 +5324,7 @@ impl ModuleCanvas {
                         rect,
                         0.0,
                         egui::Stroke::new(2.0, egui::Color32::YELLOW),
-                        
+
                     );
 
                     if ui.input(|i| i.pointer.any_released()) {
@@ -5344,7 +5344,7 @@ impl ModuleCanvas {
             rect,
             0.0, // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
-            
+
         );
 
         // Title bar
@@ -6077,7 +6077,7 @@ impl ModuleCanvas {
             popup_rect,
             0.0,
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
-            
+
         );
 
         let inner_rect = popup_rect.shrink(12.0);
@@ -7055,7 +7055,7 @@ impl ModuleCanvas {
             rect,
             0.0,
             Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
-            
+
         );
 
         // Data normalization
@@ -7079,7 +7079,7 @@ impl ModuleCanvas {
             region_rect,
             0.0,
             Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
-            
+
         );
 
         // INTERACTION LOGIC
@@ -7182,12 +7182,3 @@ impl ModuleCanvas {
         ));
     }
 }
-
-
-
-
-
-
-
-
-

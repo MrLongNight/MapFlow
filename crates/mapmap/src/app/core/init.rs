@@ -244,7 +244,7 @@ impl App {
             for (id, name) in missing_outputs {
                 info!("Self-Heal: Creating missing Output Window '{}' (ID {})", name, id);
                 state.output_manager_mut().add_output(
-                    name, 
+                    name,
                     mapmap_core::output::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
                     (1920, 1080)
                 );
@@ -255,7 +255,7 @@ impl App {
             for module in state.module_manager_mut().modules_mut() {
                 let part_ids: std::collections::HashSet<u64> = module.parts.iter().map(|p| p.id).collect();
                 info!("Self-Heal: Module '{}' has nodes: {:?}", module.name, part_ids);
-                
+
                 let initial_count = module.connections.len();
                 module.connections.retain(|c| {
                     let from_exists = part_ids.contains(&c.from_part);
@@ -594,10 +594,10 @@ impl App {
         info!("- Edge Blend:     {}", if app.edge_blend_renderer.is_some() { "ENABLED" } else { "DISABLED" });
         info!("- Color Calib:    {}", if app.color_calibration_renderer.is_some() { "ENABLED" } else { "DISABLED" });
         info!("- Bevy Engine:    INITIALIZED");
-        
+
         #[cfg(feature = "midi")]
         info!("- MIDI System:    {}", if app.midi_handler.is_some() { "CONNECTED" } else { "DISCONNECTED" });
-        
+
         info!("- Hue System:     {}", if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() { "CONFIGURED" } else { "UNCONFIGURED" });
         info!("- Media Library:  {} items", app.media_library.items.len());
         info!("==========================================");
@@ -631,5 +631,3 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
-
-
