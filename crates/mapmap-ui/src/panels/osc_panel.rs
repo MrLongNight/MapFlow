@@ -5,7 +5,11 @@ use egui;
 use mapmap_control::ControlManager;
 
 /// Renders the OSC server status panel.
-pub fn show_osc_panel(ctx: &egui::Context, app_ui: &mut AppUI, control_manager: &mut ControlManager) {
+pub fn show_osc_panel(
+    ctx: &egui::Context,
+    app_ui: &mut AppUI,
+    control_manager: &mut ControlManager,
+) {
     let mut open = app_ui.show_osc_panel;
     if !open {
         return;

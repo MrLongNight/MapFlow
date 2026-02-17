@@ -12,12 +12,15 @@ fn mesh_renderer_benchmark(c: &mut Criterion) {
     }))
     .expect("Failed to find an appropriate adapter");
 
-    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-        label: None,
-        required_features: wgpu::Features::empty(),
-        required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-        ..Default::default()
-    }, None))
+    let (device, queue) = pollster::block_on(adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            label: None,
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            ..Default::default()
+        },
+        None,
+    ))
     .expect("Failed to create device");
 
     let device = Arc::new(device);
