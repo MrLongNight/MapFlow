@@ -1506,7 +1506,12 @@ fn main() -> Result<()> {
                 None => "Box<Any>",
             },
         };
-        let error_msg = format!("Panic occurred in file '{}' at line {}: {}", location.file(), location.line(), msg);
+        let error_msg = format!(
+            "Panic occurred in file '{}' at line {}: {}",
+            location.file(),
+            location.line(),
+            msg
+        );
         tracing::error!("{}", error_msg);
         eprintln!("{}", error_msg); // Fallback to stderr
     }));
