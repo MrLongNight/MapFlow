@@ -180,6 +180,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // 600 frames @ 60fps = 10 seconds.
     static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
         std::sync::atomic::AtomicUsize::new(0);
+    #[allow(clippy::manual_is_multiple_of)]
     if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
         let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
             app.sys_info

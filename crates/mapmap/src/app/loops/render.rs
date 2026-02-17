@@ -153,6 +153,7 @@ struct RenderContext<'a> {
     color_calibration_renderer: &'a Option<mapmap_render::ColorCalibrationRenderer>,
     mesh_renderer: &'a mut mapmap_render::MeshRenderer,
     texture_pool: &'a mapmap_render::TexturePool,
+    #[allow(dead_code)]
     dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
     egui_renderer: &'a mut egui_wgpu::Renderer,
@@ -277,7 +278,7 @@ fn render_content(
             if !ctx.texture_pool.has_texture(fallback_name) {
                 let width = 64;
                 let height = 64;
-                let data = vec![255, 0, 255, 255].repeat((width * height) as usize);
+                let data = [255, 0, 255, 255].repeat((width * height) as usize);
                 ctx.texture_pool.ensure_texture(
                     fallback_name,
                     width,

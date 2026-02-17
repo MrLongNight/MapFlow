@@ -95,6 +95,7 @@ pub fn sync_media_players(app: &mut App) {
 pub fn update_media_players(app: &mut App, dt: f32) {
     static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
     let num_frames = FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    #[allow(clippy::manual_is_multiple_of)]
     let log_this_frame = num_frames % 60 == 0;
 
     let texture_pool = &mut app.texture_pool;
