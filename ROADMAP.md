@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.0
-> **Stand:** 2026-02-08 07:00
+> **Stand:** 2026-02-17 12:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.0
 
@@ -218,6 +218,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   * ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   * ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
+  * ✅ Safe Reset Clip Button (Mary StyleUX) (COMPLETED 2026-02-06)
   * ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
 
 * ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
@@ -317,10 +318,11 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ MIDI-Learn im Module Canvas verdrahtet - IMPLEMENTED 2025-12-27
   * ⬜ MIDI-zu-Parameter-Routing für Layer/Effects (low priority)
 
-* ✅ **WebSocket-System** (`mapmap-control/src/web/`) – NICHT NUTZEN
+* ✅ **WebSocket-System** (`mapmap-control/src/web/`) – (Sekundärer Pfad)
   * ✅ WebSocket-Server vorhanden (`web/websocket.rs`)
   * ✅ Web-API-Routes (`web/routes.rs`, `web/handlers.rs`)
-  * ✅ **Entscheidung: WebSocket NICHT als Control-Pfad nutzen, OSC priorisieren**
+  * ✅ WebSocket Authentication Protocol (mapmap.auth) (COMPLETED 2026-02-06)
+  * ✅ **Entscheidung: WebSocket als sicherer Control-Pfad verfügbar, OSC bleibt primär**
 
 * ⬜ **DMX-System** (`mapmap-control/src/dmx/`) – FUTURE
   * ⬜ Art-Net (`dmx/artnet.rs`)
@@ -359,6 +361,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Undo-Redo (`undo_redo.rs`) – Command-Pattern
   * ✅ Asset-Manager (`asset_manager.rs`)
   * ✅ Theme (`theme.rs`)
+  * ✅ Responsive Layout System (`core/responsive.rs`) (COMPLETED 2026-02-06)
   * ⬜ Es gibt diverse UI Elemente die keine Funktion haben und entfernt werden müssen
   * ⬜ Es gibt diverse UI Elemente die noch nicht wie gewünscht implementiert sind
 

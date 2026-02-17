@@ -61,3 +61,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-10 - Discrepancy in PR Reference for Bevy Particles
 **Erkenntnis:** CHANGELOG referenced PR #638 for "Bevy Particles", but git history shows merged commit 52bf7e7 is linked to PR #650.
 **Aktion:** Corrected CHANGELOG entry to point to #650 and updated ROADMAP to reflect the new feature implementation details.
+
+## 2026-02-17 - Roadmap Resync
+**Erkenntnis:** ROADMAP.md war veraltet (Stand 08.02.), während CHANGELOG.md Features bis 10.02. und Code-Stand bis 17.02. zeigte. Features wie WebSocket Auth, Reset Clip und Responsive Layout fehlten in der Roadmap.
+**Aktion:** ROADMAP.md aktualisiert und mit Code-Basis synchronisiert.
