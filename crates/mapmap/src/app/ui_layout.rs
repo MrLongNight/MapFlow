@@ -669,20 +669,18 @@ fn render_preview_section(ui: &mut egui::Ui, app: &mut App, layout: &ResponsiveL
             // Deduplicate output previews
             let mut seen_ids = std::collections::HashSet::new();
             for info in output_infos {
-                if seen_ids.insert(info.id) {
-                    if info.show_in_panel {
-                        ui.group(|ui| {
-                            ui.label(&info.name);
-                            if let Some(tex_id) = info.texture_id {
-                                ui.image((
-                                    tex_id,
-                                    egui::vec2(thumbnail_size, thumbnail_size * 9.0 / 16.0),
-                                ));
-                            } else {
-                                ui.label("No Preview");
-                            }
-                        });
-                    }
+                if seen_ids.insert(info.id) && info.show_in_panel {
+                    ui.group(|ui| {
+                        ui.label(&info.name);
+                        if let Some(tex_id) = info.texture_id {
+                            ui.image((
+                                tex_id,
+                                egui::vec2(thumbnail_size, thumbnail_size * 9.0 / 16.0),
+                            ));
+                        } else {
+                            ui.label("No Preview");
+                        }
+                    });
                 }
             }
         });
