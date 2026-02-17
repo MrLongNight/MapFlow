@@ -96,7 +96,7 @@ pub fn sync_media_players(app: &mut App) {
 pub fn update_media_players(app: &mut App, dt: f32) {
     static FRAME_LOG_COUNTER: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
     let num_frames = FRAME_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let log_this_frame = num_frames % 60 == 0;
+    let log_this_frame = num_frames.is_multiple_of(60);
 
     let texture_pool = &mut app.texture_pool;
     let queue = &app.backend.queue;

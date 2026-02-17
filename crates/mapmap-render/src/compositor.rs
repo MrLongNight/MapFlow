@@ -26,6 +26,13 @@ struct CachedUniform {
     last_params: Option<CompositeParams>,
 }
 
+type BindGroupCacheKey = (usize, usize);
+type BindGroupCacheValue = (
+    Weak<wgpu::TextureView>,
+    Weak<wgpu::TextureView>,
+    Arc<wgpu::BindGroup>,
+);
+
 /// Compositor for blending layers
 pub struct Compositor {
     pipeline: wgpu::RenderPipeline,
@@ -37,15 +44,7 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    #[allow(clippy::type_complexity)]
-    bind_group_cache: HashMap<
-        (usize, usize),
-        (
-            Weak<wgpu::TextureView>,
-            Weak<wgpu::TextureView>,
-            Arc<wgpu::BindGroup>,
-        ),
-    >,
+    bind_group_cache: HashMap<BindGroupCacheKey, BindGroupCacheValue>,
 }
 
 impl Compositor {
