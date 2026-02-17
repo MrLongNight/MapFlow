@@ -742,7 +742,7 @@ impl ModuleEvaluator {
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
-                                        mapping_mode: false, // FORCED FALSE
+                                        mapping_mode: *mapping_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props,
                                         effects: chain.effects,
@@ -766,7 +766,7 @@ impl ModuleEvaluator {
                                         mesh: final_mesh,
                                         opacity: *opacity * link_opacity,
                                         blend_mode: *blend_mode,
-                                        mapping_mode: false, // FORCED FALSE
+                                        mapping_mode: *mapping_mode,
                                         source_part_id: chain.source_id,
                                         source_props: chain.source_props.clone(),
                                         effects: chain.effects,
@@ -816,7 +816,13 @@ impl ModuleEvaluator {
         let mut source_props = SourceProperties::default_identity();
         let mut current_id = start_node_id;
 
-        tracing::debug!("trace_chain: Starting from node {}", start_node_id);
+        // CRITICAL: Ensure the part index cache is consistent with the current module state
+        let mut part_index = std::collections::HashMap::new();
+        for (i, part) in module.parts.iter().enumerate() {
+            part_index.insert(part.id, i);
+        }
+
+        tracing::debug!("trace_chain: Starting from node {} in module {}", start_node_id, module.name);
 
         let trigger_values = &self.cached_result.trigger_values;
 
@@ -824,7 +830,7 @@ impl ModuleEvaluator {
         for _iteration in 0..50 {
             // Apply Trigger Targets for the current node
             // We need to find if any input sockets have triggers active and targets mapped
-            if let Some(&part_idx) = self.part_index_cache.get(&current_id) {
+            if let Some(&part_idx) = part_index.get(&current_id) {
                 let part = &module.parts[part_idx];
 
                 // Check if any *incoming* connection determines the value?
@@ -906,7 +912,7 @@ impl ModuleEvaluator {
                 .copied()
             {
                 let conn = &module.connections[conn_idx];
-                if let Some(&part_idx) = self.part_index_cache.get(&conn.from_part) {
+                if let Some(&part_idx) = part_index.get(&conn.from_part) {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {

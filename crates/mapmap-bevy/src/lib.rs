@@ -22,32 +22,31 @@ impl Default for BevyRunner {
 
 impl BevyRunner {
     pub fn new() -> Self {
-        info!("Initializing Bevy integration (Headless DefaultPlugins)...");
+        info!("Initializing Bevy integration (Headless Logic Mode)...");
 
         let mut app = App::new();
 
-        // Use DefaultPlugins but disable the window
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: None,
-            exit_condition: bevy::window::ExitCondition::DontExit,
-            close_when_requested: false,
-        }).set(bevy::render::RenderPlugin {
-            render_creation: bevy::render::settings::RenderCreation::Automatic(
-                bevy::render::settings::WgpuSettings {
-                    backends: Some(bevy::render::settings::Backends::VULKAN | bevy::render::settings::Backends::DX12),
-                    ..default()
-                }
-            ),
-            ..default()
-        }));
+        // Use MinimalPlugins for core logic
+        app.add_plugins(MinimalPlugins);
+        
+        // Add infrastructure for scene and asset management (no rendering)
+        app.add_plugins((
+            bevy::hierarchy::HierarchyPlugin,
+            bevy::transform::TransformPlugin,
+            bevy::asset::AssetPlugin::default(),
+            bevy::scene::ScenePlugin,
+            bevy::gltf::GltfPlugin::default(),
+            // TextPlugin disabled to fix headless screenshot/image asset panics
+        ));
 
-        // Register Extensions
-        app.add_plugins(bevy_mod_outline::OutlinePlugin);
+        // NOTE: RenderPlugin is disabled for now to fix headless screenshot panics in Bevy 0.15.3.
+        // Offscreen rendering will be restored once a stable wgpu 23 bypass is implemented.
 
         // Register resources
         app.init_resource::<AudioInputResource>();
         app.init_resource::<BevyNodeMapping>();
         app.init_resource::<MapFlowTriggerResource>();
+        app.init_resource::<crate::resources::BevyRenderOutput>();
 
         // Register components
         app.register_type::<AudioReactive>();
@@ -60,25 +59,20 @@ impl BevyRunner {
         app.register_type::<BevyCamera>();
 
         // Register systems
-        app.add_systems(Startup, setup_3d_scene);
+        // NOTE: rendering-dependent systems are disabled because RenderPlugin is inactive.
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
             (
-                audio_reaction_system,
-                camera_control_system,
-                hex_grid_system,
-                model_system,
-                shape_system,
-                text_3d_system,
+                // audio_reaction_system, 
+                // camera_control_system,
+                // hex_grid_system,
+                // model_system,
+                // shape_system,
+                // text_3d_system,
                 node_reactivity_system,
             ),
         );
-
-        // Add readback system to the RENDER APP, not the main app
-        if let Some(render_app) = app.get_sub_app_mut(bevy::render::RenderApp) {
-            render_app.add_systems(bevy::render::Render, frame_readback_system);
-        }
 
         Self { app }
     }

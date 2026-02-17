@@ -39,7 +39,7 @@ impl App {
         let backend = WgpuBackend::new(saved_config.preferred_gpu.as_deref()).await?;
 
         // Version marker to confirm correct build is running
-        tracing::info!(">>> BUILD VERSION: 2026-02-06-BEVY-REMOVED-ULTIMATE <<<");
+        tracing::info!(">>> BUILD VERSION: 2026-02-16-FIX-BEVY-HEADLESS <<<");
 
         // Initialize renderers
         let texture_pool = TexturePool::new(backend.device.clone());
@@ -225,6 +225,56 @@ impl App {
             }
             if fixed_count > 0 {
                 info!("Self-Heal: Fixed {} output connections.", fixed_count);
+                state.dirty = true;
+            }
+
+            // --- SELF-HEAL: Ensure Output Windows exist for active Projector nodes ---
+            let existing_output_ids: std::collections::HashSet<u64> = state.output_manager.outputs().iter().map(|o| o.id).collect();
+            let mut missing_outputs = Vec::new();
+            for module in state.module_manager.modules() {
+                for part in &module.parts {
+                    if let mapmap_core::module::ModulePartType::Output(mapmap_core::module::OutputType::Projector { id, name, .. }) = &part.part_type {
+                        if !existing_output_ids.contains(id) {
+                            missing_outputs.push((*id, name.clone()));
+                        }
+                    }
+                }
+            }
+
+            for (id, name) in missing_outputs {
+                info!("Self-Heal: Creating missing Output Window '{}' (ID {})", name, id);
+                state.output_manager_mut().add_output(
+                    name, 
+                    mapmap_core::output::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
+                    (1920, 1080)
+                );
+            }
+
+            // --- SELF-HEAL: Remove dangling connections ---
+            let mut graph_fixed = false;
+            for module in state.module_manager_mut().modules_mut() {
+                let part_ids: std::collections::HashSet<u64> = module.parts.iter().map(|p| p.id).collect();
+                info!("Self-Heal: Module '{}' has nodes: {:?}", module.name, part_ids);
+                
+                let initial_count = module.connections.len();
+                module.connections.retain(|c| {
+                    let from_exists = part_ids.contains(&c.from_part);
+                    let to_exists = part_ids.contains(&c.to_part);
+                    if !from_exists {
+                        warn!("Self-Heal: Removing connection from non-existent node {} in module '{}'", c.from_part, module.name);
+                    }
+                    if !to_exists {
+                        warn!("Self-Heal: Removing connection to non-existent node {} in module '{}'", c.to_part, module.name);
+                    }
+                    from_exists && to_exists
+                });
+                let final_count = module.connections.len();
+                if initial_count != final_count {
+                    info!("Self-Heal: Cleaned {} dangling connections in module '{}'", initial_count - final_count, module.name);
+                    graph_fixed = true;
+                }
+            }
+            if graph_fixed {
                 state.dirty = true;
             }
         } else {
