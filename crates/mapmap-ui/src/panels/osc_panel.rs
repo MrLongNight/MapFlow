@@ -127,7 +127,3 @@ pub fn show_osc_panel(
         });
     app_ui.show_osc_panel = open;
 }
-
-
-
-

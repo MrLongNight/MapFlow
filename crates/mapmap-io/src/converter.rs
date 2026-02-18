@@ -533,7 +533,3 @@ mod tests {
         assert!(r < 50 && g < 50 && b < 50); // Should be close to black
     }
 }
-
-
-
-

@@ -297,7 +297,3 @@ impl HueController {
         self.nodes.get(light_id).map(|n| (n.x, n.y, n.z))
     }
 }
-
-
-
-
