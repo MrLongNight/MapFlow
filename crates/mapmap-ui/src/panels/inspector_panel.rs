@@ -336,7 +336,3 @@ pub enum InspectorAction {
     /// Update layer opacity
     UpdateOpacity(u64, f32),
 }
-
-
-
-

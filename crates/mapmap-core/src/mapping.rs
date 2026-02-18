@@ -267,7 +267,3 @@ mod tests {
         assert_eq!(manager.get_mapping(id).unwrap().depth, -1.0);
     }
 }
-
-
-
-

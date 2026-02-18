@@ -807,7 +807,3 @@ impl Renderer {
         fonts.clear_tex_data();
     }
 }
-
-
-
-

@@ -254,7 +254,3 @@ mod tests {
         assert!(!is_hap_file("video.webm"));
     }
 }
-
-
-
-

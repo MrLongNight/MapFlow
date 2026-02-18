@@ -240,7 +240,3 @@ pub enum DashboardAction {
     AudioDeviceChanged(String),
     ToggleAudioPanel,
 }
-
-
-
-

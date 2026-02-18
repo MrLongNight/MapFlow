@@ -172,7 +172,3 @@ mod tests {
         assert!(filename.ends_with(".log"));
     }
 }
-
-
-
-
