@@ -689,7 +689,7 @@ Die folgenden Node-Typen haben vollständige UI-Panels:
 
 MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optionen sind geplant:
 
-> **Detaillierte Dokumentation:** [`docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md`](docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md)
+> **Detaillierte Dokumentation:** [`docs/dev/architecture/MULTI-PC-FEASIBILITY.md`](docs/dev/architecture/MULTI-PC-FEASIBILITY.md)
 
 #### Option A: NDI Video-Streaming (Empfohlen)
 
