@@ -347,7 +347,12 @@ impl NodeEditor {
 
         // Node background
         painter.rect_filled(rect, 4.0, bg_color);
-        painter.rect_stroke(rect, 4.0, Stroke::new(2.0, Color32::from_rgb(80, 80, 80)));
+        painter.rect_stroke(
+            rect,
+            4.0,
+            Stroke::new(2.0, Color32::from_rgb(80, 80, 80)),
+            egui::StrokeKind::Middle,
+        );
 
         // Title bar
         let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 24.0 * zoom));
@@ -591,7 +596,7 @@ impl NodeEditor {
                 egui::Area::new(egui::Id::new("node_palette"))
                     .fixed_pos(pos)
                     .show(ui.ctx(), |ui| {
-                        egui::Frame::default().show(ui, |ui| {
+                        egui::Frame::popup(ui.style()).show(ui, |ui| {
                             ui.set_min_width(200.0);
                             ui.label(locale.t("node-add"));
                             ui.separator();

@@ -17,7 +17,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
     // Custom frame for modern look
     let frame = egui::Frame::default()
         .fill(ctx.style().visuals.window_fill())
-        .inner_margin(egui::Margin::symmetric(16.0, 8.0));
+        .inner_margin(egui::Margin::symmetric(16, 8));
 
     egui::TopBottomPanel::top("top_panel")
         .frame(frame)
@@ -39,7 +39,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             };
 
             // --- Main Menu Bar ---
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
 
                 // --- File Menu ---
@@ -50,7 +50,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Add),
                     ) {
                         actions.push(UIAction::NewProject);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if menu_item(
                         ui,
@@ -58,7 +58,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::LockOpen),
                     ) {
                         actions.push(UIAction::LoadProject(String::new()));
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
 
                     // Recent files submenu
@@ -68,7 +68,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                             for path in &recent_files {
                                 if ui.button(path).clicked() {
                                     actions.push(UIAction::LoadRecentProject(path.clone()));
-                                    ui.close_menu();
+                                    ui.memory_mut(|mem| mem.close_all_popups());
                                 }
                             }
                         });
@@ -82,15 +82,15 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::FloppyDisk),
                     ) {
                         actions.push(UIAction::SaveProject(String::new()));
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if ui.button(ui_state.i18n.t("menu-file-save-as")).clicked() {
                         actions.push(UIAction::SaveProjectAs);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if ui.button(ui_state.i18n.t("menu-file-export")).clicked() {
                         actions.push(UIAction::Export);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
 
                     ui.separator();
@@ -101,7 +101,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Cog),
                     ) {
                         actions.push(UIAction::OpenSettings);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
 
                     ui.separator();
@@ -112,7 +112,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::ButtonStop),
                     ) {
                         actions.push(UIAction::Exit);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                 });
 
@@ -124,7 +124,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::ArrowLeft),
                     ) {
                         actions.push(UIAction::Undo);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if menu_item(
                         ui,
@@ -132,20 +132,20 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::ArrowRight),
                     ) {
                         actions.push(UIAction::Redo);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     ui.separator();
                     if ui.button(ui_state.i18n.t("menu-edit-cut")).clicked() {
                         actions.push(UIAction::Cut);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if ui.button(ui_state.i18n.t("menu-edit-copy")).clicked() {
                         actions.push(UIAction::Copy);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if ui.button(ui_state.i18n.t("menu-edit-paste")).clicked() {
                         actions.push(UIAction::Paste);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if menu_item(
                         ui,
@@ -153,12 +153,12 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Remove),
                     ) {
                         actions.push(UIAction::Delete);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     ui.separator();
                     if ui.button(ui_state.i18n.t("menu-edit-select-all")).clicked() {
                         actions.push(UIAction::SelectAll);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                 });
 
@@ -248,7 +248,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     if ui
                         .checkbox(
                             &mut ui_state.user_config.global_fullscreen,
-                            "📽️ Projectors Fullscreen",
+                            "ðŸ“½ï¸ Projectors Fullscreen",
                         )
                         .changed()
                     {
@@ -263,7 +263,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::Monitor),
                     ) {
                         actions.push(UIAction::ToggleFullscreen);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if menu_item(
                         ui,
@@ -271,7 +271,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::AppWindow),
                     ) {
                         actions.push(UIAction::ResetLayout);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                 });
 
@@ -279,7 +279,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                 ui.menu_button(ui_state.i18n.t("menu-help"), |ui| {
                     if ui.button(ui_state.i18n.t("menu-help-docs")).clicked() {
                         actions.push(UIAction::OpenDocs);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if menu_item(
                         ui,
@@ -287,21 +287,21 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                         Some(AppIcon::InfoCircle),
                     ) {
                         actions.push(UIAction::OpenAbout);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     if ui.button(ui_state.i18n.t("menu-help-license")).clicked() {
                         actions.push(UIAction::OpenLicense);
-                        ui.close_menu();
+                        ui.memory_mut(|mem| mem.close_all_popups());
                     }
                     ui.separator();
                     ui.menu_button("Language", |ui| {
                         if ui.button("English").clicked() {
                             actions.push(UIAction::SetLanguage("en".to_string()));
-                            ui.close_menu();
+                            ui.memory_mut(|mem| mem.close_all_popups());
                         }
                         if ui.button("Deutsch").clicked() {
                             actions.push(UIAction::SetLanguage("de".to_string()));
-                            ui.close_menu();
+                            ui.memory_mut(|mem| mem.close_all_popups());
                         }
                     });
                 });
@@ -433,7 +433,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                             let left_db = db;
                             let right_db = db;
 
-                            ui.label("🔊");
+                            ui.label("ðŸ”Š");
 
                             ui.add(AudioMeter::new(
                                 ui_state.user_config.meter_style,

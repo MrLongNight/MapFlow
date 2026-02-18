@@ -1,6 +1,6 @@
-use egui::{Response, Ui, Color32, Pos2, Vec2, Rect, Sense, Rounding, Stroke, lerp};
 use crate::theme::colors;
 use crate::widgets::icons::{AppIcon, IconManager};
+use egui::{lerp, Color32, CornerRadius, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 pub fn render_header(ui: &mut Ui, title: &str) {
     let desired_size = Vec2::new(ui.available_width(), 24.0);
@@ -9,10 +9,10 @@ pub fn render_header(ui: &mut Ui, title: &str) {
 
     let painter = ui.painter();
     // Header background
-    painter.rect_filled(rect, Rounding::ZERO, colors::LIGHTER_GREY);
+    painter.rect_filled(rect, CornerRadius::ZERO, colors::LIGHTER_GREY);
 
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(2.0, rect.height()));
-    painter.rect_filled(stripe_rect, Rounding::ZERO, colors::CYAN_ACCENT);
+    painter.rect_filled(stripe_rect, CornerRadius::ZERO, colors::CYAN_ACCENT);
 
     let text_pos = Pos2::new(rect.min.x + 8.0, rect.center().y);
     painter.text(
@@ -35,29 +35,68 @@ pub fn styled_slider(
     default_value: f32,
 ) -> Response {
     let desired_size = Vec2::new(ui.available_width(), 20.0);
-    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+    // Sense::click_and_drag() implies interactivity, but we want to ensure focusability for keyboard.
+    let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
+
+    // Accessibility Info
+    response.widget_info(|| egui::WidgetInfo::new(egui::WidgetType::Slider));
 
     let visuals = ui.style().interact(&response);
+
+    // Keyboard Interaction
+    if response.has_focus() {
+        let mut step = (*range.end() - *range.start()) / 100.0;
+        if ui.input(|i| i.modifiers.shift) {
+            step *= 10.0;
+        }
+
+        let mut new_value = *value;
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
+        {
+            new_value -= step;
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            new_value += step;
+        }
+
+        new_value = new_value.clamp(*range.start(), *range.end());
+        if (new_value - *value).abs() > f32::EPSILON {
+            *value = new_value;
+            response.mark_changed();
+        }
+    }
 
     // Double-click to reset
     if response.double_clicked() {
         *value = default_value;
+        response.mark_changed(); // Ensure change is tracked
     } else if response.dragged() {
         let min = *range.start();
         let max = *range.end();
         if let Some(mouse_pos) = response.interact_pointer_pos() {
             let new_value = egui::remap_clamp(mouse_pos.x, rect.left()..=rect.right(), min..=max);
             *value = new_value;
+            response.mark_changed();
         }
     }
 
     ui.painter().rect(
         rect,
-        Rounding::ZERO,
+        CornerRadius::ZERO,
         colors::DARKER_GREY, // Track background
         visuals.bg_stroke,
-
+        egui::StrokeKind::Middle,
     );
+
+    // Focus Ring
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::ZERO,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
 
     let t = (*value - *range.start()) / (*range.end() - *range.start());
     let fill_rect = Rect::from_min_max(
@@ -78,15 +117,15 @@ pub fn styled_slider(
 
     ui.painter().rect(
         fill_rect,
-        Rounding::ZERO,
+        CornerRadius::ZERO,
         fill_color,
         Stroke::new(0.0, Color32::TRANSPARENT),
-
+        egui::StrokeKind::Middle,
     );
 
     // Value Text
     let text = format!("{:.2}", value);
-    let text_color = if response.hovered() || response.dragged() {
+    let text_color = if response.hovered() || response.dragged() || response.has_focus() {
         Color32::WHITE
     } else if is_changed {
         colors::CYAN_ACCENT
@@ -142,9 +181,9 @@ pub fn styled_drag_value(
     if is_changed {
         ui.painter().rect_stroke(
             response.rect.expand(1.0),
-            Rounding::ZERO,
+            CornerRadius::ZERO,
             Stroke::new(1.0, colors::CYAN_ACCENT),
-
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -186,8 +225,13 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter()
-        .rect(rect, Rounding::ZERO, bg_fill, stroke);
+    ui.painter().rect(
+        rect,
+        CornerRadius::ZERO,
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Middle,
+    );
 
     let text_pos = rect.center();
 
@@ -318,19 +362,19 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // 1. Background
     painter.rect(
         rect,
-        Rounding::same(4.0),
+        CornerRadius::same(4),
         visuals.bg_fill,
         visuals.bg_stroke,
-
+        egui::StrokeKind::Middle,
     );
 
     // Draw focus ring if focused
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-            Rounding::same(6.0),
+            CornerRadius::same(6),
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-
+            egui::StrokeKind::Middle,
         );
     }
 
@@ -340,7 +384,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         fill_rect.max.x = rect.min.x + rect.width() * progress;
         painter.rect_filled(
             fill_rect,
-            Rounding::same(4.0),
+            CornerRadius::same(4),
             color.linear_multiply(0.4), // Transparent version of action color
         );
     }
@@ -460,7 +504,14 @@ pub fn hold_to_action_icon(
     triggered
 }
 
-pub fn draw_safety_radial_fill(_painter: &egui::Painter, _center: Pos2, _radius: f32, _progress: f32, _color: Color32) {}
+pub fn draw_safety_radial_fill(
+    _painter: &egui::Painter,
+    _center: Pos2,
+    _radius: f32,
+    _progress: f32,
+    _color: Color32,
+) {
+}
 
 pub fn collapsing_header_with_reset(
     ui: &mut Ui,
@@ -483,4 +534,14 @@ pub fn collapsing_header_with_reset(
             add_contents(ui);
         });
     reset_clicked
+}
+
+pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
+    // Using a simple "L" as fallback for Lock icon
+    let mut btn = egui::Button::new("🔒");
+    if active {
+        // Reddish fill for Locked state
+        btn = btn.fill(Color32::from_rgb(200, 50, 50));
+    }
+    ui.add(btn)
 }

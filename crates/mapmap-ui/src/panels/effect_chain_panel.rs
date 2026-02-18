@@ -3,11 +3,10 @@
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
 
-use crate::theme::colors;
-use crate::core::responsive::ResponsiveLayout;
+use crate::core::theme::colors;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
-use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
+use crate::responsive::ResponsiveLayout;
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
 
@@ -62,25 +61,25 @@ impl EffectType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            EffectType::ColorAdjust => "🎨",
-            EffectType::Blur => "🌫️",
-            EffectType::ChromaticAberration => "🌈",
-            EffectType::EdgeDetect => "📐",
-            EffectType::Glow => "✨",
-            EffectType::Kaleidoscope => "🔮",
-            EffectType::Invert => "🔄",
-            EffectType::Pixelate => "🟩",
-            EffectType::Vignette => "🌑",
-            EffectType::FilmGrain => "🎞️",
-            EffectType::Wave => "🌊",
-            EffectType::Glitch => "👾",
-            EffectType::RgbSplit => "🌈",
-            EffectType::Mirror => "🪞",
-            EffectType::HueShift => "🎨",
-            EffectType::Voronoi => "💠",
-            EffectType::Tunnel => "🌀",
-            EffectType::Galaxy => "🌌",
-            EffectType::Custom => "⚙️",
+            EffectType::ColorAdjust => "ðŸŽ¨",
+            EffectType::Blur => "ðŸŒ«ï¸",
+            EffectType::ChromaticAberration => "ðŸŒˆ",
+            EffectType::EdgeDetect => "ðŸ“",
+            EffectType::Glow => "âœ¨",
+            EffectType::Kaleidoscope => "ðŸ”®",
+            EffectType::Invert => "ðŸ”„",
+            EffectType::Pixelate => "ðŸŸ©",
+            EffectType::Vignette => "ðŸŒ‘",
+            EffectType::FilmGrain => "ðŸŽžï¸",
+            EffectType::Wave => "ðŸŒŠ",
+            EffectType::Glitch => "ðŸ‘¾",
+            EffectType::RgbSplit => "ðŸŒˆ",
+            EffectType::Mirror => "ðŸªž",
+            EffectType::HueShift => "ðŸŽ¨",
+            EffectType::Voronoi => "ðŸ’ ",
+            EffectType::Tunnel => "ðŸŒ€",
+            EffectType::Galaxy => "ðŸŒŒ",
+            EffectType::Custom => "âš™ï¸",
         }
     }
 
@@ -393,18 +392,7 @@ impl EffectChainPanel {
             .default_size(window_size)
             .resizable(true)
             .scroll([false, true])
-            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &locale.t("panel-effect-chain"),
-                    Some(AppIcon::MagicWand),
-                    icon_manager,
-                    |_| {},
-                );
-
-                ui.add_space(8.0);
-
                 self.render_toolbar(ui, locale, icon_manager, &mut recent_configs);
                 ui.separator();
                 self.render_effect_list(ui, locale, icon_manager);
@@ -506,7 +494,7 @@ impl EffectChainPanel {
                                                      }
 
                                                      self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close_menu();
+                                                     ui.close();
                                                      self.show_add_menu = false;
                                                 }
                                             }
@@ -729,7 +717,7 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .rounding(0.0)
+            .corner_radius(0.0)
             .inner_margin(4.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -737,7 +725,7 @@ impl EffectChainPanel {
                 ui.horizontal(|ui| {
                     // Drag Handle
                     let handle_resp = ui.add(
-                        egui::Button::new("⋮⋮")
+                        egui::Button::new("â‹®â‹®")
                             .frame(false)
                             .sense(egui::Sense::drag()),
                     );
@@ -777,12 +765,12 @@ impl EffectChainPanel {
 
                         // Move buttons
                         ui.add_enabled_ui(!is_last, |ui| {
-                            if ui.small_button("▼").clicked() {
+                            if ui.small_button("â–¼").clicked() {
                                 move_down = true;
                             }
                         });
                         ui.add_enabled_ui(!is_first, |ui| {
-                            if ui.small_button("▲").clicked() {
+                            if ui.small_button("â–²").clicked() {
                                 move_up = true;
                             }
                         });
@@ -1247,7 +1235,7 @@ impl EffectChainPanel {
             .show(ctx, |ui| {
                 // Search bar
                 ui.horizontal(|ui| {
-                    ui.label("🔍");
+                    ui.label("ðŸ”");
                     ui.add(
                         egui::TextEdit::singleline(&mut self.preset_search)
                             .hint_text(locale.t("effect-search")),
@@ -1270,7 +1258,11 @@ impl EffectChainPanel {
                             }
 
                             ui.horizontal(|ui| {
-                                let star = if preset.is_favorite { "⭐" } else { "☆" };
+                                let star = if preset.is_favorite {
+                                    "★"
+                                } else {
+                                    "☆"
+                                };
                                 ui.label(star);
 
                                 if ui.button(&preset.name).clicked() {

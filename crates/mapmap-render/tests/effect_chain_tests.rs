@@ -4,7 +4,10 @@ use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
-use wgpu::{CommandEncoderDescriptor, Extent3d, TextureDescriptor, TextureUsages};
+use wgpu::{
+    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    TextureDescriptor, TextureUsages,
+};
 
 #[tokio::test]
 #[ignore = "GPU tests are unstable in headless CI environment"]
@@ -107,15 +110,15 @@ async fn test_simple_invert() {
 
     let bytes_per_row = width * bytes_per_pixel;
     encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture {
+        wgpu::TexelCopyTextureInfo {
             texture: &output_texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &output_buffer,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(bytes_per_row),
                 rows_per_image: Some(height),
@@ -132,7 +135,12 @@ async fn test_simple_invert() {
 
     let slice = output_buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    device.poll(wgpu::Maintain::Wait);
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .unwrap();
 
     let data = slice.get_mapped_range();
     // First pixel should be cyan (inverted red) [0, 255, 255, 255]

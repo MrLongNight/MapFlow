@@ -1,8 +1,7 @@
+//! Egui-based Layer Management Panel
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets;
-use crate::widgets::icons::{AppIcon, IconManager};
-use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{BlendMode, LayerManager};
@@ -37,7 +36,6 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
-        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -47,18 +45,7 @@ impl LayerPanel {
         egui::Window::new(i18n.t("panel-layers"))
             .open(&mut open)
             .default_size([380.0, 400.0])
-            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-layers"),
-                    Some(AppIcon::AppWindow),
-                    icon_manager,
-                    |_| {},
-                );
-
-                ui.add_space(8.0);
-
                 ui.horizontal(|ui| {
                     ui.label(i18n.t_args(
                         "label-total-layers",
@@ -136,7 +123,7 @@ impl LayerPanel {
                         let bg_color = if is_selected {
                             colors::CYAN_ACCENT.linear_multiply(0.2)
                         } else if idx % 2 == 1 {
-                            colors::DARKER_GREY // Subtle alternating background
+                            colors::DARKER_GREY.linear_multiply(0.5) // Subtle alternating background
                         } else {
                             Color32::TRANSPARENT
                         };
@@ -145,13 +132,13 @@ impl LayerPanel {
                         let stroke = if is_selected {
                             Stroke::new(1.0, colors::CYAN_ACCENT)
                         } else {
-                            Stroke::new(1.0, colors::STROKE_GREY)
+                            Stroke::new(1.0, colors::STROKE_GREY.linear_multiply(0.5))
                         };
 
                         egui::Frame::default()
                             .fill(bg_color)
                             .stroke(stroke)
-                            .rounding(0.0) // Sharp corners for Cyber/Resolume style
+                            .corner_radius(0.0) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {

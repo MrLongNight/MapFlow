@@ -154,7 +154,7 @@ impl ColorCalibrationRenderer {
             label: Some("Color Calibration Pipeline Layout"),
             bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
             push_constant_ranges: &[],
-                    });
+        });
 
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -314,7 +314,7 @@ mod tests {
             if let Ok(backend) = backend {
                 let renderer = ColorCalibrationRenderer::new(
                     backend.device.clone(),
-                    wgpu::TextureFormat::Bgra8UnormSrgb,
+                    wgpu::TextureFormat::Bgra8Unorm,
                 );
                 assert!(renderer.is_ok());
             }
