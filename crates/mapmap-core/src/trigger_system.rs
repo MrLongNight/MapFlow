@@ -35,6 +35,9 @@ pub struct TriggerSystem {
     ///
     /// Optimized to reduce hash lookups by storing timer and target together.
     states: HashMap<u64, TriggerState>,
+    /// Temporary set to track which triggers are active during an update cycle.
+    /// Used for garbage collecting stale states.
+    active_state_ids: HashSet<u64>,
 }
 
 impl TriggerSystem {
@@ -51,6 +54,11 @@ impl TriggerSystem {
         dt: f32,
     ) {
         self.active_triggers.clear();
+        self.active_state_ids.clear();
+
+        // Lift RNG creation out of loop
+        use rand::Rng;
+        let mut rng = rand::rng();
 
         for module in module_manager.modules() {
             for part in &module.parts {
@@ -126,6 +134,8 @@ impl TriggerSystem {
                             let interval = *interval_ms as f32 / 1000.0;
                             // Unified state lookup (O(1))
                             let state = self.states.entry(part.id).or_default();
+                            self.active_state_ids.insert(part.id);
+
                             state.timer += dt;
                             if state.timer >= interval {
                                 state.timer -= interval;
@@ -139,11 +149,10 @@ impl TriggerSystem {
                         } => {
                             // Unified state lookup (O(1)) - Handles both timer and target
                             let state = self.states.entry(part.id).or_default();
+                            self.active_state_ids.insert(part.id);
 
                             // Initialize target if needed (first run or after type switch)
                             if state.target < 0.0 {
-                                use rand::Rng;
-                                let mut rng = rand::rng();
                                 state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
                                     as f32
                                     / 1000.0;
@@ -156,8 +165,6 @@ impl TriggerSystem {
                                 self.active_triggers.insert((part.id, 0));
 
                                 // Pick new target
-                                use rand::Rng;
-                                let mut rng = rand::rng();
                                 state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
                                     as f32
                                     / 1000.0;
@@ -169,6 +176,10 @@ impl TriggerSystem {
                 }
             }
         }
+
+        // Garbage collection: Remove states for parts that no longer exist or aren't triggers
+        self.states
+            .retain(|k, _| self.active_state_ids.contains(k));
     }
 
     /// Check if a specific trigger output is currently active.
@@ -282,6 +293,47 @@ mod tests {
         // So timer is 0.0 at the end of the frame it fired.
         assert_eq!(new_state.timer, 0.0);
         assert!(new_state.target >= 0.1 && new_state.target <= 0.2);
+    }
+
+    #[test]
+    fn test_state_pruning() {
+        let mut manager = ModuleManager::new();
+        let module_id = manager.create_module("Test".to_string());
+
+        // Add a Random Trigger (stateful)
+        let part_id = manager
+            .add_part_to_module(module_id, PartType::Trigger, (0.0, 0.0))
+            .unwrap();
+
+        if let Some(module) = manager.get_module_mut(module_id) {
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
+                part.part_type = ModulePartType::Trigger(TriggerType::Random {
+                    min_interval_ms: 100,
+                    max_interval_ms: 200,
+                    probability: 1.0,
+                });
+            }
+        }
+
+        let mut system = TriggerSystem::new();
+        let audio = AudioTriggerData::default();
+
+        // 1. Run once to initialize state
+        system.update(&manager, &audio, 0.1);
+
+        // State should exist
+        assert!(system.states.contains_key(&part_id));
+
+        // 2. Remove the part from the module
+        if let Some(module) = manager.get_module_mut(module_id) {
+            module.parts.retain(|p| p.id != part_id);
+        }
+
+        // 3. Update again
+        system.update(&manager, &audio, 0.1);
+
+        // State should be removed
+        assert!(!system.states.contains_key(&part_id));
     }
 }
 
