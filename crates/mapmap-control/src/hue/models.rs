@@ -19,7 +19,3 @@ pub struct LightNode {
     pub y: f64,
     pub z: f64,
 }
-
-
-
-

@@ -167,8 +167,3 @@ async fn test_passthrough_no_effects() {
 
     assert_eq!(output_data, input_color);
 }
-
-
-
-
-

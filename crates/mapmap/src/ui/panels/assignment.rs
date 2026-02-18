@@ -19,7 +19,3 @@ pub fn show(ctx: &Context, context: AssignmentContext) {
         .assignment_panel
         .show(ctx, &context.state.assignment_manager);
 }
-
-
-
-

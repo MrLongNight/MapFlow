@@ -336,7 +336,3 @@ mod tests {
         assert!(!system.states.contains_key(&part_id));
     }
 }
-
-
-
-
