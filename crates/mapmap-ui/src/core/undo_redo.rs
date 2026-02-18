@@ -408,7 +408,3 @@ mod tests {
         assert_eq!(manager.state().layers.len(), 1);
     }
 }
-
-
-
-

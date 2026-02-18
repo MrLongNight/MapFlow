@@ -52,7 +52,3 @@ pub struct BevyNodeMapping {
 pub struct MapFlowTriggerResource {
     pub trigger_values: std::collections::HashMap<(u64, u64), f32>,
 }
-
-
-
-

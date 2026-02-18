@@ -253,7 +253,3 @@ pub enum AssetManagerAction {
     SaveEffectPreset,
     SaveTransformPreset,
 }
-
-
-
-

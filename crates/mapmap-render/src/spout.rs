@@ -37,7 +37,3 @@ pub unsafe fn shared_handle_from_texture(
     // TODO: Update Spout wgpu integration for wgpu 0.19
     Err("Spout integration requires update for wgpu 0.19 (DX11/DX12 interop changes)")
 }
-
-
-
-
