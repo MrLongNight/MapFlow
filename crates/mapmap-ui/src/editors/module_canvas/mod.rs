@@ -1,6 +1,7 @@
 ﻿use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
+use crate::widgets::audio_meter::AudioMeter;
 use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
 use egui::epaint::CubicBezierShape;
@@ -4866,7 +4867,7 @@ impl ModuleCanvas {
 
     fn draw_part_with_delete(
         &self,
-        ui: &Ui,
+        ui: &mut Ui,
         painter: &egui::Painter,
         part: &ModulePart,
         rect: Rect,
@@ -5183,36 +5184,14 @@ impl ModuleCanvas {
                 Pos2::new(meter_x, meter_y),
                 Vec2::new(meter_width, meter_height),
             );
-            painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
 
-            // Value bar with Hardware-Segments
-            let num_segments = 20;
-            let segment_spacing = 1.0 * self.zoom;
-            let segment_width =
-                (meter_width - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
-
-            for i in 0..num_segments {
-                let t = i as f32 / num_segments as f32;
-                if t > trigger_value {
-                    break;
-                }
-
-                let seg_x = meter_x + i as f32 * (segment_width + segment_spacing);
-                let seg_rect = Rect::from_min_size(
-                    Pos2::new(seg_x, meter_y),
-                    Vec2::new(segment_width, meter_height),
+            ui.scope_builder(egui::UiBuilder::new().max_rect(meter_bg), |ui| {
+                ui.add(
+                    AudioMeter::new_mono(trigger_value)
+                        .width(meter_width)
+                        .height(meter_height),
                 );
-
-                let seg_color = if t < 0.6 {
-                    Color32::from_rgb(0, 255, 100) // Green
-                } else if t < 0.85 {
-                    Color32::from_rgb(255, 180, 0) // Orange
-                } else {
-                    Color32::from_rgb(255, 50, 50) // Red
-                };
-
-                painter.rect_filled(seg_rect, 1.0, seg_color);
-            }
+            });
 
             // Threshold line
             let threshold_x = meter_x + threshold * meter_width;

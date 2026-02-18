@@ -1,68 +1,152 @@
 //! Audio Meter Widget
 //!
-//! Provides two styles of audio level visualization:
-//! - Retro: Analog VU meter with needle and arc scale
-//! - Digital: Segmented LED bar
+//! Provides accessible audio visualization:
+//! - Stereo: Analog VU meter (Retro) or LED Bar (Digital)
+//! - Mono: Single horizontal bar (for node graphs)
+//! - Spectrum: Frequency band visualization (FFT)
 
 use crate::config::AudioMeterStyle;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Vec2, Widget};
+use crate::theme::colors;
+use egui::{Color32, Pos2, Rect, Sense, Stroke, Vec2, Widget, WidgetInfo, WidgetType};
+
+/// The data mode for the audio meter
+#[derive(Clone, Debug)]
+pub enum AudioMeterMode {
+    /// Stereo levels in dB (-60 to +3)
+    Stereo { left_db: f32, right_db: f32 },
+    /// Single channel level (0.0 to 1.0)
+    Mono { level: f32 },
+    /// Frequency spectrum bands (0.0 to 1.0)
+    Spectrum { bands: Vec<f32> },
+}
 
 /// A widget that displays audio levels.
 pub struct AudioMeter {
+    mode: AudioMeterMode,
     style: AudioMeterStyle,
-    level_db_left: f32,
-    level_db_right: f32,
-    width: f32,
+    width: Option<f32>,
+    height: Option<f32>,
+    beat_active: bool,
 }
 
 impl AudioMeter {
-    /// Create a new audio meter
+    /// Create a new stereo audio meter (Retro/Digital based on style)
     pub fn new(style: AudioMeterStyle, level_db_left: f32, level_db_right: f32) -> Self {
-        let width = match style {
-            AudioMeterStyle::Retro => 300.0,
-            AudioMeterStyle::Digital => 360.0,
-        };
         Self {
+            mode: AudioMeterMode::Stereo {
+                left_db: level_db_left,
+                right_db: level_db_right,
+            },
             style,
-            level_db_left,
-            level_db_right,
-            width,
+            width: None,
+            height: None,
+            beat_active: false,
+        }
+    }
+
+    /// Create a new mono audio meter (0.0 - 1.0)
+    pub fn new_mono(level: f32) -> Self {
+        Self {
+            mode: AudioMeterMode::Mono { level },
+            style: AudioMeterStyle::Digital, // Default style for mono
+            width: None,
+            height: None,
+            beat_active: false,
+        }
+    }
+
+    /// Create a new spectrum visualizer (bands 0.0 - 1.0)
+    pub fn new_spectrum(bands: &[f32]) -> Self {
+        Self {
+            mode: AudioMeterMode::Spectrum {
+                bands: bands.to_vec(),
+            },
+            style: AudioMeterStyle::Digital,
+            width: None,
+            height: None,
+            beat_active: false,
         }
     }
 
     /// Set preferred width
     pub fn width(mut self, width: f32) -> Self {
-        self.width = width;
+        self.width = Some(width);
+        self
+    }
+
+    /// Set preferred height
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = Some(height);
+        self
+    }
+
+    /// Set beat activation state (highlights lower bands in spectrum)
+    pub fn beat(mut self, active: bool) -> Self {
+        self.beat_active = active;
         self
     }
 }
 
 impl Widget for AudioMeter {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        // Expand vertically to fill available space, but clamp to reasonable limits
-        // to prevent layout explosions or zero-height issues.
-        // We use available_height() but clamp it because sometimes it can be infinite or 0.
-        let h = ui.available_height().clamp(40.0, 120.0);
+        let (desired_size, sense) = match &self.mode {
+            AudioMeterMode::Stereo { .. } => {
+                let w = self.width.unwrap_or(match self.style {
+                    AudioMeterStyle::Retro => 300.0,
+                    AudioMeterStyle::Digital => 360.0,
+                });
+                let h = self.height.unwrap_or_else(|| ui.available_height().clamp(40.0, 120.0));
+                (Vec2::new(w, h), Sense::hover())
+            }
+            AudioMeterMode::Mono { .. } => {
+                let w = self.width.unwrap_or(ui.available_width());
+                let h = self.height.unwrap_or(4.0);
+                (Vec2::new(w, h), Sense::hover())
+            }
+            AudioMeterMode::Spectrum { .. } => {
+                let w = self.width.unwrap_or(ui.available_width());
+                let h = self.height.unwrap_or(60.0);
+                (Vec2::new(w, h), Sense::hover())
+            }
+        };
 
-        let desired_size = Vec2::new(self.width, h);
-        let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
+        let (rect, response) = ui.allocate_exact_size(desired_size, sense);
+
+        // Accessibility Info
+        response.widget_info(|| {
+            let label = match &self.mode {
+                AudioMeterMode::Stereo { left_db, right_db } => {
+                    format!("Stereo Meter: L {:.1}dB, R {:.1}dB", left_db, right_db)
+                }
+                AudioMeterMode::Mono { level } => {
+                    format!("Audio Level: {:.0}%", level * 100.0)
+                }
+                AudioMeterMode::Spectrum { bands } => {
+                    format!("Audio Spectrum with {} bands", bands.len())
+                }
+            };
+            WidgetInfo::labeled(WidgetType::Other, true, label)
+        });
 
         if ui.is_rect_visible(rect) {
-            let painter = ui.painter();
-
-            // Draw rack frame
-            draw_rack_frame(painter, rect);
-
-            // Inner content rect (inset for frame)
-            let frame_width = 8.0;
-            let content_rect = rect.shrink(frame_width);
-
-            match self.style {
-                AudioMeterStyle::Retro => {
-                    draw_retro_stereo(ui, content_rect, self.level_db_left, self.level_db_right)
+            match &self.mode {
+                AudioMeterMode::Stereo { left_db, right_db } => match self.style {
+                    AudioMeterStyle::Retro => {
+                        draw_rack_frame(ui.painter(), rect);
+                        let content_rect = rect.shrink(8.0);
+                        draw_retro_stereo(ui, content_rect, *left_db, *right_db);
+                    }
+                    AudioMeterStyle::Digital => {
+                        draw_rack_frame(ui.painter(), rect);
+                        let content_rect = rect.shrink(8.0);
+                        draw_digital_stereo(ui, content_rect, *left_db, *right_db);
+                    }
+                },
+                AudioMeterMode::Mono { level } => {
+                    draw_mono_bar(ui, rect, *level);
                 }
-                AudioMeterStyle::Digital => {
-                    draw_digital_stereo(ui, content_rect, self.level_db_left, self.level_db_right)
+                AudioMeterMode::Spectrum { bands } => {
+                    draw_spectrum(ui, rect, bands, self.beat_active);
                 }
             }
         }
@@ -71,16 +155,15 @@ impl Widget for AudioMeter {
     }
 }
 
-/// Draws the mounting frame with 4 phillips screws
+// --- Drawing Implementations ---
+
 fn draw_rack_frame(painter: &egui::Painter, rect: Rect) {
     let frame_color = Color32::from_rgb(45, 45, 50);
     let frame_highlight = Color32::from_rgb(65, 65, 70);
     let frame_shadow = Color32::from_rgb(25, 25, 30);
 
-    // Main frame
     painter.rect_filled(rect, 0.0, frame_color);
 
-    // Beveled edges (highlight top-left, shadow bottom-right)
     painter.line_segment(
         [rect.left_top(), Pos2::new(rect.right(), rect.top())],
         Stroke::new(2.0, frame_highlight),
@@ -98,9 +181,7 @@ fn draw_rack_frame(painter: &egui::Painter, rect: Rect) {
         Stroke::new(2.0, frame_shadow),
     );
 
-    // Draw 4 screws
     let screw_offset = 10.0;
-    // Ensure we don't overlap if rect is too small
     if rect.width() > 30.0 && rect.height() > 30.0 {
         let screw_positions = [
             Pos2::new(rect.min.x + screw_offset, rect.min.y + screw_offset),
@@ -115,24 +196,18 @@ fn draw_rack_frame(painter: &egui::Painter, rect: Rect) {
     }
 }
 
-/// Draws a realistic phillips head screw
 fn draw_screw(painter: &egui::Painter, center: Pos2, radius: f32) {
-    // Screw head
     painter.circle_filled(center, radius, Color32::from_rgb(80, 80, 85));
     painter.circle_stroke(
         center,
         radius,
         Stroke::new(0.5, Color32::from_rgb(40, 40, 45)),
     );
-
-    // Inner recess (darker)
     painter.circle_filled(center, radius * 0.7, Color32::from_rgb(50, 50, 55));
 
-    // Phillips cross (+)
     let cross_len = radius * 0.6;
     let cross_color = Color32::from_rgb(30, 30, 35);
 
-    // Horizontal line
     painter.line_segment(
         [
             Pos2::new(center.x - cross_len, center.y),
@@ -140,7 +215,6 @@ fn draw_screw(painter: &egui::Painter, center: Pos2, radius: f32) {
         ],
         Stroke::new(1.0, cross_color),
     );
-    // Vertical line
     painter.line_segment(
         [
             Pos2::new(center.x, center.y - cross_len),
@@ -150,14 +224,10 @@ fn draw_screw(painter: &egui::Painter, center: Pos2, radius: f32) {
     );
 }
 
-/// Draws stereo analog VU meters with glass effect
 fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32) {
     let painter = ui.painter();
+    painter.rect_filled(rect, 0.0, Color32::from_rgb(230, 225, 210));
 
-    // Dark background behind glass
-    painter.rect_filled(rect, 0.0, Color32::from_rgb(230, 225, 210)); // Cream/vintage color
-
-    // Split into left and right meters
     let meter_width = (rect.width() - 4.0) / 2.0;
     let left_rect = Rect::from_min_size(rect.min, Vec2::new(meter_width, rect.height()));
     let right_rect = Rect::from_min_size(
@@ -165,14 +235,10 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
         Vec2::new(meter_width, rect.height()),
     );
 
-    // Draw each meter
     draw_single_retro_meter(painter, left_rect, db_left, "L");
     draw_single_retro_meter(painter, right_rect, db_right, "R");
 
-    // Glass overlay effect (covers entire area)
     let glass_rect = rect.shrink(1.0);
-
-    // Glass reflection gradient (top lighter)
     painter.rect_filled(
         Rect::from_min_size(
             glass_rect.min,
@@ -181,8 +247,6 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
         4.0,
         Color32::from_white_alpha(15),
     );
-
-    // Glass edge highlight
     painter.rect_stroke(
         glass_rect,
         4.0,
@@ -192,16 +256,12 @@ fn draw_retro_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32)
 }
 
 fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: &str) {
-    // Meter face background
-    painter.rect_filled(rect, 0.0, Color32::from_rgb(230, 225, 210)); // Cream/vintage color
+    painter.rect_filled(rect, 0.0, Color32::from_rgb(230, 225, 210));
 
-    // Calculate geometry
-    // We want the pivot to be well below the rect
     let pivot_offset = rect.height() * 0.8;
     let center = rect.center_bottom() + Vec2::new(0.0, pivot_offset);
     let radius = pivot_offset + rect.height() * 0.85;
 
-    // Scale arc
     let start_angle = -35.0_f32;
     let end_angle = 35.0_f32;
     let zero_angle = 15.0_f32;
@@ -211,7 +271,6 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
         center + Vec2::new(rad.cos() * r, rad.sin() * r)
     };
 
-    // Red zone (0 to +3 dB)
     let red_points: Vec<Pos2> = (0..=5)
         .map(|i| {
             let t = i as f32 / 5.0;
@@ -227,7 +286,6 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
         ));
     }
 
-    // Scale ticks
     let ticks = [
         (-20.0, start_angle),
         (-10.0, -15.0),
@@ -239,18 +297,14 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
         let p1 = angle_to_pos(angle, radius * 0.55);
         let p2 = angle_to_pos(angle, radius * 0.65);
         painter.line_segment([p1, p2], Stroke::new(1.5, Color32::from_gray(50)));
-
-        // Labels could be added here if space permits
     }
 
-    // Needle
-    // If db is very negative (or NEG_INFINITY), show needle at minimum position
     let clamped_db = if db.is_finite() {
         db.clamp(-40.0, 6.0)
     } else {
         -40.0
     };
-    // Linear approximation for visualization
+
     let needle_angle = if clamped_db < -20.0 {
         start_angle - 5.0
     } else if clamped_db < 0.0 {
@@ -260,23 +314,14 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
     };
 
     let needle_tip = angle_to_pos(needle_angle, radius * 0.7);
-
-    // Needle intersection with bottom edge (approximate for visual cleanliness)
-    let _needle_base = rect.center_bottom() - Vec2::new(0.0, 2.0);
-
-    // We compute where the needle enters the visible area
     let dir = (needle_tip - center).normalized();
-    // Intersection with rect.max.y
     let t_base = (rect.max.y - 2.0 - center.y) / dir.y;
     let visible_base = center + dir * t_base;
 
-    // Draw needle
     painter.line_segment(
         [visible_base, needle_tip],
         Stroke::new(1.5, Color32::from_rgb(180, 40, 40)),
     );
-
-    // Shadow
     painter.line_segment(
         [
             visible_base + Vec2::new(2.0, 2.0),
@@ -285,7 +330,6 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
         Stroke::new(2.0, Color32::from_black_alpha(40)),
     );
 
-    // Channel label
     painter.text(
         Pos2::new(rect.center().x, rect.min.y + 10.0),
         egui::Align2::CENTER_CENTER,
@@ -295,20 +339,12 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
     );
 }
 
-/// Draws stereo digital LED meter (Horizontal Bars)
 fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32) {
     let painter = ui.painter();
-
-    // Dark background
     painter.rect_filled(rect, 0.0, Color32::from_rgb(10, 10, 12));
 
-    // Layout:
-    // Top: L
-    // Middle: Scale
-    // Bottom: R
-
     let total_h = rect.height();
-    let bar_h = (total_h * 0.35).min(15.0); // Max 15px height for bar
+    let bar_h = (total_h * 0.35).min(15.0);
     let scale_h = (total_h - 2.0 * bar_h).max(0.0);
 
     let l_rect = Rect::from_min_size(
@@ -324,14 +360,10 @@ fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f3
         Vec2::new(rect.width() - 8.0, bar_h),
     );
 
-    // Draw Bars
     draw_horizontal_led_bar(painter, l_rect, db_left);
     draw_horizontal_led_bar(painter, r_rect, db_right);
-
-    // Draw Scale
     draw_horizontal_scale(painter, scale_rect);
 
-    // Labels overlay
     painter.text(
         l_rect.left_center() + Vec2::new(4.0, 0.0),
         egui::Align2::LEFT_CENTER,
@@ -350,7 +382,6 @@ fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f3
 
 fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
     let segment_count = 40;
-    let _padding = 1.0;
     let total_w = rect.width();
     let seg_w = (total_w - (segment_count as f32 - 1.0)) / segment_count as f32;
 
@@ -360,8 +391,6 @@ fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
     for i in 0..segment_count {
         let t = i as f32 / (segment_count as f32 - 1.0);
         let threshold_db = min_db + t * (max_db - min_db);
-
-        // If db is very negative (or NEG_INFINITY), show no active segments
         let active = db.is_finite() && db >= threshold_db;
 
         let color = if threshold_db >= 0.0 {
@@ -390,7 +419,6 @@ fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32) {
 fn draw_horizontal_scale(painter: &egui::Painter, rect: Rect) {
     let min_db = -60.0;
     let max_db = 3.0;
-
     let db_to_x = |db: f32| -> f32 {
         let t = (db - min_db) / (max_db - min_db);
         rect.min.x + t * rect.width()
@@ -416,7 +444,76 @@ fn draw_horizontal_scale(painter: &egui::Painter, rect: Rect) {
     }
 }
 
+// --- New Drawers for Mono/Spectrum ---
 
+fn draw_mono_bar(ui: &mut egui::Ui, rect: Rect, level: f32) {
+    let painter = ui.painter();
+    painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
 
+    let num_segments = 20;
+    let segment_spacing = 1.0;
+    let segment_width = (rect.width() - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
 
+    for i in 0..num_segments {
+        let t = i as f32 / num_segments as f32;
+        if t > level {
+            break;
+        }
 
+        let seg_x = rect.min.x + i as f32 * (segment_width + segment_spacing);
+        let seg_rect = Rect::from_min_size(
+            Pos2::new(seg_x, rect.min.y),
+            Vec2::new(segment_width, rect.height()),
+        );
+
+        let seg_color = if t < 0.6 {
+            colors::MINT_ACCENT // Green
+        } else if t < 0.85 {
+            colors::WARN_COLOR // Yellow/Orange
+        } else {
+            colors::ERROR_COLOR // Red
+        };
+
+        painter.rect_filled(seg_rect, 1.0, seg_color);
+    }
+}
+
+fn draw_spectrum(ui: &mut egui::Ui, rect: Rect, bands: &[f32], beat_active: bool) {
+    let painter = ui.painter();
+    painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
+    painter.rect_stroke(
+        rect,
+        2.0,
+        Stroke::new(1.0, colors::STROKE_GREY),
+        egui::StrokeKind::Middle,
+    );
+
+    let num_bands = bands.len();
+    if num_bands == 0 {
+        return;
+    }
+
+    let spacing = 2.0;
+    let band_width = ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
+
+    for i in 0..num_bands {
+        let energy = bands[i];
+        let x = rect.min.x + spacing + i as f32 * (band_width + spacing);
+        let h = (energy * (rect.height() - 2.0 * spacing)).max(1.0);
+
+        let band_rect = Rect::from_min_max(
+            Pos2::new(x, rect.max.y - spacing - h),
+            Pos2::new(x + band_width, rect.max.y - spacing),
+        );
+
+        let color = if beat_active && i < 2 {
+            colors::MINT_ACCENT // Beat hit!
+        } else if energy > 0.8 {
+            colors::CYAN_ACCENT // High intensity
+        } else {
+            colors::CYAN_ACCENT.linear_multiply(0.6 + (energy * 0.4))
+        };
+
+        painter.rect_filled(band_rect, 1.0, color);
+    }
+}
