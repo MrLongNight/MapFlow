@@ -171,8 +171,3 @@ impl MappingPanel {
         self.visible = open;
     }
 }
-
-
-
-
-

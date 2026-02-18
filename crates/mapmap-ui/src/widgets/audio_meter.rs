@@ -415,8 +415,3 @@ fn draw_horizontal_scale(painter: &egui::Painter, rect: Rect) {
         }
     }
 }
-
-
-
-
-

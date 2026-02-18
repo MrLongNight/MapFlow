@@ -291,7 +291,3 @@ mod tests {
         assert_eq!(seq2, seq1.wrapping_add(1));
     }
 }
-
-
-
-

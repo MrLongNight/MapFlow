@@ -230,7 +230,3 @@ mod tests {
         assert_eq!(QUAD_INDICES.len(), 6);
     }
 }
-
-
-
-

@@ -102,7 +102,3 @@ pub fn show(ctx: &Context, context: SettingsContext) {
 
     context.ui_state.show_settings = show_settings;
 }
-
-
-
-

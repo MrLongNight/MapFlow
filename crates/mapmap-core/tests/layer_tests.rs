@@ -127,7 +127,3 @@ fn test_layer_integration_transform() {
     assert_eq!(matrix.w_axis.x, 100.0);
     assert_eq!(matrix.w_axis.y, 200.0);
 }
-
-
-
-

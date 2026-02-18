@@ -217,8 +217,3 @@ impl PreviewPanel {
         }
     }
 }
-
-
-
-
-

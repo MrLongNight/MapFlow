@@ -200,7 +200,3 @@ impl PaintTextureCache {
         self.cache.write().clear();
     }
 }
-
-
-
-
