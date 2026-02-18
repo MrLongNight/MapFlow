@@ -49,7 +49,3 @@ pub fn show(ctx: &Context, context: TimelineContext) {
             }
         });
 }
-
-
-
-

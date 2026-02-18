@@ -194,7 +194,3 @@ pub struct BevyCamera {
     pub fov: f32,
     pub active: bool,
 }
-
-
-
-

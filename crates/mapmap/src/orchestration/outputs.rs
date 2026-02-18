@@ -141,7 +141,3 @@ pub fn sync_output_windows(
 
     Ok(())
 }
-
-
-
-

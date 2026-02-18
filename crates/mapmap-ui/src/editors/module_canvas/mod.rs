@@ -6828,4 +6828,3 @@ impl ModuleCanvas {
         ));
     }
 }
-

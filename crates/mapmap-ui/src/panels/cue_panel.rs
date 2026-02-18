@@ -335,7 +335,3 @@ impl CuePanel {
             .clicked()
     }
 }
-
-
-
-

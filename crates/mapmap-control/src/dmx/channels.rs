@@ -228,7 +228,3 @@ mod tests {
         assert_eq!(universes, vec![0, 1]);
     }
 }
-
-
-
-

@@ -16,7 +16,3 @@ pub struct MediaManagerContext<'a> {
 pub fn show(ctx: &Context, context: MediaManagerContext) {
     context.ui.ui(ctx, context.library);
 }
-
-
-
-

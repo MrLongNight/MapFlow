@@ -257,7 +257,3 @@ mod tests {
         assert!((quad.vertices[0].position.y - (-2.0)).abs() < 0.001);
     }
 }
-
-
-
-

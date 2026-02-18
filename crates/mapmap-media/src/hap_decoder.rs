@@ -267,7 +267,3 @@ mod tests {
         assert_eq!(size, 480 * 270 * 16); // 480x270 blocks, 16 bytes each
     }
 }
-
-
-
-
