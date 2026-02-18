@@ -80,3 +80,11 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
+
+## 2026-02-18 - Root Directory Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt eine leere Datei `GEMINI.md` sowie `PR_MAINTENANCE_OVERVIEW.md`, das besser in `docs/project/` aufgehoben ist.
+
+**Aktion:**
+- `GEMINI.md` gelöscht.
+- `PR_MAINTENANCE_OVERVIEW.md` nach `docs/project/` verschoben.
