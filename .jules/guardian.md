@@ -80,3 +80,8 @@ to use explicit `AudioTriggerData` initialization.
 calculations for zero-sized layers could result in division by zero (Inf).
 **Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`.
 Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
+
+## 2024-05-28 - [Headless GPU Testing with wgpu]
+
+**Erkenntnis:** Unit tests requiring `wgpu::Texture` can run in headless CI environments (using software rasterizers like llvmpipe) if properly configured. `wgpu` v27 initialization requires careful handling of `DeviceDescriptor` (using `..Default::default()`) and explicit `force_fallback_adapter` requests.
+**Aktion:** Added `test_gpu_frame_validation` in `mapmap-io` marked as `#[ignore]`. This test initializes a minimal headless wgpu context to verify texture wrapping logic, ensuring `VideoFrame` handles GPU resources correctly without needing a full windowing system.

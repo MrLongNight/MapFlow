@@ -446,6 +446,69 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod gpu_tests {
+    use super::*;
+    use std::sync::Arc;
+    use std::time::Duration;
 
+    #[tokio::test]
+    #[ignore] // Requires GPU context
+    async fn test_gpu_frame_validation() {
+        // Initialize wgpu (headless if possible)
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
 
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::LowPower,
+                force_fallback_adapter: true, // Use software rasterizer if needed
+                compatible_surface: None,
+            })
+            .await
+            .expect("Failed to find an appropriate adapter");
 
+        let (device, _queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: None,
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    memory_hints: wgpu::MemoryHints::Performance,
+                    ..Default::default()
+                },
+            )
+            .await
+            .expect("Failed to create device");
+
+        // Create a texture
+        let texture_desc = wgpu::TextureDescriptor {
+            label: Some("Test Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        };
+        let texture = device.create_texture(&texture_desc);
+        let texture_arc = Arc::new(texture);
+
+        // Create VideoFrame
+        let format = VideoFormat::new(100, 100, PixelFormat::RGBA8, 60.0);
+        let frame = VideoFrame {
+            data: FrameData::Gpu(texture_arc),
+            format,
+            timestamp: Duration::from_secs(1),
+            metadata: FrameMetadata::default(),
+        };
+
+        // Assertions
+        assert!(frame.validate().is_ok(), "GPU frame should be valid");
+        assert_eq!(frame.size(), None, "GPU frame size should be None");
+    }
+}
