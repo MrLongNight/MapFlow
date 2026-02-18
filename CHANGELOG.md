@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-02-17: fix(security): Prevent path traversal in control inputs (Sentinel) (#742)
+- 2026-02-17: test(core): Add expanded tests for MeshType and MapFlowModule (Guardian) (#732)
 - 2026-02-12: docs: Enhance core data structure documentation (Scribe)
 - 2026-02-10: feat(bevy): Re-activate BevyParticles node with lightweight mesh-based implementation (#650)
 - 2026-02-09: perf(render): Optimize MeshRenderer uniform buffer writes to avoid redundancy

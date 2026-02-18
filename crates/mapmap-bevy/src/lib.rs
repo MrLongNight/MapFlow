@@ -22,30 +22,21 @@ impl Default for BevyRunner {
 
 impl BevyRunner {
     pub fn new() -> Self {
-        info!("Initializing Bevy integration (Headless Logic Mode)...");
+        info!("Initializing Bevy integration (Safe Logic Mode)...");
 
         let mut app = App::new();
 
-        // Use MinimalPlugins for core logic
+        // Use MinimalPlugins + essential logic plugins
         app.add_plugins(MinimalPlugins);
-
-        // Add infrastructure for scene and asset management
         app.add_plugins((
             bevy::transform::TransformPlugin,
             bevy::asset::AssetPlugin::default(),
             bevy::scene::ScenePlugin,
-            bevy::gltf::GltfPlugin::default(),
         ));
 
-        // Load PBR infrastructure so StandardMaterial and Mesh assets exist
-        app.add_plugins(bevy::pbr::PbrPlugin { ..default() });
-        app.add_plugins(bevy::render::RenderPlugin {
-            render_creation: bevy::render::settings::RenderCreation::Automatic(
-                bevy::render::settings::WgpuSettings::default(),
-            ),
-            ..default()
-        });
-        app.add_plugins(bevy::core_pipeline::CorePipelinePlugin);
+        // Manually initialize asset types required by MapFlow systems to avoid PbrPlugin panic
+        app.init_asset::<bevy::prelude::Mesh>();
+        app.init_asset::<bevy::prelude::StandardMaterial>();
 
         // Register resources
         app.init_resource::<AudioInputResource>();

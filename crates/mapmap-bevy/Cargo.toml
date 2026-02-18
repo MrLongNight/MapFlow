@@ -10,20 +10,11 @@ repository.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 # Bevy 0.16 Upgrade to align with egui/wgpu v27
-bevy = { version = "0.16", default-features = false, features = [
-    "bevy_core_pipeline",
-    "bevy_pbr",
-    "bevy_gltf",
-    "bevy_render",
-    "bevy_scene",
-    "bevy_sprite",
-    "bevy_text",
-    "bevy_ui",
-    "bevy_winit",
+bevy = { version = "0.16", features = [
+    "tonemapping_luts",
     "default_font",
     "x11",
     "wayland",
-    "tonemapping_luts",
 ] }
 
 # Extensions compatible with Bevy 0.16
