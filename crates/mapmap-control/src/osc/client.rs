@@ -135,7 +135,3 @@ mod tests {
         assert!(client.is_err());
     }
 }
-
-
-
-

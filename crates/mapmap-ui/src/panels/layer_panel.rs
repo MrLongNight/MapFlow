@@ -331,7 +331,3 @@ impl LayerPanel {
         }
     }
 }
-
-
-
-

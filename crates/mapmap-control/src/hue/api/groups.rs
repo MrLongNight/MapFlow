@@ -246,7 +246,3 @@ mod tests {
         assert_eq!(response.data[0].channels[1].channel_id, 1);
     }
 }
-
-
-
-

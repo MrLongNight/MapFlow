@@ -569,7 +569,3 @@ mod tests {
         assert_eq!(NodeType::Blur.category(), "Effects");
     }
 }
-
-
-
-

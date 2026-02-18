@@ -146,7 +146,3 @@ async fn test_simple_invert() {
     assert!(data[2] > 245);
     assert_eq!(data[3], 255);
 }
-
-
-
-
