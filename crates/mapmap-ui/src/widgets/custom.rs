@@ -236,8 +236,13 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter()
-        .rect(rect, CornerRadius::ZERO, bg_fill, stroke, egui::StrokeKind::Middle);
+    ui.painter().rect(
+        rect,
+        CornerRadius::ZERO,
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Middle,
+    );
 
     let text_pos = rect.center();
 

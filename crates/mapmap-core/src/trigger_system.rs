@@ -178,8 +178,7 @@ impl TriggerSystem {
         }
 
         // Garbage collection: Remove states for parts that no longer exist or aren't triggers
-        self.states
-            .retain(|k, _| self.active_state_ids.contains(k));
+        self.states.retain(|k, _| self.active_state_ids.contains(k));
     }
 
     /// Check if a specific trigger output is currently active.
