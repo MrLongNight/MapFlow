@@ -302,7 +302,3 @@ mod tests {
         assert_eq!(bindings.get_shortcuts().len(), loaded.get_shortcuts().len());
     }
 }
-
-
-
-

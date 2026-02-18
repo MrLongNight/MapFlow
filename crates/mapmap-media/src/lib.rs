@@ -150,7 +150,3 @@ fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
         path
     )))
 }
-
-
-
-

@@ -572,7 +572,3 @@ LUT_3D_SIZE 2
         assert_eq!(data_2d.len(), (width * height * 4) as usize);
     }
 }
-
-
-
-
