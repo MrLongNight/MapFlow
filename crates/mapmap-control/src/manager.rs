@@ -237,41 +237,28 @@ impl ControlManager {
     /// Validate control value for security issues (e.g. path traversal)
     fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
         if let ControlValue::String(s) = value {
-            let param_name = match target {
-                ControlTarget::PaintParameter(_, name) => Some(name.as_str()),
-                ControlTarget::EffectParameter(_, name) => Some(name.as_str()),
-                ControlTarget::Custom(name) => Some(name.as_str()),
-                _ => None,
-            };
-
-            if let Some(name) = param_name {
-                let name_lower = name.to_lowercase();
-                if name_lower.contains("path")
-                    || name_lower.contains("file")
-                    || name_lower.contains("source")
-                {
-                    // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
-                    // We block:
-                    // - Exact match ".."
-                    // - Start with "../" or "..\"
-                    // - Contains "/../" or "\..\" or mixed separators
-                    // - End with "/.." or "\.."
-                    if s == ".."
-                        || s.starts_with("../")
-                        || s.starts_with("..\\")
-                        || s.contains("/../")
-                        || s.contains("\\..\\")
-                        || s.contains("/..\\")
-                        || s.contains("\\../")
-                        || s.ends_with("/..")
-                        || s.ends_with("\\..")
-                    {
-                        return Err(ControlError::InvalidParameter(format!(
-                            "Security violation: Path traversal detected in value for {}",
-                            name
-                        )));
-                    }
-                }
+            // Apply path traversal validation to ALL string values globally.
+            // This prevents bypass via parameter names like "texture", "asset", "image", etc.
+            // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
+            // We block:
+            // - Exact match ".."
+            // - Start with "../" or "..\"
+            // - Contains "/../" or "\..\" or mixed separators
+            // - End with "/.." or "\.."
+            if s == ".."
+                || s.starts_with("../")
+                || s.starts_with("..\\")
+                || s.contains("/../")
+                || s.contains("\\..\\")
+                || s.contains("/..\\")
+                || s.contains("\\../")
+                || s.ends_with("/..")
+                || s.ends_with("\\..")
+            {
+                return Err(ControlError::InvalidParameter(format!(
+                    "Security violation: Path traversal detected in value for target '{}'",
+                    target.name()
+                )));
             }
         }
         Ok(())
@@ -485,7 +472,7 @@ mod tests {
         );
         assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
 
-        // 4. ".." in non-sensitive parameter should pass (debatable, but current logic allows it)
+        // 4. ".." in non-sensitive parameter should pass as long as it's not a traversal
         manager.apply_control(
             ControlTarget::Custom("MyLabel".to_string()),
             ControlValue::String("Dots..are..okay..here".to_string()),
@@ -499,9 +486,13 @@ mod tests {
             ControlValue::String("Loading...".to_string()),
         );
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // 6. Path traversal in "innocent" looking parameter names should NOW BE BLOCKED
+        manager.apply_control(
+            ControlTarget::Custom("MyLabel".to_string()),
+            ControlValue::String("../secret.txt".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
     }
 }
-
-
-
-

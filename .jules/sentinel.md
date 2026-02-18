@@ -61,3 +61,8 @@
 **Vulnerability:** API responses containing sensitive system status and configuration were potentially cacheable by intermediaries and browsers because `Cache-Control` headers were missing.
 **Learning:** Default `security_headers` middleware in Axum does not automatically prevent caching. Explicit `no-store` is required for control interfaces exposing sensitive data.
 **Prevention:** Always add `Cache-Control: no-store, max-age=0` and `Pragma: no-cache` to the security headers middleware for authenticated API routes.
+
+## 2026-02-18 - [Global Path Traversal Protection]
+**Vulnerability:** The `validate_security` function in `mapmap-control` only enforced path traversal checks (`../`) on parameters whose names contained "path", "file", or "source". This allowed an attacker to bypass validation by using other parameter names (e.g., "texture", "asset") to inject malicious paths.
+**Learning:** Security validation based on variable names (allowlisting/blocklisting names) is fragile and prone to bypasses as code evolves. Vulnerability patterns (like `../`) should be detected based on the *content* of the input, not the *context* of the variable name, especially for generic types like `String`.
+**Prevention:** Apply path traversal validation logic globally to **ALL** user-supplied string inputs in control systems, ensuring that no parameter can carry a traversal payload regardless of its name.
