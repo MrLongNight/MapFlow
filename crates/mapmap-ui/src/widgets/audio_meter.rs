@@ -95,7 +95,9 @@ impl Widget for AudioMeter {
                     AudioMeterStyle::Retro => 300.0,
                     AudioMeterStyle::Digital => 360.0,
                 });
-                let h = self.height.unwrap_or_else(|| ui.available_height().clamp(40.0, 120.0));
+                let h = self
+                    .height
+                    .unwrap_or_else(|| ui.available_height().clamp(40.0, 120.0));
                 (Vec2::new(w, h), Sense::hover())
             }
             AudioMeterMode::Mono { .. } => {
@@ -452,7 +454,8 @@ fn draw_mono_bar(ui: &mut egui::Ui, rect: Rect, level: f32) {
 
     let num_segments = 20;
     let segment_spacing = 1.0;
-    let segment_width = (rect.width() - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
+    let segment_width =
+        (rect.width() - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
 
     for i in 0..num_segments {
         let t = i as f32 / num_segments as f32;
@@ -494,7 +497,8 @@ fn draw_spectrum(ui: &mut egui::Ui, rect: Rect, bands: &[f32], beat_active: bool
     }
 
     let spacing = 2.0;
-    let band_width = ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
+    let band_width =
+        ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
 
     for i in 0..num_bands {
         let energy = bands[i];
