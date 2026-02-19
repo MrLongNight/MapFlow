@@ -81,15 +81,11 @@ impl InspectorPanel {
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
                 // Cyber Header
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-inspector"),
-                    |ui| {
-                        if ui.button("✕").clicked() {
-                            self.visible = false;
-                        }
-                    },
-                );
+                render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
+                    if ui.button("✕").clicked() {
+                        self.visible = false;
+                    }
+                });
 
                 ui.add_space(8.0);
 
