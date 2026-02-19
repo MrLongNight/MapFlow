@@ -159,7 +159,3 @@ mod tests {
         assert!(response.0.data.is_some());
     }
 }
-
-
-
-

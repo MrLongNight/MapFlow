@@ -250,7 +250,3 @@ mod tests {
         assert_eq!(trigger.value, Some("1.0".to_string()));
     }
 }
-
-
-
-

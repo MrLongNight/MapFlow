@@ -389,7 +389,3 @@ pub struct NdiSource {
     /// Source URL
     pub url_address: Option<String>,
 }
-
-
-
-

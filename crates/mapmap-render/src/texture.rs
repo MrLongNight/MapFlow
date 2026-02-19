@@ -308,7 +308,3 @@ pub struct PoolStats {
     pub free_textures: usize,
     pub total_memory: u64,
 }
-
-
-
-

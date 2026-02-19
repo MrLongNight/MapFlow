@@ -410,7 +410,3 @@ mod tests {
         pipeline.stop();
     }
 }
-
-
-
-

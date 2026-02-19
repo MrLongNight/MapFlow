@@ -260,7 +260,3 @@ mod tests {
         assert_eq!(decoder.frames.len(), 10);
     }
 }
-
-
-
-

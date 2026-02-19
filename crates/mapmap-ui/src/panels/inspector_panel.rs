@@ -378,6 +378,3 @@ fn inspector_value(ui: &mut Ui, text: &str) {
             .size(12.0),
     );
 }
-
-
-

@@ -1269,8 +1269,3 @@ fn ui_time_seconds() -> f64 {
         .unwrap_or_default()
         .as_secs_f64()
 }
-
-
-
-
-

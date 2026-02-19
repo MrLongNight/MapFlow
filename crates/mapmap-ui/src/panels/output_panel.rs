@@ -209,7 +209,3 @@ impl OutputPanel {
             });
     }
 }
-
-
-
-

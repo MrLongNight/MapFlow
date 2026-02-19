@@ -312,7 +312,3 @@ mod tests {
         assert_eq!(info.count_enabled(), 4);
     }
 }
-
-
-
-
