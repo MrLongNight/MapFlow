@@ -61,3 +61,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-10 - Discrepancy in PR Reference for Bevy Particles
 **Erkenntnis:** CHANGELOG referenced PR #638 for "Bevy Particles", but git history shows merged commit 52bf7e7 is linked to PR #650.
 **Aktion:** Corrected CHANGELOG entry to point to #650 and updated ROADMAP to reflect the new feature implementation details.
+
+## 2026-02-18 - Massive Consolidation Commit (73d7eb8)
+**Erkenntnis:** A massive commit (73d7eb8) consolidating DMX, Hue, and Bevy particles was merged but missing from CHANGELOG.md. Additionally, ROADMAP.md listed DMX/Hue in incorrect crates (mapmap-io instead of mapmap-control).
+**Aktion:** Added missing CHANGELOG entry and updated ROADMAP paths and status.

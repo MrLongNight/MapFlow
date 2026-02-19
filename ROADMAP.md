@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-17 10:00
+> **Stand:** 2026-02-18 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -866,13 +866,13 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 ### Phase 9: Lighting Integration – IN PROGRESS
 
-* ⬜ **Art-Net DMX Output** (`mapmap-io/src/artnet/`)
-  * ⬜ `artnet_protocol` Crate integrieren
-  * ⬜ DMX-Universe-Sender implementieren
-  * ⬜ Audio-reaktive DMX-Werte generieren
-  * ⬜ UI: DMX-Channel-Mapper in Module Canvas
+* ✅ **Art-Net / sACN DMX Output** (`mapmap-control/src/dmx/`)
+  * ✅ `artnet_protocol` & `sacn` Crate integriert
+  * ✅ DMX-Universe-Sender implementiert (Art-Net & sACN)
+  * ✅ Audio-reaktive DMX-Werte generieren
+  * ✅ UI: DMX-Channel-Mapper in Module Canvas (via Assignment System)
 
-* ✅ **Philips Hue Entertainment Integration** (`mapmap-io/src/hue/`)
+* ✅ **Philips Hue Entertainment Integration** (`mapmap-control/src/hue/`)
   * ✅ `hueclient` für Bridge-Discovery und API-Zugriff
   * ✅ `udp-dtls` für Entertainment-Streaming
   * ✅ Audio-reaktive Farb-Synchronisation
