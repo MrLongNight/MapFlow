@@ -45,6 +45,7 @@ jobs:
             libasound2-dev pkg-config clang libclang-dev \
             libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+            libudev-dev \
             ffmpeg
 
       - name: Check Formatting
@@ -150,6 +151,7 @@ jobs:
             libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev \
             libasound2-dev libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
+            libudev-dev \
             ffmpeg
 
       - name: Install NDI SDK
