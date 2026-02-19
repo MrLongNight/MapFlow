@@ -237,41 +237,34 @@ impl ControlManager {
     /// Validate control value for security issues (e.g. path traversal)
     fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
         if let ControlValue::String(s) = value {
-            let param_name = match target {
-                ControlTarget::PaintParameter(_, name) => Some(name.as_str()),
-                ControlTarget::EffectParameter(_, name) => Some(name.as_str()),
-                ControlTarget::Custom(name) => Some(name.as_str()),
-                _ => None,
-            };
+            // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
+            // We block:
+            // - Exact match ".."
+            // - Start with "../" or "..\"
+            // - Contains "/../" or "\..\" or mixed separators
+            // - End with "/.." or "\.."
+            if s == ".."
+                || s.starts_with("../")
+                || s.starts_with("..\\")
+                || s.contains("/../")
+                || s.contains("\\..\\")
+                || s.contains("/..\\")
+                || s.contains("\\../")
+                || s.ends_with("/..")
+                || s.ends_with("\\..")
+            {
+                // Get name for error message
+                let name = match target {
+                    ControlTarget::PaintParameter(_, name) => name.clone(),
+                    ControlTarget::EffectParameter(_, name) => name.clone(),
+                    ControlTarget::Custom(name) => name.clone(),
+                    _ => target.name(),
+                };
 
-            if let Some(name) = param_name {
-                let name_lower = name.to_lowercase();
-                if name_lower.contains("path")
-                    || name_lower.contains("file")
-                    || name_lower.contains("source")
-                {
-                    // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
-                    // We block:
-                    // - Exact match ".."
-                    // - Start with "../" or "..\"
-                    // - Contains "/../" or "\..\" or mixed separators
-                    // - End with "/.." or "\.."
-                    if s == ".."
-                        || s.starts_with("../")
-                        || s.starts_with("..\\")
-                        || s.contains("/../")
-                        || s.contains("\\..\\")
-                        || s.contains("/..\\")
-                        || s.contains("\\../")
-                        || s.ends_with("/..")
-                        || s.ends_with("\\..")
-                    {
-                        return Err(ControlError::InvalidParameter(format!(
-                            "Security violation: Path traversal detected in value for {}",
-                            name
-                        )));
-                    }
-                }
+                return Err(ControlError::InvalidParameter(format!(
+                    "Security violation: Path traversal detected in value for {}",
+                    name
+                )));
             }
         }
         Ok(())
@@ -499,6 +492,15 @@ mod tests {
             ControlValue::String("Loading...".to_string()),
         );
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // 6. Unsafe value in a parameter that doesn't sound like a file path
+        // previously allowed, now should be blocked
+        manager.apply_control(
+            ControlTarget::Custom("UserDescription".to_string()),
+            ControlValue::String("../../../etc/passwd".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
     }
 }
 
