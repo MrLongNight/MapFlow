@@ -179,7 +179,3 @@ mod tests {
         assert!(second_modified_at > first_modified_at);
     }
 }
-
-
-
-

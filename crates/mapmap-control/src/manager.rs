@@ -503,7 +503,3 @@ mod tests {
         assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
     }
 }
-
-
-
-

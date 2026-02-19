@@ -787,7 +787,3 @@ impl EffectChainRenderer {
         &self.queue
     }
 }
-
-
-
-

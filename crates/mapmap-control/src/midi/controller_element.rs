@@ -305,7 +305,3 @@ mod tests {
         assert!(manager.get("nonexistent").is_none());
     }
 }
-
-
-
-

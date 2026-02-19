@@ -448,8 +448,3 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
 
     changed
 }
-
-
-
-
-

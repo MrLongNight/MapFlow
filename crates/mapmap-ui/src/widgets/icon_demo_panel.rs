@@ -129,8 +129,3 @@ impl IconDemoPanel {
             });
     }
 }
-
-
-
-
-

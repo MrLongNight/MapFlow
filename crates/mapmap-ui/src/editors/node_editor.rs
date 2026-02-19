@@ -738,7 +738,3 @@ impl DataTypeUI for DataType {
         self == other
     }
 }
-
-
-
-
