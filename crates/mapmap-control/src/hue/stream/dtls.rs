@@ -123,7 +123,3 @@ impl HueStreamer {
         Ok(())
     }
 }
-
-
-
-

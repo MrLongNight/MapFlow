@@ -680,4 +680,3 @@ impl App {
         self.dummy_texture = Some(texture);
     }
 }
-

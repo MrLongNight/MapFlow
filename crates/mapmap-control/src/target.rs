@@ -308,7 +308,3 @@ mod tests {
         assert!(nan_vec.validate().is_err());
     }
 }
-
-
-
-

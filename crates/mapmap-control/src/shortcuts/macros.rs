@@ -353,7 +353,3 @@ mod tests {
         assert_eq!(macro_def.actions.len(), loaded.actions.len());
     }
 }
-
-
-
-

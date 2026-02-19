@@ -834,7 +834,3 @@ impl OscillatorRenderer {
         }
     }
 }
-
-
-
-
