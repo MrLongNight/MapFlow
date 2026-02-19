@@ -192,7 +192,8 @@ fn render_content(
     if target_ops.is_empty() && output_id != 0 {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                depth_slice: None,
                 view,
                 resolve_target: None,
 
@@ -217,7 +218,8 @@ fn render_content(
     {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Output Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                depth_slice: None,
                 view,
                 resolve_target: None,
 
@@ -315,7 +317,8 @@ fn render_content(
 
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Mesh Layer Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    depth_slice: None,
                     view,
                     resolve_target: None,
 
@@ -351,7 +354,8 @@ fn render_content(
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Egui Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    depth_slice: None,
                     view,
                     resolve_target: None,
 
@@ -480,7 +484,8 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Preview Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            depth_slice: None,
                             view: &current_view_arc,
                             resolve_target: None,
 
