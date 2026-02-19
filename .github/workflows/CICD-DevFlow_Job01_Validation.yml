@@ -45,7 +45,7 @@ jobs:
             libasound2-dev pkg-config clang libclang-dev \
             libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
-            ffmpeg
+            libudev-dev ffmpeg
 
       - name: Check Formatting
         id: fmt

@@ -54,11 +54,7 @@ impl OutputPanel {
             .scroll([false, true])
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-outputs"),
-                    |_| {},
-                );
+                render_panel_header(ui, &i18n.t("panel-outputs"), |_| {});
 
                 ui.add_space(8.0);
 
