@@ -204,7 +204,3 @@ mod tests {
         assert!((paint.aspect_ratio() - 16.0 / 9.0).abs() < 0.01);
     }
 }
-
-
-
-

@@ -278,6 +278,46 @@ fn test_fallback_behavior() {
     );
 }
 
+#[test]
+fn test_inverted_outputs_logic() {
+    let mut system = TriggerSystem::new();
+    let mut module_manager = ModuleManager::new();
+    let module_id = module_manager.create_module("Test Module".to_string());
+    let module = module_manager.get_module_mut(module_id).unwrap();
 
+    // 1. Config: Beat Output, INVERTED
+    let mut inverted_outputs = std::collections::HashSet::new();
+    inverted_outputs.insert("Beat Out".to_string());
 
+    let config = AudioTriggerOutputConfig {
+        frequency_bands: false,
+        volume_outputs: false,
+        beat_output: true,
+        bpm_output: false,
+        inverted_outputs,
+    };
 
+    let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: AudioBand::Bass,
+        threshold: 0.5,
+        output_config: config,
+    });
+    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
+
+    // 2. Scenario A: Beat DETECTED (Signal High) -> Output Inverted -> INACTIVE
+    let mut audio_data = default_audio_data();
+    audio_data.beat_detected = true;
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        !system.is_active(part_id, 0),
+        "Beat Output should be INACTIVE when detected but inverted"
+    );
+
+    // 3. Scenario B: Beat NOT DETECTED (Signal Low) -> Output Inverted -> ACTIVE
+    audio_data.beat_detected = false;
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        system.is_active(part_id, 0),
+        "Beat Output should be ACTIVE when NOT detected but inverted"
+    );
+}

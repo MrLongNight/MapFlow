@@ -64,11 +64,28 @@ impl TriggerSystem {
                             let mut socket_index = 0;
                             let mut any_output_enabled = false;
 
+                            // Helper for inversion
+                            let is_active = |name: &str, condition: bool| -> bool {
+                                let inverted = output_config.inverted_outputs.contains(name);
+                                condition ^ inverted
+                            };
+
                             // 1. Frequency Bands (9 outputs)
                             if output_config.frequency_bands {
                                 any_output_enabled = true;
-                                for i in 0..9 {
-                                    if audio_data.band_energies[i] > *threshold {
+                                let band_names = [
+                                    "SubBass Out",
+                                    "Bass Out",
+                                    "LowMid Out",
+                                    "Mid Out",
+                                    "HighMid Out",
+                                    "UpperMid Out",
+                                    "Presence Out",
+                                    "Brilliance Out",
+                                    "Air Out",
+                                ];
+                                for (i, name) in band_names.iter().enumerate() {
+                                    if is_active(name, audio_data.band_energies[i] > *threshold) {
                                         self.active_triggers.insert((part.id, socket_index));
                                     }
                                     socket_index += 1;
@@ -79,13 +96,13 @@ impl TriggerSystem {
                             if output_config.volume_outputs {
                                 any_output_enabled = true;
                                 // RMS
-                                if audio_data.rms_volume > *threshold {
+                                if is_active("RMS Volume", audio_data.rms_volume > *threshold) {
                                     self.active_triggers.insert((part.id, socket_index));
                                 }
                                 socket_index += 1;
 
                                 // Peak
-                                if audio_data.peak_volume > *threshold {
+                                if is_active("Peak Volume", audio_data.peak_volume > *threshold) {
                                     self.active_triggers.insert((part.id, socket_index));
                                 }
                                 socket_index += 1;
@@ -94,7 +111,7 @@ impl TriggerSystem {
                             // 3. Beat Output
                             if output_config.beat_output {
                                 any_output_enabled = true;
-                                if audio_data.beat_detected {
+                                if is_active("Beat Out", audio_data.beat_detected) {
                                     self.active_triggers.insert((part.id, socket_index));
                                 }
                                 socket_index += 1;
@@ -110,8 +127,12 @@ impl TriggerSystem {
                             }
 
                             // Fallback: If no outputs are enabled, we default to a single Beat output (index 0)
-                            if !any_output_enabled && audio_data.beat_detected {
-                                self.active_triggers.insert((part.id, 0));
+                            if !any_output_enabled {
+                                // Check if implicit "Beat Out" is inverted
+                                let inverted = output_config.inverted_outputs.contains("Beat Out");
+                                if audio_data.beat_detected ^ inverted {
+                                    self.active_triggers.insert((part.id, 0));
+                                }
                             }
 
                             // Silence unused assignment warning for the last increment
@@ -284,7 +305,3 @@ mod tests {
         assert!(new_state.target >= 0.1 && new_state.target <= 0.2);
     }
 }
-
-
-
-

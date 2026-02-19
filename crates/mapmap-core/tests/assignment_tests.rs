@@ -98,7 +98,3 @@ fn test_control_source_variants() {
     assert_ne!(midi, osc);
     assert_ne!(osc, dmx);
 }
-
-
-
-

@@ -80,3 +80,8 @@ to use explicit `AudioTriggerData` initialization.
 calculations for zero-sized layers could result in division by zero (Inf).
 **Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`.
 Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
+
+## 2024-05-28 - [Trigger System Correctness]
+
+**Erkenntnis:** `TriggerSystem` (legacy/alternative implementation) completely ignored `inverted_outputs` configuration, meaning logical inversions (active on low signal) were never processed, unlike `ModuleEvaluator`.
+**Aktion:** Fixed `TriggerSystem` to respect inversion flags and added `test_inverted_outputs_logic` to catch regressions.
