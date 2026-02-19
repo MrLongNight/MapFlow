@@ -130,7 +130,3 @@ impl Default for ShortcutEditor {
         Self::new()
     }
 }
-
-
-
-

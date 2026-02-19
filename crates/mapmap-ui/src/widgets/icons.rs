@@ -240,7 +240,3 @@ impl IconManager {
         self.image(icon, size).map(|img| ui.add(img))
     }
 }
-
-
-
-

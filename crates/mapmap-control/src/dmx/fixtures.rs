@@ -258,7 +258,3 @@ mod tests {
         assert_eq!(dmx_data[2], 64); // Blue
     }
 }
-
-
-
-

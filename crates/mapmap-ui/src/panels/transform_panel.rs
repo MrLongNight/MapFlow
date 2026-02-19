@@ -228,7 +228,3 @@ impl TransformPanel {
         self.visible = open;
     }
 }
-
-
-
-

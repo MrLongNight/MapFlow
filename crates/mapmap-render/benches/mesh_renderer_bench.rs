@@ -44,8 +44,3 @@ fn mesh_renderer_benchmark(c: &mut Criterion) {
 
 criterion_group!(benches, mesh_renderer_benchmark);
 criterion_main!(benches);
-
-
-
-
-
