@@ -83,7 +83,3 @@ pub fn init(config: &LogConfig) -> Result<Option<LogGuard>> {
 
     Ok(guard)
 }
-
-
-
-
