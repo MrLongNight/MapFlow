@@ -80,3 +80,13 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `apply_global_fix.ps1` nach `.temp-archive/2026-02-10-apply_global_fix.ps1` archiviert.
 - `docs/03-ARCHITECTURE/specs/HueFlow-main.zip` nach `.temp-archive/2026-02-10-HueFlow-main.zip` archiviert.
 - `fix_formatting.py` nach `scripts/fix_formatting.py` verschoben.
+
+## 2026-02-18 - Repository Maintenance & Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt `PR_MAINTENANCE_OVERVIEW.md` (Projektmanagement-Dokument) und eine leere `GEMINI.md` Datei. In `resources/controllers/ecler_nuo4/` befand sich eine Backup-Datei `elements.json.bak`. `.gitignore` fehlte der Eintrag für `Thumbs.db`.
+
+**Aktion:**
+- `PR_MAINTENANCE_OVERVIEW.md` nach `docs/project/PR_MAINTENANCE_OVERVIEW.md` verschoben.
+- `GEMINI.md` nach `.temp-archive/2026-02-18-GEMINI.md` archiviert.
+- `resources/controllers/ecler_nuo4/elements.json.bak` gelöscht.
+- `Thumbs.db` zu `.gitignore` hinzugefügt.
