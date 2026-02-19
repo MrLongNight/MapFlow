@@ -216,7 +216,6 @@ pub fn icon_button(
     let desired_size = Vec2::new(24.0, 24.0);
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
 
-
     // Accessibility info
     response.widget_info(|| WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), text));
 
@@ -240,8 +239,13 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter()
-        .rect(rect, CornerRadius::ZERO, bg_fill, stroke, egui::StrokeKind::Middle);
+    ui.painter().rect(
+        rect,
+        CornerRadius::ZERO,
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Middle,
+    );
 
     // Draw focus ring if focused
     if response.has_focus() {
