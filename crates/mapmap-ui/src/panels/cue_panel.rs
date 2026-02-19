@@ -50,11 +50,7 @@ impl CuePanel {
             .default_size([300.0, 500.0])
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-cues"),
-                    |_| {},
-                );
+                render_panel_header(ui, &i18n.t("panel-cues"), |_| {});
 
                 ui.add_space(8.0);
 
