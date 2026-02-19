@@ -225,7 +225,3 @@ fn create_hello_world_texture(width: u32, height: u32, base_color: [f32; 4]) -> 
 
     data
 }
-
-
-
-

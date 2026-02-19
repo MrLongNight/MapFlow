@@ -411,7 +411,3 @@ mod tests {
         assert!(result_total.is_err());
     }
 }
-
-
-
-

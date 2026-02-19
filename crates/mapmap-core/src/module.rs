@@ -3472,7 +3472,3 @@ fn test_trigger_config_smoothed_fallback_with_invert_external() {
     // Smoothed (Direct Fallback): 0.0 + (100.0 - 0.0) * 0.8 = 80.0
     assert_eq!(config.apply(0.2), 80.0);
 }
-
-
-
-

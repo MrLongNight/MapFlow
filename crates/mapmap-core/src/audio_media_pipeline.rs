@@ -352,7 +352,3 @@ mod tests {
         assert_eq!(pipeline.latency_compensation(), 50.0);
     }
 }
-
-
-
-

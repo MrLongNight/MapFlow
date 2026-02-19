@@ -69,7 +69,3 @@ fn test_load_invalid_ron() {
     let result = load_project(&file_path);
     assert!(matches!(result, Err(IoError::RonDeserialization(_))));
 }
-
-
-
-

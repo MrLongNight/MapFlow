@@ -307,7 +307,3 @@ impl EdgeBlendPanel {
         }
     }
 }
-
-
-
-
