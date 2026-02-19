@@ -83,15 +83,11 @@ impl InspectorPanel {
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
                 // Cyber Header
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-inspector"),
-                    |ui| {
-                        if ui.button("✕").clicked() {
-                            self.visible = false;
-                        }
-                    },
-                );
+                render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
+                    if ui.button("✕").clicked() {
+                        self.visible = false;
+                    }
+                });
 
                 ui.add_space(8.0);
 
@@ -196,10 +192,7 @@ impl InspectorPanel {
             inspector_row(ui, "Position", |ui| {
                 inspector_value(
                     ui,
-                    &format!(
-                        "({:.1}, {:.1})",
-                        transform.position.x, transform.position.y
-                    ),
+                    &format!("({:.1}, {:.1})", transform.position.x, transform.position.y),
                 );
             });
 
@@ -211,10 +204,7 @@ impl InspectorPanel {
             });
 
             inspector_row(ui, "Rotation", |ui| {
-                inspector_value(
-                    ui,
-                    &format!("{:.1}°", transform.rotation.z.to_degrees()),
-                );
+                inspector_value(ui, &format!("{:.1}°", transform.rotation.z.to_degrees()));
             });
         });
 
@@ -262,7 +252,11 @@ impl InspectorPanel {
 
             inspector_row(ui, "Solo", |ui| {
                 if layer.solo {
-                    ui.label(egui::RichText::new("ACTIVE").color(colors::MINT_ACCENT).strong());
+                    ui.label(
+                        egui::RichText::new("ACTIVE")
+                            .color(colors::MINT_ACCENT)
+                            .strong(),
+                    );
                 } else {
                     ui.label(egui::RichText::new("—").color(Color32::GRAY));
                 }
@@ -270,7 +264,11 @@ impl InspectorPanel {
 
             inspector_row(ui, "Bypass", |ui| {
                 if layer.bypass {
-                    ui.label(egui::RichText::new("ACTIVE").color(colors::WARN_COLOR).strong());
+                    ui.label(
+                        egui::RichText::new("ACTIVE")
+                            .color(colors::WARN_COLOR)
+                            .strong(),
+                    );
                 } else {
                     ui.label(egui::RichText::new("—").color(Color32::GRAY));
                 }
@@ -372,9 +370,5 @@ fn inspector_row(ui: &mut Ui, label: &str, add_contents: impl FnOnce(&mut Ui)) {
 }
 
 fn inspector_value(ui: &mut Ui, text: &str) {
-    ui.label(
-        egui::RichText::new(text)
-            .color(Color32::WHITE)
-            .size(12.0),
-    );
+    ui.label(egui::RichText::new(text).color(Color32::WHITE).size(12.0));
 }

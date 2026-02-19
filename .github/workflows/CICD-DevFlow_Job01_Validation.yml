@@ -42,7 +42,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libasound2-dev pkg-config clang libclang-dev \
+            libudev-dev libasound2-dev pkg-config clang libclang-dev \
             libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
             ffmpeg
