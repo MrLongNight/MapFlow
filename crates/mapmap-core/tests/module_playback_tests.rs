@@ -29,7 +29,3 @@ fn test_module_playback_mode_serialization() {
         panic!("Wrong variant deserialized");
     }
 }
-
-
-
-

@@ -18,7 +18,3 @@ fn bench_video_decode(c: &mut Criterion) {
 
 criterion_group!(benches, bench_video_decode);
 criterion_main!(benches);
-
-
-
-
