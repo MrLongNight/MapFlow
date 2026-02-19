@@ -81,7 +81,3 @@ fn test_trigger_config_for_target() {
     assert_eq!(config.target, TriggerTarget::Opacity);
     assert_eq!(config.mode, TriggerMappingMode::Direct);
 }
-
-
-
-

@@ -149,7 +149,3 @@ mod tests {
         assert!(history.undo(state.clone()).is_none()); // Start is gone
     }
 }
-
-
-
-

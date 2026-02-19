@@ -46,7 +46,3 @@ impl AssignmentPanel {
             });
     }
 }
-
-
-
-

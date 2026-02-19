@@ -7,7 +7,3 @@ pub use dashboard::*;
 pub use media_browser::*;
 pub use menu_bar::*;
 pub use module_sidebar::*;
-
-
-
-
