@@ -199,6 +199,49 @@ jobs:
 
               console.log("🎉 PR merged successfully!");
 
+              const linkedIssues = new Set();
+              const textToScan = `${pr.data.title || ''}\n${pr.data.body || ''}`;
+              const closingIssueRegex = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b/gi;
+              for (const match of textToScan.matchAll(closingIssueRegex)) {
+                const issueNumber = Number.parseInt(match[1], 10);
+                if (Number.isInteger(issueNumber) && issueNumber > 0 && issueNumber !== prNumber) {
+                  linkedIssues.add(issueNumber);
+                }
+              }
+
+              for (const issueNumber of linkedIssues) {
+                try {
+                  const issue = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber
+                  });
+
+                  if (issue.data.pull_request) {
+                    console.log(`ℹ️ #${issueNumber} is a pull request, skipping issue closure.`);
+                    continue;
+                  }
+
+                  if (issue.data.state === 'open') {
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      body: `✅ Dieses Issue wurde automatisch nach erfolgreichem Merge von PR #${prNumber} geschlossen.`
+                    });
+                    await github.rest.issues.update({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      state: 'closed'
+                    });
+                    console.log(`✅ Closed linked issue #${issueNumber}`);
+                  }
+                } catch (closeError) {
+                  console.log(`⚠️ Failed to close linked issue #${issueNumber}: ${closeError.message}`);
+                }
+              }
+
               // Optional: Add a comment to the PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
