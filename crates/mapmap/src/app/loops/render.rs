@@ -514,7 +514,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     }
 }
 
-fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
+fn generate_grid_texture(width: u32, height: u32, _layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
     let _bg_color = [0, 0, 0, 255];
     let _grid_color = [255, 255, 255, 255];
