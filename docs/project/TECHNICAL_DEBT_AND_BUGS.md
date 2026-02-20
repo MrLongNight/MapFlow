@@ -7,7 +7,7 @@ This document tracks the current state of MapFlow's implementation, identifying 
 ### 1. Video Rendering Pipeline (Partial Fix Applied)
 - **Status:** **IN PROGRESS**
 - **Symptoms:** Media nodes show no content; Output projectors show magenta/pink patterns.
-- **Root Cause:** 
+- **Root Cause:**
     - Decoded frames were uploaded to `TexturePool` but not synchronized with the `node_previews` map used by the UI.
     - `wgpu` texture format mismatch between decoder (RGBA) and surface (BGRA) handled incorrectly in some places.
     - `PaintTextureCache` default to test patterns instead of waiting for decoder frames.
