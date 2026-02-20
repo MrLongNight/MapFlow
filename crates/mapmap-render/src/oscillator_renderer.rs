@@ -723,7 +723,8 @@ impl OscillatorRenderer {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Oscillator Simulation Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -811,7 +812,8 @@ impl OscillatorRenderer {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Oscillator Distortion Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    depth_slice: None,
                     view: output_view,
                     resolve_target: None,
 
@@ -834,7 +836,3 @@ impl OscillatorRenderer {
         }
     }
 }
-
-
-
-

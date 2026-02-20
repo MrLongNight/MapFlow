@@ -66,9 +66,3 @@ pub fn render_panel_header<R>(
     })
     .inner
 }
-
-
-
-
-
-

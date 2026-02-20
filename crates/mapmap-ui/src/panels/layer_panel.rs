@@ -49,11 +49,7 @@ impl LayerPanel {
             .default_size([380.0, 400.0])
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-layers"),
-                    |_| {},
-                );
+                render_panel_header(ui, &i18n.t("panel-layers"), |_| {});
 
                 ui.add_space(8.0);
 
@@ -331,7 +327,3 @@ impl LayerPanel {
         }
     }
 }
-
-
-
-

@@ -1,8 +1,8 @@
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
-use crate::widgets::{custom, panel};
 use crate::widgets::icons::IconManager;
 use crate::widgets::panel::cyber_panel_frame;
+use crate::widgets::{custom, panel};
 use crate::UIAction;
 use egui::*;
 use mapmap_core::{MappingId, MappingManager};
@@ -171,8 +171,3 @@ impl MappingPanel {
         self.visible = open;
     }
 }
-
-
-
-
-

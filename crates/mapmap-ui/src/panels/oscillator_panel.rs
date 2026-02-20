@@ -48,11 +48,7 @@ impl OscillatorPanel {
             .scroll([false, true])
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &locale.t("oscillator-panel-title"),
-                    |_| {},
-                );
+                render_panel_header(ui, &locale.t("oscillator-panel-title"), |_| {});
 
                 ui.add_space(8.0);
 
@@ -290,8 +286,3 @@ impl OscillatorPanel {
         viz_changed
     }
 }
-
-
-
-
-

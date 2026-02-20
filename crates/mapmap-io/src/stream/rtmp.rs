@@ -289,7 +289,3 @@ mod tests {
         assert!(stats.bitrate.is_some());
     }
 }
-
-
-
-

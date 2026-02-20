@@ -97,17 +97,20 @@ impl WgpuBackend {
         }
 
         if adapter_res.is_none() {
-            adapter_res = Some(instance
-                .request_adapter(&wgpu::RequestAdapterOptions {
-                    power_preference,
-                    compatible_surface: None,
-                    force_fallback_adapter: false,
-                })
-                .await);
+            adapter_res = Some(
+                instance
+                    .request_adapter(&wgpu::RequestAdapterOptions {
+                        power_preference,
+                        compatible_surface: None,
+                        force_fallback_adapter: false,
+                    })
+                    .await,
+            );
         }
 
-        let adapter =
-            adapter_res.unwrap().map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
+        let adapter = adapter_res
+            .unwrap()
+            .map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -116,16 +119,14 @@ impl WgpuBackend {
         );
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("MapFlow Device"),
-                    required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
-                    required_limits: wgpu::Limits {
-                        ..Default::default()
-                    },
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("MapFlow Device"),
+                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
+                required_limits: wgpu::Limits {
                     ..Default::default()
                 },
-            )
+                ..Default::default()
+            })
             .await
             .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;
 
@@ -337,9 +338,3 @@ mod tests {
         });
     }
 }
-
-
-
-
-
-

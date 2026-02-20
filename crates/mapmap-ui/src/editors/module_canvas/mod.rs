@@ -1,4 +1,4 @@
-﻿use crate::editors::mesh_editor::MeshEditor;
+use crate::editors::mesh_editor::MeshEditor;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::{styled_drag_value, styled_slider};
@@ -3081,7 +3081,10 @@ impl ModuleCanvas {
                                         module.color = color_f32;
                                     }
 
-                                    if ui.button("\u{1F5D1}").on_hover_text("Delete Module").clicked()
+                                    if ui
+                                        .button("\u{1F5D1}")
+                                        .on_hover_text("Delete Module")
+                                        .clicked()
                                     {
                                         manager.delete_module(module_id);
                                         self.active_module_id = None;
@@ -5596,7 +5599,9 @@ impl ModuleCanvas {
                 TriggerType::AudioFFT { band, .. } => format!("\u{1F50A} Audio: {:?}", band),
                 TriggerType::Random { .. } => "\u{1F3B2} Random".to_string(),
                 TriggerType::Fixed { interval_ms, .. } => format!("â±ï¸ {}ms", interval_ms),
-                TriggerType::Midi { channel, note, .. } => format!("\u{1F3B9} Ch{} N{}", channel, note),
+                TriggerType::Midi { channel, note, .. } => {
+                    format!("\u{1F3B9} Ch{} N{}", channel, note)
+                }
                 TriggerType::Osc { address } => format!("\u{1F4E1} {}", address),
                 TriggerType::Shortcut { key_code, .. } => format!("âŒ¨ï¸ {}", key_code),
                 TriggerType::Beat => "ðŸ¥ Beat".to_string(),
@@ -5640,8 +5645,12 @@ impl ModuleCanvas {
                         )
                     }
                 }
-                SourceType::VideoMulti { shared_id, .. } => format!("\u{1F4F9} Shared: {}", shared_id),
-                SourceType::ImageMulti { shared_id, .. } => format!("\u{1F5BC} Shared: {}", shared_id),
+                SourceType::VideoMulti { shared_id, .. } => {
+                    format!("\u{1F4F9} Shared: {}", shared_id)
+                }
+                SourceType::ImageMulti { shared_id, .. } => {
+                    format!("\u{1F5BC} Shared: {}", shared_id)
+                }
                 SourceType::BevyAtmosphere { .. } => "â˜ï¸ Atmosphere".to_string(),
                 SourceType::BevyHexGrid { .. } => "\u{1F6D1} Hex Grid".to_string(),
                 SourceType::BevyParticles { .. } => "\u{2728} Particles".to_string(),
@@ -5668,7 +5677,9 @@ impl ModuleCanvas {
                     }
                 }
                 MaskType::Shape(shape) => format!("\u{1F537} {:?}", shape),
-                MaskType::Gradient { angle, .. } => format!("\u{1F308} Gradient {}Â°", *angle as i32),
+                MaskType::Gradient { angle, .. } => {
+                    format!("\u{1F308} Gradient {}Â°", *angle as i32)
+                }
             },
             ModulePartType::Modulizer(modulizer_type) => match modulizer_type {
                 ModulizerType::Effect {
@@ -6849,4 +6860,3 @@ impl ModuleCanvas {
         ));
     }
 }
-

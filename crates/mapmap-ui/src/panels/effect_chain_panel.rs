@@ -395,11 +395,7 @@ impl EffectChainPanel {
             .scroll([false, true])
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &locale.t("panel-effect-chain"),
-                    |_| {},
-                );
+                render_panel_header(ui, &locale.t("panel-effect-chain"), |_| {});
 
                 ui.add_space(8.0);
 
@@ -1393,4 +1389,3 @@ mod tests {
         assert!(panel.actions.is_empty());
     }
 }
-

@@ -45,11 +45,7 @@ impl PaintPanel {
             .scroll([false, true])
             .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(
-                    ui,
-                    &i18n.t("panel-paints"),
-                    |_| {},
-                );
+                render_panel_header(ui, &i18n.t("panel-paints"), |_| {});
 
                 ui.add_space(8.0);
 
@@ -137,7 +133,3 @@ impl PaintPanel {
             });
     }
 }
-
-
-
-

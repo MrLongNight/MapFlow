@@ -286,8 +286,3 @@ fn format_size(bytes: u64) -> String {
     }
     format!("{:.2} {}", size, UNITS[unit_idx])
 }
-
-
-
-
-
