@@ -857,10 +857,10 @@ impl EffectChainRenderer {
                     });
 
                     render_pass.set_pipeline(pipeline);
-                    render_pass.set_bind_group(0, &input_bind_group, &[]);
-                    render_pass.set_bind_group(1, &uniform_bind_group, &[]);
+                    render_pass.set_bind_group(0, &*input_bind_group, &[]);
+                    render_pass.set_bind_group(1, &*uniform_bind_group, &[]);
                     if let Some(lut_bg) = lut_bind_group_resource {
-                        render_pass.set_bind_group(2, &lut_bg, &[]);
+                        render_pass.set_bind_group(2, &*lut_bg, &[]);
                     }
                     render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                     render_pass
