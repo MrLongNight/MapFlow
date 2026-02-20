@@ -62,13 +62,13 @@ impl PixelFormat {
             PixelFormat::UYVY => pixels * 2,
             PixelFormat::NV12 => (pixels * 3) / 2, // Y + UV/2
             PixelFormat::BC1 => {
-                let blocks_x = (width + 3) / 4;
-                let blocks_y = (height + 3) / 4;
+                let blocks_x = width.div_ceil(4);
+                let blocks_y = height.div_ceil(4);
                 (blocks_x * blocks_y * 8) as usize
             }
             PixelFormat::BC3 => {
-                let blocks_x = (width + 3) / 4;
-                let blocks_y = (height + 3) / 4;
+                let blocks_x = width.div_ceil(4);
+                let blocks_y = height.div_ceil(4);
                 (blocks_x * blocks_y * 16) as usize
             }
         }
