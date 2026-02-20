@@ -14,7 +14,7 @@ This document tracks the current state of MapFlow's implementation, identifying 
 
 ### 3. Windows Startup Performance
 - **Status:** **FIXED**
-- **Fix:** 
+- **Fix:**
     - Disabled Bevy asset watcher (prevented startup hang).
     - Implemented 2s timeout for Philips Hue connection.
     - Removed `sysinfo::System::new_all()` (expensive call).
