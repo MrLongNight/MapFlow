@@ -1,4 +1,4 @@
-name: "CICD-DevFlow: Job01 Validation"
+name: "Build & Quality"
 
 # ═══════════════════════════════════════════════════════════════
 # WICHTIG: Dieser Workflow läuft automatisch bei jedem Pull Request
@@ -12,7 +12,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -42,7 +42,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libasound2-dev libudev-dev pkg-config clang libclang-dev \
+            libasound2-dev pkg-config clang libclang-dev \
             libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
             libudev-dev \
@@ -149,7 +149,7 @@ jobs:
             build-essential pkg-config clang libclang-dev \
             yasm nasm libfontconfig1-dev libfreetype6-dev \
             libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev \
-            libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev \
+            libasound2-dev libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
             libudev-dev \
             ffmpeg

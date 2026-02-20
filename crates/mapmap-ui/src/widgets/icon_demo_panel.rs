@@ -2,9 +2,9 @@
 //!
 //! Shows all available Ultimate Colors icons for preview.
 
-use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
+use crate::responsive::ResponsiveLayout;
 
 /// Panel to display all available icons
 pub struct IconDemoPanel {
@@ -46,7 +46,6 @@ impl IconDemoPanel {
         egui::Window::new("🎨 Icon Gallery - Ultimate Colors")
             .default_size(window_size)
             .resizable(true)
-            .scroll([false, true])
             .open(&mut self.visible)
             .scroll([false, true])
             .show(ctx, |ui| {
@@ -65,14 +64,12 @@ impl IconDemoPanel {
                     // Display icons in a grid
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         let available_width = ui.available_width();
-                        // Adjust icon size for compact layouts if not overridden by slider
-                        let display_icon_size = if layout.is_compact() {
-                            self.icon_size * 0.75
+                        let icon_size = if layout.is_compact() {
+                            32.0
                         } else {
                             self.icon_size
                         };
-
-                        let cols = ((available_width - 20.0) / (display_icon_size + 80.0))
+                        let cols = ((available_width - 20.0) / (icon_size + 80.0))
                             .floor()
                             .max(1.0) as usize;
 
@@ -81,7 +78,7 @@ impl IconDemoPanel {
                             .show(ui, |ui| {
                                 for (i, icon) in AppIcon::all().iter().enumerate() {
                                     ui.vertical(|ui| {
-                                        ui.set_width(display_icon_size + 60.0);
+                                        ui.set_width(icon_size + 60.0);
 
                                         // Icon background
                                         egui::Frame::default()
@@ -91,7 +88,7 @@ impl IconDemoPanel {
                                             .show(ui, |ui| {
                                                 ui.centered_and_justified(|ui| {
                                                     if let Some(img) =
-                                                        icon_manager.image(*icon, display_icon_size)
+                                                        icon_manager.image(*icon, icon_size)
                                                     {
                                                         ui.add(img);
                                                     } else {

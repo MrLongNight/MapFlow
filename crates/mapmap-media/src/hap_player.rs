@@ -2,15 +2,17 @@
 //!
 //! Integrates HAP decoding with GPU texture upload for high-performance playback.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
+use crate::decoder::VideoDecoder;
 use crate::hap_decoder::{decode_hap_frame, HapError, HapFrame, HapTextureType};
-use crate::player::{LoopMode, PlaybackState, PlayerError, VideoDecoder};
 use crate::MediaError;
+use mapmap_io::{PixelFormat, VideoFormat, VideoFrame};
 
 /// HAP-specific decoder that produces GPU-ready DXT textures
+#[derive(Clone)]
 pub struct HapVideoDecoder {
     /// Video width
     width: u32,
@@ -23,16 +25,17 @@ pub struct HapVideoDecoder {
     /// Current frame index
     current_frame: usize,
     /// Raw HAP frame data (from container)
-    frames: Vec<Vec<u8>>,
+    frames: Arc<Vec<Vec<u8>>>,
     /// HAP texture type (determined from first frame)
     texture_type: Option<HapTextureType>,
+    /// Path for cloning/re-opening (though we use Arc frames)
+    path: PathBuf,
 }
 
 impl HapVideoDecoder {
     /// Open a HAP video file
     ///
     /// Note: This requires FFmpeg to extract frames from the MOV container.
-    /// For now, this is a placeholder that needs FFmpeg integration.
     #[cfg(feature = "ffmpeg")]
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, MediaError> {
         use ffmpeg_next as ffmpeg;
@@ -118,8 +121,9 @@ impl HapVideoDecoder {
             fps,
             frame_count,
             current_frame: 0,
-            frames,
+            frames: Arc::new(frames),
             texture_type,
+            path: path.to_path_buf(),
         })
     }
 
@@ -157,12 +161,8 @@ impl HapVideoDecoder {
 }
 
 impl VideoDecoder for HapVideoDecoder {
-    fn width(&self) -> u32 {
-        self.width
-    }
-
-    fn height(&self) -> u32 {
-        self.height
+    fn resolution(&self) -> (u32, u32) {
+        (self.width, self.height)
     }
 
     fn fps(&self) -> f64 {
@@ -174,14 +174,7 @@ impl VideoDecoder for HapVideoDecoder {
         std::time::Duration::from_secs_f64(seconds)
     }
 
-    fn frame_count(&self) -> usize {
-        self.frame_count
-    }
-
-    fn decode_frame(&mut self) -> Result<crate::DecodedFrame, MediaError> {
-        // For HAP, we return the raw DXT data instead of decoded RGBA
-        // The GPU will handle the final decompression
-
+    fn next_frame(&mut self) -> crate::Result<VideoFrame> {
         if self.current_frame >= self.frame_count {
             return Err(MediaError::EndOfStream);
         }
@@ -190,32 +183,50 @@ impl VideoDecoder for HapVideoDecoder {
             .decode_current_frame()
             .map_err(|e| MediaError::DecoderError(e.to_string()))?;
 
-        // Note: This returns DXT-compressed data, not RGBA!
-        // The caller must use compressed texture upload
-        let frame = crate::decoder::DecodedFrame {
+        // Determine PixelFormat based on HapTextureType
+        let pixel_format = match hap_frame.texture_type {
+            HapTextureType::Rgb => PixelFormat::BC1,
+            HapTextureType::Rgba | HapTextureType::YCoCg | HapTextureType::YCoCgAlpha => {
+                PixelFormat::BC3
+            }
+        };
+
+        // Note: For YCoCg (HAP Q), we use BC3 but the shader needs to handle color conversion.
+        // We might need metadata to signal this to the renderer.
+        // For now, we assume the renderer (or shader) knows or auto-detects,
+        // but `PixelFormat` alone doesn't convey YCoCg-ness.
+        // Ideally `VideoFrame` metadata should carry this info.
+
+        let format = VideoFormat {
             width: self.width,
             height: self.height,
-            data: hap_frame.texture_data,
-            timestamp: std::time::Duration::from_secs_f64(self.current_frame as f64 / self.fps),
-            // Mark as compressed format (caller should check and use BC upload)
-            format: crate::decoder::PixelFormat::Unknown,
+            pixel_format,
+            frame_rate: self.fps as f32,
         };
+
+        let timestamp = std::time::Duration::from_secs_f64(self.current_frame as f64 / self.fps);
+
+        let mut frame = VideoFrame::new(hap_frame.texture_data, format, timestamp);
+
+        // Add metadata for YCoCg if needed
+        if hap_frame.texture_type.needs_ycocg_conversion() {
+            frame.metadata.add_custom("hap_mode", "ycocg");
+        }
 
         self.current_frame += 1;
 
         Ok(frame)
     }
 
-    fn seek(&mut self, position: std::time::Duration) -> Result<(), MediaError> {
-        let target_frame = (position.as_secs_f64() * self.fps) as usize;
+    fn seek(&mut self, timestamp: std::time::Duration) -> crate::Result<()> {
+        let target_frame = (timestamp.as_secs_f64() * self.fps) as usize;
         self.current_frame = target_frame.min(self.frame_count.saturating_sub(1));
         debug!("HAP seek to frame {}", self.current_frame);
         Ok(())
     }
 
-    fn seek_frame(&mut self, frame: usize) -> Result<(), MediaError> {
-        self.current_frame = frame.min(self.frame_count.saturating_sub(1));
-        Ok(())
+    fn clone_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
+        Ok(Box::new(self.clone()))
     }
 }
 

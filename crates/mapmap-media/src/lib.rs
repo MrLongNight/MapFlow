@@ -14,8 +14,8 @@ use thiserror::Error;
 pub mod decoder;
 #[cfg(feature = "hap")]
 pub mod hap_decoder;
-// #[cfg(feature = "hap")]
-// pub mod hap_player;
+#[cfg(feature = "hap")]
+pub mod hap_player;
 pub mod image_decoder;
 #[cfg(feature = "libmpv")]
 pub mod mpv_decoder;
@@ -30,8 +30,8 @@ pub mod sequence;
 pub use decoder::{FFmpegDecoder, HwAccelType, PixelFormat, TestPatternDecoder, VideoDecoder};
 #[cfg(feature = "hap")]
 pub use hap_decoder::{decode_hap_frame, HapError, HapFrame, HapTextureType};
-// #[cfg(feature = "hap")]
-// pub use hap_player::{is_hap_file, HapVideoDecoder};
+#[cfg(feature = "hap")]
+pub use hap_player::{is_hap_file, HapVideoDecoder};
 pub use image_decoder::{GifDecoder, StillImageDecoder};
 #[cfg(feature = "libmpv")]
 pub use mpv_decoder::MpvDecoder;
@@ -94,20 +94,20 @@ pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
             Box::new(StillImageDecoder::open(path)?)
         }
         // HAP videos are typically in MOV containers
-        // #[cfg(feature = "hap")]
-        // "mov" => {
-        //     // Try HAP first, fall back to other decoders if it fails
-        //     match HapVideoDecoder::open(path) {
-        //         Ok(hap_decoder) => {
-        //             tracing::info!("Opened as HAP video: {:?}", path);
-        //             Box::new(hap_decoder)
-        //         }
-        //         Err(_) => {
-        //             tracing::debug!("Not a HAP file, trying other decoders: {:?}", path);
-        //             open_video_file(path)?
-        //         }
-        //     }
-        // }
+        #[cfg(feature = "hap")]
+        "mov" => {
+            // Try HAP first, fall back to other decoders if it fails
+            match HapVideoDecoder::open(path) {
+                Ok(hap_decoder) => {
+                    tracing::info!("Opened as HAP video: {:?}", path);
+                    Box::new(hap_decoder)
+                }
+                Err(_) => {
+                    tracing::debug!("Not a HAP file, trying other decoders: {:?}", path);
+                    open_video_file(path)?
+                }
+            }
+        }
         _ => open_video_file(path)?,
     };
 

@@ -881,7 +881,7 @@
     },
     {
       "id": "layout_led",
-      "element_type": "button",
+      "element_type": "led",
       "section": "midi_section",
       "label": "Layout LED",
       "position": {

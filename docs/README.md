@@ -43,4 +43,4 @@ Prozesse, Planung und Meta-Informationen.
 
 ---
 
-*Zuletzt aktualisiert: 15.02.2026*
+*Zuletzt aktualisiert: 18.02.2026*

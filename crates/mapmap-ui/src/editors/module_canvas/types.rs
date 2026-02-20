@@ -1,4 +1,4 @@
-use crate::theme::colors;
+use egui::Color32;
 use egui_node_editor::*;
 use mapmap_core::module::{ModulePartId, ModulePartType};
 use std::borrow::Cow;
@@ -72,14 +72,14 @@ pub enum MyResponse {
 impl UserResponseTrait for MyResponse {}
 
 impl DataTypeTrait<MyUserState> for MyDataType {
-    fn data_type_color(&self, _user_state: &mut MyUserState) -> egui::Color32 {
+    fn data_type_color(&self, _user_state: &mut MyUserState) -> Color32 {
         match self {
-            MyDataType::Trigger => egui::Color32::from_rgb(180, 100, 220),
-            MyDataType::Media => egui::Color32::from_rgb(100, 180, 220),
-            MyDataType::Effect => colors::WARN_COLOR,
-            MyDataType::Layer => colors::MINT_ACCENT,
-            MyDataType::Output => colors::ERROR_COLOR,
-            MyDataType::Link => colors::STROKE_GREY,
+            MyDataType::Trigger => Color32::from_rgb(180, 100, 220),
+            MyDataType::Media => Color32::from_rgb(100, 180, 220),
+            MyDataType::Effect => Color32::from_rgb(220, 180, 100),
+            MyDataType::Layer => Color32::from_rgb(100, 220, 140),
+            MyDataType::Output => Color32::from_rgb(220, 100, 100),
+            MyDataType::Link => Color32::from_rgb(200, 200, 200),
         }
     }
 
