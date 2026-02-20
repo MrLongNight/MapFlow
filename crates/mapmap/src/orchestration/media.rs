@@ -1,4 +1,4 @@
-//! Video player and media orchestration.
+//! Video player and media orchestration..
 
 use crate::app::core::app_struct::App;
 use mapmap_core::module::{ModulePartType, SourceType};
