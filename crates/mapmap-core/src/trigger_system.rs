@@ -81,7 +81,8 @@ impl TriggerSystem {
 
                                 for (i, band_name) in band_names.iter().enumerate() {
                                     let active = audio_data.band_energies[i] > *threshold;
-                                    let inverted = output_config.inverted_outputs.contains(*band_name);
+                                    let inverted =
+                                        output_config.inverted_outputs.contains(*band_name);
 
                                     if active ^ inverted {
                                         self.active_triggers.insert((part.id, socket_index));
