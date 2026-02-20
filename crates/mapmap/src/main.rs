@@ -1278,6 +1278,8 @@ impl App {
                                 target_screen,
                                 show_in_preview_panel: _,
                                 extra_preview_window,
+                                ndi_enabled: _ndi_enabled,
+                                ndi_stream_name: _ndi_stream_name,
                                 ..
                             } => {
                                 // 1. Primary Window - Use Logical ID (projector_id) not Part ID
@@ -1337,6 +1339,57 @@ impl App {
                                             self.ui_state.user_config.vsync_mode,
                                         )?;
                                         info!("Created preview window for output {}", window_id);
+                                    }
+                                }
+
+                                // 3. NDI Broadcasting for Projector
+                                #[cfg(feature = "ndi")]
+                                if *_ndi_enabled {
+                                    // Use part.id for unique sender ID (consistent with NdiOutput)
+                                    let sender_id = part.id;
+                                    active_sender_ids.insert(sender_id);
+
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        self.ndi_senders.entry(sender_id)
+                                    {
+                                        // Use configured name or default to "Projector N"
+                                        let stream_name = if _ndi_stream_name.is_empty() {
+                                            name.clone()
+                                        } else {
+                                            _ndi_stream_name.clone()
+                                        };
+
+                                        // Width/Height should match projector resolution, but we might not know it exactly here if auto-sized.
+                                        // However, NDI sender needs a format.
+                                        // We'll use 1920x1080 as default or fetch from window if available.
+                                        let (width, height) = if let Some(ctx) =
+                                            self.window_manager.get(*projector_id)
+                                        {
+                                            (ctx.surface_config.width, ctx.surface_config.height)
+                                        } else {
+                                            (1920, 1080)
+                                        };
+
+                                        match mapmap_io::ndi::NdiSender::new(
+                                            stream_name.clone(),
+                                            mapmap_io::format::VideoFormat {
+                                                width,
+                                                height,
+                                                pixel_format: mapmap_io::format::PixelFormat::BGRA8,
+                                                frame_rate: 60.0,
+                                            },
+                                        ) {
+                                            Ok(sender) => {
+                                                info!(
+                                                    "Created NDI sender for projector: {}",
+                                                    stream_name
+                                                );
+                                                e.insert(sender);
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to create NDI sender: {}", e);
+                                            }
+                                        }
                                     }
                                 }
                             }

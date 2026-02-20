@@ -54,6 +54,31 @@ jobs:
         shell: pwsh
         run: .\vcpkg\vcpkg install ffmpeg:x64-windows
 
+      # ═══════════════════════════════════════════════════════════════
+      # NEU: LLVM/Clang für bindgen installieren
+      # ═══════════════════════════════════════════════════════════════
+      - name: Install LLVM and Clang
+        shell: pwsh
+        run: |
+          choco install llvm --version=18.1.8 -y
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+
+      # ═══════════════════════════════════════════════════════════════
+      # NEU: FFmpeg Include-Pfade für bindgen setzen
+      # ═══════════════════════════════════════════════════════════════
+      - name: Set FFmpeg paths for bindgen
+        shell: pwsh
+        run: |
+          $VcpkgRoot = "$(Get-Location)\vcpkg"
+          $IncludePath = "$VcpkgRoot\installed\x64-windows\include"
+          $LibPath = "$VcpkgRoot\installed\x64-windows\lib"
+
+          echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
+          echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$IncludePath" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$LibPath\pkgconfig" >> $env:GITHUB_ENV
+
       - name: Install WiX Toolset
         run: dotnet tool install --global WiX
 

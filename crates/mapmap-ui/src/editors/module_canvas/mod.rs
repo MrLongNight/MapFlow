@@ -1832,6 +1832,8 @@ impl ModuleCanvas {
                                                 target_screen,
                                                 show_in_preview_panel,
                                                 extra_preview_window,
+                                                ndi_enabled: _ndi_enabled,
+                                                ndi_stream_name: _ndi_stream_name,
                                                 ..
                                             } => {
                                                 ui.label("ðŸ“½ï¸ Projector Output");
@@ -1871,6 +1873,26 @@ impl ModuleCanvas {
                                                 ui.label("ðŸ‘ï¸ Preview:");
                                                 ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
                                                 ui.checkbox(extra_preview_window, "Extra Preview Window");
+
+                                                ui.separator();
+                                                ui.label("\u{1F4E1} NDI Broadcast");
+                                                #[cfg(feature = "ndi")]
+                                                {
+                                                    ui.checkbox(_ndi_enabled, "Enable NDI Output");
+                                                    if *_ndi_enabled {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Stream Name:");
+                                                            ui.text_edit_singleline(_ndi_stream_name);
+                                                        });
+                                                        if _ndi_stream_name.is_empty() {
+                                                            ui.small(format!("Default: {}", name));
+                                                        }
+                                                    }
+                                                }
+                                                #[cfg(not(feature = "ndi"))]
+                                                {
+                                                    ui.label("NDI feature disabled in build");
+                                                }
                                             }
                                             #[cfg(feature = "ndi")]
                                             OutputType::NdiOutput { name } => {
@@ -2796,6 +2818,8 @@ impl ModuleCanvas {
                                 output_width: 0,
                                 output_height: 0,
                                 output_fps: 60.0,
+                                ndi_enabled: false,
+                                ndi_stream_name: String::new(),
                             },
                         ),
                         pos,
@@ -5939,6 +5963,8 @@ impl ModuleCanvas {
                             output_width: 0,
                             output_height: 0,
                             output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
                         }),
                         (650.0, 100.0), // Increased from 450 to 650
                         None,
@@ -5982,6 +6008,8 @@ impl ModuleCanvas {
                             output_width: 0,
                             output_height: 0,
                             output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -6038,6 +6066,8 @@ impl ModuleCanvas {
                             output_width: 0,
                             output_height: 0,
                             output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
                         }),
                         (1250.0, 100.0), // Increased spacing
                         None,
@@ -6080,6 +6110,8 @@ impl ModuleCanvas {
                             output_width: 0,
                             output_height: 0,
                             output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
                         }),
                         (950.0, 100.0), // Increased spacing
                         None,
@@ -6117,6 +6149,8 @@ impl ModuleCanvas {
                             output_width: 0,
                             output_height: 0,
                             output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
                         }),
                         (650.0, 100.0),
                         None,
@@ -6183,6 +6217,8 @@ impl ModuleCanvas {
                             output_width: 0,
                             output_height: 0,
                             output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
                         }),
                         (650.0, 100.0),
                         None,
