@@ -224,6 +224,42 @@ impl ControlManager {
         }
     }
 
+    /// Validate control value for security issues (e.g. path traversal)
+    fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
+        if let ControlValue::String(s) = value {
+            // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
+            // We block:
+            // - Exact match ".."
+            // - Start with "../" or "..\"
+            // - Contains "/../" or "\..\" or mixed separators
+            // - End with "/.." or "\.."
+            if s == ".."
+                || s.starts_with("../")
+                || s.starts_with("..\\")
+                || s.contains("/../")
+                || s.contains("\\..\\")
+                || s.contains("/..\\")
+                || s.contains("\\../")
+                || s.ends_with("/..")
+                || s.ends_with("\\..")
+            {
+                // Get name for error message
+                let name = match target {
+                    ControlTarget::PaintParameter(_, name) => name.clone(),
+                    ControlTarget::EffectParameter(_, name) => name.clone(),
+                    ControlTarget::Custom(name) => name.clone(),
+                    _ => target.name(),
+                };
+
+                return Err(ControlError::InvalidParameter(format!(
+                    "Security violation: Path traversal detected in value for {}",
+                    name
+                )));
+            }
+        }
+        Ok(())
+    }
+
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
         // SECURITY: Validate potential file paths to prevent traversal
