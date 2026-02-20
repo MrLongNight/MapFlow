@@ -81,3 +81,6 @@ project.mflow
 # Archives
 /.temp-archive/
 temp_373/
+
+.gemini/
+gha-creds-*.json

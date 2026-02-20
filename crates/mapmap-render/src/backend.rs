@@ -74,7 +74,7 @@ impl WgpuBackend {
             ..Default::default()
         });
 
-        let mut adapter = None;
+        let mut adapter_res = None;
 
         if let Some(gpu_name) = preferred_gpu {
             if !gpu_name.is_empty() {
@@ -83,11 +83,11 @@ impl WgpuBackend {
                     let info = a.get_info();
                     if info.name == gpu_name {
                         info!("Found preferred adapter: {}", info.name);
-                        adapter = Some(a);
+                        adapter_res = Some(Ok(a));
                         break;
                     }
                 }
-                if adapter.is_none() {
+                if adapter_res.is_none() {
                     tracing::warn!(
                         "Preferred GPU '{}' not found, falling back to auto-selection.",
                         gpu_name
@@ -96,19 +96,21 @@ impl WgpuBackend {
             }
         }
 
-        if adapter.is_none() {
-            adapter = instance
-                .request_adapter(&wgpu::RequestAdapterOptions {
-                    power_preference,
-                    compatible_surface: None,
-                    force_fallback_adapter: false,
-                })
-                .await
-                .ok();
+        if adapter_res.is_none() {
+            adapter_res = Some(
+                instance
+                    .request_adapter(&wgpu::RequestAdapterOptions {
+                        power_preference,
+                        compatible_surface: None,
+                        force_fallback_adapter: false,
+                    })
+                    .await,
+            );
         }
 
-        let adapter =
-            adapter.ok_or_else(|| RenderError::DeviceError("No adapter found".to_string()))?;
+        let adapter = adapter_res
+            .unwrap()
+            .map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -119,12 +121,10 @@ impl WgpuBackend {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("MapFlow Device"),
-                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
+                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
                 required_limits: wgpu::Limits {
-                    max_push_constant_size: 128,
                     ..Default::default()
                 },
-                memory_hints: Default::default(),
                 ..Default::default()
             })
             .await
@@ -311,15 +311,15 @@ mod tests {
     #[test]
     fn test_backend_creation() {
         pollster::block_on(async {
-            let backend = WgpuBackend::new(None).await;
-            if backend.is_err() {
+            let backend = WgpuBackend::new(None).await.ok();
+            if backend.is_none() {
                 // Skipping test on CI/Headless systems without GPU support.
                 eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
                 return;
             }
-            assert!(backend.is_ok());
+            assert!(backend.is_some());
 
-            if let Ok(backend) = backend {
+            if let Some(backend) = backend {
                 println!("Backend: {:?}", backend.adapter_info);
             }
         });
@@ -330,10 +330,10 @@ mod tests {
         pollster::block_on(async {
             // This test ensures that trying to create a backend doesn't panic,
             // even if it fails.
-            let result = WgpuBackend::new(None).await;
+            let result = WgpuBackend::new(None).await.ok();
             match result {
-                Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
-                Err(e) => println!("Backend init failed gracefully: {}", e),
+                Some(b) => println!("Backend init success: {:?}", b.adapter_info),
+                None => println!("Backend init failed gracefully"),
             }
         });
     }

@@ -973,21 +973,6 @@ impl ModuleEvaluator {
                                     flip_horizontal,
                                     flip_vertical,
                                     ..
-                                }
-                                | SourceType::HapVideo {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
                                 } => {
                                     extracted_props = Some(SourceProperties {
                                         opacity: *opacity,
@@ -1364,8 +1349,7 @@ impl ModuleEvaluator {
         match source_type {
             SourceType::MediaFile { path, .. }
             | SourceType::VideoUni { path, .. }
-            | SourceType::ImageUni { path, .. }
-            | SourceType::HapVideo { path, .. } => {
+            | SourceType::ImageUni { path, .. } => {
                 if path.is_empty() {
                     return None;
                 }

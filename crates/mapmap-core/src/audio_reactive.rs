@@ -311,6 +311,9 @@ pub struct AudioReactiveAnimationSystem {
 
     /// Blend factor (0.0 = animation only, 1.0 = audio only)
     pub blend_factor: f32,
+
+    /// Buffer for blended values to avoid allocation
+    blend_buffer: HashMap<String, f32>,
 }
 
 impl Default for AudioReactiveAnimationSystem {
@@ -321,6 +324,7 @@ impl Default for AudioReactiveAnimationSystem {
             audio_controller: AudioReactiveController::new(),
             blend_mode: AudioAnimationBlendMode::Add,
             blend_factor: 1.0,
+            blend_buffer: HashMap::new(),
         }
     }
 }
@@ -351,21 +355,26 @@ impl AudioReactiveAnimationSystem {
         let audio_values = self.audio_controller.update(audio, current_time);
 
         // Blend values based on blend mode
-        let final_values =
-            Self::blend_values(&animated_values, audio_values, blend_mode, blend_factor);
+        Self::blend_values_into_buffer(
+            &mut self.blend_buffer,
+            &animated_values,
+            audio_values,
+            blend_mode,
+            blend_factor,
+        );
 
         // Apply to shader graph
-        for (param_path, value) in final_values {
+        for (param_path, value) in &self.blend_buffer {
             if let Some((node_id_str, param_name)) = param_path.split_once('.') {
                 if let Ok(node_id) = node_id_str.parse::<NodeId>() {
                     if let Some(node) = graph.nodes.get_mut(&node_id) {
                         if let Some(param_value) = node.parameters.get_mut(param_name) {
                             match param_value {
-                                ParameterValue::Float(v) => *v = value,
-                                ParameterValue::Vec2(v) => v[0] = value,
-                                ParameterValue::Vec3(v) => v[0] = value,
-                                ParameterValue::Vec4(v) => v[0] = value,
-                                ParameterValue::Color(c) => c[0] = value,
+                                ParameterValue::Float(v) => *v = *value,
+                                ParameterValue::Vec2(v) => v[0] = *value,
+                                ParameterValue::Vec3(v) => v[0] = *value,
+                                ParameterValue::Vec4(v) => v[0] = *value,
+                                ParameterValue::Color(c) => c[0] = *value,
                                 ParameterValue::String(_) => {}
                             }
                         }
@@ -393,22 +402,22 @@ impl AudioReactiveAnimationSystem {
         }
     }
 
-    /// Blend animated and audio-reactive values
-    fn blend_values(
+    /// Blend animated and audio-reactive values into the internal buffer
+    fn blend_values_into_buffer(
+        buffer: &mut HashMap<String, f32>,
         animated: &HashMap<String, f32>,
         audio: &HashMap<String, f32>,
         blend_mode: AudioAnimationBlendMode,
         blend_factor: f32,
-    ) -> HashMap<String, f32> {
-        // Pre-allocate assuming worst case (no overlap) to avoid resizing
-        let mut result = HashMap::with_capacity(animated.len() + audio.len());
+    ) {
+        buffer.clear();
 
         // Process all keys from animated map
         for (param_path, &anim_value) in animated {
             let audio_value = audio.get(param_path).copied().unwrap_or(0.0);
             let blended =
                 Self::calculate_blended(anim_value, audio_value, blend_mode, blend_factor);
-            result.insert(param_path.clone(), blended);
+            buffer.insert(param_path.clone(), blended);
         }
 
         // Process keys from audio map that were NOT in animated map
@@ -416,11 +425,9 @@ impl AudioReactiveAnimationSystem {
             if !animated.contains_key(param_path) {
                 // anim_value is 0.0
                 let blended = Self::calculate_blended(0.0, audio_value, blend_mode, blend_factor);
-                result.insert(param_path.clone(), blended);
+                buffer.insert(param_path.clone(), blended);
             }
         }
-
-        result
     }
 
     /// Helper to calculate blended value based on mode
@@ -495,7 +502,7 @@ mod tests {
 
     #[test]
     fn test_blend_modes() {
-        let system = AudioReactiveAnimationSystem::new();
+        let mut system = AudioReactiveAnimationSystem::new();
 
         let mut animated = HashMap::new();
         animated.insert("1.opacity".to_string(), 0.5);
@@ -503,12 +510,13 @@ mod tests {
         let mut audio = HashMap::new();
         audio.insert("1.opacity".to_string(), 0.3);
 
-        let blended = AudioReactiveAnimationSystem::blend_values(
+        AudioReactiveAnimationSystem::blend_values_into_buffer(
+            &mut system.blend_buffer,
             &animated,
             &audio,
             system.blend_mode,
             system.blend_factor,
         );
-        assert!(blended.contains_key("1.opacity"));
+        assert!(system.blend_buffer.contains_key("1.opacity"));
     }
 }
