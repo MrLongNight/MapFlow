@@ -216,9 +216,6 @@ pub fn icon_button(
     let desired_size = Vec2::new(24.0, 24.0);
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
 
-    // Accessibility info
-    response.widget_info(|| WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), text));
-
     let visuals = ui.style().interact(&response);
 
     // Background fill logic
@@ -246,16 +243,6 @@ pub fn icon_button(
         stroke,
         egui::StrokeKind::Middle,
     );
-
-    // Draw focus ring if focused
-    if response.has_focus() {
-        ui.painter().rect_stroke(
-            rect.expand(2.0),
-            CornerRadius::ZERO,
-            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Middle,
-        );
-    }
 
     let text_pos = rect.center();
 
@@ -377,9 +364,6 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // Use Sense::click() for accessibility (focus/tab navigation)
     let (rect, response) = ui.allocate_at_least(size, Sense::click());
 
-    // Accessibility info
-    response.widget_info(|| WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), text));
-
     // Use response.id for unique state storage to prevent collisions
     let state_id = response.id.with("hold_state");
 
@@ -460,12 +444,6 @@ pub fn hold_to_action_icon(
 ) -> bool {
     let desired_size = Vec2::splat(size + 8.0); // Add padding for ring
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
-
-    // Accessibility info
-    let enabled = ui.is_enabled();
-    let label = format!("{:?} Action", icon);
-    response.widget_info(move || WidgetInfo::labeled(WidgetType::Button, enabled, label.clone()));
-
     let state_id = response.id.with("hold_state");
 
     // Check inputs
@@ -478,16 +456,6 @@ pub fn hold_to_action_icon(
     // Visuals
     let painter = ui.painter();
     let center = rect.center();
-
-    // Draw focus ring if focused
-    if response.has_focus() {
-        painter.rect_stroke(
-            rect.expand(2.0),
-            CornerRadius::same(6),
-            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
-            egui::StrokeKind::Middle,
-        );
-    }
 
     // Draw Icon
     if let Some(mgr) = icon_manager {

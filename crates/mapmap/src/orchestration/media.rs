@@ -104,7 +104,6 @@ pub fn update_media_players(app: &mut App, dt: f32) {
     let ui_state = &mut app.ui_state;
 
     for ((mod_id, part_id), (_, player)) in &mut app.media_players {
-        let player: &mut mapmap_media::player::VideoPlayer = player;
         // Update player logic
         if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
             let tex_name = format!("part_{}_{}", mod_id, part_id);
