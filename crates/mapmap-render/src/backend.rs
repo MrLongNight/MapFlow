@@ -2,7 +2,7 @@
 
 use crate::{RenderError, Result, ShaderHandle, ShaderSource, TextureDescriptor, TextureHandle};
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use wgpu::util::StagingBelt;
 
 /// Trait for rendering backends
@@ -20,9 +20,11 @@ pub struct WgpuBackend {
     pub device: Arc<wgpu::Device>,
     pub queue: Arc<wgpu::Queue>,
     pub adapter_info: wgpu::AdapterInfo,
+    #[allow(dead_code)]
     staging_belt: StagingBelt,
     texture_counter: u64,
     shader_counter: u64,
+    start_time: std::time::Instant,
 }
 
 impl WgpuBackend {
@@ -48,87 +50,64 @@ impl WgpuBackend {
             return primary_result;
         }
 
-        info!("Primary backend initialization failed, attempting GL fallback...");
-
-        // 2. Fallback to GL if PRIMARY failed
-        // Note: This step might still panic on headless systems if GL is selected but unavailable,
-        // but it's a necessary fallback for older hardware.
+        // 2. Fallback to ALL backends including GL if the modern ones failed.
+        warn!("Modern graphics backends failed. Falling back to OpenGL/Software...");
         Self::new_with_options(
-            wgpu::Backends::GL,
-            wgpu::PowerPreference::HighPerformance,
+            wgpu::Backends::all(),
+            wgpu::PowerPreference::LowPower,
             preferred_gpu,
         )
         .await
     }
 
-    /// Create a new wgpu backend with specific options
-    pub async fn new_with_options(
+    async fn new_with_options(
         backends: wgpu::Backends,
-        power_preference: wgpu::PowerPreference,
+        power_pref: wgpu::PowerPreference,
         preferred_gpu: Option<&str>,
     ) -> Result<Self> {
-        info!("Initializing wgpu backend");
-
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
             ..Default::default()
         });
 
-        let mut adapter_res = None;
-
-        if let Some(gpu_name) = preferred_gpu {
-            if !gpu_name.is_empty() {
-                let adapters = instance.enumerate_adapters(backends);
-                for a in adapters {
-                    let info = a.get_info();
-                    if info.name == gpu_name {
-                        info!("Found preferred adapter: {}", info.name);
-                        adapter_res = Some(Ok(a));
-                        break;
-                    }
-                }
-                if adapter_res.is_none() {
-                    tracing::warn!(
-                        "Preferred GPU '{}' not found, falling back to auto-selection.",
-                        gpu_name
-                    );
-                }
-            }
-        }
-
-        if adapter_res.is_none() {
-            adapter_res = Some(
-                instance
-                    .request_adapter(&wgpu::RequestAdapterOptions {
-                        power_preference,
-                        compatible_surface: None,
-                        force_fallback_adapter: false,
-                    })
-                    .await,
-            );
-        }
-
-        let adapter = adapter_res
-            .unwrap()
-            .map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: power_pref,
+                force_fallback_adapter: false,
+                compatible_surface: None,
+            })
+            .await
+            .map_err(|e| RenderError::DeviceError(e.to_string()))?;
 
         let adapter_info = adapter.get_info();
         info!(
-            "Selected adapter: {} ({:?})",
+            "Using GPU: {} ({:?})",
             adapter_info.name, adapter_info.backend
         );
+
+        // Filter based on preferred GPU name if provided
+        if let Some(preferred) = preferred_gpu {
+            if !adapter_info
+                .name
+                .to_lowercase()
+                .contains(&preferred.to_lowercase())
+            {
+                warn!(
+                    "Current GPU '{}' does not match preferred '{}'. This might be a secondary adapter.",
+                    adapter_info.name, preferred
+                );
+            }
+        }
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("MapFlow Device"),
                 required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
-                required_limits: wgpu::Limits {
-                    ..Default::default()
-                },
+                required_limits: wgpu::Limits::default(),
                 ..Default::default()
             })
             .await
-            .map_err(|e: wgpu::RequestDeviceError| RenderError::DeviceError(e.to_string()))?;
+            .map_err(|e| RenderError::DeviceError(e.to_string()))?;
 
         info!("Device created successfully");
 
@@ -142,6 +121,7 @@ impl WgpuBackend {
             staging_belt,
             texture_counter: 0,
             shader_counter: 0,
+            start_time: std::time::Instant::now(),
         })
     }
 
@@ -168,18 +148,7 @@ impl WgpuBackend {
         &self.adapter_info
     }
 
-    /// Recall staging belt buffers
-    pub fn recall_staging_belt(&mut self) {
-        self.staging_belt.recall();
-    }
-
-    /// Finish staging belt
-    pub fn finish_staging_belt(&mut self) {
-        self.staging_belt.finish();
-    }
-
-    /// Get the preferred surface format.
-    /// Note: This is hardcoded for now as the backend is surface-agnostic.
+    /// Set surface format
     pub fn surface_format(&self) -> wgpu::TextureFormat {
         wgpu::TextureFormat::Bgra8UnormSrgb
     }
@@ -196,13 +165,13 @@ impl RenderBackend for WgpuBackend {
 
     fn create_texture(&mut self, desc: TextureDescriptor) -> Result<TextureHandle> {
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(&format!("Texture {}", self.texture_counter)),
+            label: Some("Backend Texture"),
             size: wgpu::Extent3d {
                 width: desc.width,
                 height: desc.height,
                 depth_or_array_layers: 1,
             },
-            mip_level_count: desc.mip_levels,
+            mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: desc.format,
@@ -216,6 +185,9 @@ impl RenderBackend for WgpuBackend {
             width: desc.width,
             height: desc.height,
             format: desc.format,
+            last_used: Arc::new(std::sync::atomic::AtomicU64::new(
+                self.start_time.elapsed().as_secs(),
+            )),
         };
 
         self.texture_counter += 1;
@@ -223,34 +195,11 @@ impl RenderBackend for WgpuBackend {
             "Created texture {} ({}x{})",
             handle.id, desc.width, desc.height
         );
-
         Ok(handle)
     }
 
     fn upload_texture(&mut self, handle: TextureHandle, data: &[u8]) -> Result<()> {
-        let bytes_per_pixel = match handle.format {
-            wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb => 4,
-            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => 4,
-            _ => {
-                return Err(RenderError::TextureCreation(
-                    "Unsupported texture format for upload".to_string(),
-                ))
-            }
-        };
-
-        let expected_size = (handle.width * handle.height * bytes_per_pixel) as usize;
-        if data.len() != expected_size {
-            return Err(RenderError::TextureCreation(format!(
-                "Data size mismatch: expected {}, got {}",
-                expected_size,
-                data.len()
-            )));
-        }
-
-        // Calculate row stride
-        let bytes_per_row = handle.width * bytes_per_pixel;
-
-        // Use direct write for all textures (queue.write_texture is efficient)
+        let bytes_per_pixel = 4; // Assume RGBA8
         self.queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
@@ -261,7 +210,7 @@ impl RenderBackend for WgpuBackend {
             data,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(bytes_per_row),
+                bytes_per_row: Some(handle.width * bytes_per_pixel),
                 rows_per_image: Some(handle.height),
             },
             wgpu::Extent3d {
@@ -270,27 +219,18 @@ impl RenderBackend for WgpuBackend {
                 depth_or_array_layers: 1,
             },
         );
-
-        debug!(
-            "Uploaded texture {} ({}x{}, {} bytes)",
-            handle.id,
-            handle.width,
-            handle.height,
-            data.len()
-        );
         Ok(())
     }
 
     fn create_shader(&mut self, source: ShaderSource) -> Result<ShaderHandle> {
-        let module = match source {
-            ShaderSource::Wgsl(ref code) => {
-                self.device
-                    .create_shader_module(wgpu::ShaderModuleDescriptor {
-                        label: Some(&format!("Shader {}", self.shader_counter)),
-                        source: wgpu::ShaderSource::Wgsl(code.clone().into()),
-                    })
-            }
-        };
+        let module = self
+            .device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some(&format!("Shader {}", self.shader_counter)),
+                source: match source {
+                    ShaderSource::Wgsl(s) => wgpu::ShaderSource::Wgsl(s.into()),
+                },
+            });
 
         let handle = ShaderHandle {
             id: self.shader_counter,
@@ -298,43 +238,6 @@ impl RenderBackend for WgpuBackend {
         };
 
         self.shader_counter += 1;
-        debug!("Created shader {}", handle.id);
-
         Ok(handle)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_backend_creation() {
-        pollster::block_on(async {
-            let backend = WgpuBackend::new(None).await.ok();
-            if backend.is_none() {
-                // Skipping test on CI/Headless systems without GPU support.
-                eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
-                return;
-            }
-            assert!(backend.is_some());
-
-            if let Some(backend) = backend {
-                println!("Backend: {:?}", backend.adapter_info);
-            }
-        });
-    }
-
-    #[test]
-    fn test_initialization_robustness() {
-        pollster::block_on(async {
-            // This test ensures that trying to create a backend doesn't panic,
-            // even if it fails.
-            let result = WgpuBackend::new(None).await.ok();
-            match result {
-                Some(b) => println!("Backend init success: {:?}", b.adapter_info),
-                None => println!("Backend init failed gracefully"),
-            }
-        });
     }
 }

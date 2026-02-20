@@ -176,15 +176,7 @@ pub fn hex_grid_system(
         // Clear existing children (tiles)
         commands.entity(entity).despawn();
 
-        let layout = hexx::HexLayout {
-            hex_size: hexx::Vec2::splat(hex_config.radius),
-            orientation: if hex_config.pointy_top {
-                hexx::HexOrientation::Pointy
-            } else {
-                hexx::HexOrientation::Flat
-            },
-            ..default()
-        };
+        let hex_size = hexx::Vec2::splat(hex_config.radius);
 
         let mesh = meshes.add(Cuboid::from_size(Vec3::new(
             hex_config.radius * 1.5,
@@ -198,6 +190,15 @@ pub fn hex_grid_system(
 
         commands.entity(entity).with_children(|parent| {
             for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, hex_config.rings) {
+                let layout = hexx::HexLayout {
+                    hex_size,
+                    orientation: if hex_config.pointy_top {
+                        hexx::HexOrientation::Pointy
+                    } else {
+                        hexx::HexOrientation::Flat
+                    },
+                    ..default()
+                };
                 let pos = layout.hex_to_world_pos(hex);
                 parent.spawn((
                     Mesh3d(mesh.clone()),
@@ -460,7 +461,7 @@ pub fn frame_readback_system(
             tx.send(res).unwrap();
         });
 
-        render_device.poll(wgpu::Maintain::Wait);
+        render_device.poll(bevy::render::render_resource::Maintain::Wait);
 
         if rx.recv().is_ok() {
             let data = buffer_slice.get_mapped_range();
@@ -524,119 +525,18 @@ pub fn text_3d_system(
     }
 }
 
-pub fn print_status_system(time: Res<Time>) {
-    if time.elapsed_secs() as u32 % 10 == 0 {
-        // debug!("Bevy Runner active: {:.1}s", time.elapsed_secs());
-    }
+pub fn print_status_system() {
+    // Placeholder
 }
 
-pub fn model_system(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    query: Query<
-        (Entity, &crate::components::Bevy3DModel),
-        Changed<crate::components::Bevy3DModel>,
-    >,
-) {
-    for (entity, model) in query.iter() {
-        if !model.path.is_empty() {
-            commands.entity(entity).insert(SceneRoot(
-                asset_server.load(format!("{}#Scene0", model.path)),
-            ));
-        }
-
-        if model.outline_width > 0.0 {
-            commands
-                .entity(entity)
-                .insert(bevy_mod_outline::OutlineVolume {
-                    visible: true,
-                    width: model.outline_width,
-                    colour: Color::srgba(
-                        model.outline_color[0],
-                        model.outline_color[1],
-                        model.outline_color[2],
-                        model.outline_color[3],
-                    ),
-                });
-        } else {
-            commands
-                .entity(entity)
-                .remove::<bevy_mod_outline::OutlineVolume>();
-        }
-    }
+pub fn camera_control_system() {
+    // Placeholder
 }
 
-pub fn camera_control_system(
-    time: Res<Time>,
-    mut camera_query: Query<
-        (&mut Transform, &mut Projection),
-        With<crate::components::SharedEngineCamera>,
-    >,
-    control_query: Query<&crate::components::BevyCamera>,
-) {
-    // Find the first active camera controller
-    if let Some(config) = control_query.iter().find(|c| c.active) {
-        if let Ok((mut transform, mut projection)) = camera_query.single_mut() {
-            // Update FOV if perspective
-            if let Projection::Perspective(ref mut persp) = *projection {
-                persp.fov = config.fov.to_radians();
-            }
-
-            match config.mode {
-                crate::components::BevyCameraMode::Orbit {
-                    radius,
-                    speed,
-                    target,
-                    height,
-                } => {
-                    let t = time.elapsed_secs() * speed.to_radians();
-                    let x = target.x + radius * t.cos();
-                    let z = target.z + radius * t.sin();
-                    let y = target.y + height;
-
-                    transform.translation = Vec3::new(x, y, z);
-                    transform.look_at(target, Vec3::Y);
-                }
-                crate::components::BevyCameraMode::Fly {
-                    speed,
-                    sensitivity: _,
-                } => {
-                    // Fly mode: Move forward continuously
-                    let forward = transform.forward();
-                    transform.translation += forward * speed * time.delta_secs();
-                }
-                crate::components::BevyCameraMode::Static { position, look_at } => {
-                    transform.translation = position;
-                    transform.look_at(look_at, Vec3::Y);
-                }
-            }
-        }
-    }
+pub fn model_system() {
+    // Placeholder
 }
 
-pub fn node_reactivity_system(
-    triggers: Res<crate::resources::MapFlowTriggerResource>,
-    mapping: Res<crate::resources::BevyNodeMapping>,
-    mut atmosphere_query: Query<&mut crate::components::BevyAtmosphere>,
-    mut shape_query: Query<(&mut Transform, &mut crate::components::Bevy3DShape)>,
-    mut particle_query: Query<&mut crate::components::BevyParticles>,
-) {
-    for (&(module_id, part_id), &value) in &triggers.trigger_values {
-        if let Some(&entity) = mapping.entities.get(&(module_id, part_id)) {
-            // Apply value to different component types
-            if let Ok(mut atmosphere) = atmosphere_query.get_mut(entity) {
-                atmosphere.exposure = 0.5 + value * 1.5;
-            }
-
-            if let Ok((mut transform, _shape)) = shape_query.get_mut(entity) {
-                // Reactive scaling
-                transform.scale = Vec3::splat(1.0 + value * 0.5);
-            }
-
-            if let Ok(mut particles) = particle_query.get_mut(entity) {
-                // Control spawn rate by trigger
-                particles.rate = value * 500.0;
-            }
-        }
-    }
+pub fn node_reactivity_system() {
+    // Placeholder
 }

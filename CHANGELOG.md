@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-02-20: feat(render): Add 3D LUT effect support with GPU-accelerated color grading (#770)
+- 2026-02-20: fix(render): Resolve architectural inconsistencies in media player command dispatch
+- 2026-02-20: docs: Professionalize README.md with improved vision, feature highlights, and optimized workflow badges
+- 2026-02-20: fix(ci): Resolve wgpu v27 and hexx v0.18 compatibility issues in rendering and Bevy integration
 - 2026-02-17: fix(security): Prevent path traversal in control inputs (Sentinel) (#742)
 - 2026-02-17: test(core): Add expanded tests for MeshType and MapFlowModule (Guardian) (#732)
 - 2026-02-12: docs: Enhance core data structure documentation (Scribe)

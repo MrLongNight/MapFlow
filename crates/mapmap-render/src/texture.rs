@@ -2,7 +2,9 @@
 
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 /// Handle to a GPU texture
 #[derive(Clone)]
@@ -12,6 +14,8 @@ pub struct TextureHandle {
     pub width: u32,
     pub height: u32,
     pub format: wgpu::TextureFormat,
+    /// Timestamp (seconds since pool creation) when last used
+    pub last_used: Arc<AtomicU64>,
 }
 
 impl TextureHandle {
@@ -29,6 +33,12 @@ impl TextureHandle {
             _ => 4, // Default to 4 bytes
         };
         (self.width * self.height * bytes_per_pixel) as u64
+    }
+
+    /// Mark as used now
+    pub fn mark_used(&self, start_time: Instant) {
+        let now_secs = start_time.elapsed().as_secs();
+        self.last_used.store(now_secs, Ordering::Relaxed);
     }
 }
 
@@ -58,7 +68,8 @@ impl Default for TextureDescriptor {
 pub struct TexturePool {
     device: Arc<wgpu::Device>,
     textures: RwLock<HashMap<String, TextureHandle>>,
-    views: RwLock<HashMap<String, Arc<wgpu::TextureView>>>, // Changed to Arc
+    views: RwLock<HashMap<String, Arc<wgpu::TextureView>>>,
+    start_time: Instant,
 }
 
 impl TexturePool {
@@ -67,6 +78,7 @@ impl TexturePool {
             device,
             textures: RwLock::new(HashMap::new()),
             views: RwLock::new(HashMap::new()),
+            start_time: Instant::now(),
         }
     }
 
@@ -79,8 +91,8 @@ impl TexturePool {
         format: wgpu::TextureFormat,
         usage: wgpu::TextureUsages,
     ) -> String {
-        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-        let id = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let id = COUNTER.fetch_add(1, Ordering::Relaxed);
 
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some(name),
@@ -97,16 +109,19 @@ impl TexturePool {
             view_formats: &[],
         });
 
+        let last_used = Arc::new(AtomicU64::new(self.start_time.elapsed().as_secs()));
+
         let handle = TextureHandle {
             id,
             texture: Arc::new(texture),
             width,
             height,
             format,
+            last_used,
         };
 
         let view = handle.create_view();
-        let view_arc = Arc::new(view); // Wrap in Arc
+        let view_arc = Arc::new(view);
 
         let name_owned = name.to_string();
 
@@ -117,15 +132,15 @@ impl TexturePool {
     }
 
     /// Get a texture view by name.
-    ///
-    /// Optimized to use cached views where possible to avoid expensive reallocation
-    /// in the render loop. Returns an Arc to the view.
     pub fn get_view(&self, name: &str) -> Arc<wgpu::TextureView> {
+        // Refresh usage timestamp
+        if let Some(handle) = self.textures.read().get(name) {
+            handle.mark_used(self.start_time);
+        }
+
         // Fast path: check views cache
-        {
-            if let Some(view) = self.views.read().get(name).cloned() {
-                return view;
-            }
+        if let Some(view) = self.views.read().get(name).cloned() {
+            return view;
         }
 
         // Slow path: create from handle
@@ -139,18 +154,18 @@ impl TexturePool {
         Arc::new(view)
     }
 
-    /// Alias an existing texture to a new name (sharing the underlying resource)
+    /// Alias an existing texture to a new name
     pub fn alias_texture(&self, src_name: &str, dest_name: &str) -> bool {
         let textures = self.textures.read();
         if let Some(handle) = textures.get(src_name) {
+            handle.mark_used(self.start_time);
             let handle_clone = handle.clone();
-            drop(textures); // Drop read lock before write
+            drop(textures);
 
             self.textures
                 .write()
                 .insert(dest_name.to_string(), handle_clone);
 
-            // Also alias the view if it exists
             if let Some(view) = self.views.read().get(src_name).cloned() {
                 self.views.write().insert(dest_name.to_string(), view);
             }
@@ -162,10 +177,16 @@ impl TexturePool {
 
     /// Check if a texture exists in the pool.
     pub fn has_texture(&self, name: &str) -> bool {
-        self.textures.read().contains_key(name)
+        let exists = self.textures.read().contains_key(name);
+        if exists {
+            if let Some(handle) = self.textures.read().get(name) {
+                handle.mark_used(self.start_time);
+            }
+        }
+        exists
     }
 
-    /// Ensure a texture exists with specific properties, creating it if necessary.
+    /// Ensure a texture exists with specific properties.
     pub fn ensure_texture(
         &self,
         name: &str,
@@ -182,6 +203,7 @@ impl TexturePool {
                     && handle.format == format
                     && handle.texture.usage() == usage
                 {
+                    handle.mark_used(self.start_time);
                     return;
                 }
             }
@@ -190,25 +212,21 @@ impl TexturePool {
     }
 
     /// Resize a texture if its dimensions have changed.
-    ///
-    /// ⚡ Bolt: Optimized with double-checked locking to avoid write locks on steady state.
     pub fn resize_if_needed(&self, name: &str, new_width: u32, new_height: u32) {
-        // Optimistic read check
         {
             let textures = self.textures.read();
             if let Some(handle) = textures.get(name) {
+                handle.mark_used(self.start_time);
                 if handle.width == new_width && handle.height == new_height {
                     return;
                 }
             } else {
-                return; // Texture doesn't exist, nothing to resize
+                return;
             }
         }
 
-        // Needs resize
         let mut textures = self.textures.write();
         if let Some(handle) = textures.get_mut(name) {
-            // Double check in case another thread resized it while we waited
             if handle.width != new_width || handle.height != new_height {
                 let new_texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some(name),
@@ -228,6 +246,7 @@ impl TexturePool {
                 handle.texture = Arc::new(new_texture);
                 handle.width = new_width;
                 handle.height = new_height;
+                handle.mark_used(self.start_time);
 
                 let new_view = handle.create_view();
                 self.views
@@ -238,8 +257,6 @@ impl TexturePool {
     }
 
     /// Upload data to a texture.
-    ///
-    /// ⚡ Bolt: Optimized to use read lock for handle retrieval.
     pub fn upload_data(
         &self,
         queue: &wgpu::Queue,
@@ -248,10 +265,8 @@ impl TexturePool {
         width: u32,
         height: u32,
     ) {
-        // Ensure texture exists and is correct size
         self.resize_if_needed(name, width, height);
 
-        // Optimistic read lock to get handle
         let handle = {
             let textures = self.textures.read();
             textures.get(name).cloned()
@@ -260,19 +275,18 @@ impl TexturePool {
         let handle = if let Some(h) = handle {
             h
         } else {
-            // Create new (requires write lock internally)
-            let _ = self.create(
+            self.create(
                 name,
                 width,
                 height,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             );
-            // Recursively call to get the handle again
             return self.upload_data(queue, name, data, width, height);
         };
 
-        // Write data
+        handle.mark_used(self.start_time);
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
@@ -294,10 +308,56 @@ impl TexturePool {
         );
     }
 
-    /// Release a texture, making it available for reuse or deallocation.
+    /// Release a texture manually.
     pub fn release(&self, name: &str) {
         self.textures.write().remove(name);
         self.views.write().remove(name);
+    }
+
+    /// Perform Garbage Collection: remove textures not used for TTL duration.
+    pub fn collect_garbage(&self, ttl: Duration) -> usize {
+        let now_secs = self.start_time.elapsed().as_secs();
+        let ttl_secs = ttl.as_secs();
+
+        let mut to_remove = Vec::new();
+        {
+            let textures = self.textures.read();
+            for (name, handle) in textures.iter() {
+                // Persistent textures should never be GC'd
+                if name == "composite" || name.starts_with("layer_pong") || name == "bevy_output" {
+                    continue;
+                }
+
+                let last_used = handle.last_used.load(Ordering::Relaxed);
+                if now_secs > last_used + ttl_secs {
+                    to_remove.push(name.clone());
+                }
+            }
+        }
+
+        let removed_count = to_remove.len();
+        if !to_remove.is_empty() {
+            let mut textures = self.textures.write();
+            let mut views = self.views.write();
+            for name in to_remove {
+                textures.remove(&name);
+                views.remove(&name);
+            }
+        }
+
+        removed_count
+    }
+
+    /// Get current stats
+    pub fn get_stats(&self) -> PoolStats {
+        let textures = self.textures.read();
+        let total_memory = textures.values().map(|h| h.size_bytes()).sum();
+
+        PoolStats {
+            total_textures: textures.len(),
+            free_textures: 0,
+            total_memory,
+        }
     }
 }
 
