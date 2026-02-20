@@ -4,6 +4,11 @@ name: "Stable Release"
 # WICHTIG: Dieser Workflow erstellt produktionsreife Releases.
 # Er generiert MSI-Installer und ZIP-Archive für Windows sowie
 # Tarballs für Linux.
+#
+# FIX 2026-02-20: Windows-Build korrigiert – ffmpeg-sys-next
+# suchte nach Linux-Headern (/usr/include/libavcodec/avfft.h)
+# auf Windows. Lösung: FFMPEG_DIR + pkg-config korrekt setzen,
+# damit bindgen die vcpkg-Header findet.
 # ═══════════════════════════════════════════════════════════════
 
 on:
@@ -55,7 +60,7 @@ jobs:
         run: .\vcpkg\vcpkg install ffmpeg:x64-windows
 
       # ═══════════════════════════════════════════════════════════════
-      # NEU: LLVM/Clang für bindgen installieren
+      # LLVM/Clang für bindgen installieren
       # ═══════════════════════════════════════════════════════════════
       - name: Install LLVM and Clang
         shell: pwsh
@@ -65,19 +70,74 @@ jobs:
           echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
       # ═══════════════════════════════════════════════════════════════
-      # NEU: FFmpeg Include-Pfade für bindgen setzen
+      # pkg-config für Windows installieren (benötigt für ffmpeg-sys-next)
       # ═══════════════════════════════════════════════════════════════
-      - name: Set FFmpeg paths for bindgen
+      - name: Install pkg-config for Windows
+        shell: pwsh
+        run: |
+          choco install pkgconfiglite -y
+          echo "C:\ProgramData\chocolatey\bin" >> $env:GITHUB_PATH
+
+      # ═══════════════════════════════════════════════════════════════
+      # FFmpeg-Pfade korrekt für bindgen und ffmpeg-sys-next setzen
+      #
+      # KRITISCH: FFMPEG_DIR wird von ffmpeg-sys-next als primäre
+      # Quelle für Header und Libs verwendet. Ohne diese Variable
+      # fällt das Build-Script auf Linux-Pfade zurück und sucht
+      # nach /usr/include/libavcodec/avfft.h – was auf Windows
+      # nicht existiert.
+      # ═══════════════════════════════════════════════════════════════
+      - name: Set FFmpeg paths for bindgen and ffmpeg-sys-next
         shell: pwsh
         run: |
           $VcpkgRoot = "$(Get-Location)\vcpkg"
-          $IncludePath = "$VcpkgRoot\installed\x64-windows\include"
-          $LibPath = "$VcpkgRoot\installed\x64-windows\lib"
+          $InstalledDir = "$VcpkgRoot\installed\x64-windows"
+          $IncludePath = "$InstalledDir\include"
+          $LibPath = "$InstalledDir\lib"
+          $BinPath = "$InstalledDir\bin"
 
+          # FFMPEG_DIR ist die primäre Variable für ffmpeg-sys-next
+          # Sie verhindert, dass das Build-Script Linux-Fallback-Pfade nutzt
+          echo "FFMPEG_DIR=$InstalledDir" >> $env:GITHUB_ENV
+
+          # Explizite Include/Lib-Pfade als Fallback
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$IncludePath" >> $env:GITHUB_ENV
+
+          # pkg-config muss die .pc-Dateien von vcpkg finden
           echo "PKG_CONFIG_PATH=$LibPath\pkgconfig" >> $env:GITHUB_ENV
+
+          # Bindgen muss die vcpkg-Header finden, NICHT /usr/include
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$IncludePath" >> $env:GITHUB_ENV
+
+          # DLL-Pfad für Runtime
+          echo "$BinPath" >> $env:GITHUB_PATH
+
+          # Diagnose-Ausgabe
+          Write-Host "=== FFmpeg Environment Setup ==="
+          Write-Host "FFMPEG_DIR=$InstalledDir"
+          Write-Host "FFMPEG_INCLUDE_DIR=$IncludePath"
+          Write-Host "FFMPEG_LIB_DIR=$LibPath"
+          Write-Host "PKG_CONFIG_PATH=$LibPath\pkgconfig"
+          Write-Host "BINDGEN_EXTRA_CLANG_ARGS=-I$IncludePath"
+
+          # Verifiziere, dass die Header tatsächlich existieren
+          if (Test-Path "$IncludePath\libavcodec\avcodec.h") {
+              Write-Host "✅ FFmpeg headers found at $IncludePath"
+          } else {
+              Write-Error "❌ FFmpeg headers NOT found at $IncludePath"
+              Get-ChildItem $InstalledDir -Recurse -Filter "avcodec.h" | ForEach-Object { Write-Host "Found: $($_.FullName)" }
+              exit 1
+          }
+
+          # Verifiziere, dass .lib-Dateien existieren
+          if (Test-Path "$LibPath\avcodec.lib") {
+              Write-Host "✅ FFmpeg libs found at $LibPath"
+          } else {
+              Write-Error "❌ FFmpeg libs NOT found at $LibPath"
+              Get-ChildItem $InstalledDir -Recurse -Filter "avcodec.lib" | ForEach-Object { Write-Host "Found: $($_.FullName)" }
+              exit 1
+          }
 
       - name: Install WiX Toolset
         run: dotnet tool install --global WiX
@@ -86,20 +146,28 @@ jobs:
         run: cargo install cargo-wix
 
       - name: Build (Release)
-        run: cargo build --release --verbose --features "audio,ffmpeg"
+        shell: pwsh
+        run: |
+          # Nochmal sicherstellen, dass die Env-Variablen gesetzt sind
+          Write-Host "FFMPEG_DIR=$env:FFMPEG_DIR"
+          Write-Host "LIBCLANG_PATH=$env:LIBCLANG_PATH"
+          Write-Host "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
+          cargo build --release --verbose --features "audio,ffmpeg"
 
       - name: Prepare Release Folder & Copy DLLs
         shell: pwsh
         run: |
           $ReleaseDir = "target/release"
-          $VcpkgBin = "vcpkg_installed/x64-windows/bin"
-          if (-not (Test-Path $VcpkgBin)) { $VcpkgBin = "vcpkg/installed/x64-windows/bin" }
+          $VcpkgBin = "vcpkg/installed/x64-windows/bin"
 
           if (Test-Path $VcpkgBin) {
               Write-Host "Copying DLLs from $VcpkgBin to $ReleaseDir..."
+              $DllCount = (Get-ChildItem "$VcpkgBin/*.dll").Count
               Copy-Item "$VcpkgBin/*.dll" "$ReleaseDir/" -Force
+              Write-Host "✅ Copied $DllCount DLLs"
           } else {
-              Write-Warning "Vcpkg bin directory not found!"
+              Write-Error "❌ Vcpkg bin directory not found at $VcpkgBin!"
+              exit 1
           }
 
       - name: Create ZIP Artifact
@@ -114,7 +182,6 @@ jobs:
         shell: pwsh
         run: |
           # Use cargo wix to build the MSI
-          # Note: version in Cargo.toml should ideally match, but we can override
           cargo wix --release --no-check-includes
           $MsiPath = Get-ChildItem -Path "target/wix/*.msi" | Select-Object -First 1 -ExpandProperty FullName
           Move-Item -Path $MsiPath -Destination "MapFlow-${{ inputs.version }}-x64.msi"
