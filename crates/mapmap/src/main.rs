@@ -452,112 +452,85 @@ impl App {
                             .collect();
                     }
 
-                    // 1. Handle Source Commands for this module
-                    #[allow(clippy::for_kv_map)]
-                    for (part_id, cmd) in &result.source_commands {
-                        #[allow(clippy::single_match)]
-                        match cmd {
-                            mapmap_core::SourceCommand::PlayMedia {
-                                path,
-                                trigger_value,
-                            } => {
-                                let path = path.clone();
-                                let part_id = *part_id;
-                                let player_key = (module.id, part_id);
-                                if path.is_empty() {
-                                    continue;
-                                }
-
-                                let player_needs_reload = if let Some((current_path, _)) =
-                                    self.media_players.get(&player_key)
-                                {
-                                    current_path != &path
-                                } else {
-                                    true
-                                };
-
-                                if player_needs_reload {
-                                    match mapmap_media::open_path(&path) {
-                                        Ok(player) => {
-                                            self.media_players
-                                                .insert(player_key, (path.clone(), player));
+                                        // 1. Handle Source Commands for this module
+                                        #[allow(clippy::for_kv_map)]
+                                        for (part_id, cmd) in &result.source_commands {
+                                            let part_id = *part_id;
+                                            let player_key = (module.id, part_id);
+                    
+                                            match cmd {
+                                                mapmap_core::SourceCommand::PlayMedia {
+                                                    path: _,
+                                                    trigger_value,
+                                                } => {
+                                                    if let Some(handle) = self.media_players.get_mut(&player_key) {
+                                                        if *trigger_value > 0.1 {
+                                                            let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                                        } else {
+                                                            let _ = handle.command_tx.send(PlaybackCommand::Pause);
+                                                        }
+                                                    }
+                                                }
+                                                mapmap_core::SourceCommand::PlaySharedMedia {
+                                                    id: _,
+                                                    path: _,
+                                                    trigger_value,
+                                                } => {
+                                                    if let Some(handle) = self.media_players.get_mut(&player_key) {
+                                                        if *trigger_value > 0.1 {
+                                                            let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                                        } else {
+                                                            let _ = handle.command_tx.send(PlaybackCommand::Pause);
+                                                        }
+                                                    }
+                                                }
+                                                mapmap_core::SourceCommand::NdiInput {
+                                                    source_name: Some(_src_name),
+                                                    ..
+                                                } => {
+                                                    #[cfg(feature = "ndi")]
+                                                    {
+                                                        let receiver =
+                                                            self.ndi_receivers.entry(part_id).or_insert_with(|| {
+                                                                mapmap_io::ndi::NdiReceiver::new()
+                                                                    .expect("Failed to create NDI receiver")
+                                                            });
+                                                        if let Ok(Some(frame)) =
+                                                            receiver.receive(std::time::Duration::from_millis(0))
+                                                        {
+                                                            if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
+                                                            {
+                                                                let tex_name =
+                                                                    format!("part_{}_{}", module.id, part_id);
+                                                                self.texture_pool.upload_data(
+                                                                    &self.backend.queue,
+                                                                    &tex_name,
+                                                                    data,
+                                                                    frame.format.width,
+                                                                    frame.format.height,
+                                                                );
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                mapmap_core::SourceCommand::HueOutput {
+                                                    brightness,
+                                                    hue,
+                                                    saturation,
+                                                    strobe,
+                                                    ids,
+                                                } => {
+                                                    self.hue_controller.update_from_command(
+                                                        ids.as_deref(),
+                                                        *brightness,
+                                                        *hue,
+                                                        *saturation,
+                                                        *strobe,
+                                                    );
+                                                }
+                                                _ => {}
+                                            }
                                         }
-                                        Err(e) => {
-                                            error!("Failed to load media '{}': {}", path, e);
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                if let Some((_, player)) = self.media_players.get_mut(&player_key) {
-                                    if *trigger_value > 0.1 {
-                                        let _ = player.command_sender().send(PlaybackCommand::Play);
-                                    }
-                                    if let Some(frame) =
-                                        player.update(std::time::Duration::from_millis(16))
-                                    {
-                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
-                                        {
-                                            let tex_name =
-                                                format!("part_{}_{}", module.id, part_id);
-                                            self.texture_pool.upload_data(
-                                                &self.backend.queue,
-                                                &tex_name,
-                                                data,
-                                                frame.format.width,
-                                                frame.format.height,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            mapmap_core::SourceCommand::NdiInput {
-                                source_name: Some(_src_name),
-                                ..
-                            } => {
-                                #[cfg(feature = "ndi")]
-                                {
-                                    let receiver =
-                                        self.ndi_receivers.entry(*part_id).or_insert_with(|| {
-                                            mapmap_io::ndi::NdiReceiver::new()
-                                                .expect("Failed to create NDI receiver")
-                                        });
-                                    if let Ok(Some(frame)) =
-                                        receiver.receive(std::time::Duration::from_millis(0))
-                                    {
-                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
-                                        {
-                                            let tex_name =
-                                                format!("part_{}_{}", module.id, part_id);
-                                            self.texture_pool.upload_data(
-                                                &self.backend.queue,
-                                                &tex_name,
-                                                data,
-                                                frame.format.width,
-                                                frame.format.height,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            mapmap_core::SourceCommand::HueOutput {
-                                brightness,
-                                hue,
-                                saturation,
-                                strobe,
-                                ids,
-                            } => {
-                                self.hue_controller.update_from_command(
-                                    ids.as_deref(),
-                                    *brightness,
-                                    *hue,
-                                    *saturation,
-                                    *strobe,
-                                );
-                            }
-                            _ => {}
-                        }
-                    }
                 }
 
                 // Global render log removed to prevent spam
