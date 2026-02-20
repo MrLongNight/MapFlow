@@ -62,8 +62,8 @@ pub mod colors {
     pub const MINT_ACCENT: Color32 = Color32::from_rgb(0, 255, 170); // Mint for selection/alt
     pub const WARN_COLOR: Color32 = Color32::from_rgb(255, 170, 0); // Orange
     pub const ERROR_COLOR: Color32 = Color32::from_rgb(255, 50, 50); // Red
-    pub const DARK_GREY: Color32 = Color32::from_rgb(18, 18, 24); // Main Panel Background (Deep Navy / Cyber Base)
-    pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 8); // Window/Deep Background (Almost Black)
+    pub const DARK_GREY: Color32 = Color32::from_rgb(15, 15, 20); // Main Panel Background (Deep Navy / Cyber Base)
+    pub const DARKER_GREY: Color32 = Color32::from_rgb(5, 5, 10); // Window/Deep Background (Almost Black)
     pub const LIGHTER_GREY: Color32 = Color32::from_rgb(40, 40, 45); // Widget Background
     pub const STROKE_GREY: Color32 = Color32::from_rgb(60, 60, 70); // Borders (High Contrast)
 }
@@ -82,10 +82,8 @@ impl ThemeConfig {
         };
 
         style.visuals = visuals;
-
-        // Base Spacing (will be overridden by responsive logic if necessary)
-        style.spacing.item_spacing = egui::vec2(8.0, 6.0);
-        style.spacing.button_padding = egui::vec2(8.0, 4.0);
+        style.spacing.item_spacing = egui::vec2(self.spacing * 2.0, self.spacing);
+        style.spacing.button_padding = egui::vec2(self.spacing * 2.0, self.spacing);
 
         ctx.set_style(style);
     }

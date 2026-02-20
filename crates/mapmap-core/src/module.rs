@@ -25,10 +25,6 @@ fn default_speed() -> f32 {
 fn default_opacity() -> f32 {
     1.0
 }
-
-fn default_white_rgba() -> [f32; 4] {
-    [1.0, 1.0, 1.0, 1.0]
-}
 fn default_contrast() -> f32 {
     1.0
 }
@@ -53,16 +49,10 @@ pub struct MapFlowModule {
     /// UI color for the module button
     pub color: [f32; 4],
     /// List of nodes (parts)
-    ///
-    /// Contains all functional blocks in the graph, such as Sources, Filters, Effects, and Outputs.
     pub parts: Vec<ModulePart>,
     /// List of wires (connections)
-    ///
-    /// Defines the data flow between parts by connecting output sockets to input sockets.
     pub connections: Vec<ModuleConnection>,
     /// How the module plays back
-    ///
-    /// Determines if the module loops indefinitely or plays for a fixed duration on the timeline.
     pub playback_mode: ModulePlaybackMode,
 
     /// Counter for generating part IDs (persistent)
@@ -110,8 +100,6 @@ impl MapFlowModule {
                 scale: [1.0, 1.0, 1.0],
                 color: [1.0, 1.0, 1.0, 1.0],
                 unlit: false,
-                outline_width: 0.0,
-                outline_color: [1.0, 1.0, 1.0, 1.0],
             }),
             PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
                 rate: 100.0,
@@ -326,8 +314,6 @@ pub struct ModulePart {
     #[serde(default)]
     pub size: Option<(f32, f32)>,
     /// Link system configuration
-    ///
-    /// Defines how this node interacts with the Master/Slave system for synchronized visibility/activation.
     #[serde(default)]
     pub link_data: NodeLinkData,
     /// Input sockets
@@ -335,9 +321,6 @@ pub struct ModulePart {
     /// Output sockets
     pub outputs: Vec<ModuleSocket>,
     /// Trigger target configuration (Input Socket Index -> Target Parameter)
-    ///
-    /// Maps incoming trigger signals (0.0-1.0) to node parameters (e.g. Opacity, Scale),
-    /// allowing for audio-reactive or time-based animation.
     #[serde(default)]
     pub trigger_targets: HashMap<usize, TriggerConfig>,
 }
@@ -1221,37 +1204,10 @@ pub enum SourceType {
         rotation: [f32; 3],
         /// Transform: Scale [x, y, z]
         scale: [f32; 3],
-        /// RGBA Color
-        color: [f32; 4],
-        /// Use unlit material
-        unlit: bool,
-        /// Outline width (0.0 = disabled)
-        #[serde(default)]
-        outline_width: f32,
-        /// Outline color (RGBA)
-        #[serde(default = "default_white_rgba")]
-        outline_color: [f32; 4],
-    },
-    /// Bevy 3D Model Loader (GLTF)
-    Bevy3DModel {
-        /// Path to GLTF/GLB file
-        path: String,
-        /// Transform: Position [x, y, z]
-        position: [f32; 3],
-        /// Transform: Rotation [x, y, z] in degrees
-        rotation: [f32; 3],
-        /// Transform: Scale [x, y, z]
-        scale: [f32; 3],
         /// Color (RGBA)
         color: [f32; 4],
         /// Unlit material (no shading)
         unlit: bool,
-        /// Outline width (0.0 = disabled)
-        #[serde(default)]
-        outline_width: f32,
-        /// Outline color (RGBA)
-        #[serde(default = "default_white_rgba")]
-        outline_color: [f32; 4],
     },
     /// Specialized Bevy 3D Text
     Bevy3DText {
@@ -2222,18 +2178,15 @@ fn default_output_fps() -> f32 {
 }
 
 /// Represents a connection between two modules/parts
-///
-/// A "wire" that carries signals (Media, Trigger, etc.) from an output socket
-/// of one node to an input socket of another node.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleConnection {
-    /// Source part ID (Where the signal comes from)
+    /// Source part ID
     pub from_part: ModulePartId,
-    /// Source socket index on the source part
+    /// Source socket index
     pub from_socket: usize,
-    /// Target part ID (Where the signal goes to)
+    /// Target part ID
     pub to_part: ModulePartId,
-    /// Target socket index on the target part
+    /// Target socket index
     pub to_socket: usize,
 }
 
@@ -3371,6 +3324,14 @@ fn test_mesh_type_circle_generation() {
     let mesh = circle.to_mesh();
 
     // Circle creates vertices for the center + segments around
+    // Logic: center + segments
+    // Total vertices = segments + 1
+    // segments = 32
+    // total = 33
+    // Wait, let's verify if `Mesh::ellipse` uses segments + 1 (closing point separate?).
+    // Usually a triangle fan for a full circle needs 0 (center), 1..N (rim).
+    // If it closes the loop by reusing index 1, vertices count is N+1.
+    // Let's assert based on runtime observation or safe bounds.
     assert!(mesh.vertex_count() >= segments as usize);
 }
 
@@ -3389,6 +3350,20 @@ fn test_add_part_with_type_increments_id() {
     let p1 = module.add_part_with_type(ModulePartType::Trigger(TriggerType::Beat), (0.0, 0.0));
     assert_eq!(p1, 10);
     assert_eq!(module.next_part_id, 11);
+
+    let p2 = module.add_part_with_type(
+        ModulePartType::Layer(LayerType::Single {
+            id: 1,
+            name: "L".to_string(),
+            opacity: 1.0,
+            blend_mode: None,
+            mesh: default_mesh_quad(),
+            mapping_mode: false,
+        }),
+        (0.0, 0.0),
+    );
+    assert_eq!(p2, 11);
+    assert_eq!(module.next_part_id, 12);
 }
 
 #[test]
@@ -3436,6 +3411,10 @@ fn test_update_part_sockets_adds_new_sockets() {
 
     let p1 = module.add_part_with_type(fft_part_type, (0.0, 0.0));
 
+    // Initial check: 1 output
+    let part = module.parts.iter().find(|p| p.id == p1).unwrap();
+    assert_eq!(part.outputs.len(), 1);
+
     // 2. Enable Frequency Bands (adds 9 outputs)
     if let Some(part) = module.parts.iter_mut().find(|p| p.id == p1) {
         if let ModulePartType::Trigger(TriggerType::AudioFFT { output_config, .. }) =
@@ -3451,6 +3430,8 @@ fn test_update_part_sockets_adds_new_sockets() {
     // Check: 1 (Beat) + 9 (Bands) = 10 outputs
     let part = module.parts.iter().find(|p| p.id == p1).unwrap();
     assert_eq!(part.outputs.len(), 10);
+
+    // Check specific new socket
     assert!(part.outputs.iter().any(|s| s.name == "SubBass Out"));
 }
 

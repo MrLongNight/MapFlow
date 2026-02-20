@@ -30,7 +30,6 @@ pub use crate::panels::*;
 pub use crate::view::*;
 pub use crate::widgets::*;
 
-/// Re-export types for public use
 pub mod types {
     pub use crate::editors::module_canvas::types::*;
 }
@@ -267,7 +266,6 @@ pub enum UIAction {
     ),
 
     // Module Connection Deletion
-    /// Delete a connection between two module parts
     DeleteConnection(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModuleConnection,
@@ -431,12 +429,6 @@ pub struct AppUI {
     pub sys_info: sysinfo::System,
     /// Active keyboard keys (for Shortcut triggers)
     pub active_keys: std::collections::HashSet<String>,
-
-    /// Active tab in compact sidebar (0 = Controls, 1 = Preview)
-    pub active_sidebar_tab: usize,
-
-    /// Last time responsive styles were updated
-    last_style_update: std::time::Instant,
 }
 
 impl Default for AppUI {
@@ -537,56 +529,11 @@ impl Default for AppUI {
             available_hue_groups: Vec::new(),
             sys_info: sysinfo::System::new_all(),
             active_keys: std::collections::HashSet::new(),
-            active_sidebar_tab: 0,
-            last_style_update: std::time::Instant::now(),
         }
     }
 }
 
 impl AppUI {
-    /// Update responsive styles based on viewport size
-    ///
-    /// Only updates every 500ms to preserve performance
-    pub fn update_responsive_styles(&mut self, ctx: &egui::Context) {
-        // Only update every 500ms
-        if self.last_style_update.elapsed().as_millis() < 500 {
-            return;
-        }
-        self.last_style_update = std::time::Instant::now();
-
-        let layout = crate::core::responsive::ResponsiveLayout::new(ctx);
-
-        let mut style = (*ctx.style()).clone();
-        let base_font_size = 14.0;
-
-        // Scale font sizes
-        let scaled_size = layout.scale_font(base_font_size);
-
-        style.text_styles.insert(
-            egui::TextStyle::Body,
-            egui::FontId::proportional(scaled_size),
-        );
-        style.text_styles.insert(
-            egui::TextStyle::Button,
-            egui::FontId::proportional(scaled_size),
-        );
-        style.text_styles.insert(
-            egui::TextStyle::Heading,
-            egui::FontId::proportional(scaled_size * 1.4),
-        );
-        style.text_styles.insert(
-            egui::TextStyle::Small,
-            egui::FontId::proportional(scaled_size * 0.85),
-        );
-
-        // Scale spacing
-        let spacing_scale = layout.scale_font(1.0) / 14.0; // Normalize scale factor
-        style.spacing.item_spacing = egui::vec2(8.0, 6.0) * spacing_scale;
-        style.spacing.button_padding = egui::vec2(8.0, 4.0) * spacing_scale;
-
-        ctx.set_style(style);
-    }
-
     /// Take all pending actions and clear the list
     pub fn take_actions(&mut self) -> Vec<UIAction> {
         std::mem::take(&mut self.actions)
@@ -626,8 +573,8 @@ impl AppUI {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("panel-media-browser"),
-                    |ui| {
-                        if ui.button("✕").clicked() {
+                    |ui: &mut egui::Ui| {
+                        if ui.button("âœ•").clicked() {
                             self.show_media_browser = false;
                         }
                     },
@@ -635,7 +582,7 @@ impl AppUI {
 
                 egui::Frame::default()
                     .inner_margin(egui::Margin::symmetric(8, 8))
-                    .show(ui, |ui| {
+                    .show(ui, |ui: &mut egui::Ui| {
                         let _ = self
                             .media_browser
                             .ui(ui, &self.i18n, self.icon_manager.as_ref());
@@ -651,8 +598,7 @@ impl AppUI {
 
         egui::Window::new(self.i18n.t("panel-playback"))
             .default_size([320.0, 360.0])
-            .frame(crate::widgets::panel::cyber_panel_frame(&ctx.style()))
-            .show(ctx, |ui| {
+            .show(ctx, |ui: &mut egui::Ui| {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("header-video-playback"),
@@ -730,13 +676,12 @@ impl AppUI {
             .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0]) // Offset from menu bar
             .order(egui::Order::Foreground)
             .interactable(false)
-            .show(ctx, |ui| {
-                egui::Frame::default()
+            .show(ctx, |ui: &mut egui::Ui| {
+                egui::Frame::popup(ui.style())
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .corner_radius(4.0)
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
                     .inner_margin(egui::Margin::symmetric(16, 8))
-                    .show(ui, |ui| {
+                    .show(ui, |ui: &mut egui::Ui| {
                         ui.horizontal(|ui| {
                             ui.label(
                                 egui::RichText::new(format!("FPS: {:.0}", fps))
@@ -941,13 +886,7 @@ impl AppUI {
             // Visual indicator (Pulse yellow)
             let time = ui.input(|i| i.time);
             let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
-            let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
-            ui.painter().rect_stroke(
-                rect.expand(2.0),
-                4.0,
-                egui::Stroke::new(2.0, color),
-                egui::StrokeKind::Middle,
-            );
+            let _color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
 
             // Check for recent MIDI activity (last 0.5s)
             if let Some(last_time) = last_active_time {

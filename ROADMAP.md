@@ -1,9 +1,9 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 2.1
-> **Stand:** 2026-02-17 10:00
+> **Version:** 2.0
+
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
-> **Projekt-Version:** 0.2.1
+> **Projekt-Version:** 0.2.0
 
 ---
 
@@ -47,7 +47,6 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * **Priorität:** 🛡️ **HIGH**
 * **Ziel:** Fixen von Fehlern und Problemen, Verbesserung der Performance.
 * **Cleanup:** Entfernen von UI-Elementen, die keine Funktion haben.
-* **Refactoring:** Aufteilung übergroßer Dateien (insb. `module_canvas/mod.rs`).
 
 ### D) Release-Artefakte
 
@@ -963,7 +962,7 @@ graph TD
     * Integration-Tests für `OSC` -> `Parameter` Mapping.
 
 3. **Documentation (Priorität: Niedrig)**
-    * ✅ Rustdoc für alle `pub` Structs in `mapmap-core` (COMPLETED 2026-02-12).
+    * Rustdoc für alle `pub` Structs in `mapmap-core`.
     * Tutorial "Wie erstelle ich einen neuen Node-Typ?".
 
 ## Task-Gruppen (Adaptiert für Rust)

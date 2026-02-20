@@ -10,7 +10,6 @@ use egui::Ui;
 use crate::i18n::LocaleManager;
 use crate::icons::IconManager;
 use crate::transform_panel::TransformPanel;
-use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use mapmap_core::{Layer, OutputConfig, Transform};
 
 /// The Inspector Panel provides context-sensitive property editing
@@ -78,16 +77,17 @@ impl InspectorPanel {
             .default_width(300.0)
             .min_width(250.0)
             .max_width(450.0)
-            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                // Cyber Header
-                render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
-                    if ui.button("✕").clicked() {
-                        self.visible = false;
-                    }
+                // Header
+                ui.horizontal(|ui| {
+                    ui.heading(i18n.t("panel-inspector"));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("✕").clicked() {
+                            self.visible = false;
+                        }
+                    });
                 });
-
-                ui.add_space(8.0);
+                ui.separator();
 
                 // Context-sensitive content
                 match context {
@@ -146,13 +146,13 @@ impl InspectorPanel {
             ui.label(
                 egui::RichText::new("No Selection")
                     .size(16.0)
-                    .color(egui::Color32::WHITE.linear_multiply(0.5)),
+                    .color(egui::Color32::from_rgb(120, 120, 140)),
             );
             ui.add_space(10.0);
             ui.label(
                 egui::RichText::new("Select a layer or output to view properties")
                     .size(12.0)
-                    .color(egui::Color32::WHITE.linear_multiply(0.4)),
+                    .color(egui::Color32::from_rgb(100, 100, 120)),
             );
         });
     }

@@ -1496,26 +1496,6 @@ fn main() -> Result<()> {
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
 
-    // Install Panic Hook
-    std::panic::set_hook(Box::new(|panic_info| {
-        let location = panic_info.location().unwrap();
-        let msg = match panic_info.payload().downcast_ref::<&'static str>() {
-            Some(s) => *s,
-            None => match panic_info.payload().downcast_ref::<String>() {
-                Some(s) => &s[..],
-                None => "Box<Any>",
-            },
-        };
-        let error_msg = format!(
-            "Panic occurred in file '{}' at line {}: {}",
-            location.file(),
-            location.line(),
-            msg
-        );
-        tracing::error!("{}", error_msg);
-        eprintln!("{}", error_msg); // Fallback to stderr
-    }));
-
     info!("==========================================");
     info!("===      MapFlow Session Started       ===");
     info!("==========================================");

@@ -596,7 +596,7 @@ impl NodeEditor {
                 egui::Area::new(egui::Id::new("node_palette"))
                     .fixed_pos(pos)
                     .show(ui.ctx(), |ui| {
-                        egui::Frame::default().show(ui, |ui| {
+                        egui::Frame::popup(ui.style()).show(ui, |ui| {
                             ui.set_min_width(200.0);
                             ui.label(locale.t("node-add"));
                             ui.separator();

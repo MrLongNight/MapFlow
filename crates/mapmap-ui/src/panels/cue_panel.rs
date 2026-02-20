@@ -10,9 +10,6 @@ use mapmap_control::{
 use crate::{
     i18n::LocaleManager,
     icons::{AppIcon, IconManager},
-    theme::colors,
-    widgets::hold_to_action_icon,
-    widgets::panel::{cyber_panel_frame, render_panel_header},
     UIAction,
 };
 
@@ -48,12 +45,7 @@ impl CuePanel {
         egui::Window::new(i18n.t("panel-cues"))
             .open(&mut open)
             .default_size([300.0, 500.0])
-            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                render_panel_header(ui, &i18n.t("panel-cues"), |_| {});
-
-                ui.add_space(8.0);
-
                 self.render_ui(ui, &control_manager.cue_list, i18n, actions, icon_manager);
             });
         self.visible = open;
@@ -105,25 +97,15 @@ impl CuePanel {
 
             // --- Stop Button ---
             let stop_enabled = cue_list.current_cue().is_some();
-            if stop_enabled {
-                if hold_to_action_icon(
-                    ui,
-                    icon_manager,
-                    AppIcon::ButtonStop,
-                    24.0,
-                    colors::ERROR_COLOR,
-                ) {
-                    actions.push(UIAction::StopCue);
-                }
-            } else {
-                self.icon_button(
-                    ui,
-                    icon_manager,
-                    AppIcon::ButtonStop,
-                    "btn-stop",
-                    i18n,
-                    false,
-                );
+            if self.icon_button(
+                ui,
+                icon_manager,
+                AppIcon::ButtonStop,
+                "btn-stop",
+                i18n,
+                stop_enabled,
+            ) {
+                actions.push(UIAction::StopCue);
             }
 
             ui.separator();

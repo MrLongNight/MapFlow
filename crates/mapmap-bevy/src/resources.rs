@@ -46,9 +46,3 @@ pub struct ReadbackBuffer {
 pub struct BevyNodeMapping {
     pub entities: std::collections::HashMap<(u64, u64), Entity>,
 }
-
-/// Stores evaluated trigger values from MapFlow for each node
-#[derive(Resource, Default)]
-pub struct MapFlowTriggerResource {
-    pub trigger_values: std::collections::HashMap<(u64, u64), f32>,
-}

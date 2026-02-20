@@ -74,7 +74,7 @@ impl WgpuBackend {
             ..Default::default()
         });
 
-        let mut adapter_res = None;
+        let mut adapter = None;
 
         if let Some(gpu_name) = preferred_gpu {
             if !gpu_name.is_empty() {
@@ -83,11 +83,11 @@ impl WgpuBackend {
                     let info = a.get_info();
                     if info.name == gpu_name {
                         info!("Found preferred adapter: {}", info.name);
-                        adapter_res = Some(Ok(a));
+                        adapter = Some(a);
                         break;
                     }
                 }
-                if adapter_res.is_none() {
+                if adapter.is_none() {
                     tracing::warn!(
                         "Preferred GPU '{}' not found, falling back to auto-selection.",
                         gpu_name
@@ -96,21 +96,19 @@ impl WgpuBackend {
             }
         }
 
-        if adapter_res.is_none() {
-            adapter_res = Some(
-                instance
-                    .request_adapter(&wgpu::RequestAdapterOptions {
-                        power_preference,
-                        compatible_surface: None,
-                        force_fallback_adapter: false,
-                    })
-                    .await,
-            );
+        if adapter.is_none() {
+            adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference,
+                    compatible_surface: None,
+                    force_fallback_adapter: false,
+                })
+                .await
+                .ok();
         }
 
-        let adapter = adapter_res
-            .unwrap()
-            .map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
+        let adapter =
+            adapter.ok_or_else(|| RenderError::DeviceError("No adapter found".to_string()))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -125,6 +123,7 @@ impl WgpuBackend {
                 required_limits: wgpu::Limits {
                     ..Default::default()
                 },
+                memory_hints: Default::default(),
                 ..Default::default()
             })
             .await

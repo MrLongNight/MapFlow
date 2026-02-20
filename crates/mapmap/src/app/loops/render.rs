@@ -15,7 +15,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         label: Some("Render Encoder"),
     });
 
-    // Batch render passes.
+    // Bolt Optimization: Batch render passes.
     app.mesh_renderer.begin_frame();
     app.effect_chain_renderer.begin_frame();
     app.preview_effect_chain_renderer.begin_frame();
@@ -23,6 +23,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     if output_id == 0 {
         // Sync Texture Previews
         prepare_texture_previews(app, &mut encoder);
+
         // Update Bevy Texture
         if let Some(runner) = &app.bevy_runner {
             let runner: &mapmap_bevy::BevyRunner = runner;
@@ -68,7 +69,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             let raw_input = app.egui_state.take_egui_input(&window_context.window);
 
             let full_output = app.egui_context.run(raw_input, |ctx| {
-                // SAFETY: We ensure window_context doesn't overlap with fields used in show.
+                // SAFETY: Disjoint access to App fields
                 unsafe {
                     ui_layout::show(&mut *app_ptr, ctx);
                 }
@@ -94,11 +95,9 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 pixels_per_point: app.egui_context.pixels_per_point(),
             };
 
-            // CRITICAL: Update GPU buffers before rendering - this prepares vertex/index buffers
-            // and ensures all texture references are valid. Without this, egui-wgpu may panic
-            // when looking up textures that haven't been properly registered yet.
+            // egui 0.33 requires update_buffers before rendering
             app.egui_renderer.update_buffers(
-                &device,
+                &app.backend.device,
                 &app.backend.queue,
                 &mut encoder,
                 &tris,
@@ -119,7 +118,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 color_calibration_renderer: &app.color_calibration_renderer,
                 mesh_renderer: &mut app.mesh_renderer,
                 texture_pool: &app.texture_pool,
-                _dummy_view: &app.dummy_view,
+                dummy_view: &app.dummy_view,
                 mesh_buffer_cache: &mut app.mesh_buffer_cache,
                 egui_renderer: &mut app.egui_renderer,
             },
@@ -153,7 +152,7 @@ struct RenderContext<'a> {
     color_calibration_renderer: &'a Option<mapmap_render::ColorCalibrationRenderer>,
     mesh_renderer: &'a mut mapmap_render::MeshRenderer,
     texture_pool: &'a mapmap_render::TexturePool,
-    _dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
+    dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
     egui_renderer: &'a mut egui_wgpu::Renderer,
 }
@@ -193,10 +192,9 @@ fn render_content(
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                depth_slice: None,
                 view,
                 resolve_target: None,
-
+                depth_slice: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
@@ -209,20 +207,14 @@ fn render_content(
         return Ok(());
     }
 
-    let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
-    let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();
-    let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
-
-    let _mesh_target_view_ref = view;
     // Clear Pass
     {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Output Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                depth_slice: None,
                 view,
                 resolve_target: None,
-
+                depth_slice: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(if output_id == 0 {
                         wgpu::Color {
@@ -270,27 +262,8 @@ fn render_content(
             Some(ctx.texture_pool.get_view(&grid_tex_name))
         } else if ctx.texture_pool.has_texture(&tex_name) {
             Some(ctx.texture_pool.get_view(&tex_name))
-        } else if ctx.texture_pool.has_texture("bevy_output") {
-            // Fallback for Bevy nodes
-            Some(ctx.texture_pool.get_view("bevy_output"))
         } else {
-            // MAGENTA FALLBACK for missing textures
-            let fallback_name = "missing_texture_fallback";
-            if !ctx.texture_pool.has_texture(fallback_name) {
-                let width = 64;
-                let height = 64;
-                let data = [255, 0, 255, 255].repeat((width * height) as usize);
-                ctx.texture_pool.ensure_texture(
-                    fallback_name,
-                    width,
-                    height,
-                    wgpu::TextureFormat::Rgba8UnormSrgb,
-                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                );
-                ctx.texture_pool
-                    .upload_data(queue, fallback_name, &data, width, height);
-            }
-            Some(ctx.texture_pool.get_view(fallback_name))
+            ctx.dummy_view.as_ref().map(|v| v.clone())
         };
 
         if let Some(src_ref) = source_view {
@@ -318,10 +291,9 @@ fn render_content(
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Mesh Layer Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    depth_slice: None,
                     view,
                     resolve_target: None,
-
+                    depth_slice: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
@@ -355,10 +327,9 @@ fn render_content(
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Egui Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    depth_slice: None,
                     view,
                     resolve_target: None,
-
+                    depth_slice: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
@@ -369,13 +340,9 @@ fn render_content(
                 occlusion_query_set: None,
             });
 
-            // SAFETY: Hack to bypass lifetime issues in older egui-wgpu versions
-            unsafe {
-                let render_pass_static: &mut wgpu::RenderPass<'static> =
-                    std::mem::transmute(&mut render_pass);
-                egui_renderer.render(render_pass_static, tris, screen_desc);
-            }
-            drop(render_pass);
+            let render_pass_static: &mut wgpu::RenderPass<'static> =
+                unsafe { std::mem::transmute(&mut render_pass) };
+            egui_renderer.render(render_pass_static, tris, screen_desc);
         }
     }
     Ok(())
@@ -437,40 +404,31 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                 }
 
                 let target_tex = app.output_temp_textures.get(&output_id).unwrap();
+                let target_view_arc = std::sync::Arc::new(
+                    target_tex.create_view(&wgpu::TextureViewDescriptor::default()),
+                );
 
                 use std::collections::hash_map::Entry;
-                let current_view_arc = match app.output_preview_cache.entry(output_id) {
+                match app.output_preview_cache.entry(output_id) {
                     Entry::Occupied(mut e) => {
-                        let (id, old_view) = e.get_mut();
-                        if needs_recreate {
-                            let target_view =
-                                target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                            let target_view_arc = std::sync::Arc::new(target_view);
-                            app.egui_renderer.update_egui_texture_from_wgpu_texture(
-                                &app.backend.device,
-                                &target_view_arc,
-                                wgpu::FilterMode::Linear,
-                                *id,
-                            );
-                            *e.get_mut() = (*id, target_view_arc.clone());
-                            target_view_arc
-                        } else {
-                            old_view.clone()
-                        }
+                        let (id, _old_view) = e.get_mut();
+                        app.egui_renderer.update_egui_texture_from_wgpu_texture(
+                            &app.backend.device,
+                            &target_view_arc,
+                            wgpu::FilterMode::Linear,
+                            *id,
+                        );
+                        *e.into_mut() = (*id, target_view_arc.clone());
                     }
                     Entry::Vacant(e) => {
-                        let target_view =
-                            target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                        let target_view_arc = std::sync::Arc::new(target_view);
                         let id = app.egui_renderer.register_native_texture(
                             &app.backend.device,
                             &target_view_arc,
                             wgpu::FilterMode::Linear,
                         );
                         e.insert((id, target_view_arc.clone()));
-                        target_view_arc
                     }
-                };
+                }
 
                 {
                     let transform = glam::Mat4::IDENTITY;
@@ -485,10 +443,9 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Preview Render Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            depth_slice: None,
-                            view: &current_view_arc,
+                            view: &target_view_arc,
                             resolve_target: None,
-
+                            depth_slice: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: wgpu::StoreOp::Store,
@@ -516,10 +473,6 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let mut data = vec![0u8; (width * height * 4) as usize];
-    let _bg_color = [0, 0, 0, 255];
-    let _grid_color = [255, 255, 255, 255];
-    let _text_color = [0, 255, 255, 255];
-
     for i in 0..(width * height) {
         let idx = (i * 4) as usize;
         data[idx] = 0;
@@ -530,7 +483,7 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
     let grid_step = 64;
     for y in 0..height {
         for x in 0..width {
-            if x % grid_step == 0 || y % grid_step == 0 || x == width - 1 || y == height - 1 {
+            if x % grid_step == 0 || y % grid_step == 0 {
                 let idx = ((y * width + x) * 4) as usize;
                 data[idx] = 255;
                 data[idx + 1] = 255;
@@ -539,7 +492,6 @@ fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {
             }
         }
     }
-
     let id_str = format!("{}", layer_id);
     let digit_scale = 8;
     let digit_w = 3 * digit_scale;
@@ -595,7 +547,7 @@ fn draw_digit(
                     for dx in 0..scale {
                         let x = offset_x + col as u32 * scale + dx;
                         let y = offset_y + row as u32 * scale + dy;
-                        if x < width && y < (data.len() as u32 / width / 4) {
+                        if x < width && y < (data.len() as u32 / (width * 4)) {
                             let idx = ((y * width + x) * 4) as usize;
                             data[idx] = color[0];
                             data[idx + 1] = color[1];

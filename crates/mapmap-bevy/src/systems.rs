@@ -89,25 +89,6 @@ pub fn shape_system(
             Mesh3d(meshes.add(mesh)),
             MeshMaterial3d(materials.add(material)),
         ));
-
-        if shape.outline_width > 0.0 {
-            commands
-                .entity(entity)
-                .insert(bevy_mod_outline::OutlineVolume {
-                    visible: true,
-                    width: shape.outline_width,
-                    colour: Color::srgba(
-                        shape.outline_color[0],
-                        shape.outline_color[1],
-                        shape.outline_color[2],
-                        shape.outline_color[3],
-                    ),
-                });
-        } else {
-            commands
-                .entity(entity)
-                .remove::<bevy_mod_outline::OutlineVolume>();
-        }
     }
 }
 
@@ -174,10 +155,10 @@ pub fn hex_grid_system(
 ) {
     for (entity, hex_config) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_related::<Children>();
 
         let layout = hexx::HexLayout {
-            hex_size: hexx::Vec2::splat(hex_config.radius),
+            scale: hexx::Vec2::splat(hex_config.radius),
             orientation: if hex_config.pointy_top {
                 hexx::HexOrientation::Pointy
             } else {
@@ -460,7 +441,7 @@ pub fn frame_readback_system(
             tx.send(res).unwrap();
         });
 
-        render_device.poll(wgpu::Maintain::Wait);
+        render_device.poll(bevy::render::render_resource::Maintain::Wait);
 
         if rx.recv().is_ok() {
             let data = buffer_slice.get_mapped_range();
@@ -524,48 +505,6 @@ pub fn text_3d_system(
     }
 }
 
-pub fn print_status_system(time: Res<Time>) {
-    if time.elapsed_secs() as u32 % 10 == 0 {
-        // debug!("Bevy Runner active: {:.1}s", time.elapsed_secs());
-    }
-}
-
-pub fn model_system(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    query: Query<
-        (Entity, &crate::components::Bevy3DModel),
-        Changed<crate::components::Bevy3DModel>,
-    >,
-) {
-    for (entity, model) in query.iter() {
-        if !model.path.is_empty() {
-            commands.entity(entity).insert(SceneRoot(
-                asset_server.load(format!("{}#Scene0", model.path)),
-            ));
-        }
-
-        if model.outline_width > 0.0 {
-            commands
-                .entity(entity)
-                .insert(bevy_mod_outline::OutlineVolume {
-                    visible: true,
-                    width: model.outline_width,
-                    colour: Color::srgba(
-                        model.outline_color[0],
-                        model.outline_color[1],
-                        model.outline_color[2],
-                        model.outline_color[3],
-                    ),
-                });
-        } else {
-            commands
-                .entity(entity)
-                .remove::<bevy_mod_outline::OutlineVolume>();
-        }
-    }
-}
-
 pub fn camera_control_system(
     time: Res<Time>,
     mut camera_query: Query<
@@ -609,33 +548,6 @@ pub fn camera_control_system(
                     transform.translation = position;
                     transform.look_at(look_at, Vec3::Y);
                 }
-            }
-        }
-    }
-}
-
-pub fn node_reactivity_system(
-    triggers: Res<crate::resources::MapFlowTriggerResource>,
-    mapping: Res<crate::resources::BevyNodeMapping>,
-    mut atmosphere_query: Query<&mut crate::components::BevyAtmosphere>,
-    mut shape_query: Query<(&mut Transform, &mut crate::components::Bevy3DShape)>,
-    mut particle_query: Query<&mut crate::components::BevyParticles>,
-) {
-    for (&(module_id, part_id), &value) in &triggers.trigger_values {
-        if let Some(&entity) = mapping.entities.get(&(module_id, part_id)) {
-            // Apply value to different component types
-            if let Ok(mut atmosphere) = atmosphere_query.get_mut(entity) {
-                atmosphere.exposure = 0.5 + value * 1.5;
-            }
-
-            if let Ok((mut transform, _shape)) = shape_query.get_mut(entity) {
-                // Reactive scaling
-                transform.scale = Vec3::splat(1.0 + value * 0.5);
-            }
-
-            if let Ok(mut particles) = particle_query.get_mut(entity) {
-                // Control spawn rate by trigger
-                particles.rate = value * 500.0;
             }
         }
     }

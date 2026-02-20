@@ -26,12 +26,6 @@ struct CachedUniform {
     last_params: Option<CompositeParams>,
 }
 
-struct CachedTextureBindGroup {
-    base_weak: Weak<wgpu::TextureView>,
-    blend_weak: Weak<wgpu::TextureView>,
-    bind_group: Arc<wgpu::BindGroup>,
-}
-
 /// Compositor for blending layers
 pub struct Compositor {
     pipeline: wgpu::RenderPipeline,
@@ -43,8 +37,14 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<(usize, usize), CachedTextureBindGroup>,
+    bind_group_cache: HashMap<(usize, usize), BindGroupCacheEntry>,
 }
+
+type BindGroupCacheEntry = (
+    Weak<wgpu::TextureView>,
+    Weak<wgpu::TextureView>,
+    Arc<wgpu::BindGroup>,
+);
 
 impl Compositor {
     /// Create a new compositor
@@ -204,9 +204,9 @@ impl Compositor {
             Arc::as_ptr(blend_view) as usize,
         );
 
-        if let Some(cached) = self.bind_group_cache.get(&key) {
-            if cached.base_weak.upgrade().is_some() && cached.blend_weak.upgrade().is_some() {
-                return cached.bind_group.clone();
+        if let Some((weak_base, weak_blend, bg)) = self.bind_group_cache.get(&key) {
+            if weak_base.upgrade().is_some() && weak_blend.upgrade().is_some() {
+                return bg.clone();
             }
         }
 
@@ -236,11 +236,11 @@ impl Compositor {
         let bg = Arc::new(bg);
         self.bind_group_cache.insert(
             key,
-            CachedTextureBindGroup {
-                base_weak: Arc::downgrade(base_view),
-                blend_weak: Arc::downgrade(blend_view),
-                bind_group: bg.clone(),
-            },
+            (
+                Arc::downgrade(base_view),
+                Arc::downgrade(blend_view),
+                bg.clone(),
+            ),
         );
 
         bg
@@ -267,9 +267,10 @@ impl Compositor {
         self.current_cache_index = 0;
 
         // Prune dead texture bind groups
-        self.bind_group_cache.retain(|_, cached| {
-            cached.base_weak.strong_count() > 0 && cached.blend_weak.strong_count() > 0
-        });
+        self.bind_group_cache
+            .retain(|_, (weak_base, weak_blend, _)| {
+                weak_base.strong_count() > 0 && weak_blend.strong_count() > 0
+            });
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources
@@ -385,7 +386,7 @@ mod tests {
             let backend = crate::WgpuBackend::new(None).await;
             if let Ok(backend) = backend {
                 let compositor =
-                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8UnormSrgb);
+                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8Unorm);
                 assert!(compositor.is_ok());
             }
         });
