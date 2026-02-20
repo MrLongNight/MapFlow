@@ -113,6 +113,29 @@ impl MapFlowModule {
                 outline_width: 0.0,
                 outline_color: [1.0, 1.0, 1.0, 1.0],
             }),
+            PartType::Bevy3DModel => ModulePartType::Source(SourceType::Bevy3DModel {
+                path: String::new(),
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+                unlit: false,
+                outline_width: 0.0,
+                outline_color: [1.0, 1.0, 1.0, 1.0],
+            }),
+            PartType::Bevy3DText => ModulePartType::Source(SourceType::Bevy3DText {
+                text: "Hello MapFlow".to_string(),
+                font_size: 32.0,
+                color: [1.0, 1.0, 1.0, 1.0],
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                alignment: "Center".to_string(),
+            }),
+            PartType::BevyCamera => ModulePartType::Source(SourceType::BevyCamera {
+                mode: BevyCameraMode::default(),
+                fov: 45.0,
+                active: true,
+            }),
             PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
                 rate: 100.0,
                 lifetime: 2.0,
@@ -782,6 +805,12 @@ pub enum PartType {
     BevyParticles,
     /// Bevy 3D Shapes
     Bevy3DShape,
+    /// Bevy 3D Model
+    Bevy3DModel,
+    /// Bevy 3D Text
+    Bevy3DText,
+    /// Bevy Camera
+    BevyCamera,
     /// Masks
     Mask,
     /// Effects and modifiers
