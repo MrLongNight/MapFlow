@@ -10,7 +10,6 @@ use crate::module::{
     ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
     TriggerType,
 };
-use rand::Rng;
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -546,6 +545,9 @@ impl ModuleEvaluator {
         module: &MapFlowModule,
         shared_state: &SharedMediaState,
     ) -> &ModuleEvalResult {
+        // Initialize RNG once per frame outside the loop
+        let mut rng = rand::rng();
+
         // Clear previous result for reuse
         self.cached_result.clear();
         // Since we cleared trigger_values via iteration (retaining keys),
@@ -589,6 +591,7 @@ impl ModuleEvaluator {
                     self.start_time,
                     &self.active_keys,
                     values,
+                    &mut rng,
                 );
             }
         }
@@ -1182,6 +1185,7 @@ impl ModuleEvaluator {
         start_time: Instant,
         active_keys: &std::collections::HashSet<String>,
         output: &mut Vec<f32>,
+        rng: &mut impl rand::Rng,
     ) {
         match trigger_type {
             TriggerType::AudioFFT {
@@ -1246,7 +1250,7 @@ impl ModuleEvaluator {
                 output.push(if audio_data.beat_detected { 1.0 } else { 0.0 });
             }
             TriggerType::Random { probability, .. } => {
-                let random_value: f32 = rand::rng().random();
+                let random_value: f32 = rng.random();
                 output.push(if random_value < *probability {
                     1.0
                 } else {
@@ -1444,12 +1448,15 @@ mod tests_logic {
         let mut output = Vec::new();
         let data_true = create_audio_data(true);
         let keys = std::collections::HashSet::new();
+        let mut rng = rand::rng();
+
         ModuleEvaluator::compute_trigger_output(
             &TriggerType::Beat,
             &data_true,
             Instant::now(),
             &keys,
             &mut output,
+            &mut rng,
         );
         assert_eq!(output, vec![1.0]);
 
@@ -1461,6 +1468,7 @@ mod tests_logic {
             Instant::now(),
             &keys,
             &mut output,
+            &mut rng,
         );
         assert_eq!(output, vec![0.0]);
     }
@@ -1470,6 +1478,7 @@ mod tests_logic {
         let mut output = Vec::new();
         let data = create_audio_data(true);
         let keys = std::collections::HashSet::new();
+        let mut rng = rand::rng();
 
         let config = AudioTriggerOutputConfig {
             frequency_bands: true,
@@ -1489,6 +1498,7 @@ mod tests_logic {
             Instant::now(),
             &keys,
             &mut output,
+            &mut rng,
         );
 
         // Expected output order:
@@ -1512,6 +1522,7 @@ mod tests_logic {
         let mut output = Vec::new();
         let data = create_audio_data(false);
         let keys = std::collections::HashSet::new();
+        let mut rng = rand::rng();
 
         // Interval 1000ms. Pulse duration 100ms.
         // At 50ms: Phase 50 < 100 -> 1.0
@@ -1529,6 +1540,7 @@ mod tests_logic {
             start_past_50,
             &keys,
             &mut output,
+            &mut rng,
         );
         assert_eq!(output[0], 1.0);
 
@@ -1544,6 +1556,7 @@ mod tests_logic {
             start_past_150,
             &keys,
             &mut output,
+            &mut rng,
         );
         assert_eq!(output[0], 0.0);
     }
