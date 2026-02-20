@@ -35,21 +35,24 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: vcpkg installieren
-        shell: bash
+        shell: pwsh
         run: |
-          if [ ! -d "vcpkg" ]; then
+          if (-not (Test-Path "vcpkg")) {
             git clone https://github.com/microsoft/vcpkg.git
-            ./vcpkg/bootstrap-vcpkg.sh
-          fi
-          ./vcpkg/vcpkg integrate install
-
-      - name: ffmpeg mit vcpkg installieren
-        shell: bash
-        run: ./vcpkg/vcpkg install ffmpeg:x64-windows
+            .\vcpkg\bootstrap-vcpkg.bat
+          }
+          .\vcpkg\vcpkg integrate install
 
       - name: VCPKG_ROOT-Variable setzen
-        shell: bash
-        run: echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
+        shell: pwsh
+        run: |
+          $vcpkgRoot = "$(Get-Location)\vcpkg"
+          echo "VCPKG_ROOT=$vcpkgRoot" >> $env:GITHUB_ENV
+          echo "VCPKG_DEFAULT_TRIPLET=x64-windows" >> $env:GITHUB_ENV
+
+      - name: ffmpeg mit vcpkg installieren
+        shell: pwsh
+        run: .\vcpkg\vcpkg install ffmpeg:x64-windows
 
       - name: Install WiX Toolset
         run: dotnet tool install --global WiX
