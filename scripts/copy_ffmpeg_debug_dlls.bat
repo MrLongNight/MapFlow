@@ -1,12 +1,8 @@
 @echo off
 REM Script to copy FFmpeg DEBUG DLLs to the debug target directory
 
-set VCPKG_DEBUG_BIN=%~dp0..\vcpkg_installed\x64-windows\debug\bin
-set TARGET_DIR=%~dp0..\target\debug
-
-if not exist "%VCPKG_DEBUG_BIN%" (
-    set VCPKG_DEBUG_BIN=%~dp0..\vcpkg\installed\x64-windows\debug\bin
-)
+set VCPKG_DEBUG_BIN=%~dp0..\vcpkg\installed\x64-windows\debug\bin
+set TARGET_DIR=%~dp0..	arget\debug
 
 echo Copying DEBUG FFmpeg DLLs from %VCPKG_DEBUG_BIN% to %TARGET_DIR%...
 

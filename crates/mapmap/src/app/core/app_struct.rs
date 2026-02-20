@@ -158,6 +158,6 @@ pub struct App {
     /// Media Library
     /// Media Library
     pub media_library: MediaLibrary,
-    /// Bevy runner for 3D/Particles
+    /// Bevy Integration Runner
     pub bevy_runner: Option<mapmap_bevy::BevyRunner>,
 }

@@ -74,7 +74,7 @@ impl WgpuBackend {
             ..Default::default()
         });
 
-        let mut adapter_res = None;
+        let mut adapter = None;
 
         if let Some(gpu_name) = preferred_gpu {
             if !gpu_name.is_empty() {
@@ -83,11 +83,11 @@ impl WgpuBackend {
                     let info = a.get_info();
                     if info.name == gpu_name {
                         info!("Found preferred adapter: {}", info.name);
-                        adapter_res = Some(Ok(a));
+                        adapter = Some(a);
                         break;
                     }
                 }
-                if adapter_res.is_none() {
+                if adapter.is_none() {
                     tracing::warn!(
                         "Preferred GPU '{}' not found, falling back to auto-selection.",
                         gpu_name
@@ -96,21 +96,19 @@ impl WgpuBackend {
             }
         }
 
-        if adapter_res.is_none() {
-            adapter_res = Some(
-                instance
-                    .request_adapter(&wgpu::RequestAdapterOptions {
-                        power_preference,
-                        compatible_surface: None,
-                        force_fallback_adapter: false,
-                    })
-                    .await,
-            );
+        if adapter.is_none() {
+            adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference,
+                    compatible_surface: None,
+                    force_fallback_adapter: false,
+                })
+                .await
+                .ok();
         }
 
-        let adapter = adapter_res
-            .unwrap()
-            .map_err(|e| RenderError::DeviceError(format!("No adapter found: {}", e)))?;
+        let adapter =
+            adapter.ok_or_else(|| RenderError::DeviceError("No adapter found".to_string()))?;
 
         let adapter_info = adapter.get_info();
         info!(
@@ -121,10 +119,12 @@ impl WgpuBackend {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("MapFlow Device"),
-                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
+                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
                 required_limits: wgpu::Limits {
+                    max_push_constant_size: 128,
                     ..Default::default()
                 },
+                memory_hints: Default::default(),
                 ..Default::default()
             })
             .await
@@ -311,15 +311,15 @@ mod tests {
     #[test]
     fn test_backend_creation() {
         pollster::block_on(async {
-            let backend = WgpuBackend::new(None).await.ok();
-            if backend.is_none() {
+            let backend = WgpuBackend::new(None).await;
+            if backend.is_err() {
                 // Skipping test on CI/Headless systems without GPU support.
                 eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
                 return;
             }
-            assert!(backend.is_some());
+            assert!(backend.is_ok());
 
-            if let Some(backend) = backend {
+            if let Ok(backend) = backend {
                 println!("Backend: {:?}", backend.adapter_info);
             }
         });
@@ -330,10 +330,10 @@ mod tests {
         pollster::block_on(async {
             // This test ensures that trying to create a backend doesn't panic,
             // even if it fails.
-            let result = WgpuBackend::new(None).await.ok();
+            let result = WgpuBackend::new(None).await;
             match result {
-                Some(b) => println!("Backend init success: {:?}", b.adapter_info),
-                None => println!("Backend init failed gracefully"),
+                Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
+                Err(e) => println!("Backend init failed gracefully: {}", e),
             }
         });
     }

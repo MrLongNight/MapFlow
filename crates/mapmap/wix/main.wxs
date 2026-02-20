@@ -16,25 +16,25 @@
                     </Component>
                     <!-- FFmpeg DLLs (FFmpeg 7.1 / vcpkg versions) -->
                     <Component Id='avcodec' Guid='*' Win64='yes'>
-                        <File Id='avcodec' Name='avcodec-61.dll' Source='$(var.CargoTargetBinDir)\avcodec-61.dll' KeyPath='yes' />
+                        <File Id='avcodec' Name='avcodec-62.dll' Source='$(var.CargoTargetBinDir)\avcodec-62.dll' KeyPath='yes' />
                     </Component>
                     <Component Id='avdevice' Guid='*' Win64='yes'>
-                        <File Id='avdevice' Name='avdevice-61.dll' Source='$(var.CargoTargetBinDir)\avdevice-61.dll' KeyPath='yes' />
+                        <File Id='avdevice' Name='avdevice-62.dll' Source='$(var.CargoTargetBinDir)\avdevice-62.dll' KeyPath='yes' />
                     </Component>
                     <Component Id='avfilter' Guid='*' Win64='yes'>
-                        <File Id='avfilter' Name='avfilter-10.dll' Source='$(var.CargoTargetBinDir)\avfilter-10.dll' KeyPath='yes' />
+                        <File Id='avfilter' Name='avfilter-11.dll' Source='$(var.CargoTargetBinDir)\avfilter-11.dll' KeyPath='yes' />
                     </Component>
                     <Component Id='avformat' Guid='*' Win64='yes'>
-                        <File Id='avformat' Name='avformat-61.dll' Source='$(var.CargoTargetBinDir)\avformat-61.dll' KeyPath='yes' />
+                        <File Id='avformat' Name='avformat-62.dll' Source='$(var.CargoTargetBinDir)\avformat-62.dll' KeyPath='yes' />
                     </Component>
                     <Component Id='avutil' Guid='*' Win64='yes'>
-                        <File Id='avutil' Name='avutil-59.dll' Source='$(var.CargoTargetBinDir)\avutil-59.dll' KeyPath='yes' />
+                        <File Id='avutil' Name='avutil-60.dll' Source='$(var.CargoTargetBinDir)\avutil-60.dll' KeyPath='yes' />
                     </Component>
                     <Component Id='swresample' Guid='*' Win64='yes'>
-                        <File Id='swresample' Name='swresample-5.dll' Source='$(var.CargoTargetBinDir)\swresample-5.dll' KeyPath='yes' />
+                        <File Id='swresample' Name='swresample-6.dll' Source='$(var.CargoTargetBinDir)\swresample-6.dll' KeyPath='yes' />
                     </Component>
                     <Component Id='swscale' Guid='*' Win64='yes'>
-                        <File Id='swscale' Name='swscale-8.dll' Source='$(var.CargoTargetBinDir)\swscale-8.dll' KeyPath='yes' />
+                        <File Id='swscale' Name='swscale-9.dll' Source='$(var.CargoTargetBinDir)\swscale-9.dll' KeyPath='yes' />
                     </Component>
                 </Directory>
             </Directory>

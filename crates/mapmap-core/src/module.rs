@@ -113,6 +113,29 @@ impl MapFlowModule {
                 outline_width: 0.0,
                 outline_color: [1.0, 1.0, 1.0, 1.0],
             }),
+            PartType::Bevy3DModel => ModulePartType::Source(SourceType::Bevy3DModel {
+                path: String::new(),
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+                unlit: false,
+                outline_width: 0.0,
+                outline_color: [1.0, 1.0, 1.0, 1.0],
+            }),
+            PartType::Bevy3DText => ModulePartType::Source(SourceType::Bevy3DText {
+                text: "Hello MapFlow".to_string(),
+                font_size: 32.0,
+                color: [1.0, 1.0, 1.0, 1.0],
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                alignment: "Center".to_string(),
+            }),
+            PartType::BevyCamera => ModulePartType::Source(SourceType::BevyCamera {
+                mode: BevyCameraMode::default(),
+                fov: 45.0,
+                active: true,
+            }),
             PartType::BevyParticles => ModulePartType::Source(SourceType::BevyParticles {
                 rate: 100.0,
                 lifetime: 2.0,
@@ -683,6 +706,7 @@ impl ModulePartType {
                     socket_type: ModuleSocketType::Media,
                 }],
             ),
+            // Default source sockets (including HapVideo)
             ModulePartType::Source(_) => (
                 vec![ModuleSocket {
                     name: "Trigger In".to_string(),
@@ -784,6 +808,12 @@ pub enum PartType {
     BevyParticles,
     /// Bevy 3D Shapes
     Bevy3DShape,
+    /// Bevy 3D Model
+    Bevy3DModel,
+    /// Bevy 3D Text
+    Bevy3DText,
+    /// Bevy Camera
+    BevyCamera,
     /// Masks
     Mask,
     /// Effects and modifiers
@@ -1492,6 +1522,65 @@ pub enum SourceType {
         /// Flip video vertically
         #[serde(default)]
         flip_vertical: bool,
+    },
+    /// HAP Video Source (GPU Accelerated)
+    HapVideo {
+        /// File path
+        path: String,
+        /// Playback speed multiplier (1.0 = normal)
+        #[serde(default = "default_speed")]
+        speed: f32,
+        /// Loop playback
+        #[serde(default)]
+        loop_enabled: bool,
+        /// Start time in seconds (for clips)
+        #[serde(default)]
+        start_time: f32,
+        /// End time in seconds (0 = full duration)
+        #[serde(default)]
+        end_time: f32,
+        /// Transparency/Opacity (0.0 - 1.0)
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+        /// Blend mode for compositing
+        #[serde(default)]
+        blend_mode: Option<BlendModeType>,
+        /// Color correction: Brightness (-1.0 to 1.0)
+        #[serde(default)]
+        brightness: f32,
+        /// Color correction: Contrast (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_contrast")]
+        contrast: f32,
+        /// Color correction: Saturation (0.0 to 2.0, 1.0 = normal)
+        #[serde(default = "default_saturation")]
+        saturation: f32,
+        /// Color correction: Hue shift (-180 to 180 degrees)
+        #[serde(default)]
+        hue_shift: f32,
+        /// Transform: Scale X
+        #[serde(default = "default_scale")]
+        scale_x: f32,
+        /// Transform: Scale Y
+        #[serde(default = "default_scale")]
+        scale_y: f32,
+        /// Transform: Rotation in degrees
+        #[serde(default)]
+        rotation: f32,
+        /// Transform: Position offset X
+        #[serde(default)]
+        offset_x: f32,
+        /// Transform: Position offset Y
+        #[serde(default)]
+        offset_y: f32,
+        /// Flip video horizontally
+        #[serde(default)]
+        flip_horizontal: bool,
+        /// Flip video vertically
+        #[serde(default)]
+        flip_vertical: bool,
+        /// Play video in reverse
+        #[serde(default)]
+        reverse_playback: bool,
     },
 }
 
@@ -3479,4 +3568,38 @@ fn test_trigger_config_smoothed_fallback_with_invert_external() {
     // 0.2 -> 0.8
     // Smoothed (Direct Fallback): 0.0 + (100.0 - 0.0) * 0.8 = 80.0
     assert_eq!(config.apply(0.2), 80.0);
+}
+
+#[test]
+fn test_hap_video_source_serialization() {
+    let source = SourceType::HapVideo {
+        path: "test.mov".to_string(),
+        speed: 1.0,
+        loop_enabled: true,
+        start_time: 0.0,
+        end_time: 0.0,
+        opacity: 1.0,
+        blend_mode: None,
+        brightness: 0.0,
+        contrast: 1.0,
+        saturation: 1.0,
+        hue_shift: 0.0,
+        scale_x: 1.0,
+        scale_y: 1.0,
+        rotation: 0.0,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        flip_horizontal: false,
+        flip_vertical: false,
+        reverse_playback: false,
+    };
+
+    let serialized = serde_json::to_string(&source).unwrap();
+    let deserialized: SourceType = serde_json::from_str(&serialized).unwrap();
+
+    if let SourceType::HapVideo { path, .. } = deserialized {
+        assert_eq!(path, "test.mov");
+    } else {
+        panic!("Wrong source type deserialized");
+    }
 }
