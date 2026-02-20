@@ -277,13 +277,13 @@ impl App {
                         if let Some(handle) = self.media_players.get_mut(&player_key) {
                             match cmd {
                                 mapmap_ui::types::MediaPlaybackCommand::Play => {
-                                    let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Play);
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Pause => {
-                                    let _ = handle.command_tx.send(PlaybackCommand::Pause);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Pause);
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Stop => {
-                                    let _ = handle.command_tx.send(PlaybackCommand::Stop);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Stop);
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Reload => {
                                     info!("Reloading media player for part_id={}", part_id);
@@ -291,7 +291,10 @@ impl App {
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::SetSpeed(speed) => {
                                     info!("Setting speed to {} for part_id={}", speed, part_id);
-                                    let _ = handle.command_tx.send(PlaybackCommand::SetSpeed(speed));
+                                    let _ = handle
+                                        .1
+                                        .command_sender()
+                                        .send(PlaybackCommand::SetSpeed(speed));
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::SetLoop(enabled) => {
                                     info!("Setting loop to {} for part_id={}", enabled, part_id);
@@ -300,11 +303,14 @@ impl App {
                                     } else {
                                         mapmap_media::LoopMode::PlayOnce
                                     };
-                                    let _ = handle.command_tx.send(PlaybackCommand::SetLoopMode(mode));
+                                    let _ = handle
+                                        .1
+                                        .command_sender()
+                                        .send(PlaybackCommand::SetLoopMode(mode));
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Seek(position) => {
                                     info!("Seeking to {} for part_id={}", position, part_id);
-                                    let _ = handle.command_tx.send(PlaybackCommand::Seek(
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Seek(
                                         std::time::Duration::from_secs_f64(position),
                                     ));
                                 }
@@ -417,9 +423,11 @@ impl App {
 
                                 if let Some(handle) = self.media_players.get_mut(&player_key) {
                                     if *trigger_value > 0.1 {
-                                        let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                        let _ =
+                                            handle.1.command_sender().send(PlaybackCommand::Play);
                                     } else {
-                                        let _ = handle.command_tx.send(PlaybackCommand::Pause);
+                                        let _ =
+                                            handle.1.command_sender().send(PlaybackCommand::Pause);
                                     }
                                 }
                             }
@@ -433,9 +441,11 @@ impl App {
 
                                 if let Some(handle) = self.media_players.get_mut(&player_key) {
                                     if *trigger_value > 0.1 {
-                                        let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                        let _ =
+                                            handle.1.command_sender().send(PlaybackCommand::Play);
                                     } else {
-                                        let _ = handle.command_tx.send(PlaybackCommand::Pause);
+                                        let _ =
+                                            handle.1.command_sender().send(PlaybackCommand::Pause);
                                     }
                                 }
                             }
