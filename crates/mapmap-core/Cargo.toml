@@ -14,6 +14,7 @@ winit = ["dep:winit"]
 mock-audio = []
 
 [dependencies]
+image = { workspace = true }
 
 # Audio Analysis (Phase 1 Migration)
 audio-processor-analysis = "2.4"

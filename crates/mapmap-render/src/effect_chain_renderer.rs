@@ -116,6 +116,7 @@ pub struct EffectChainRenderer {
     // Bind group layout for effects
     bind_group_layout: wgpu::BindGroupLayout,
     uniform_bind_group_layout: wgpu::BindGroupLayout,
+    lut_bind_group_layout: wgpu::BindGroupLayout,
 
     // Sampler for textures
     sampler: wgpu::Sampler,
@@ -137,6 +138,9 @@ pub struct EffectChainRenderer {
     // Caches
     uniform_bg_cache: HashMap<(usize, u64, u64), Arc<wgpu::BindGroup>>,
     texture_bg_cache: HashMap<usize, (Weak<wgpu::TextureView>, Arc<wgpu::BindGroup>)>,
+    lut_cache: HashMap<String, Option<(f32, wgpu::TextureView, Arc<wgpu::BindGroup>)>>,
+    lut_last_used: HashMap<String, u64>,
+    frame_count: u64,
 }
 
 impl EffectChainRenderer {
@@ -187,6 +191,30 @@ impl EffectChainRenderer {
                     },
                     count: None,
                 }],
+            });
+
+        // Create bind group layout for LUTs
+        let lut_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Effect Chain LUT Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
             });
 
         // Create sampler
@@ -247,6 +275,9 @@ impl EffectChainRenderer {
 
         // Create built-in effect pipelines
         let effect_types = [
+            EffectType::LoadLUT {
+                path: String::new(),
+            },
             EffectType::ColorAdjust,
             EffectType::Blur,
             EffectType::ChromaticAberration,
@@ -268,8 +299,9 @@ impl EffectChainRenderer {
                 &device,
                 &bind_group_layout,
                 &uniform_bind_group_layout,
+                &lut_bind_group_layout,
                 target_format,
-                effect_type,
+                &effect_type,
             ) {
                 pipelines.insert(effect_type, pipeline);
             } else {
@@ -286,6 +318,7 @@ impl EffectChainRenderer {
             pipelines,
             bind_group_layout,
             uniform_bind_group_layout,
+            lut_bind_group_layout,
             sampler,
             ping_pong: None,
             current_size: (0, 0),
@@ -295,6 +328,9 @@ impl EffectChainRenderer {
             allocator,
             uniform_bg_cache: HashMap::new(),
             texture_bg_cache: HashMap::new(),
+            lut_cache: HashMap::new(),
+            lut_last_used: HashMap::new(),
+            frame_count: 0,
         })
     }
 
@@ -310,6 +346,18 @@ impl EffectChainRenderer {
         // Prune dead texture bind groups
         self.texture_bg_cache
             .retain(|_, (weak, _)| weak.strong_count() > 0);
+
+        self.frame_count += 1;
+
+        // Cleanup LUT cache every 600 frames (approx 10 seconds at 60fps)
+        if self.frame_count % 600 == 0 {
+            let threshold = self.frame_count.saturating_sub(600);
+            self.lut_cache.retain(|path, _| {
+                *self.lut_last_used.get(path).unwrap_or(&0) >= threshold
+            });
+            self.lut_last_used
+                .retain(|_, frame| *frame >= threshold);
+        }
     }
 
     /// Create a render pipeline for a specific effect type
@@ -317,8 +365,9 @@ impl EffectChainRenderer {
         device: &wgpu::Device,
         bind_group_layout: &wgpu::BindGroupLayout,
         uniform_bind_group_layout: &wgpu::BindGroupLayout,
+        lut_bind_group_layout: &wgpu::BindGroupLayout,
         target_format: wgpu::TextureFormat,
-        effect_type: EffectType,
+        effect_type: &EffectType,
     ) -> Result<wgpu::RenderPipeline> {
         let shader_source = Self::get_effect_shader_source(effect_type);
 
@@ -327,9 +376,14 @@ impl EffectChainRenderer {
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 
+        let mut bind_group_layouts = vec![bind_group_layout, uniform_bind_group_layout];
+        if let EffectType::LoadLUT { .. } = effect_type {
+            bind_group_layouts.push(lut_bind_group_layout);
+        }
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(&format!("Effect Pipeline Layout: {:?}", effect_type)),
-            bind_group_layouts: &[bind_group_layout, uniform_bind_group_layout],
+            bind_group_layouts: &bind_group_layouts,
             push_constant_ranges: &[],
         });
 
@@ -386,8 +440,9 @@ impl EffectChainRenderer {
     }
 
     /// Get the WGSL shader source for an effect type
-    fn get_effect_shader_source(effect_type: EffectType) -> &'static str {
+    fn get_effect_shader_source(effect_type: &EffectType) -> &'static str {
         match effect_type {
+            EffectType::LoadLUT { .. } => include_str!("../../../shaders/lut_color_grade.wgsl"),
             EffectType::ColorAdjust => include_str!("../../../shaders/effect_color_adjust.wgsl"),
             EffectType::Blur => include_str!("../../../shaders/effect_blur.wgsl"),
             EffectType::ChromaticAberration => {
@@ -559,7 +614,7 @@ impl EffectChainRenderer {
 
             // Get the pipeline for this effect (if standard)
             let pipeline = if !is_custom_graph {
-                match self.pipelines.get(&effect.effect_type) {
+                match self.pipelines.get(&effect.effect_type.normalized()) {
                     Some(p) => Some(p),
                     None => {
                         warn!("No pipeline for effect type: {:?}", effect.effect_type);
@@ -578,7 +633,83 @@ impl EffectChainRenderer {
                 ..Default::default()
             };
 
-            match effect.effect_type {
+            let mut lut_bind_group_resource = None;
+
+            match &effect.effect_type {
+                EffectType::LoadLUT { path } => {
+                    if !path.is_empty() {
+                        if !self.lut_cache.contains_key(path) {
+                            // Load LUT
+                            match mapmap_core::lut::Lut3D::from_file(path) {
+                                Ok(lut) => {
+                                    let (data, width, height) = lut.to_2d_texture_data();
+                                    let lut_size = lut.size as f32;
+
+                                    let texture = self.device.create_texture_with_data(
+                                        &self.queue,
+                                        &wgpu::TextureDescriptor {
+                                            label: Some(&format!("LUT Texture: {}", path)),
+                                            size: wgpu::Extent3d {
+                                                width,
+                                                height,
+                                                depth_or_array_layers: 1,
+                                            },
+                                            mip_level_count: 1,
+                                            sample_count: 1,
+                                            dimension: wgpu::TextureDimension::D2,
+                                            format: wgpu::TextureFormat::Rgba8Unorm,
+                                            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                                                | wgpu::TextureUsages::COPY_DST,
+                                            view_formats: &[],
+                                        },
+                                        wgpu::util::TextureDataOrder::LayerMajor,
+                                        &data,
+                                    );
+
+                                    let view = texture
+                                        .create_view(&wgpu::TextureViewDescriptor::default());
+
+                                    let bind_group =
+                                        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                                            label: Some(&format!("LUT Bind Group: {}", path)),
+                                            layout: &self.lut_bind_group_layout,
+                                            entries: &[
+                                                wgpu::BindGroupEntry {
+                                                    binding: 0,
+                                                    resource: wgpu::BindingResource::TextureView(
+                                                        &view,
+                                                    ),
+                                                },
+                                                wgpu::BindGroupEntry {
+                                                    binding: 1,
+                                                    resource: wgpu::BindingResource::Sampler(
+                                                        &self.sampler,
+                                                    ),
+                                                },
+                                            ],
+                                        });
+
+                                    self.lut_cache.insert(
+                                        path.clone(),
+                                        Some((lut_size, view, Arc::new(bind_group))),
+                                    );
+                                }
+                                Err(e) => {
+                                    warn!("Failed to load LUT from {}: {}", path, e);
+                                    self.lut_cache.insert(path.clone(), None);
+                                }
+                            }
+                        }
+
+                        // Mark as used
+                        self.lut_last_used.insert(path.clone(), self.frame_count);
+
+                        if let Some(Some((size, _, bg))) = self.lut_cache.get(path) {
+                            params.param_a = *size;
+                            lut_bind_group_resource = Some(bg.clone());
+                        }
+                    }
+                }
                 EffectType::ColorAdjust => {
                     params.param_a = effect.get_param("brightness", 0.0);
                     params.param_b = effect.get_param("contrast", 1.0);
@@ -730,6 +861,9 @@ impl EffectChainRenderer {
                     render_pass.set_pipeline(pipeline);
                     render_pass.set_bind_group(0, input_bind_group.as_ref(), &[]);
                     render_pass.set_bind_group(1, uniform_bind_group.as_ref(), &[]);
+                    if let Some(lut_bg) = lut_bind_group_resource {
+                        render_pass.set_bind_group(2, lut_bg.as_ref(), &[]);
+                    }
                     render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                     render_pass
                         .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);

@@ -6,6 +6,7 @@
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use image::GenericImageView;
 
 /// LUT size (standard is 32x32x32 or 64x64x64)
 pub const LUT_SIZE_32: usize = 32;
@@ -66,13 +67,109 @@ impl Lut3D {
         }
     }
 
-    /// Load a LUT from a .cube file
-    pub fn from_cube_file(path: impl AsRef<Path>) -> Result<Self, LutError> {
+    /// Load a LUT from a file (.cube or .png)
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, LutError> {
         let path = path.as_ref();
-        let content =
-            std::fs::read_to_string(path).map_err(|e| LutError::IoError(e.to_string()))?;
+        let extension = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|s| s.to_lowercase())
+            .unwrap_or_default();
 
-        Self::parse_cube(&content, Some(path.to_path_buf()))
+        match extension.as_str() {
+            "cube" => {
+                let content = std::fs::read_to_string(path)
+                    .map_err(|e| LutError::IoError(e.to_string()))?;
+                Self::parse_cube(&content, Some(path.to_path_buf()))
+            }
+            "png" => Self::from_png_file(path),
+            _ => Err(LutError::ParseError(format!(
+                "Unsupported file extension: {}",
+                extension
+            ))),
+        }
+    }
+
+    /// Load a HALD CLUT from a .png file
+    pub fn from_png_file(path: impl AsRef<Path>) -> Result<Self, LutError> {
+        let path = path.as_ref();
+        let img = image::open(path).map_err(|e| LutError::IoError(e.to_string()))?;
+
+        let (width, height) = img.dimensions();
+        let total_pixels = (width * height) as usize;
+        let size = (total_pixels as f64).cbrt().round() as usize;
+
+        if size * size * size != total_pixels {
+            return Err(LutError::ParseError(format!(
+                "Image dimensions {}x{} do not match a cubic LUT size",
+                width, height
+            )));
+        }
+
+        let mut target_data = vec![0.0f32; total_pixels * 3];
+
+        // Check for Strip Format (width = size, height = size*size)
+        if width == size as u32 && height == (size * size) as u32 {
+            for y in 0..height {
+                for x in 0..width {
+                    let pixel = img.get_pixel(x, y);
+                    let r = pixel[0] as f32 / 255.0;
+                    let g = pixel[1] as f32 / 255.0;
+                    let b = pixel[2] as f32 / 255.0;
+
+                    let idx = (y * width + x) as usize * 3;
+                    target_data[idx] = r;
+                    target_data[idx + 1] = g;
+                    target_data[idx + 2] = b;
+                }
+            }
+        } else {
+            // Assume Square HALD (Grid of tiles)
+            // e.g. 512x512 for size 64. Tiles are 64x64. Grid is 8x8.
+            let tiles_per_row = width / size as u32;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let pixel = img.get_pixel(x, y);
+                    let r_val = pixel[0] as f32 / 255.0;
+                    let g_val = pixel[1] as f32 / 255.0;
+                    let b_val = pixel[2] as f32 / 255.0;
+
+                    let tile_x = x / size as u32;
+                    let tile_y = y / size as u32;
+                    let r_idx = x % size as u32;
+                    let g_idx = y % size as u32;
+                    let b_idx = tile_y * tiles_per_row + tile_x;
+
+                    // Check bounds
+                    if b_idx >= size as u32 {
+                        continue;
+                    }
+
+                    let target_idx = ((b_idx * (size as u32) * (size as u32))
+                        + (g_idx * (size as u32))
+                        + r_idx) as usize
+                        * 3;
+
+                    if target_idx + 2 < target_data.len() {
+                        target_data[target_idx] = r_val;
+                        target_data[target_idx + 1] = g_val;
+                        target_data[target_idx + 2] = b_val;
+                    }
+                }
+            }
+        }
+
+        Ok(Self {
+            name: path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("PNG LUT")
+                .to_string(),
+            size,
+            data: target_data,
+            file_path: Some(path.to_path_buf()),
+        })
     }
 
     /// Parse .cube file format
@@ -462,7 +559,7 @@ impl LutManager {
 
     /// Load a LUT from file and add it to the manager
     pub fn load_from_file(&mut self, path: impl AsRef<Path>) -> Result<usize, LutError> {
-        let lut = Lut3D::from_cube_file(path)?;
+        let lut = Lut3D::from_file(path)?;
         Ok(self.add_lut(lut))
     }
 }

@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 /// Available effect types (mirror of mapmap-render::EffectType)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EffectType {
+    LoadLUT,
     ColorAdjust,
     Blur,
     ChromaticAberration,
@@ -38,6 +39,7 @@ pub enum EffectType {
 impl EffectType {
     pub fn display_name(&self, locale: &LocaleManager) -> String {
         match self {
+            EffectType::LoadLUT => locale.t("effect-name-load-lut"),
             EffectType::ColorAdjust => locale.t("effect-name-color-adjust"),
             EffectType::Blur => locale.t("effect-name-blur"),
             EffectType::ChromaticAberration => locale.t("effect-name-chromatic-aberration"),
@@ -62,6 +64,7 @@ impl EffectType {
 
     pub fn icon(&self) -> &'static str {
         match self {
+            EffectType::LoadLUT => "🧊",
             EffectType::ColorAdjust => "🎨",
             EffectType::Blur => "🌫️",
             EffectType::ChromaticAberration => "🌈",
@@ -86,6 +89,7 @@ impl EffectType {
 
     pub fn app_icon(&self) -> AppIcon {
         match self {
+            EffectType::LoadLUT => AppIcon::ImageFile,
             EffectType::ColorAdjust => AppIcon::MagicWand,
             EffectType::Blur => AppIcon::MagicWand,
             EffectType::ChromaticAberration => AppIcon::MagicWand,
@@ -110,6 +114,7 @@ impl EffectType {
 
     pub fn all() -> &'static [EffectType] {
         &[
+            EffectType::LoadLUT,
             EffectType::ColorAdjust,
             EffectType::Blur,
             EffectType::ChromaticAberration,
@@ -141,6 +146,8 @@ pub struct UIEffect {
     pub enabled: bool,
     pub intensity: f32,
     pub expanded: bool,
+    pub lut_path: String,
+    pub error: Option<String>,
     pub parameters: std::collections::HashMap<String, f32>,
 }
 
@@ -150,6 +157,9 @@ impl UIEffect {
 
         // Default parameters
         match effect_type {
+            EffectType::LoadLUT => {
+                parameters.insert("intensity".to_string(), 1.0);
+            }
             EffectType::ColorAdjust => {
                 parameters.insert("brightness".to_string(), 0.0);
                 parameters.insert("contrast".to_string(), 1.0);
@@ -207,6 +217,8 @@ impl UIEffect {
             enabled: true,
             intensity: 1.0,
             expanded: true,
+            lut_path: String::new(),
+            error: None,
             parameters,
         }
     }
@@ -301,6 +313,8 @@ pub enum EffectChainAction {
     SetIntensity(u64, f32),
     /// Set effect parameter
     SetParameter(u64, String, f32),
+    /// Set LUT path
+    SetLUTPath(u64, String),
     /// Load a preset by name
     LoadPreset(String),
     /// Save current chain as preset
@@ -567,6 +581,8 @@ impl EffectChainPanel {
                             new_expanded,
                             new_intensity,
                             param_changes,
+                            new_lut_path,
+                            new_error,
                         ) = Self::render_effect_card_static(
                             ui,
                             effect_id,
@@ -574,6 +590,8 @@ impl EffectChainPanel {
                             enabled,
                             expanded,
                             intensity,
+                            &effect.lut_path,
+                            effect.error.as_ref(),
                             &effect.parameters,
                             is_first,
                             is_last,
@@ -619,6 +637,16 @@ impl EffectChainPanel {
                             effect.set_param(&name, value);
                             self.actions
                                 .push(EffectChainAction::SetParameter(effect_id, name, value));
+                        }
+
+                        if let Some(path) = new_lut_path {
+                            effect.lut_path = path.clone();
+                            self.actions
+                                .push(EffectChainAction::SetLUTPath(effect_id, path));
+                        }
+
+                        if let Some(err) = new_error {
+                            effect.error = err;
                         }
 
                         if remove {
@@ -679,6 +707,8 @@ impl EffectChainPanel {
         mut enabled: bool,
         mut expanded: bool,
         mut intensity: f32,
+        lut_path: &str,
+        error: Option<&String>,
         parameters: &std::collections::HashMap<String, f32>,
         is_first: bool,
         is_last: bool,
@@ -696,12 +726,16 @@ impl EffectChainPanel {
         bool,
         f32,
         Vec<(String, f32)>,
+        Option<String>,
+        Option<Option<String>>,
     ) {
         let mut remove = false;
         let mut move_up = false;
         let mut move_down = false;
         let mut dragged = false;
         let mut param_changes = Vec::new();
+        let mut new_lut_path = None;
+        let mut new_error = None;
 
         let frame_color = if is_dragging {
             Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
@@ -793,6 +827,43 @@ impl EffectChainPanel {
                         ui.add(egui::Slider::new(&mut intensity, 0.0..=1.0));
                     });
 
+                    // LUT Path
+                    if effect_type == EffectType::LoadLUT {
+                        ui.horizontal(|ui| {
+                            ui.label("LUT:");
+                            let path_label = if lut_path.is_empty() {
+                                "None"
+                            } else {
+                                std::path::Path::new(lut_path)
+                                    .file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or(lut_path)
+                            };
+
+                            if ui.button(path_label).clicked() {
+                                if let Some(path) = rfd::FileDialog::new()
+                                    .add_filter("LUT", &["cube", "png"])
+                                    .pick_file()
+                                {
+                                    let path_str = path.to_string_lossy().to_string();
+                                    match mapmap_core::lut::Lut3D::from_file(&path) {
+                                        Ok(_) => {
+                                            new_lut_path = Some(path_str);
+                                            new_error = Some(None);
+                                        }
+                                        Err(e) => {
+                                            new_error = Some(Some(e.to_string()));
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        if let Some(err) = error {
+                            ui.label(RichText::new(format!("Error: {}", err)).color(Color32::RED).small());
+                        }
+                    }
+
                     // Effect-specific parameters
                     Self::render_effect_parameters_static(
                         ui,
@@ -815,6 +886,8 @@ impl EffectChainPanel {
             expanded,
             intensity,
             param_changes,
+            new_lut_path,
+            new_error,
         )
     }
 

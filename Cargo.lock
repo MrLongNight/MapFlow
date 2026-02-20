@@ -4737,6 +4737,7 @@ dependencies = [
  "dirs",
  "glam 0.32.0",
  "hound",
+ "image 0.24.9",
  "num-complex",
  "num-traits",
  "parking_lot",
