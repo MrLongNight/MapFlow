@@ -7,9 +7,6 @@ The user interface layer for MapFlow, built with `egui`.
 This crate contains all the UI components, panels, and widgets that make up the MapFlow application.
 It manages the interaction between the user and the core application state.
 
-> **Note:** As of Phase 6 (Completed 2025-12-23), the legacy ImGui interface has been fully removed.
-> All UI components are now implemented using `egui` for a unified and performant experience.
-
 ## Key Components
 
 - **Dashboard**: The main control center for playback and performance monitoring.

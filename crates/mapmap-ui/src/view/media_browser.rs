@@ -349,7 +349,6 @@ impl MediaBrowser {
             ui.add_enabled_ui(self.history_index > 0, |ui| {
                 if ui
                     .button("◀")
-                    .clone()
                     .on_hover_text(locale.t("media-browser-back"))
                     .clicked()
                 {
@@ -360,7 +359,6 @@ impl MediaBrowser {
             ui.add_enabled_ui(self.history_index < self.history.len() - 1, |ui| {
                 if ui
                     .button("▶")
-                    .clone()
                     .on_hover_text(locale.t("media-browser-forward"))
                     .clicked()
                 {
@@ -370,7 +368,6 @@ impl MediaBrowser {
 
             if ui
                 .button("⬆")
-                .clone()
                 .on_hover_text(locale.t("media-browser-up"))
                 .clicked()
             {
@@ -379,19 +376,13 @@ impl MediaBrowser {
 
             if ui
                 .button("🔄")
-                .clone()
                 .on_hover_text(locale.t("media-browser-refresh"))
                 .clicked()
             {
                 self.refresh();
             }
 
-            if ui
-                .button("⚙")
-                .clone()
-                .on_hover_text("Folder Settings")
-                .clicked()
-            {
+            if ui.button("⚙").on_hover_text("Folder Settings").clicked() {
                 self.show_folder_settings = !self.show_folder_settings;
             }
 
@@ -424,7 +415,7 @@ impl MediaBrowser {
                     if ui.text_edit_singleline(&mut video_path).changed() {
                         self.media_folders.video_folder = PathBuf::from(video_path);
                     }
-                    if ui.button("📂").clone().on_hover_text("Browse").clicked() {
+                    if ui.button("📂").on_hover_text("Browse").clicked() {
                         // Would trigger folder dialog
                     }
                 });
@@ -435,7 +426,7 @@ impl MediaBrowser {
                     if ui.text_edit_singleline(&mut image_path).changed() {
                         self.media_folders.image_folder = PathBuf::from(image_path);
                     }
-                    if ui.button("📂").clone().on_hover_text("Browse").clicked() {
+                    if ui.button("📂").on_hover_text("Browse").clicked() {
                         // Would trigger folder dialog
                     }
                 });
@@ -446,7 +437,7 @@ impl MediaBrowser {
                     if ui.text_edit_singleline(&mut audio_path).changed() {
                         self.media_folders.audio_folder = PathBuf::from(audio_path);
                     }
-                    if ui.button("📂").clone().on_hover_text("Browse").clicked() {
+                    if ui.button("📂").on_hover_text("Browse").clicked() {
                         // Would trigger folder dialog
                     }
                 });

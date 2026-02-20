@@ -51,9 +51,9 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 // Simple hash function for pseudo-random noise
 fn hash(p: vec2<f32>) -> f32 {
-    let p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
-    let p4 = dot(p3, p3.yzx + 33.33);
-    return fract((p4 + p4) * p3.z);
+    var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+    p3 += dot(p3, vec3<f32>(p3.y, p3.z, p3.x) + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 // Compute natural frequency for a cell
@@ -131,8 +131,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var coupling_sum = 0.0;
     var weight_sum = 0.0;
 
-    let radius = params.kernel_radius;
-    let max_offset = i32(ceil(radius));
+    let max_offset = i32(ceil(params.kernel_radius));
 
     for (var dy = -max_offset; dy <= max_offset; dy = dy + 1) {
         for (var dx = -max_offset; dx <= max_offset; dx = dx + 1) {
@@ -143,11 +142,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             let offset = vec2<f32>(f32(dx), f32(dy));
             let dist = length(offset);
 
-            if (dist > radius) {
+            if (dist > params.kernel_radius) {
                 continue;
             }
 
-            // Sample neighbor - use textureSampleLevel to avoid gradient issues in loops
+            // Sample neighbor
             let neighbor_uv = uv + offset * pixel_size;
 
             // Clamp to valid range

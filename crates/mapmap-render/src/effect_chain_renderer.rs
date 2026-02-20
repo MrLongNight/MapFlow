@@ -9,7 +9,7 @@
 //! - Parameter uniforms
 //! - Hot-reload support (via shader recompilation)
 
-use crate::{pipeline::Allocation, pipeline::UniformBufferAllocator, QuadRenderer, Result};
+use crate::{pipeline::UniformBufferAllocator, QuadRenderer, Result};
 use bytemuck::{Pod, Zeroable};
 use mapmap_core::{EffectChain, EffectType};
 use std::collections::HashMap;
@@ -52,7 +52,7 @@ impl Default for EffectParams {
 #[allow(dead_code)]
 struct PingPongBuffer {
     textures: [wgpu::Texture; 2],
-    views: [Arc<wgpu::TextureView>; 2],
+    views: [wgpu::TextureView; 2],
     current: usize,
 }
 
@@ -81,8 +81,8 @@ impl PingPongBuffer {
         let tex_a = create_texture();
         let tex_b = create_texture();
 
-        let view_a = Arc::new(tex_a.create_view(&wgpu::TextureViewDescriptor::default()));
-        let view_b = Arc::new(tex_b.create_view(&wgpu::TextureViewDescriptor::default()));
+        let view_a = tex_a.create_view(&wgpu::TextureViewDescriptor::default());
+        let view_b = tex_b.create_view(&wgpu::TextureViewDescriptor::default());
 
         Self {
             textures: [tex_a, tex_b],
@@ -91,11 +91,11 @@ impl PingPongBuffer {
         }
     }
 
-    fn current_view(&self) -> &Arc<wgpu::TextureView> {
+    fn current_view(&self) -> &wgpu::TextureView {
         &self.views[self.current]
     }
 
-    fn next_view(&self) -> &Arc<wgpu::TextureView> {
+    fn next_view(&self) -> &wgpu::TextureView {
         &self.views[1 - self.current]
     }
 
@@ -478,25 +478,11 @@ impl EffectChainRenderer {
         }
     }
 
-    /// Get or create a bind group for an input texture
-    fn get_texture_bind_group_static(
-        device: &wgpu::Device,
-        layout: &wgpu::BindGroupLayout,
-        sampler: &wgpu::Sampler,
-        cache: &mut HashMap<usize, (Weak<wgpu::TextureView>, Arc<wgpu::BindGroup>)>,
-        input_view: &Arc<wgpu::TextureView>,
-    ) -> Arc<wgpu::BindGroup> {
-        let key = Arc::as_ptr(input_view) as usize;
-
-        if let Some((weak, bg)) = cache.get(&key) {
-            if weak.upgrade().is_some() {
-                return bg.clone();
-            }
-        }
-
-        let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    /// Create a bind group for an input texture
+    pub fn create_bind_group(&self, input_view: &wgpu::TextureView) -> wgpu::BindGroup {
+        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Effect Chain Input Bind Group"),
-            layout,
+            layout: &self.bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -504,13 +490,10 @@ impl EffectChainRenderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(sampler),
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
             ],
-        });
-        let bg = Arc::new(bg);
-        cache.insert(key, (Arc::downgrade(input_view), bg.clone()));
-        bg
+        })
     }
 
     /// Create a uniform buffer for effect parameters
@@ -523,34 +506,16 @@ impl EffectChainRenderer {
             })
     }
 
-    /// Get or create a uniform bind group
-    fn get_uniform_bind_group_static(
-        device: &wgpu::Device,
-        layout: &wgpu::BindGroupLayout,
-        cache: &mut HashMap<(usize, u64, u64), Arc<wgpu::BindGroup>>,
-        allocation: &Allocation,
-        size: u64,
-    ) -> Arc<wgpu::BindGroup> {
-        let key = (allocation.page_index, allocation.offset, size);
-        if let Some(bg) = cache.get(&key) {
-            return bg.clone();
-        }
-
-        let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    /// Create a uniform bind group
+    pub fn create_uniform_bind_group(&self, buffer: &wgpu::Buffer) -> wgpu::BindGroup {
+        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Effect Chain Uniform Bind Group"),
-            layout,
+            layout: &self.uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: allocation.buffer,
-                    offset: allocation.offset,
-                    size: std::num::NonZeroU64::new(size),
-                }),
+                resource: buffer.as_entire_binding(),
             }],
-        });
-        let bg = Arc::new(bg);
-        cache.insert(key, bg.clone());
-        bg
+        })
     }
 
     /// Apply the effect chain to an input texture
@@ -560,8 +525,8 @@ impl EffectChainRenderer {
     pub fn apply_chain(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
-        input_view: &Arc<wgpu::TextureView>,
-        output_view: &Arc<wgpu::TextureView>,
+        input_view: &wgpu::TextureView,
+        output_view: &wgpu::TextureView,
         chain: &EffectChain,
         shader_graph_manager: &crate::ShaderGraphManager,
         time: f32,
@@ -579,14 +544,13 @@ impl EffectChainRenderer {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Passthrough Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    depth_slice: None,
                     view: output_view,
                     resolve_target: None,
-
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -777,34 +741,33 @@ impl EffectChainRenderer {
 
             // Get input view
             let current_input = if use_input {
-                input_view.clone()
+                input_view
             } else {
                 let ping_pong = self.ping_pong.as_ref().unwrap();
-                ping_pong.views[current_idx].clone()
+                &ping_pong.views[current_idx]
             };
 
             // Create bind groups
-            let input_bind_group = Self::get_texture_bind_group_static(
-                &self.device,
-                &self.bind_group_layout,
-                &self.sampler,
-                &mut self.texture_bg_cache,
-                &current_input,
-            );
+            let input_bind_group = self.create_bind_group(current_input);
 
             // Allocate uniform buffer from pool
-            let allocation = self
+            let (buffer, offset) = self
                 .allocator
                 .allocate(&self.queue, bytemuck::cast_slice(&[params]));
             let size = std::mem::size_of::<EffectParams>() as u64;
 
-            let uniform_bind_group = Self::get_uniform_bind_group_static(
-                &self.device,
-                &self.uniform_bind_group_layout,
-                &mut self.uniform_bg_cache,
-                &allocation,
-                size,
-            );
+            let uniform_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Effect Chain Uniform Bind Group"),
+                layout: &self.uniform_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer,
+                        offset,
+                        size: std::num::NonZeroU64::new(size),
+                    }),
+                }],
+            });
 
             // Determine output target
             let render_target = if is_last {
@@ -823,10 +786,10 @@ impl EffectChainRenderer {
                         self.apply_shader_graph(
                             encoder,
                             compiled,
-                            &current_input,
+                            current_input,
                             render_target,
-                            input_bind_group.as_ref(),
-                            uniform_bind_group.as_ref(),
+                            &input_bind_group,
+                            &uniform_bind_group,
                         );
                     } else {
                         // Fallback if not ready: Passthrough
@@ -843,13 +806,13 @@ impl EffectChainRenderer {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some(&format!("Effect Pass: {:?}", effect.effect_type)),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            depth_slice: None,
                             view: render_target,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                                 store: wgpu::StoreOp::Store,
                             },
+                            depth_slice: None,
                         })],
                         depth_stencil_attachment: None,
                         timestamp_writes: None,

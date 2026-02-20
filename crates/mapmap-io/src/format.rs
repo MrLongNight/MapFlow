@@ -26,6 +26,10 @@ pub enum PixelFormat {
     UYVY,
     /// NV12 format (Y plane + interleaved UV)
     NV12,
+    /// BC1 (DXT1) Compressed RGB(A) - 8 bytes per 4x4 block
+    BC1,
+    /// BC3 (DXT5) Compressed RGBA - 16 bytes per 4x4 block
+    BC3,
 }
 
 impl PixelFormat {
@@ -41,6 +45,8 @@ impl PixelFormat {
             PixelFormat::YUV422P => 2, // Average across Y, U, V planes
             PixelFormat::UYVY => 2,
             PixelFormat::NV12 => 1, // Average across Y and UV planes
+            PixelFormat::BC1 => 0,  // Compressed (0.5 bytes effective)
+            PixelFormat::BC3 => 1,  // Compressed (1.0 byte effective)
         }
     }
 
@@ -55,6 +61,16 @@ impl PixelFormat {
             PixelFormat::YUV422P => pixels * 2,       // Y + U/2 + V/2
             PixelFormat::UYVY => pixels * 2,
             PixelFormat::NV12 => (pixels * 3) / 2, // Y + UV/2
+            PixelFormat::BC1 => {
+                let blocks_x = width.div_ceil(4);
+                let blocks_y = height.div_ceil(4);
+                (blocks_x * blocks_y * 8) as usize
+            }
+            PixelFormat::BC3 => {
+                let blocks_x = width.div_ceil(4);
+                let blocks_y = height.div_ceil(4);
+                (blocks_x * blocks_y * 16) as usize
+            }
         }
     }
 
@@ -78,7 +94,11 @@ impl PixelFormat {
     pub fn is_rgb(&self) -> bool {
         matches!(
             self,
-            PixelFormat::RGBA8 | PixelFormat::BGRA8 | PixelFormat::RGB8
+            PixelFormat::RGBA8
+                | PixelFormat::BGRA8
+                | PixelFormat::RGB8
+                | PixelFormat::BC1
+                | PixelFormat::BC3
         )
     }
 
@@ -92,6 +112,8 @@ impl PixelFormat {
             PixelFormat::YUV422P => "YUV422P",
             PixelFormat::UYVY => "UYVY",
             PixelFormat::NV12 => "NV12",
+            PixelFormat::BC1 => "BC1",
+            PixelFormat::BC3 => "BC3",
         }
     }
 }

@@ -231,11 +231,11 @@ impl AudioAnalyzerV2 {
 
         // Sanitize input samples: replace non-finite values (NaN, Infinity) with 0.0
         // to prevent contamination of analysis metrics.
-        let sanitized_samples: Vec<f32> = samples
+        let sanitized: Vec<f32> = samples
             .iter()
             .map(|&s| if s.is_finite() { s } else { 0.0 })
             .collect();
-        let samples = &sanitized_samples;
+        let samples = &sanitized;
 
         self.current_time = timestamp;
         self.total_samples += samples.len() as u64;
@@ -818,7 +818,7 @@ mod tests {
         // Feed NaN and Infinity
         let bad_samples = vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.5];
 
-        // Should not panic, and results should be clean (calculated from sanitized inputs)
+        // Should not panic, and should sanitize inputs
         analyzer.process_samples(&bad_samples, 0.0);
 
         let analysis = analyzer.get_latest_analysis();
@@ -830,9 +830,12 @@ mod tests {
             analysis.rms_volume
         );
 
-        // Check that bad inputs were effectively handled (non-finite values replaced by 0.0)
-        // 0.5 amplitude sine or similar would result in some RMS, but here we just check finite
-        assert!(analysis.rms_volume >= 0.0);
+        // 2. Peak volume should be finite
+        assert!(
+            analysis.peak_volume.is_finite(),
+            "Peak Volume should be finite, got {}",
+            analysis.peak_volume
+        );
 
         // 3. Magnitudes should all be finite
         for (i, mag) in analysis.fft_magnitudes.iter().enumerate() {
@@ -861,6 +864,11 @@ mod tests {
         let mut analyzer = AudioAnalyzerV2::new(config);
 
         // Simulate 3 beats (less than 4 required for BPM)
+        // Intervals: 0.5s -> 120 BPM
+        // Since we can't easily access private field beat_timestamps,
+        // we simulate beats by forcing high energy signal at specific times.
+
+        // Actually, we can just use the public API and feed kick drums.
         let sample_rate = 44100.0;
         let kick_freq = 60.0;
         let kick: Vec<f32> = (0..512)
@@ -888,6 +896,7 @@ mod tests {
 
         // Should have detected beats
         // But BPM should be None because we only have 3 beats (2 intervals)
+        // and logic requires 4 beats (3 intervals) to be stable.
         assert_eq!(
             analysis.tempo_bpm, None,
             "BPM should be None for sparse data (only 3 beats)"
@@ -917,12 +926,15 @@ mod tests {
         let rms1 = analyzer.get_latest_analysis().rms_volume;
 
         // With smoothing 0.9: New = Old * 0.9 + Input * 0.1
+        // Input RMS is 1.0. Old is 0.0.
+        // rms1 should be approx 0.1
         assert!(rms1 > 0.05 && rms1 < 0.2, "RMS1 was {}", rms1);
 
         // Step 2
         analyzer.process_samples(&loud, 2.0);
         let rms2 = analyzer.get_latest_analysis().rms_volume;
 
+        // rms2 should be approx 0.1 * 0.9 + 1.0 * 0.1 = 0.09 + 0.1 = 0.19
         assert!(rms2 > rms1, "RMS should increase over time with smoothing");
         assert!(rms2 < 1.0, "RMS should not reach target instantly");
     }
