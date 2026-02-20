@@ -275,8 +275,8 @@ impl TexturePool {
         // Write data
         let (bytes_per_row, rows_per_image, copy_width, copy_height) = match handle.format {
             wgpu::TextureFormat::Bc1RgbaUnorm | wgpu::TextureFormat::Bc1RgbaUnormSrgb => {
-                let blocks_x = (width + 3) / 4;
-                let blocks_y = (height + 3) / 4;
+                let blocks_x = width.div_ceil(4);
+                let blocks_y = height.div_ceil(4);
                 let bytes_per_row = blocks_x * 8;
                 let aligned_width = (width + 3) & !3;
                 let aligned_height = (height + 3) & !3;
@@ -288,8 +288,8 @@ impl TexturePool {
                 )
             }
             wgpu::TextureFormat::Bc3RgbaUnorm | wgpu::TextureFormat::Bc3RgbaUnormSrgb => {
-                let blocks_x = (width + 3) / 4;
-                let blocks_y = (height + 3) / 4;
+                let blocks_x = width.div_ceil(4);
+                let blocks_y = height.div_ceil(4);
                 let bytes_per_row = blocks_x * 16;
                 let aligned_width = (width + 3) & !3;
                 let aligned_height = (height + 3) & !3;
