@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-02-20 - Massive Undocumented UI Update (PR #760)
+**Erkenntnis:** Commit #760 ("Polish InspectorPanel with Cyber Dark theme") was a massive update (649 files, 100k+ insertions) including many assets and shader updates, but was missing from CHANGELOG.
+**Aktion:** Added entry to CHANGELOG.md and marked Cyber Dark Theme as completed in ROADMAP.md.
+
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
