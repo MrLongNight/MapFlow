@@ -5,7 +5,7 @@ use crate::orchestration::outputs::sync_output_windows;
 use anyhow::Result;
 use mapmap_core::module::{ModulePartType, OutputType};
 use mapmap_io::save_project;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use tracing::info;
 
 /// Global update loop (physics/logic), independent of render rate per window.
@@ -27,24 +27,34 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
-        let runner: &mut mapmap_bevy::BevyRunner = runner;
-        let mut node_triggers = std::collections::HashMap::new();
+        let mut all_node_triggers = HashMap::new();
 
-        // First sync graph state and collect triggers
+        // Evaluate ALL modules and collect triggers
+        app.render_ops.clear();
         for module in app.state.module_manager.list_modules() {
             let module_id = module.id;
-            runner.apply_graph_state(module);
-
             if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
                 let eval_result = app
                     .module_evaluator
                     .evaluate(module_ref, &app.state.module_manager.shared_media);
 
+                // Collect trigger values for Bevy reactivity
                 for (part_id, values) in &eval_result.trigger_values {
-                    if let Some(last_val) = values.last() {
-                        node_triggers.insert((module_id, *part_id), *last_val);
-                    }
+                    let max_val = values.iter().copied().fold(0.0, f32::max);
+                    all_node_triggers.insert((module_id, *part_id), max_val);
                 }
+
+                // Push (ModuleId, RenderOp) tuple
+                app.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module_id, op)),
+                );
+
+                // Sync graph state to Bevy
+                runner.apply_graph_state(module_ref);
             }
         }
 
@@ -57,30 +67,28 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             beat_strength: analysis.beat_strength,
             bpm: analysis.tempo_bpm,
         };
-        runner.update(&trigger_data, &node_triggers);
-    }
-    // --- Module Graph Evaluation ---
-    // Evaluate ALL modules and merge render_ops for multi-output support
-    app.render_ops.clear();
-    for module in app.state.module_manager.list_modules() {
-        let module_id = module.id;
-        if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
-            let eval_result = app
-                .module_evaluator
-                .evaluate(module_ref, &app.state.module_manager.shared_media);
-            // Push (ModuleId, RenderOp) tuple
-            app.render_ops.extend(
-                eval_result
-                    .render_ops
-                    .iter()
-                    .cloned()
-                    .map(|op| (module_id, op)),
-            );
+        runner.update(&trigger_data, &all_node_triggers);
+    } else {
+        // Fallback evaluation if Bevy is not active
+        app.render_ops.clear();
+        for module in app.state.module_manager.list_modules() {
+            let module_id = module.id;
+            if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
+                let eval_result = app
+                    .module_evaluator
+                    .evaluate(module_ref, &app.state.module_manager.shared_media);
+                app.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module_id, op)),
+                );
+            }
         }
     }
 
-    // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
-    // NOT render_ops (which can be empty/fluctuate).
+    // Sync output windows based on MODULE GRAPH STRUCTURE
     let current_output_ids: HashSet<u64> = app
         .state
         .module_manager
@@ -96,7 +104,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         })
         .collect();
 
-    // Get current window IDs (excluding main window 0)
     let prev_output_ids: HashSet<u64> = app
         .window_manager
         .iter()
@@ -104,13 +111,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         .map(|wc| wc.output_id)
         .collect();
 
-    // Only sync if module graph's projector set changed
     if ui_needs_sync || current_output_ids != prev_output_ids {
         info!(
             "Output set changed: {:?} -> {:?}",
             prev_output_ids, current_output_ids
         );
-        // Create temp list of ops for sync
         let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
             app.render_ops.iter().map(|(_, op)| op.clone()).collect();
         if let Err(e) = sync_output_windows(app, elwt, &ops_only, None) {
@@ -148,7 +153,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             if let Some(path) =
                 dirs::data_local_dir().map(|p| p.join("MapFlow").join("autosave.mflow"))
             {
-                // Ensure dir exists
                 if let Some(parent) = path.parent() {
                     let _ = std::fs::create_dir_all(parent);
                 }
@@ -174,17 +178,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // Periodic Performance Status (every 10s)
-    // Use a simpler approach without static mut to avoid warnings/safety issues
-    // We can use the app.last_sysinfo_refresh as a rough proxy or just log every N frames.
-    // Let's use a frame counter based approach since we don't want to modify App struct.
-    // 600 frames @ 60fps = 10 seconds.
-<<<<<<< HEAD
     static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-=======
-    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
-        std::sync::atomic::AtomicUsize::new(0);
->>>>>>> feature/lut-effect-support-3979088571781432886
-    #[allow(clippy::manual_is_multiple_of)]
     if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
         let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
             app.sys_info

@@ -516,7 +516,7 @@ impl App {
             window_manager,
             ui_state,
             backend,
-            texture_pool,
+            texture_pool: std::sync::Arc::new(texture_pool),
             _compositor: compositor,
             effect_chain_renderer,
             preview_effect_chain_renderer,

@@ -23,6 +23,7 @@ use mapmap_control::Action;
 use mapmap_core::OutputId;
 use mapmap_mcp::McpAction;
 use mapmap_media::PlaybackCommand;
+use mapmap_ui::types::MediaPlaybackCommand;
 use mapmap_ui::EdgeBlendAction;
 
 use rfd::FileDialog;

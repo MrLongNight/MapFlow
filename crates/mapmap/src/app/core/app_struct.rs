@@ -34,7 +34,7 @@ pub struct App {
     /// The application's render backend.
     pub backend: WgpuBackend,
     /// Texture pool for intermediate textures.
-    pub texture_pool: TexturePool,
+    pub texture_pool: std::sync::Arc<TexturePool>,
     /// The main compositor.
     pub _compositor: Compositor,
     /// The effect chain renderer.
