@@ -272,6 +272,12 @@ impl ControlManager {
 
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
+        // Security: Validate value (e.g. prevent path traversal)
+        if let Err(e) = self.validate_security(&target, &value) {
+            warn!("Blocked unsafe control change: {}", e);
+            return;
+        }
+
         info!("Control change: {:?} = {:?}", target, value);
 
         // Call the control callback if set
