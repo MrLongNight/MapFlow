@@ -21,9 +21,9 @@
 2.  Handle `has_focus()` and keyboard inputs (Arrows, Shift).
 3.  For hold interactions, use a persistent "triggered" flag to enforce "trigger once per press".
 
-## 2024-06-05 – Custom Widget Accessibility Standardization
-**Learning:** Custom 'egui' widgets (sliders, icon buttons) require explicit implementation of accessibility features to match standard widget behavior. They do not inherit keyboard navigation or screen reader metadata automatically.
-**Action:** For every custom widget:
-1.  **Metadata:** Implement `response.widget_info(|| ...)` with correct type and value.
-2.  **Interaction:** Handle `response.has_focus()` and specific keys (Arrows for values, Space/Enter for actions).
-3.  **Visuals:** Draw a focus ring when focused, ensuring corner radius matches the widget's shape (e.g., 0.0 for sharp rects).
+## 2024-06-05 – Custom Button Accessibility Pattern
+**Learning:** Custom-drawn buttons (like icon buttons) often lack visual focus indicators and accessibility metadata, making them unusable for keyboard and screen reader users. `egui::Response` provides `widget_info` which must be explicitly populated for custom widgets.
+**Action:** established a standard pattern for custom buttons:
+1.  **Focus:** Always draw a focus ring (e.g., `ui.visuals().selection.stroke`) when `response.has_focus()`.
+2.  **Metadata:** Always call `response.widget_info` with a labeled `WidgetType::Button`. Use descriptive labels (e.g., `format!("{:?}", icon)`), not generic ones.
+3.  **Interaction:** Ensure `Sense::click()` is used and verify keyboard activation support.

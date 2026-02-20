@@ -3,7 +3,6 @@
 resolver = "2"
 members = [
     "crates/mapmap",
-    "crates/mapmap-bevy",
     "crates/mapmap-control",
     "crates/mapmap-core",
     "crates/mapmap-ffi",
@@ -45,12 +44,16 @@ criterion = "0.8"
 
 # Concurrency
 crossbeam-channel = "0.5"
+
 # Phase 6: egui migration
+ecolor = "0.33.3"
 egui = { version = "0.33.3", features = ["serde"] }
 egui-wgpu = "0.33.3"
 egui-winit = "0.33.3"
 egui_extras = { version = "0.33.3", features = ["image", "file", "svg"] }
 egui_node_editor = "0.9.0"
+emath = "0.33.3"
+epaint = "0.33.3"
 
 # Media
 ffmpeg-next = { version = "7.1", default-features = false, features = [
@@ -86,7 +89,6 @@ pollster = "0.4"
 # Testing
 proptest = "1.4"
 rayon = "1.8"
-tests_bin = "0.1"
 
 # SVG rendering for icons
 resvg = "0.47"
@@ -101,6 +103,7 @@ serde_json = "1.0"
 
 # Crypto
 sha2 = "0.10"
+tests_bin = "0.1"
 # Error handling
 thiserror = "1.0"
 tiny-skia = "0.12"

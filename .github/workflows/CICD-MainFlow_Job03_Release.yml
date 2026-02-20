@@ -1,4 +1,4 @@
-name: "Stable Release"
+name: "CICD-MainFlow: Job03 Release"
 
 # ═══════════════════════════════════════════════════════════════
 # WICHTIG: Dieser Workflow erstellt produktionsreife Releases.
@@ -80,14 +80,12 @@ jobs:
           echo "PKG_CONFIG_PATH=$LibPath\pkgconfig" >> $env:GITHUB_ENV
 
       - name: Install WiX Toolset
-        run: dotnet tool install --global wix
+        run: dotnet tool install --global WiX
 
       - name: Install cargo-wix
         run: cargo install cargo-wix
 
       - name: Build (Release)
-        env:
-          PKG_CONFIG_ALLOW_CROSS: 1
         run: cargo build --release --verbose --features "audio,ffmpeg"
 
       - name: Prepare Release Folder & Copy DLLs
@@ -149,7 +147,6 @@ jobs:
             build-essential pkg-config clang libclang-dev \
             libasound2-dev libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
-            libudev-dev \
             ffmpeg
 
       - name: Build (Release)

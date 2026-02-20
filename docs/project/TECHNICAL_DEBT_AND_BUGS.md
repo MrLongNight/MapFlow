@@ -1,4 +1,4 @@
- Technical Debt, Bugs and Missing UI Features
+# Technical Debt, Bugs and Missing UI Features
 
 This document tracks the current state of MapFlow's implementation, identifying gaps between code and UI, known bugs, and technical debt.
 

@@ -73,6 +73,8 @@ pub struct App {
     pub last_update: std::time::Instant,
     /// Application start time.
     pub start_time: std::time::Instant,
+    /// Last VRAM Garbage Collection timestamp.
+    pub last_texture_gc: std::time::Instant,
     /// Receiver for MCP commands
     pub mcp_receiver: Receiver<McpAction>,
     /// Sender for internal actions (async -> sync)
@@ -158,6 +160,6 @@ pub struct App {
     /// Media Library
     /// Media Library
     pub media_library: MediaLibrary,
-    /// Bevy Integration Runner
+    /// Bevy runner for 3D/Particles
     pub bevy_runner: Option<mapmap_bevy::BevyRunner>,
 }

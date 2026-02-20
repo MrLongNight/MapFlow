@@ -819,8 +819,12 @@ impl ModuleEvaluator {
         let mut source_props = SourceProperties::default_identity();
         let mut current_id = start_node_id;
 
-        // Use cached index from evaluate phase.
-        // Note: This requires that evaluate() has been called for this module to populate self.part_index_cache.
+        // CRITICAL: Ensure the part index cache is consistent with the current module state
+        let mut part_index = std::collections::HashMap::new();
+        for (i, part) in module.parts.iter().enumerate() {
+            part_index.insert(part.id, i);
+        }
+
         tracing::debug!(
             "trace_chain: Starting from node {} in module {}",
             start_node_id,
@@ -833,7 +837,7 @@ impl ModuleEvaluator {
         for _iteration in 0..50 {
             // Apply Trigger Targets for the current node
             // We need to find if any input sockets have triggers active and targets mapped
-            if let Some(&part_idx) = self.part_index_cache.get(&current_id) {
+            if let Some(&part_idx) = part_index.get(&current_id) {
                 let part = &module.parts[part_idx];
 
                 // Check if any *incoming* connection determines the value?
@@ -915,7 +919,7 @@ impl ModuleEvaluator {
                 .copied()
             {
                 let conn = &module.connections[conn_idx];
-                if let Some(&part_idx) = self.part_index_cache.get(&conn.from_part) {
+                if let Some(&part_idx) = part_index.get(&conn.from_part) {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
@@ -956,21 +960,6 @@ impl ModuleEvaluator {
                                     ..
                                 }
                                 | SourceType::ImageUni {
-                                    opacity,
-                                    brightness,
-                                    contrast,
-                                    saturation,
-                                    hue_shift,
-                                    scale_x,
-                                    scale_y,
-                                    rotation,
-                                    offset_x,
-                                    offset_y,
-                                    flip_horizontal,
-                                    flip_vertical,
-                                    ..
-                                }
-                                | SourceType::HapVideo {
                                     opacity,
                                     brightness,
                                     contrast,
@@ -1360,8 +1349,7 @@ impl ModuleEvaluator {
         match source_type {
             SourceType::MediaFile { path, .. }
             | SourceType::VideoUni { path, .. }
-            | SourceType::ImageUni { path, .. }
-            | SourceType::HapVideo { path, .. } => {
+            | SourceType::ImageUni { path, .. } => {
                 if path.is_empty() {
                     return None;
                 }

@@ -15,16 +15,21 @@ struct VertexOutput {
 }
 
 struct Uniforms {
-    lut_size: f32,
+    time: f32,
     intensity: f32,  // Blend between original (0.0) and LUT (1.0)
-    _padding: vec2<f32>,
+    lut_size: f32,   // param_a
+    param_b: f32,
+    param_c: vec2<f32>,
+    resolution: vec2<f32>,
 }
 
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var input_texture: texture_2d<f32>;
-@group(0) @binding(2) var input_sampler: sampler;
-@group(0) @binding(3) var lut_texture: texture_2d<f32>;
-@group(0) @binding(4) var lut_sampler: sampler;
+@group(0) @binding(0) var input_texture: texture_2d<f32>;
+@group(0) @binding(1) var input_sampler: sampler;
+
+@group(1) @binding(0) var<uniform> uniforms: Uniforms;
+
+@group(2) @binding(0) var lut_texture: texture_2d<f32>;
+@group(2) @binding(1) var lut_sampler: sampler;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {

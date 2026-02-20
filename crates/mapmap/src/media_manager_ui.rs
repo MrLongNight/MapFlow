@@ -49,11 +49,14 @@ impl MediaManagerUI {
             .resizable(true)
             .default_size(window_size)
             .show(ctx, |ui| {
+                // Conditional layout based on screen size
                 if layout.is_compact() {
+                    // Vertical layout for compact screens
                     self.render_sidebar(ui, library);
                     ui.separator();
                     self.render_main_content(ui, library);
                 } else {
+                    // Horizontal layout for larger screens
                     ui.horizontal(|ui| {
                         self.render_sidebar(ui, library);
                         ui.separator();

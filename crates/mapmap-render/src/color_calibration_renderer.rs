@@ -314,7 +314,7 @@ mod tests {
             if let Ok(backend) = backend {
                 let renderer = ColorCalibrationRenderer::new(
                     backend.device.clone(),
-                    wgpu::TextureFormat::Bgra8Unorm,
+                    wgpu::TextureFormat::Bgra8UnormSrgb,
                 );
                 assert!(renderer.is_ok());
             }
