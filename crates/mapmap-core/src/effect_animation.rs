@@ -1,4 +1,4 @@
-//! Effect Parameter Automation via Timeline
+//! Effect Parameter Automation via Timeline.
 //!
 //! Bridges the Animation system with Effect parameters,
 //! allowing effect parameters to be keyframe-animated over time.
