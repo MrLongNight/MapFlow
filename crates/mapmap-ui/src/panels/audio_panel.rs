@@ -193,6 +193,7 @@ impl AudioPanel {
             egui::Frame::default()
                 .fill(colors::DARKER_GREY)
                 .stroke(Stroke::new(1.0, colors::STROKE_GREY))
+                .corner_radius(0.0)
                 .inner_margin(4.0)
                 .show(ui, |ui| match self.view_mode {
                     ViewMode::Spectrum => self.render_spectrum(ui, analysis),
@@ -231,10 +232,10 @@ impl AudioPanel {
         let painter = ui.painter();
 
         // Background
-        painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
+        painter.rect_filled(rect, 0.0, colors::DARKER_GREY);
         painter.rect_stroke(
             rect,
-            egui::CornerRadius::same(2),
+            egui::CornerRadius::ZERO,
             Stroke::new(1.0, colors::STROKE_GREY),
             egui::StrokeKind::Middle,
         );
@@ -252,7 +253,7 @@ impl AudioPanel {
             colors::MINT_ACCENT
         };
 
-        painter.rect_filled(bar_rect, 2.0, color);
+        painter.rect_filled(bar_rect, 0.0, color);
 
         // Text
         painter.text(
@@ -389,7 +390,7 @@ impl AudioPanel {
                 colors::CYAN_ACCENT
             };
 
-            painter.rect_filled(bar_rect, 2.0, color);
+            painter.rect_filled(bar_rect, 0.0, color);
 
             // Peak indicator
             let peak_y = rect.max.y
