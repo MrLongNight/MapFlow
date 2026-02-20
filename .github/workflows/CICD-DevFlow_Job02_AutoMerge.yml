@@ -201,11 +201,13 @@ jobs:
 
               const linkedIssues = new Set();
               const textToScan = `${pr.data.title || ''}\n${pr.data.body || ''}`;
-              const closingIssueRegex = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b/gi;
+              const closingIssueRegex = /\b(?:close(?:s|d|ing)?|fix(?:es|ed|ing)?|resolve(?:s|d|ing)?)\s*:?\s*((?:#\d+\s*(?:,\s*#\d+\s*)*))/gi;
               for (const match of textToScan.matchAll(closingIssueRegex)) {
-                const issueNumber = Number.parseInt(match[1], 10);
-                if (Number.isInteger(issueNumber) && issueNumber > 0 && issueNumber !== prNumber) {
-                  linkedIssues.add(issueNumber);
+                for (const issueMatch of match[1].matchAll(/#(\d+)/g)) {
+                  const issueNumber = Number.parseInt(issueMatch[1], 10);
+                  if (Number.isInteger(issueNumber) && issueNumber > 0) {
+                    linkedIssues.add(issueNumber);
+                  }
                 }
               }
 
@@ -227,7 +229,7 @@ jobs:
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       issue_number: issueNumber,
-                      body: `✅ Dieses Issue wurde automatisch nach erfolgreichem Merge von PR #${prNumber} geschlossen.`
+                      body: `✅ This issue was automatically closed after successful merge of PR #${prNumber}.`
                     });
                     await github.rest.issues.update({
                       owner: context.repo.owner,
