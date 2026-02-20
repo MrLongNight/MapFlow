@@ -274,71 +274,24 @@ impl App {
                     if let Some(mod_id) = target_module_id {
                         let player_key = (mod_id, part_id);
 
-                        // If player doesn't exist and we get any command (except Reload), try to create it
-                        if !self.media_players.contains_key(&player_key)
-                            && cmd != mapmap_ui::types::MediaPlaybackCommand::Reload
-                        {
-                            info!(
-                                "Player doesn't exist for part_id={}, attempting to create...",
-                                part_id
-                            );
-                            // Find the source path
-                            if let Some(module) = self.state.module_manager.get_module(mod_id) {
-                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                                    if let mapmap_core::module::ModulePartType::Source(
-                                        mapmap_core::module::SourceType::MediaFile {
-                                            ref path, ..
-                                        },
-                                    ) = &part.part_type
-                                    {
-                                        info!(
-                                            "Found media path: '{}' in module '{}'",
-                                            path, module.name
-                                        );
-                                        if !path.is_empty() {
-                                            match mapmap_media::open_path(path) {
-                                                Ok(player) => {
-                                                    info!(
-                                                        "Successfully created player for '{}'",
-                                                        path
-                                                    );
-                                                    self.media_players
-                                                        .insert(player_key, (path.clone(), player));
-                                                }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Failed to load media '{}': {}",
-                                                        path, e
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if let Some((_, player)) = self.media_players.get_mut(&player_key) {
+                        if let Some(handle) = self.media_players.get_mut(&player_key) {
                             match cmd {
                                 mapmap_ui::types::MediaPlaybackCommand::Play => {
-                                    let _ = player.command_sender().send(PlaybackCommand::Play);
+                                    let _ = handle.command_tx.send(PlaybackCommand::Play);
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Pause => {
-                                    let _ = player.command_sender().send(PlaybackCommand::Pause);
+                                    let _ = handle.command_tx.send(PlaybackCommand::Pause);
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Stop => {
-                                    let _ = player.command_sender().send(PlaybackCommand::Stop);
+                                    let _ = handle.command_tx.send(PlaybackCommand::Stop);
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Reload => {
-                                    // Remove existing player - it will be recreated with new path
                                     info!("Reloading media player for part_id={}", part_id);
-                                    // (Player removal handled below)
+                                    // Player removal handled below
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::SetSpeed(speed) => {
                                     info!("Setting speed to {} for part_id={}", speed, part_id);
-                                    let _ = player
-                                        .command_sender()
-                                        .send(PlaybackCommand::SetSpeed(speed));
+                                    let _ = handle.command_tx.send(PlaybackCommand::SetSpeed(speed));
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::SetLoop(enabled) => {
                                     info!("Setting loop to {} for part_id={}", enabled, part_id);
@@ -347,13 +300,11 @@ impl App {
                                     } else {
                                         mapmap_media::LoopMode::PlayOnce
                                     };
-                                    let _ = player
-                                        .command_sender()
-                                        .send(PlaybackCommand::SetLoopMode(mode));
+                                    let _ = handle.command_tx.send(PlaybackCommand::SetLoopMode(mode));
                                 }
                                 mapmap_ui::types::MediaPlaybackCommand::Seek(position) => {
                                     info!("Seeking to {} for part_id={}", position, part_id);
-                                    let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                    let _ = handle.command_tx.send(PlaybackCommand::Seek(
                                         std::time::Duration::from_secs_f64(position),
                                     ));
                                 }
@@ -458,56 +409,33 @@ impl App {
                         #[allow(clippy::single_match)]
                         match cmd {
                             mapmap_core::SourceCommand::PlayMedia {
-                                path,
+                                path: _,
                                 trigger_value,
                             } => {
-                                let path = path.clone();
                                 let part_id = *part_id;
                                 let player_key = (module.id, part_id);
-                                if path.is_empty() {
-                                    continue;
-                                }
 
-                                let player_needs_reload = if let Some((current_path, _)) =
-                                    self.media_players.get(&player_key)
-                                {
-                                    current_path != &path
-                                } else {
-                                    true
-                                };
-
-                                if player_needs_reload {
-                                    match mapmap_media::open_path(&path) {
-                                        Ok(player) => {
-                                            self.media_players
-                                                .insert(player_key, (path.clone(), player));
-                                        }
-                                        Err(e) => {
-                                            error!("Failed to load media '{}': {}", path, e);
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                if let Some((_, player)) = self.media_players.get_mut(&player_key) {
+                                if let Some(handle) = self.media_players.get_mut(&player_key) {
                                     if *trigger_value > 0.1 {
-                                        let _ = player.command_sender().send(PlaybackCommand::Play);
+                                        let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                    } else {
+                                        let _ = handle.command_tx.send(PlaybackCommand::Pause);
                                     }
-                                    if let Some(frame) =
-                                        player.update(std::time::Duration::from_millis(16))
-                                    {
-                                        if let mapmap_io::format::FrameData::Cpu(data) = &frame.data
-                                        {
-                                            let tex_name =
-                                                format!("part_{}_{}", module.id, part_id);
-                                            self.texture_pool.upload_data(
-                                                &self.backend.queue,
-                                                &tex_name,
-                                                data,
-                                                frame.format.width,
-                                                frame.format.height,
-                                            );
-                                        }
+                                }
+                            }
+                            mapmap_core::SourceCommand::PlaySharedMedia {
+                                id: _,
+                                path: _,
+                                trigger_value,
+                            } => {
+                                let part_id = *part_id;
+                                let player_key = (module.id, part_id);
+
+                                if let Some(handle) = self.media_players.get_mut(&player_key) {
+                                    if *trigger_value > 0.1 {
+                                        let _ = handle.command_tx.send(PlaybackCommand::Play);
+                                    } else {
+                                        let _ = handle.command_tx.send(PlaybackCommand::Pause);
                                     }
                                 }
                             }
