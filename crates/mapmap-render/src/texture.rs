@@ -273,6 +273,36 @@ impl TexturePool {
         };
 
         // Write data
+        let (bytes_per_row, rows_per_image, copy_width, copy_height) = match handle.format {
+            wgpu::TextureFormat::Bc1RgbaUnorm | wgpu::TextureFormat::Bc1RgbaUnormSrgb => {
+                let blocks_x = (width + 3) / 4;
+                let blocks_y = (height + 3) / 4;
+                let bytes_per_row = blocks_x * 8;
+                let aligned_width = (width + 3) & !3;
+                let aligned_height = (height + 3) & !3;
+                (
+                    Some(bytes_per_row),
+                    Some(blocks_y),
+                    aligned_width,
+                    aligned_height,
+                )
+            }
+            wgpu::TextureFormat::Bc3RgbaUnorm | wgpu::TextureFormat::Bc3RgbaUnormSrgb => {
+                let blocks_x = (width + 3) / 4;
+                let blocks_y = (height + 3) / 4;
+                let bytes_per_row = blocks_x * 16;
+                let aligned_width = (width + 3) & !3;
+                let aligned_height = (height + 3) & !3;
+                (
+                    Some(bytes_per_row),
+                    Some(blocks_y),
+                    aligned_width,
+                    aligned_height,
+                )
+            }
+            _ => (Some(4 * width), Some(height), width, height),
+        };
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
@@ -283,12 +313,12 @@ impl TexturePool {
             data,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * width),
-                rows_per_image: Some(height),
+                bytes_per_row,
+                rows_per_image,
             },
             wgpu::Extent3d {
-                width: handle.width,
-                height: handle.height,
+                width: copy_width,
+                height: copy_height,
                 depth_or_array_layers: 1,
             },
         );
