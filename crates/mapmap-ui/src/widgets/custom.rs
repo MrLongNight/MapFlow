@@ -51,6 +51,35 @@ pub fn styled_slider(
     let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
 
+    // Keyboard interaction
+    if response.has_focus() {
+        let range_span = range.end() - range.start();
+        let step = range_span / 100.0;
+        let large_step = range_span / 10.0;
+
+        let mut delta = 0.0;
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
+        {
+            delta -= if ui.input(|i| i.modifiers.shift) {
+                large_step
+            } else {
+                step
+            };
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            delta += if ui.input(|i| i.modifiers.shift) {
+                large_step
+            } else {
+                step
+            };
+        }
+
+        if delta != 0.0 {
+            *value = (*value + delta).clamp(*range.start(), *range.end());
+            response.mark_changed();
+        }
+    }
+
     // Double-click to reset
     if response.double_clicked() {
         *value = default_value;
@@ -116,6 +145,23 @@ pub fn styled_slider(
         text_color,
     );
 
+    // Draw focus ring
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            0.0,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
+
+    // Accessibility info
+    response.widget_info(|| {
+        let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "Slider");
+        info.value = Some(*value as f64);
+        info
+    });
+
     response.on_hover_text("Double-click to reset")
 }
 
@@ -128,6 +174,49 @@ pub fn styled_slider_log(
     let desired_size = Vec2::new(ui.spacing().slider_width, 18.0);
     let (rect, mut response) = ui.allocate_at_least(desired_size, Sense::click_and_drag());
     let visuals = ui.style().interact(&response);
+
+    // Keyboard interaction
+    if response.has_focus() {
+        let min = *range.start();
+        let max = *range.end();
+        let min_val = min.max(0.0001); // Avoid log(0)
+        let min_log = min_val.ln();
+        let max_log = max.ln();
+
+        let mut delta_t = 0.0;
+        let step_t = 0.01; // 1% of the log scale
+        let large_step_t = 0.1; // 10%
+
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowDown))
+        {
+            delta_t -= if ui.input(|i| i.modifiers.shift) {
+                large_step_t
+            } else {
+                step_t
+            };
+        }
+        if ui.input(|i| i.key_pressed(egui::Key::ArrowRight) || i.key_pressed(egui::Key::ArrowUp)) {
+            delta_t += if ui.input(|i| i.modifiers.shift) {
+                large_step_t
+            } else {
+                step_t
+            };
+        }
+
+        if delta_t != 0.0 {
+            // Calculate current t
+            let current_log = value.max(min_val).ln();
+            let current_t = (current_log - min_log) / (max_log - min_log);
+
+            // Apply delta
+            let new_t = (current_t + delta_t).clamp(0.0, 1.0);
+
+            // Convert back to value
+            let new_log = min_log + new_t * (max_log - min_log);
+            *value = new_log.exp();
+            response.mark_changed();
+        }
+    }
 
     // Double-click to reset
     if response.double_clicked() {
@@ -205,6 +294,23 @@ pub fn styled_slider_log(
         egui::FontId::proportional(12.0),
         text_color,
     );
+
+    // Draw focus ring
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            0.0,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
+
+    // Accessibility info
+    response.widget_info(|| {
+        let mut info = egui::WidgetInfo::labeled(egui::WidgetType::Slider, true, "Log Slider");
+        info.value = Some(*value as f64);
+        info
+    });
 
     response.on_hover_text("Double-click to reset (Logarithmic)")
 }
@@ -389,6 +495,19 @@ pub fn icon_button(
         egui::FontId::proportional(14.0),
         text_color,
     );
+
+    // Draw focus ring
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            0.0,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
+
+    // Accessibility info
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, text));
 
     response
 }

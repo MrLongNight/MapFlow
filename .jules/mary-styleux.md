@@ -20,3 +20,10 @@
 1.  Implement `response.widget_info(...)`.
 2.  Handle `has_focus()` and keyboard inputs (Arrows, Shift).
 3.  For hold interactions, use a persistent "triggered" flag to enforce "trigger once per press".
+
+## 2024-06-05 – Custom Widget Accessibility Standardization
+**Learning:** Custom 'egui' widgets (sliders, icon buttons) require explicit implementation of accessibility features to match standard widget behavior. They do not inherit keyboard navigation or screen reader metadata automatically.
+**Action:** For every custom widget:
+1.  **Metadata:** Implement `response.widget_info(|| ...)` with correct type and value.
+2.  **Interaction:** Handle `response.has_focus()` and specific keys (Arrows for values, Space/Enter for actions).
+3.  **Visuals:** Draw a focus ring when focused, ensuring corner radius matches the widget's shape (e.g., 0.0 for sharp rects).
