@@ -568,6 +568,8 @@ impl App {
             ndi_receivers: std::collections::HashMap::new(),
             #[cfg(feature = "ndi")]
             ndi_senders: std::collections::HashMap::new(),
+            #[cfg(feature = "ndi")]
+            ndi_readbacks: std::collections::HashMap::new(),
 
             output_assignments: std::collections::HashMap::new(),
             shader_graph_manager: mapmap_render::ShaderGraphManager::new(),

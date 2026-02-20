@@ -124,7 +124,7 @@ impl WindowManager {
 
         let surface = backend.create_surface(window.clone())?;
         let surface_config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             format: backend.surface_format(),
             width: default_width,
             height: default_height,
@@ -315,7 +315,7 @@ impl WindowManager {
         let surface = backend.create_surface(window.clone())?;
 
         let surface_config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             format: backend.surface_format(),
             width: default_width,
             height: default_height,
