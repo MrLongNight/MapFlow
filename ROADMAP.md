@@ -1015,4 +1015,3 @@ graph TD
 * **CI:** GitHub Actions (Build, Test, Lint).
 * **Linter:** `clippy` (Strikt).
 * **Formatter:** `rustfmt`.
-
