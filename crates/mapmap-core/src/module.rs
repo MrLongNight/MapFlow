@@ -2,7 +2,7 @@
 //!
 //! Defines the graph structure of a MapFlow project, including Parts (nodes),
 //! Connections (edges), and their types (Source, Layer, Output, etc.).
-//!
+//!.
 //! # Core Structures #
 //!
 //! - [`MapFlowModule`]: The top-level container for a visual programming graph.
@@ -199,6 +199,8 @@ impl MapFlowModule {
                     output_width: 0,
                     output_height: 0,
                     output_fps: 60.0,
+                    ndi_enabled: false,
+                    ndi_stream_name: String::new(),
                 })
             }
         };
@@ -2262,6 +2264,12 @@ pub enum OutputType {
         /// Output target FPS (0.0 = unlimited/vsync)
         #[serde(default = "default_output_fps")]
         output_fps: f32,
+        /// Enable NDI broadcasting for this output
+        #[serde(default)]
+        ndi_enabled: bool,
+        /// NDI Stream Name
+        #[serde(default)]
+        ndi_stream_name: String,
     },
     /// NDI network video output
     NdiOutput {
