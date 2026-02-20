@@ -4,8 +4,8 @@
   # MapFlow
   ### High-Performance Real-Time Visual Synthesis & Projection Mapping
 
-  [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
-  [![Latest Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml)
+  [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main&label=Build%20%26%20Quality)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
+  [![Stable Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg?label=Stable%20Release)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml)
   [![Security Scanned](https://img.shields.io/badge/Security-Verified-brightgreen)](.github/workflows/CICD-DevFlow_Job01_Validation.yml)
   [![Platform: Windows | Linux](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue.svg)](docs/01-GETTING-STARTED/INSTALLATION.md)
   [![Language: Rust](https://img.shields.io/badge/Language-Rust-orange.svg)](https://www.rust-lang.org/)
