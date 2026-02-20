@@ -275,6 +275,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         match action {
             EffectChainAction::AddEffectWithParams(ui_type, params) => {
                 let render_type = match ui_type {
+                    UIEffectType::LoadLUT => RenderEffectType::LoadLUT {
+                        path: String::new(),
+                    },
                     UIEffectType::Blur => RenderEffectType::Blur,
                     UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
                     UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
@@ -308,6 +311,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             }
             EffectChainAction::AddEffect(ui_type) => {
                 let render_type = match ui_type {
+                    UIEffectType::LoadLUT => RenderEffectType::LoadLUT {
+                        path: String::new(),
+                    },
                     UIEffectType::Blur => RenderEffectType::Blur,
                     UIEffectType::ColorAdjust => RenderEffectType::ColorAdjust,
                     UIEffectType::ChromaticAberration => RenderEffectType::ChromaticAberration,
@@ -358,6 +364,11 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             EffectChainAction::SetParameter(id, name, val) => {
                 if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
                     effect.set_param(&name, val);
+                }
+            }
+            EffectChainAction::SetLUTPath(id, path) => {
+                if let Some(effect) = app.state.effect_chain_mut().get_effect_mut(id) {
+                    effect.effect_type = RenderEffectType::LoadLUT { path };
                 }
             }
             _ => {}

@@ -27,9 +27,25 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
-        // First sync graph state
+        let runner: &mut mapmap_bevy::BevyRunner = runner;
+        let mut node_triggers = std::collections::HashMap::new();
+
+        // First sync graph state and collect triggers
         for module in app.state.module_manager.list_modules() {
+            let module_id = module.id;
             runner.apply_graph_state(module);
+
+            if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
+                let eval_result = app
+                    .module_evaluator
+                    .evaluate(module_ref, &app.state.module_manager.shared_media);
+
+                for (part_id, values) in &eval_result.trigger_values {
+                    if let Some(last_val) = values.last() {
+                        node_triggers.insert((module_id, *part_id), *last_val);
+                    }
+                }
+            }
         }
 
         let analysis = app.audio_analyzer.get_latest_analysis();
@@ -41,9 +57,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             beat_strength: analysis.beat_strength,
             bpm: analysis.tempo_bpm,
         };
-        runner.update(&trigger_data);
+        runner.update(&trigger_data, &node_triggers);
     }
-
     // --- Module Graph Evaluation ---
     // Evaluate ALL modules and merge render_ops for multi-output support
     app.render_ops.clear();
@@ -163,7 +178,12 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // We can use the app.last_sysinfo_refresh as a rough proxy or just log every N frames.
     // Let's use a frame counter based approach since we don't want to modify App struct.
     // 600 frames @ 60fps = 10 seconds.
+<<<<<<< HEAD
     static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+=======
+    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
+        std::sync::atomic::AtomicUsize::new(0);
+>>>>>>> feature/lut-effect-support-3979088571781432886
     #[allow(clippy::manual_is_multiple_of)]
     if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
         let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {

@@ -4,8 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Effect types available in the chain
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EffectType {
+    /// Load 3D LUT from file
+    LoadLUT {
+        /// Path to .cube file
+        path: String,
+    },
     /// Color adjustments (brightness, contrast, saturation)
     ColorAdjust,
     /// Gaussian blur effect
@@ -49,9 +54,23 @@ pub enum EffectType {
 }
 
 impl EffectType {
+    /// Get a normalized version of the effect type (e.g. for map keys)
+    ///
+    /// For types that carry data (like LoadLUT), this returns a representative
+    /// instance with empty/default data.
+    pub fn normalized(&self) -> Self {
+        match self {
+            EffectType::LoadLUT { .. } => EffectType::LoadLUT {
+                path: String::new(),
+            },
+            _ => self.clone(),
+        }
+    }
+
     /// Get the display name for UI
     pub fn display_name(&self) -> &'static str {
         match self {
+            EffectType::LoadLUT { .. } => "Load 3D LUT",
             EffectType::ColorAdjust => "Color Adjust",
             EffectType::Blur => "Blur",
             EffectType::ChromaticAberration => "Chromatic Aberration",
@@ -100,7 +119,10 @@ impl Effect {
         let mut parameters = HashMap::new();
 
         // Set default parameters based on effect type
-        match effect_type {
+        match &effect_type {
+            EffectType::LoadLUT { .. } => {
+                parameters.insert("intensity".to_string(), 1.0);
+            }
             EffectType::ColorAdjust => {
                 parameters.insert("brightness".to_string(), 0.0);
                 parameters.insert("contrast".to_string(), 1.0);

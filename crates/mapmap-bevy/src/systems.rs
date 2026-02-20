@@ -55,6 +55,62 @@ pub fn audio_reaction_system(
     }
 }
 
+pub fn shape_system(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    query: Query<
+        (Entity, &crate::components::Bevy3DShape),
+        Changed<crate::components::Bevy3DShape>,
+    >,
+) {
+    for (entity, shape) in query.iter() {
+        let mesh = match shape.shape_type {
+            mapmap_core::module::BevyShapeType::Cube => Mesh::from(Cuboid::default()),
+            mapmap_core::module::BevyShapeType::Sphere => Mesh::from(Sphere::default()),
+            mapmap_core::module::BevyShapeType::Capsule => Mesh::from(Capsule3d::default()),
+            mapmap_core::module::BevyShapeType::Torus => Mesh::from(Torus::default()),
+            mapmap_core::module::BevyShapeType::Cylinder => Mesh::from(Cylinder::default()),
+            mapmap_core::module::BevyShapeType::Plane => Mesh::from(Plane3d::default()),
+        };
+
+        let material = StandardMaterial {
+            base_color: Color::srgba(
+                shape.color[0],
+                shape.color[1],
+                shape.color[2],
+                shape.color[3],
+            ),
+            unlit: shape.unlit,
+            ..default()
+        };
+
+        commands.entity(entity).insert((
+            Mesh3d(meshes.add(mesh)),
+            MeshMaterial3d(materials.add(material)),
+        ));
+
+        if shape.outline_width > 0.0 {
+            commands
+                .entity(entity)
+                .insert(bevy_mod_outline::OutlineVolume {
+                    visible: true,
+                    width: shape.outline_width,
+                    colour: Color::srgba(
+                        shape.outline_color[0],
+                        shape.outline_color[1],
+                        shape.outline_color[2],
+                        shape.outline_color[3],
+                    ),
+                });
+        } else {
+            commands
+                .entity(entity)
+                .remove::<bevy_mod_outline::OutlineVolume>();
+        }
+    }
+}
+
 pub fn setup_3d_scene(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
@@ -118,17 +174,9 @@ pub fn hex_grid_system(
 ) {
     for (entity, hex_config) in query.iter() {
         // Clear existing children (tiles)
-        commands.entity(entity).despawn_related::<Children>();
+        commands.entity(entity).despawn();
 
-        let layout = hexx::HexLayout {
-            scale: hexx::Vec2::splat(hex_config.radius),
-            orientation: if hex_config.pointy_top {
-                hexx::HexOrientation::Pointy
-            } else {
-                hexx::HexOrientation::Flat
-            },
-            ..default()
-        };
+        let hex_size = hexx::Vec2::splat(hex_config.radius);
 
         let mesh = meshes.add(Cuboid::from_size(Vec3::new(
             hex_config.radius * 1.5,
@@ -142,6 +190,15 @@ pub fn hex_grid_system(
 
         commands.entity(entity).with_children(|parent| {
             for hex in hexx::shapes::hexagon(hexx::Hex::ZERO, hex_config.rings) {
+                let layout = hexx::HexLayout {
+                    hex_size,
+                    orientation: if hex_config.pointy_top {
+                        hexx::HexOrientation::Pointy
+                    } else {
+                        hexx::HexOrientation::Flat
+                    },
+                    ..default()
+                };
                 let pos = layout.hex_to_world_pos(hex);
                 parent.spawn((
                     Mesh3d(mesh.clone()),
@@ -466,4 +523,20 @@ pub fn text_3d_system(
             },
         ));
     }
+}
+
+pub fn print_status_system() {
+    // Placeholder
+}
+
+pub fn camera_control_system() {
+    // Placeholder
+}
+
+pub fn model_system() {
+    // Placeholder
+}
+
+pub fn node_reactivity_system() {
+    // Placeholder
 }

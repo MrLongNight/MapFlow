@@ -46,3 +46,12 @@
     - **Node Header:** `colors::LIGHTER_GREY` (creates contrast vs body).
     - **Separator:** `colors::STROKE_GREY` (sharp definition).
 **Action:** Refactored `ModuleCanvas` to use `crate::theme::colors` constants, enforcing the Cyber Dark palette on the node graph.
+
+## 2026-02-16 – [Refactoring Mapping and Audio Panels]
+**Learning:** `egui::Frame` with `corner_radius(0.0)` and zebra striping is essential for the Cyber Dark look.
+- **Insight:** `MappingPanel` was using mixed UI paradigms. Refactoring it to use `render_panel_header` and consistent row layouts significantly improves readability.
+- **Pattern:**
+    - **Header:** `render_panel_header`
+    - **List:** `egui::ScrollArea` + `egui::Frame` (zebra) + `ui.horizontal`
+    - **Actions:** Right-aligned icon buttons (`delete_button`, `lock_button`, `solo_button`).
+**Action:** Applied this pattern to `MappingPanel` and `AudioPanel`. Also added `lock_button` to `custom.rs` for reuse.

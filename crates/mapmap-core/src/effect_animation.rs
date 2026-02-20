@@ -93,7 +93,7 @@ impl EffectParameterAnimator {
 
         let binding = EffectParameterBinding {
             id,
-            effect_type,
+            effect_type: effect_type.clone(),
             effect_instance,
             parameter_name: parameter_name.to_string(),
             track_name,
@@ -204,7 +204,7 @@ impl EffectParameterAnimator {
 
                     updates.push(EffectParameterUpdate {
                         binding_id: binding.id,
-                        effect_type: binding.effect_type,
+                        effect_type: binding.effect_type.clone(),
                         effect_instance: binding.effect_instance,
                         parameter_name: binding.parameter_name.clone(),
                         value,
