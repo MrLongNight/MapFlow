@@ -70,7 +70,7 @@ jobs:
           $VcpkgRoot = "$(Get-Location)\vcpkg"
           $IncludePath = "$VcpkgRoot\installed\x64-windows\include"
           $LibPath = "$VcpkgRoot\installed\x64-windows\lib"
-          
+
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
           echo "BINDGEN_EXTRA_CLANG_ARGS=-I$IncludePath" >> $env:GITHUB_ENV
