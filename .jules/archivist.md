@@ -9,7 +9,7 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 ```
 ## YYYY-MM-DD - [Titel]
 **Erkenntnis:** [Was gelernt]
-**Aktion:** [Wie beim nächsten Mal anwenden]
+**Aktion:** [Wie beim nächsten Mal anwenden].
 ```
 
 ---
