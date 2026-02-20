@@ -47,8 +47,24 @@ impl TriggerSystem {
                             // 1. Frequency Bands (9 outputs)
                             if output_config.frequency_bands {
                                 any_output_enabled = true;
-                                for i in 0..9 {
-                                    if audio_data.band_energies[i] > *threshold {
+                                let band_names = [
+                                    "SubBass Out",
+                                    "Bass Out",
+                                    "LowMid Out",
+                                    "Mid Out",
+                                    "HighMid Out",
+                                    "UpperMid Out",
+                                    "Presence Out",
+                                    "Brilliance Out",
+                                    "Air Out",
+                                ];
+
+                                for (i, band_name) in band_names.iter().enumerate() {
+                                    let active = audio_data.band_energies[i] > *threshold;
+                                    let inverted =
+                                        output_config.inverted_outputs.contains(*band_name);
+
+                                    if active ^ inverted {
                                         self.active_triggers.insert((part.id, socket_index));
                                     }
                                     socket_index += 1;
@@ -59,14 +75,26 @@ impl TriggerSystem {
                             if output_config.volume_outputs {
                                 any_output_enabled = true;
                                 // RMS
-                                if audio_data.rms_volume > *threshold {
-                                    self.active_triggers.insert((part.id, socket_index));
+                                {
+                                    let active = audio_data.rms_volume > *threshold;
+                                    let inverted =
+                                        output_config.inverted_outputs.contains("RMS Volume");
+
+                                    if active ^ inverted {
+                                        self.active_triggers.insert((part.id, socket_index));
+                                    }
                                 }
                                 socket_index += 1;
 
                                 // Peak
-                                if audio_data.peak_volume > *threshold {
-                                    self.active_triggers.insert((part.id, socket_index));
+                                {
+                                    let active = audio_data.peak_volume > *threshold;
+                                    let inverted =
+                                        output_config.inverted_outputs.contains("Peak Volume");
+
+                                    if active ^ inverted {
+                                        self.active_triggers.insert((part.id, socket_index));
+                                    }
                                 }
                                 socket_index += 1;
                             }
@@ -74,7 +102,10 @@ impl TriggerSystem {
                             // 3. Beat Output
                             if output_config.beat_output {
                                 any_output_enabled = true;
-                                if audio_data.beat_detected {
+                                let active = audio_data.beat_detected;
+                                let inverted = output_config.inverted_outputs.contains("Beat Out");
+
+                                if active ^ inverted {
                                     self.active_triggers.insert((part.id, socket_index));
                                 }
                                 socket_index += 1;
