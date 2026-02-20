@@ -1,4 +1,4 @@
-name: "CICD-MainFlow: Job03 Release"
+name: "Stable Release"
 
 # ═══════════════════════════════════════════════════════════════
 # WICHTIG: Dieser Workflow erstellt produktionsreife Releases.

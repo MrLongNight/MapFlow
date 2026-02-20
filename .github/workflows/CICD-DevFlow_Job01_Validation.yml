@@ -1,4 +1,4 @@
-name: "CICD-DevFlow: Job01 Validation"
+name: "Build & Quality"
 
 # ═══════════════════════════════════════════════════════════════
 # WICHTIG: Dieser Workflow läuft automatisch bei jedem Pull Request
