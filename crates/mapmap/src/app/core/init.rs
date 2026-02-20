@@ -4,6 +4,7 @@ use super::app_struct::App;
 use crate::media_manager_ui::MediaManagerUI;
 use crate::window_manager::WindowManager;
 use anyhow::Result;
+use crossbeam_channel::unbounded;
 use egui_wgpu::Renderer;
 use egui_winit::State;
 use mapmap_control::hue::controller::HueController;
@@ -41,9 +42,7 @@ impl App {
         tracing::info!(">>> BUILD VERSION: 2026-02-16-FIX-BEVY-HEADLESS <<<");
 
         // Initialize renderers
-        // Wrap TexturePool in Arc early so it can be shared with background threads
-        let texture_pool = std::sync::Arc::new(TexturePool::new(backend.device.clone()));
-
+        let texture_pool = TexturePool::new(backend.device.clone());
         let compositor = Compositor::new(backend.device.clone(), backend.surface_format())?;
         let effect_chain_renderer = EffectChainRenderer::new(
             backend.device.clone(),
@@ -177,11 +176,128 @@ impl App {
                     }
                     Err(e) => {
                         error!("Failed to load autosave: {}", e);
+                        // Fallback to new project is automatic as state is already initialized
                     }
                 }
             } else {
                 info!("No autosave found at {:?}, starting new project.", path);
             }
+
+            // --- SELF-HEAL: Reconcile Output IDs ---
+            // Ensure Output Nodes in the graph point to valid IDs in OutputManager.
+            // If ID mismatch but NAME match, update the ID.
+            let valid_outputs: HashMap<String, u64> = state
+                .output_manager
+                .outputs()
+                .iter()
+                .map(|o| (o.name.clone(), o.id))
+                .collect();
+            let valid_ids: Vec<u64> = valid_outputs.values().cloned().collect();
+
+            let mut fixed_count = 0;
+            for module in state.module_manager_mut().modules_mut() {
+                for part in &mut module.parts {
+                    if let mapmap_core::module::ModulePartType::Output(
+                        mapmap_core::module::OutputType::Projector {
+                            ref mut id,
+                            ref name,
+                            ..
+                        },
+                    ) = &mut part.part_type
+                    {
+                        if !valid_ids.contains(id) {
+                            if let Some(new_id) = valid_outputs.get(name) {
+                                info!(
+                                    "Self-Heal: Relinking Output '{}' from ID {} to {}.",
+                                    name, id, new_id
+                                );
+                                *id = *new_id;
+                                fixed_count += 1;
+                            } else {
+                                warn!(
+                                    "Self-Heal: Output '{}' (ID {}) has no matching Output Window.",
+                                    name, id
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            if fixed_count > 0 {
+                info!("Self-Heal: Fixed {} output connections.", fixed_count);
+                state.dirty = true;
+            }
+
+            // --- SELF-HEAL: Ensure Output Windows exist for active Projector nodes ---
+            let existing_output_ids: std::collections::HashSet<u64> = state
+                .output_manager
+                .outputs()
+                .iter()
+                .map(|o| o.id)
+                .collect();
+            let mut missing_outputs = Vec::new();
+            for module in state.module_manager.modules() {
+                for part in &module.parts {
+                    if let mapmap_core::module::ModulePartType::Output(
+                        mapmap_core::module::OutputType::Projector { id, name, .. },
+                    ) = &part.part_type
+                    {
+                        if !existing_output_ids.contains(id) {
+                            missing_outputs.push((*id, name.clone()));
+                        }
+                    }
+                }
+            }
+
+            for (id, name) in missing_outputs {
+                info!(
+                    "Self-Heal: Creating missing Output Window '{}' (ID {})",
+                    name, id
+                );
+                state.output_manager_mut().add_output(
+                    name,
+                    mapmap_core::output::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
+                    (1920, 1080),
+                );
+            }
+
+            // --- SELF-HEAL: Remove dangling connections ---
+            let mut graph_fixed = false;
+            for module in state.module_manager_mut().modules_mut() {
+                let part_ids: std::collections::HashSet<u64> =
+                    module.parts.iter().map(|p| p.id).collect();
+                info!(
+                    "Self-Heal: Module '{}' has nodes: {:?}",
+                    module.name, part_ids
+                );
+
+                let initial_count = module.connections.len();
+                module.connections.retain(|c| {
+                    let from_exists = part_ids.contains(&c.from_part);
+                    let to_exists = part_ids.contains(&c.to_part);
+                    if !from_exists {
+                        warn!("Self-Heal: Removing connection from non-existent node {} in module '{}'", c.from_part, module.name);
+                    }
+                    if !to_exists {
+                        warn!("Self-Heal: Removing connection to non-existent node {} in module '{}'", c.to_part, module.name);
+                    }
+                    from_exists && to_exists
+                });
+                let final_count = module.connections.len();
+                if initial_count != final_count {
+                    info!(
+                        "Self-Heal: Cleaned {} dangling connections in module '{}'",
+                        initial_count - final_count,
+                        module.name
+                    );
+                    graph_fixed = true;
+                }
+            }
+            if graph_fixed {
+                state.dirty = true;
+            }
+        } else {
+            warn!("Could not determine data local directory for autosave.");
         }
 
         let audio_devices = match CpalBackend::list_devices() {
@@ -230,7 +346,7 @@ impl App {
             }
         }
 
-        // Initialize Audio Analyzer V2
+        // Initialize Audio Analyzer V2 (new implementation)
         let audio_analyzer = AudioAnalyzerV2::new(AudioAnalyzerV2Config {
             sample_rate: state.audio_config.sample_rate,
             fft_size: state.audio_config.fft_size,
@@ -239,7 +355,7 @@ impl App {
         });
 
         // Start MCP Server in a separate thread
-        let (mcp_sender, mcp_receiver) = crossbeam_channel::unbounded();
+        let (mcp_sender, mcp_receiver) = unbounded();
         let action_sender = mcp_sender.clone();
 
         thread::spawn(move || {
@@ -307,7 +423,22 @@ impl App {
         ui_state.initialize_icons(&egui_context, &assets_path);
 
         // Initialize preview quad buffers
-        let preview_mesh = mapmap_core::Mesh::quad();
+        // Use manual construction to ensure -1..1 NDC range coverage for full viewport
+        let preview_mesh = mapmap_core::Mesh {
+            mesh_type: mapmap_core::MeshType::Quad,
+            vertices: vec![
+                // Top-Left (0, 0) -> UV 0,0
+                mapmap_core::MeshVertex::new(glam::Vec2::new(0.0, 0.0), glam::Vec2::new(0.0, 0.0)),
+                // Top-Right (1, 0) -> UV 1,0
+                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 0.0), glam::Vec2::new(1.0, 0.0)),
+                // Bottom-Right (1, 1) -> UV 1,1
+                mapmap_core::MeshVertex::new(glam::Vec2::new(1.0, 1.0), glam::Vec2::new(1.0, 1.0)),
+                // Bottom-Left (0, 1) -> UV 0,1
+                mapmap_core::MeshVertex::new(glam::Vec2::new(0.0, 1.0), glam::Vec2::new(0.0, 1.0)),
+            ],
+            indices: vec![0, 1, 2, 0, 2, 3],
+            revision: 0,
+        };
         let preview_quad_buffers = {
             let (vb, ib) = mesh_renderer.create_mesh_buffers(&preview_mesh);
             (vb, ib, preview_mesh.indices.len() as u32)
@@ -329,23 +460,14 @@ impl App {
         if !ui_state.user_config.hue_config.bridge_ip.is_empty()
             && ui_state.user_config.hue_config.auto_connect
         {
-            info!("Initializing Hue Controller (2s timeout)...");
-            let connect_res = tokio_runtime.block_on(async {
-                tokio::time::timeout(std::time::Duration::from_secs(2), hue_controller.connect())
-                    .await
-            });
-
-            match connect_res {
-                Ok(Ok(_)) => info!("Hue Controller connected successfully."),
-                Ok(Err(e)) => warn!("Hue Controller connection failed: {}", e),
-                Err(_) => warn!("Hue Controller connection timed out after 2s"),
+            info!("Initializing Hue Controller...");
+            if let Err(e) = tokio_runtime.block_on(hue_controller.connect()) {
+                warn!("Hue Controller initial connection failed: {}", e);
             }
         }
 
         let control_manager = ControlManager::new();
-        let mut sys_info = sysinfo::System::new();
-        sys_info.refresh_memory();
-
+        let sys_info = sysinfo::System::new_all();
         let (dummy_texture, dummy_view) = {
             let texture = backend.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Dummy Input Texture"),
@@ -373,8 +495,12 @@ impl App {
                 Ok(mut handler) => {
                     info!("MIDI initialized");
                     if let Ok(ports) = MidiInputHandler::list_ports() {
+                        info!("Available MIDI ports: {:?}", ports);
+                        // Auto-connect to first port if available
                         if !ports.is_empty() {
-                            let _ = handler.connect(0);
+                            if let Err(e) = handler.connect(0) {
+                                error!("Failed to auto-connect MIDI: {}", e);
+                            }
                         }
                     }
                     Some(handler)
@@ -390,7 +516,7 @@ impl App {
             window_manager,
             ui_state,
             backend,
-            texture_pool: texture_pool.clone(),
+            texture_pool,
             _compositor: compositor,
             effect_chain_renderer,
             preview_effect_chain_renderer,
@@ -437,7 +563,7 @@ impl App {
             {
                 None
             } else {
-                Some(0)
+                Some(0) // Assuming auto-connect to first port succeeded
             },
             #[cfg(feature = "ndi")]
             ndi_receivers: std::collections::HashMap::new(),
@@ -462,9 +588,69 @@ impl App {
             hue_controller,
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
-            media_library: MediaLibrary::new(),
+            media_library: {
+                let mut lib = MediaLibrary::new();
+                // Add default search paths for media
+                if let Some(video_dir) = dirs::video_dir() {
+                    lib.add_scan_path(video_dir);
+                }
+                // Also add project relative media dir if it exists
+                let project_media = std::path::PathBuf::from("resources/app_videos");
+                if project_media.exists() {
+                    lib.add_scan_path(project_media);
+                }
+                lib
+            },
             bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
+
+        // --- INITIALIZATION STATUS REPORT ---
+        info!("==========================================");
+        info!("   MapFlow Initialization Status Report   ");
+        info!("------------------------------------------");
+        info!(
+            "- Render Backend: {} ({:?})",
+            app.backend.adapter_info().name,
+            app.backend.adapter_info().backend
+        );
+        info!(
+            "- Edge Blend:     {}",
+            if app.edge_blend_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
+        info!(
+            "- Color Calib:    {}",
+            if app.color_calibration_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
+        info!("- Bevy Engine:    INITIALIZED");
+
+        #[cfg(feature = "midi")]
+        info!(
+            "- MIDI System:    {}",
+            if app.midi_handler.is_some() {
+                "CONNECTED"
+            } else {
+                "DISCONNECTED"
+            }
+        );
+
+        info!(
+            "- Hue System:     {}",
+            if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() {
+                "CONFIGURED"
+            } else {
+                "UNCONFIGURED"
+            }
+        );
+        info!("- Media Library:  {} items", app.media_library.items.len());
+        info!("==========================================");
 
         Ok(app)
     }
