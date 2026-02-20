@@ -457,7 +457,7 @@ impl App {
                                         for (part_id, cmd) in &result.source_commands {
                                             let part_id = *part_id;
                                             let player_key = (module.id, part_id);
-                    
+
                                             match cmd {
                                                 mapmap_core::SourceCommand::PlayMedia {
                                                     path: _,
