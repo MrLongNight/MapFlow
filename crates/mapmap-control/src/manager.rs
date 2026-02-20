@@ -9,7 +9,7 @@ use crate::error::{ControlError, Result};
 use crate::shortcuts::{Action, Key, KeyBindings, Modifiers};
 use crate::target::{ControlTarget, ControlValue};
 use std::sync::{Arc, Mutex};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 #[cfg(feature = "midi")]
 use crate::midi::MidiInputHandler;
@@ -236,6 +236,15 @@ impl ControlManager {
 
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
+        // Enforce validation (security)
+        if let Err(e) = value.validate() {
+            error!(
+                "Security violation: Invalid control value for {:?}: {}",
+                target, e
+            );
+            return;
+        }
+
         info!("Control change: {:?} = {:?}", target, value);
 
         // Call the control callback if set

@@ -189,6 +189,13 @@ impl ControlValue {
                         MAX_STRING_LEN
                     ));
                 }
+                // Check for path traversal attempts (security)
+                if std::path::Path::new(s)
+                    .components()
+                    .any(|c| matches!(c, std::path::Component::ParentDir))
+                {
+                    return Err("String value contains path traversal component (..)".to_string());
+                }
             }
             ControlValue::Float(f) => {
                 if !f.is_finite() {
@@ -306,5 +313,34 @@ mod tests {
 
         let nan_vec = ControlValue::Vec2(0.0, f32::NAN);
         assert!(nan_vec.validate().is_err());
+    }
+
+    #[test]
+    fn test_control_value_path_traversal() {
+        // Should pass
+        assert!(ControlValue::String("normal_string".to_string())
+            .validate()
+            .is_ok());
+        assert!(ControlValue::String("/absolute/path/to/file.mp4".to_string())
+            .validate()
+            .is_ok());
+        assert!(ControlValue::String("relative/path/to/file.mp4".to_string())
+            .validate()
+            .is_ok());
+        assert!(ControlValue::String("String with dots...".to_string())
+            .validate()
+            .is_ok());
+
+        // Should fail
+        assert!(ControlValue::String("../parent".to_string())
+            .validate()
+            .is_err());
+        assert!(ControlValue::String("dir/../parent".to_string())
+            .validate()
+            .is_err());
+        assert!(ControlValue::String("/etc/passwd/../../secret".to_string())
+            .validate()
+            .is_err());
+        assert!(ControlValue::String("..".to_string()).validate().is_err());
     }
 }
