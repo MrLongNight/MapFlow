@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-02-20: fix(ci): Restore CodeQL security scan workflow (CI-02) to resolve GitHub Security warnings
 - 2026-02-20: feat(render): Add 3D LUT effect support with GPU-accelerated color grading (#770)
 - 2026-02-20: fix(security): Enforce global path traversal checks in ControlManager (#758)
 - 2026-02-20: fix(render): Resolve architectural inconsistencies in media player command dispatch

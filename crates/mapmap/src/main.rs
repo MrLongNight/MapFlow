@@ -23,6 +23,7 @@ use mapmap_control::Action;
 use mapmap_core::OutputId;
 use mapmap_mcp::McpAction;
 use mapmap_media::PlaybackCommand;
+use mapmap_ui::types::{MediaPlaybackCommand, MediaPlayerInfo};
 use mapmap_ui::EdgeBlendAction;
 
 use rfd::FileDialog;
@@ -274,55 +275,54 @@ impl App {
                     if let Some(mod_id) = target_module_id {
                         let player_key = (mod_id, part_id);
 
-                        if let Some(handle) = self.media_players.get_mut(&player_key) {
-                            match cmd {
-                                mapmap_ui::types::MediaPlaybackCommand::Play => {
-                                    let _ = handle.1.command_sender().send(PlaybackCommand::Play);
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::Pause => {
-                                    let _ = handle.1.command_sender().send(PlaybackCommand::Pause);
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::Stop => {
-                                    let _ = handle.1.command_sender().send(PlaybackCommand::Stop);
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::Reload => {
-                                    info!("Reloading media player for part_id={}", part_id);
-                                    // Player removal handled below
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::SetSpeed(speed) => {
-                                    info!("Setting speed to {} for part_id={}", speed, part_id);
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(PlaybackCommand::SetSpeed(speed));
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::SetLoop(enabled) => {
-                                    info!("Setting loop to {} for part_id={}", enabled, part_id);
-                                    let mode = if enabled {
-                                        mapmap_media::LoopMode::Loop
-                                    } else {
-                                        mapmap_media::LoopMode::PlayOnce
-                                    };
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(PlaybackCommand::SetLoopMode(mode));
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::Seek(position) => {
-                                    info!("Seeking to {} for part_id={}", position, part_id);
-                                    let _ = handle.1.command_sender().send(PlaybackCommand::Seek(
-                                        std::time::Duration::from_secs_f64(position),
-                                    ));
-                                }
-                                mapmap_ui::types::MediaPlaybackCommand::SetReverse(reverse) => {
-                                    info!("Setting reverse playback to {} for part_id={} (NOT IMPLEMENTED)", reverse, part_id);
-                                }
-                            }
-                        }
-
-                        // Handle Reload by removing player and immediately recreating
-                        if cmd == mapmap_ui::types::MediaPlaybackCommand::Reload {
-                            if self.media_players.remove(&player_key).is_some() {
+                                                if let Some(handle) = self.media_players.get_mut(&player_key) {
+                                                    match cmd {
+                                                        MediaPlaybackCommand::Play => {
+                                                            let _ = handle.1.command_sender().send(PlaybackCommand::Play);
+                                                        }
+                                                        MediaPlaybackCommand::Pause => {
+                                                            let _ = handle.1.command_sender().send(PlaybackCommand::Pause);
+                                                        }
+                                                        MediaPlaybackCommand::Stop => {
+                                                            let _ = handle.1.command_sender().send(PlaybackCommand::Stop);
+                                                        }
+                                                        MediaPlaybackCommand::Reload => {
+                                                            info!("Reloading media player for part_id={}", part_id);
+                                                            // Player removal handled below
+                                                        }
+                                                        MediaPlaybackCommand::SetSpeed(speed) => {
+                                                            info!("Setting speed to {} for part_id={}", speed, part_id);
+                                                            let _ = handle
+                                                                .1
+                                                                .command_sender()
+                                                                .send(PlaybackCommand::SetSpeed(speed));
+                                                        }
+                                                        MediaPlaybackCommand::SetLoop(enabled) => {
+                                                            info!("Setting loop to {} for part_id={}", enabled, part_id);
+                                                            let mode = if enabled {
+                                                                mapmap_media::LoopMode::Loop
+                                                            } else {
+                                                                mapmap_media::LoopMode::PlayOnce
+                                                            };
+                                                            let _ = handle
+                                                                .1
+                                                                .command_sender()
+                                                                .send(PlaybackCommand::SetLoopMode(mode));
+                                                        }
+                                                        MediaPlaybackCommand::Seek(position) => {
+                                                            info!("Seeking to {} for part_id={}", position, part_id);
+                                                            let _ = handle.1.command_sender().send(PlaybackCommand::Seek(
+                                                                std::time::Duration::from_secs_f64(position),
+                                                            ));
+                                                        }
+                                                        MediaPlaybackCommand::SetReverse(reverse) => {
+                                                            info!("Setting reverse playback to {} for part_id={} (NOT IMPLEMENTED)", reverse, part_id);
+                                                        }
+                                                    }
+                                                }
+                        
+                                                // Handle Reload by removing player and immediately recreating
+                                                if cmd == MediaPlaybackCommand::Reload {                            if self.media_players.remove(&player_key).is_some() {
                                 info!(
                                     "Removed old media player for part_id={} for reload",
                                     part_id
