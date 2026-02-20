@@ -1,62 +1,103 @@
 <div align="center">
   <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.png" alt="MapFlow Logo" width="500"/>
+
+  # MapFlow
+  ### High-Performance Real-Time Visual Synthesis & Projection Mapping
+
+  [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
+  [![Latest Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml)
+  [![Security Scanned](https://img.shields.io/badge/Security-Verified-brightgreen)](.github/workflows/CICD-DevFlow_Job01_Validation.yml)
+  [![Platform: Windows | Linux](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue.svg)](docs/01-GETTING-STARTED/INSTALLATION.md)
+  [![Language: Rust](https://img.shields.io/badge/Language-Rust-orange.svg)](https://www.rust-lang.org/)
+
+  **MapFlow** is a next-generation, modular **VJ (Video Jockey) Software** engineered for high-performance visual synthesis, real-time effects, and professional projection mapping. Built with the speed and safety of **Rust**, it empowers artists to create immersive visual experiences with unprecedented flexibility.
 </div>
 
-# MapFlow
+---
 
-**MapFlow** is a modular, node-based **VJ (Video Jockey) Software** built in **Rust** 🦀, designed for high-performance real-time visual synthesis and
-projection mapping.
+## 🚀 Vision
 
-> 🚀 **CI/CD Status**: Verified (v3.0)
-[![CICD-DevFlow: Job01 Validation](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
+In an era of complex visual performances, MapFlow bridges the gap between ease of use and professional power. By utilizing a **node-based architecture**, every parameter becomes a playground for automation, audio-reactivity, and external control.
 
-## ✨ Key Features
+## ✨ Core Features
 
-* **Modular Node System**: Connect video, image, and effect nodes.
-* **Real-time Rendering**: Powered by `wgpu` and `bevy`.
-* **Projection Mapping**: Advanced warping and masking.
-* **Jules AI Integration**: Built-in AI coding assistant.
+### 🧩 Modular Node System
+Design complex visual flows by connecting video sources, generative shaders, and real-time filters. Every node property is a control target for our unified modulation system.
 
-## 🛠️ Tech Stack
+### ⚡ Professional Rendering Engine
+Powered by **WGPU** and the **Bevy Engine**, MapFlow delivers low-latency, hardware-accelerated rendering.
+* **Multi-Layer Composition**: Advanced blend modes and hierarchical grouping.
+* **3D & Particle Integration**: Native Bevy support for stunning volumetric effects and 3D scenes.
+* **LUT Color Grading**: Industry-standard `.cube` support for cinematic looks.
 
-* **Core**: Rust
-* **Engine**: Bevy (via `mapmap-bevy`)
-* **UI**: eframe / egui
-* **Graphics**: wgpu
-* **Audio**: cpal, rodio
-* **AI**: Model Context Protocol (`mapmap-mcp`)
+### 🔊 Deep Audio Reactivity
+Our **AudioAnalyzer V2** tracks 9 frequency bands, RMS volume, and peak detection in real-time, allowing visuals to dance perfectly to the beat.
 
-## 📦 Workspace Modules
+### 📐 Precision Projection Mapping
+* **Bezier Warping**: Flexible mesh deformation for complex surfaces.
+* **Edge Blending**: Seamless multi-projector setups with per-output gamma correction.
+* **Advanced Masking**: Integrated shape and file-based masking tools.
 
-* `mapmap`: Main application binary
-* `mapmap-core`: Core data structures and logic
-* `mapmap-ui`: UI implementation (egui)
-* `mapmap-render`: WGPU rendering engine
-* `mapmap-bevy`: Bevy engine integration (3D/Particles)
-* `mapmap-mcp`: MCP Server for AI integration
-* `mapmap-media`: Media decoding and playback
-* `mapmap-control`: OSC/MIDI input handling
-* `mapmap-io`: NDI/Spout IO
-* `mapmap-ffi`: C/C++ Foreign Function Interface
+### 🎛️ Unified Control
+Seamlessly integrate with your performance setup via **OSC**, **MIDI**, and **Ableton Link**. Our built-in **Jules AI assistant** is always ready to help you extend the software's capabilities.
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
+| :--- | :--- |
+| **Core** | [Rust 🦀](https://www.rust-lang.org/) (High-performance, Thread-safe) |
+| **Graphics** | [WGPU](https://wgpu.rs/) (Modern WebGPU-based hardware acceleration) |
+| **3D Engine** | [Bevy](https://bevyengine.org/) (Data-driven ECS engine) |
+| **Interface** | [egui](https://github.com/emilk/egui) (Blazing fast immediate mode UI) |
+| **Video/Audio** | FFmpeg (via `ffmpeg-next`), CPAL (Cross-platform audio) |
+| **Protocol** | [MCP](https://modelcontextprotocol.io/) (Model Context Protocol for AI integration) |
+
+---
+
+## 🚦 Quick Start
+
+### 1. Requirements
+* **Rust**: [Install latest stable version](https://rustup.rs/)
+* **FFmpeg**: System-wide installation required for video decoding.
+* **NDI (Optional)**: For network video I/O.
+
+### 2. Run from Source
+```bash
+# Clone the repository
+git clone https://github.com/MrLongNight/MapFlow.git
+cd MapFlow
+
+# Run the application (Release mode recommended for performance)
+cargo run --release
+```
+
+### 3. Usage
+* Check the [**Quick Start Guide**](docs/01-GETTING-STARTED/QUICKSTART.md) to create your first composition.
+* Explore the [**User Manual**](docs/02-USER-GUIDE/) for detailed control explanations.
+
+---
 
 ## 📚 Documentation
 
-Detailed documentation is available in the [`docs/`](docs/INDEX.md) directory:
+Explore our comprehensive guides in the [`docs/`](docs/INDEX.md) directory:
 
-* [**User Guide**](docs/02-USER-GUIDE/): Features and controls.
-* [**Developer Guide**](docs/05-DEVELOPMENT/): Setup and guidelines.
-* [**Architecture**](docs/03-ARCHITECTURE/): System design.
-* [**Roadmap**](ROADMAP.md): Project status and plans.
+* 📖 [**User Guide**](docs/02-USER-GUIDE/): Interface layout, keyboard shortcuts, and performance tips.
+* 👨‍💻 [**Developer Portal**](docs/05-DEVELOPMENT/): Architecture overview, coding standards, and build instructions.
+* 🗺️ [**Project Roadmap**](ROADMAP.md): Current status and upcoming Phase 1.0 release goals.
 
-## ⚙️ CI/CD
+---
 
-MapFlow uses a comprehensive GitHub Actions workflow for validation and release management.
-See [CI/CD Workflow](docs/10-CICD_PROZESS/README_CICD.md) for details.
+## 🤝 Contributing
 
-## 📦 Installation
-
-See [INSTALLATION.md](docs/01-GETTING-STARTED/INSTALLATION.md).
+We welcome contributions from visual artists and developers alike! Please read our [**Contributing Guidelines**](CONTRIBUTING.md) and check our [**GitHub Issues**](https://github.com/MrLongNight/MapFlow/issues) for open tasks.
 
 ## 📄 License
 
-MIT / Apache 2.0
+MapFlow is licensed under **GPL-3.0**. See the [LICENSE](LICENSE) file for more information.
+
+---
+<div align="center">
+  Created with ❤️ by the MapFlow Contributors.
+</div>
