@@ -28,6 +28,9 @@ pub enum ControlError {
     #[error("HTTP error: {0}")]
     HttpError(String),
 
+    #[error("Link error: {0}")]
+    LinkError(String),
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
