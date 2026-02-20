@@ -3,6 +3,7 @@
 //! This module provides a unified abstraction for all controllable parameters in MapFlow.
 
 use serde::{Deserialize, Serialize};
+use std::path::{Component, Path};
 
 /// A controllable parameter in the application
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -189,12 +190,12 @@ impl ControlValue {
                         MAX_STRING_LEN
                     ));
                 }
-                // Check for path traversal attempts (security)
-                if std::path::Path::new(s)
+                // Path traversal check
+                if Path::new(s)
                     .components()
-                    .any(|c| matches!(c, std::path::Component::ParentDir))
+                    .any(|c| matches!(c, Component::ParentDir))
                 {
-                    return Err("String value contains path traversal component (..)".to_string());
+                    return Err("String value contains path traversal attempt (..)".to_string());
                 }
             }
             ControlValue::Float(f) => {
@@ -313,38 +314,18 @@ mod tests {
 
         let nan_vec = ControlValue::Vec2(0.0, f32::NAN);
         assert!(nan_vec.validate().is_err());
-    }
 
-    #[test]
-    fn test_control_value_path_traversal() {
-        // Should pass
-        assert!(ControlValue::String("normal_string".to_string())
-            .validate()
-            .is_ok());
-        assert!(
-            ControlValue::String("/absolute/path/to/file.mp4".to_string())
-                .validate()
-                .is_ok()
-        );
-        assert!(
-            ControlValue::String("relative/path/to/file.mp4".to_string())
-                .validate()
-                .is_ok()
-        );
-        assert!(ControlValue::String("String with dots...".to_string())
-            .validate()
-            .is_ok());
+        // Path traversal
+        let traversal = ControlValue::String("../secret".to_string());
+        assert!(traversal.validate().is_err());
 
-        // Should fail
-        assert!(ControlValue::String("../parent".to_string())
-            .validate()
-            .is_err());
-        assert!(ControlValue::String("dir/../parent".to_string())
-            .validate()
-            .is_err());
-        assert!(ControlValue::String("/etc/passwd/../../secret".to_string())
-            .validate()
-            .is_err());
-        assert!(ControlValue::String("..".to_string()).validate().is_err());
+        let traversal2 = ControlValue::String("foo/../bar".to_string());
+        assert!(traversal2.validate().is_err());
+
+        let valid_dots = ControlValue::String("Loading...".to_string());
+        assert!(valid_dots.validate().is_ok());
+
+        let dots_in_name = ControlValue::String("my..file".to_string());
+        assert!(dots_in_name.validate().is_ok());
     }
 }

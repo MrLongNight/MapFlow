@@ -9,7 +9,7 @@ use crate::error::{ControlError, Result};
 use crate::shortcuts::{Action, Key, KeyBindings, Modifiers};
 use crate::target::{ControlTarget, ControlValue};
 use std::sync::{Arc, Mutex};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 #[cfg(feature = "midi")]
 use crate::midi::MidiInputHandler;
@@ -236,12 +236,9 @@ impl ControlManager {
 
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
-        // Enforce validation (security)
+        // SECURITY: Validate value (including path traversal checks)
         if let Err(e) = value.validate() {
-            error!(
-                "Security violation: Invalid control value for {:?}: {}",
-                target, e
-            );
+            warn!("Security violation in apply_control: {}", e);
             return;
         }
 
@@ -411,5 +408,53 @@ mod tests {
         manager.execute_action(Action::PrevCue);
         manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(1));
+    }
+
+    #[test]
+    fn test_security_validation() {
+        let mut manager = ControlManager::new();
+        let called = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called_clone = called.clone();
+
+        manager.set_control_callback(move |_target, _value| {
+            called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+
+        // 1. Safe value should pass
+        manager.apply_control(
+            ControlTarget::EffectParameter(0, "file_path".to_string()),
+            ControlValue::String("safe_file.txt".to_string()),
+        );
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // 2. Unsafe value should be blocked (contains "..")
+        manager.apply_control(
+            ControlTarget::EffectParameter(0, "file_path".to_string()),
+            ControlValue::String("../secret.txt".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+
+        // 3. Unsafe value with different casing in parameter name
+        manager.apply_control(
+            ControlTarget::EffectParameter(0, "MySourceFile".to_string()),
+            ControlValue::String("../secret.txt".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+
+        // 4. ".." in non-sensitive parameter should pass (debatable, but current logic allows it)
+        manager.apply_control(
+            ControlTarget::Custom("MyLabel".to_string()),
+            ControlValue::String("Dots..are..okay..here".to_string()),
+        );
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // 5. "Loading..." should pass for a "source" parameter (ellipses are valid text)
+        manager.apply_control(
+            ControlTarget::Custom("TextSource".to_string()),
+            ControlValue::String("Loading...".to_string()),
+        );
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
     }
 }

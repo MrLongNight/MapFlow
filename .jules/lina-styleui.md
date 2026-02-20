@@ -47,11 +47,11 @@
     - **Separator:** `colors::STROKE_GREY` (sharp definition).
 **Action:** Refactored `ModuleCanvas` to use `crate::theme::colors` constants, enforcing the Cyber Dark palette on the node graph.
 
-## 2026-02-02 – [Sharp Corners & Borders]
-**Learning:** To fully align with the "Cyber Dark" (Resolume/MadMapper) aesthetic, UI elements must avoid rounded corners.
-- **Insight:** Rounded corners soften the interface, while sharp corners (`corner_radius: 0.0`) and defined borders (`STROKE_GREY`) create a more technical, precise look suitable for VJ software.
+## 2026-02-16 – [Refactoring Mapping and Audio Panels]
+**Learning:** `egui::Frame` with `corner_radius(0.0)` and zebra striping is essential for the Cyber Dark look.
+- **Insight:** `MappingPanel` was using mixed UI paradigms. Refactoring it to use `render_panel_header` and consistent row layouts significantly improves readability.
 - **Pattern:**
-    - **Panels/Sections:** Use `egui::Frame` with `corner_radius(0.0)` and `stroke(Stroke::new(1.0, colors::STROKE_GREY))`.
-    - **Bars/Meters:** Use `painter.rect_filled` with rounding `0.0`.
-    - **Frames:** Explicitly override default frame rounding.
-**Action:** Refactored `InspectorPanel` (sections) and `AudioPanel` (visualizations) to enforce this sharp, bordered style.
+    - **Header:** `render_panel_header`
+    - **List:** `egui::ScrollArea` + `egui::Frame` (zebra) + `ui.horizontal`
+    - **Actions:** Right-aligned icon buttons (`delete_button`, `lock_button`, `solo_button`).
+**Action:** Applied this pattern to `MappingPanel` and `AudioPanel`. Also added `lock_button` to `custom.rs` for reuse.

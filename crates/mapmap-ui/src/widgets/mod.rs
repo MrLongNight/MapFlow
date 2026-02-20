@@ -4,8 +4,6 @@ pub mod icon_demo_panel;
 pub mod icons;
 pub mod panel;
 
-pub use audio_meter::*;
+// Re-export commonly used custom widgets
 pub use custom::*;
-pub use icon_demo_panel::*;
-pub use icons::*;
 pub use panel::*;

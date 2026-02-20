@@ -165,9 +165,10 @@ fn main() {
                             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                 label: Some("Main Render Pass"),
                                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    depth_slice: None,
                                     view: &view,
                                     resolve_target: None,
-                                    depth_slice: None,
+
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                         store: wgpu::StoreOp::Store,

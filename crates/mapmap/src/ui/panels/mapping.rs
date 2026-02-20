@@ -19,5 +19,6 @@ pub fn show(ctx: &Context, context: MappingContext) {
         context.state.mapping_manager_mut(),
         &mut context.ui_state.actions,
         &context.ui_state.i18n,
+        context.ui_state.icon_manager.as_ref(),
     );
 }

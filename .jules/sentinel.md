@@ -61,8 +61,3 @@
 **Vulnerability:** API responses containing sensitive system status and configuration were potentially cacheable by intermediaries and browsers because `Cache-Control` headers were missing.
 **Learning:** Default `security_headers` middleware in Axum does not automatically prevent caching. Explicit `no-store` is required for control interfaces exposing sensitive data.
 **Prevention:** Always add `Cache-Control: no-store, max-age=0` and `Pragma: no-cache` to the security headers middleware for authenticated API routes.
-
-## 2026-02-16 - Path Traversal in ControlValue
-**Vulnerability:** `ControlValue::String` inputs in `mapmap-control` were validated for length but not for content, allowing strings containing `..` (ParentDir) components. This could allow path traversal attacks if these values were used in file system operations (e.g., via `McpAction::SetModuleSourcePath`).
-**Learning:** General-purpose string types in control protocols often become file paths in practice. Validation must be context-aware or securely restrictive by default to prevent "confused deputy" attacks where a valid string becomes a malicious path.
-**Prevention:** Explicitly validate `ControlValue::String` using `std::path::Path::components()` to reject `ParentDir` (`..`) components. Enforce this validation at the `ControlManager::apply_control` entry point to protect all downstream consumers.

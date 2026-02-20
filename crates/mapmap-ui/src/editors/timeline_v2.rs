@@ -2,6 +2,8 @@
 //!
 //! Multi-track timeline with keyframe animation, using mapmap_core::animation types.
 
+use crate::theme::colors;
+use crate::widgets::hold_to_action_button;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::animation::AnimValue;
 use mapmap_core::effect_animation::EffectParameterAnimator;
@@ -72,7 +74,7 @@ impl TimelineV2 {
                 action = Some(TimelineAction::Play);
             }
 
-            if ui.button("⏹ Stop").clicked() {
+            if hold_to_action_button(ui, "⏹ Stop", colors::ERROR_COLOR) {
                 action = Some(TimelineAction::Stop);
             }
 

@@ -324,8 +324,10 @@ mod tests {
         pollster::block_on(async {
             let backend = crate::WgpuBackend::new(None).await;
             if let Ok(backend) = backend {
-                let renderer =
-                    EdgeBlendRenderer::new(backend.device.clone(), wgpu::TextureFormat::Bgra8Unorm);
+                let renderer = EdgeBlendRenderer::new(
+                    backend.device.clone(),
+                    wgpu::TextureFormat::Bgra8UnormSrgb,
+                );
                 assert!(renderer.is_ok());
             }
         });
