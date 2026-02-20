@@ -369,7 +369,8 @@ pub fn icon_button(
         visuals.bg_stroke
     };
 
-    ui.painter().rect(rect, 0.0, bg_fill, stroke, egui::StrokeKind::Middle);
+    ui.painter()
+        .rect(rect, 0.0, bg_fill, stroke, egui::StrokeKind::Middle);
 
     let text_pos = rect.center();
 
@@ -710,7 +711,3 @@ pub fn collapsing_header_with_reset(
         });
     reset_clicked
 }
-
-
-
-

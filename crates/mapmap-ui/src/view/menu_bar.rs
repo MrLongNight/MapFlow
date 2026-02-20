@@ -39,7 +39,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             };
 
             // --- Main Menu Bar ---
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
 
                 // --- File Menu ---
@@ -327,6 +327,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                                     if let Some(img) = mgr.image(icon, icon_size) {
                                         return ui
                                             .add(egui::Button::image(img).frame(false))
+                                            .clone()
                                             .on_hover_text(tooltip)
                                             .clicked();
                                     }
@@ -363,6 +364,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                                     .color(egui::Color32::from_rgb(255, 200, 0))
                                     .strong(),
                             ))
+                            .clone()
                             .on_hover_text("Erkanntes Tempo (Beats per Minute)");
 
                             ui.separator();
@@ -379,15 +381,18 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                                             egui::Button::image(img).frame(false)
                                         };
                                         ui.add(btn)
+                                            .clone()
                                             .on_hover_text("MIDI Controller Overlay ein/aus")
                                             .clicked()
                                     } else {
                                         ui.button("MIDI")
+                                            .clone()
                                             .on_hover_text("MIDI Controller Overlay ein/aus")
                                             .clicked()
                                     }
                                 } else {
                                     ui.button("MIDI")
+                                        .clone()
                                         .on_hover_text("MIDI Controller Overlay ein/aus")
                                         .clicked()
                                 };
@@ -407,6 +412,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                                 };
                                 if ui
                                     .add(learn_btn)
+                                    .clone()
                                     .on_hover_text("Global MIDI Learn Mode aktivieren")
                                     .clicked()
                                 {
@@ -495,6 +501,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                                     ui.separator();
 
                                     ui.label(format!("{:.1}ms/f", frame_time))
+                                        .clone()
                                         .on_hover_text("Millisekunden pro Frame");
 
                                     ui.colored_label(

@@ -39,7 +39,7 @@ impl App {
         let backend = WgpuBackend::new(saved_config.preferred_gpu.as_deref()).await?;
 
         // Version marker to confirm correct build is running
-        tracing::info!(">>> BUILD VERSION: 2026-01-04-FIX-RENDER-CHECK <<<");
+        tracing::info!(">>> BUILD VERSION: 2026-02-16-FIX-BEVY-HEADLESS <<<");
 
         // Initialize renderers
         let texture_pool = TexturePool::new(backend.device.clone());
@@ -227,6 +227,75 @@ impl App {
                 info!("Self-Heal: Fixed {} output connections.", fixed_count);
                 state.dirty = true;
             }
+
+            // --- SELF-HEAL: Ensure Output Windows exist for active Projector nodes ---
+            let existing_output_ids: std::collections::HashSet<u64> = state
+                .output_manager
+                .outputs()
+                .iter()
+                .map(|o| o.id)
+                .collect();
+            let mut missing_outputs = Vec::new();
+            for module in state.module_manager.modules() {
+                for part in &module.parts {
+                    if let mapmap_core::module::ModulePartType::Output(
+                        mapmap_core::module::OutputType::Projector { id, name, .. },
+                    ) = &part.part_type
+                    {
+                        if !existing_output_ids.contains(id) {
+                            missing_outputs.push((*id, name.clone()));
+                        }
+                    }
+                }
+            }
+
+            for (id, name) in missing_outputs {
+                info!(
+                    "Self-Heal: Creating missing Output Window '{}' (ID {})",
+                    name, id
+                );
+                state.output_manager_mut().add_output(
+                    name,
+                    mapmap_core::output::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
+                    (1920, 1080),
+                );
+            }
+
+            // --- SELF-HEAL: Remove dangling connections ---
+            let mut graph_fixed = false;
+            for module in state.module_manager_mut().modules_mut() {
+                let part_ids: std::collections::HashSet<u64> =
+                    module.parts.iter().map(|p| p.id).collect();
+                info!(
+                    "Self-Heal: Module '{}' has nodes: {:?}",
+                    module.name, part_ids
+                );
+
+                let initial_count = module.connections.len();
+                module.connections.retain(|c| {
+                    let from_exists = part_ids.contains(&c.from_part);
+                    let to_exists = part_ids.contains(&c.to_part);
+                    if !from_exists {
+                        warn!("Self-Heal: Removing connection from non-existent node {} in module '{}'", c.from_part, module.name);
+                    }
+                    if !to_exists {
+                        warn!("Self-Heal: Removing connection to non-existent node {} in module '{}'", c.to_part, module.name);
+                    }
+                    from_exists && to_exists
+                });
+                let final_count = module.connections.len();
+                if initial_count != final_count {
+                    info!(
+                        "Self-Heal: Cleaned {} dangling connections in module '{}'",
+                        initial_count - final_count,
+                        module.name
+                    );
+                    graph_fixed = true;
+                }
+            }
+            if graph_fixed {
+                state.dirty = true;
+            }
         } else {
             warn!("Could not determine data local directory for autosave.");
         }
@@ -314,7 +383,11 @@ impl App {
             None,
             None,
         );
-        let egui_renderer = Renderer::new(&backend.device, format, None, 1, false);
+        let egui_renderer = Renderer::new(
+            &backend.device,
+            format,
+            egui_wgpu::RendererOptions::default(),
+        );
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),
@@ -514,9 +587,69 @@ impl App {
             hue_controller,
             tokio_runtime,
             media_manager_ui: MediaManagerUI::new(),
-            media_library: MediaLibrary::new(),
+            media_library: {
+                let mut lib = MediaLibrary::new();
+                // Add default search paths for media
+                if let Some(video_dir) = dirs::video_dir() {
+                    lib.add_scan_path(video_dir);
+                }
+                // Also add project relative media dir if it exists
+                let project_media = std::path::PathBuf::from("resources/app_videos");
+                if project_media.exists() {
+                    lib.add_scan_path(project_media);
+                }
+                lib
+            },
             bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
+
+        // --- INITIALIZATION STATUS REPORT ---
+        info!("==========================================");
+        info!("   MapFlow Initialization Status Report   ");
+        info!("------------------------------------------");
+        info!(
+            "- Render Backend: {} ({:?})",
+            app.backend.adapter_info().name,
+            app.backend.adapter_info().backend
+        );
+        info!(
+            "- Edge Blend:     {}",
+            if app.edge_blend_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
+        info!(
+            "- Color Calib:    {}",
+            if app.color_calibration_renderer.is_some() {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
+        );
+        info!("- Bevy Engine:    INITIALIZED");
+
+        #[cfg(feature = "midi")]
+        info!(
+            "- MIDI System:    {}",
+            if app.midi_handler.is_some() {
+                "CONNECTED"
+            } else {
+                "DISCONNECTED"
+            }
+        );
+
+        info!(
+            "- Hue System:     {}",
+            if !app.ui_state.user_config.hue_config.bridge_ip.is_empty() {
+                "CONFIGURED"
+            } else {
+                "UNCONFIGURED"
+            }
+        );
+        info!("- Media Library:  {} items", app.media_library.items.len());
+        info!("==========================================");
 
         Ok(app)
     }

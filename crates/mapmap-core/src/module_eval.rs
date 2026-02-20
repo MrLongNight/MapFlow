@@ -446,6 +446,19 @@ pub enum SourceCommand {
         /// Trigger value
         trigger_value: f32,
     },
+    /// Bevy 3D Model Loading and control
+    Bevy3DModel {
+        /// Path to the model file
+        path: String,
+        /// Position in 3D space
+        position: [f32; 3],
+        /// Rotation in degrees
+        rotation: [f32; 3],
+        /// Scale multiplier
+        scale: [f32; 3],
+        /// Trigger/Intensity value
+        trigger_value: f32,
+    },
     /// Philips Hue output (Trigger/Effect data)
     HueOutput {
         /// Brightness (0.0 - 1.0)
@@ -803,7 +816,17 @@ impl ModuleEvaluator {
         let mut source_props = SourceProperties::default_identity();
         let mut current_id = start_node_id;
 
-        tracing::debug!("trace_chain: Starting from node {}", start_node_id);
+        // CRITICAL: Ensure the part index cache is consistent with the current module state
+        let mut part_index = std::collections::HashMap::new();
+        for (i, part) in module.parts.iter().enumerate() {
+            part_index.insert(part.id, i);
+        }
+
+        tracing::debug!(
+            "trace_chain: Starting from node {} in module {}",
+            start_node_id,
+            module.name
+        );
 
         let trigger_values = &self.cached_result.trigger_values;
 
@@ -811,7 +834,7 @@ impl ModuleEvaluator {
         for _iteration in 0..50 {
             // Apply Trigger Targets for the current node
             // We need to find if any input sockets have triggers active and targets mapped
-            if let Some(&part_idx) = self.part_index_cache.get(&current_id) {
+            if let Some(&part_idx) = part_index.get(&current_id) {
                 let part = &module.parts[part_idx];
 
                 // Check if any *incoming* connection determines the value?
@@ -893,7 +916,7 @@ impl ModuleEvaluator {
                 .copied()
             {
                 let conn = &module.connections[conn_idx];
-                if let Some(&part_idx) = self.part_index_cache.get(&conn.from_part) {
+                if let Some(&part_idx) = part_index.get(&conn.from_part) {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
@@ -1363,6 +1386,21 @@ impl ModuleEvaluator {
             SourceType::BevyHexGrid { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy3DText { .. } => Some(SourceCommand::BevyInput { trigger_value }),
+            SourceType::BevyCamera { .. } => Some(SourceCommand::BevyInput { trigger_value }),
+            SourceType::Bevy3DModel {
+                path,
+                position,
+                rotation,
+                scale,
+                ..
+            } => Some(SourceCommand::Bevy3DModel {
+                path: path.clone(),
+                position: *position,
+                rotation: *rotation,
+                scale: *scale,
+                trigger_value,
+            }),
+            SourceType::Bevy3DShape { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }

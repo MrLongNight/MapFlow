@@ -276,7 +276,7 @@ impl App {
 
                         // If player doesn't exist and we get any command (except Reload), try to create it
                         if !self.media_players.contains_key(&player_key)
-                            && cmd != mapmap_ui::MediaPlaybackCommand::Reload
+                            && cmd != mapmap_ui::types::MediaPlaybackCommand::Reload
                         {
                             info!(
                                 "Player doesn't exist for part_id={}, attempting to create...",
@@ -320,27 +320,27 @@ impl App {
 
                         if let Some((_, player)) = self.media_players.get_mut(&player_key) {
                             match cmd {
-                                mapmap_ui::MediaPlaybackCommand::Play => {
+                                mapmap_ui::types::MediaPlaybackCommand::Play => {
                                     let _ = player.command_sender().send(PlaybackCommand::Play);
                                 }
-                                mapmap_ui::MediaPlaybackCommand::Pause => {
+                                mapmap_ui::types::MediaPlaybackCommand::Pause => {
                                     let _ = player.command_sender().send(PlaybackCommand::Pause);
                                 }
-                                mapmap_ui::MediaPlaybackCommand::Stop => {
+                                mapmap_ui::types::MediaPlaybackCommand::Stop => {
                                     let _ = player.command_sender().send(PlaybackCommand::Stop);
                                 }
-                                mapmap_ui::MediaPlaybackCommand::Reload => {
+                                mapmap_ui::types::MediaPlaybackCommand::Reload => {
                                     // Remove existing player - it will be recreated with new path
                                     info!("Reloading media player for part_id={}", part_id);
                                     // (Player removal handled below)
                                 }
-                                mapmap_ui::MediaPlaybackCommand::SetSpeed(speed) => {
+                                mapmap_ui::types::MediaPlaybackCommand::SetSpeed(speed) => {
                                     info!("Setting speed to {} for part_id={}", speed, part_id);
                                     let _ = player
                                         .command_sender()
                                         .send(PlaybackCommand::SetSpeed(speed));
                                 }
-                                mapmap_ui::MediaPlaybackCommand::SetLoop(enabled) => {
+                                mapmap_ui::types::MediaPlaybackCommand::SetLoop(enabled) => {
                                     info!("Setting loop to {} for part_id={}", enabled, part_id);
                                     let mode = if enabled {
                                         mapmap_media::LoopMode::Loop
@@ -351,20 +351,20 @@ impl App {
                                         .command_sender()
                                         .send(PlaybackCommand::SetLoopMode(mode));
                                 }
-                                mapmap_ui::MediaPlaybackCommand::Seek(position) => {
+                                mapmap_ui::types::MediaPlaybackCommand::Seek(position) => {
                                     info!("Seeking to {} for part_id={}", position, part_id);
                                     let _ = player.command_sender().send(PlaybackCommand::Seek(
                                         std::time::Duration::from_secs_f64(position),
                                     ));
                                 }
-                                mapmap_ui::MediaPlaybackCommand::SetReverse(reverse) => {
+                                mapmap_ui::types::MediaPlaybackCommand::SetReverse(reverse) => {
                                     info!("Setting reverse playback to {} for part_id={} (NOT IMPLEMENTED)", reverse, part_id);
                                 }
                             }
                         }
 
                         // Handle Reload by removing player and immediately recreating
-                        if cmd == mapmap_ui::MediaPlaybackCommand::Reload {
+                        if cmd == mapmap_ui::types::MediaPlaybackCommand::Reload {
                             if self.media_players.remove(&player_key).is_some() {
                                 info!(
                                     "Removed old media player for part_id={} for reload",
@@ -1194,10 +1194,10 @@ impl App {
                                 *p = path.to_string_lossy().to_string();
                                 self.state.dirty = true;
                                 // Trigger reload
-                                self.ui_state
-                                    .module_canvas
-                                    .pending_playback_commands
-                                    .push((part_id, mapmap_ui::MediaPlaybackCommand::Reload));
+                                self.ui_state.module_canvas.pending_playback_commands.push((
+                                    part_id,
+                                    mapmap_ui::types::MediaPlaybackCommand::Reload,
+                                ));
                             }
                         }
                     }
@@ -1495,6 +1495,26 @@ fn main() -> Result<()> {
     // Initialize logging with default configuration.
     // This creates a log file in logs/ and outputs to console
     let _log_guard = logging_setup::init(&mapmap_core::logging::LogConfig::default())?;
+
+    // Install Panic Hook
+    std::panic::set_hook(Box::new(|panic_info| {
+        let location = panic_info.location().unwrap();
+        let msg = match panic_info.payload().downcast_ref::<&'static str>() {
+            Some(s) => *s,
+            None => match panic_info.payload().downcast_ref::<String>() {
+                Some(s) => &s[..],
+                None => "Box<Any>",
+            },
+        };
+        let error_msg = format!(
+            "Panic occurred in file '{}' at line {}: {}",
+            location.file(),
+            location.line(),
+            msg
+        );
+        tracing::error!("{}", error_msg);
+        eprintln!("{}", error_msg); // Fallback to stderr
+    }));
 
     info!("==========================================");
     info!("===      MapFlow Session Started       ===");
