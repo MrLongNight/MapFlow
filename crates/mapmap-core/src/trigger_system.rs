@@ -79,11 +79,9 @@ impl TriggerSystem {
                                     "Air Out",
                                 ];
 
-                                for i in 0..9 {
+                                for (i, band_name) in band_names.iter().enumerate() {
                                     let active = audio_data.band_energies[i] > *threshold;
-                                    let inverted = output_config
-                                        .inverted_outputs
-                                        .contains(band_names[i]);
+                                    let inverted = output_config.inverted_outputs.contains(*band_name);
 
                                     if active ^ inverted {
                                         self.active_triggers.insert((part.id, socket_index));
@@ -98,9 +96,8 @@ impl TriggerSystem {
                                 // RMS
                                 {
                                     let active = audio_data.rms_volume > *threshold;
-                                    let inverted = output_config
-                                        .inverted_outputs
-                                        .contains("RMS Volume");
+                                    let inverted =
+                                        output_config.inverted_outputs.contains("RMS Volume");
 
                                     if active ^ inverted {
                                         self.active_triggers.insert((part.id, socket_index));
@@ -111,9 +108,8 @@ impl TriggerSystem {
                                 // Peak
                                 {
                                     let active = audio_data.peak_volume > *threshold;
-                                    let inverted = output_config
-                                        .inverted_outputs
-                                        .contains("Peak Volume");
+                                    let inverted =
+                                        output_config.inverted_outputs.contains("Peak Volume");
 
                                     if active ^ inverted {
                                         self.active_triggers.insert((part.id, socket_index));

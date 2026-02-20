@@ -314,13 +314,22 @@ fn test_update_robustness_nan_inf() {
 
     // Verify behavior:
     // NaN > 0.5 is false. So socket 0 (SubBass) should be inactive.
-    assert!(!system.is_active(part_id, 0), "NaN input should not trigger");
+    assert!(
+        !system.is_active(part_id, 0),
+        "NaN input should not trigger"
+    );
 
     // Inf > 0.5 is true. So socket 1 (Bass) should be active.
-    assert!(system.is_active(part_id, 1), "Infinity input should trigger");
+    assert!(
+        system.is_active(part_id, 1),
+        "Infinity input should trigger"
+    );
 
     // -Inf > 0.5 is false. So socket 2 (LowMid) should be inactive.
-    assert!(!system.is_active(part_id, 2), "Negative Infinity input should not trigger");
+    assert!(
+        !system.is_active(part_id, 2),
+        "Negative Infinity input should not trigger"
+    );
 
     // RMS NaN -> Inactive
     // Socket index: 9 bands (0-8) -> RMS is 9
