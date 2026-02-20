@@ -5,11 +5,13 @@
 //! - Output selected: Edge Blend, Calibration, Resolution
 //! - Nothing selected: Project Settings summary
 
-use egui::Ui;
+use egui::{Color32, Ui};
 
 use crate::i18n::LocaleManager;
 use crate::icons::IconManager;
+use crate::theme::colors;
 use crate::transform_panel::TransformPanel;
+use crate::widgets::custom::styled_slider;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use mapmap_core::{Layer, OutputConfig, Transform};
 
@@ -144,15 +146,22 @@ impl InspectorPanel {
         ui.vertical_centered(|ui| {
             ui.add_space(40.0);
             ui.label(
-                egui::RichText::new("No Selection")
-                    .size(16.0)
-                    .color(egui::Color32::WHITE.linear_multiply(0.5)),
+                egui::RichText::new("∅")
+                    .size(48.0)
+                    .color(colors::CYAN_ACCENT.linear_multiply(0.3)),
             );
-            ui.add_space(10.0);
+            ui.add_space(16.0);
             ui.label(
-                egui::RichText::new("Select a layer or output to view properties")
+                egui::RichText::new("No Selection")
+                    .size(20.0)
+                    .strong()
+                    .color(colors::CYAN_ACCENT),
+            );
+            ui.add_space(8.0);
+            ui.label(
+                egui::RichText::new("Select a layer or output\nto view properties")
                     .size(12.0)
-                    .color(egui::Color32::WHITE.linear_multiply(0.4)),
+                    .color(egui::Color32::WHITE.linear_multiply(0.5)),
             );
         });
     }
@@ -175,152 +184,148 @@ impl InspectorPanel {
         let mut action = None;
 
         // Layer header with icon
-        ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("📦").size(18.0));
-            ui.label(egui::RichText::new(&layer.name).size(14.0).strong());
-        });
-        ui.separator();
+        render_panel_header(ui, &format!("📦 {}", layer.name), |_| {});
+        ui.add_space(8.0);
 
         // Transform section
-        egui::CollapsingHeader::new("Transform")
-            .default_open(true)
-            .show(ui, |ui| {
-                // Position
-                ui.horizontal(|ui| {
-                    ui.label("Position:");
-                    ui.label(format!(
-                        "({:.1}, {:.1})",
-                        transform.position.x, transform.position.y
-                    ));
-                });
-
-                // Scale
-                ui.horizontal(|ui| {
-                    ui.label("Scale:");
-                    ui.label(format!(
-                        "({:.2}, {:.2})",
-                        transform.scale.x, transform.scale.y
-                    ));
-                });
-
-                // Rotation
-                ui.horizontal(|ui| {
-                    ui.label("Rotation:");
-                    ui.label(format!("{:.1}°", transform.rotation.z.to_degrees()));
-                });
+        inspector_section(ui, "Transform", true, |ui| {
+            inspector_row(ui, "Position", |ui| {
+                inspector_value(
+                    ui,
+                    &format!("({:.1}, {:.1})", transform.position.x, transform.position.y),
+                );
             });
+
+            inspector_row(ui, "Scale", |ui| {
+                inspector_value(
+                    ui,
+                    &format!("({:.2}, {:.2})", transform.scale.x, transform.scale.y),
+                );
+            });
+
+            inspector_row(ui, "Rotation", |ui| {
+                inspector_value(ui, &format!("{:.1}°", transform.rotation.z.to_degrees()));
+            });
+        });
+
+        ui.add_space(4.0);
 
         // Blending section
-        egui::CollapsingHeader::new("Blending")
-            .default_open(true)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Opacity:");
+        inspector_section(ui, "Blending", true, |ui| {
+            inspector_row(ui, "Opacity", |ui| {
+                let mut opacity = layer.opacity;
+                let response = styled_slider(ui, &mut opacity, 0.0..=1.0, 1.0);
+                if response.changed() {
+                    action = Some(InspectorAction::UpdateOpacity(layer.id, opacity));
+                }
 
-                    let mut opacity = layer.opacity;
-                    let response = ui.add(egui::Slider::new(&mut opacity, 0.0..=1.0));
-                    if response.changed() {
-                        action = Some(InspectorAction::UpdateOpacity(layer.id, opacity));
-                    }
-
-                    // MIDI Learn
-                    use mapmap_control::target::ControlTarget;
-                    crate::AppUI::midi_learn_helper(
-                        ui,
-                        &response,
-                        ControlTarget::LayerOpacity(index as u32),
-                        is_learning,
-                        last_active_element,
-                        last_active_time,
-                        global_actions,
-                    );
-                });
-
-                ui.horizontal(|ui| {
-                    ui.label("Blend Mode:");
-                    ui.label(format!("{:?}", layer.blend_mode));
-                });
+                // MIDI Learn
+                use mapmap_control::target::ControlTarget;
+                crate::AppUI::midi_learn_helper(
+                    ui,
+                    &response,
+                    ControlTarget::LayerOpacity(index as u32),
+                    is_learning,
+                    last_active_element,
+                    last_active_time,
+                    global_actions,
+                );
             });
+
+            inspector_row(ui, "Blend Mode", |ui| {
+                inspector_value(ui, &format!("{:?}", layer.blend_mode));
+            });
+        });
+
+        ui.add_space(4.0);
 
         // Layer state
-        egui::CollapsingHeader::new("State")
-            .default_open(false)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Visible:");
-                    ui.label(if layer.visible { "✅" } else { "❌" });
-                });
-
-                ui.horizontal(|ui| {
-                    ui.label("Solo:");
-                    ui.label(if layer.solo { "🔊" } else { "—" });
-                });
-
-                ui.horizontal(|ui| {
-                    ui.label("Bypass:");
-                    ui.label(if layer.bypass { "⏸" } else { "—" });
-                });
+        inspector_section(ui, "State", true, |ui| {
+            inspector_row(ui, "Visible", |ui| {
+                let (text, color) = if layer.visible {
+                    ("Visible", colors::CYAN_ACCENT)
+                } else {
+                    ("Hidden", Color32::GRAY)
+                };
+                ui.label(egui::RichText::new(text).color(color).strong());
             });
+
+            inspector_row(ui, "Solo", |ui| {
+                if layer.solo {
+                    ui.label(
+                        egui::RichText::new("ACTIVE")
+                            .color(colors::MINT_ACCENT)
+                            .strong(),
+                    );
+                } else {
+                    ui.label(egui::RichText::new("—").color(Color32::GRAY));
+                }
+            });
+
+            inspector_row(ui, "Bypass", |ui| {
+                if layer.bypass {
+                    ui.label(
+                        egui::RichText::new("ACTIVE")
+                            .color(colors::WARN_COLOR)
+                            .strong(),
+                    );
+                } else {
+                    ui.label(egui::RichText::new("—").color(Color32::GRAY));
+                }
+            });
+        });
 
         action
     }
 
     /// Show output properties inspector
     fn show_output_inspector(&self, ui: &mut Ui, output: &OutputConfig, _i18n: &LocaleManager) {
-        // Output header
-        ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("🖥").size(18.0));
-            ui.label(egui::RichText::new(&output.name).size(14.0).strong());
-        });
-        ui.separator();
+        // Header
+        render_panel_header(ui, &format!("🖥 {}", output.name), |_| {});
+        ui.add_space(8.0);
 
         // Resolution section
-        egui::CollapsingHeader::new("Resolution")
-            .default_open(true)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Size:");
-                    ui.label(format!("{}x{}", output.resolution.0, output.resolution.1));
-                });
+        inspector_section(ui, "Resolution", true, |ui| {
+            inspector_row(ui, "Size", |ui| {
+                inspector_value(
+                    ui,
+                    &format!("{}x{}", output.resolution.0, output.resolution.1),
+                );
             });
+        });
+
+        ui.add_space(4.0);
 
         // Canvas Region section
-        egui::CollapsingHeader::new("Canvas Region")
-            .default_open(true)
-            .show(ui, |ui| {
-                let region = &output.canvas_region;
-                ui.horizontal(|ui| {
-                    ui.label("Position:");
-                    ui.label(format!("({:.0}, {:.0})", region.x, region.y));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Size:");
-                    ui.label(format!("{:.0}x{:.0}", region.width, region.height));
-                });
+        inspector_section(ui, "Canvas Region", true, |ui| {
+            let region = &output.canvas_region;
+            inspector_row(ui, "Position", |ui| {
+                inspector_value(ui, &format!("({:.0}, {:.0})", region.x, region.y));
             });
 
-        // Edge Blend indicator
-        egui::CollapsingHeader::new("Edge Blend")
-            .default_open(false)
-            .show(ui, |ui| {
-                let eb = &output.edge_blend;
-                ui.horizontal(|ui| {
-                    ui.label("Left:");
-                    ui.label(format!("{:.0}px", eb.left.width * 100.0));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Right:");
-                    ui.label(format!("{:.0}px", eb.right.width * 100.0));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Top:");
-                    ui.label(format!("{:.0}px", eb.top.width * 100.0));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Bottom:");
-                    ui.label(format!("{:.0}px", eb.bottom.width * 100.0));
-                });
+            inspector_row(ui, "Size", |ui| {
+                inspector_value(ui, &format!("{:.0}x{:.0}", region.width, region.height));
             });
+        });
+
+        ui.add_space(4.0);
+
+        // Edge Blend indicator
+        inspector_section(ui, "Edge Blend", false, |ui| {
+            let eb = &output.edge_blend;
+            inspector_row(ui, "Left", |ui| {
+                inspector_value(ui, &format!("{:.0}px", eb.left.width * 100.0));
+            });
+            inspector_row(ui, "Right", |ui| {
+                inspector_value(ui, &format!("{:.0}px", eb.right.width * 100.0));
+            });
+            inspector_row(ui, "Top", |ui| {
+                inspector_value(ui, &format!("{:.0}px", eb.top.width * 100.0));
+            });
+            inspector_row(ui, "Bottom", |ui| {
+                inspector_value(ui, &format!("{:.0}px", eb.bottom.width * 100.0));
+            });
+        });
     }
 }
 
@@ -331,4 +336,39 @@ pub enum InspectorAction {
     UpdateTransform(u64, Transform),
     /// Update layer opacity
     UpdateOpacity(u64, f32),
+}
+
+// --- Visual Helpers ---
+
+fn inspector_section(
+    ui: &mut Ui,
+    title: &str,
+    default_open: bool,
+    add_contents: impl FnOnce(&mut Ui),
+) {
+    egui::CollapsingHeader::new(title)
+        .default_open(default_open)
+        .show(ui, |ui| {
+            egui::Frame::NONE
+                .fill(colors::LIGHTER_GREY)
+                .inner_margin(8.0)
+                .corner_radius(4.0)
+                .show(ui, |ui| {
+                    ui.set_min_width(ui.available_width());
+                    add_contents(ui);
+                });
+        });
+}
+
+fn inspector_row(ui: &mut Ui, label: &str, add_contents: impl FnOnce(&mut Ui)) {
+    ui.horizontal(|ui| {
+        ui.label(label);
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            add_contents(ui);
+        });
+    });
+}
+
+fn inspector_value(ui: &mut Ui, text: &str) {
+    ui.label(egui::RichText::new(text).color(Color32::WHITE).size(12.0));
 }

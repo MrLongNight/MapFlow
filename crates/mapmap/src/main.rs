@@ -278,54 +278,85 @@ impl App {
                         if let Some(handle) = self.media_players.get_mut(&player_key) {
                             match cmd {
                                 MediaPlaybackCommand::Play => {
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(mapmap_media::PlaybackCommand::Play);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Play);
                                 }
                                 MediaPlaybackCommand::Pause => {
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(mapmap_media::PlaybackCommand::Pause);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Pause);
                                 }
                                 MediaPlaybackCommand::Stop => {
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(mapmap_media::PlaybackCommand::Stop);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Stop);
                                 }
                                 MediaPlaybackCommand::Reload => {
-                                    self.media_players.remove(&player_key);
+                                    info!("Reloading media player for part_id={}", part_id);
+                                    // Player removal handled below
                                 }
                                 MediaPlaybackCommand::SetSpeed(speed) => {
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(mapmap_media::PlaybackCommand::SetSpeed(speed));
+                                    info!("Setting speed to {} for part_id={}", speed, part_id);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::SetSpeed(speed));
                                 }
                                 MediaPlaybackCommand::SetLoop(enabled) => {
+                                    info!("Setting loop to {} for part_id={}", enabled, part_id);
                                     let mode = if enabled {
                                         mapmap_media::LoopMode::Loop
                                     } else {
                                         mapmap_media::LoopMode::PlayOnce
                                     };
-                                    let _ = handle
-                                        .1
-                                        .command_sender()
-                                        .send(mapmap_media::PlaybackCommand::SetLoopMode(mode));
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::SetLoopMode(mode));
                                 }
                                 MediaPlaybackCommand::Seek(position) => {
-                                    let _ = handle.1.command_sender().send(
-                                        mapmap_media::PlaybackCommand::Seek(
-                                            std::time::Duration::from_secs_f64(position),
-                                        ),
-                                    );
+                                    info!("Seeking to {} for part_id={}", position, part_id);
+                                    let _ = handle.1.command_sender().send(PlaybackCommand::Seek(
+                                        std::time::Duration::from_secs_f64(position),
+                                    ));
                                 }
-                                _ => {}
+                                MediaPlaybackCommand::SetReverse(reverse) => {
+                                    info!("Setting reverse playback to {} for part_id={} (NOT IMPLEMENTED)", reverse, part_id);
+                                }
                             }
-                        } else if cmd == MediaPlaybackCommand::Reload {
-                            self.media_players.remove(&player_key);
+                        }
+
+                        // Handle Reload by removing player and immediately recreating
+                        if cmd == MediaPlaybackCommand::Reload {
+                            if self.media_players.remove(&player_key).is_some() {
+                                info!(
+                                    "Removed old media player for part_id={} for reload",
+                                    part_id
+                                );
+                            }
+                            // Immediately recreate the player
+                            if let Some(module) = self.state.module_manager.get_module(mod_id) {
+                                if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
+                                    if let mapmap_core::module::ModulePartType::Source(
+                                        mapmap_core::module::SourceType::MediaFile {
+                                            ref path, ..
+                                        },
+                                    ) = &part.part_type
+                                    {
+                                        if !path.is_empty() {
+                                            match mapmap_media::open_path(path) {
+                                                Ok(player) => {
+                                                    info!(
+                                                        "Recreated player for '{}' after reload",
+                                                        path
+                                                    );
+                                                    // Auto-play after reload
+                                                    let _ = player
+                                                        .command_sender()
+                                                        .send(PlaybackCommand::Play);
+                                                    self.media_players
+                                                        .insert(player_key, (path.clone(), player));
+                                                }
+                                                Err(e) => {
+                                                    error!(
+                                                        "Failed to reload media '{}': {}",
+                                                        path, e
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else {
                         warn!("Could not find module owner for part_id={}", part_id);

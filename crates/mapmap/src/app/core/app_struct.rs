@@ -73,6 +73,8 @@ pub struct App {
     pub last_update: std::time::Instant,
     /// Application start time.
     pub start_time: std::time::Instant,
+    /// Last VRAM Garbage Collection timestamp.
+    pub last_texture_gc: std::time::Instant,
     /// Receiver for MCP commands
     pub mcp_receiver: Receiver<McpAction>,
     /// Sender for internal actions (async -> sync)

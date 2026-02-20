@@ -410,6 +410,7 @@ impl App {
             last_autosave: std::time::Instant::now(),
             last_update: std::time::Instant::now(),
             start_time: std::time::Instant::now(),
+            last_texture_gc: std::time::Instant::now(),
             mcp_receiver,
             action_sender,
             control_manager,
