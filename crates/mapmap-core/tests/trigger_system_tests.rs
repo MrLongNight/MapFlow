@@ -277,3 +277,161 @@ fn test_fallback_behavior() {
         "Fallback Beat Output should be active"
     );
 }
+
+#[test]
+fn test_update_robustness_nan_inf() {
+    let mut system = TriggerSystem::new();
+    let mut module_manager = ModuleManager::new();
+    let module_id = module_manager.create_module("Test Module".to_string());
+    let module = module_manager.get_module_mut(module_id).unwrap();
+
+    let config = AudioTriggerOutputConfig {
+        frequency_bands: true,
+        volume_outputs: true,
+        beat_output: true,
+        bpm_output: true,
+        inverted_outputs: Default::default(),
+    };
+    let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: AudioBand::Bass,
+        threshold: 0.5,
+        output_config: config,
+    });
+    // This part should have sockets for all outputs
+    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
+
+    // Create bad audio data
+    let mut audio_data = default_audio_data();
+    audio_data.band_energies[0] = f32::NAN;
+    audio_data.band_energies[1] = f32::INFINITY;
+    audio_data.band_energies[2] = f32::NEG_INFINITY;
+    audio_data.rms_volume = f32::NAN;
+    audio_data.peak_volume = f32::INFINITY;
+    audio_data.beat_strength = f32::NAN;
+
+    // Update should not panic
+    system.update(&module_manager, &audio_data, 0.016);
+
+    // Verify behavior:
+    // NaN > 0.5 is false. So socket 0 (SubBass) should be inactive.
+    assert!(!system.is_active(part_id, 0), "NaN input should not trigger");
+
+    // Inf > 0.5 is true. So socket 1 (Bass) should be active.
+    assert!(system.is_active(part_id, 1), "Infinity input should trigger");
+
+    // -Inf > 0.5 is false. So socket 2 (LowMid) should be inactive.
+    assert!(!system.is_active(part_id, 2), "Negative Infinity input should not trigger");
+
+    // RMS NaN -> Inactive
+    // Socket index: 9 bands (0-8) -> RMS is 9
+    assert!(!system.is_active(part_id, 9), "NaN RMS should not trigger");
+
+    // Peak Inf -> Active
+    // Socket index: 9 bands -> RMS(9) -> Peak(10)
+    assert!(system.is_active(part_id, 10), "Inf Peak should trigger");
+}
+
+#[test]
+fn test_audio_fft_inverted_output() {
+    // 1. Setup
+    let mut system = TriggerSystem::new();
+    let mut module_manager = ModuleManager::new();
+    let module_id = module_manager.create_module("Test Module".to_string());
+    let module = module_manager.get_module_mut(module_id).unwrap();
+
+    let mut inverted_outputs = std::collections::HashSet::new();
+    inverted_outputs.insert("Bass Out".to_string());
+
+    let config = AudioTriggerOutputConfig {
+        frequency_bands: true,
+        inverted_outputs,
+        ..Default::default()
+    };
+
+    let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: AudioBand::Bass,
+        threshold: 0.5,
+        output_config: config,
+    });
+    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
+
+    // 2. Test Below Threshold
+    // Should be ACTIVE because it's inverted!
+    let mut audio_data = default_audio_data();
+    audio_data.band_energies[1] = 0.4; // 0.4 < 0.5
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        system.is_active(part_id, 1),
+        "Inverted Bass Out (socket 1) should be ACTIVE when below threshold"
+    );
+
+    // 3. Test Above Threshold
+    // Should be INACTIVE because it's inverted!
+    audio_data.band_energies[1] = 0.6; // 0.6 > 0.5
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        !system.is_active(part_id, 1),
+        "Inverted Bass Out (socket 1) should be INACTIVE when above threshold"
+    );
+
+    // 4. Test Another Band (Non-Inverted)
+    // "SubBass Out" (index 0) is not inverted
+    audio_data.band_energies[0] = 0.6; // 0.6 > 0.5
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        system.is_active(part_id, 0),
+        "SubBass Out (socket 0) should be ACTIVE when above threshold (normal)"
+    );
+    audio_data.band_energies[0] = 0.4; // 0.4 < 0.5
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        !system.is_active(part_id, 0),
+        "SubBass Out (socket 0) should be INACTIVE when below threshold (normal)"
+    );
+}
+
+#[test]
+fn test_audio_fft_volume_inverted_output() {
+    // 1. Setup
+    let mut system = TriggerSystem::new();
+    let mut module_manager = ModuleManager::new();
+    let module_id = module_manager.create_module("Test Module".to_string());
+    let module = module_manager.get_module_mut(module_id).unwrap();
+
+    let mut inverted_outputs = std::collections::HashSet::new();
+    inverted_outputs.insert("RMS Volume".to_string());
+
+    let config = AudioTriggerOutputConfig {
+        frequency_bands: false,
+        volume_outputs: true,
+        beat_output: false,
+        bpm_output: false,
+        inverted_outputs,
+    };
+
+    let part_type = ModulePartType::Trigger(TriggerType::AudioFFT {
+        band: AudioBand::Bass,
+        threshold: 0.5,
+        output_config: config,
+    });
+    let part_id = module.add_part_with_type(part_type, (0.0, 0.0));
+
+    // 2. Test Below Threshold
+    // RMS (index 0) is inverted -> Should be ACTIVE
+    let mut audio_data = default_audio_data();
+    audio_data.rms_volume = 0.4;
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        system.is_active(part_id, 0),
+        "Inverted RMS Volume should be ACTIVE when below threshold"
+    );
+
+    // 3. Test Above Threshold
+    // RMS (index 0) is inverted -> Should be INACTIVE
+    audio_data.rms_volume = 0.6;
+    system.update(&module_manager, &audio_data, 0.016);
+    assert!(
+        !system.is_active(part_id, 0),
+        "Inverted RMS Volume should be INACTIVE when above threshold"
+    );
+}

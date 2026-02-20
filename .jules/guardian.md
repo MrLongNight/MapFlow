@@ -80,3 +80,8 @@ to use explicit `AudioTriggerData` initialization.
 calculations for zero-sized layers could result in division by zero (Inf).
 **Aktion:** Implemented input sanitization in `AudioAnalyzerV2::process_samples` and zero-size checks in `ResizeMode::calculate_transform`.
 Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero_size`.
+
+## 2026-02-18 - [Trigger Inversion Missing]
+
+**Erkenntnis:** Die TriggerSystem Logik für inverted_outputs fehlte komplett im Code, obwohl die Konfiguration dafür existierte. Dies hätte dazu geführt, dass Trigger, die als "inverted" markiert waren, sich wie normale Trigger verhalten hätten (falsches Positiv in UI, falsches Verhalten).
+**Aktion:** Implemented explicit XOR logic active ^ inverted in TriggerSystem::update covering Frequency Bands, Volume, and Beat outputs. Added regression tests test_audio_fft_inverted_output and test_audio_fft_volume_inverted_output to prevent regression.
